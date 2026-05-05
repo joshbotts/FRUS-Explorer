@@ -1,0 +1,378 @@
+// AppStore.swift
+// Central application state — volume catalogue, download management, parsed volumes.
+
+import Foundation
+import Observation
+import Network
+import FRUSKit
+
+// MARK: - Download state per volume
+
+enum VolumeDownloadState: Equatable {
+    case notDownloaded
+    case downloading(progress: Double)   // 0.0 – 1.0
+    case downloaded(localURL: URL)
+    case parsing
+    case ready
+    case failed(String)
+}
+
+// MARK: - Parsed volume wrapper
+
+final class LoadedVolume: Identifiable {
+    let info: FRUSVolumeInfo
+    let volume: FRUSVolume
+    var id: String { info.id }
+
+    init(info: FRUSVolumeInfo, volume: FRUSVolume) {
+        self.info = info
+        self.volume = volume
+    }
+}
+
+// MARK: - AppStore
+
+@MainActor
+@Observable
+final class AppStore {
+
+    // Catalogue
+    var catalogue: [FRUSVolumeInfo] = []
+    var catalogueState: CatalogueState = .idle
+    var searchText = ""
+
+    // Network reachability
+    var isOnline: Bool = true
+
+    // Per-volume state
+    var downloadStates: [String: VolumeDownloadState] = [:]
+
+    // Loaded (parsed) volumes
+    var loadedVolumes: [String: LoadedVolume] = [:]
+
+    // Local-only volume metadata (populated from disk at launch, before network)
+    var localVolumeIDs: Set<String> = []
+
+    // Currently explored volume / selection
+    var selectedVolumeID: String?
+    var selectedNodeID: String?
+
+    // Summaries cache: composite key = "{divisionID}__{profileID}"
+    var summaries: [String: SummaryState] = [:]
+
+    let downloader = FRUSDownloader(maxConcurrentDownloads: 2, skipIfAlreadyDownloaded: true)
+    let summariser = SummarisationService()
+
+    var profileStore: PromptProfileStore? {
+        didSet { observeProfileChanges() }
+    }
+    private var profileObserver: NSObjectProtocol?
+    private var networkMonitor: NWPathMonitor?
+    private var networkQueue = DispatchQueue(label: "frus.network.monitor")
+
+    private func observeProfileChanges() {
+        if let existing = profileObserver {
+            NotificationCenter.default.removeObserver(existing)
+        }
+        profileObserver = NotificationCenter.default.addObserver(
+            forName: .summaryProfileDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.summaries.removeAll()
+        }
+    }
+
+    private func summaryKey(for divisionID: String) -> String {
+        let profileID = profileStore?.activeProfileID.uuidString ?? "default"
+        return "\(divisionID)__\(profileID)"
+    }
+
+    private let downloadDirectory: URL = {
+        let docs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = docs.appending(component: "FRUSExplorer/volumes")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }()
+
+    // MARK: - Init
+
+    init() {
+        // Scan local volumes immediately so offline content is available
+        // before any network request completes.
+        scanLocalVolumes()
+        startNetworkMonitor()
+    }
+
+    // MARK: - Network monitoring
+
+    private func startNetworkMonitor() {
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            let online = path.status == .satisfied
+            Task { @MainActor [weak self] in
+                self?.isOnline = online
+            }
+        }
+        monitor.start(queue: networkQueue)
+        networkMonitor = monitor
+    }
+
+    // MARK: - Local volume scanning
+
+    /// Scans the download directory and populates `downloadStates` and `localVolumeIDs`
+    /// without waiting for the network. Called at init and after every download.
+    func scanLocalVolumes() {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: downloadDirectory,
+            includingPropertiesForKeys: [.fileSizeKey]
+        ) else { return }
+
+        var found: Set<String> = []
+        for file in files where file.pathExtension == "xml" {
+            let volumeID = file.deletingPathExtension().lastPathComponent
+            found.insert(volumeID)
+            // Only set to .downloaded if we haven't already parsed it into .ready
+            switch downloadStates[volumeID] {
+            case .none, .notDownloaded:
+                downloadStates[volumeID] = .downloaded(localURL: file)
+            default:
+                break
+            }
+        }
+        localVolumeIDs = found
+    }
+
+    // MARK: - Computed
+
+    var filteredCatalogue: [FRUSVolumeInfo] {
+        guard !searchText.isEmpty else { return catalogue }
+        return catalogue.filter { $0.id.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    /// Volumes available locally but not present in the current catalogue
+    /// (e.g. when offline or before the catalogue finishes loading).
+    var offlineOnlyVolumeIDs: [String] {
+        let catalogueIDs = Set(catalogue.map(\.id))
+        return localVolumeIDs.subtracting(catalogueIDs).sorted()
+    }
+
+    var selectedVolume: LoadedVolume? {
+        guard let id = selectedVolumeID else { return nil }
+        return loadedVolumes[id]
+    }
+
+    // MARK: - Catalogue loading
+
+    enum CatalogueState: Equatable {
+        case idle, loading, loaded, failed(String)
+    }
+
+    func loadCatalogue() async {
+        guard catalogueState != .loading else { return }
+        catalogueState = .loading
+        do {
+            let list = try await downloader.fetchVolumeList()
+            catalogue = list
+            catalogueState = .loaded
+            // Re-scan local after we have catalogue metadata to merge against
+            scanLocalVolumes()
+        } catch {
+            // Don't erase existing catalogue on refresh failure
+            if catalogue.isEmpty {
+                catalogueState = .failed(error.localizedDescription)
+            } else {
+                catalogueState = .loaded
+            }
+        }
+    }
+
+    // MARK: - Downloading
+
+    func download(_ info: FRUSVolumeInfo) {
+        let id = info.id
+        switch downloadStates[id] {
+        case .none, .notDownloaded, .failed:
+            break
+        default:
+            return
+        }
+        downloadStates[id] = .downloading(progress: 0)
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let result = try await downloader.download(
+                    volume: info,
+                    to: downloadDirectory,
+                    progress: { [weak self] p in
+                        self?.downloadStates[id] = .downloading(
+                            progress: p.fractionCompleted ?? 0
+                        )
+                    }
+                )
+                downloadStates[id] = .downloaded(localURL: result.localURL)
+                localVolumeIDs.insert(id)
+            } catch {
+                downloadStates[id] = .failed(error.localizedDescription)
+            }
+        }
+    }
+
+    func cancelDownload(_ id: String) {
+        downloadStates[id] = .notDownloaded
+    }
+
+    // MARK: - Bulk download
+
+    /// Downloads every volume in the catalogue that has not yet been downloaded.
+    /// Individual `download(_:)` calls drive the per-volume progress already
+    /// observed by the UI, so no additional state is needed.
+    func downloadAll() {
+        guard catalogueState == .loaded else { return }
+        let pending = catalogue.filter {
+            switch downloadStates[$0.id] {
+            case .none, .notDownloaded, .failed: return true
+            default: return false
+            }
+        }
+        for info in pending {
+            download(info)
+        }
+    }
+
+    /// Cancels every in-progress download.
+    func cancelAllDownloads() {
+        for (id, state) in downloadStates {
+            if case .downloading = state {
+                downloadStates[id] = .notDownloaded
+            }
+        }
+    }
+
+    // MARK: - Bulk progress summary
+
+    struct BulkProgress {
+        let downloading: Int   // volumes currently in flight
+        let completed: Int     // volumes in .downloaded or .ready state
+        let total: Int         // total volumes in catalogue
+        let failed: Int
+
+        var fractionCompleted: Double {
+            total > 0 ? Double(completed) / Double(total) : 0
+        }
+
+        var isActive: Bool { downloading > 0 }
+    }
+
+    var bulkProgress: BulkProgress {
+        let total = catalogue.count
+        guard total > 0 else { return BulkProgress(downloading: 0, completed: 0, total: 0, failed: 0) }
+        var downloading = 0, completed = 0, failed = 0
+        for info in catalogue {
+            switch downloadStates[info.id] {
+            case .downloading:            downloading += 1
+            case .downloaded, .ready:     completed  += 1
+            case .failed:                 failed     += 1
+            default: break
+            }
+        }
+        return BulkProgress(downloading: downloading, completed: completed,
+                            total: total, failed: failed)
+    }
+
+    // MARK: - Parsing / loading
+
+    func loadVolume(_ info: FRUSVolumeInfo) async {
+        let id = info.id
+        // Accept both .downloaded and .ready states as triggers
+        guard case .downloaded(let url) = downloadStates[id] else {
+            // Also handle the case where the file is on disk but state is stale
+            let fileURL = downloadDirectory.appending(component: "\(id).xml")
+            guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+            if loadedVolumes[id] != nil { selectedVolumeID = id; return }
+            await parseVolume(id: id, url: fileURL, info: info)
+            return
+        }
+        guard loadedVolumes[id] == nil else {
+            selectedVolumeID = id
+            return
+        }
+        await parseVolume(id: id, url: url, info: info)
+    }
+
+    private func parseVolume(id: String, url: URL, info: FRUSVolumeInfo) async {
+        downloadStates[id] = .parsing
+        do {
+            let volume = try await Task.detached(priority: .userInitiated) {
+                try FRUSParser().parse(url: url)
+            }.value
+            let loaded = LoadedVolume(info: info, volume: volume)
+            loadedVolumes[id] = loaded
+            downloadStates[id] = .ready
+            selectedVolumeID = id
+        } catch {
+            downloadStates[id] = .failed(error.localizedDescription)
+        }
+    }
+
+    // MARK: - Summarisation
+
+    func summarise(_ division: Division) {
+        guard let nodeID = division.id else { return }
+        let key = summaryKey(for: nodeID)
+        guard summaries[key] == nil else { return }
+        summaries[key] = .generating
+
+        let text = division.bodyText
+        guard !text.isEmpty else {
+            summaries[key] = .ready("No text content available.")
+            return
+        }
+
+        let activeProfile = profileStore?.activeProfile
+        Task {
+            let result = await summariser.summarise(
+                text: text,
+                title: division.title ?? "",
+                profile: activeProfile
+            )
+            summaries[key] = result
+        }
+    }
+
+    func regenerateSummary(for division: Division) {
+        guard let nodeID = division.id else { return }
+        let key = summaryKey(for: nodeID)
+        summaries.removeValue(forKey: key)
+        summarise(division)
+    }
+
+    func summary(for division: Division) -> SummaryState? {
+        guard let nodeID = division.id else { return nil }
+        return summaries[summaryKey(for: nodeID)]
+    }
+
+    // MARK: - Delete local file
+
+    func deleteVolume(_ id: String) {
+        let url = downloadDirectory.appending(component: "\(id).xml")
+        try? FileManager.default.removeItem(at: url)
+        downloadStates[id] = .notDownloaded
+        localVolumeIDs.remove(id)
+        loadedVolumes.removeValue(forKey: id)
+        if selectedVolumeID == id { selectedVolumeID = nil }
+    }
+
+    func downloadState(for id: String) -> VolumeDownloadState {
+        downloadStates[id] ?? .notDownloaded
+    }
+}
+
+// MARK: - Summary state
+
+enum SummaryState: Equatable {
+    case generating
+    case ready(String)
+    case failed(String)
+}
