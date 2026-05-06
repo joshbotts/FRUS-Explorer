@@ -89,8 +89,16 @@ final class AppStore {
     }
 
     private let downloadDirectory: URL = {
-        let docs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = docs.appending(component: "FRUSExplorer/volumes")
+        // On macOS, store in Application Support (hidden from Finder by default).
+        // On iPadOS, store in the Documents directory so volumes appear in the
+        // Files app and survive iCloud Drive backups.
+#if os(macOS)
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appending(component: "FRUSExplorer/volumes")
+#else
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let dir = base.appending(component: "FRUSVolumes")
+#endif
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()

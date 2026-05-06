@@ -7,6 +7,7 @@ import FRUSKit
 struct CollectionEditorView: View {
     @Environment(AppStore.self) private var store: AppStore
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
+    @Environment(\.platformViewReference) private var platformRef: PlatformViewReference?
 
     let collectionID: UUID
 
@@ -23,6 +24,8 @@ struct CollectionEditorView: View {
 
     var body: some View {
         if let col = collection {
+#if os(macOS)
+            // macOS: compact header + HSplitView side-by-side
             VStack(spacing: 0) {
                 collectionHeader(col)
                 Divider()
@@ -38,6 +41,31 @@ struct CollectionEditorView: View {
             } message: {
                 Text(exportError ?? "Unknown error.")
             }
+#else
+            // iPadOS: NavigationSplitView must be the root view.
+            // The header is placed as a safeAreaInset on the sidebar column
+            // so it stays visible while the split adapts to screen size.
+            NavigationSplitView {
+                itemListPane(col)
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        VStack(spacing: 0) {
+                            collectionHeader(col)
+                            Divider()
+                        }
+                        .background(.bar)
+                    }
+                    .navigationTitle(col.name)
+                    .navigationBarTitleDisplayMode(.inline)
+            } detail: {
+                annotationPane(col)
+            }
+            .toolbar { toolbarContent(col) }
+            .alert("Export Failed", isPresented: $showingExportError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(exportError ?? "Unknown error.")
+            }
+#endif
         }
     }
 
@@ -211,7 +239,7 @@ struct CollectionEditorView: View {
         await exportCollectionToPDF(
             collection: col,
             resolvedItems: resolved,
-            from: NSApp.keyWindow
+            presentingView: platformRef ?? PlatformViewReference()
         )
     }
 

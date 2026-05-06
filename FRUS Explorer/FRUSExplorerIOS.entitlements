@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        App Sandbox is not used on iOS/iPadOS — the iOS security model
+        provides its own sandboxing automatically.
+
+        Outbound network connections (api.github.com, raw.githubusercontent.com)
+        are permitted by default on iOS for HTTPS traffic.
+        No explicit network entitlement is required.
+    -->
+
+    <!--
+        Background processing: allows URLSession downloads to continue when the
+        app is backgrounded. Large FRUS volumes (50–100 MB) may take several
+        minutes on a slow connection.
+    -->
+    <key>com.apple.developer.background-task-scheduler-allowed-task-identifiers</key>
+    <array>
+        <string>com.historyatstate.FRUSExplorer.download</string>
+    </array>
+</dict>
+</plist>

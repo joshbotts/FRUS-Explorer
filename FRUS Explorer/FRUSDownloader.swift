@@ -121,7 +121,22 @@ public actor FRUSDownloader {
     /// When `true`, an existing file whose size on disk matches `FRUSVolumeInfo.size` is skipped.
     public var skipIfAlreadyDownloaded: Bool
 
-    private let session: URLSession
+    // Two sessions with distinct responsibilities:
+    //
+    // listingSession — ephemeral, used only for the Git Trees API call in
+    //   fetchVolumeList(). Short-lived JSON responses (~200 KB) that complete
+    //   in seconds. Background sessions are forbidden from using the async/await
+    //   completion-handler-based APIs (session.data(for:)), so this must be a
+    //   standard session on all platforms.
+    //
+    // downloadSession — used for large FRUS XML file downloads. Also a standard
+    //   session: the async session.download(for:) API is internally backed by
+    //   completion handlers, which are likewise forbidden on background sessions.
+    //   True background download support requires a URLSessionDownloadDelegate
+    //   and is a separate architectural concern; using a standard session here
+    //   restores correct behaviour on both macOS and iPadOS.
+    private let listingSession: URLSession
+    private let downloadSession: URLSession
 
     // Private API endpoints
     //
@@ -141,12 +156,30 @@ public actor FRUSDownloader {
         maxConcurrentDownloads: Int = 3,
         githubToken: String? = nil,
         skipIfAlreadyDownloaded: Bool = true,
-        urlSession: URLSession = .shared
+        urlSession: URLSession? = nil
     ) {
         self.maxConcurrentDownloads = maxConcurrentDownloads
         self.githubToken = githubToken
         self.skipIfAlreadyDownloaded = skipIfAlreadyDownloaded
-        self.session = urlSession
+
+        if let urlSession {
+            // Caller-supplied session used for both listing and downloading.
+            // This path is primarily used in unit tests via StubURLProtocol.
+            self.listingSession  = urlSession
+            self.downloadSession = urlSession
+        } else {
+            // Listing: ephemeral session for the short-lived Git Trees API call.
+            // Must be a standard (non-background) session because the async
+            // session.data(for:) API uses completion handlers internally, which
+            // are forbidden on background URLSessions on all Apple platforms.
+            self.listingSession = URLSession(configuration: .ephemeral)
+
+            // Downloads: also a standard session. The async session.download(for:)
+            // API is similarly backed by completion handlers and cannot be used
+            // with a background session. A standard session correctly supports
+            // concurrent callers via Swift structured concurrency.
+            self.downloadSession = URLSession(configuration: .ephemeral)
+        }
     }
 
     // MARK: - Volume listing
@@ -171,7 +204,7 @@ public actor FRUSDownloader {
 
         let (data, response): (Data, URLResponse)
         do {
-            (data, response) = try await session.data(for: request)
+            (data, response) = try await listingSession.data(for: request)
         } catch {
             throw FRUSDownloaderError.listingFailed(underlying: error)
         }
@@ -335,7 +368,7 @@ public actor FRUSDownloader {
         let (tempURL, response): (URL, URLResponse)
         do {
             // Kick off progress observation before awaiting the download.
-            let downloadTask = session.downloadTask(with: request)
+            let downloadTask = downloadSession.downloadTask(with: request)
 
             // If a progress callback was requested, observe via a retained token.
             // The token is stored in a local var so ARC keeps it alive until
@@ -355,7 +388,7 @@ public actor FRUSDownloader {
                 }
             }
 
-            (tempURL, response) = try await session.download(for: request)
+            (tempURL, response) = try await downloadSession.download(for: request)
             // Silence the unused-variable warning while keeping the token alive
             // until after the await above completes.
             _ = progressObservation

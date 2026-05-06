@@ -1,5 +1,5 @@
 // FRUSExplorerApp.swift
-// Entry point for the FRUSExplorer macOS application.
+// Entry point for FRUSExplorer — macOS and iPadOS.
 
 import SwiftUI
 
@@ -8,6 +8,7 @@ struct FRUSExplorerApp: App {
     @State private var store = AppStore()
     @State private var collectionStore = CollectionStore()
     @State private var profileStore = PromptProfileStore()
+    @State private var platformRef: PlatformViewReference? = nil
 
     var body: some Scene {
         WindowGroup {
@@ -15,18 +16,69 @@ struct FRUSExplorerApp: App {
                 .environment(store)
                 .environment(collectionStore)
                 .environment(profileStore)
+                .environment(\.platformViewReference, platformRef)
+#if os(macOS)
                 .frame(minWidth: 1100, minHeight: 700)
+                // Invisible helper that reads the NSWindow once the view
+                // is placed in the hierarchy and stores it in platformRef.
+                .background(
+                    WindowAccessor { window in
+                        if self.platformRef == nil {
+                            self.platformRef = PlatformViewReference(window: window)
+                        }
+                    }
+                )
+#else
+                // On iPadOS, capture the hosting UIViewController
+                .background(
+                    ViewControllerAccessor { vc in
+                        if self.platformRef == nil {
+                            self.platformRef = PlatformViewReference(viewController: vc)
+                        }
+                    }
+                )
+#endif
                 .task {
-                    // Wire profileStore into AppStore after both are initialised.
-                    // AppStore.profileStore is a plain var (not @Published) so this
-                    // assignment does not trigger a view update loop.
                     store.profileStore = profileStore
                 }
         }
+#if os(macOS)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(replacing: .newItem) { }
         }
+#endif
     }
 }
+
+// MARK: - iPadOS UIViewController accessor
+
+#if !os(macOS)
+/// An invisible UIViewControllerRepresentable that provides access to the
+/// hosting UIViewController for presenting share sheets.
+struct ViewControllerAccessor: UIViewControllerRepresentable {
+    let onViewController: @MainActor (UIViewController) -> Void
+
+    func makeUIViewController(context: Context) -> Impl {
+        Impl(callback: onViewController)
+    }
+    func updateUIViewController(_ vc: Impl, context: Context) {}
+
+    final class Impl: UIViewController {
+        let callback: @MainActor (UIViewController) -> Void
+        init(callback: @escaping @MainActor (UIViewController) -> Void) {
+            self.callback = callback
+            super.init(nibName: nil, bundle: nil)
+        }
+        required init?(coder: NSCoder) { fatalError() }
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            // parent is the SwiftUI hosting controller
+            if let parent {
+                Task { @MainActor in self.callback(parent) }
+            }
+        }
+    }
+}
+#endif

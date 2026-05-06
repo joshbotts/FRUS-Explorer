@@ -26,7 +26,9 @@ struct PromptProfilesView: View {
     var body: some View {
         NavigationSplitView {
             profileSidebar
+#if os(macOS)
                 .navigationSplitViewColumnWidth(min: 210, ideal: 230, max: 270)
+#endif
         } detail: {
             if let profile = selectedProfile {
                 ProfileDetailView(profile: profile)
@@ -318,7 +320,11 @@ struct ProfileDetailView: View {
                             Text(fmt.displayName).tag(fmt)
                         }
                     }
+#if os(macOS)
                     .pickerStyle(.radioGroup)
+#else
+                    .pickerStyle(.segmented)
+#endif
                     .onChange(of: draft.outputFormat) { _, _ in isDirty = true }
                     Text(draft.outputFormat.description)
                         .font(.caption)
