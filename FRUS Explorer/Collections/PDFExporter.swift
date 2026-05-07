@@ -128,9 +128,14 @@ private final class Coordinator: NSObject, WKNavigationDelegate {
 func exportCollectionToPDF(
     collection: DocumentCollection,
     resolvedItems: [UUID: Division],
+    loadedVolumes: [String: LoadedVolume],
     presentingView: PlatformViewReference
 ) async {
-    let html = CollectionHTMLRenderer.html(for: collection, resolvedItems: resolvedItems)
+    let html = CollectionHTMLRenderer.html(
+        for: collection,
+        resolvedItems: resolvedItems,
+        loadedVolumes: loadedVolumes
+    )
 
     let data: Data
     do {

@@ -239,6 +239,7 @@ struct CollectionEditorView: View {
         await exportCollectionToPDF(
             collection: col,
             resolvedItems: resolved,
+            loadedVolumes: store.loadedVolumes,
             presentingView: platformRef ?? PlatformViewReference()
         )
     }
