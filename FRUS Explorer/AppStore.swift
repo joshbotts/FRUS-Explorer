@@ -440,6 +440,39 @@ final class AppStore {
         await parseVolume(id: id, url: fileURL, info: info)
     }
 
+    // MARK: - Re-index
+
+    /// Forces a full re-parse of a volume that is already downloaded.
+    /// Evicts the existing in-memory copy, clears its search index and
+    /// in-memory summary cache, then re-runs the parse pipeline.
+    func reindexVolume(_ info: FRUSVolumeInfo) async {
+        let id = info.id
+        let fileURL = downloadDirectory.appending(component: "\(id).xml")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        loadedVolumes.removeValue(forKey: id)
+        Task { await searchEngine.removeIndex(volumeID: id) }
+        summaries = summaries.filter { !$0.key.hasPrefix("\(id)__") }
+        downloadStates[id] = .downloaded(localURL: fileURL)
+        await parseVolume(id: id, url: fileURL, info: info)
+    }
+
+    /// Re-index variant for offline rows where only the volume ID is known.
+    func reindexVolumeByID(_ id: String) async {
+        if let info = catalogue.first(where: { $0.id == id }) {
+            await reindexVolume(info)
+            return
+        }
+        let fileURL = downloadDirectory.appending(component: "\(id).xml")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        let placeholderURL = URL(string: "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(id).xml")!
+        let info = FRUSVolumeInfo(id: id, size: 0, sha: "", downloadURL: placeholderURL)
+        loadedVolumes.removeValue(forKey: id)
+        Task { await searchEngine.removeIndex(volumeID: id) }
+        summaries = summaries.filter { !$0.key.hasPrefix("\(id)__") }
+        downloadStates[id] = .downloaded(localURL: fileURL)
+        await parseVolume(id: id, url: fileURL, info: info)
+    }
+
     // MARK: - Delete local file
 
     func deleteVolume(_ id: String) {

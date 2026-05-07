@@ -287,6 +287,7 @@ struct CatalogueView: View {
             Button("Download") { store.download(info) }
         case .downloaded, .ready:
             Button("Open") { Task { await store.loadVolume(info) } }
+            Button("Re-index") { Task { await store.reindexVolume(info) } }
             Divider()
             Button("Delete Local File", role: .destructive) { store.deleteVolume(info.id) }
         case .downloading:
@@ -500,6 +501,8 @@ struct OfflineVolumeRow: View {
         }
         .padding(.vertical, 5)
         .contextMenu {
+            Button("Re-index") { Task { await store.reindexVolumeByID(volumeID) } }
+            Divider()
             Button("Delete Local File", role: .destructive) {
                 store.deleteVolume(volumeID)
             }

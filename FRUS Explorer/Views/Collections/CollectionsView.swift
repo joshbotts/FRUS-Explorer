@@ -2,7 +2,6 @@
 // Left-pane list of all collections with create / rename / delete actions.
 
 import SwiftUI
-import FRUSKit
 
 struct CollectionsView: View {
     @Environment(AppStore.self) private var store: AppStore
