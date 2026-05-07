@@ -2,7 +2,6 @@
 // Full prompt profile management UI: list, editor, live preview.
 
 import SwiftUI
-import FRUSKit
 
 // MARK: - PromptProfilesView
 

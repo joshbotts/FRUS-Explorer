@@ -1,161 +1,84 @@
-# FRUSKit
+# FRUS Explorer
 
-A Swift library for parsing *Foreign Relations of the United States* (FRUS) TEI XML volumes published by the [Office of the Historian](https://history.state.gov/) and made available as open data at [HistoryAtState/frus](https://github.com/HistoryAtState/frus).
+A native macOS and iPadOS reader for the *Foreign Relations of the United States* (FRUS) series — the official documentary record of U.S. foreign policy published by the [Office of the Historian](https://history.state.gov/). Volumes are sourced from the open-data repository at [HistoryAtState/frus](https://github.com/HistoryAtState/frus).
 
-## Schema
+## Features
 
-FRUS volumes are encoded according to the [Text Encoding Initiative P5 Guidelines](https://tei-c.org/guidelines/p5/) with a custom project profile defined in `schema/frus.odd` (compiled from TEI ODD to RelaxNG). FRUSKit models the key structural elements defined in that schema.
+### Volume catalogue
+- Fetches the full FRUS catalogue from GitHub at launch and displays file sizes.
+- Download individual volumes or all volumes in bulk, with per-volume and aggregate progress indicators.
+- Downloaded volumes are stored locally and available offline; the catalogue shows a "Downloaded" section immediately at launch before any network request completes.
+- Sort volumes by ID or file size.
 
-## Installation
+### Three-column explorer
+- **Catalogue** — searchable, filterable volume list with download state indicators.
+- **Outline** — hierarchical chapter/document outline for the selected volume, matching the structure of history.state.gov.
+- **Detail** — full document rendering with typeset body text, footnotes, tables, and editorial apparatus.
 
-Add FRUSKit to your `Package.swift`:
+### Document rendering
+- TEI XML is parsed to a native Swift model and rendered entirely in SwiftUI.
+- Typography matches the history.state.gov presentation: serif body text, monospaced datelines, inline footnotes, paragraph and list formatting.
 
-```swift
-dependencies: [
-    .package(url: "https://github.com/yourorg/FRUSKit.git", from: "1.0.0"),
-],
-targets: [
-    .target(name: "MyApp", dependencies: ["FRUSKit"]),
-]
-```
+### Full-text search
+- Cross-volume search across all downloaded volumes simultaneously.
+- Field-scoped query syntax: `person:Kissinger`, `place:Geneva`, `org:NATO`, `term:détente`.
+- Date-range filter with a visual date picker.
+- Search scope includes document text, AI-generated summaries, and collection annotations.
+- Results show volume ID, document title, dateline, and a relevance-ranked excerpt.
 
-## Quick Start
+### AI-powered summaries
+- Generates per-document summaries using Apple Intelligence (on-device; no data leaves the device).
+- Multiple named *prompt profiles* let you configure tone, length, focus, and output format independently.
+- Summaries are persisted across sessions keyed to the document and the profile that produced them, so re-opening a document does not trigger re-generation.
+- Summaries are included in full-text search.
+- Manage profiles and purge stored summaries per-profile from the Prompt Profiles panel.
 
-```swift
-import FRUSKit
+### Research collections
+- Create named collections and add any document from any loaded volume.
+- Drag to reorder items within a collection.
+- Write per-item research annotations and collection-level research notes.
+- Annotations appear in search results and in PDF exports.
 
-let parser = FRUSParser()
+### Citation-aware PDF export
+- Exports a collection to a US Letter (8.5 × 11 in) paginated PDF via WebKit.
+- Each document is labeled with its volume ID, document number, and its canonical URL on history.state.gov.
+- A "Cite as:" block is generated for each document following the [FRUS citation guidelines](https://history.state.gov/historicaldocuments/citing-frus):
+  > *Foreign Relations of the United States*, [Series Title], eds. [Editors] (Place: Publisher, Year), Document N.
+- Research annotations appear beneath each document in the export.
 
-// Parse from a local file (download from https://github.com/HistoryAtState/frus/tree/master/volumes)
-let url = URL(fileURLWithPath: "frus1969-76v24.xml")
-let volume = try parser.parse(url: url)
+### Volume management
+- Re-index any downloaded volume to force a full re-parse and rebuild of the search index — useful after app updates or if the index becomes stale.
+- Delete downloaded volumes individually to free disk space.
 
-// Volume identity
-print(volume.id)            // "frus1969-76v24"
-print(volume.volumeTitle!)  // "1969–1976, Volume XXIV"
-print(volume.seriesTitle!)  // "Foreign Relations of the United States"
+## Platform requirements
 
-// Iterate all diplomatic documents in the volume
-for doc in volume.documents {
-    print("Document \(doc.number ?? "?"):", doc.title ?? "(untitled)")
-    if let date = doc.date {
-        print("  Date:", date.when ?? date.text)
-    }
-    print("  Paragraphs:", doc.paragraphs.count)
-}
+| Platform | Minimum |
+|----------|---------|
+| macOS    | 14 Sonoma |
+| iPadOS   | 17 |
 
-// Access chapters and compilations
-for compilation in volume.compilations {
-    print("Compilation:", compilation.title ?? "")
-    for chapter in compilation.children.filter({ $0.type == .chapter }) {
-        print("  Chapter:", chapter.title ?? "")
-    }
-}
+Apple Intelligence features require a device that supports on-device model inference (M-series Mac or A17 Pro / M-series iPad).
 
-// Front / back matter
-if let preface = volume.frontMatterSection[.preface] {
-    print("Preface body text:", preface.bodyText)
-}
-```
+## Architecture
 
-## Document Structure
+| Layer | Description |
+|-------|-------------|
+| `FRUSKit` | Embedded module: TEI XML parser (`FRUSParser`) and model types (`FRUSVolume`, `Division`, `InlineContent`, `Note`, …) |
+| `AppStore` | Central `@Observable` store — catalogue, downloads, parsing, summarisation, search |
+| `CollectionStore` | Persistent store for research collections and annotations |
+| `SummaryStore` | Persistent store for AI-generated summaries, keyed by `(volumeID, divisionID, profileID)` |
+| `PromptProfileStore` | Persistent store for named summarisation prompt profiles |
+| `SearchEngine` | Swift actor — builds and queries an inverted full-text index across all loaded volumes |
+| `PDFExporter` | WKWebView-based PDF renderer; `CollectionHTMLRenderer` produces the print-ready HTML |
 
-FRUS TEI XML is organised as follows (matching the FRUS schema):
+## Data storage
 
-```
-TEI (@xml:id = volume identifier)
-├── teiHeader
-│   ├── fileDesc
-│   │   ├── titleStmt   → titles[], editors[], principals[]
-│   │   └── publicationStmt → publisher, pubDate, idnos[]
-│   ├── encodingDesc
-│   ├── profileDesc     → langUsage[], particDesc (persons[])
-│   └── revisionDesc    → changes[]
-└── text
-    ├── front           → [Division] (preface, sources, persons, terms)
-    ├── body            → [Division] (compilations → chapters → documents)
-    └── back            → [Division] (appendices, index)
-```
-
-Each `Division` (mapped from `<div>`) has:
-
-| Property | Source | Notes |
-|---|---|---|
-| `id` | `@xml:id` | Canonical identifier, e.g. `"d176"` |
-| `type` | `@type` | `.compilation`, `.chapter`, `.document`, `.section`, … |
-| `number` | `@n` | Document number |
-| `headings` | `<head>` | One or more headings |
-| `dateline` | `<dateline>` | Date + place of creation |
-| `opener` | `<opener>` | Salutation / addressee |
-| `closer` | `<closer>` | Valediction / signature |
-| `paragraphs` | `<p>` | Body paragraphs |
-| `notes` | `<note>` | Footnotes and editorial notes |
-| `children` | nested `<div>` | Nested sub-divisions |
-
-### Inline Content
-
-`Paragraph.content` (and `Heading.content`, `Dateline.content`, etc.) is an array of `InlineContent`, an enum covering:
-
-- `.text(String)` — plain text
-- `.persName(PersonName)` — `<persName>` with optional `ref` to `<particDesc>`
-- `.placeName(PlaceName)` — `<placeName>`
-- `.orgName(OrgName)` — `<orgName>`
-- `.date(DateElement)` — `<date>` with ISO 8601 `when`/`from`/`to`
-- `.ref(Reference)` — `<ref>` / `<xRef>` cross-references
-- `.hi(HighlightedText)` — `<hi rend="italic|bold|…">`
-- `.term(Term)` — `<term>` abbreviation
-- `.note(Note)` — inline footnote
-- `.pageBreak(PageBreak)` — `<pb n="551">`
-- `.lineBreak` — `<lb/>`
-- `.list(XMLList)` — `<list>`
-- `.table(Table)` — `<table>`
-- `.unknown(elementName:rawContent:)` — forward-compatibility catch-all
-
-## API Reference
-
-### `FRUSParser`
-
-| Method | Description |
-|---|---|
-| `parse(url:) throws -> FRUSVolume` | Parse from a file URL |
-| `parse(data:) throws -> FRUSVolume` | Parse from raw `Data` |
-
-### `FRUSVolume` (convenience)
-
-| Property | Type | Description |
-|---|---|---|
-| `id` | `String` | Volume identifier |
-| `volumeTitle` | `String?` | Main title |
-| `seriesTitle` | `String?` | "Foreign Relations of the United States" |
-| `documents` | `[Division]` | All `<div type="document">` in the body |
-| `chapters` | `[Division]` | All `<div type="chapter">` in the body |
-| `compilations` | `[Division]` | Top-level compilations |
-| `frontMatterSection` | `[DivisionType: Division]` | Front matter by type |
-
-### `Division` (convenience)
-
-| Property | Type | Description |
-|---|---|---|
-| `title` | `String?` | Plain text of first heading |
-| `documentNumber` | `Int?` | `@n` as integer |
-| `date` | `DateElement?` | First date in dateline |
-| `footnotes` | `[Note]` | Notes with `type="footnote"` |
-| `bodyText` | `String` | All paragraph text joined |
-| `allDocuments` | `[Division]` | Recursive descendant documents |
-| `allChapters` | `[Division]` | Recursive descendant chapters |
-
-### `DateElement` (convenience)
-
-| Property | Type | Description |
-|---|---|---|
-| `date` | `Date?` | Parsed from `@when` (ISO 8601) |
-
-## Requirements
-
-- Swift 5.9+
-- macOS 13+ / iOS 16+
-- No external dependencies (uses `Foundation.XMLParser`)
+| Data | Location |
+|------|----------|
+| Downloaded volumes (macOS) | `~/Library/Application Support/FRUSExplorer/volumes/` |
+| Downloaded volumes (iPadOS) | Files app → FRUS Explorer → FRUSVolumes/ |
+| Collections, summaries, profiles | `~/Library/Application Support/FRUSExplorer/` (macOS) / app Documents (iPadOS) |
 
 ## License
 
-The FRUS source files are in the public domain per the U.S. State Department. This library is released under the MIT License.
+Source is provided for personal and research use. FRUS volumes are U.S. Government works in the public domain.
