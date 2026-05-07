@@ -398,7 +398,7 @@ enum CollectionHTMLRenderer {
 
     private static func frag(_ item: InlineContent, fns: [FootnoteRecord]?, di: Int) -> String {
         switch item {
-        case .text(let s):      return esc(normalizeWS(s))
+        case .text(let s):      return esc(s.xmlWhitespaceCollapsed())
         // Named entities — plain text, no colour (matching history.state.gov)
         case .persName(let p):  return esc(p.text)
         case .placeName(let p): return esc(p.text)
@@ -457,19 +457,6 @@ enum CollectionHTMLRenderer {
 
         case .unknown: return ""
         }
-    }
-
-    // MARK: - Whitespace normalization
-
-    /// Collapse XML formatting whitespace: newlines and runs of spaces
-    /// are reduced to a single space, matching what history.state.gov renders.
-    private static func normalizeWS(_ s: String) -> String {
-        var r = s
-        r = r.replacingOccurrences(of: "\n", with: " ")
-        r = r.replacingOccurrences(of: "\r", with: " ")
-        r = r.replacingOccurrences(of: "\t", with: " ")
-        while r.contains("  ") { r = r.replacingOccurrences(of: "  ", with: " ") }
-        return r
     }
 
     // MARK: - XML escaping

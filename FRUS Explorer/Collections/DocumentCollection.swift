@@ -184,17 +184,10 @@ final class CollectionStore {
         in loadedVolumes: [String: LoadedVolume]
     ) -> Division? {
         guard let vol = loadedVolumes[item.volumeID] else { return nil }
-        return findDivision(id: item.divisionID, in: vol.volume.text.body.divisions)
-            ?? findDivision(id: item.divisionID, in: vol.volume.text.front?.divisions ?? [])
-            ?? findDivision(id: item.divisionID, in: vol.volume.text.back?.divisions ?? [])
-    }
-
-    private func findDivision(id: String, in divs: [Division]) -> Division? {
-        for div in divs {
-            if div.id == id { return div }
-            if let found = findDivision(id: id, in: div.children) { return found }
-        }
-        return nil
+        let t = vol.volume.text
+        return t.body.divisions.findDivision(id: item.divisionID)
+            ?? (t.front?.divisions ?? []).findDivision(id: item.divisionID)
+            ?? (t.back?.divisions ?? []).findDivision(id: item.divisionID)
     }
 
     // MARK: - Persistence helpers

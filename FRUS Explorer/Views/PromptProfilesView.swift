@@ -531,9 +531,12 @@ private struct PreviewPane: View {
             previewState = .noDocument
             return
         }
-        guard let div = findDivision(nodeID: nodeID, in: vol.volume.text.body.divisions, volumeID: volID)
-            ?? findDivision(nodeID: nodeID, in: vol.volume.text.front?.divisions ?? [], volumeID: volID)
-            ?? findDivision(nodeID: nodeID, in: vol.volume.text.back?.divisions ?? [], volumeID: volID)
+        let prefix = volID + "__"
+        let divID = nodeID.hasPrefix(prefix) ? String(nodeID.dropFirst(prefix.count)) : nodeID
+        let t = vol.volume.text
+        guard let div = t.body.divisions.findDivision(id: divID)
+            ?? (t.front?.divisions ?? []).findDivision(id: divID)
+            ?? (t.back?.divisions ?? []).findDivision(id: divID)
         else {
             previewState = .noDocument
             return
@@ -552,13 +555,6 @@ private struct PreviewPane: View {
         }
     }
 
-    private func findDivision(nodeID: String, in divs: [Division], volumeID: String) -> Division? {
-        for div in divs {
-            if volumeID + "__" + (div.id ?? "") == nodeID { return div }
-            if let found = findDivision(nodeID: nodeID, in: div.children, volumeID: volumeID) { return found }
-        }
-        return nil
-    }
 }
 
 // MARK: - Notification

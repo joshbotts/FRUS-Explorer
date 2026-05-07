@@ -361,6 +361,23 @@ final class AppStore {
         return summaries[summaryKey(for: nodeID)]
     }
 
+    // MARK: - Load by ID (offline row convenience)
+
+    /// Loads a volume from disk when only the volume ID is known.
+    /// Prefers the real `FRUSVolumeInfo` from the catalogue when available.
+    func loadVolumeByID(_ id: String) async {
+        if let info = catalogue.first(where: { $0.id == id }) {
+            await loadVolume(info)
+            return
+        }
+        if loadedVolumes[id] != nil { selectedVolumeID = id; return }
+        let fileURL = downloadDirectory.appending(component: "\(id).xml")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        let placeholderURL = URL(string: "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(id).xml")!
+        let info = FRUSVolumeInfo(id: id, size: 0, sha: "", downloadURL: placeholderURL)
+        await parseVolume(id: id, url: fileURL, info: info)
+    }
+
     // MARK: - Delete local file
 
     func deleteVolume(_ id: String) {

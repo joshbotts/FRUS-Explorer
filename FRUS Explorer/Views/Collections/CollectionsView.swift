@@ -90,37 +90,19 @@ struct CollectionsView: View {
     // MARK: - Sheets
 
     private var newSheet: some View {
-        VStack(spacing: 18) {
-            Text("New Collection").font(.headline)
-            TextField("Name", text: $newName)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 270)
-                .onSubmit { createCollection() }
-            HStack {
-                Button("Cancel") { showingNewSheet = false }.keyboardShortcut(.cancelAction)
-                Button("Create") { createCollection() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
+        NameInputSheet(title: "New Collection", actionLabel: "Create", name: $newName) {
+            createCollection()
+        } onCancel: {
+            showingNewSheet = false
         }
-        .padding(28)
     }
 
     private func renameSheet(_ col: DocumentCollection) -> some View {
-        VStack(spacing: 18) {
-            Text("Rename Collection").font(.headline)
-            TextField("Name", text: $renameText)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 270)
-                .onSubmit { applyRename(col) }
-            HStack {
-                Button("Cancel") { renamingCollection = nil }.keyboardShortcut(.cancelAction)
-                Button("Rename") { applyRename(col) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(renameText.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
+        NameInputSheet(title: "Rename Collection", actionLabel: "Rename", name: $renameText) {
+            applyRename(col)
+        } onCancel: {
+            renamingCollection = nil
         }
-        .padding(28)
     }
 
     // MARK: - Actions
@@ -138,6 +120,33 @@ struct CollectionsView: View {
         guard !name.isEmpty else { return }
         collectionStore.rename(col, to: name)
         renamingCollection = nil
+    }
+}
+
+// MARK: - NameInputSheet
+
+private struct NameInputSheet: View {
+    let title: String
+    let actionLabel: String
+    @Binding var name: String
+    let onCommit: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Text(title).font(.headline)
+            TextField("Name", text: $name)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 270)
+                .onSubmit(onCommit)
+            HStack {
+                Button("Cancel", action: onCancel).keyboardShortcut(.cancelAction)
+                Button(actionLabel, action: onCommit)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(28)
     }
 }
 

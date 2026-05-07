@@ -486,9 +486,7 @@ struct OfflineVolumeRow: View {
                     .frame(width: 32, height: 32)
             } else {
                 Button {
-                    let rawURL = URL(string: "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(volumeID).xml")!
-                    let info = FRUSVolumeInfo(id: volumeID, size: 0, sha: "", downloadURL: rawURL)
-                    Task { await store.loadVolume(info) }
+                    Task { await store.loadVolumeByID(volumeID) }
                 } label: {
                     Image(systemName: state == .ready ? "chevron.right.circle.fill" : "doc.text.magnifyingglass")
                         .font(.system(size: 20))
