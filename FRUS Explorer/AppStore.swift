@@ -62,6 +62,11 @@ final class AppStore {
 
     let downloader = FRUSDownloader(maxConcurrentDownloads: 2, skipIfAlreadyDownloaded: true)
     let summariser = SummarisationService()
+    let searchEngine = SearchEngine()
+
+    // Search state
+    var searchResults: [SearchResult] = []
+    var isSearching = false
 
     var profileStore: PromptProfileStore? {
         didSet { observeProfileChanges() }
@@ -312,13 +317,17 @@ final class AppStore {
     private func parseVolume(id: String, url: URL, info: FRUSVolumeInfo) async {
         downloadStates[id] = .parsing
         do {
-            let volume = try await Task.detached(priority: .userInitiated) {
-                try FRUSParser().parse(url: url)
+            // Parse XML and build search index together off the main thread
+            let (volume, records) = try await Task.detached(priority: .userInitiated) {
+                let v = try FRUSParser().parse(url: url)
+                let r = SearchIndexBuilder.build(from: v, volumeID: id)
+                return (v, r)
             }.value
             let loaded = LoadedVolume(info: info, volume: volume)
             loadedVolumes[id] = loaded
             downloadStates[id] = .ready
             selectedVolumeID = id
+            await searchEngine.addIndex(volumeID: id, records: records)
         } catch {
             downloadStates[id] = .failed(error.localizedDescription)
         }
@@ -361,6 +370,27 @@ final class AppStore {
         return summaries[summaryKey(for: nodeID)]
     }
 
+    // MARK: - Search
+
+    func runSearch(
+        query: String,
+        dateFilter: DateFilter? = nil,
+        annotations: [String: String] = [:]
+    ) async {
+        isSearching = true
+        defer { isSearching = false }
+        let summaryTexts = summaries.compactMapValues { (s: SummaryState) -> String? in
+            if case .ready(let t) = s { return t }
+            return nil
+        }
+        searchResults = await searchEngine.search(
+            queryString: query,
+            explicitDateFilter: dateFilter,
+            summaries: summaryTexts,
+            annotations: annotations
+        )
+    }
+
     // MARK: - Load by ID (offline row convenience)
 
     /// Loads a volume from disk when only the volume ID is known.
@@ -387,6 +417,7 @@ final class AppStore {
         localVolumeIDs.remove(id)
         loadedVolumes.removeValue(forKey: id)
         if selectedVolumeID == id { selectedVolumeID = nil }
+        Task { await searchEngine.removeIndex(volumeID: id) }
     }
 
     func downloadState(for id: String) -> VolumeDownloadState {

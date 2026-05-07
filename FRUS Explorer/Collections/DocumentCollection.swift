@@ -210,6 +210,18 @@ final class CollectionStore {
         }
     }
 
+    /// Flat dictionary of all non-empty annotations keyed by nodeID ("volumeID__divisionID").
+    /// Used by the search engine to include annotation text in full-text queries.
+    var allAnnotations: [String: String] {
+        var result: [String: String] = [:]
+        for col in collections {
+            for item in col.items where !item.annotation.isEmpty {
+                result["\(item.volumeID)__\(item.divisionID)"] = item.annotation
+            }
+        }
+        return result
+    }
+
     func load() {
         let url = Self.storageURL
         guard FileManager.default.fileExists(atPath: url.path) else { return }

@@ -307,6 +307,7 @@ struct CollectionItemRow: View {
 // MARK: - CollectionItemDetailView
 
 private struct CollectionItemDetailView: View {
+    @Environment(AppStore.self) private var store: AppStore
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
 
     let item: CollectionItem
@@ -314,73 +315,120 @@ private struct CollectionItemDetailView: View {
 
     @State private var annotationText = ""
     @State private var dirty = false
+    @State private var isLoadingVolume = false
+
+    private var resolvedDivision: Division? {
+        collectionStore.resolve(item, in: store.loadedVolumes)
+    }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // Metadata
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.cachedTitle)
-                        .font(.system(.headline, design: .serif))
-                    if let dl = item.cachedDateline {
-                        Text(dl)
-                            .font(.system(.callout, design: .serif))
-                            .foregroundStyle(.secondary)
-                            .italic()
-                    }
-                    HStack(spacing: 8) {
-                        Label(item.volumeID, systemImage: "books.vertical")
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                        Label(item.divisionID, systemImage: "number")
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 0) {
+
+                // Full document content (when volume is loaded)
+                if let div = resolvedDivision {
+                    FRUSDocumentView(division: div, volumeID: item.volumeID)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+                        .padding(.bottom, 8)
+                } else {
+                    volumeNotLoadedBanner
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
                 }
 
+                // Annotation section
                 Divider()
+                    .padding(.vertical, 16)
 
-                // Annotation editor
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Research Annotation", systemImage: "pencil.line")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
-
-                    Text("Annotations appear in the PDF export beneath each document.")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-
-                    TextEditor(text: $annotationText)
-                        .font(.system(.callout, design: .serif))
-                        .frame(minHeight: 90)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.quaternary, lineWidth: 1)
-                        )
-                        .onChange(of: annotationText) { _, _ in dirty = true }
-
-                    if dirty {
-                        HStack {
-                            Spacer()
-                            Button("Save") {
-                                collectionStore.updateAnnotation(item, in: collection, annotation: annotationText)
-                                dirty = false
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.small)
-                        }
-                    }
-                }
-
-                Spacer(minLength: 24)
+                annotationSection
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 28)
             }
-            .padding(18)
         }
         .onAppear { annotationText = item.annotation }
         .onChange(of: item.id) { _, _ in
             annotationText = item.annotation
             dirty = false
+        }
+    }
+
+    // MARK: - Volume not loaded banner
+
+    private var volumeNotLoadedBanner: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "books.vertical")
+                .font(.title2)
+                .foregroundStyle(.tertiary)
+            VStack(spacing: 4) {
+                Text(item.cachedTitle)
+                    .font(.system(.headline, design: .serif))
+                    .multilineTextAlignment(.center)
+                if let dl = item.cachedDateline {
+                    Text(dl)
+                        .font(.system(.callout, design: .serif))
+                        .foregroundStyle(.secondary)
+                        .italic()
+                }
+            }
+            Text("Volume \(item.volumeID) is not loaded — document text is unavailable.")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button {
+                Task {
+                    isLoadingVolume = true
+                    await store.loadVolumeByID(item.volumeID)
+                    isLoadingVolume = false
+                }
+            } label: {
+                if isLoadingVolume {
+                    ProgressView().scaleEffect(0.8)
+                } else {
+                    Label("Load Volume", systemImage: "arrow.down.circle")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(isLoadingVolume)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(28)
+        .background(.quinary, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Annotation editor
+
+    private var annotationSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Research Annotation", systemImage: "pencil.line")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+
+            Text("Annotations appear in the PDF export beneath each document.")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+
+            TextEditor(text: $annotationText)
+                .font(.system(.callout, design: .serif))
+                .frame(minHeight: 90)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.quaternary, lineWidth: 1)
+                )
+                .onChange(of: annotationText) { _, _ in dirty = true }
+
+            if dirty {
+                HStack {
+                    Spacer()
+                    Button("Save") {
+                        collectionStore.updateAnnotation(item, in: collection, annotation: annotationText)
+                        dirty = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+            }
         }
     }
 }

@@ -106,6 +106,16 @@ public extension Array where Element == Division {
         }
         return nil
     }
+
+    /// Finds the first division whose outline node ID matches `nodeID`.
+    /// Outline node IDs are formatted as `"\(volumeID)__\(div.xmlID)"`.
+    func findDivisionByNodeID(_ nodeID: String, volumeID: String) -> Division? {
+        for div in self {
+            if volumeID + "__" + (div.id ?? "") == nodeID { return div }
+            if let found = div.children.findDivisionByNodeID(nodeID, volumeID: volumeID) { return found }
+        }
+        return nil
+    }
 }
 
 // MARK: - String helpers
