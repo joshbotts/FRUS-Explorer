@@ -123,7 +123,7 @@ private struct LoadedOutlineView: View {
                 if let id = newID,
                    let node = findNode(id: id, in: nodes),
                    let div = node.division {
-                    store.summarise(div)
+                    store.summarise(div, volumeID: volume.id)
                 }
             }
         }
@@ -170,8 +170,9 @@ struct OutlineRowView: View {
     }
 
     private var summary: SummaryState? {
-        guard let div = node.division else { return nil }
-        return store.summary(for: div)
+        guard let div = node.division,
+              let volID = store.selectedVolumeID else { return nil }
+        return store.summary(for: div, volumeID: volID)
     }
 
     var body: some View {

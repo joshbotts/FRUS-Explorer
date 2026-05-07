@@ -57,8 +57,10 @@ final class AppStore {
     var selectedVolumeID: String?
     var selectedNodeID: String?
 
-    // Summaries cache: composite key = "{divisionID}__{profileID}"
+    // Summaries cache: composite key = "{volumeID}__{divisionID}" (matches nodeID / SearchRecord.id)
     var summaries: [String: SummaryState] = [:]
+
+    var summaryStore: SummaryStore?
 
     let downloader = FRUSDownloader(maxConcurrentDownloads: 2, skipIfAlreadyDownloaded: true)
     let summariser = SummarisationService()
@@ -86,11 +88,6 @@ final class AppStore {
         ) { [weak self] _ in
             self?.summaries.removeAll()
         }
-    }
-
-    private func summaryKey(for divisionID: String) -> String {
-        let profileID = profileStore?.activeProfileID.uuidString ?? "default"
-        return "\(divisionID)__\(profileID)"
     }
 
     private let downloadDirectory: URL = {
@@ -335,10 +332,18 @@ final class AppStore {
 
     // MARK: - Summarisation
 
-    func summarise(_ division: Division) {
-        guard let nodeID = division.id else { return }
-        let key = summaryKey(for: nodeID)
+    func summarise(_ division: Division, volumeID: String) {
+        guard let divID = division.id else { return }
+        let key = "\(volumeID)__\(divID)"
         guard summaries[key] == nil else { return }
+
+        // Return persisted summary for the active profile if one exists.
+        if let profileID = profileStore?.activeProfileID,
+           let stored = summaryStore?.lookup(volumeID: volumeID, divisionID: divID, profileID: profileID) {
+            summaries[key] = .ready(stored)
+            return
+        }
+
         summaries[key] = .generating
 
         let text = division.bodyText
@@ -348,6 +353,9 @@ final class AppStore {
         }
 
         let activeProfile = profileStore?.activeProfile
+        let profileID = profileStore?.activeProfileID
+        let profileName = profileStore?.activeProfile.name ?? "Default"
+
         Task {
             let result = await summariser.summarise(
                 text: text,
@@ -355,19 +363,35 @@ final class AppStore {
                 profile: activeProfile
             )
             summaries[key] = result
+            if case .ready(let t) = result, let pid = profileID {
+                summaryStore?.store(
+                    volumeID: volumeID,
+                    divisionID: divID,
+                    profileID: pid,
+                    profileName: profileName,
+                    text: t
+                )
+            }
         }
     }
 
-    func regenerateSummary(for division: Division) {
-        guard let nodeID = division.id else { return }
-        let key = summaryKey(for: nodeID)
+    func regenerateSummary(for division: Division, volumeID: String) {
+        guard let divID = division.id else { return }
+        let key = "\(volumeID)__\(divID)"
         summaries.removeValue(forKey: key)
-        summarise(division)
+        if let profileID = profileStore?.activeProfileID {
+            summaryStore?.purge(volumeID: volumeID, divisionID: divID, profileID: profileID)
+        }
+        summarise(division, volumeID: volumeID)
     }
 
-    func summary(for division: Division) -> SummaryState? {
-        guard let nodeID = division.id else { return nil }
-        return summaries[summaryKey(for: nodeID)]
+    func summary(for division: Division, volumeID: String) -> SummaryState? {
+        guard let divID = division.id else { return nil }
+        return summaries["\(volumeID)__\(divID)"]
+    }
+
+    func clearSummaryCache() {
+        summaries.removeAll()
     }
 
     // MARK: - Search
@@ -379,9 +403,17 @@ final class AppStore {
     ) async {
         isSearching = true
         defer { isSearching = false }
-        let summaryTexts = summaries.compactMapValues { (s: SummaryState) -> String? in
-            if case .ready(let t) = s { return t }
-            return nil
+        // Merge persisted summaries (all profiles, all volumes) with the in-memory
+        // session cache so every stored summary is reachable in a single search pass.
+        var summaryTexts = summaryStore?.allSummaryTexts ?? [:]
+        for (key, state) in summaries {
+            if case .ready(let t) = state {
+                if let existing = summaryTexts[key] {
+                    summaryTexts[key] = existing + " " + t
+                } else {
+                    summaryTexts[key] = t
+                }
+            }
         }
         searchResults = await searchEngine.search(
             queryString: query,
@@ -418,6 +450,8 @@ final class AppStore {
         loadedVolumes.removeValue(forKey: id)
         if selectedVolumeID == id { selectedVolumeID = nil }
         Task { await searchEngine.removeIndex(volumeID: id) }
+        summaryStore?.purgeVolume(id)
+        summaries = summaries.filter { !$0.key.hasPrefix("\(id)__") }
     }
 
     func downloadState(for id: String) -> VolumeDownloadState {

@@ -80,8 +80,8 @@ struct DocumentDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
 
                 // AI summary card
-                if let state = store.summary(for: division) {
-                    SummaryCard(state: state, division: division)
+                if let state = store.summary(for: division, volumeID: volume.id) {
+                    SummaryCard(state: state, division: division, volumeID: volume.id)
                         .padding(.horizontal, 28).padding(.top, 20).padding(.bottom, 8)
                 }
 
@@ -94,7 +94,7 @@ struct DocumentDetailView: View {
         }
         .background(self.backgroundColor)
         .toolbar { detailToolbar }
-        .task(id: division.id) { store.summarise(division) }
+        .task(id: division.id) { store.summarise(division, volumeID: volume.id) }
     }
 
     // MARK: - Toolbar
@@ -142,6 +142,7 @@ struct SummaryCard: View {
     @Environment(PromptProfileStore.self) private var profileStore: PromptProfileStore
     let state: SummaryState
     let division: Division
+    let volumeID: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -156,7 +157,7 @@ struct SummaryCard: View {
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(.purple.opacity(0.1), in: Capsule())
                 Button {
-                    store.regenerateSummary(for: division)
+                    store.regenerateSummary(for: division, volumeID: volumeID)
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 10)).foregroundStyle(.purple.opacity(0.7))

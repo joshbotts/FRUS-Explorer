@@ -9,9 +9,11 @@ import FRUSKit
 struct PromptProfilesView: View {
     @Environment(AppStore.self) private var store: AppStore
     @Environment(PromptProfileStore.self) private var profileStore: PromptProfileStore
+    @Environment(SummaryStore.self) private var summaryStore: SummaryStore
 
     @State private var selectedProfileID: UUID?
     @State private var confirmingDelete: SummaryPromptProfile?
+    @State private var confirmingPurge: SummaryStore.ProfileStat?
 
     private var selectedProfile: SummaryPromptProfile? {
         guard let id = selectedProfileID else { return nil }
@@ -53,6 +55,27 @@ struct PromptProfilesView: View {
         } message: {
             Text("This action cannot be undone.")
         }
+        .confirmationDialog(
+            "Purge summaries for \u{201C}\(confirmingPurge?.profileName ?? "")\u{201D}?",
+            isPresented: Binding(
+                get: { confirmingPurge != nil },
+                set: { if !$0 { confirmingPurge = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Purge \(confirmingPurge?.count ?? 0) Summaries", role: .destructive) {
+                if let stat = confirmingPurge {
+                    summaryStore.purge(profileID: stat.profileID)
+                    if stat.profileID == profileStore.activeProfileID {
+                        store.clearSummaryCache()
+                    }
+                }
+                confirmingPurge = nil
+            }
+            Button("Cancel", role: .cancel) { confirmingPurge = nil }
+        } message: {
+            Text("Stored summaries for this profile will be removed. They can be regenerated on demand.")
+        }
     }
 
     // MARK: - Sidebar
@@ -92,6 +115,33 @@ struct PromptProfilesView: View {
                                     confirmingDelete = profile
                                 }
                             }
+                    }
+                }
+            }
+
+            // Stored summaries — per-profile counts with purge action
+            let stats = summaryStore.profileStats
+            if !stats.isEmpty {
+                Section("Stored Summaries") {
+                    ForEach(stats) { stat in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(stat.profileName)
+                                    .font(.system(.callout))
+                                    .lineLimit(1)
+                                let plural = stat.count == 1 ? "" : "s"
+                                Text("\(stat.count) summary\(plural)")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Purge") { confirmingPurge = stat }
+                                .buttonStyle(.borderless)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.red)
+                                .controlSize(.small)
+                        }
+                        .padding(.vertical, 2)
                     }
                 }
             }
