@@ -8,6 +8,7 @@ struct FRUSExplorerApp: App {
     @State private var store = AppStore()
     @State private var collectionStore = CollectionStore()
     @State private var profileStore = PromptProfileStore()
+    @State private var summaryStore = SummaryStore()
     @State private var platformRef: PlatformViewReference? = nil
 
     var body: some Scene {
@@ -16,6 +17,7 @@ struct FRUSExplorerApp: App {
                 .environment(store)
                 .environment(collectionStore)
                 .environment(profileStore)
+                .environment(summaryStore)
                 .environment(\.platformViewReference, platformRef)
 #if os(macOS)
                 .frame(minWidth: 1100, minHeight: 700)
@@ -40,6 +42,7 @@ struct FRUSExplorerApp: App {
 #endif
                 .task {
                     store.profileStore = profileStore
+                    store.summaryStore = summaryStore
                 }
         }
 #if os(macOS)

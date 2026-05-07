@@ -7,17 +7,37 @@ import FRUSKit
 struct OutlineView: View {
     @Environment(AppStore.self) private var store: AppStore
 
+    @State private var showingSearch = false
+
     private var volume: LoadedVolume? { store.selectedVolume }
 
     var body: some View {
         Group {
-            if let volume {
+            if showingSearch {
+                SearchView()
+            } else if let volume {
                 LoadedOutlineView(volume: volume)
             } else {
                 emptyState
             }
         }
-        .navigationTitle(store.selectedVolume?.info.id ?? "Outline")
+        .navigationTitle(showingSearch ? "Search" : (store.selectedVolume?.info.id ?? "Outline"))
+        .toolbar { searchToolbarItem }
+    }
+
+    @ToolbarContentBuilder
+    private var searchToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showingSearch.toggle()
+                    if !showingSearch { store.searchResults = [] }
+                }
+            } label: {
+                Image(systemName: showingSearch ? "xmark" : "magnifyingglass")
+            }
+            .help(showingSearch ? "Close search" : "Search across all downloaded volumes")
+        }
     }
 
     private var emptyState: some View {
@@ -103,7 +123,7 @@ private struct LoadedOutlineView: View {
                 if let id = newID,
                    let node = findNode(id: id, in: nodes),
                    let div = node.division {
-                    store.summarise(div)
+                    store.summarise(div, volumeID: volume.id)
                 }
             }
         }
@@ -150,8 +170,9 @@ struct OutlineRowView: View {
     }
 
     private var summary: SummaryState? {
-        guard let div = node.division else { return nil }
-        return store.summary(for: div)
+        guard let div = node.division,
+              let volID = store.selectedVolumeID else { return nil }
+        return store.summary(for: div, volumeID: volID)
     }
 
     var body: some View {

@@ -45,21 +45,16 @@ public extension FRUSVolume {
 // MARK: Division
 
 public extension Division {
-    /// Recursively collect all descendant `<div type="document">` nodes.
-    var allDocuments: [Division] {
+    /// Recursively collect all descendant `<div>` nodes matching `divType`.
+    func allDivisions(ofType divType: DivisionType) -> [Division] {
         var result: [Division] = []
-        if type == .document { result.append(self) }
-        for child in children { result += child.allDocuments }
+        if type == divType { result.append(self) }
+        for child in children { result += child.allDivisions(ofType: divType) }
         return result
     }
 
-    /// Recursively collect all descendant `<div type="chapter">` nodes.
-    var allChapters: [Division] {
-        var result: [Division] = []
-        if type == .chapter { result.append(self) }
-        for child in children { result += child.allChapters }
-        return result
-    }
+    var allDocuments: [Division] { allDivisions(ofType: .document) }
+    var allChapters: [Division]  { allDivisions(ofType: .chapter)  }
 
     /// The plain-text content of the first heading.
     var title: String? { headings.first.map { plainText(from: $0.content) } }
@@ -100,17 +95,48 @@ public extension InlineContent {
     var plainTextValue: String { plainText(from: [self]) }
 }
 
+// MARK: - Division search
+
+public extension Array where Element == Division {
+    /// Recursively finds the first division whose `@xml:id` matches `id`.
+    func findDivision(id: String) -> Division? {
+        for div in self {
+            if div.id == id { return div }
+            if let found = div.children.findDivision(id: id) { return found }
+        }
+        return nil
+    }
+
+    /// Finds the first division whose outline node ID matches `nodeID`.
+    /// Outline node IDs are formatted as `"\(volumeID)__\(div.xmlID)"`.
+    func findDivisionByNodeID(_ nodeID: String, volumeID: String) -> Division? {
+        for div in self {
+            if volumeID + "__" + (div.id ?? "") == nodeID { return div }
+            if let found = div.children.findDivisionByNodeID(nodeID, volumeID: volumeID) { return found }
+        }
+        return nil
+    }
+}
+
+// MARK: - String helpers
+
+extension String {
+    /// Collapses XML formatting whitespace (newlines, tabs, runs of spaces) to single spaces.
+    func xmlWhitespaceCollapsed() -> String {
+        var r = self
+        for c in ["\n", "\r", "\t"] { r = r.replacingOccurrences(of: c, with: " ") }
+        while r.contains("  ") { r = r.replacingOccurrences(of: "  ", with: " ") }
+        return r
+    }
+}
+
 // MARK: - Private Helpers (file-scope)
 
 func plainText(from content: [InlineContent]) -> String {
     content.map { item -> String in
         switch item {
         case .text(let s):
-            // Normalize XML whitespace: collapse runs to single spaces
-            var r = s
-            for c in ["\n","\r","\t"] { r = r.replacingOccurrences(of: c, with: " ") }
-            while r.contains("  ") { r = r.replacingOccurrences(of: "  ", with: " ") }
-            return r
+            return s.xmlWhitespaceCollapsed()
         case .persName(let p):        return p.text
         case .placeName(let p):       return p.text
         case .orgName(let o):         return o.text

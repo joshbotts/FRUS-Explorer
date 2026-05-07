@@ -22,6 +22,11 @@
 //  • <ref target="http…"> → <a>; otherwise plain text
 //  • Sub-sections (nested <div>) rendered with a rule and smaller heading
 //  • No collapsible XML source blocks
+//
+// Citation format follows https://history.state.gov/historicaldocuments/citing-frus:
+//   _Foreign Relations of the United States_, [volume title],
+//   eds. [Editor1 and Editor2] (Washington: Government Printing Office, year),
+//   Document N.
 
 import Foundation
 import FRUSKit
@@ -34,7 +39,8 @@ enum CollectionHTMLRenderer {
 
     static func html(
         for collection: DocumentCollection,
-        resolvedItems: [UUID: Division]
+        resolvedItems: [UUID: Division],
+        loadedVolumes: [String: LoadedVolume]
     ) -> String {
         var bodyHTML = ""
         bodyHTML += coverHTML(for: collection)
@@ -43,6 +49,7 @@ enum CollectionHTMLRenderer {
             bodyHTML += documentHTML(
                 item: item,
                 division: resolvedItems[item.id],
+                loadedVolume: loadedVolumes[item.volumeID],
                 docIndex: i + 1,
                 totalDocs: collection.items.count
             )
@@ -69,7 +76,7 @@ enum CollectionHTMLRenderer {
     }
 
     // MARK: - CSS
-    // Typography and layout matching history.state.gov, adapted for print/PDF.
+    // Typography and layout matching history.state.gov, adapted for US Letter print/PDF.
 
     private static let css: String = """
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -81,12 +88,17 @@ enum CollectionHTMLRenderer {
             -webkit-print-color-adjust:exact;
             print-color-adjust:exact;
         }
-        @page{size:letter portrait;margin:1in 1.15in 1.1in 1.15in}
+        @page{
+            size:8.5in 11in portrait;
+            margin:1in 1.15in 1.1in 1.15in;
+        }
         @media print{
             .page-break{page-break-before:always;break-before:page}
             .avoid-break{page-break-inside:avoid;break-inside:avoid}
             a{color:inherit;text-decoration:none}
+            .doc-ref-url a{color:#0060a0;text-decoration:none}
         }
+        p{orphans:3;widows:3}
 
         /* Cover */
         .cover{
@@ -126,7 +138,22 @@ enum CollectionHTMLRenderer {
         .document{padding:2.4rem 0 2rem;border-top:1px solid #ccc}
         .document:first-of-type{border-top:none}
 
+        /* Document reference block (volume label + URL) */
+        .doc-ref{
+            margin-bottom:.7rem;padding-bottom:.5rem;
+            border-bottom:1px solid #e8e8e8;
+        }
+        .doc-ref-label{
+            font-size:8pt;font-family:'Courier New',monospace;
+            color:#555;margin-bottom:.15rem;
+        }
+        .doc-ref-url{
+            font-size:8pt;color:#0060a0;
+        }
+        .doc-ref-url a{color:#0060a0;text-decoration:none}
+
         /* Header block — matching history.state.gov */
+        .doc-header{margin-top:.55rem}
         .doc-source{font-size:8.5pt;font-style:italic;color:#666;margin-bottom:.45rem}
         .doc-number{
             font-size:8pt;font-weight:bold;letter-spacing:.07em;
@@ -141,6 +168,11 @@ enum CollectionHTMLRenderer {
         .doc-body{margin-top:.65rem}
         .doc-body>p{text-align:justify;hyphens:auto;margin-bottom:.52rem}
         .doc-body>p:last-child{margin-bottom:0}
+
+        /* Paragraph alignment/style variants */
+        p.text-center{text-align:center;hyphens:none}
+        p.text-right{text-align:right;hyphens:none}
+        p.text-italic{font-style:italic}
         p.indent{text-indent:1.5em}
 
         /* Subsections */
@@ -184,11 +216,13 @@ enum CollectionHTMLRenderer {
         .fn-n{min-width:1.8em;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
         .fn-text{flex:1;line-height:1.5}
 
-        /* Footer / attribution */
-        .doc-footer{
-            margin-top:.9rem;padding-top:.35rem;border-top:1px solid #eee;
-            font-size:7.5pt;color:#999;font-family:'Courier New',monospace;
+        /* Citation block */
+        .doc-citation{
+            margin-top:1.2rem;padding:.4rem .7rem;
+            border-left:2px solid #ccc;
+            font-size:8.5pt;color:#555;line-height:1.5;
         }
+        .doc-citation-label{font-style:normal;font-weight:600;margin-right:.3em}
 
         /* User annotation */
         .annotation{
@@ -244,31 +278,100 @@ enum CollectionHTMLRenderer {
     private static func documentHTML(
         item: CollectionItem,
         division: Division?,
+        loadedVolume: LoadedVolume?,
         docIndex: Int,
         totalDocs: Int
     ) -> String {
         var h = "<div class=\"document page-break\" id=\"doc-\(docIndex)\">\n"
 
+        // Reference block: volume + document identifier and history.state.gov URL
+        let hsgURL = "https://history.state.gov/historicaldocuments/\(item.volumeID)/\(item.divisionID)"
+        let docLabel: String
+        if let n = division?.number {
+            docLabel = "Volume \(item.volumeID) \u{00B7} Document \(n)"
+        } else {
+            docLabel = "Volume \(item.volumeID) \u{00B7} \(item.divisionID)"
+        }
+        h += "<div class=\"doc-ref avoid-break\">\n"
+        h += "<p class=\"doc-ref-label\">\(esc(docLabel))</p>\n"
+        h += "<p class=\"doc-ref-url\"><a href=\"\(esc(hsgURL))\">\(esc(hsgURL))</a></p>\n"
+        h += "</div>\n"
+
         if let div = division {
             let fns = buildFootnoteRegistry(from: div, docIndex: docIndex)
+            h += "<div class=\"doc-header avoid-break\">\n"
             h += headerHTML(div: div, item: item)
+            h += "</div>\n"
             h += bodyHTML(div: div, fns: fns, docIndex: docIndex, depth: 0)
             if !fns.isEmpty { h += footnotesHTML(fns: fns) }
         } else {
-            h += "<p class=\"doc-source\">\(esc(item.volumeID))</p>\n"
+            h += "<div class=\"doc-header avoid-break\">\n"
+            h += "<p class=\"doc-source\">Foreign Relations of the United States &middot; \(esc(item.volumeID))</p>\n"
             h += "<p class=\"doc-head-type\">\(esc(item.cachedTitle))</p>\n"
             if let dl = item.cachedDateline {
                 h += "<p class=\"doc-dateline\">\(esc(dl))</p>\n"
             }
+            h += "</div>\n"
             h += "<p class=\"not-loaded\">Full text unavailable — volume not currently loaded. Load the volume in FRUS Explorer and re-export this collection to include the complete text.</p>\n"
         }
 
-        h += "<p class=\"doc-footer\">\(esc(item.volumeID)) · \(esc(item.divisionID))</p>\n"
+        // Citation
+        h += citationHTML(item: item, division: division, volume: loadedVolume?.volume)
+
+        // User annotation
         if !item.annotation.isEmpty {
-            h += "<div class=\"annotation\"><span class=\"annotation-label\">Note:</span> \(esc(item.annotation))</div>\n"
+            h += "<div class=\"annotation\"><span class=\"annotation-label\">Research Note:</span> \(esc(item.annotation))</div>\n"
         }
+
         h += "</div>\n"
         return h
+    }
+
+    // MARK: - Citation block
+
+    // Citation format per https://history.state.gov/historicaldocuments/citing-frus:
+    // _Foreign Relations of the United States_, [volume title],
+    // eds. [Name and Name] (Place: Publisher, Year), Document N.
+    private static func citationHTML(
+        item: CollectionItem,
+        division: Division?,
+        volume: FRUSVolume?
+    ) -> String {
+        let series = volume?.seriesTitle ?? "Foreign Relations of the United States"
+        let volTitle = volume?.volumeTitle
+
+        let stmt = volume?.header.fileDescription.titleStatement
+        let primaryEditors = (stmt?.editors ?? []).filter { $0.role == "primary" }
+        let allEditors     = stmt?.editors ?? []
+        let editorNames    = (primaryEditors.isEmpty ? allEditors : primaryEditors).map(\.name)
+        let editorStr      = formatEditorNames(editorNames)
+
+        let pub       = volume?.header.fileDescription.publicationStatement
+        let pubPlace  = pub?.pubPlace  ?? "Washington"
+        let publisher = pub?.publisher ?? "Government Printing Office"
+        let year      = pub?.date      ?? ""
+
+        let docNum = division?.number
+
+        var cite = "<em>\(esc(series))</em>"
+        if let vt = volTitle, !vt.isEmpty { cite += ", \(esc(vt))" }
+        if !editorStr.isEmpty { cite += ", eds. \(esc(editorStr))" }
+        var pubPart = "(\(esc(pubPlace)): \(esc(publisher))"
+        if !year.isEmpty { pubPart += ", \(esc(year))" }
+        pubPart += ")"
+        cite += ", \(pubPart)"
+        if let n = docNum { cite += ", Document \(esc(n))." } else { cite += "." }
+
+        return "<div class=\"doc-citation\"><span class=\"doc-citation-label\">Cite as:</span> \(cite)</div>\n"
+    }
+
+    private static func formatEditorNames(_ names: [String]) -> String {
+        switch names.count {
+        case 0:  return ""
+        case 1:  return names[0]
+        case 2:  return "\(names[0]) and \(names[1])"
+        default: return names.dropLast().joined(separator: ", ") + ", and " + names.last!
+        }
     }
 
     // MARK: - Header block
@@ -304,8 +407,15 @@ enum CollectionHTMLRenderer {
             let cls = depth == 0 ? "doc-body" : "subsection-body"
             h += "<div class=\"\(cls)\">\n"
             for p in div.paragraphs {
-                let pCls = (p.rend?.contains("indent") == true) ? " class=\"indent\"" : ""
-                h += "<p\(pCls)>\(inline(p.content, fns: fns, di: docIndex))</p>\n"
+                var pClasses: [String] = []
+                if let rend = p.rend {
+                    if rend.contains("center") { pClasses.append("text-center") }
+                    if rend.contains("right")  { pClasses.append("text-right") }
+                    if rend.contains("italic") { pClasses.append("text-italic") }
+                    if rend.contains("indent") { pClasses.append("indent") }
+                }
+                let pAttr = pClasses.isEmpty ? "" : " class=\"\(pClasses.joined(separator: " "))\""
+                h += "<p\(pAttr)>\(inline(p.content, fns: fns, di: docIndex))</p>\n"
             }
             h += "</div>\n"
         }
@@ -313,7 +423,7 @@ enum CollectionHTMLRenderer {
             h += "<p class=\"doc-closer\">\(inline(cl.content, fns: nil, di: 0))</p>\n"
         }
         for child in div.children {
-            h += "<div class=\"subsection\">\n"
+            h += "<div class=\"subsection avoid-break\">\n"
             for (i, hd) in child.headings.enumerated() {
                 h += "<p class=\"\(i == 0 ? "subsection-head" : "doc-head-subject")\">\(inline(hd.content, fns: nil, di: 0))</p>\n"
             }
@@ -360,8 +470,14 @@ enum CollectionHTMLRenderer {
             switch item {
             case .note(let n) where n.type == "footnote" || n.type == nil || n.place == "bottom":
                 appendFn(n, into: &out, docIndex: docIndex)
-            case .hi(let h): gatherInlineNotes(h.content, into: &out, docIndex: docIndex)
-            default: break
+            case .hi(let h):
+                gatherInlineNotes(h.content, into: &out, docIndex: docIndex)
+            case .list(let l):
+                for listItem in l.items {
+                    gatherInlineNotes(listItem.content, into: &out, docIndex: docIndex)
+                }
+            default:
+                break
             }
         }
     }
@@ -398,7 +514,7 @@ enum CollectionHTMLRenderer {
 
     private static func frag(_ item: InlineContent, fns: [FootnoteRecord]?, di: Int) -> String {
         switch item {
-        case .text(let s):      return esc(normalizeWS(s))
+        case .text(let s):      return esc(s.xmlWhitespaceCollapsed())
         // Named entities — plain text, no colour (matching history.state.gov)
         case .persName(let p):  return esc(p.text)
         case .placeName(let p): return esc(p.text)
@@ -457,19 +573,6 @@ enum CollectionHTMLRenderer {
 
         case .unknown: return ""
         }
-    }
-
-    // MARK: - Whitespace normalization
-
-    /// Collapse XML formatting whitespace: newlines and runs of spaces
-    /// are reduced to a single space, matching what history.state.gov renders.
-    private static func normalizeWS(_ s: String) -> String {
-        var r = s
-        r = r.replacingOccurrences(of: "\n", with: " ")
-        r = r.replacingOccurrences(of: "\r", with: " ")
-        r = r.replacingOccurrences(of: "\t", with: " ")
-        while r.contains("  ") { r = r.replacingOccurrences(of: "  ", with: " ") }
-        return r
     }
 
     // MARK: - XML escaping

@@ -287,6 +287,10 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
         case "cell":
             pushInline(attrs: attrs)
 
+        case "gloss":
+            // Gloss marks a definition or explanation; rendered as plain inline text.
+            pushInline(attrs: attrs)
+
         default:
             break
         }
@@ -330,10 +334,6 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
             if currentPersonID != nil || !currentPersonNames.isEmpty {
                 currentPersonNames.append(text)
             }
-
-        case "persName":
-            if currentPersonID != nil { currentPersonNames.append(text) }
-            // fall through to inline handling below
 
         case "principal", "respStmt":
             if inHeader {
@@ -465,10 +465,16 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
 
         case "persName":
             guard let inline = popInline() else { return }
+            let personText = plainText(from: inline.content)
+            // In particDesc/person context, capture the name for the person record.
+            // Uses plainText(from:) so nested markup (hi, ref, etc.) is included.
+            if currentPersonID != nil {
+                currentPersonNames.append(personText)
+            }
             let pn = PersonName(
                 ref: attrs["ref"] ?? attrs["corresp"],
                 role: attrs["role"],
-                text: plainText(from: inline.content)
+                text: personText
             )
             appendToCurrentInline(.persName(pn))
 
@@ -558,6 +564,13 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
             pendingCellContents.append(cellContent)
             let cellIdx = pendingCellContents.count - 1
             appendToCurrentInline(.unknown(elementName: "__cell__", rawContent: "\(cellIdx)"))
+
+        case "gloss":
+            guard let inline = popInline() else { return }
+            // Drain gloss content (including any child markup) into the parent inline context.
+            for item in inline.content {
+                appendToCurrentInline(item)
+            }
 
         case "TEI":
             // Build the final volume

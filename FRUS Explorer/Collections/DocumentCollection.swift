@@ -184,17 +184,10 @@ final class CollectionStore {
         in loadedVolumes: [String: LoadedVolume]
     ) -> Division? {
         guard let vol = loadedVolumes[item.volumeID] else { return nil }
-        return findDivision(id: item.divisionID, in: vol.volume.text.body.divisions)
-            ?? findDivision(id: item.divisionID, in: vol.volume.text.front?.divisions ?? [])
-            ?? findDivision(id: item.divisionID, in: vol.volume.text.back?.divisions ?? [])
-    }
-
-    private func findDivision(id: String, in divs: [Division]) -> Division? {
-        for div in divs {
-            if div.id == id { return div }
-            if let found = findDivision(id: id, in: div.children) { return found }
-        }
-        return nil
+        let t = vol.volume.text
+        return t.body.divisions.findDivision(id: item.divisionID)
+            ?? (t.front?.divisions ?? []).findDivision(id: item.divisionID)
+            ?? (t.back?.divisions ?? []).findDivision(id: item.divisionID)
     }
 
     // MARK: - Persistence helpers
@@ -215,6 +208,18 @@ final class CollectionStore {
         } catch {
             print("[CollectionStore] Save failed: \(error)")
         }
+    }
+
+    /// Flat dictionary of all non-empty annotations keyed by nodeID ("volumeID__divisionID").
+    /// Used by the search engine to include annotation text in full-text queries.
+    var allAnnotations: [String: String] {
+        var result: [String: String] = [:]
+        for col in collections {
+            for item in col.items where !item.annotation.isEmpty {
+                result["\(item.volumeID)__\(item.divisionID)"] = item.annotation
+            }
+        }
+        return result
     }
 
     func load() {
