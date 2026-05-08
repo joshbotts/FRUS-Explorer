@@ -16,7 +16,9 @@ struct CollectionsView: View {
     var body: some View {
         NavigationSplitView {
             sidebarList
+#if os(macOS)
                 .navigationSplitViewColumnWidth(min: 210, ideal: 230, max: 280)
+#endif
         } detail: {
             if let id = selectedCollectionID,
                let col = collectionStore.collections.first(where: { $0.id == id }) {

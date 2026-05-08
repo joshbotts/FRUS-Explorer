@@ -159,11 +159,8 @@ private struct LoadedOutlineView: View {
 struct OutlineRowView: View {
     @Environment(AppStore.self) private var store: AppStore
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
+    @Environment(TaxonomyStore.self) private var taxonomyStore: TaxonomyStore
     let node: OutlineNode
-
-    // Show inline add-to-collection button on hover for documents and notes
-    @State private var isHovered = false
-    @State private var showingAddToCollection = false
 
     private var isCollectable: Bool {
         node.kind == .document || node.kind == .editorialNote
@@ -207,6 +204,17 @@ struct OutlineRowView: View {
                         .foregroundStyle(.tertiary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // ── Subject taxonomy chips ─────────────────────────────
+                if (node.kind == .document || node.kind == .editorialNote),
+                   let divID = node.division?.id,
+                   let volID = store.selectedVolumeID {
+                    let subjects = taxonomyStore.subjects(for: divID, in: volID)
+                    if !subjects.isEmpty {
+                        SubjectChipsRow(subjects: subjects)
+                            .padding(.top, 2)
+                    }
                 }
 
                 // ── AI summary preview ─────────────────────────────────

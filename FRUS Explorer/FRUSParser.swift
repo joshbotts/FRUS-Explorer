@@ -307,7 +307,10 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
         }
 
         let attrs = attrStack.last ?? [:]
-        let text = charBuf.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Collapse internal XML whitespace (newlines, tabs, indentation from source
+        // formatting) before trimming, so header leaf values like <title> are clean
+        // single-line strings. inlineStack content uses normalizeXMLWhitespace instead.
+        let text = charBuf.xmlWhitespaceCollapsed().trimmingCharacters(in: .whitespacesAndNewlines)
         charBuf = ""
 
         switch elementName {

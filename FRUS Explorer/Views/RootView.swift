@@ -17,6 +17,9 @@ struct RootView: View {
         case explorer    = "Explorer"
         case collections = "Collections"
         case research    = "Research"
+#if os(iOS)
+        case settings    = "Settings"
+#endif
     }
 
     var body: some View {
@@ -32,6 +35,14 @@ struct RootView: View {
             Tab("Research", systemImage: "text.badge.checkmark", value: AppTab.research) {
                 PromptProfilesView()
             }
+
+#if os(iOS)
+            Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {
+                NavigationStack {
+                    SettingsView()
+                }
+            }
+#endif
         }
 #if os(iOS)
         // On iPadOS 18+, the sidebar-style tab bar shows labels alongside icons

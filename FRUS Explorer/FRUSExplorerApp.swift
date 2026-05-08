@@ -9,6 +9,7 @@ struct FRUSExplorerApp: App {
     @State private var collectionStore = CollectionStore()
     @State private var profileStore = PromptProfileStore()
     @State private var summaryStore = SummaryStore()
+    @State private var taxonomyStore = TaxonomyStore()
     @State private var platformRef: PlatformViewReference? = nil
 
     var body: some Scene {
@@ -18,6 +19,7 @@ struct FRUSExplorerApp: App {
                 .environment(collectionStore)
                 .environment(profileStore)
                 .environment(summaryStore)
+                .environment(taxonomyStore)
                 .environment(\.platformViewReference, platformRef)
 #if os(macOS)
                 .frame(minWidth: 1100, minHeight: 700)
@@ -43,6 +45,8 @@ struct FRUSExplorerApp: App {
                 .task {
                     store.profileStore = profileStore
                     store.summaryStore = summaryStore
+                    store.taxonomyStore = taxonomyStore
+                    await taxonomyStore.loadTaxonomy()
                 }
         }
 #if os(macOS)
@@ -50,6 +54,19 @@ struct FRUSExplorerApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(replacing: .newItem) { }
+        }
+#endif
+
+        // macOS Settings window — accessible via Cmd+, and the application menu.
+        // Kept in a separate #if block so it is a sibling scene in the builder,
+        // not chained onto the WindowGroup modifiers above.
+#if os(macOS)
+        Settings {
+            SettingsView()
+                .environment(store)
+                .environment(summaryStore)
+                .environment(profileStore)
+                .environment(taxonomyStore)
         }
 #endif
     }

@@ -17,6 +17,13 @@ enum VolumeDownloadState: Equatable {
     case failed(String)
 }
 
+// MARK: - Cached volume title (persists across sessions)
+
+struct VolumeTitleCache: Codable {
+    let seriesTitle: String?
+    let volumeTitle: String?
+}
+
 // MARK: - Parsed volume wrapper
 
 final class LoadedVolume: Identifiable {
@@ -53,6 +60,17 @@ final class AppStore {
     // Local-only volume metadata (populated from disk at launch, before network)
     var localVolumeIDs: Set<String> = []
 
+    // Titles extracted from parsed volumes — persists across sessions so the
+    // catalogue can show human-readable titles before volumes are re-loaded.
+    var volumeTitleCache: [String: VolumeTitleCache] = [:]
+
+    // User-configurable concurrent download limit (1–8, default 2).
+    var maxConcurrentDownloads: Int = 2
+
+    // Set to true while a bulk re-index is running; provides progress to SettingsView.
+    var isReindexingAll: Bool = false
+    var reindexAllProgress: (current: Int, total: Int) = (0, 0)
+
     // Currently explored volume / selection
     var selectedVolumeID: String?
     var selectedNodeID: String?
@@ -61,6 +79,7 @@ final class AppStore {
     var summaries: [String: SummaryState] = [:]
 
     var summaryStore: SummaryStore?
+    var taxonomyStore: TaxonomyStore?
 
     let downloader = FRUSDownloader(maxConcurrentDownloads: 2, skipIfAlreadyDownloaded: true)
     let summariser = SummarisationService()
@@ -107,11 +126,29 @@ final class AppStore {
 
     // MARK: - Init
 
+    private static let titleCacheDefaultsKey = "frus.volumeTitleCache.v2"
+    private static let maxConcurrentDownloadsKey = "frus.settings.maxConcurrentDownloads"
+
     init() {
-        // Scan local volumes immediately so offline content is available
-        // before any network request completes.
+        let saved = UserDefaults.standard.integer(forKey: Self.maxConcurrentDownloadsKey)
+        maxConcurrentDownloads = saved > 0 ? max(1, min(8, saved)) : 2
+        loadTitleCache()
         scanLocalVolumes()
         startNetworkMonitor()
+    }
+
+    // MARK: - Title cache persistence
+
+    private func loadTitleCache() {
+        guard let data = UserDefaults.standard.data(forKey: Self.titleCacheDefaultsKey),
+              let decoded = try? JSONDecoder().decode([String: VolumeTitleCache].self, from: data)
+        else { return }
+        volumeTitleCache = decoded
+    }
+
+    private func saveTitleCache() {
+        guard let data = try? JSONEncoder().encode(volumeTitleCache) else { return }
+        UserDefaults.standard.set(data, forKey: Self.titleCacheDefaultsKey)
     }
 
     // MARK: - Network monitoring
@@ -157,7 +194,11 @@ final class AppStore {
 
     var filteredCatalogue: [FRUSVolumeInfo] {
         guard !searchText.isEmpty else { return catalogue }
-        return catalogue.filter { $0.id.localizedCaseInsensitiveContains(searchText) }
+        return catalogue.filter {
+            $0.id.localizedCaseInsensitiveContains(searchText)
+            || (volumeTitleCache[$0.id]?.volumeTitle?.localizedCaseInsensitiveContains(searchText) ?? false)
+            || (volumeTitleCache[$0.id]?.seriesTitle?.localizedCaseInsensitiveContains(searchText) ?? false)
+        }
     }
 
     /// Volumes available locally but not present in the current catalogue
@@ -314,17 +355,33 @@ final class AppStore {
     private func parseVolume(id: String, url: URL, info: FRUSVolumeInfo) async {
         downloadStates[id] = .parsing
         do {
-            // Parse XML and build search index together off the main thread
-            let (volume, records) = try await Task.detached(priority: .userInitiated) {
+            // Parse XML, load per-volume subject data, and build search index — all off the main thread.
+            let (volume, records, subjectMap) = try await Task.detached(priority: .userInitiated) {
                 let v = try FRUSParser().parse(url: url)
-                let r = SearchIndexBuilder.build(from: v, volumeID: id)
-                return (v, r)
+                // Load bundled per-volume subject map (docID → [subjectID]).
+                var subjectMap: [String: [String]] = [:]
+                if let subjectURL = Bundle.main.url(
+                    forResource: "subjects-\(id)", withExtension: "json",
+                    subdirectory: "SubjectData"
+                ),
+                let data = try? Data(contentsOf: subjectURL),
+                let decoded = try? JSONDecoder().decode([String: [String]].self, from: data) {
+                    subjectMap = decoded
+                }
+                let r = SearchIndexBuilder.build(from: v, volumeID: id, subjects: subjectMap)
+                return (v, r, subjectMap)
             }.value
             let loaded = LoadedVolume(info: info, volume: volume)
             loadedVolumes[id] = loaded
             downloadStates[id] = .ready
             selectedVolumeID = id
+            volumeTitleCache[id] = VolumeTitleCache(
+                seriesTitle: volume.seriesTitle,
+                volumeTitle: volume.volumeTitle
+            )
+            saveTitleCache()
             await searchEngine.addIndex(volumeID: id, records: records)
+            taxonomyStore?.storeVolumeSubjects(subjectMap, volumeID: id)
         } catch {
             downloadStates[id] = .failed(error.localizedDescription)
         }
@@ -399,6 +456,7 @@ final class AppStore {
     func runSearch(
         query: String,
         dateFilter: DateFilter? = nil,
+        subjectFilter: Set<String> = [],
         annotations: [String: String] = [:]
     ) async {
         isSearching = true
@@ -418,6 +476,7 @@ final class AppStore {
         searchResults = await searchEngine.search(
             queryString: query,
             explicitDateFilter: dateFilter,
+            subjectFilter: subjectFilter,
             summaries: summaryTexts,
             annotations: annotations
         )
@@ -483,12 +542,123 @@ final class AppStore {
         loadedVolumes.removeValue(forKey: id)
         if selectedVolumeID == id { selectedVolumeID = nil }
         Task { await searchEngine.removeIndex(volumeID: id) }
+        taxonomyStore?.removeVolumeSubjects(volumeID: id)
         summaryStore?.purgeVolume(id)
         summaries = summaries.filter { !$0.key.hasPrefix("\(id)__") }
     }
 
     func downloadState(for id: String) -> VolumeDownloadState {
         downloadStates[id] ?? .notDownloaded
+    }
+
+    // MARK: - Settings utilities
+
+    /// Disk space consumed by all locally downloaded XML files.
+    var localDiskUsage: (count: Int, bytes: Int64) {
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: downloadDirectory,
+            includingPropertiesForKeys: [.fileSizeKey]
+        )) ?? []
+        let xmlFiles = files.filter { $0.pathExtension == "xml" }
+        let bytes: Int64 = xmlFiles.reduce(0) { sum, url in
+            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            return sum + Int64(size)
+        }
+        return (count: xmlFiles.count, bytes: bytes)
+    }
+
+    /// Persist and apply a new concurrent-download limit.
+    func setMaxConcurrentDownloads(_ n: Int) {
+        let clamped = max(1, min(8, n))
+        maxConcurrentDownloads = clamped
+        UserDefaults.standard.set(clamped, forKey: Self.maxConcurrentDownloadsKey)
+        Task { await downloader.updateMaxConcurrent(clamped) }
+    }
+
+    /// Re-builds the search index for every locally downloaded volume.
+    /// Volumes already loaded in memory are re-indexed from their in-memory data;
+    /// downloaded-but-unloaded volumes are parsed from disk.
+    /// Does NOT change `selectedVolumeID`.
+    func reindexAllDownloadedVolumes() async {
+        guard !isReindexingAll else { return }
+        let ids = localVolumeIDs.sorted()
+        guard !ids.isEmpty else { return }
+        isReindexingAll = true
+        reindexAllProgress = (0, ids.count)
+        defer {
+            isReindexingAll = false
+            reindexAllProgress = (0, 0)
+        }
+
+        for (index, id) in ids.enumerated() {
+            reindexAllProgress = (index, ids.count)
+            // Load the per-volume subject map (same for both in-memory and on-disk paths).
+            let subjectMap: [String: [String]] = await Task.detached(priority: .utility) {
+                guard let subjectURL = Bundle.main.url(
+                    forResource: "subjects-\(id)", withExtension: "json",
+                    subdirectory: "SubjectData"
+                ),
+                let data = try? Data(contentsOf: subjectURL),
+                let decoded = try? JSONDecoder().decode([String: [String]].self, from: data)
+                else { return [:] }
+                return decoded
+            }.value
+
+            if let loaded = loadedVolumes[id] {
+                let vol = loaded.volume
+                let recs = await Task.detached(priority: .userInitiated) {
+                    SearchIndexBuilder.build(from: vol, volumeID: id, subjects: subjectMap)
+                }.value
+                await searchEngine.addIndex(volumeID: id, records: recs)
+                taxonomyStore?.storeVolumeSubjects(subjectMap, volumeID: id)
+            } else {
+                let fileURL = downloadDirectory.appending(component: "\(id).xml")
+                guard FileManager.default.fileExists(atPath: fileURL.path) else { continue }
+                let info = catalogue.first(where: { $0.id == id }) ?? FRUSVolumeInfo(
+                    id: id, size: 0, sha: "",
+                    downloadURL: URL(string: "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(id).xml")!
+                )
+                downloadStates[id] = .parsing
+                do {
+                    let (volume, records) = try await Task.detached(priority: .userInitiated) {
+                        let v = try FRUSParser().parse(url: fileURL)
+                        let r = SearchIndexBuilder.build(from: v, volumeID: id, subjects: subjectMap)
+                        return (v, r)
+                    }.value
+                    loadedVolumes[id] = LoadedVolume(info: info, volume: volume)
+                    downloadStates[id] = .ready
+                    volumeTitleCache[id] = VolumeTitleCache(
+                        seriesTitle: volume.seriesTitle,
+                        volumeTitle: volume.volumeTitle
+                    )
+                    await searchEngine.addIndex(volumeID: id, records: records)
+                    taxonomyStore?.storeVolumeSubjects(subjectMap, volumeID: id)
+                } catch {
+                    downloadStates[id] = .downloaded(localURL: fileURL)
+                }
+            }
+        }
+        saveTitleCache()
+        reindexAllProgress = (ids.count, ids.count)
+    }
+
+    /// Evict all parsed volumes from memory; their download state reverts to `.downloaded`
+    /// so they can be reloaded on demand.
+    func clearLoadedVolumes() {
+        for id in loadedVolumes.keys {
+            let fileURL = downloadDirectory.appending(component: "\(id).xml")
+            downloadStates[id] = .downloaded(localURL: fileURL)
+            taxonomyStore?.removeVolumeSubjects(volumeID: id)
+        }
+        loadedVolumes.removeAll()
+        summaries.removeAll()
+    }
+
+    /// Discard the persisted volume title cache.  Titles will be re-populated
+    /// the next time each volume is parsed.
+    func clearTitleCache() {
+        volumeTitleCache.removeAll()
+        UserDefaults.standard.removeObject(forKey: Self.titleCacheDefaultsKey)
     }
 }
 

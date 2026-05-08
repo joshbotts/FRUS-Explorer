@@ -32,9 +32,14 @@ struct SearchRecord: Identifiable, Sendable {
     let dateline: String?
     let isEditorialNote: Bool
 
-    /// ISO-format date from the first @when attribute in the dateline.
+    /// ISO-format date from the first <date> in the dateline.
+    /// Sourced from @when (exact) or @from/@notBefore (range start).
     /// May be partial: "1969", "1969-03", or "1969-03-15".
     let isoDate: String?
+
+    /// ISO-format end date for documents that span a range (@to / @notAfter).
+    /// Nil for point-in-time documents.
+    let isoDateEnd: String?
 
     /// Lowercased, whitespace-normalised concatenation of all body paragraphs.
     let normalizedBody: String
@@ -44,6 +49,9 @@ struct SearchRecord: Identifiable, Sendable {
     let placeNames:  [String]
     let orgNames:    [String]
     let terms:       [String]   // diplomatic terms and abbreviations
+
+    /// Subject taxonomy IDs assigned to this document by the FRUS subject index.
+    let subjectIDs: [String]
 }
 
 // MARK: - SearchResult
@@ -54,7 +62,7 @@ struct SearchResult: Identifiable, Sendable {
     let matchedFields: Set<MatchField>
 
     enum MatchField: Hashable, Sendable {
-        case title, body, person, place, org, term, summary, annotation, date
+        case title, body, person, place, org, term, summary, annotation, date, subject
     }
 }
 
@@ -81,9 +89,20 @@ struct DateFilter: Sendable {
 
     var isEmpty: Bool { from == nil && to == nil }
 
-    func matches(_ isoDate: String?) -> Bool {
+    /// Returns true when the document's date or date range overlaps this filter.
+    ///
+    /// Overlap test: document overlaps filter iff
+    ///   document.start ≤ filter.to  AND  document.end ≥ filter.from
+    ///
+    /// For point-in-time documents (isoDateEnd == nil) this reduces to the
+    /// original single-date containment check.
+    func matches(isoDate: String?, isoDateEnd: String? = nil) -> Bool {
         guard let isoDate, !isoDate.isEmpty else { return false }
-        if let from, isoDate < from.prefix { return false }
+        // For range documents use the end date; fall back to the start date
+        // so point-in-time documents behave identically to before.
+        let docEnd = (isoDateEnd?.isEmpty == false) ? isoDateEnd! : isoDate
+
+        // Document must start on or before the filter's upper bound.
         if let to {
             let ceiling: String
             switch to {
@@ -92,6 +111,10 @@ struct DateFilter: Sendable {
             case .full(let y, let m, let d): ceiling = String(format: "%04d-%02d-%02d", y, m, d)
             }
             if isoDate > ceiling { return false }
+        }
+        // Document must end on or after the filter's lower bound.
+        if let from {
+            if docEnd < from.prefix { return false }
         }
         return true
     }
@@ -295,10 +318,11 @@ actor SearchEngine {
     func search(
         queryString: String,
         explicitDateFilter: DateFilter? = nil,
+        subjectFilter: Set<String> = [],
         summaries: [String: String],
         annotations: [String: String]
     ) -> [SearchResult] {
-        // Build combined predicate
+        // Build combined text/date predicate
         var predicates: [SearchPredicate] = []
         let trimmed = queryString.trimmingCharacters(in: .whitespaces)
         if !trimmed.isEmpty, let p = SearchQueryParser.parse(trimmed) {
@@ -307,17 +331,28 @@ actor SearchEngine {
         if let df = explicitDateFilter, !df.isEmpty {
             predicates.append(.dateFilter(df))
         }
-        guard !predicates.isEmpty else { return [] }
-        let predicate: SearchPredicate = predicates.count == 1 ? predicates[0] : .and(predicates)
+        guard !predicates.isEmpty || !subjectFilter.isEmpty else { return [] }
+        let predicate: SearchPredicate? = predicates.isEmpty ? nil
+            : (predicates.count == 1 ? predicates[0] : .and(predicates))
 
         var results: [SearchResult] = []
         for records in indexes.values {
             for record in records {
-                let summary    = summaries[record.id]
-                let annotation = annotations[record.id]
-                if let fields = evaluate(predicate, record: record,
-                                         summary: summary, annotation: annotation) {
-                    results.append(SearchResult(id: record.id, record: record, matchedFields: fields))
+                // Subject pre-filter: record must share at least one subject with the active filter.
+                if !subjectFilter.isEmpty {
+                    guard !Set(record.subjectIDs).isDisjoint(with: subjectFilter) else { continue }
+                }
+
+                if let predicate {
+                    let summary    = summaries[record.id]
+                    let annotation = annotations[record.id]
+                    if let fields = evaluate(predicate, record: record,
+                                             summary: summary, annotation: annotation) {
+                        results.append(SearchResult(id: record.id, record: record, matchedFields: fields))
+                    }
+                } else {
+                    // Subject-only filter (no text/date predicate) — every subject-matching record passes.
+                    results.append(SearchResult(id: record.id, record: record, matchedFields: [.subject]))
                 }
             }
         }
@@ -348,7 +383,7 @@ actor SearchEngine {
         case .field(let type, let value):
             return matchField(type, value: value, record: record)
         case .dateFilter(let df):
-            return df.matches(record.isoDate) ? [.date] : nil
+            return df.matches(isoDate: record.isoDate, isoDateEnd: record.isoDateEnd) ? [.date] : nil
         case .not(let inner):
             return evaluate(inner, record: record,
                             summary: summary, annotation: annotation) == nil ? [] : nil
@@ -436,7 +471,13 @@ actor SearchEngine {
 /// Designed to be called from a `Task.detached` alongside XML parsing.
 enum SearchIndexBuilder {
 
-    static func build(from volume: FRUSVolume, volumeID: String) -> [SearchRecord] {
+    /// - Parameter subjects: mapping from division @xml:id → [subjectID] for this volume,
+    ///   loaded from the bundled `SubjectData/subjects-{volumeID}.json` file.
+    static func build(
+        from volume: FRUSVolume,
+        volumeID: String,
+        subjects: [String: [String]] = [:]
+    ) -> [SearchRecord] {
         var records: [SearchRecord] = []
         let sections: [[Division]] = [
             volume.text.body.divisions,
@@ -444,13 +485,14 @@ enum SearchIndexBuilder {
             volume.text.back?.divisions  ?? [],
         ]
         for section in sections {
-            for div in section { collect(div, volumeID: volumeID, into: &records) }
+            for div in section { collect(div, volumeID: volumeID, subjects: subjects, into: &records) }
         }
         return records
     }
 
     private static func collect(
-        _ div: Division, volumeID: String, into records: inout [SearchRecord]
+        _ div: Division, volumeID: String, subjects: [String: [String]],
+        into records: inout [SearchRecord]
     ) {
         let shouldIndex: Bool
         switch div.type {
@@ -459,13 +501,14 @@ enum SearchIndexBuilder {
         default: shouldIndex = false
         }
         if shouldIndex, let divID = div.id {
-            records.append(makeRecord(div, volumeID: volumeID, divisionID: divID))
+            records.append(makeRecord(div, volumeID: volumeID, divisionID: divID, subjects: subjects))
         }
-        for child in div.children { collect(child, volumeID: volumeID, into: &records) }
+        for child in div.children { collect(child, volumeID: volumeID, subjects: subjects, into: &records) }
     }
 
     private static func makeRecord(
-        _ div: Division, volumeID: String, divisionID: String
+        _ div: Division, volumeID: String, divisionID: String,
+        subjects: [String: [String]]
     ) -> SearchRecord {
         // Title — mirrors OutlineBuilder.divNode logic
         let subjectHeading = div.headings.first(where: { $0.type == "subject" })
@@ -478,7 +521,33 @@ enum SearchIndexBuilder {
         let dateline = div.dateline.map {
             plainText(from: $0.content).trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        let isoDate = div.dateline?.dates.first?.when
+
+        // Extract start and end dates from the first <date> in the dateline.
+        // TEI P5 uses mutually-exclusive attribute sets on <date>:
+        //   @when            — exact point in time
+        //   @from / @to      — a known date range
+        //   @notBefore / @notAfter — approximate/uncertain range
+        let firstDate = div.dateline?.dates.first
+        let isoDate: String?
+        let isoDateEnd: String?
+        if let d = firstDate {
+            if let when = d.when {
+                isoDate    = when
+                isoDateEnd = nil
+            } else if let from = d.from {
+                isoDate    = from
+                isoDateEnd = d.to
+            } else if let notBefore = d.notBefore {
+                isoDate    = notBefore
+                isoDateEnd = d.notAfter
+            } else {
+                isoDate    = nil
+                isoDateEnd = nil
+            }
+        } else {
+            isoDate    = nil
+            isoDateEnd = nil
+        }
 
         // Body text — paragraphs, opener, closer (not footnotes)
         var bodyParts: [String] = div.paragraphs.map { plainText(from: $0.content) }
@@ -517,11 +586,13 @@ enum SearchIndexBuilder {
             dateline: dateline,
             isEditorialNote: false,
             isoDate: isoDate,
+            isoDateEnd: isoDateEnd,
             normalizedBody: bodyParts.joined(separator: " ").lowercased(),
             personNames: Array(persons),
             placeNames:  Array(places),
             orgNames:    Array(orgs),
-            terms:       Array(terms)
+            terms:       Array(terms),
+            subjectIDs:  subjects[divisionID] ?? []
         )
     }
 }

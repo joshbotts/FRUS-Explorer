@@ -137,7 +137,7 @@ struct PromptProfilesView: View {
                             Button("Purge") { confirmingPurge = stat }
                                 .buttonStyle(.borderless)
                                 .font(.system(size: 11))
-                                .foregroundStyle(.red)
+                                .foregroundStyle(Color.frusAmber)
                                 .controlSize(.small)
                         }
                         .padding(.vertical, 2)
@@ -179,7 +179,7 @@ struct PromptProfilesView: View {
     private var activeProfileBadge: some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.frusRuby)
                 .font(.caption)
             Text("Active: \(profileStore.activeProfile.name)")
                 .font(.caption)
@@ -223,7 +223,7 @@ private struct ProfileSidebarRow: View {
             Spacer()
             if isActive {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.frusRuby)
                     .font(.caption)
             }
         }
@@ -296,7 +296,7 @@ struct ProfileDetailView: View {
                     if isActive {
                         Label("Active", systemImage: "checkmark.circle.fill")
                             .font(.caption)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.frusRuby)
                     }
                 }
             }

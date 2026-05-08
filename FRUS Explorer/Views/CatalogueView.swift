@@ -73,7 +73,7 @@ struct CatalogueView: View {
             // Online / offline indicator
             HStack(spacing: 5) {
                 Circle()
-                    .fill(store.isOnline ? Color.green : Color.orange)
+                    .fill(store.isOnline ? Color.frusRuby : Color.orange)
                     .frame(width: 8, height: 8)
                 Text(store.isOnline ? "Online" : "Offline")
                     .font(.system(size: 11))
@@ -211,7 +211,7 @@ struct CatalogueView: View {
                         } header: {
                             Label("Downloaded", systemImage: "checkmark.circle.fill")
                                 .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.frusRuby)
                         }
                     }
 
@@ -270,7 +270,7 @@ struct CatalogueView: View {
                 } header: {
                     Label("Downloaded", systemImage: "checkmark.circle.fill")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.frusRuby)
                 }
             }
             .listStyle(.sidebar)
@@ -346,6 +346,7 @@ struct VolumeRow: View {
     let info: FRUSVolumeInfo
 
     private var state: VolumeDownloadState { store.downloadState(for: info.id) }
+    private var cachedTitle: String? { store.volumeTitleCache[info.id]?.volumeTitle }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -354,9 +355,20 @@ struct VolumeRow: View {
                 .frame(width: 22, height: 22)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(info.id)
-                    .font(.system(.callout, design: .monospaced))
-                    .lineLimit(1)
+                if let title = cachedTitle {
+                    Text(title)
+                        .font(.system(.callout, design: .serif))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(info.id)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text(info.id)
+                        .font(.system(.callout, design: .monospaced))
+                        .lineLimit(1)
+                }
                 HStack(spacing: 8) {
                     Text(info.formattedSize)
                         .font(.system(size: 11))
@@ -390,7 +402,7 @@ struct VolumeRow: View {
         case .downloaded:
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 18))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.frusRuby)
         case .parsing:
             ProgressView().scaleEffect(0.75)
         case .ready:
@@ -400,7 +412,7 @@ struct VolumeRow: View {
         case .failed:
             Image(systemName: "exclamationmark.circle.fill")
                 .font(.system(size: 18))
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.frusAmber)
         }
     }
 
@@ -423,7 +435,7 @@ struct VolumeRow: View {
             } label: {
                 Image(systemName: "arrow.counterclockwise.circle.fill")
                     .font(.system(size: 20))
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.frusAmber)
             }
             .buttonStyle(.plain)
             .help("Retry download")
@@ -463,18 +475,30 @@ struct OfflineVolumeRow: View {
     let volumeID: String
 
     private var state: VolumeDownloadState { store.downloadState(for: volumeID) }
+    private var cachedTitle: String? { store.volumeTitleCache[volumeID]?.volumeTitle }
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 18))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.frusRuby)
                 .frame(width: 22, height: 22)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(volumeID)
-                    .font(.system(.callout, design: .monospaced))
-                    .lineLimit(1)
+                if let title = cachedTitle {
+                    Text(title)
+                        .font(.system(.callout, design: .serif))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(volumeID)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text(volumeID)
+                        .font(.system(.callout, design: .monospaced))
+                        .lineLimit(1)
+                }
                 Text("Available offline")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)

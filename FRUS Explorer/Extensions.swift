@@ -6,15 +6,21 @@ import Foundation
 
 public extension FRUSVolume {
     /// The main series title from the `<titleStmt>`.
+    /// FRUS volumes use `@type="series"` rather than the TEI standard `@level="s"`;
+    /// we check both so either convention works.
     var seriesTitle: String? {
-        header.fileDescription.titleStatement.titles
-            .first(where: { $0.level == "s" })?.text
+        let titles = header.fileDescription.titleStatement.titles
+        return titles.first(where: { $0.level == "s" })?.text
+            ?? titles.first(where: { $0.type == "series" })?.text
     }
 
-    /// The main volume title (monograph-level).
+    /// The per-volume title from the `<titleStmt>`.
+    /// FRUS volumes use `@type="volume"` rather than the TEI standard `@level="m"`;
+    /// we check both so either convention works.
     var volumeTitle: String? {
-        header.fileDescription.titleStatement.titles
-            .first(where: { $0.level == "m" || $0.level == nil })?.text
+        let titles = header.fileDescription.titleStatement.titles
+        return titles.first(where: { $0.level == "m" })?.text
+            ?? titles.first(where: { $0.type == "volume" })?.text
     }
 
     /// All flat list of `<div type="document">` elements anywhere in the body.

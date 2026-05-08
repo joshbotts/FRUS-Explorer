@@ -9,6 +9,7 @@ import SwiftUI
 struct SearchView: View {
     @Environment(AppStore.self) private var store: AppStore
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
+    @Environment(TaxonomyStore.self) private var taxonomyStore: TaxonomyStore
 
     @State private var query: String = ""
     @State private var showDateFilter = false
@@ -16,9 +17,12 @@ struct SearchView: View {
     @State private var dateFrom = Calendar.current.date(from: DateComponents(year: 1960))!
     @State private var dateToEnabled = false
     @State private var dateTo = Date()
+    @State private var subjectFilter: Set<String> = []
+    @State private var showSubjectPicker = false
     @State private var debounceTask: Task<Void, Never>? = nil
 
     private var hasDateFilter: Bool { dateFromEnabled || dateToEnabled }
+    private var hasSubjectFilter: Bool { !subjectFilter.isEmpty }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,11 +31,21 @@ struct SearchView: View {
                 dateFilterPanel
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
+            if hasSubjectFilter {
+                subjectFilterChipsBar
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
             Divider()
             resultsArea
         }
         .animation(.easeInOut(duration: 0.18), value: showDateFilter)
+        .animation(.easeInOut(duration: 0.18), value: hasSubjectFilter)
         .onDisappear { store.searchResults = [] }
+        .sheet(isPresented: $showSubjectPicker) {
+            SubjectPickerSheet(selectedIDs: $subjectFilter)
+                .environment(taxonomyStore)
+        }
+        .onChange(of: subjectFilter) { _, _ in triggerSearch() }
     }
 
     // MARK: - Query bar
@@ -68,6 +82,17 @@ struct SearchView: View {
             }
             .buttonStyle(.plain)
             .help("Filter by date range")
+
+            Button {
+                showSubjectPicker = true
+            } label: {
+                Image(systemName: hasSubjectFilter ? "tag.fill" : "tag")
+                    .font(.system(size: 13))
+                    .foregroundStyle(hasSubjectFilter ? Color.frusRuby : .secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Filter by subject")
+            .disabled(!taxonomyStore.isLoaded)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
@@ -131,7 +156,9 @@ struct SearchView: View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(label, isOn: enabled)
                 .font(.system(size: 11))
+#if os(macOS)
                 .toggleStyle(.checkbox)
+#endif
             DatePicker("", selection: date, displayedComponents: .date)
                 .labelsHidden()
                 .controlSize(.small)
@@ -140,13 +167,57 @@ struct SearchView: View {
         }
     }
 
+    // MARK: - Subject filter chips bar
+
+    private var subjectFilterChipsBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                Text("Subjects:")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                ForEach(Array(subjectFilter), id: \.self) { id in
+                    if let subject = taxonomyStore.subjectsByID[id] {
+                        HStack(spacing: 3) {
+                            Text(subject.name)
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(Color.frusRuby)
+                            Button {
+                                subjectFilter.remove(id)
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 7, weight: .bold))
+                                    .foregroundStyle(Color.frusRuby.opacity(0.7))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.frusRuby.opacity(0.10), in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.frusRuby.opacity(0.25), lineWidth: 0.5))
+                    }
+                }
+
+                Button("Clear all") {
+                    subjectFilter.removeAll()
+                }
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+        }
+        .background(.quinary.opacity(0.6))
+    }
+
     // MARK: - Results area
 
     @ViewBuilder
     private var resultsArea: some View {
         if store.isSearching {
             loadingView
-        } else if query.trimmingCharacters(in: .whitespaces).isEmpty && !hasDateFilter {
+        } else if query.trimmingCharacters(in: .whitespaces).isEmpty && !hasDateFilter && !hasSubjectFilter {
             placeholderView
         } else if store.searchResults.isEmpty {
             ContentUnavailableView(
@@ -250,13 +321,14 @@ struct SearchView: View {
 
     private func triggerSearch() {
         let q = query.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty || hasDateFilter else {
+        guard !q.isEmpty || hasDateFilter || hasSubjectFilter else {
             store.searchResults = []
             return
         }
         let df = buildDateFilter()
+        let sf = subjectFilter
         let annotations = collectionStore.allAnnotations
-        Task { await store.runSearch(query: q, dateFilter: df, annotations: annotations) }
+        Task { await store.runSearch(query: q, dateFilter: df, subjectFilter: sf, annotations: annotations) }
     }
 
     private func buildDateFilter() -> DateFilter? {
@@ -360,6 +432,7 @@ extension SearchResult.MatchField {
         case .summary:    return "sparkles"
         case .annotation: return "pencil.line"
         case .date:       return "calendar"
+        case .subject:    return "tag"
         }
     }
 
@@ -374,6 +447,7 @@ extension SearchResult.MatchField {
         case .summary:    return "Summary"
         case .annotation: return "Note"
         case .date:       return "Date"
+        case .subject:    return "Subject"
         }
     }
 
@@ -388,6 +462,7 @@ extension SearchResult.MatchField {
         case .summary:    return .indigo
         case .annotation: return .brown
         case .date:       return .red
+        case .subject:    return Color.frusRuby
         }
     }
 
@@ -396,6 +471,133 @@ extension SearchResult.MatchField {
         case .title: return 0; case .body: return 1; case .person: return 2
         case .place: return 3; case .org:  return 4; case .term:   return 5
         case .summary: return 6; case .annotation: return 7; case .date: return 8
+        case .subject: return 9
         }
+    }
+}
+
+// MARK: - SubjectPickerSheet
+
+/// A full-screen sheet for selecting subject taxonomy filters.
+/// Subjects are listed by category → subcategory with a live search bar for narrowing.
+struct SubjectPickerSheet: View {
+    @Environment(TaxonomyStore.self) private var taxonomyStore: TaxonomyStore
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedIDs: Set<String>
+
+    @State private var searchText = ""
+
+    private var filteredCategories: [TaxonomyCategory] {
+        guard !searchText.isEmpty else { return taxonomyStore.categories }
+        let q = searchText.lowercased()
+        return taxonomyStore.categories.compactMap { cat in
+            let matchingSubs = cat.subcategories.compactMap { sub -> TaxonomySubcategory? in
+                let matchingSubjects = sub.subjects.filter { s in
+                    s.name.lowercased().contains(q)
+                    || s.variants.contains { $0.lowercased().contains(q) }
+                }
+                return matchingSubjects.isEmpty ? nil
+                    : TaxonomySubcategory(label: sub.label,
+                                          annotationCount: sub.annotationCount,
+                                          subjects: matchingSubjects)
+            }
+            return matchingSubs.isEmpty ? nil
+                : TaxonomyCategory(label: cat.label,
+                                   annotationCount: cat.annotationCount,
+                                   subcategories: matchingSubs)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if taxonomyStore.categories.isEmpty {
+                    ContentUnavailableView("Taxonomy Loading", systemImage: "tag",
+                        description: Text("Subject index is still loading. Please try again in a moment."))
+                } else {
+                    List {
+                        ForEach(filteredCategories) { category in
+                            Section(header: categoryHeader(category)) {
+                                ForEach(category.subcategories, id: \.label) { sub in
+                                    ForEach(sub.subjects) { subject in
+                                        subjectRow(subject)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                }
+            }
+            .searchable(text: $searchText, prompt: "Search subjects…")
+            .navigationTitle("Filter by Subject")
+#if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+#endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+                if !selectedIDs.isEmpty {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Clear") { selectedIDs.removeAll() }
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+        }
+    }
+
+    private func categoryHeader(_ category: TaxonomyCategory) -> some View {
+        HStack {
+            Text(category.label)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.3)
+            Spacer()
+            Text("\(category.annotationCount.formattedWithCommas) documents")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private func subjectRow(_ subject: TaxonomySubject) -> some View {
+        let isSelected = selectedIDs.contains(subject.id)
+        return Button {
+            if isSelected {
+                selectedIDs.remove(subject.id)
+            } else {
+                selectedIDs.insert(subject.id)
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 16))
+                    .foregroundStyle(isSelected ? Color.frusRuby : .tertiary)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(subject.name)
+                        .font(.system(.callout, design: .serif))
+                        .foregroundStyle(.primary)
+                    Text("\(subject.annotationCount.formattedWithCommas) documents · \(subject.volumeCount) volumes")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                SubjectChip(subject: subject)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+extension Int {
+    fileprivate var formattedWithCommas: String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        return f.string(from: NSNumber(value: self)) ?? "\(self)"
     }
 }
