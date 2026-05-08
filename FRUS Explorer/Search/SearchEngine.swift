@@ -320,7 +320,7 @@ actor SearchEngine {
         subjectFilter: Set<String> = [],
         summaries: [String: String],
         annotations: [String: String]
-    ) -> [SearchResult] {
+    ) async -> [SearchResult] {
         // Build combined text/date predicate
         var predicates: [SearchPredicate] = []
         let trimmed = queryString.trimmingCharacters(in: .whitespaces)
@@ -335,8 +335,18 @@ actor SearchEngine {
             : (predicates.count == 1 ? predicates[0] : .and(predicates))
 
         var results: [SearchResult] = []
+        var recordCount = 0
         for records in indexes.values {
             for record in records {
+                // Yield every 200 records so the actor remains responsive to
+                // cancellation and the cooperative scheduler can service other
+                // tasks (important on iPadOS with many loaded volumes).
+                recordCount += 1
+                if recordCount % 200 == 0 {
+                    await Task.yield()
+                    if Task.isCancelled { return [] }
+                }
+
                 // Subject pre-filter: record must share at least one subject with the active filter.
                 if !subjectFilter.isEmpty {
                     guard !Set(record.subjectIDs).isDisjoint(with: subjectFilter) else { continue }
