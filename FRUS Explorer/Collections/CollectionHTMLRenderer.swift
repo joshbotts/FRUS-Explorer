@@ -456,13 +456,20 @@ enum CollectionHTMLRenderer {
     }
 
     private static func gatherNotes(div: Division, into out: inout [FootnoteRecord], docIndex: Int) {
+        // Direct child notes (source citations) are registered first — before inline notes.
+        // In printed FRUS, the source note always leads the footnote block.
+        for n in div.notes where isCollectableNote(n) {
+            appendFn(n, into: &out, docIndex: docIndex)
+        }
         for p in div.paragraphs { gatherInlineNotes(p.content, into: &out, docIndex: docIndex) }
         if let op = div.opener  { gatherInlineNotes(op.content, into: &out, docIndex: docIndex) }
         if let cl = div.closer  { gatherInlineNotes(cl.content, into: &out, docIndex: docIndex) }
-        for n in div.notes where n.type == "footnote" || n.place == "bottom" || n.place == "end" {
-            appendFn(n, into: &out, docIndex: docIndex)
-        }
         for child in div.children { gatherNotes(div: child, into: &out, docIndex: docIndex) }
+    }
+
+    private static func isCollectableNote(_ note: Note) -> Bool {
+        note.place == "bottom" || note.place == "end"
+            || note.type == "footnote" || note.type == "source"
     }
 
     private static func gatherInlineNotes(_ content: [InlineContent], into out: inout [FootnoteRecord], docIndex: Int) {

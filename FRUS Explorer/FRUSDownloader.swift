@@ -182,6 +182,13 @@ public actor FRUSDownloader {
         }
     }
 
+    // MARK: - Configuration update
+
+    /// Update the concurrency limit; takes effect on the next `download(volumes:…)` call.
+    public func updateMaxConcurrent(_ n: Int) {
+        maxConcurrentDownloads = max(1, min(8, n))
+    }
+
     // MARK: - Volume listing
 
     /// Returns metadata for every FRUS volume in the GitHub repository.

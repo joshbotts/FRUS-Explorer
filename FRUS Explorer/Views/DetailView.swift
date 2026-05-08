@@ -65,6 +65,7 @@ struct DetailView: View {
 struct DocumentDetailView: View {
     @Environment(AppStore.self) private var store: AppStore
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
+    @Environment(TaxonomyStore.self) private var taxonomyStore: TaxonomyStore
     let volume: LoadedVolume
     let division: Division
     var backgroundColor: Color {
@@ -88,6 +89,16 @@ struct DocumentDetailView: View {
                 // Full document
                 FRUSDocumentView(division: division, volumeID: volume.id)
                     .padding(.horizontal, 28).padding(.vertical, 16)
+
+                // Subject taxonomy section
+                if let divID = division.id {
+                    let subjects = taxonomyStore.subjects(for: divID, in: volume.id)
+                    if !subjects.isEmpty {
+                        SubjectsSection(subjects: subjects)
+                            .padding(.horizontal, 28)
+                            .padding(.bottom, 16)
+                    }
+                }
 
                 Spacer(minLength: 48)
             }
@@ -551,6 +562,29 @@ struct FootnotesBlock: View {
     }
 }
 
+// MARK: - SubjectsSection
+
+/// Displays the subject taxonomy tags for a document in the detail view.
+/// Subjects are organised into groups by their parent subcategory name for
+/// easy scanning; groups with a single subject omit the group label.
+struct SubjectsSection: View {
+    let subjects: [TaxonomySubject]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Divider()
+
+            Text("Subjects")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.6)
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+
+            SubjectChipsRow(subjects: subjects)
+        }
+    }
+}
+
 // MARK: - FRUSRenderer
 
 /// Shared rendering utilities: AttributedString construction and footnote collection.
@@ -568,6 +602,11 @@ enum FRUSRenderer {
     }
 
     private static func collectFootnotesRecursive(from div: Division, into result: inout [Note]) {
+        // Direct child notes (source citations) come first — before inline paragraph notes.
+        // In printed FRUS, the source note always leads the footnote block.
+        for note in div.notes where isCollectableNote(note) {
+            result.append(note)
+        }
         // Inline notes within paragraphs
         for para in div.paragraphs {
             collectInlineNotes(from: para.content, into: &result)
@@ -580,14 +619,15 @@ enum FRUSRenderer {
         if let cl = div.closer {
             collectInlineNotes(from: cl.content, into: &result)
         }
-        // Direct child notes with place="bottom" or type="footnote"
-        for note in div.notes where note.place == "bottom" || note.type == "footnote" || note.place == "end" {
-            result.append(note)
-        }
         // Recurse into children
         for child in div.children {
             collectFootnotesRecursive(from: child, into: &result)
         }
+    }
+
+    private static func isCollectableNote(_ note: Note) -> Bool {
+        note.place == "bottom" || note.place == "end"
+            || note.type == "footnote" || note.type == "source"
     }
 
     private static func collectInlineNotes(from content: [InlineContent], into result: inout [Note]) {

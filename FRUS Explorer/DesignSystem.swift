@@ -20,6 +20,10 @@ extension Color {
     static let frusInk      = Color(red: 0.13, green: 0.14, blue: 0.17)
     static let frusPaper    = Color(red: 0.97, green: 0.95, blue: 0.90)
     static let frusRuling   = Color(red: 0.85, green: 0.81, blue: 0.72)
+    // Authentic FRUS cover ruby red — used for "downloaded / ready / online" states.
+    static let frusRuby     = Color(red: 147/255, green: 49/255, blue: 22/255)
+    // Deep amber — used for error / failure states (distinct from the ruby-red success color).
+    static let frusAmber    = Color(red: 180/255, green: 83/255, blue: 9/255)
 }
 
 // MARK: - Typography scale

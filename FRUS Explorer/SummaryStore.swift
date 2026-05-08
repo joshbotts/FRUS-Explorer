@@ -128,6 +128,12 @@ final class SummaryStore {
         save()
     }
 
+    /// Remove every stored summary across all volumes and profiles.
+    func purgeAll() {
+        records.removeAll()
+        save()
+    }
+
     // MARK: - Search support
 
     /// All stored summary texts keyed by `"\(volumeID)__\(divisionID)"`.
