@@ -309,6 +309,7 @@ struct CollectionItemRow: View {
 private struct CollectionItemDetailView: View {
     @Environment(AppStore.self) private var store: AppStore
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
+    @Environment(SummaryStore.self) private var summaryStore: SummaryStore
 
     let item: CollectionItem
     let collection: DocumentCollection
@@ -316,6 +317,17 @@ private struct CollectionItemDetailView: View {
     @State private var annotationText = ""
     @State private var dirty = false
     @State private var isLoadingVolume = false
+
+    private var availableSummaries: [SummaryRecord] {
+        summaryStore.records.filter {
+            $0.volumeID == item.volumeID && $0.divisionID == item.divisionID
+        }
+    }
+
+    private func insertSummary(_ record: SummaryRecord) {
+        annotationText = record.text
+        dirty = true
+    }
 
     private var resolvedDivision: Division? {
         collectionStore.resolve(item, in: store.loadedVolumes)
@@ -399,6 +411,32 @@ private struct CollectionItemDetailView: View {
 
     // MARK: - Annotation editor
 
+    @ViewBuilder
+    private var summaryDraftControl: some View {
+        if availableSummaries.count == 1, let record = availableSummaries.first {
+            Button {
+                insertSummary(record)
+            } label: {
+                Label("Use \(record.profileName) Summary as Draft", systemImage: "text.badge.plus")
+                    .font(.system(size: 10))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+        } else {
+            Menu {
+                ForEach(availableSummaries) { record in
+                    Button(record.profileName) { insertSummary(record) }
+                }
+            } label: {
+                Label("Use Summary as Draft…", systemImage: "text.badge.plus")
+                    .font(.system(size: 10))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .foregroundStyle(.tint)
+        }
+    }
+
     private var annotationSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Research Annotation", systemImage: "pencil.line")
@@ -408,6 +446,10 @@ private struct CollectionItemDetailView: View {
             Text("Annotations appear in the PDF export beneath each document.")
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
+
+            if !availableSummaries.isEmpty {
+                summaryDraftControl
+            }
 
             TextEditor(text: $annotationText)
                 .font(.system(.callout, design: .serif))

@@ -89,7 +89,7 @@ enum CollectionHTMLRenderer {
         }
         @page{
             size:8.5in 11in portrait;
-            margin:1in 1.15in 1.1in 1.15in;
+            margin:1in;
         }
         @media print{
             .page-break{page-break-before:always;break-before:page}

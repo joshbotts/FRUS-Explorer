@@ -1,6 +1,7 @@
 // Views/SearchView.swift
 // Cross-volume search panel shown in the outline column.
-// Supports the full query language defined in SearchEngine.swift plus a date-range picker.
+// Each search dimension has its own field; a Search button builds and runs
+// the combined query. A help sheet explains every field type.
 
 import SwiftUI
 
@@ -11,147 +12,160 @@ struct SearchView: View {
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
     @Environment(TaxonomyStore.self) private var taxonomyStore: TaxonomyStore
 
-    @State private var query: String = ""
-    @State private var showDateFilter = false
+    // ── Query parameters ──────────────────────────────────────────────────
+    @State private var keywords:     String = ""
+    @State private var personQuery:  String = ""
+    @State private var placeQuery:   String = ""
+    @State private var orgQuery:     String = ""
+    @State private var termQuery:    String = ""
+
+    // ── Date filter ───────────────────────────────────────────────────────
     @State private var dateFromEnabled = false
     @State private var dateFrom = Calendar.current.date(from: DateComponents(year: 1960))!
-    @State private var dateToEnabled = false
-    @State private var dateTo = Date()
-    @State private var subjectFilter: Set<String> = []
-    @State private var showSubjectPicker = false
-    @State private var debounceTask: Task<Void, Never>? = nil
+    @State private var dateToEnabled   = false
+    @State private var dateTo          = Date()
 
-    private var hasDateFilter: Bool { dateFromEnabled || dateToEnabled }
-    private var hasSubjectFilter: Bool { !subjectFilter.isEmpty }
+    // ── Subject filter ────────────────────────────────────────────────────
+    @State private var subjectFilter:    Set<String> = []
+    @State private var showSubjectPicker = false
+
+    // ── UI state ──────────────────────────────────────────────────────────
+    @State private var showHelp      = false
+    @State private var hasRunSearch  = false
+
+    // ── Derived ───────────────────────────────────────────────────────────
+
+    private var hasAnyInput: Bool {
+        [keywords, personQuery, placeQuery, orgQuery, termQuery]
+            .contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        || dateFromEnabled || dateToEnabled || !subjectFilter.isEmpty
+    }
+
+    private var canClear: Bool { hasAnyInput || !store.searchResults.isEmpty }
+
+    // ── Body ──────────────────────────────────────────────────────────────
 
     var body: some View {
         VStack(spacing: 0) {
-            queryBar
-            if showDateFilter {
-                dateFilterPanel
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-            if hasSubjectFilter {
-                subjectFilterChipsBar
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
+            formArea
             Divider()
             resultsArea
         }
-        .animation(.easeInOut(duration: 0.18), value: showDateFilter)
-        .animation(.easeInOut(duration: 0.18), value: hasSubjectFilter)
-        .onDisappear { store.searchResults = [] }
         .sheet(isPresented: $showSubjectPicker) {
             SubjectPickerSheet(selectedIDs: $subjectFilter)
                 .environment(taxonomyStore)
         }
-        .onChange(of: subjectFilter) { _, _ in triggerSearch() }
+        .sheet(isPresented: $showHelp) {
+            SearchHelpSheet()
+        }
+        .onDisappear { store.searchResults = [] }
     }
 
-    // MARK: - Query bar
+    // MARK: - Form area
 
-    private var queryBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .font(.system(size: 12))
+    private var formArea: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    keywordsSection
+                    entitySection
+                    dateSection
+                    subjectSection
+                }
+                .padding(12)
+            }
 
-            TextField("Keywords, \"phrase\", person:Name, term:MIRV…", text: $query)
-                .textFieldStyle(.plain)
-                .font(.system(.callout, design: .monospaced))
-                .onSubmit { triggerSearch() }
-                .onChange(of: query) { _, _ in scheduleSearch() }
+            Divider()
 
-            if !query.isEmpty {
+            // Sticky action bar — always visible without scrolling
+            HStack(spacing: 10) {
+                if canClear {
+                    Button("Clear") { clearAll() }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .font(.system(size: 11))
+                }
+                Spacer()
                 Button {
-                    query = ""
-                    store.searchResults = []
+                    showHelp = true
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-            }
+                .help("Search guide")
 
-            Button {
-                withAnimation { showDateFilter.toggle() }
-            } label: {
-                Image(systemName: hasDateFilter ? "calendar.badge.checkmark" : "calendar")
-                    .font(.system(size: 13))
-                    .foregroundStyle(hasDateFilter ? Color.accentColor : .secondary)
-            }
-            .buttonStyle(.plain)
-            .help("Filter by date range")
-
-            Button {
-                showSubjectPicker = true
-            } label: {
-                Image(systemName: hasSubjectFilter ? "tag.fill" : "tag")
-                    .font(.system(size: 13))
-                    .foregroundStyle(hasSubjectFilter ? Color.frusRuby : .secondary)
-            }
-            .buttonStyle(.plain)
-            .help("Filter by subject")
-            .disabled(!taxonomyStore.isLoaded)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(.quinary)
-    }
-
-    // MARK: - Date filter panel
-
-    private var dateFilterPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Date Range")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                    .tracking(0.4)
-                Spacer()
-                if hasDateFilter {
-                    Button("Clear") {
-                        dateFromEnabled = false
-                        dateToEnabled = false
-                        triggerSearch()
-                    }
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.accentColor)
-                    .buttonStyle(.plain)
+                Button(action: runSearch) {
+                    Label("Search", systemImage: "magnifyingglass")
+                        .font(.system(size: 12, weight: .semibold))
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(!hasAnyInput)
             }
-
-            HStack(spacing: 16) {
-                dateToggleRow(
-                    label: "From",
-                    enabled: $dateFromEnabled,
-                    date: $dateFrom
-                )
-                dateToggleRow(
-                    label: "To",
-                    enabled: $dateToEnabled,
-                    date: $dateTo
-                )
-            }
-
-            Text("Also supported inline: date:1969, after:1969-06, before:1970, date:1969..1972")
-                .font(.system(size: 9))
-                .foregroundStyle(.quaternary)
-                .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.bar)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(.quinary.opacity(0.6))
-        .onChange(of: dateFromEnabled) { _, _ in triggerSearch() }
-        .onChange(of: dateToEnabled)   { _, _ in triggerSearch() }
-        .onChange(of: dateFrom)        { _, _ in if dateFromEnabled { triggerSearch() } }
-        .onChange(of: dateTo)          { _, _ in if dateToEnabled   { triggerSearch() } }
     }
 
-    @ViewBuilder
-    private func dateToggleRow(
-        label: String, enabled: Binding<Bool>, date: Binding<Date>
+    // MARK: - Keywords
+
+    private var keywordsSection: some View {
+        searchSection(label: "Keywords") {
+            TextField("Terms, \"exact phrase\", wild*, AND / OR / NOT…", text: $keywords)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 12, design: .monospaced))
+                .onSubmit { runSearch() }
+        }
+    }
+
+    // MARK: - Named entity fields
+
+    private var entitySection: some View {
+        searchSection(label: "Named Entities") {
+            VStack(spacing: 6) {
+                entityRow(label: "Person", text: $personQuery, placeholder: "e.g. Kissinger")
+                entityRow(label: "Place",  text: $placeQuery,  placeholder: "e.g. Saigon")
+                entityRow(label: "Org",    text: $orgQuery,    placeholder: "e.g. NATO")
+                entityRow(label: "Term",   text: $termQuery,   placeholder: "e.g. MIRV")
+            }
+        }
+    }
+
+    private func entityRow(
+        label: String,
+        text: Binding<String>,
+        placeholder: String
+    ) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 42, alignment: .trailing)
+            TextField(placeholder, text: text)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 12))
+                .onSubmit { runSearch() }
+        }
+    }
+
+    // MARK: - Date range
+
+    private var dateSection: some View {
+        searchSection(label: "Date Range") {
+            HStack(alignment: .top, spacing: 16) {
+                datePickerRow(label: "From", enabled: $dateFromEnabled, date: $dateFrom)
+                datePickerRow(label: "To",   enabled: $dateToEnabled,   date: $dateTo)
+            }
+        }
+    }
+
+    private func datePickerRow(
+        label: String,
+        enabled: Binding<Bool>,
+        date: Binding<Date>
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(label, isOn: enabled)
@@ -167,48 +181,67 @@ struct SearchView: View {
         }
     }
 
-    // MARK: - Subject filter chips bar
+    // MARK: - Subject filter
 
-    private var subjectFilterChipsBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                Text("Subjects:")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.secondary)
-
-                ForEach(Array(subjectFilter), id: \.self) { id in
-                    if let subject = taxonomyStore.subjectsByID[id] {
-                        HStack(spacing: 3) {
-                            Text(subject.name)
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(Color.frusRuby)
-                            Button {
-                                subjectFilter.remove(id)
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundStyle(Color.frusRuby.opacity(0.7))
+    private var subjectSection: some View {
+        searchSection(label: "Subjects") {
+            VStack(alignment: .leading, spacing: 8) {
+                if !subjectFilter.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(Array(subjectFilter), id: \.self) { id in
+                                if let subject = taxonomyStore.subjectsByID[id] {
+                                    HStack(spacing: 3) {
+                                        Text(subject.name)
+                                            .font(.system(size: 9, weight: .medium))
+                                            .foregroundStyle(Color.frusRuby)
+                                        Button {
+                                            subjectFilter.remove(id)
+                                        } label: {
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 7, weight: .bold))
+                                                .foregroundStyle(Color.frusRuby.opacity(0.7))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Color.frusRuby.opacity(0.10), in: Capsule())
+                                    .overlay(Capsule().strokeBorder(Color.frusRuby.opacity(0.25),
+                                                                    lineWidth: 0.5))
+                                }
                             }
-                            .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.frusRuby.opacity(0.10), in: Capsule())
-                        .overlay(Capsule().strokeBorder(Color.frusRuby.opacity(0.25), lineWidth: 0.5))
                     }
                 }
-
-                Button("Clear all") {
-                    subjectFilter.removeAll()
+                Button {
+                    showSubjectPicker = true
+                } label: {
+                    Label(subjectFilter.isEmpty ? "Choose Subjects…" : "Edit Subjects…",
+                          systemImage: "tag")
+                        .font(.system(size: 11))
                 }
-                .font(.system(size: 9))
-                .foregroundStyle(.secondary)
                 .buttonStyle(.plain)
+                .foregroundStyle(subjectFilter.isEmpty ? .secondary : Color.frusRuby)
+                .disabled(!taxonomyStore.isLoaded)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
         }
-        .background(.quinary.opacity(0.6))
+    }
+
+    // MARK: - Section wrapper
+
+    private func searchSection<Content: View>(
+        label: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.system(size: 9, weight: .semibold))
+                .tracking(0.5)
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+            content()
+        }
     }
 
     // MARK: - Results area
@@ -216,28 +249,24 @@ struct SearchView: View {
     @ViewBuilder
     private var resultsArea: some View {
         if store.isSearching {
-            loadingView
-        } else if query.trimmingCharacters(in: .whitespaces).isEmpty && !hasDateFilter && !hasSubjectFilter {
+            HStack(spacing: 8) {
+                ProgressView().scaleEffect(0.7)
+                Text("Searching…")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if !hasRunSearch {
             placeholderView
         } else if store.searchResults.isEmpty {
             ContentUnavailableView(
                 "No Results",
                 systemImage: "magnifyingglass",
-                description: Text("Try different keywords, broaden your date range, or check query syntax.")
+                description: Text("Try different keywords, broaden the date range, or adjust your filters.")
             )
         } else {
             resultsList
         }
-    }
-
-    private var loadingView: some View {
-        HStack(spacing: 8) {
-            ProgressView().scaleEffect(0.7)
-            Text("Searching…")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var placeholderView: some View {
@@ -245,28 +274,28 @@ struct SearchView: View {
             Image(systemName: "text.magnifyingglass")
                 .font(.system(size: 36))
                 .foregroundStyle(.tertiary)
-            VStack(spacing: 5) {
-                Text("Search all downloaded volumes")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                Group {
-                    Text("AND · OR · NOT  /  \"exact phrase\"  /  wild* ")
-                    + Text("  person:Name  ·  term:MIRV  ·  place:Saigon")
-                    + Text("  date:1969  ·  date:1968..1972  ·  after:1969-06")
-                }
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundStyle(.quaternary)
+            Text("Fill in one or more fields above, then tap Search.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: 230)
+                .frame(maxWidth: 200)
 
             if !store.loadedVolumes.isEmpty {
                 indexedVolumesBadge
             }
+
+            if store.isReindexingAll {
+                loadAllProgressView
+            } else if unloadedLocalCount > 0 {
+                loadAllBanner
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+    }
+
+    private var unloadedLocalCount: Int {
+        store.localVolumeIDs.subtracting(Set(store.loadedVolumes.keys)).count
     }
 
     private var indexedVolumesBadge: some View {
@@ -281,6 +310,37 @@ struct SearchView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
         .background(.quinary, in: Capsule())
+    }
+
+    private var loadAllBanner: some View {
+        VStack(spacing: 6) {
+            Text("\(unloadedLocalCount) downloaded volume\(unloadedLocalCount == 1 ? "" : "s") not yet indexed")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button {
+                Task { await store.reindexAllDownloadedVolumes() }
+            } label: {
+                Label("Load All Downloaded Volumes", systemImage: "arrow.down.circle")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(.top, 4)
+    }
+
+    private var loadAllProgressView: some View {
+        let (current, total) = store.reindexAllProgress
+        return VStack(spacing: 6) {
+            ProgressView(value: total > 0 ? Double(current) / Double(total) : 0)
+                .progressViewStyle(.linear)
+                .frame(maxWidth: 180)
+            Text("Loading volumes… \(current) / \(total)")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 4)
     }
 
     private var resultsList: some View {
@@ -310,44 +370,60 @@ struct SearchView: View {
 
     // MARK: - Actions
 
-    private func scheduleSearch() {
-        debounceTask?.cancel()
-        debounceTask = Task {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            triggerSearch()
-        }
-    }
-
-    private func triggerSearch() {
-        let q = query.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty || hasDateFilter || hasSubjectFilter else {
-            store.searchResults = []
+    private func runSearch() {
+        let q = buildQueryString()
+        guard !q.isEmpty || dateFromEnabled || dateToEnabled || !subjectFilter.isEmpty else {
             return
         }
-        let df = buildDateFilter()
-        let sf = subjectFilter
+        hasRunSearch = true
+        let df          = buildDateFilter()
+        let sf          = subjectFilter
         let annotations = collectionStore.allAnnotations
         Task { await store.runSearch(query: q, dateFilter: df, subjectFilter: sf, annotations: annotations) }
     }
 
+    private func clearAll() {
+        keywords    = ""
+        personQuery = ""
+        placeQuery  = ""
+        orgQuery    = ""
+        termQuery   = ""
+        dateFromEnabled = false
+        dateToEnabled   = false
+        subjectFilter.removeAll()
+        store.searchResults = []
+        hasRunSearch = false
+    }
+
+    /// Assembles the engine query string from the keyword and entity fields.
+    /// Entity values that contain spaces are quoted so the parser treats them
+    /// as a single field argument rather than separate keywords.
+    private func buildQueryString() -> String {
+        var parts: [String] = []
+        let kw = keywords.trimmingCharacters(in: .whitespaces)
+        if !kw.isEmpty { parts.append(kw) }
+        for (field, raw) in [("person", personQuery), ("place", placeQuery),
+                              ("org",    orgQuery),    ("term",  termQuery)] {
+            let v = raw.trimmingCharacters(in: .whitespaces)
+            guard !v.isEmpty else { continue }
+            parts.append(v.contains(" ") ? "\(field):\"\(v)\"" : "\(field):\(v)")
+        }
+        return parts.joined(separator: " ")
+    }
+
     private func buildDateFilter() -> DateFilter? {
-        guard hasDateFilter else { return nil }
-        var df = DateFilter()
+        guard dateFromEnabled || dateToEnabled else { return nil }
+        var df  = DateFilter()
         let cal = Calendar.current
         if dateFromEnabled {
-            df.from = .full(
-                cal.component(.year,  from: dateFrom),
-                cal.component(.month, from: dateFrom),
-                cal.component(.day,   from: dateFrom)
-            )
+            df.from = .full(cal.component(.year,  from: dateFrom),
+                            cal.component(.month, from: dateFrom),
+                            cal.component(.day,   from: dateFrom))
         }
         if dateToEnabled {
-            df.to = .full(
-                cal.component(.year,  from: dateTo),
-                cal.component(.month, from: dateTo),
-                cal.component(.day,   from: dateTo)
-            )
+            df.to = .full(cal.component(.year,  from: dateTo),
+                          cal.component(.month, from: dateTo),
+                          cal.component(.day,   from: dateTo))
         }
         return df
     }
@@ -363,6 +439,135 @@ struct SearchView: View {
                 await store.loadVolumeByID(volID)
                 store.selectedNodeID = nodeID
             }
+        }
+    }
+}
+
+// MARK: - SearchHelpSheet
+
+struct SearchHelpSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                helpSection(
+                    icon: "text.magnifyingglass", iconColor: .blue,
+                    title: "Keywords",
+                    items: [
+                        HelpItem("Basic",    "Enter one or more words to match anywhere in a document's title, body text, or entity lists."),
+                        HelpItem("Phrase",   "Wrap in double quotes for an exact match: \"national security council\""),
+                        HelpItem("Wildcard", "Append * for prefix matching: diplo* matches diplomat, diplomacy, diplomatic…"),
+                        HelpItem("Require",  "AND is the default between words — both must appear: Vietnam policy"),
+                        HelpItem("Either",   "OR returns documents matching either term: Nixon OR Kissinger"),
+                        HelpItem("Exclude",  "NOT removes documents containing a word: Cuba NOT crisis"),
+                    ]
+                )
+
+                helpSection(
+                    icon: "person.text.rectangle", iconColor: .purple,
+                    title: "Named Entities",
+                    items: [
+                        HelpItem("Person", "Matches names tagged as persons in document text — e.g. Kissinger"),
+                        HelpItem("Place",  "Matches location names tagged in document text — e.g. Saigon"),
+                        HelpItem("Org",    "Matches organization names — e.g. NATO, NSC, Politburo"),
+                        HelpItem("Term",   "Matches defined terms, weapons systems, treaties, and technical vocabulary — e.g. MIRV, SALT"),
+                    ],
+                    note: "Entity fields search the tagged entity lists extracted by the TEI markup, not free-running prose. A document that mentions 'Kissinger' in untagged text will not match a Person search."
+                )
+
+                helpSection(
+                    icon: "calendar", iconColor: .red,
+                    title: "Date Range",
+                    items: [
+                        HelpItem("From", "Exclude documents dated before this date"),
+                        HelpItem("To",   "Exclude documents dated after this date"),
+                    ],
+                    note: "Dates correspond to when the document was written or sent, not when it was published in FRUS. Enabling only From returns everything from that date forward; only To returns everything up to that date."
+                )
+
+                helpSection(
+                    icon: "tag", iconColor: Color.frusRuby,
+                    title: "Subjects",
+                    items: [
+                        HelpItem("Choosing",   "Tap 'Choose Subjects' to browse the subject taxonomy and select one or more tags."),
+                        HelpItem("Multiple",   "Selecting several subjects returns documents matching any one of them."),
+                        HelpItem("Scope",      "Only documents from currently loaded volumes carry subject tags."),
+                    ],
+                    note: "Subject tags are assigned by the Office of the Historian and reflect the main topics of each document. They cannot be entered as free text — use the picker."
+                )
+
+                helpSection(
+                    icon: "arrow.triangle.merge", iconColor: .green,
+                    title: "Combining Fields",
+                    items: [
+                        HelpItem("AND logic", "Every active field must match. A document appears only if it satisfies the keywords, every entity field, the date range, and at least one selected subject."),
+                        HelpItem("Empty fields", "Leaving a field blank places no restriction on that dimension — it is simply ignored."),
+                    ]
+                )
+            }
+#if os(macOS)
+            .listStyle(.inset)
+#else
+            .listStyle(.insetGrouped)
+#endif
+            .navigationTitle("Search Guide")
+#if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+#endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    // MARK: - Help section builder
+
+    private struct HelpItem {
+        let label: String
+        let description: String
+        init(_ label: String, _ description: String) {
+            self.label = label
+            self.description = description
+        }
+    }
+
+    @ViewBuilder
+    private func helpSection(
+        icon: String,
+        iconColor: Color,
+        title: String,
+        items: [HelpItem],
+        note: String? = nil
+    ) -> some View {
+        Section {
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(item.label)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Text(item.description)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 2)
+            }
+            if let note {
+                Text(note)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 4)
+                    .listRowBackground(Color.secondary.opacity(0.06))
+            }
+        } header: {
+            Label(title, systemImage: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .textCase(nil)
         }
     }
 }
