@@ -80,7 +80,7 @@ final class TaxonomyStore {
         guard !isLoaded else { return }
 
         let result = await Task.detached(priority: .utility) { () -> TaxonomyPayload? in
-            guard let url = Bundle.main.url(forResource: "taxonomy", withExtension: "json", subdirectory: "SubjectData") else {
+            guard let url = Bundle.main.url(forResource: "taxonomy", withExtension: "json") else {
                 return nil
             }
             do {

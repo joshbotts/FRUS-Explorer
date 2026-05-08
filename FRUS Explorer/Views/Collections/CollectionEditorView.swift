@@ -259,48 +259,52 @@ struct CollectionItemRow: View {
     let isLoaded: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: item.isEditorialNote ? "quote.bubble.fill" : "doc.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(item.isEditorialNote ? Color.purple : Color.primary)
-                .frame(width: 16)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(item.cachedTitle)
+                .font(.system(.caption, design: .serif))
+                .fontWeight(.medium)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.cachedTitle)
-                    .font(.system(.caption, design: .serif))
-                    .fontWeight(.medium)
-                    .lineLimit(2)
+            if let dl = item.cachedDateline, !dl.isEmpty {
+                Text(dl)
+                    .font(.system(size: 10, design: .serif))
+                    .foregroundStyle(.secondary)
+                    .italic()
+                    .lineLimit(1)
+            }
 
-                HStack(spacing: 6) {
-                    if let dl = item.cachedDateline {
-                        Text(dl)
-                            .font(.system(size: 9, design: .monospaced))
-                            .foregroundStyle(.tertiary)
-                    }
-                    Text(item.volumeID)
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundStyle(.quaternary)
-                        .lineLimit(1)
+            HStack(spacing: 6) {
+                Text(item.volumeID)
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(.quaternary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                if !isLoaded {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
+                        .help("Volume not loaded — full text will be omitted from PDF export")
+                }
+
+                if item.isEditorialNote {
+                    Image(systemName: "quote.bubble")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.purple.opacity(0.7))
+                        .help("Editorial note")
+                }
+
+                if !item.annotation.isEmpty {
+                    Image(systemName: "pencil.line")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .help("Has annotation")
                 }
             }
-
-            Spacer()
-
-            if !isLoaded {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.orange)
-                    .help("Volume not loaded — full text will be omitted from PDF export")
-            }
-
-            if !item.annotation.isEmpty {
-                Image(systemName: "pencil.line")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                    .help("Has annotation")
-            }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 4)
     }
 }
 
@@ -337,25 +341,27 @@ private struct CollectionItemDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
 
+                // Annotation section — sits above the document so researchers
+                // can draft notes before (or while) reading the full text.
+                annotationSection
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+                    .padding(.bottom, 16)
+
+                Divider()
+
                 // Full document content (when volume is loaded)
                 if let div = resolvedDivision {
                     FRUSDocumentView(division: div, volumeID: item.volumeID)
                         .padding(.horizontal, 24)
-                        .padding(.top, 20)
-                        .padding(.bottom, 8)
+                        .padding(.top, 16)
+                        .padding(.bottom, 28)
                 } else {
                     volumeNotLoadedBanner
                         .padding(.horizontal, 24)
-                        .padding(.top, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 28)
                 }
-
-                // Annotation section
-                Divider()
-                    .padding(.vertical, 16)
-
-                annotationSection
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 28)
             }
         }
         .onAppear { annotationText = item.annotation }

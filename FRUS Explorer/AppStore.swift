@@ -360,8 +360,7 @@ final class AppStore {
                 // Load bundled per-volume subject map (docID → [subjectID]).
                 var subjectMap: [String: [String]] = [:]
                 if let subjectURL = Bundle.main.url(
-                    forResource: "subjects-\(id)", withExtension: "json",
-                    subdirectory: "SubjectData"
+                    forResource: "subjects-\(id)", withExtension: "json"
                 ),
                 let data = try? Data(contentsOf: subjectURL),
                 let decoded = try? JSONDecoder().decode([String: [String]].self, from: data) {
@@ -594,8 +593,7 @@ final class AppStore {
             // Load the per-volume subject map (same for both in-memory and on-disk paths).
             let subjectMap: [String: [String]] = await Task.detached(priority: .utility) {
                 guard let subjectURL = Bundle.main.url(
-                    forResource: "subjects-\(id)", withExtension: "json",
-                    subdirectory: "SubjectData"
+                    forResource: "subjects-\(id)", withExtension: "json"
                 ),
                 let data = try? Data(contentsOf: subjectURL),
                 let decoded = try? JSONDecoder().decode([String: [String]].self, from: data)

@@ -121,6 +121,19 @@ private final class Coordinator: NSObject, WKNavigationDelegate {
 #if os(macOS)
         // macOS: drive pagination through NSPrintOperation, which honours
         // paper size / margins from NSPrintInfo and produces a real multi-page PDF.
+        //
+        // NSPrintOperation requires the web view to be embedded in a window.
+        // Create a temporary off-screen window so that printOperation(with:)
+        // has a valid window context — without one the call crashes.
+        let offscreenWindow = NSWindow(
+            contentRect: NSRect(x: -16000, y: -16000, width: 624, height: 1056),
+            styleMask: [],
+            backing: .buffered,
+            defer: false
+        )
+        offscreenWindow.isReleasedWhenClosed = false
+        offscreenWindow.contentView = webView
+
         let printInfo = NSPrintInfo()
         printInfo.paperSize    = NSSize(width: pageW, height: pageH)
         printInfo.orientation  = .portrait
@@ -136,14 +149,19 @@ private final class Coordinator: NSObject, WKNavigationDelegate {
 
         let tempURL = FileManager.default.temporaryDirectory
             .appending(component: UUID().uuidString + ".pdf")
-        // "NSPrintJobSavingURL" is the raw key for NSPrintInfo.AttributeKey.jobSavingURL
-        printInfo.dictionary()["NSPrintJobSavingURL"] = tempURL
+        // Use setValue(_:forKey:) with explicit NSURL cast to ensure proper
+        // bridging for the NSPrintInfo save-URL attribute.
+        printInfo.dictionary().setValue(
+            tempURL as NSURL,
+            forKey: NSPrintInfo.AttributeKey.jobSavingURL.rawValue
+        )
 
         let printOp = webView.printOperation(with: printInfo)
         printOp.showsPrintPanel    = false
         printOp.showsProgressPanel = false
 
         if printOp.run() {
+            offscreenWindow.contentView = nil  // detach before cleanup
             do {
                 let data = try Data(contentsOf: tempURL)
                 try? FileManager.default.removeItem(at: tempURL)
@@ -153,6 +171,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate {
                     "Could not read output PDF: \(error.localizedDescription)"))
             }
         } else {
+            offscreenWindow.contentView = nil
             continuation.resume(throwing: PDFExportError.renderFailed(
                 "NSPrintOperation returned failure"))
         }
