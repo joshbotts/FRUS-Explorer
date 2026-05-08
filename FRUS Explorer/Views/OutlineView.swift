@@ -2,7 +2,6 @@
 // Middle column: expandable/collapsible tree of the selected FRUS volume.
 
 import SwiftUI
-import FRUSKit
 
 struct OutlineView: View {
     @Environment(AppStore.self) private var store: AppStore

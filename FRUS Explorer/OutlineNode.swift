@@ -2,7 +2,6 @@
 // Converts the parsed FRUSVolume into a tree of OutlineNodes for SwiftUI List disclosure groups.
 
 import Foundation
-import FRUSKit
 
 // MARK: - Node
 

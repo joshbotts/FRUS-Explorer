@@ -2,7 +2,6 @@
 // Detail view for a single collection: reorderable item list, annotation editor, PDF export.
 
 import SwiftUI
-import FRUSKit
 
 struct CollectionEditorView: View {
     @Environment(AppStore.self) private var store: AppStore

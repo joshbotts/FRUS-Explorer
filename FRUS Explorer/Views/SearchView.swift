@@ -526,7 +526,11 @@ struct SubjectPickerSheet: View {
                             }
                         }
                     }
+#if os(macOS)
+                    .listStyle(.inset)
+#else
                     .listStyle(.insetGrouped)
+#endif
                 }
             }
             .searchable(text: $searchText, prompt: "Search subjects…")

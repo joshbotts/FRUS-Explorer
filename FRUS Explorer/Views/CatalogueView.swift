@@ -3,7 +3,6 @@
 // Shows locally-available volumes immediately at launch before the network loads.
 
 import SwiftUI
-import FRUSKit
 
 struct CatalogueView: View {
     @Environment(AppStore.self) private var store: AppStore
