@@ -1,20 +1,26 @@
 // Collections/PDFExporter.swift
 //
-// Renders a DocumentCollection to a PDF using WKWebView's print pipeline,
-// then saves or shares it using the appropriate platform mechanism:
+// Renders a DocumentCollection to a PDF and saves or shares it:
 //
-//   macOS  — NSSavePanel lets the user choose a save location.
-//   iPadOS — UIActivityViewController presents the system share sheet,
-//            which includes "Save to Files" for local storage.
+//   macOS  — NSPrintOperation with NSPrintInfo drives pagination (letter size,
+//            1-inch margins). NSSavePanel lets the user pick a save location.
+//   iPadOS — UIPrintPageRenderer with viewPrintFormatter() drives pagination.
+//            UIActivityViewController presents the system share sheet.
 //
-// WKWebView and WKPDFConfiguration are available on both platforms.
-// We intentionally do NOT set WKPDFConfiguration.rect so that WebKit
-// uses the CSS @page rule for pagination.
+// WKWebView.createPDF() is NOT used: it captures the web view's scrollable
+// content as a single continuous surface rather than paginating into pages.
+// The print pipeline (NSPrintOperation / UIPrintPageRenderer) is the correct
+// API for producing properly paginated letter-size PDFs.
 
 import Foundation
 import WebKit
 import UniformTypeIdentifiers
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - Error types
 
@@ -52,8 +58,10 @@ final class PDFExporter: NSObject {
     func renderToPDFData(html: String) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
             let config = WKWebViewConfiguration()
+            // Width = printable content area: 8.5" − 2 × 1" margin = 6.5" × 96 CSS px/in = 624 px.
+            // Height is one page tall; the print pipeline handles multi-page layout.
             let webView = WKWebView(
-                frame: CGRect(x: 0, y: 0, width: 816, height: 1056),
+                frame: CGRect(x: 0, y: 0, width: 624, height: 1056),
                 configuration: config
             )
             webView.isHidden = true
@@ -105,18 +113,77 @@ private final class Coordinator: NSObject, WKNavigationDelegate {
     }
 
     private func generatePDF(from webView: WKWebView) {
-        let pdfConfig = WKPDFConfiguration()
-        // rect intentionally left unset — WebKit uses the CSS @page rule
-        webView.createPDF(configuration: pdfConfig) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let data):
-                self.continuation.resume(returning: data)
-            case .failure(let error):
-                self.continuation.resume(
-                    throwing: PDFExportError.renderFailed(error.localizedDescription))
+        let ptPerIn: CGFloat = 72          // PDF point = 1/72 inch
+        let pageW:   CGFloat = 8.5 * ptPerIn   // 612 pt
+        let pageH:   CGFloat = 11.0 * ptPerIn  // 792 pt
+        let margin:  CGFloat = 1.0 * ptPerIn   //  72 pt
+
+#if os(macOS)
+        // macOS: drive pagination through NSPrintOperation, which honours
+        // paper size / margins from NSPrintInfo and produces a real multi-page PDF.
+        let printInfo = NSPrintInfo()
+        printInfo.paperSize    = NSSize(width: pageW, height: pageH)
+        printInfo.orientation  = .portrait
+        printInfo.topMargin    = margin
+        printInfo.bottomMargin = margin
+        printInfo.leftMargin   = margin
+        printInfo.rightMargin  = margin
+        printInfo.isHorizontallyCentered = false
+        printInfo.isVerticallyCentered   = false
+        printInfo.horizontalPagination   = .fit
+        printInfo.verticalPagination     = .automatic
+        printInfo.jobDisposition         = .save
+
+        let tempURL = FileManager.default.temporaryDirectory
+            .appending(component: UUID().uuidString + ".pdf")
+        // "NSPrintJobSavingURL" is the raw key for NSPrintInfo.AttributeKey.jobSavingURL
+        printInfo.dictionary()["NSPrintJobSavingURL"] = tempURL
+
+        let printOp = webView.printOperation(with: printInfo)
+        printOp.showsPrintPanel    = false
+        printOp.showsProgressPanel = false
+
+        if printOp.run() {
+            do {
+                let data = try Data(contentsOf: tempURL)
+                try? FileManager.default.removeItem(at: tempURL)
+                continuation.resume(returning: data)
+            } catch {
+                continuation.resume(throwing: PDFExportError.renderFailed(
+                    "Could not read output PDF: \(error.localizedDescription)"))
             }
+        } else {
+            continuation.resume(throwing: PDFExportError.renderFailed(
+                "NSPrintOperation returned failure"))
         }
+
+#else
+        // iPadOS: UIPrintPageRenderer with viewPrintFormatter() properly
+        // paginates the web view's content into letter-size pages.
+        let paperRect     = CGRect(origin: .zero, size: CGSize(width: pageW, height: pageH))
+        let printableRect = paperRect.insetBy(dx: margin, dy: margin)
+
+        let renderer = UIPrintPageRenderer()
+        renderer.addPrintFormatter(webView.viewPrintFormatter(), startingAtPageAt: 0)
+        renderer.setValue(NSValue(cgRect: paperRect),     forKey: "paperRect")
+        renderer.setValue(NSValue(cgRect: printableRect), forKey: "printableRect")
+
+        let pdfData = NSMutableData()
+        UIGraphicsBeginPDFContextToData(pdfData, paperRect, nil)
+        let pageCount = renderer.numberOfPages
+        for i in 0..<pageCount {
+            UIGraphicsBeginPDFPage()
+            renderer.drawPage(at: i, in: UIGraphicsGetPDFContextBounds())
+        }
+        UIGraphicsEndPDFContext()
+
+        guard pdfData.length > 0 else {
+            continuation.resume(throwing: PDFExportError.renderFailed(
+                "PDF rendering produced no data"))
+            return
+        }
+        continuation.resume(returning: pdfData as Data)
+#endif
     }
 }
 
