@@ -1,13 +1,62 @@
 // CatalogueView.swift
-// Left column: searchable catalogue of FRUS volumes with download controls.
+// Left column: searchable catalogue of FRUS volumes grouped by subseries.
 // Shows locally-available volumes immediately at launch before the network loads.
 
 import SwiftUI
+
+// MARK: - Subseries helpers
+
+/// Extracts the subseries prefix from a FRUS volume ID.
+/// e.g. "frus1946v03" → "frus1946", "frus1946-47v01" → "frus1946-47"
+private func subseriesPrefix(from id: String) -> String {
+    let pattern = #"^frus\d{4}(?:-\d{2,4})?"#
+    if let range = id.range(of: pattern, options: .regularExpression) {
+        return String(id[range])
+    }
+    return id
+}
+
+private struct SubseriesGroup: Identifiable {
+    let prefix: String
+    let volumes: [FRUSVolumeInfo]
+    var id: String { prefix }
+}
+
+private func groupBySubseries(_ volumes: [FRUSVolumeInfo]) -> [SubseriesGroup] {
+    var order: [String] = []
+    var byPrefix: [String: [FRUSVolumeInfo]] = [:]
+    for vol in volumes {
+        let p = subseriesPrefix(from: vol.id)
+        if byPrefix[p] == nil { order.append(p) }
+        byPrefix[p, default: []].append(vol)
+    }
+    return order.map { SubseriesGroup(prefix: $0, volumes: byPrefix[$0]!) }
+}
+
+private struct OfflineSubseriesGroup {
+    let prefix: String
+    let ids: [String]
+}
+
+private func groupOfflineBySubseries(_ ids: [String]) -> [OfflineSubseriesGroup] {
+    var order: [String] = []
+    var byPrefix: [String: [String]] = [:]
+    for id in ids {
+        let p = subseriesPrefix(from: id)
+        if byPrefix[p] == nil { order.append(p) }
+        byPrefix[p, default: []].append(id)
+    }
+    return order.map { OfflineSubseriesGroup(prefix: $0, ids: byPrefix[$0]!) }
+}
+
+// MARK: - CatalogueView
 
 struct CatalogueView: View {
     @Environment(AppStore.self) private var store: AppStore
     @State private var sortOrder = SortOrder.id
     @State private var showDownloadAllConfirmation = false
+    @State private var expandedSubseries: Set<String> = []
+    @State private var hideUndownloaded = false
 
     enum SortOrder: String, CaseIterable, Identifiable {
         case id = "Volume ID"
@@ -23,14 +72,36 @@ struct CatalogueView: View {
         }
     }
 
+    private var visibleGroups: [SubseriesGroup] {
+        if hideUndownloaded {
+            let filtered = sorted.filter { info in
+                if case .notDownloaded = store.downloadState(for: info.id) { return false }
+                return true
+            }
+            return groupBySubseries(filtered)
+        }
+        return groupBySubseries(sorted)
+    }
+
     private var bulk: AppStore.BulkProgress { store.bulkProgress }
+
+    private func expansionBinding(for prefix: String) -> Binding<Bool> {
+        let isSearching = !store.searchText.isEmpty
+        return Binding(
+            get: { isSearching || expandedSubseries.contains(prefix) },
+            set: { newVal in
+                guard !isSearching else { return }
+                if newVal { expandedSubseries.insert(prefix) }
+                else { expandedSubseries.remove(prefix) }
+            }
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             headerBar
             searchBar(store: store)
             Divider()
-            // Bulk-download progress bar — shown whenever downloads are active
             if bulk.isActive {
                 bulkProgressBar
             }
@@ -69,7 +140,6 @@ struct CatalogueView: View {
 
             Spacer()
 
-            // Online / offline indicator
             HStack(spacing: 5) {
                 Circle()
                     .fill(store.isOnline ? Color.frusRuby : Color.orange)
@@ -191,48 +261,24 @@ struct CatalogueView: View {
             }
 
         case .loaded:
-            if sorted.isEmpty && store.searchText.isEmpty {
-                offlineSection
+            if visibleGroups.isEmpty && !store.searchText.isEmpty {
+                List { ContentUnavailableView.search(text: store.searchText) }
+                    .listStyle(.sidebar)
+            } else if visibleGroups.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.tertiary)
+                    Text("No downloaded volumes.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 @Bindable var store = store
                 List(selection: $store.selectedVolumeID) {
-                    let localIDs      = store.localVolumeIDs
-                    let localVolumes  = sorted.filter {  localIDs.contains($0.id) }
-                    let remoteVolumes = sorted.filter { !localIDs.contains($0.id) }
-
-                    if !localVolumes.isEmpty && store.searchText.isEmpty {
-                        Section {
-                            ForEach(localVolumes) { info in
-                                VolumeRow(info: info)
-                                    .tag(info.id)
-                                    .contextMenu { volumeContextMenu(info) }
-                            }
-                        } header: {
-                            Label("Downloaded", systemImage: "checkmark.circle.fill")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(Color.frusRuby)
-                        }
-                    }
-
-                    let displayVolumes = store.searchText.isEmpty ? remoteVolumes : sorted
-                    if !displayVolumes.isEmpty {
-                        Section {
-                            ForEach(displayVolumes) { info in
-                                VolumeRow(info: info)
-                                    .tag(info.id)
-                                    .contextMenu { volumeContextMenu(info) }
-                            }
-                        } header: {
-                            if !localVolumes.isEmpty && store.searchText.isEmpty {
-                                Text("All Volumes")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-
-                    if sorted.isEmpty {
-                        ContentUnavailableView.search(text: store.searchText)
+                    ForEach(visibleGroups) { group in
+                        subseriesDisclosureGroup(group)
                     }
                 }
                 .listStyle(.sidebar)
@@ -240,11 +286,55 @@ struct CatalogueView: View {
         }
     }
 
-    // MARK: - Offline section
+    // MARK: - Subseries disclosure group
+
+    @ViewBuilder
+    private func subseriesDisclosureGroup(_ group: SubseriesGroup) -> some View {
+        let downloadedCount = group.volumes.filter {
+            store.localVolumeIDs.contains($0.id)
+        }.count
+        let pending = group.volumes.filter { info in
+            if case .notDownloaded = store.downloadState(for: info.id) { return true }
+            if case .failed = store.downloadState(for: info.id) { return true }
+            return false
+        }
+
+        DisclosureGroup(isExpanded: expansionBinding(for: group.prefix)) {
+            ForEach(group.volumes) { info in
+                VolumeRow(info: info)
+                    .tag(info.id)
+                    .contextMenu { volumeContextMenu(info) }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(group.prefix)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.primary)
+                Text("(\(downloadedCount)/\(group.volumes.count))")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if !pending.isEmpty && store.isOnline {
+                    Button {
+                        store.downloadSubseries(pending)
+                    } label: {
+                        Image(systemName: "arrow.down.circle")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Download \(pending.count) remaining volume\(pending.count == 1 ? "" : "s") in \(group.prefix)")
+                }
+            }
+        }
+    }
+
+    // MARK: - Offline section (grouped by subseries)
 
     @ViewBuilder
     private var offlineSection: some View {
-        if store.localVolumeIDs.isEmpty {
+        let localIDs = store.localVolumeIDs.sorted()
+        if localIDs.isEmpty {
             VStack(spacing: 18) {
                 Image(systemName: store.isOnline ? "arrow.down.circle" : "wifi.slash")
                     .font(.system(size: 40))
@@ -259,17 +349,33 @@ struct CatalogueView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
+            let groups = groupOfflineBySubseries(localIDs)
             @Bindable var store = store
             List(selection: $store.selectedVolumeID) {
-                Section {
-                    ForEach(store.localVolumeIDs.sorted(), id: \.self) { volumeID in
-                        OfflineVolumeRow(volumeID: volumeID)
-                            .tag(volumeID)
+                ForEach(groups, id: \.prefix) { group in
+                    if group.ids.count == 1, let only = group.ids.first {
+                        OfflineVolumeRow(volumeID: only)
+                            .tag(only)
+                    } else {
+                        DisclosureGroup(isExpanded: expansionBinding(for: group.prefix)) {
+                            ForEach(group.ids, id: \.self) { vid in
+                                OfflineVolumeRow(volumeID: vid)
+                                    .tag(vid)
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.frusRuby)
+                                Text(group.prefix)
+                                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                Text("(\(group.ids.count))")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                        }
                     }
-                } header: {
-                    Label("Downloaded", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.frusRuby)
                 }
             }
             .listStyle(.sidebar)
@@ -300,10 +406,16 @@ struct CatalogueView: View {
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        // Download All button
+        ToolbarItem(placement: .secondaryAction) {
+            Toggle(isOn: $hideUndownloaded) {
+                Label("Downloaded Only", systemImage: "arrow.down.circle.fill")
+            }
+            .toggleStyle(.button)
+            .help(hideUndownloaded ? "Showing downloaded volumes only — click to show all" : "Show downloaded volumes only")
+        }
+
         ToolbarItem(placement: .secondaryAction) {
             if bulk.isActive {
-                // While downloading: show aggregate progress + cancel
                 Button {
                     store.cancelAllDownloads()
                 } label: {
@@ -325,7 +437,6 @@ struct CatalogueView: View {
             }
         }
 
-        // Refresh catalogue
         ToolbarItem(placement: .primaryAction) {
             Button {
                 Task { await store.loadCatalogue() }
@@ -349,7 +460,6 @@ struct VolumeRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // State icon — larger for easier scanning
             stateIcon
                 .frame(width: 22, height: 22)
 
@@ -382,7 +492,6 @@ struct VolumeRow: View {
 
             Spacer()
 
-            // Action button — larger touch target
             actionButton
                 .frame(width: 32, height: 32)
                 .contentShape(Rectangle())

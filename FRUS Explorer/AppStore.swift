@@ -291,6 +291,11 @@ final class AppStore {
         }
     }
 
+    /// Downloads a specific list of volumes (e.g. all pending volumes in a subseries).
+    func downloadSubseries(_ volumes: [FRUSVolumeInfo]) {
+        for info in volumes { download(info) }
+    }
+
     /// Cancels every in-progress download.
     func cancelAllDownloads() {
         for (id, state) in downloadStates {
@@ -576,67 +581,88 @@ final class AppStore {
     /// Re-builds the search index for every locally downloaded volume.
     /// Volumes already loaded in memory are re-indexed from their in-memory data;
     /// downloaded-but-unloaded volumes are parsed from disk.
+    /// Up to `maxConcurrentDownloads` volumes are processed in parallel.
     /// Does NOT change `selectedVolumeID`.
     func reindexAllDownloadedVolumes() async {
         guard !isReindexingAll else { return }
         let ids = localVolumeIDs.sorted()
         guard !ids.isEmpty else { return }
         isReindexingAll = true
-        reindexAllProgress = (0, ids.count)
+        let total = ids.count
+        reindexAllProgress = (0, total)
         defer {
             isReindexingAll = false
             reindexAllProgress = (0, 0)
         }
 
-        for (index, id) in ids.enumerated() {
-            reindexAllProgress = (index, ids.count)
-            // Load the per-volume subject map (same for both in-memory and on-disk paths).
-            let subjectMap: [String: [String]] = await Task.detached(priority: .utility) {
-                guard let subjectURL = Bundle.main.url(
-                    forResource: "subjects-\(id)", withExtension: "json"
-                ),
-                let data = try? Data(contentsOf: subjectURL),
-                let decoded = try? JSONDecoder().decode([String: [String]].self, from: data)
-                else { return [:] }
-                return decoded
-            }.value
-
-            if let loaded = loadedVolumes[id] {
-                let vol = loaded.volume
-                let recs = await Task.detached(priority: .userInitiated) {
-                    SearchIndexBuilder.build(from: vol, volumeID: id, subjects: subjectMap)
-                }.value
-                await searchEngine.addIndex(volumeID: id, records: recs)
-                taxonomyStore?.storeVolumeSubjects(subjectMap, volumeID: id)
-            } else {
-                let fileURL = downloadDirectory.appending(component: "\(id).xml")
-                guard FileManager.default.fileExists(atPath: fileURL.path) else { continue }
-                let info = catalogue.first(where: { $0.id == id }) ?? FRUSVolumeInfo(
-                    id: id, size: 0, sha: "",
-                    downloadURL: URL(string: "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(id).xml")!
-                )
-                downloadStates[id] = .parsing
-                do {
-                    let (volume, records) = try await Task.detached(priority: .userInitiated) {
-                        let v = try FRUSParser().parse(url: fileURL)
-                        let r = SearchIndexBuilder.build(from: v, volumeID: id, subjects: subjectMap)
-                        return (v, r)
-                    }.value
-                    loadedVolumes[id] = LoadedVolume(info: info, volume: volume)
-                    downloadStates[id] = .ready
-                    volumeTitleCache[id] = VolumeTitleCache(
-                        seriesTitle: volume.seriesTitle,
-                        volumeTitle: volume.volumeTitle
-                    )
-                    await searchEngine.addIndex(volumeID: id, records: records)
-                    taxonomyStore?.storeVolumeSubjects(subjectMap, volumeID: id)
-                } catch {
-                    downloadStates[id] = .downloaded(localURL: fileURL)
+        let limit = maxConcurrentDownloads
+        await withTaskGroup(of: Void.self) { group in
+            var inFlight = 0
+            var done = 0
+            for id in ids {
+                if inFlight >= limit {
+                    _ = await group.next()
+                    done += 1
+                    reindexAllProgress = (done, total)
+                    inFlight -= 1
                 }
+                group.addTask { [self] in await self.loadAndIndexVolume(id) }
+                inFlight += 1
+            }
+            for await _ in group {
+                done += 1
+                reindexAllProgress = (done, total)
             }
         }
+
         saveTitleCache()
-        reindexAllProgress = (ids.count, ids.count)
+        reindexAllProgress = (total, total)
+    }
+
+    private func loadAndIndexVolume(_ id: String) async {
+        let subjectMap: [String: [String]] = await Task.detached(priority: .utility) {
+            guard let subjectURL = Bundle.main.url(
+                forResource: "subjects-\(id)", withExtension: "json"
+            ),
+            let data = try? Data(contentsOf: subjectURL),
+            let decoded = try? JSONDecoder().decode([String: [String]].self, from: data)
+            else { return [:] }
+            return decoded
+        }.value
+
+        if let loaded = loadedVolumes[id] {
+            let vol = loaded.volume
+            let recs = await Task.detached(priority: .userInitiated) {
+                SearchIndexBuilder.build(from: vol, volumeID: id, subjects: subjectMap)
+            }.value
+            await searchEngine.addIndex(volumeID: id, records: recs)
+            taxonomyStore?.storeVolumeSubjects(subjectMap, volumeID: id)
+        } else {
+            let fileURL = downloadDirectory.appending(component: "\(id).xml")
+            guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+            let info = catalogue.first(where: { $0.id == id }) ?? FRUSVolumeInfo(
+                id: id, size: 0, sha: "",
+                downloadURL: URL(string: "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(id).xml")!
+            )
+            downloadStates[id] = .parsing
+            do {
+                let (volume, records) = try await Task.detached(priority: .userInitiated) {
+                    let v = try FRUSParser().parse(url: fileURL)
+                    let r = SearchIndexBuilder.build(from: v, volumeID: id, subjects: subjectMap)
+                    return (v, r)
+                }.value
+                loadedVolumes[id] = LoadedVolume(info: info, volume: volume)
+                downloadStates[id] = .ready
+                volumeTitleCache[id] = VolumeTitleCache(
+                    seriesTitle: volume.seriesTitle,
+                    volumeTitle: volume.volumeTitle
+                )
+                await searchEngine.addIndex(volumeID: id, records: records)
+                taxonomyStore?.storeVolumeSubjects(subjectMap, volumeID: id)
+            } catch {
+                downloadStates[id] = .downloaded(localURL: fileURL)
+            }
+        }
     }
 
     /// Evict all parsed volumes from memory; their download state reverts to `.downloaded`
