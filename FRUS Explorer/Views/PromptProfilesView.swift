@@ -340,7 +340,7 @@ struct ProfileDetailView: View {
             // Emphasis instruction — the core prompt text
             fieldBlock(
                 label: "Emphasis Instruction",
-                help: "This text is injected directly into the model prompt. Write in second-person imperative addressed to the model. Be specific about what to emphasise, what to note, and what to omit. Avoid vague instructions like "focus on important things"."
+                help: "This text is injected directly into the model prompt. Write in second-person imperative addressed to the model. Be specific about what to emphasise, what to note, and what to omit. Avoid vague instructions like \"focus on important things\"."
             ) {
                 if canEdit {
                     TextEditor(text: $draft.emphasisInstruction)
@@ -391,7 +391,7 @@ struct ProfileDetailView: View {
             if draft.outputFormat == .structuredFields {
                 fieldBlock(
                     label: "Custom Field Label",
-                    help: "The label for the research-focus field in the structured output, e.g. "Bureaucratic actors" or "Intelligence dimension"."
+                    help: "The label for the research-focus field in the structured output, e.g. \"Bureaucratic actors\" or \"Intelligence dimension\"."
                 ) {
                     if canEdit {
                         TextField("e.g. Bureaucratic actors", text: $draft.focusLabel)

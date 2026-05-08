@@ -78,7 +78,7 @@ struct SearchView: View {
             } label: {
                 Image(systemName: hasDateFilter ? "calendar.badge.checkmark" : "calendar")
                     .font(.system(size: 13))
-                    .foregroundStyle(hasDateFilter ? .accent : .secondary)
+                    .foregroundStyle(hasDateFilter ? Color.accentColor : .secondary)
             }
             .buttonStyle(.plain)
             .help("Filter by date range")
@@ -117,7 +117,7 @@ struct SearchView: View {
                         triggerSearch()
                     }
                     .font(.system(size: 11))
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor)
                     .buttonStyle(.plain)
                 }
             }
@@ -578,7 +578,7 @@ struct SubjectPickerSheet: View {
             HStack(spacing: 10) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 16))
-                    .foregroundStyle(isSelected ? Color.frusRuby : .tertiary)
+                    .foregroundStyle(isSelected ? Color.frusRuby : Color.frusAmber)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(subject.name)

@@ -407,7 +407,7 @@ struct VolumeRow: View {
         case .ready:
             Image(systemName: "book.fill")
                 .font(.system(size: 18))
-                .foregroundStyle(.accent)
+                .foregroundStyle(Color.accentColor)
         case .failed:
             Image(systemName: "exclamationmark.circle.fill")
                 .font(.system(size: 18))
@@ -423,7 +423,7 @@ struct VolumeRow: View {
             } label: {
                 Image(systemName: "arrow.down.circle")
                     .font(.system(size: 20))
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor)
             }
             .buttonStyle(.plain)
             .help("Download \(info.id)")
@@ -445,7 +445,7 @@ struct VolumeRow: View {
             } label: {
                 Image(systemName: "doc.text.magnifyingglass")
                     .font(.system(size: 20))
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor)
             }
             .buttonStyle(.plain)
             .help("Explore \(info.id)")
@@ -456,7 +456,7 @@ struct VolumeRow: View {
             } label: {
                 Image(systemName: "chevron.right.circle.fill")
                     .font(.system(size: 20))
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor)
             }
             .buttonStyle(.plain)
             .help("View \(info.id)")

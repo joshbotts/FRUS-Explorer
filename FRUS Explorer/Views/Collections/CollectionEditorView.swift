@@ -163,7 +163,7 @@ struct CollectionEditorView: View {
                     ContentUnavailableView(
                         "Empty Collection",
                         systemImage: "plus.rectangle.on.rectangle",
-                        description: Text("Right-click a document in the outline view and choose "Add to Collection".")
+                        description: Text("Right-click a document in the outline view and choose \"Add to Collection\".")
                     )
                 }
             }
@@ -414,7 +414,7 @@ private struct CollectionItemDetailView: View {
                 .frame(minHeight: 90)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.quaternary, lineWidth: 1)
+                        .stroke(Color.black, lineWidth: 1)
                 )
                 .onChange(of: annotationText) { _, _ in dirty = true }
 
