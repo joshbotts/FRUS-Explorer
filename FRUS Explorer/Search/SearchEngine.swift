@@ -17,7 +17,6 @@
 //   before:1970-01-01          – documents before this date
 
 import Foundation
-import FRUSKit
 
 // MARK: - SearchRecord
 

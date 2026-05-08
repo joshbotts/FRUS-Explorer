@@ -4,7 +4,6 @@
 
 import Foundation
 import Observation
-import FRUSKit
 
 // MARK: - CollectionItem
 

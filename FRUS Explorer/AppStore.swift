@@ -4,7 +4,6 @@
 import Foundation
 import Observation
 import Network
-import FRUSKit
 
 // MARK: - Download state per volume
 
