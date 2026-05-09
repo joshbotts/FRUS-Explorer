@@ -2,15 +2,15 @@
 //
 // Renders a DocumentCollection to a PDF and saves or shares it:
 //
-//   macOS  — NSPrintOperation with NSPrintInfo drives pagination (letter size,
-//            1-inch margins). NSSavePanel lets the user pick a save location.
+//   macOS  — WKWebView.createPDF() drives PDF generation directly through
+//            WebKit. The HTML's @page { size: 8.5in 11in; margin: 1in } CSS
+//            rule controls pagination. NSSavePanel lets the user pick a save
+//            location. This approach requires no print entitlement and is
+//            fully sandboxed — NSPrintOperation is NOT used because it requires
+//            access to the print daemon (printd) which is blocked by the
+//            sandbox, causing a crash.
 //   iPadOS — UIPrintPageRenderer with viewPrintFormatter() drives pagination.
 //            UIActivityViewController presents the system share sheet.
-//
-// WKWebView.createPDF() is NOT used: it captures the web view's scrollable
-// content as a single continuous surface rather than paginating into pages.
-// The print pipeline (NSPrintOperation / UIPrintPageRenderer) is the correct
-// API for producing properly paginated letter-size PDFs.
 
 import Foundation
 import WebKit
@@ -113,70 +113,32 @@ private final class Coordinator: NSObject, WKNavigationDelegate {
     }
 
     private func generatePDF(from webView: WKWebView) {
+#if os(macOS)
+        // macOS: WKWebView.createPDF() is the sandboxed path — it talks directly
+        // to the WebContent process and needs no print entitlement. The HTML's
+        // @page { size: 8.5in 11in; margin: 1in } CSS rule tells WebKit the paper
+        // dimensions, so the resulting PDF is paginated to US letter.
+        //
+        // NSPrintOperation is intentionally avoided: it requires the print daemon
+        // (printd / printToolAgent) which is blocked by the app sandbox, causing
+        // an immediate crash with "frame not initialized" from WKPrintingView.
+        let config = WKPDFConfiguration()
+        webView.createPDF(configuration: config) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let data):
+                self.continuation.resume(returning: data)
+            case .failure(let error):
+                self.continuation.resume(throwing: PDFExportError.renderFailed(
+                    error.localizedDescription))
+            }
+        }
+
+#else
         let ptPerIn: CGFloat = 72          // PDF point = 1/72 inch
         let pageW:   CGFloat = 8.5 * ptPerIn   // 612 pt
         let pageH:   CGFloat = 11.0 * ptPerIn  // 792 pt
         let margin:  CGFloat = 1.0 * ptPerIn   //  72 pt
-
-#if os(macOS)
-        // macOS: drive pagination through NSPrintOperation, which honours
-        // paper size / margins from NSPrintInfo and produces a real multi-page PDF.
-        //
-        // NSPrintOperation requires the web view to be embedded in a window.
-        // Create a temporary off-screen window so that printOperation(with:)
-        // has a valid window context — without one the call crashes.
-        let offscreenWindow = NSWindow(
-            contentRect: NSRect(x: -16000, y: -16000, width: 624, height: 1056),
-            styleMask: [],
-            backing: .buffered,
-            defer: false
-        )
-        offscreenWindow.isReleasedWhenClosed = false
-        offscreenWindow.contentView = webView
-
-        let printInfo = NSPrintInfo()
-        printInfo.paperSize    = NSSize(width: pageW, height: pageH)
-        printInfo.orientation  = .portrait
-        printInfo.topMargin    = margin
-        printInfo.bottomMargin = margin
-        printInfo.leftMargin   = margin
-        printInfo.rightMargin  = margin
-        printInfo.isHorizontallyCentered = false
-        printInfo.isVerticallyCentered   = false
-        printInfo.horizontalPagination   = .fit
-        printInfo.verticalPagination     = .automatic
-        printInfo.jobDisposition         = .save
-
-        let tempURL = FileManager.default.temporaryDirectory
-            .appending(component: UUID().uuidString + ".pdf")
-        // Use setValue(_:forKey:) with explicit NSURL cast to ensure proper
-        // bridging for the NSPrintInfo save-URL attribute.
-        printInfo.dictionary().setValue(
-            tempURL as NSURL,
-            forKey: NSPrintInfo.AttributeKey.jobSavingURL.rawValue
-        )
-
-        let printOp = webView.printOperation(with: printInfo)
-        printOp.showsPrintPanel    = false
-        printOp.showsProgressPanel = false
-
-        if printOp.run() {
-            offscreenWindow.contentView = nil  // detach before cleanup
-            do {
-                let data = try Data(contentsOf: tempURL)
-                try? FileManager.default.removeItem(at: tempURL)
-                continuation.resume(returning: data)
-            } catch {
-                continuation.resume(throwing: PDFExportError.renderFailed(
-                    "Could not read output PDF: \(error.localizedDescription)"))
-            }
-        } else {
-            offscreenWindow.contentView = nil
-            continuation.resume(throwing: PDFExportError.renderFailed(
-                "NSPrintOperation returned failure"))
-        }
-
-#else
         // iPadOS: UIPrintPageRenderer with viewPrintFormatter() properly
         // paginates the web view's content into letter-size pages.
         let paperRect     = CGRect(origin: .zero, size: CGSize(width: pageW, height: pageH))
