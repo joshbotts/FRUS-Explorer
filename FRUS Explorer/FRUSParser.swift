@@ -146,6 +146,9 @@ private final class ParserDelegate: NSObject, @preconcurrency XMLParserDelegate 
     // the item content arrays are already captured here, indexed by the sentinel
     // stored in the parent's inline accumulator.
     private var pendingListItemContents: [[InlineContent]] = []
+    // Staging buffer for <label> elements in gloss lists.
+    // Each entry pairs the label's xml:id (if any) with its rendered content.
+    private var pendingLabels: [(id: String?, content: [InlineContent])] = []
     private var pendingRowContents: [[InlineContent]] = []
     private var pendingRowRoles: [String?] = []
     private var pendingCellContents: [[InlineContent]] = []
@@ -276,6 +279,9 @@ private final class ParserDelegate: NSObject, @preconcurrency XMLParserDelegate 
             pushInline(attrs: attrs)
 
         case "list":
+            pushInline(attrs: attrs)
+
+        case "label":
             pushInline(attrs: attrs)
 
         case "item":
@@ -540,7 +546,22 @@ private final class ParserDelegate: NSObject, @preconcurrency XMLParserDelegate 
             guard let inline = popInline() else { return }
             let items = extractListItems(from: inline.content)
             let list = XMLList(type: attrs["type"], items: items)
-            appendToCurrentInline(.list(list))
+            if inlineStack.isEmpty && !divStack.isEmpty {
+                // Direct <div> child (e.g. Terms & Abbreviations section lists) —
+                // wrap in a synthetic paragraph so it renders in DocumentBodyBlock.
+                divStack[divStack.count - 1].paragraphs.append(
+                    Paragraph(id: nil, rend: nil, content: [.list(list)])
+                )
+            } else {
+                appendToCurrentInline(.list(list))
+            }
+
+        case "label":
+            // <label> is the abbreviation half of a gloss-list pair (<label>/<item>).
+            guard let inline = popInline() else { return }
+            pendingLabels.append((id: xmlID(attrs), content: inline.content))
+            let labelIdx = pendingLabels.count - 1
+            appendToCurrentInline(.unknown(elementName: "__label__", rawContent: "\(labelIdx)"))
 
         case "item":
             guard let inline = popInline() else { return }
@@ -784,15 +805,29 @@ private final class ParserDelegate: NSObject, @preconcurrency XMLParserDelegate 
     }
 
     private func extractListItems(from content: [InlineContent]) -> [ListItem] {
-        content.compactMap { item -> ListItem? in
-            if case .unknown(let name, let rawContent) = item, name == "__item__" {
-                if let idx = Int(rawContent), idx < pendingListItemContents.count {
-                    return ListItem(content: pendingListItemContents[idx])
+        var result: [ListItem] = []
+        var pendingLabel: (id: String?, text: String)? = nil
+        for item in content {
+            guard case .unknown(let name, let rawContent) = item else { continue }
+            if name == "__label__" {
+                if let idx = Int(rawContent), idx < pendingLabels.count {
+                    let entry = pendingLabels[idx]
+                    pendingLabel = (id: entry.id, text: plainText(from: entry.content))
                 }
-                return ListItem(content: [.text(rawContent)])
+            } else if name == "__item__" {
+                if let idx = Int(rawContent), idx < pendingListItemContents.count {
+                    result.append(ListItem(
+                        content: pendingListItemContents[idx],
+                        label: pendingLabel?.text,
+                        labelID: pendingLabel?.id
+                    ))
+                } else {
+                    result.append(ListItem(content: [.text(rawContent)], label: pendingLabel?.text, labelID: pendingLabel?.id))
+                }
+                pendingLabel = nil
             }
-            return nil
         }
+        return result
     }
 
     private func extractTableRows(from content: [InlineContent]) -> [TableRow] {

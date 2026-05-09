@@ -62,12 +62,29 @@ struct DetailView: View {
 
 // MARK: - DocumentDetailView
 
+// MARK: - DocumentDetailView helpers
+
+private struct IdentifiedNote: Identifiable {
+    let id: Int  // 1-based footnote position
+    let note: Note
+}
+private struct RefID: Identifiable {
+    let id: String
+}
+
 struct DocumentDetailView: View {
     @Environment(AppStore.self) private var store: AppStore
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
     @Environment(TaxonomyStore.self) private var taxonomyStore: TaxonomyStore
     let volume: LoadedVolume
     let division: Division
+
+    @State private var tappedFootnote: IdentifiedNote?
+    @State private var tappedPersonRef: RefID?
+    @State private var tappedTermRef: RefID?
+
+    private var footnotes: [Note] { FRUSRenderer.collectFootnotes(from: division) }
+
     var backgroundColor: Color {
 #if os(macOS)
         return Color(NSColor.textBackgroundColor)
@@ -106,6 +123,45 @@ struct DocumentDetailView: View {
         .background(self.backgroundColor)
         .toolbar { detailToolbar }
         .task(id: division.id) { store.summarise(division, volumeID: volume.id) }
+        .environment(\.openURL, OpenURLAction { url in
+            guard url.scheme == "frus", let host = url.host else { return .systemAction }
+            switch host {
+            case "footnote":
+                // lastPathComponent is the 1-based index or @n value
+                let parts = url.pathComponents.filter { $0 != "/" }
+                let key = parts.first ?? ""
+                let notes = footnotes
+                if let n = Int(key), n >= 1, n <= notes.count {
+                    tappedFootnote = IdentifiedNote(id: n, note: notes[n - 1])
+                } else if let idx = notes.firstIndex(where: { $0.n == key }) {
+                    tappedFootnote = IdentifiedNote(id: idx + 1, note: notes[idx])
+                }
+            case "person":
+                let parts = url.pathComponents.filter { $0 != "/" }
+                if let ref = parts.first, !ref.isEmpty { tappedPersonRef = RefID(id: ref) }
+            case "term":
+                let parts = url.pathComponents.filter { $0 != "/" }
+                if let ref = parts.first, !ref.isEmpty { tappedTermRef = RefID(id: ref) }
+            case "doc":
+                let parts = url.pathComponents.filter { $0 != "/" }
+                if parts.count >= 2 {
+                    let volID = parts[0] == "__current__" ? volume.id : parts[0]
+                    store.navigate(to: parts[1], in: volID)
+                }
+            default:
+                return .systemAction
+            }
+            return .handled
+        })
+        .sheet(item: $tappedFootnote) { item in
+            FootnoteDetailSheet(note: item.note)
+        }
+        .sheet(item: $tappedPersonRef) { item in
+            PersonDetailSheet(ref: item.id, volume: volume.volume)
+        }
+        .sheet(item: $tappedTermRef) { item in
+            TermDetailSheet(ref: item.id, volume: volume.volume)
+        }
     }
 
     // MARK: - Toolbar
@@ -220,7 +276,7 @@ struct FRUSDocumentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            DocumentHeaderBlock(division: division, volumeID: volumeID)
+            DocumentHeaderBlock(division: division, volumeID: volumeID, footnotes: footnotes)
             DocumentBodyBlock(division: division, footnotes: footnotes, depth: 0)
                 .padding(.top, 14)
             if !footnotes.isEmpty {
@@ -238,6 +294,7 @@ struct FRUSDocumentView: View {
 struct DocumentHeaderBlock: View {
     let division: Division
     let volumeID: String
+    let footnotes: [Note]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -260,7 +317,7 @@ struct DocumentHeaderBlock: View {
 
             // All headings: first = type (largest), subsequent = subject
             ForEach(Array(division.headings.enumerated()), id: \.offset) { idx, heading in
-                Text(FRUSRenderer.attributedString(heading.content))
+                Text(FRUSRenderer.attributedString(heading.content, footnotes: footnotes))
                     .font(idx == 0
                           ? .system(size: 18, weight: .bold, design: .serif)
                           : .system(size: 14, weight: .semibold, design: .serif))
@@ -445,8 +502,38 @@ struct ListBlock: View {
     let footnotes: [Note]
 
     private var isOrdered: Bool { list.type == "ordered" || list.type == "ol" }
+    private var isGloss: Bool   { list.type == "gloss" }
 
     var body: some View {
+        if isGloss {
+            glossLayout
+        } else {
+            bulletLayout
+        }
+    }
+
+    // Two-column: bold monospaced abbreviation | serif definition
+    private var glossLayout: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(list.items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 12) {
+                    if let label = item.label {
+                        Text(label)
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .frame(minWidth: 52, maxWidth: 88, alignment: .leading)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                    Text(FRUSRenderer.attributedString(item.content, footnotes: footnotes))
+                        .font(.system(size: 13, design: .serif))
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(.leading, 8)
+    }
+
+    private var bulletLayout: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(list.items.enumerated()), id: \.offset) { idx, item in
                 HStack(alignment: .top, spacing: 8) {
@@ -607,6 +694,10 @@ enum FRUSRenderer {
         for note in div.notes where isCollectableNote(note) {
             result.append(note)
         }
+        // Notes embedded in headings (some volumes put <note type="source"> inside <head>).
+        for heading in div.headings {
+            collectInlineNotes(from: heading.content, into: &result)
+        }
         // Inline notes within paragraphs
         for para in div.paragraphs {
             collectInlineNotes(from: para.content, into: &result)
@@ -694,7 +785,15 @@ enum FRUSRenderer {
             return AttributedString(normalizeWhitespace(s))
 
         case .persName(let p):
-            return AttributedString(p.text)
+            var a = AttributedString(p.text)
+            if let ref = p.ref, !ref.isEmpty {
+                let refID = ref.hasPrefix("#") ? String(ref.dropFirst()) : ref
+                if let url = URL(string: "frus://person/\(refID)") {
+                    a.link = url
+                    a.foregroundColor = .init(.systemTeal)
+                }
+            }
+            return a
 
         case .placeName(let p):
             return AttributedString(p.text)
@@ -707,8 +806,26 @@ enum FRUSRenderer {
 
         case .ref(let r):
             var a = AttributedString(r.text)
-            if let target = r.target, target.hasPrefix("http"), let url = URL(string: target) {
-                a.link = url
+            if let target = r.target {
+                if target.hasPrefix("http"), let url = URL(string: target) {
+                    // External URL — open in system browser.
+                    a.link = url
+                } else if target.hasPrefix("#") {
+                    // Same-volume document: #d337
+                    let docID = String(target.dropFirst())
+                    if let url = URL(string: "frus://doc/__current__/\(docID)") {
+                        a.link = url
+                        a.foregroundColor = .init(.systemBlue)
+                    }
+                } else if target.contains("#") {
+                    // Cross-volume: frus1964-68v02#d337
+                    let parts = target.split(separator: "#", maxSplits: 1)
+                    if parts.count == 2,
+                       let url = URL(string: "frus://doc/\(parts[0])/\(parts[1])") {
+                        a.link = url
+                        a.foregroundColor = .init(.systemBlue)
+                    }
+                }
             }
             return a
 
@@ -735,16 +852,28 @@ enum FRUSRenderer {
         case .term(let t):
             var a = AttributedString(t.text)
             a.font = .system(size: 13, design: .serif).italic()
+            if let ref = t.ref, !ref.isEmpty {
+                let refID = ref.hasPrefix("#") ? String(ref.dropFirst()) : ref
+                if let url = URL(string: "frus://term/\(refID)") {
+                    a.link = url
+                    a.foregroundColor = .init(.systemPurple)
+                }
+            }
             return a
 
         case .note(let n):
             // Render as superscript marker — look up in collected footnotes for
             // a stable sequential number; fall back to @n attribute.
+            // Encodes the position as a frus://footnote/<n> link so tapping
+            // opens a sheet with the full note text.
             let marker: String
+            var linkURL: URL? = nil
             if let idx = footnotes.firstIndex(where: { $0.id == n.id && n.id != nil }) {
                 marker = "\(idx + 1)"
+                linkURL = URL(string: "frus://footnote/\(idx + 1)")
             } else if let nVal = n.n {
                 marker = nVal
+                linkURL = URL(string: "frus://footnote/\(nVal)")
             } else {
                 marker = "†"
             }
@@ -752,6 +881,7 @@ enum FRUSRenderer {
             a.font = .system(size: 9)
             a.baselineOffset = 4
             a.foregroundColor = .init(.systemOrange)
+            if let url = linkURL { a.link = url }
             return a
 
         case .pageBreak(let pb):

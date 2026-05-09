@@ -543,6 +543,19 @@ final class AppStore {
         await parseVolume(id: id, url: fileURL, info: info)
     }
 
+    // MARK: - In-app navigation
+
+    /// Navigates to a document by division ID inside any volume.
+    /// If the target volume is downloaded but not yet in memory, loads it first.
+    func navigate(to divisionID: String, in targetVolumeID: String) {
+        let nodeID = "\(targetVolumeID)__\(divisionID)"
+        selectedVolumeID = targetVolumeID
+        selectedNodeID = nodeID
+        if loadedVolumes[targetVolumeID] == nil {
+            Task { await loadVolumeByID(targetVolumeID) }
+        }
+    }
+
     // MARK: - Delete local file
 
     func deleteVolume(_ id: String) {

@@ -405,6 +405,10 @@ public struct XMLList: Sendable {
 /// `<item>` inside a `<list>`.
 public struct ListItem: Sendable {
     public let content: [InlineContent]
+    /// Text of the paired `<label>` element in a gloss list. Nil for non-gloss lists.
+    public let label: String?
+    /// `@xml:id` of the `<label>` element — used to resolve `<term ref="...">` pointers.
+    public let labelID: String?
 }
 
 /// `<table>` — a table.
