@@ -128,7 +128,7 @@ public extension Array where Element == Division {
 
 extension String {
     /// Collapses XML formatting whitespace (newlines, tabs, runs of spaces) to single spaces.
-    func xmlWhitespaceCollapsed() -> String {
+    nonisolated func xmlWhitespaceCollapsed() -> String {
         var r = self
         for c in ["\n", "\r", "\t"] { r = r.replacingOccurrences(of: c, with: " ") }
         while r.contains("  ") { r = r.replacingOccurrences(of: "  ", with: " ") }
@@ -138,7 +138,7 @@ extension String {
 
 // MARK: - Private Helpers (file-scope)
 
-func plainText(from content: [InlineContent]) -> String {
+nonisolated func plainText(from content: [InlineContent]) -> String {
     content.map { item -> String in
         switch item {
         case .text(let s):

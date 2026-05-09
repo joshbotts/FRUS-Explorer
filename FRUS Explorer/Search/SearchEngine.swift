@@ -18,52 +18,9 @@
 
 import Foundation
 
-// MARK: - SearchRecord
-
-/// One indexed, searchable unit — a document-level or section division.
-struct SearchRecord: Identifiable, Sendable {
-    /// Matches OutlineNode.id format: "\(volumeID)__\(divisionID)"
-    let id: String
-    let volumeID: String
-    let divisionID: String
-
-    let title: String
-    let dateline: String?
-    let isEditorialNote: Bool
-
-    /// ISO-format date from the first <date> in the dateline.
-    /// Sourced from @when (exact) or @from/@notBefore (range start).
-    /// May be partial: "1969", "1969-03", or "1969-03-15".
-    let isoDate: String?
-
-    /// ISO-format end date for documents that span a range (@to / @notAfter).
-    /// Nil for point-in-time documents.
-    let isoDateEnd: String?
-
-    /// Lowercased, whitespace-normalised concatenation of all body paragraphs.
-    let normalizedBody: String
-
-    // Structured entities extracted from TEI markup
-    let personNames: [String]   // lowercased, de-duped
-    let placeNames:  [String]
-    let orgNames:    [String]
-    let terms:       [String]   // diplomatic terms and abbreviations
-
-    /// Subject taxonomy IDs assigned to this document by the FRUS subject index.
-    let subjectIDs: [String]
-}
-
-// MARK: - SearchResult
-
-struct SearchResult: Identifiable, Sendable {
-    let id: String              // same as SearchRecord.id
-    let record: SearchRecord
-    let matchedFields: Set<MatchField>
-
-    enum MatchField: Hashable, Sendable {
-        case title, body, person, place, org, term, summary, annotation, date, subject
-    }
-}
+// SearchRecord and SearchResult (including MatchField) are defined in
+// Search/SearchResult.swift — a Foundation-only file — to prevent @MainActor
+// inference from tainting their Hashable conformances.
 
 // MARK: - DateFilter
 
@@ -74,7 +31,7 @@ struct DateFilter: Sendable {
         case yearMonth(Int, Int)
         case full(Int, Int, Int)
 
-        var prefix: String {
+        nonisolated var prefix: String {
             switch self {
             case .year(let y):               return String(format: "%04d", y)
             case .yearMonth(let y, let m):   return String(format: "%04d-%02d", y, m)
@@ -86,7 +43,7 @@ struct DateFilter: Sendable {
     var from: Bound?
     var to: Bound?
 
-    var isEmpty: Bool { from == nil && to == nil }
+    nonisolated var isEmpty: Bool { from == nil && to == nil }
 
     /// Returns true when the document's date or date range overlaps this filter.
     ///
@@ -95,7 +52,7 @@ struct DateFilter: Sendable {
     ///
     /// For point-in-time documents (isoDateEnd == nil) this reduces to the
     /// original single-date containment check.
-    func matches(isoDate: String?, isoDateEnd: String? = nil) -> Bool {
+    nonisolated func matches(isoDate: String?, isoDateEnd: String? = nil) -> Bool {
         guard let isoDate, !isoDate.isEmpty else { return false }
         // For range documents use the end date; fall back to the start date
         // so point-in-time documents behave identically to before.
@@ -135,9 +92,10 @@ indirect enum SearchPredicate: Sendable {
 
 // MARK: - Query parser
 
+// nonisolated: pure algorithm with no shared mutable state; safe to call from any actor context.
 enum SearchQueryParser {
 
-    static func parse(_ input: String) -> SearchPredicate? {
+    nonisolated static func parse(_ input: String) -> SearchPredicate? {
         var tokens = tokenize(input)
         return parseOr(&tokens)
     }
@@ -148,7 +106,7 @@ enum SearchQueryParser {
         case word(String), phrase(String), and, or, not, minus, lparen, rparen, eof
     }
 
-    private static func tokenize(_ input: String) -> [Token] {
+    private nonisolated static func tokenize(_ input: String) -> [Token] {
         var tokens: [Token] = []
         var i = input.startIndex
         while i < input.endIndex {
@@ -182,9 +140,9 @@ enum SearchQueryParser {
 
     // MARK: Recursive descent (OR < AND < NOT < atom)
 
-    private static func peek(_ t: [Token]) -> Token { t.first ?? .eof }
+    private nonisolated static func peek(_ t: [Token]) -> Token { t.first ?? .eof }
 
-    private static func parseOr(_ tokens: inout [Token]) -> SearchPredicate? {
+    private nonisolated static func parseOr(_ tokens: inout [Token]) -> SearchPredicate? {
         guard let left = parseAnd(&tokens) else { return nil }
         var parts = [left]
         while case .or = peek(tokens) {
@@ -194,7 +152,7 @@ enum SearchQueryParser {
         return parts.count == 1 ? parts[0] : .or(parts)
     }
 
-    private static func parseAnd(_ tokens: inout [Token]) -> SearchPredicate? {
+    private nonisolated static func parseAnd(_ tokens: inout [Token]) -> SearchPredicate? {
         guard let left = parseNot(&tokens) else { return nil }
         var parts = [left]
         loop: while true {
@@ -211,7 +169,7 @@ enum SearchQueryParser {
         return parts.count == 1 ? parts[0] : .and(parts)
     }
 
-    private static func parseNot(_ tokens: inout [Token]) -> SearchPredicate? {
+    private nonisolated static func parseNot(_ tokens: inout [Token]) -> SearchPredicate? {
         switch peek(tokens) {
         case .not, .minus:
             tokens.removeFirst()
@@ -221,7 +179,7 @@ enum SearchQueryParser {
         }
     }
 
-    private static func parseAtom(_ tokens: inout [Token]) -> SearchPredicate? {
+    private nonisolated static func parseAtom(_ tokens: inout [Token]) -> SearchPredicate? {
         switch peek(tokens) {
         case .lparen:
             tokens.removeFirst()
@@ -239,7 +197,7 @@ enum SearchQueryParser {
         }
     }
 
-    private static func interpretWord(_ w: String) -> SearchPredicate? {
+    private nonisolated static func interpretWord(_ w: String) -> SearchPredicate? {
         if let colon = w.firstIndex(of: ":") {
             let field = String(w[..<colon]).lowercased()
             let value = String(w[w.index(after: colon)...])
@@ -262,7 +220,7 @@ enum SearchQueryParser {
 
     private enum DateMode { case range, after, before }
 
-    private static func parseDate(_ spec: String, mode: DateMode) -> SearchPredicate? {
+    private nonisolated static func parseDate(_ spec: String, mode: DateMode) -> SearchPredicate? {
         if let r = spec.range(of: "..") {
             var f = DateFilter()
             f.from = parseBound(String(spec[..<r.lowerBound]))
@@ -279,7 +237,7 @@ enum SearchQueryParser {
         return .dateFilter(f)
     }
 
-    private static func parseBound(_ s: String) -> DateFilter.Bound? {
+    private nonisolated static func parseBound(_ s: String) -> DateFilter.Bound? {
         let parts = s.split(separator: "-", omittingEmptySubsequences: false)
         switch parts.count {
         case 1: return Int(parts[0]).map { .year($0) }
@@ -382,7 +340,10 @@ actor SearchEngine {
         record: SearchRecord,
         summary: String?,
         annotation: String?
-    ) -> Set<SearchResult.MatchField>? {
+    // Returns [MatchField] (not Set) to avoid needing Hashable on MatchField from
+    // this actor's non-main-actor context. ForEach(id: \.self) in SwiftUI still
+    // works because that code runs on @MainActor where Hashable is available.
+    ) -> [SearchResult.MatchField]? {
         switch pred {
         case .keyword(let w, let wildcard):
             return matchKeyword(w, wildcard: wildcard,
@@ -397,20 +358,21 @@ actor SearchEngine {
             return evaluate(inner, record: record,
                             summary: summary, annotation: annotation) == nil ? [] : nil
         case .and(let preds):
-            var combined: Set<SearchResult.MatchField> = []
+            var combined: [SearchResult.MatchField] = []
             for p in preds {
                 guard let f = evaluate(p, record: record,
                                        summary: summary, annotation: annotation) else { return nil }
-                combined.formUnion(f)
+                for field in f where !combined.contains(field) { combined.append(field) }
             }
             return combined
         case .or(let preds):
-            var combined: Set<SearchResult.MatchField> = []
+            var combined: [SearchResult.MatchField] = []
             var any = false
             for p in preds {
                 if let f = evaluate(p, record: record,
                                     summary: summary, annotation: annotation) {
-                    combined.formUnion(f); any = true
+                    for field in f where !combined.contains(field) { combined.append(field) }
+                    any = true
                 }
             }
             return any ? combined : nil
@@ -422,24 +384,24 @@ actor SearchEngine {
     private func matchKeyword(
         _ word: String, wildcard: Bool,
         record: SearchRecord, summary: String?, annotation: String?
-    ) -> Set<SearchResult.MatchField>? {
-        var matched: Set<SearchResult.MatchField> = []
+    ) -> [SearchResult.MatchField]? {
+        var matched: [SearchResult.MatchField] = []
         let escaped = NSRegularExpression.escapedPattern(for: word)
         let pattern = wildcard ? "\\b\(escaped)\\w*" : "\\b\(escaped)\\b"
         let opts: String.CompareOptions = [.regularExpression, .caseInsensitive]
 
-        if record.title.range(of: pattern, options: opts) != nil          { matched.insert(.title) }
-        if record.normalizedBody.range(of: pattern, options: opts) != nil { matched.insert(.body)  }
-        if let s = summary,    s.range(of: pattern, options: opts) != nil { matched.insert(.summary) }
-        if let a = annotation, a.range(of: pattern, options: opts) != nil { matched.insert(.annotation) }
+        if record.title.range(of: pattern, options: opts) != nil          { matched.append(.title) }
+        if record.normalizedBody.range(of: pattern, options: opts) != nil { matched.append(.body)  }
+        if let s = summary,    s.range(of: pattern, options: opts) != nil { matched.append(.summary) }
+        if let a = annotation, a.range(of: pattern, options: opts) != nil { matched.append(.annotation) }
 
         let entityHit = { (list: [String]) -> Bool in
             wildcard ? list.contains { $0.hasPrefix(word) } : list.contains { $0 == word }
         }
-        if entityHit(record.personNames) { matched.insert(.person) }
-        if entityHit(record.placeNames)  { matched.insert(.place)  }
-        if entityHit(record.orgNames)    { matched.insert(.org)    }
-        if entityHit(record.terms)       { matched.insert(.term)   }
+        if entityHit(record.personNames) { matched.append(.person) }
+        if entityHit(record.placeNames)  { matched.append(.place)  }
+        if entityHit(record.orgNames)    { matched.append(.org)    }
+        if entityHit(record.terms)       { matched.append(.term)   }
 
         return matched.isEmpty ? nil : matched
     }
@@ -449,12 +411,12 @@ actor SearchEngine {
     private func matchPhrase(
         _ phrase: String,
         record: SearchRecord, summary: String?, annotation: String?
-    ) -> Set<SearchResult.MatchField>? {
-        var matched: Set<SearchResult.MatchField> = []
-        if record.title.lowercased().contains(phrase)        { matched.insert(.title) }
-        if record.normalizedBody.contains(phrase)            { matched.insert(.body)  }
-        if summary?.lowercased().contains(phrase) == true    { matched.insert(.summary) }
-        if annotation?.lowercased().contains(phrase) == true { matched.insert(.annotation) }
+    ) -> [SearchResult.MatchField]? {
+        var matched: [SearchResult.MatchField] = []
+        if record.title.lowercased().contains(phrase)        { matched.append(.title) }
+        if record.normalizedBody.contains(phrase)            { matched.append(.body)  }
+        if summary?.lowercased().contains(phrase) == true    { matched.append(.summary) }
+        if annotation?.lowercased().contains(phrase) == true { matched.append(.annotation) }
         return matched.isEmpty ? nil : matched
     }
 
@@ -462,7 +424,7 @@ actor SearchEngine {
 
     private func matchField(
         _ type: SearchPredicate.FieldType, value: String, record: SearchRecord
-    ) -> Set<SearchResult.MatchField>? {
+    ) -> [SearchResult.MatchField]? {
         let (list, field): ([String], SearchResult.MatchField)
         switch type {
         case .person: (list, field) = (record.personNames, .person)
@@ -478,11 +440,12 @@ actor SearchEngine {
 
 /// Builds a flat `[SearchRecord]` from every indexable division in a volume.
 /// Designed to be called from a `Task.detached` alongside XML parsing.
+// nonisolated: pure value transformation with no shared mutable state.
 enum SearchIndexBuilder {
 
     /// - Parameter subjects: mapping from division @xml:id → [subjectID] for this volume,
     ///   loaded from the bundled `SubjectData/subjects-{volumeID}.json` file.
-    static func build(
+    nonisolated static func build(
         from volume: FRUSVolume,
         volumeID: String,
         subjects: [String: [String]] = [:]
@@ -499,7 +462,7 @@ enum SearchIndexBuilder {
         return records
     }
 
-    private static func collect(
+    private nonisolated static func collect(
         _ div: Division, volumeID: String, subjects: [String: [String]],
         into records: inout [SearchRecord]
     ) {
@@ -515,7 +478,7 @@ enum SearchIndexBuilder {
         for child in div.children { collect(child, volumeID: volumeID, subjects: subjects, into: &records) }
     }
 
-    private static func makeRecord(
+    private nonisolated static func makeRecord(
         _ div: Division, volumeID: String, divisionID: String,
         subjects: [String: [String]]
     ) -> SearchRecord {

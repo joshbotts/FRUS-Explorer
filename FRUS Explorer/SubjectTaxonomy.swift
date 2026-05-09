@@ -54,7 +54,9 @@ struct TaxonomyCategory: Identifiable, Codable, Sendable {
 
 // MARK: - Payload
 
-private struct TaxonomyPayload: Decodable {
+// nonisolated: pure Decodable value type used only inside Task.detached.
+// Without this annotation Swift infers @MainActor by proximity to TaxonomyStore.
+private nonisolated struct TaxonomyPayload: Decodable {
     let categories: [TaxonomyCategory]
 }
 

@@ -37,11 +37,11 @@ public enum FRUSParserError: Error, LocalizedError {
 ///     print(doc.headings.first?.plainText ?? "(untitled)")
 /// }
 /// ```
-public final class FRUSParser {
-    public init() {}
+public final class FRUSParser: Sendable {
+    public nonisolated init() {}
 
     /// Parse a FRUS volume from a file URL.
-    public func parse(url: URL) throws -> FRUSVolume {
+    public nonisolated func parse(url: URL) throws -> FRUSVolume {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw FRUSParserError.fileNotFound(url)
         }
@@ -50,7 +50,7 @@ public final class FRUSParser {
     }
 
     /// Parse a FRUS volume from raw XML `Data`.
-    public func parse(data: Data) throws -> FRUSVolume {
+    public nonisolated func parse(data: Data) throws -> FRUSVolume {
         let delegate = ParserDelegate()
         let xmlParser = XMLParser(data: data)
         xmlParser.delegate = delegate
@@ -77,9 +77,13 @@ public final class FRUSParser {
 // MARK: - Internal SAX Delegate
 
 /// SAX-style delegate that builds the model incrementally.
-private final class ParserDelegate: NSObject, XMLParserDelegate {
+private final class ParserDelegate: NSObject, @preconcurrency XMLParserDelegate {
 
-    var result: FRUSVolume?
+    // nonisolated(unsafe): ParserDelegate is created and used exclusively within
+    // a single synchronous parse() call — no concurrent access occurs.
+    nonisolated(unsafe) var result: FRUSVolume?
+
+    nonisolated override init() { super.init() }
 
     // ── Parsing state ──────────────────────────────────────────────────────
 
@@ -350,7 +354,20 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
         case "publisher": publisher = text
         case "pubPlace": pubPlace = text
         case "date":
-            if inHeader && !inText { pubDate = text }
+            if inHeader && !inText {
+                _ = popInline()       // balance the pushInline from didStartElement
+                pubDate = text
+            } else if let inline = popInline() {
+                let de = DateElement(
+                    when: attrs["when"],
+                    from: attrs["from"],
+                    to: attrs["to"],
+                    notBefore: attrs["notBefore"],
+                    notAfter: attrs["notAfter"],
+                    text: plainText(from: inline.content)
+                )
+                appendToCurrentInline(.date(de))
+            }
 
         case "idno":
             idnos.append(Identifier(type: currentIdnoType, value: text))
@@ -387,7 +404,7 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
         case "body": inBody = false
 
         case "div":
-            guard var acc = divStack.popLast() else { return }
+            guard let acc = divStack.popLast() else { return }
             let div = acc.build()
             if divStack.isEmpty {
                 // Top-level div — store in appropriate container
@@ -496,18 +513,6 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
                 text: plainText(from: inline.content)
             )
             appendToCurrentInline(.orgName(org))
-
-        case "date":
-            guard let inline = popInline() else { return }
-            let de = DateElement(
-                when: attrs["when"],
-                from: attrs["from"],
-                to: attrs["to"],
-                notBefore: attrs["notBefore"],
-                notAfter: attrs["notAfter"],
-                text: plainText(from: inline.content)
-            )
-            appendToCurrentInline(.date(de))
 
         case "ref", "xRef":
             guard let inline = popInline() else { return }

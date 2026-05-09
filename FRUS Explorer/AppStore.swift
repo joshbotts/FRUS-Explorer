@@ -104,7 +104,7 @@ final class AppStore {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.summaries.removeAll()
+            Task { @MainActor [weak self] in self?.summaries.removeAll() }
         }
     }
 

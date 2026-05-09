@@ -66,7 +66,7 @@ public struct SummaryPromptProfile: Identifiable, Codable, Sendable, Equatable {
     public let createdAt: Date
     public var modifiedAt: Date
 
-    public init(
+    nonisolated public init(
         id: UUID = UUID(),
         name: String,
         researchDescription: String,
@@ -94,7 +94,7 @@ public struct SummaryPromptProfile: Identifiable, Codable, Sendable, Equatable {
 // MARK: - Built-in profiles
 
 extension SummaryPromptProfile {
-    static let builtIns: [SummaryPromptProfile] = [
+    nonisolated static let builtIns: [SummaryPromptProfile] = [
         defaultProfile,
         institutionalHistory,
         bilateralRelations,
@@ -104,7 +104,7 @@ extension SummaryPromptProfile {
     ]
 
     /// The standard three-sentence summary — used when no custom profile is active.
-    static let defaultProfile = SummaryPromptProfile(
+    nonisolated static let defaultProfile = SummaryPromptProfile(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
         name: "Default",
         researchDescription: "A general-purpose summary identifying document type, main subject, and historical significance.",
@@ -114,7 +114,7 @@ extension SummaryPromptProfile {
         isBuiltIn: true
     )
 
-    static let institutionalHistory = SummaryPromptProfile(
+    nonisolated static let institutionalHistory = SummaryPromptProfile(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
         name: "Institutional History",
         researchDescription: "Research on the organisation and management of the Department of State and other foreign-affairs agencies: how policy was coordinated within the bureaucracy, which offices or bureaus were involved, and how authority was exercised or delegated.",
@@ -124,7 +124,7 @@ extension SummaryPromptProfile {
         isBuiltIn: true
     )
 
-    static let bilateralRelations = SummaryPromptProfile(
+    nonisolated static let bilateralRelations = SummaryPromptProfile(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
         name: "Bilateral Relations",
         researchDescription: "Research tracing the arc of U.S. relations with a specific country or region: key negotiating positions, points of agreement or friction, and the evolution of U.S. policy objectives.",
@@ -134,7 +134,7 @@ extension SummaryPromptProfile {
         isBuiltIn: true
     )
 
-    static let crisisDecisionMaking = SummaryPromptProfile(
+    nonisolated static let crisisDecisionMaking = SummaryPromptProfile(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000004")!,
         name: "Crisis Decision-Making",
         researchDescription: "Research on how U.S. policymakers responded under time pressure: the options considered, who recommended what, the decision actually taken, and the information environment at the time.",
@@ -144,7 +144,7 @@ extension SummaryPromptProfile {
         isBuiltIn: true
     )
 
-    static let economicTrade = SummaryPromptProfile(
+    nonisolated static let economicTrade = SummaryPromptProfile(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000005")!,
         name: "Economic & Trade Policy",
         researchDescription: "Research on U.S. international economic policy: trade negotiations, monetary policy, sanctions, aid, and the intersection of economic interests with diplomatic objectives.",
@@ -154,7 +154,7 @@ extension SummaryPromptProfile {
         isBuiltIn: true
     )
 
-    static let intelligenceCovert = SummaryPromptProfile(
+    nonisolated static let intelligenceCovert = SummaryPromptProfile(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000006")!,
         name: "Intelligence & Covert Action",
         researchDescription: "Research on the intelligence dimension of U.S. foreign policy: assessments, collection activities, covert operations, and the role of the intelligence community in shaping or carrying out policy.",
@@ -207,7 +207,7 @@ final class PromptProfileStore {
     // MARK: - CRUD
 
     func create(name: String = "New Profile") -> SummaryPromptProfile {
-        var p = SummaryPromptProfile(
+        let p = SummaryPromptProfile(
             name: name,
             researchDescription: "",
             emphasisInstruction: "",

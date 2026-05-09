@@ -80,7 +80,9 @@ final class PDFExporter: NSObject {
     }
 
     private enum AssociatedKeys {
-        static var coordinator = "coordinator"
+        // UInt8 key avoids the UnsafeRawPointer-to-String warning that arises
+        // when a Swift String is used as an objc_setAssociatedObject key.
+        static var coordinator: UInt8 = 0
     }
 }
 
