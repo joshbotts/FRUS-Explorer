@@ -12,6 +12,7 @@ struct RootView: View {
     @Environment(CollectionStore.self) private var collectionStore: CollectionStore
     @Environment(PromptProfileStore.self) private var profileStore: PromptProfileStore
     @State private var selectedTab: AppTab = .explorer
+    @State private var showOnboarding = false
 
     enum AppTab: String, Hashable {
         case explorer    = "Explorer"
@@ -49,6 +50,27 @@ struct RootView: View {
         // and collapses gracefully in Split View / Slide Over.
         .tabViewStyle(.sidebarAdaptable)
 #endif
+        // Show the onboarding sheet whenever no volumes have been downloaded.
+        // It auto-dismisses when the first volume finishes downloading.
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingView()
+                .interactiveDismissDisabled()
+#if os(macOS)
+                .frame(minWidth: 580, minHeight: 520)
+#endif
+        }
+        .task {
+            // FRUSExplorerApp already calls scanLocalVolumes(), but run it again
+            // here in case this view appears before the app-level task fires.
+            store.scanLocalVolumes()
+            if store.localVolumeIDs.isEmpty {
+                showOnboarding = true
+            }
+        }
+        .onChange(of: store.localVolumeIDs.isEmpty) { _, isEmpty in
+            // Auto-dismiss when the first downloaded volume lands on disk.
+            if !isEmpty { showOnboarding = false }
+        }
     }
 }
 

@@ -296,6 +296,14 @@ final class AppStore {
         for info in volumes { download(info) }
     }
 
+    /// Downloads volumes initiated from the onboarding flow, bypassing the user's
+    /// `maxConcurrentDownloads` preference. Each volume is started as an independent
+    /// Swift Task so all downloads proceed concurrently, bounded only by URLSession's
+    /// HTTP/2 multiplexing (GitHub CDN) rather than the user's conservative limit.
+    func downloadForOnboarding(_ volumes: [FRUSVolumeInfo]) {
+        for info in volumes { download(info) }
+    }
+
     /// Cancels every in-progress download.
     func cancelAllDownloads() {
         for (id, state) in downloadStates {

@@ -43,6 +43,9 @@ struct FRUSExplorerApp: App {
                 )
 #endif
                 .task {
+                    // Scan local files immediately so localVolumeIDs is accurate
+                    // before RootView decides whether to present the onboarding sheet.
+                    store.scanLocalVolumes()
                     store.profileStore = profileStore
                     store.summaryStore = summaryStore
                     store.taxonomyStore = taxonomyStore
