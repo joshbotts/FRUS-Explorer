@@ -112,7 +112,7 @@ final class CollectionStore {
     // MARK: - CRUD
 
     func create(name: String) -> DocumentCollection {
-        var c = DocumentCollection(name: name)
+        let c = DocumentCollection(name: name)
         collections.append(c)
         save()
         return c

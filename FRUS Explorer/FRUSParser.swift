@@ -37,11 +37,11 @@ public enum FRUSParserError: Error, LocalizedError {
 ///     print(doc.headings.first?.plainText ?? "(untitled)")
 /// }
 /// ```
-public final class FRUSParser {
-    public init() {}
+public final class FRUSParser: Sendable {
+    public nonisolated init() {}
 
     /// Parse a FRUS volume from a file URL.
-    public func parse(url: URL) throws -> FRUSVolume {
+    public nonisolated func parse(url: URL) throws -> FRUSVolume {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw FRUSParserError.fileNotFound(url)
         }
@@ -50,7 +50,7 @@ public final class FRUSParser {
     }
 
     /// Parse a FRUS volume from raw XML `Data`.
-    public func parse(data: Data) throws -> FRUSVolume {
+    public nonisolated func parse(data: Data) throws -> FRUSVolume {
         let delegate = ParserDelegate()
         let xmlParser = XMLParser(data: data)
         xmlParser.delegate = delegate
@@ -77,9 +77,13 @@ public final class FRUSParser {
 // MARK: - Internal SAX Delegate
 
 /// SAX-style delegate that builds the model incrementally.
-private final class ParserDelegate: NSObject, XMLParserDelegate {
+private final class ParserDelegate: NSObject, @preconcurrency XMLParserDelegate {
 
-    var result: FRUSVolume?
+    // nonisolated(unsafe): ParserDelegate is created and used exclusively within
+    // a single synchronous parse() call — no concurrent access occurs.
+    nonisolated(unsafe) var result: FRUSVolume?
+
+    nonisolated override init() { super.init() }
 
     // ── Parsing state ──────────────────────────────────────────────────────
 
@@ -142,6 +146,9 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
     // the item content arrays are already captured here, indexed by the sentinel
     // stored in the parent's inline accumulator.
     private var pendingListItemContents: [[InlineContent]] = []
+    // Staging buffer for <label> elements in gloss lists.
+    // Each entry pairs the label's xml:id (if any) with its rendered content.
+    private var pendingLabels: [(id: String?, content: [InlineContent])] = []
     private var pendingRowContents: [[InlineContent]] = []
     private var pendingRowRoles: [String?] = []
     private var pendingCellContents: [[InlineContent]] = []
@@ -274,6 +281,9 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
         case "list":
             pushInline(attrs: attrs)
 
+        case "label":
+            pushInline(attrs: attrs)
+
         case "item":
             pushInline(attrs: attrs)
 
@@ -350,7 +360,20 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
         case "publisher": publisher = text
         case "pubPlace": pubPlace = text
         case "date":
-            if inHeader && !inText { pubDate = text }
+            if inHeader && !inText {
+                _ = popInline()       // balance the pushInline from didStartElement
+                pubDate = text
+            } else if let inline = popInline() {
+                let de = DateElement(
+                    when: attrs["when"],
+                    from: attrs["from"],
+                    to: attrs["to"],
+                    notBefore: attrs["notBefore"],
+                    notAfter: attrs["notAfter"],
+                    text: plainText(from: inline.content)
+                )
+                appendToCurrentInline(.date(de))
+            }
 
         case "idno":
             idnos.append(Identifier(type: currentIdnoType, value: text))
@@ -387,7 +410,7 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
         case "body": inBody = false
 
         case "div":
-            guard var acc = divStack.popLast() else { return }
+            guard let acc = divStack.popLast() else { return }
             let div = acc.build()
             if divStack.isEmpty {
                 // Top-level div — store in appropriate container
@@ -497,18 +520,6 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
             )
             appendToCurrentInline(.orgName(org))
 
-        case "date":
-            guard let inline = popInline() else { return }
-            let de = DateElement(
-                when: attrs["when"],
-                from: attrs["from"],
-                to: attrs["to"],
-                notBefore: attrs["notBefore"],
-                notAfter: attrs["notAfter"],
-                text: plainText(from: inline.content)
-            )
-            appendToCurrentInline(.date(de))
-
         case "ref", "xRef":
             guard let inline = popInline() else { return }
             let ref = Reference(
@@ -535,7 +546,22 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
             guard let inline = popInline() else { return }
             let items = extractListItems(from: inline.content)
             let list = XMLList(type: attrs["type"], items: items)
-            appendToCurrentInline(.list(list))
+            if inlineStack.isEmpty && !divStack.isEmpty {
+                // Direct <div> child (e.g. Terms & Abbreviations section lists) —
+                // wrap in a synthetic paragraph so it renders in DocumentBodyBlock.
+                divStack[divStack.count - 1].paragraphs.append(
+                    Paragraph(id: nil, rend: nil, content: [.list(list)])
+                )
+            } else {
+                appendToCurrentInline(.list(list))
+            }
+
+        case "label":
+            // <label> is the abbreviation half of a gloss-list pair (<label>/<item>).
+            guard let inline = popInline() else { return }
+            pendingLabels.append((id: xmlID(attrs), content: inline.content))
+            let labelIdx = pendingLabels.count - 1
+            appendToCurrentInline(.unknown(elementName: "__label__", rawContent: "\(labelIdx)"))
 
         case "item":
             guard let inline = popInline() else { return }
@@ -779,15 +805,29 @@ private final class ParserDelegate: NSObject, XMLParserDelegate {
     }
 
     private func extractListItems(from content: [InlineContent]) -> [ListItem] {
-        content.compactMap { item -> ListItem? in
-            if case .unknown(let name, let rawContent) = item, name == "__item__" {
-                if let idx = Int(rawContent), idx < pendingListItemContents.count {
-                    return ListItem(content: pendingListItemContents[idx])
+        var result: [ListItem] = []
+        var pendingLabel: (id: String?, text: String)? = nil
+        for item in content {
+            guard case .unknown(let name, let rawContent) = item else { continue }
+            if name == "__label__" {
+                if let idx = Int(rawContent), idx < pendingLabels.count {
+                    let entry = pendingLabels[idx]
+                    pendingLabel = (id: entry.id, text: plainText(from: entry.content))
                 }
-                return ListItem(content: [.text(rawContent)])
+            } else if name == "__item__" {
+                if let idx = Int(rawContent), idx < pendingListItemContents.count {
+                    result.append(ListItem(
+                        content: pendingListItemContents[idx],
+                        label: pendingLabel?.text,
+                        labelID: pendingLabel?.id
+                    ))
+                } else {
+                    result.append(ListItem(content: [.text(rawContent)], label: pendingLabel?.text, labelID: pendingLabel?.id))
+                }
+                pendingLabel = nil
             }
-            return nil
         }
+        return result
     }
 
     private func extractTableRows(from content: [InlineContent]) -> [TableRow] {

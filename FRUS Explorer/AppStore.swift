@@ -104,7 +104,7 @@ final class AppStore {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.summaries.removeAll()
+            Task { @MainActor [weak self] in self?.summaries.removeAll() }
         }
     }
 
@@ -541,6 +541,19 @@ final class AppStore {
         summaries = summaries.filter { !$0.key.hasPrefix("\(id)__") }
         downloadStates[id] = .downloaded(localURL: fileURL)
         await parseVolume(id: id, url: fileURL, info: info)
+    }
+
+    // MARK: - In-app navigation
+
+    /// Navigates to a document by division ID inside any volume.
+    /// If the target volume is downloaded but not yet in memory, loads it first.
+    func navigate(to divisionID: String, in targetVolumeID: String) {
+        let nodeID = "\(targetVolumeID)__\(divisionID)"
+        selectedVolumeID = targetVolumeID
+        selectedNodeID = nodeID
+        if loadedVolumes[targetVolumeID] == nil {
+            Task { await loadVolumeByID(targetVolumeID) }
+        }
     }
 
     // MARK: - Delete local file
