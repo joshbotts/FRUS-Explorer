@@ -4,14 +4,30 @@
 
 import SwiftUI
 
-// MARK: - Subseries helpers
+// MARK: - Subseries helpers (module-level — also used by SearchView)
 
 /// Extracts the subseries prefix from a FRUS volume ID.
 /// e.g. "frus1946v03" → "frus1946", "frus1946-47v01" → "frus1946-47"
-private func subseriesPrefix(from id: String) -> String {
+func subseriesPrefix(from id: String) -> String {
     let pattern = #"^frus\d{4}(?:-\d{2,4})?"#
     if let range = id.range(of: pattern, options: .regularExpression) {
         return String(id[range])
+    }
+    return id
+}
+
+/// Human-readable label for a subseries prefix, e.g. "frus1969-76" → "1969–76".
+func subseriesLabel(from prefix: String) -> String {
+    var label = String(prefix.dropFirst(4))         // drop "frus"
+    label = label.replacingOccurrences(of: "-", with: "–")
+    return label.isEmpty ? prefix : label
+}
+
+/// Short label for a volume: title from cache if available, else "Vol. N" from the ID.
+func volumeShortLabel(for id: String, titleCache: [String: VolumeTitleCache]) -> String {
+    if let title = titleCache[id]?.volumeTitle { return title }
+    if let range = id.range(of: #"v(\d+)$"#, options: .regularExpression) {
+        return "Vol. \(String(id[range].dropFirst()))"
     }
     return id
 }

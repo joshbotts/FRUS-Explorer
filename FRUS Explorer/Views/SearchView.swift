@@ -29,9 +29,36 @@ struct SearchView: View {
     @State private var subjectFilter:    Set<String> = []
     @State private var showSubjectPicker = false
 
+    // ── Citation navigator ────────────────────────────────────────────────
+    @State private var citSubseriesID  = ""   // selected subseries prefix
+    @State private var citVolumeID     = ""   // selected volume ID
+    @State private var citDocNumber    = ""   // document @n value (e.g. "337")
+    @State private var citIsNavigating = false
+    @State private var citNotFound     = false
+
     // ── UI state ──────────────────────────────────────────────────────────
     @State private var showHelp      = false
     @State private var hasRunSearch  = false
+
+    // ── Citation navigator — derived ──────────────────────────────────────
+
+    /// All unique subseries prefixes in alphabetical order.
+    private var citSubseriesList: [String] {
+        Array(Set(store.catalogue.map { subseriesPrefix(from: $0.id) })).sorted()
+    }
+
+    /// Volumes belonging to the currently selected subseries.
+    private var citVolumeList: [FRUSVolumeInfo] {
+        guard !citSubseriesID.isEmpty else { return [] }
+        return store.catalogue.filter { subseriesPrefix(from: $0.id) == citSubseriesID }
+    }
+
+    /// True when all three citation fields have a value.
+    private var citCanGo: Bool {
+        !citSubseriesID.isEmpty
+        && !citVolumeID.isEmpty
+        && !citDocNumber.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     // ── Derived ───────────────────────────────────────────────────────────
 
@@ -71,6 +98,8 @@ struct SearchView: View {
                     entitySection
                     dateSection
                     subjectSection
+                    Divider()
+                    citationSection
                 }
                 .padding(12)
             }
@@ -224,6 +253,92 @@ struct SearchView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(subjectFilter.isEmpty ? .secondary : Color.frusRuby)
                 .disabled(!taxonomyStore.isLoaded)
+            }
+        }
+    }
+
+    // MARK: - Citation Navigator
+
+    private var citationSection: some View {
+        searchSection(label: "Citation Navigator") {
+            VStack(alignment: .leading, spacing: 8) {
+                // ── Subseries picker ──────────────────────────────────────
+                Picker(selection: $citSubseriesID) {
+                    Text("Select Subseries…")
+                        .foregroundStyle(.secondary)
+                        .tag("")
+                    ForEach(citSubseriesList, id: \.self) { prefix in
+                        Text(subseriesLabel(from: prefix))
+                            .tag(prefix)
+                    }
+                } label: {
+                    Text("Subseries")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 56, alignment: .trailing)
+                }
+                .pickerStyle(.menu)
+                .onChange(of: citSubseriesID) {
+                    citVolumeID  = ""
+                    citNotFound  = false
+                }
+
+                // ── Volume picker ─────────────────────────────────────────
+                Picker(selection: $citVolumeID) {
+                    Text("Select Volume…")
+                        .foregroundStyle(.secondary)
+                        .tag("")
+                    ForEach(citVolumeList, id: \.id) { vol in
+                        Text(volumeShortLabel(for: vol.id,
+                                              titleCache: store.volumeTitleCache))
+                            .tag(vol.id)
+                    }
+                } label: {
+                    Text("Volume")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 56, alignment: .trailing)
+                }
+                .pickerStyle(.menu)
+                .disabled(citSubseriesID.isEmpty)
+                .onChange(of: citVolumeID) { citNotFound = false }
+
+                // ── Document number + Go ──────────────────────────────────
+                HStack(spacing: 6) {
+                    Text("Doc #")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 56, alignment: .trailing)
+
+                    TextField("e.g. 337", text: $citDocNumber)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12, design: .monospaced))
+                        .frame(maxWidth: 80)
+                        .onChange(of: citDocNumber) { citNotFound = false }
+                        .onSubmit { if citCanGo { Task { await goToDocument() } } }
+
+                    if citIsNavigating {
+                        ProgressView().scaleEffect(0.6)
+                    } else {
+                        Button {
+                            Task { await goToDocument() }
+                        } label: {
+                            Label("Go", systemImage: "arrow.right.circle.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(!citCanGo)
+                    }
+                }
+
+                // ── Error feedback ────────────────────────────────────────
+                if citNotFound {
+                    Label("Document \(citDocNumber) not found in this volume.",
+                          systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
+                }
             }
         }
     }
@@ -440,6 +555,53 @@ struct SearchView: View {
                 store.selectedNodeID = nodeID
             }
         }
+    }
+
+    // MARK: - Citation navigation
+
+    @MainActor
+    private func goToDocument() async {
+        let volID  = citVolumeID
+        let docNum = citDocNumber.trimmingCharacters(in: .whitespaces)
+        guard !volID.isEmpty, !docNum.isEmpty else { return }
+
+        citIsNavigating = true
+        citNotFound     = false
+
+        // Load the volume if it isn't already in memory.
+        if store.loadedVolumes[volID] == nil {
+            await store.loadVolumeByID(volID)
+        }
+
+        guard let loaded = store.loadedVolumes[volID],
+              let divID  = findDocumentByNumber(docNum, in: loaded.volume) else {
+            citNotFound     = true
+            citIsNavigating = false
+            return
+        }
+
+        store.navigate(to: divID, in: volID)
+        citIsNavigating = false
+    }
+
+    /// Searches all divisions (front, body, back) for a document whose `@n` matches `number`.
+    private func findDocumentByNumber(_ number: String, in volume: FRUSVolume) -> String? {
+        let allDivisions = (volume.text.front?.divisions ?? [])
+                         + volume.text.body.divisions
+                         + (volume.text.back?.divisions ?? [])
+        return searchDivisions(allDivisions, for: number)
+    }
+
+    private func searchDivisions(_ divisions: [Division], for number: String) -> String? {
+        for div in divisions {
+            if div.type == .document, div.number == number, let xmlID = div.id {
+                return xmlID
+            }
+            if let found = searchDivisions(div.children, for: number) {
+                return found
+            }
+        }
+        return nil
     }
 }
 
