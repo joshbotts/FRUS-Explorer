@@ -51,6 +51,14 @@ struct FRUSExplorerApp: App {
                     store.taxonomyStore = taxonomyStore
                     await taxonomyStore.loadTaxonomy()
                 }
+                // Handle frus:// deep links routed back to the app by the OS.
+                // On macOS, Text views with AttributedString.link call NSWorkspace.open()
+                // which bypasses the SwiftUI openURL environment; registering the frus://
+                // scheme (SupportingInfo.plist) causes the OS to send the URL here instead.
+                .onOpenURL { url in
+                    guard url.scheme == "frus" else { return }
+                    store.handleFrusURL(url)
+                }
         }
 #if os(macOS)
         .windowStyle(.titleBar)

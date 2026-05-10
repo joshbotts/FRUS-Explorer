@@ -123,36 +123,27 @@ struct DocumentDetailView: View {
         .background(self.backgroundColor)
         .toolbar { detailToolbar }
         .task(id: division.id) { store.summarise(division, volumeID: volume.id) }
-        .environment(\.openURL, OpenURLAction { url in
-            guard url.scheme == "frus", let host = url.host else { return .systemAction }
-            switch host {
-            case "footnote":
-                // lastPathComponent is the 1-based index or @n value
-                let parts = url.pathComponents.filter { $0 != "/" }
-                let key = parts.first ?? ""
-                let notes = footnotes
-                if let n = Int(key), n >= 1, n <= notes.count {
-                    tappedFootnote = IdentifiedNote(id: n, note: notes[n - 1])
-                } else if let idx = notes.firstIndex(where: { $0.n == key }) {
+        // Observe frus:// actions dispatched by AppStore.handleFrusURL — called when
+        // the OS routes a clicked frus:// link back to the app via onOpenURL.
+        .onChange(of: store.pendingFrusAction) { _, action in
+            guard let action else { return }
+            defer { store.pendingFrusAction = nil }
+            let notes = footnotes
+            switch action {
+            case .showFootnote(let index):
+                if index >= 1, index <= notes.count {
+                    tappedFootnote = IdentifiedNote(id: index, note: notes[index - 1])
+                }
+            case .showFootnoteByN(let n):
+                if let idx = notes.firstIndex(where: { $0.n == n }) {
                     tappedFootnote = IdentifiedNote(id: idx + 1, note: notes[idx])
                 }
-            case "person":
-                let parts = url.pathComponents.filter { $0 != "/" }
-                if let ref = parts.first, !ref.isEmpty { tappedPersonRef = RefID(id: ref) }
-            case "term":
-                let parts = url.pathComponents.filter { $0 != "/" }
-                if let ref = parts.first, !ref.isEmpty { tappedTermRef = RefID(id: ref) }
-            case "doc":
-                let parts = url.pathComponents.filter { $0 != "/" }
-                if parts.count >= 2 {
-                    let volID = parts[0] == "__current__" ? volume.id : parts[0]
-                    store.navigate(to: parts[1], in: volID)
-                }
-            default:
-                return .systemAction
+            case .showPerson(let ref):
+                tappedPersonRef = RefID(id: ref)
+            case .showTerm(let ref):
+                tappedTermRef = RefID(id: ref)
             }
-            return .handled
-        })
+        }
         .sheet(item: $tappedFootnote) { item in
             FootnoteDetailSheet(note: item.note)
         }
@@ -262,6 +253,21 @@ struct SummaryCard: View {
     }
 }
 
+// MARK: - currentVolumeID environment key
+
+/// Propagates the current volume ID down the document-rendering tree so every
+/// `FRUSRenderer.attributedString` call can embed the real volume ID in
+/// `frus://doc/<volumeID>/...` links without threading the parameter explicitly.
+private struct VolumeIDKey: EnvironmentKey {
+    static let defaultValue = ""
+}
+extension EnvironmentValues {
+    var currentVolumeID: String {
+        get { self[VolumeIDKey.self] }
+        set { self[VolumeIDKey.self] = newValue }
+    }
+}
+
 // MARK: - FRUSDocumentView
 
 /// Full document renderer: header + body + footnotes, matching history.state.gov layout.
@@ -284,6 +290,7 @@ struct FRUSDocumentView: View {
                     .padding(.top, 20)
             }
         }
+        .environment(\.currentVolumeID, volumeID)
     }
 }
 
@@ -295,6 +302,7 @@ struct DocumentHeaderBlock: View {
     let division: Division
     let volumeID: String
     let footnotes: [Note]
+    @Environment(\.currentVolumeID) private var volID
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -317,7 +325,7 @@ struct DocumentHeaderBlock: View {
 
             // All headings: first = type (largest), subsequent = subject
             ForEach(Array(division.headings.enumerated()), id: \.offset) { idx, heading in
-                Text(FRUSRenderer.attributedString(heading.content, footnotes: footnotes))
+                Text(FRUSRenderer.attributedString(heading.content, footnotes: footnotes, volumeID: volID))
                     .font(idx == 0
                           ? .system(size: 18, weight: .bold, design: .serif)
                           : .system(size: 14, weight: .semibold, design: .serif))
@@ -327,7 +335,7 @@ struct DocumentHeaderBlock: View {
 
             // Dateline
             if let dl = division.dateline, !dl.content.isEmpty {
-                Text(FRUSRenderer.attributedString(dl.content))
+                Text(FRUSRenderer.attributedString(dl.content, volumeID: volID))
                     .font(.system(size: 12, design: .serif))
                     .italic()
                     .foregroundStyle(.secondary)
@@ -336,7 +344,7 @@ struct DocumentHeaderBlock: View {
 
             // Opener (salutation, addressee line)
             if let op = division.opener, !op.content.isEmpty {
-                Text(FRUSRenderer.attributedString(op.content))
+                Text(FRUSRenderer.attributedString(op.content, volumeID: volID))
                     .font(.system(size: 13, design: .serif))
                     .padding(.top, 4)
                     .fixedSize(horizontal: false, vertical: true)
@@ -352,6 +360,7 @@ struct DocumentBodyBlock: View {
     let division: Division
     let footnotes: [Note]
     let depth: Int
+    @Environment(\.currentVolumeID) private var volID
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -370,7 +379,7 @@ struct DocumentBodyBlock: View {
                     }
                     // Sub-section headings
                     ForEach(Array(child.headings.enumerated()), id: \.offset) { idx, heading in
-                        Text(FRUSRenderer.attributedString(heading.content))
+                        Text(FRUSRenderer.attributedString(heading.content, volumeID: volID))
                             .font(idx == 0
                                   ? .system(size: 14, weight: .semibold, design: .serif)
                                   : .system(size: 13, weight: .medium, design: .serif))
@@ -378,13 +387,13 @@ struct DocumentBodyBlock: View {
                     }
                     // Sub-section dateline
                     if let dl = child.dateline, !dl.content.isEmpty {
-                        Text(FRUSRenderer.attributedString(dl.content))
+                        Text(FRUSRenderer.attributedString(dl.content, volumeID: volID))
                             .font(.system(size: 12, design: .serif))
                             .italic().foregroundStyle(.secondary)
                     }
                     // Sub-section opener
                     if let op = child.opener, !op.content.isEmpty {
-                        Text(FRUSRenderer.attributedString(op.content))
+                        Text(FRUSRenderer.attributedString(op.content, volumeID: volID))
                             .font(.system(size: 13, design: .serif))
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -411,6 +420,7 @@ struct DocumentBodyBlock: View {
 struct ParagraphBlock: View {
     let paragraph: Paragraph
     let footnotes: [Note]
+    @Environment(\.currentVolumeID) private var volID
 
     private var textAlignment: TextAlignment {
         switch paragraph.rend {
@@ -436,7 +446,7 @@ struct ParagraphBlock: View {
                 switch run {
                 case .text(let inlines):
                     if !inlines.isEmpty {
-                        Text(FRUSRenderer.attributedString(inlines, footnotes: footnotes))
+                        Text(FRUSRenderer.attributedString(inlines, footnotes: footnotes, volumeID: volID))
                             .font(paragraph.rend == "italic"
                                   ? .system(size: 13, design: .serif).italic()
                                   : .system(size: 13, design: .serif))
@@ -500,6 +510,7 @@ struct ParagraphBlock: View {
 struct ListBlock: View {
     let list: XMLList
     let footnotes: [Note]
+    @Environment(\.currentVolumeID) private var volID
 
     private var isOrdered: Bool { list.type == "ordered" || list.type == "ol" }
     private var isGloss: Bool   { list.type == "gloss" }
@@ -523,7 +534,7 @@ struct ListBlock: View {
                             .frame(minWidth: 52, maxWidth: 88, alignment: .leading)
                             .fixedSize(horizontal: true, vertical: false)
                     }
-                    Text(FRUSRenderer.attributedString(item.content, footnotes: footnotes))
+                    Text(FRUSRenderer.attributedString(item.content, footnotes: footnotes, volumeID: volID))
                         .font(.system(size: 13, design: .serif))
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -541,7 +552,7 @@ struct ListBlock: View {
                         .font(.system(size: 13, design: .serif))
                         .foregroundStyle(.secondary)
                         .frame(minWidth: 20, alignment: .trailing)
-                    Text(FRUSRenderer.attributedString(item.content, footnotes: footnotes))
+                    Text(FRUSRenderer.attributedString(item.content, footnotes: footnotes, volumeID: volID))
                         .font(.system(size: 13, design: .serif))
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -557,13 +568,14 @@ struct ListBlock: View {
 struct TableBlock: View {
     let table: Table
     let footnotes: [Note]
+    @Environment(\.currentVolumeID) private var volID
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(table.rows.enumerated()), id: \.offset) { _, row in
                 HStack(alignment: .top, spacing: 0) {
                     ForEach(Array(row.cells.enumerated()), id: \.offset) { _, cell in
-                        Text(FRUSRenderer.attributedString(cell.content, footnotes: footnotes))
+                        Text(FRUSRenderer.attributedString(cell.content, footnotes: footnotes, volumeID: volID))
                             .font(row.role == "label"
                                   ? .system(size: 12, weight: .semibold, design: .serif)
                                   : .system(size: 12, design: .serif))
@@ -589,9 +601,10 @@ struct TableBlock: View {
 
 struct CloserBlock: View {
     let closer: Closer
+    @Environment(\.currentVolumeID) private var volID
 
     var body: some View {
-        Text(FRUSRenderer.attributedString(closer.content))
+        Text(FRUSRenderer.attributedString(closer.content, volumeID: volID))
             .font(.system(size: 13, design: .serif))
             .italic()
             .foregroundStyle(.secondary)
@@ -605,6 +618,7 @@ struct CloserBlock: View {
 /// Each entry has a numbered marker matching the inline superscript.
 struct FootnotesBlock: View {
     let notes: [Note]
+    @Environment(\.currentVolumeID) private var volID
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -628,7 +642,7 @@ struct FootnotesBlock: View {
 
                     // Content: prefer paragraphs, fall back to inline content
                     let noteContent = noteText(note)
-                    Text(FRUSRenderer.attributedString(noteContent))
+                    Text(FRUSRenderer.attributedString(noteContent, volumeID: volID))
                         .font(.system(size: 11, design: .serif))
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -766,18 +780,21 @@ enum FRUSRenderer {
 
     /// Build an `AttributedString` from inline content, rendering footnote markers
     /// as superscript references matched against the provided footnote list.
+    /// `volumeID` is included in all generated `frus://doc/` links so the URL is
+    /// self-contained and the `onOpenURL` handler requires no additional context.
     static func attributedString(
         _ content: [InlineContent],
-        footnotes: [Note] = []
+        footnotes: [Note] = [],
+        volumeID: String = ""
     ) -> AttributedString {
         var result = AttributedString()
         for item in content {
-            result += fragment(item, footnotes: footnotes)
+            result += fragment(item, footnotes: footnotes, volumeID: volumeID)
         }
         return result
     }
 
-    private static func fragment(_ item: InlineContent, footnotes: [Note]) -> AttributedString {
+    private static func fragment(_ item: InlineContent, footnotes: [Note], volumeID: String = "") -> AttributedString {
         switch item {
 
         case .text(let s):
@@ -811,14 +828,15 @@ enum FRUSRenderer {
                     // External URL — open in system browser.
                     a.link = url
                 } else if target.hasPrefix("#") {
-                    // Same-volume document: #d337
+                    // Same-volume document: #d337 → frus://doc/<volumeID>/d337
                     let docID = String(target.dropFirst())
-                    if let url = URL(string: "frus://doc/__current__/\(docID)") {
+                    let vol = volumeID.isEmpty ? "unknown" : volumeID
+                    if let url = URL(string: "frus://doc/\(vol)/\(docID)") {
                         a.link = url
                         a.foregroundColor = .init(.systemBlue)
                     }
                 } else if target.contains("#") {
-                    // Cross-volume: frus1964-68v02#d337
+                    // Cross-volume: frus1964-68v02#d337 → frus://doc/frus1964-68v02/d337
                     let parts = target.split(separator: "#", maxSplits: 1)
                     if parts.count == 2,
                        let url = URL(string: "frus://doc/\(parts[0])/\(parts[1])") {
@@ -831,7 +849,7 @@ enum FRUSRenderer {
 
         case .hi(let h):
             var a = AttributedString()
-            for c in h.content { a += fragment(c, footnotes: footnotes) }
+            for c in h.content { a += fragment(c, footnotes: footnotes, volumeID: volumeID) }
             let rend = h.rend ?? ""
             if rend.contains("italic") {
                 a.font = .system(size: 13, design: .serif).italic()

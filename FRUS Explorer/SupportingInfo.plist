@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- frus:// internal URL scheme — used for in-app navigation between
+	     documents, footnotes, person records, and term definitions.
+	     Registering the scheme ensures macOS routes clicked links back to
+	     this app instead of showing an "unknown application" dialog. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>FRUS Internal Links</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>frus</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

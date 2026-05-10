@@ -556,6 +556,53 @@ final class AppStore {
         }
     }
 
+    // MARK: - frus:// URL handling
+
+    /// Actions that deep views (DocumentDetailView) need to present as sheets.
+    enum PendingFrusAction: Equatable {
+        /// Show the footnote at this 1-based sequential position.
+        case showFootnote(index: Int)
+        /// Tap on footnote identified only by @n value (no sequential index available).
+        case showFootnoteByN(n: String)
+        /// Show a person card for the given particDesc xml:id.
+        case showPerson(ref: String)
+        /// Show a term definition for the given gloss-list label xml:id.
+        case showTerm(ref: String)
+    }
+
+    /// Set by `handleFrusURL`; cleared by the view after it presents the action.
+    var pendingFrusAction: PendingFrusAction?
+
+    /// Parses a `frus://` URL and either navigates immediately (doc links) or
+    /// stores an action for the current document view to present as a sheet.
+    func handleFrusURL(_ url: URL) {
+        guard url.scheme == "frus", let host = url.host else { return }
+        let parts = url.pathComponents.filter { $0 != "/" }
+        switch host {
+        case "footnote":
+            let key = parts.first ?? ""
+            if let n = Int(key) {
+                pendingFrusAction = .showFootnote(index: n)
+            } else if !key.isEmpty {
+                pendingFrusAction = .showFootnoteByN(n: key)
+            }
+        case "person":
+            if let ref = parts.first, !ref.isEmpty {
+                pendingFrusAction = .showPerson(ref: ref)
+            }
+        case "term":
+            if let ref = parts.first, !ref.isEmpty {
+                pendingFrusAction = .showTerm(ref: ref)
+            }
+        case "doc":
+            if parts.count >= 2 {
+                navigate(to: parts[1], in: parts[0])
+            }
+        default:
+            break
+        }
+    }
+
     // MARK: - Delete local file
 
     func deleteVolume(_ id: String) {
