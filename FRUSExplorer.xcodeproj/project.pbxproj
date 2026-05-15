@@ -27,6 +27,9 @@
 		AA06BB02CC03DD04EE060032 /* FRUSDocumentRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */; };
 		AA06BB02CC03DD04EE060033 /* TEIParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */; };
 		AA07BB02CC03DD04EE070001 /* FRUSParserSession07Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */; };
+		AA08BB02CC03DD04EE080001 /* SubjectTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */; };
+		AA08BB02CC03DD04EE080002 /* SubjectTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */; };
+		AA08BB02CC03DD04EE080004 /* SubjectTagStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */; };
 		AA06BB02CC03DD04EE060034 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		AA06BB02CC03DD04EE060035 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
@@ -113,6 +116,8 @@
 		AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSDocumentRenderer.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TEIParserTests.swift; sourceTree = "<group>"; };
 		AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSParserSession07Tests.swift; sourceTree = "<group>"; };
+		AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubjectTagStore.swift; sourceTree = "<group>"; };
+		AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubjectTagStoreTests.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "tei-rendering-config.json"; sourceTree = "<group>"; };
 		12AD9CC40627F7281D079B75 /* SwiftDataModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SwiftDataModelTests.swift; sourceTree = "<group>"; };
 		138DA99A6075C0CE20F88129 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
@@ -244,6 +249,7 @@
 				AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */,
 				AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */,
 				AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */,
+				AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -290,6 +296,7 @@
 			children = (
 				48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */,
 				805A3A8F83E1102E00B2D12C /* VolumeLevelTagStore.swift */,
+				AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */,
 			);
 			path = Tags;
 			sourceTree = "<group>";
@@ -481,6 +488,7 @@
 				79425B089B74B72978721CBB /* ManifestStore.swift in Sources */,
 				CB79768B4C635DCD4164AA09 /* TaxonomyModels.swift in Sources */,
 				57383AB4A7720F91DCEE13A1 /* VolumeLevelTagStore.swift in Sources */,
+				AA08BB02CC03DD04EE080001 /* SubjectTagStore.swift in Sources */,
 				E83FB53D20F4585C41AAAB73 /* SupportingTypes.swift in Sources */,
 				DCAADA810C1FCDA065DBE283 /* Project.swift in Sources */,
 				CCC8365E667F068DDD2789AB /* ResearchNote.swift in Sources */,
@@ -513,6 +521,7 @@
 				E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */,
 				B0130650A3D9513A0E58368C /* TaxonomyModels.swift in Sources */,
 				887D4D10D94B9100A232EB57 /* VolumeLevelTagStore.swift in Sources */,
+				AA08BB02CC03DD04EE080002 /* SubjectTagStore.swift in Sources */,
 				A715CE19074448DDA44E1980 /* SupportingTypes.swift in Sources */,
 				727AA985E27DFD88FB9D2340 /* Project.swift in Sources */,
 				F80B3D8D9BBCFEDB3BA130EF /* ResearchNote.swift in Sources */,
@@ -548,6 +557,7 @@
 				AA01BB02CC03DD04EE050015 /* DownloadManagerTests.swift in Sources */,
 				AA06BB02CC03DD04EE060033 /* TEIParserTests.swift in Sources */,
 				AA07BB02CC03DD04EE070001 /* FRUSParserSession07Tests.swift in Sources */,
+				AA08BB02CC03DD04EE080004 /* SubjectTagStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

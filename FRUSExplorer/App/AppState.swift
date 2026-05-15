@@ -29,10 +29,16 @@ import Observation
 /// `downloadManager` is set once at app launch by `FRUSExplorerApp`. Views that
 /// need to trigger or inspect downloads access it via `@Environment(AppState.self)`.
 ///
+/// ## Tag Stores
+/// `volumeLevelTagStore` resolves volume-level tag slugs and provides volume-by-tag
+/// index queries. `subjectTagStore` provides document-level subject tag lookups.
+/// Both are loaded synchronously at init from the app bundle.
+///
 /// Version history:
 ///   1.0 — Session 01: initial implementation
 ///   1.1 — Session 04: SwiftData container injected at App level
 ///   1.2 — Session 05: NWPathMonitor, downloadManager, downloadQueue wired up
+///   1.3 — Session 08: volumeLevelTagStore, subjectTagStore wired up
 @Observable
 @MainActor
 final class AppState {
@@ -75,6 +81,16 @@ final class AppState {
     /// Updated by `DownloadManager` via its `onStateChanged` callback. Views observe
     /// this to show download indicators without calling into the actor directly.
     var downloadQueue: [String] = []
+
+    // MARK: - Tag Stores
+
+    /// Resolves volume-level tag slugs and provides volume-by-tag queries.
+    /// Loaded synchronously from `volume-tag-taxonomy.json` and `manifest.json` at init.
+    let volumeLevelTagStore: VolumeLevelTagStore = VolumeLevelTagStore()
+
+    /// Provides document-level subject tag lookups by document ID, subject ID, and category.
+    /// Loaded synchronously from `taxonomy.json` and `subject-appearances.json` at init.
+    let subjectTagStore: SubjectTagStore = SubjectTagStore()
 
     // MARK: - Network Monitor (private)
 

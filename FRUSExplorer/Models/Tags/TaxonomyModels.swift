@@ -71,3 +71,69 @@ public struct TagTaxonomyEntry: Codable, Sendable, Equatable {
     public let parentSlug: String?
     public let description: String?
 }
+
+// MARK: - SubjectTag
+
+/// A document-level subject tag produced by the experimental tagging pipeline.
+///
+/// Unlike `VolumeLevelTag` (which is per-volume and authoritative), `SubjectTag` is
+/// per-document and carries a `confidence` tier that reflects how the tag was assigned.
+///
+/// `.curated` tags are manually verified; `.stringMatch` tags are algorithmically
+/// derived and may have false positives.
+///
+/// Version history:
+///   1.0 — Session 08: initial implementation
+public struct SubjectTag: Identifiable, Sendable, Equatable {
+    /// Stable primary key. Shares the namespace with `VolumeLevelTag.slug`.
+    public let subjectId: String
+
+    /// Human-readable display name.
+    public let displayName: String
+
+    /// Top-level category.
+    public let category: TagCategory
+
+    /// Confidence tier assigned by the tagging pipeline.
+    public let confidence: SubjectTagConfidence
+
+    public var id: String { subjectId }
+}
+
+/// Confidence tier for a document-level `SubjectTag`.
+public enum SubjectTagConfidence: String, Codable, Sendable, CaseIterable {
+    /// Manually verified by OH staff or the data pipeline operator.
+    case curated
+    /// Derived algorithmically via string matching. May include false positives.
+    case stringMatch
+}
+
+// MARK: - SubjectTagEntry
+
+/// A single entry decoded from `taxonomy.json` (the document-level subject taxonomy).
+///
+/// Decoded by `SubjectTagStore` at launch and used to resolve `SubjectTag` values.
+///
+/// Version history:
+///   1.0 — Session 08: initial implementation
+public struct SubjectTagEntry: Codable, Sendable, Equatable {
+    public let subjectId: String
+    public let displayName: String
+    public let category: String
+}
+
+// MARK: - SubjectAppearance
+
+/// A record linking a subject to a specific document, decoded from `subject-appearances.json`.
+///
+/// `SubjectTagStore` uses these records to answer "which subjects appear in document X?"
+/// and "which documents mention subject Y?".
+///
+/// Version history:
+///   1.0 — Session 08: initial implementation
+public struct SubjectAppearance: Codable, Sendable, Equatable {
+    public let subjectId: String
+    public let documentId: String
+    public let volumeId: String
+    public let confidence: SubjectTagConfidence
+}

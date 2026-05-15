@@ -12,8 +12,13 @@ import Observation
 /// Loads the bundled volume-tag taxonomy and resolves tag slugs to `VolumeLevelTag` values.
 ///
 /// `VolumeLevelTagStore` is the single point of contact for tag display data. It decodes
-/// `volume-tag-taxonomy.json` once at init and provides O(1) slug resolution for the
-/// Browse-by-Tag volume list and other tag-displaying UI.
+/// `volume-tag-taxonomy.json` and `manifest.json` once at init, providing O(1) slug
+/// resolution and O(n) volume-by-tag queries for the Browse-by-Tag volume list.
+///
+/// ## Volume-by-Tag Index
+/// At init, the store reads `manifest.json` to build a reverse index mapping each tag slug
+/// to the list of volume IDs that carry it. Call `volumes(forTagSlug:)` for single-tag
+/// lookup and `volumes(forTagSlugs:)` for AND-filtered multi-tag intersection.
 ///
 /// ## Unknown Slugs
 /// Tags present in `manifest.json` but absent from the taxonomy return `nil` from
@@ -23,6 +28,7 @@ import Observation
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — Session 08: volume-by-tag index; allTags/volumes query methods
 @Observable
 @MainActor
 public final class VolumeLevelTagStore {
@@ -41,13 +47,26 @@ public final class VolumeLevelTagStore {
         }
     }
 
+    // MARK: - Private State
+
+    /// Reverse index: tag slug → sorted volume IDs that carry it.
+    private var volumesByTag: [String: [String]] = [:]
+
     // MARK: - Initialization
 
     public init() {
         entries = Self.loadBundledTaxonomy()
+        let manifest = Self.loadBundledManifest()
+        volumesByTag = Self.buildVolumesByTag(from: manifest)
         #if DEBUG
-        print("[FRUSExplorer] VolumeLevelTagStore initialised with \(entries.count) entries.")
+        print("[FRUSExplorer] VolumeLevelTagStore initialised: \(entries.count) tags, \(manifest.count) volumes.")
         #endif
+    }
+
+    /// Testing initialiser — skips bundle I/O and uses provided data directly.
+    init(taxonomyEntries: [TagTaxonomyEntry], manifestEntries: [VolumeManifestEntry]) {
+        entries = Dictionary(uniqueKeysWithValues: taxonomyEntries.map { ($0.slug, $0) })
+        volumesByTag = Self.buildVolumesByTag(from: manifestEntries)
     }
 
     // MARK: - Resolution
@@ -77,6 +96,44 @@ public final class VolumeLevelTagStore {
         slugs.compactMap { resolve(slug: $0) }
     }
 
+    // MARK: - Tag Queries
+
+    /// All resolved tags sorted by display name within category.
+    public func allTags() -> [VolumeLevelTag] {
+        allEntries.compactMap { resolve(slug: $0.slug) }
+    }
+
+    /// All resolved tags in the given category, sorted by display name.
+    public func allTags(inCategory category: TagCategory) -> [VolumeLevelTag] {
+        allTags().filter { $0.category == category }
+    }
+
+    /// All resolved tags in the given subcategory slug, sorted by display name.
+    public func allTags(inSubcategory subcategory: String) -> [VolumeLevelTag] {
+        allTags().filter { $0.subcategory == subcategory }
+    }
+
+    // MARK: - Volume Queries
+
+    /// Returns the volume IDs that carry the given tag slug.
+    ///
+    /// Returns an empty array if the slug is unknown or no volume uses it.
+    public func volumes(forTagSlug slug: String) -> [String] {
+        volumesByTag[slug] ?? []
+    }
+
+    /// Returns the volume IDs that carry **all** of the given tag slugs (AND logic).
+    ///
+    /// An empty input returns an empty array. A single slug delegates to `volumes(forTagSlug:)`.
+    public func volumes(forTagSlugs slugs: [String]) -> [String] {
+        guard let first = slugs.first else { return [] }
+        var result = Set(volumes(forTagSlug: first))
+        for slug in slugs.dropFirst() {
+            result.formIntersection(volumes(forTagSlug: slug))
+        }
+        return result.sorted()
+    }
+
     // MARK: - Private
 
     private static func loadBundledTaxonomy() -> [String: TagTaxonomyEntry] {
@@ -96,5 +153,35 @@ public final class VolumeLevelTagStore {
             #endif
             return [:]
         }
+    }
+
+    private static func loadBundledManifest() -> [VolumeManifestEntry] {
+        guard let url = Bundle.main.url(forResource: "manifest", withExtension: "json") else {
+            #if DEBUG
+            print("[FRUSExplorer] VolumeLevelTagStore: manifest.json not found in bundle.")
+            #endif
+            return []
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            return try JSONDecoder().decode([VolumeManifestEntry].self, from: data)
+        } catch {
+            #if DEBUG
+            print("[FRUSExplorer] VolumeLevelTagStore: failed to decode manifest — \(error)")
+            #endif
+            return []
+        }
+    }
+
+    private static func buildVolumesByTag(from entries: [VolumeManifestEntry]) -> [String: [String]] {
+        var index: [String: [String]] = [:]
+        for entry in entries {
+            for slug in entry.tags {
+                index[slug, default: []].append(entry.volumeId)
+            }
+        }
+        // Sort volume lists for deterministic output
+        for key in index.keys { index[key]?.sort() }
+        return index
     }
 }
