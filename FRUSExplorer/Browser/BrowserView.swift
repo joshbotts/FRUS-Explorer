@@ -92,6 +92,8 @@ struct BrowserView: View {
             VolumeView(vm: vm, volume: entry)
         case .compilation(let volumeId, let section):
             CompilationView(vm: vm, volumeId: volumeId, section: section)
+        case .document(let entry):
+            DocumentView(entry: entry)
         }
     }
 
@@ -130,7 +132,11 @@ private struct SubseriesListView: View {
                 "Subseries \(group.subseries), \(group.totalVolumes) volumes"
             )
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
     }
 }
 

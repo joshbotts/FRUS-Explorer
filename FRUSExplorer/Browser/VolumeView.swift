@@ -43,7 +43,11 @@ struct VolumeView: View {
             // Structure / section list
             volumeStructureSection
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
         .navigationTitle(volume.title)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)

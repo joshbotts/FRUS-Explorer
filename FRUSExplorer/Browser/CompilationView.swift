@@ -44,7 +44,11 @@ struct CompilationView: View {
             // Document list
             documentListSection
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
         .navigationTitle(section.title)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
@@ -110,7 +114,15 @@ struct CompilationView: View {
         } else {
             Section(header: Text(docsHeader(count: docs.count))) {
                 ForEach(docs) { doc in
-                    DocumentRowLabel(doc: doc)
+                    Button {
+                        vm.navigationPath.append(.document(doc))
+                        #if DEBUG
+                        print("[BrowserView] Navigate → document \(doc.documentId)")
+                        #endif
+                    } label: {
+                        DocumentRowLabel(doc: doc)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

@@ -44,7 +44,11 @@ struct CorpusView: View {
                 }
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
         .navigationTitle(String(localized: "browser.corpus.title", defaultValue: "FRUS Corpus"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)

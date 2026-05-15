@@ -50,6 +50,7 @@ public final class BrowserViewModel {
         case subseries(SubseriesGroup)
         case volume(VolumeManifestEntry)
         case compilation(volumeId: String, section: VolumeSection)
+        case document(DocumentBrowserEntry)
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -58,6 +59,7 @@ public final class BrowserViewModel {
             case .volume(let v):       hasher.combine(2); hasher.combine(v.volumeId)
             case .compilation(let vid, let s):
                 hasher.combine(3); hasher.combine(vid); hasher.combine(s.sectionId)
+            case .document(let e):     hasher.combine(4); hasher.combine(e.documentId)
             }
         }
 
@@ -68,6 +70,7 @@ public final class BrowserViewModel {
             case (.volume(let a), .volume(let b)): return a.volumeId == b.volumeId
             case (.compilation(let v1, let s1), .compilation(let v2, let s2)):
                 return v1 == v2 && s1.sectionId == s2.sectionId
+            case (.document(let a), .document(let b)): return a.documentId == b.documentId
             default: return false
             }
         }

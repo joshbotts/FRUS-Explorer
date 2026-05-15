@@ -1,0 +1,227 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Foundation
+import Observation
+import SwiftData
+
+// MARK: - DocumentViewModel
+
+/// Manages state for the Document view: loading the rendered document, subject tags,
+/// person/gloss lookup tables, and research-note cross-project indicator.
+///
+/// ## Loading Sequence
+/// 1. `load()` is called on appear with the volume URL.
+/// 2. Parses the document AST and persons/terms in parallel.
+/// 3. Converts the AST to a `FRUSDocumentRenderModel` with person/gloss lookup closures.
+/// 4. Fetches subject tags from `SubjectTagStore`.
+/// 5. `recordReadingHistory()` inserts a `ReadingHistoryEntry` into SwiftData.
+///
+/// ## persName / gloss Sheets
+/// `selectedPerson` and `selectedGloss` are set by the renderer callbacks and drive
+/// sheet presentation. Cross-reference navigation appends a new `.document` level to
+/// `BrowserViewModel.navigationPath`.
+///
+/// Version history:
+///   1.0 — Session 12: initial implementation
+@Observable
+@MainActor
+public final class DocumentViewModel {
+
+    // MARK: - Document State
+
+    /// The fully-rendered model, set after a successful load.
+    public var renderModel: FRUSDocumentRenderModel?
+
+    /// `true` while the document is being parsed/converted.
+    public var isLoading: Bool = false
+
+    /// Non-nil if loading failed.
+    public var loadError: Error? = nil
+
+    // MARK: - Person / Gloss Lookup Tables
+
+    /// Persons from the volume's `<listPerson>`, indexed by `ref` attribute.
+    public var personsByRef: [String: PersonEntry] = [:]
+
+    /// Glossary terms from the volume's `<glossary>`, indexed by `ref` attribute.
+    public var termsByRef: [String: GlossEntry] = [:]
+
+    // MARK: - Tag State
+
+    /// Subject tags for this document (curated + string-match), loaded after parse.
+    public var subjectTags: [SubjectTag] = []
+
+    // MARK: - Sheet State
+
+    /// Person selected via a `<persName>` tap; drives the List of Persons sheet.
+    public var selectedPerson: PersonEntry? = nil
+
+    /// Gloss entry selected via a `<gloss>` tap; drives the Terms sheet.
+    public var selectedGloss: GlossEntry? = nil
+
+    // MARK: - Research Note Indicator
+
+    /// Count of research notes attached to this document that belong to a
+    /// project OTHER than the currently active project.
+    public var crossProjectNoteCount: Int = 0
+
+    // MARK: - Summaries
+
+    /// Summaries for this document, ordered newest-first.
+    var summaries: [GeneratedSummary] = []
+
+    /// Index of the summary currently displayed (0 = most recent).
+    public var activeSummaryIndex: Int = 0
+
+    var activeSummary: GeneratedSummary? {
+        guard !summaries.isEmpty, summaries.indices.contains(activeSummaryIndex) else { return nil }
+        return summaries[activeSummaryIndex]
+    }
+
+    // MARK: - Dependencies
+
+    public let entry: DocumentBrowserEntry
+    private let parser: FRUSDocumentParser
+    private let subjectTagStore: SubjectTagStore
+
+    // MARK: - Init
+
+    public init(
+        entry: DocumentBrowserEntry,
+        parser: FRUSDocumentParser,
+        subjectTagStore: SubjectTagStore
+    ) {
+        self.entry = entry
+        self.parser = parser
+        self.subjectTagStore = subjectTagStore
+    }
+
+    // MARK: - Loading
+
+    /// Parses the document, populates lookup tables, converts to a render model,
+    /// and fetches subject tags. Idempotent if already loaded.
+    public func load(volumeURL: URL) async {
+        guard renderModel == nil else { return }
+        isLoading = true
+        loadError = nil
+        do {
+            // Parse document AST, persons, and terms concurrently
+            async let astResult = parser.parseDocument(documentId: entry.documentId,
+                                                       volumeURL: volumeURL)
+            async let personsResult = parser.parsePersons(volumeURL: volumeURL)
+            async let termsResult = parser.parseTerms(volumeURL: volumeURL)
+
+            guard let ast = try await astResult else {
+                loadError = DocumentLoadError.documentNotFound(entry.documentId)
+                isLoading = false
+                return
+            }
+            let persons = try await personsResult
+            let terms   = try await termsResult
+
+            // Build lookup tables
+            var pByRef: [String: PersonEntry] = [:]
+            for p in persons { pByRef[p.ref] = p }
+            var tByRef: [String: GlossEntry] = [:]
+            for t in terms { tByRef[t.ref] = t }
+            personsByRef = pByRef
+            termsByRef   = tByRef
+
+            // Convert AST → render model with lookup closures
+            var converter = ASTToRenderNodeConverter(
+                personLookup: { [pByRef] ref in pByRef[ref] },
+                glossLookup:  { [tByRef] ref in tByRef[ref] }
+            )
+            renderModel = converter.convert(ast)
+
+            // Fetch subject tags
+            subjectTags = await subjectTagStore.tags(forDocumentId: entry.documentId)
+
+            #if DEBUG
+            print("[DocumentView] Loaded \(entry.volumeId)/\(entry.documentId) " +
+                  "bodyNodes=\(renderModel?.bodyNodes.count ?? 0) " +
+                  "subjectTags=\(subjectTags.count)")
+            #endif
+        } catch {
+            loadError = error
+            #if DEBUG
+            print("[DocumentView] Load failed for \(entry.documentId): \(error)")
+            #endif
+        }
+        isLoading = false
+    }
+
+    // MARK: - Reading History
+
+    /// Inserts a `ReadingHistoryEntry` into the SwiftData context.
+    /// Call this once after a successful load, passing the active project ID.
+    public func recordReadingHistory(projectId: UUID?, in context: ModelContext) {
+        let record = ReadingHistoryEntry(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            projectId: projectId
+        )
+        context.insert(record)
+        #if DEBUG
+        print("[DocumentView] ReadingHistoryEntry recorded: \(entry.volumeId)/\(entry.documentId)")
+        #endif
+    }
+
+    // MARK: - Cross-Project Notes
+
+    /// Refreshes `crossProjectNoteCount` from SwiftData.
+    ///
+    /// A note is "cross-project" if it is attached to this document and does NOT
+    /// include the current active project in its `projectIds` list.
+    public func refreshCrossProjectNoteCount(activeProjectId: UUID?, context: ModelContext) {
+        let docId = entry.documentId
+        let volId = entry.volumeId
+        let descriptor = FetchDescriptor<ResearchNote>(
+            predicate: #Predicate { note in
+                note.documentId == docId && note.volumeId == volId
+            }
+        )
+        let all = (try? context.fetch(descriptor)) ?? []
+        if let pid = activeProjectId {
+            crossProjectNoteCount = all.filter { !$0.projectIds.contains(pid) }.count
+        } else {
+            crossProjectNoteCount = 0
+        }
+    }
+
+    // MARK: - Summaries
+
+    /// Loads summaries for this document from SwiftData, ordered newest-first.
+    public func loadSummaries(context: ModelContext) {
+        let docId = entry.documentId
+        let volId = entry.volumeId
+        var descriptor = FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { s in
+                s.documentId == docId && s.volumeId == volId
+            }
+        )
+        descriptor.fetchLimit = 20
+        summaries = ((try? context.fetch(descriptor)) ?? [])
+            .sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
+        activeSummaryIndex = 0
+    }
+}
+
+// MARK: - DocumentLoadError
+
+public enum DocumentLoadError: LocalizedError {
+    case documentNotFound(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .documentNotFound(let id):
+            return "Document '\(id)' was not found in the volume."
+        }
+    }
+}

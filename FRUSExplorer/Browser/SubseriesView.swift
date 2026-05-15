@@ -63,7 +63,11 @@ struct SubseriesView: View {
                 }
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
         .navigationTitle(group.subseries)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
@@ -218,7 +222,9 @@ private struct TagPickerSheet: View {
                         prompt: String(localized: "browser.filter.search",
                                        defaultValue: "Search tags"))
             .navigationTitle(String(localized: "browser.filter.title", defaultValue: "Filter by Tag"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "browser.filter.done", defaultValue: "Done")) {
