@@ -30,8 +30,10 @@ import Sparkle
 /// 1. `AppState` initialises synchronously: restores `activeProjectId`, starts `NWPathMonitor`.
 /// 2. `ModelContainer` is created synchronously via `makeFRUSContainer()`.
 /// 3. On the first `.task {}` fire (main actor, after first render):
-///    a. `DownloadManager` is created and assigned to `appState.downloadManager`.
-///    b. If online, `resumeQueuedDownloads()` is called to continue any persisted queue.
+///    a. `IndexingPipeline` and `SearchService` are created (failures are non-fatal).
+///    b. `DownloadManager` is created with an `onVolumeDownloaded` closure that calls
+///       `pipeline.indexVolume(_:)` automatically after each successful download.
+///    c. If online, `resumeQueuedDownloads()` is called to continue any persisted queue.
 /// 4. `onChange(of: appState.isOnline)` enables/suspends the download manager in real time.
 ///
 /// ## Version history
@@ -44,6 +46,7 @@ import Sparkle
 ///   1.6 — Session 21: wire BackgroundSummarizationService at boot
 ///   1.7 — Session 29: DirectDistribution Sparkle "Check for Updates" menu command
 ///   1.8 — Session 31: fix CitationLookupView download URL construction
+///   1.9 — Session 33: wire onVolumeDownloaded → indexVolume for automatic post-download indexing
 @main
 struct FRUSExplorerApp: App {
 
@@ -133,11 +136,27 @@ struct FRUSExplorerApp: App {
         )
         SummarizationPromptSeeder.seed(in: modelContainer)
 
+        // Capture the pipeline reference here on the MainActor (where appState is isolated)
+        // so the onVolumeDownloaded closure can call indexVolume without a main-actor hop.
+        // If pipeline setup failed above, indexPipeline is nil and no callback is registered.
+        let indexPipeline = appState.indexingPipeline
+
         let dm = DownloadManager(
             volumesDirectory: volumesDir,
             concurrencyLimit: UserDefaults.standard.integer(forKey: "downloadConcurrencyLimit").nonZeroOrDefault(4),
             onStateChanged: { @MainActor [appState] state in
                 appState.downloadQueue = state.allQueuedVolumeIds
+            },
+            onVolumeDownloaded: indexPipeline.map { pipeline in
+                // Called on an unstructured Task after each successful download.
+                // Errors are suppressed with try? — a failed index attempt is recoverable
+                // via Settings > Reindex.
+                { @Sendable volumeId in
+                    try? await pipeline.indexVolume(volumeId)
+                    #if DEBUG
+                    print("[FRUSExplorer] Auto-indexed \(volumeId) after download.")
+                    #endif
+                }
             }
         )
         appState.downloadManager = dm

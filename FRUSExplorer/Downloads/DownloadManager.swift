@@ -38,12 +38,20 @@ import Foundation
 /// The `downloadTask` parameter replaces the real URLSession call in tests. Inject a
 /// closure that writes fixture XML to a temporary file and returns its URL.
 ///
-/// ## Session 09 Hook
+/// ## Post-Download Hook
+/// `onVolumeDownloaded` is called (via an unstructured `Task`) immediately after a volume
+/// file is confirmed on disk. `FRUSExplorerApp` supplies a closure that calls
+/// `IndexingPipeline.indexVolume(_:)`, so search indexing begins automatically without
+/// any user action. `DownloadManager` has no direct reference to `IndexingPipeline`;
+/// the closure is the only coupling point.
+///
+/// ## Deletion Hook
 /// `deleteVolume` fires `Notification.Name.frusVolumeDeleted` so the FTS5 index pipeline
 /// can remove the volume's entries. The search index observer is registered in Session 09.
 ///
 /// Version history:
 ///   1.0 — Session 05: initial implementation
+///   1.1 — Session 33: added `onVolumeDownloaded` callback for automatic post-download indexing
 public actor DownloadManager {
 
     // MARK: - Types
@@ -62,6 +70,10 @@ public actor DownloadManager {
 
     private let downloadTask: DownloadTask
     private let onStateChanged: @MainActor (DownloadManagerState) -> Void
+
+    /// Called on an unstructured `Task` immediately after a volume file is written to disk.
+    /// `nil` if no post-download action is needed (e.g. indexing is unavailable).
+    private let onVolumeDownloaded: (@Sendable (String) async -> Void)?
 
     // MARK: - Mutable Queue State
 
@@ -91,11 +103,15 @@ public actor DownloadManager {
     ///   - concurrencyLimit: Max simultaneous downloads. Default 4.
     ///   - downloadTask: URLSession replacement for tests. Default uses `URLSession.shared`.
     ///   - onStateChanged: Called on the MainActor whenever active/pending queues change.
+    ///   - onVolumeDownloaded: Called (via an unstructured `Task`) once a volume file is
+    ///     confirmed on disk. Use this to trigger indexing without coupling `DownloadManager`
+    ///     directly to `IndexingPipeline`. Pass `nil` if no post-download action is needed.
     public init(
         volumesDirectory: URL,
         concurrencyLimit: Int = 4,
         downloadTask: DownloadTask? = nil,
-        onStateChanged: @escaping @MainActor (DownloadManagerState) -> Void
+        onStateChanged: @escaping @MainActor (DownloadManagerState) -> Void,
+        onVolumeDownloaded: (@Sendable (String) async -> Void)? = nil
     ) {
         self.volumesDirectory = volumesDirectory
         self.concurrencyLimit = concurrencyLimit
@@ -103,6 +119,7 @@ public actor DownloadManager {
             try await URLSession.shared.download(for: request)
         }
         self.onStateChanged = onStateChanged
+        self.onVolumeDownloaded = onVolumeDownloaded
 
         // Restore persisted pending queue from the previous app session.
         let restored = Self.loadPersistedQueue()
@@ -326,6 +343,14 @@ public actor DownloadManager {
     private func downloadDidSucceed(volumeId: String) {
         activeDownloads.removeValue(forKey: volumeId)
         pendingUrls.removeValue(forKey: volumeId)
+
+        // Trigger post-download indexing (or any other action) without blocking the actor.
+        // The callback runs in an unstructured Task so it does not delay queue processing
+        // and does not hold the DownloadManager actor for the duration of indexing.
+        if let callback = onVolumeDownloaded {
+            Task { await callback(volumeId) }
+        }
+
         processQueue()
     }
 
