@@ -232,6 +232,8 @@
 		AA30BB01CC03DD04EE3021 /* CitationParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3020 /* CitationParserTests.swift */; };
 		AA30BB01CC03DD04EE3023 /* PageRangeStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3022 /* PageRangeStoreTests.swift */; };
 		AA30BB01CC03DD04EE3025 /* CitationMatchingEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */; };
+		AA31BB01CC03DD04EE3101 /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */; };
+		AA31BB01CC03DD04EE3103 /* CodingStandardsAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */; };
 		AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
@@ -393,6 +395,8 @@
 		AA30BB01CC03DD04EE3020 /* CitationParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationParserTests.swift; sourceTree = "<group>"; };
 		AA30BB01CC03DD04EE3022 /* PageRangeStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PageRangeStoreTests.swift; sourceTree = "<group>"; };
 		AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngineTests.swift; sourceTree = "<group>"; };
+		AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
+		AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodingStandardsAuditTests.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
@@ -516,6 +520,8 @@
 				AA30BB01CC03DD04EE3020 /* CitationParserTests.swift */,
 				AA30BB01CC03DD04EE3022 /* PageRangeStoreTests.swift */,
 				AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */,
+				AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */,
+				AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -1155,6 +1161,8 @@
 				AA30BB01CC03DD04EE3021 /* CitationParserTests.swift in Sources */,
 				AA30BB01CC03DD04EE3023 /* PageRangeStoreTests.swift in Sources */,
 				AA30BB01CC03DD04EE3025 /* CitationMatchingEngineTests.swift in Sources */,
+				AA31BB01CC03DD04EE3101 /* IntegrationTests.swift in Sources */,
+				AA31BB01CC03DD04EE3103 /* CodingStandardsAuditTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

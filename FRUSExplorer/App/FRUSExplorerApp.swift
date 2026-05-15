@@ -43,6 +43,7 @@ import Sparkle
 ///   1.5 — Session 20: seed standard prompts on first launch
 ///   1.6 — Session 21: wire BackgroundSummarizationService at boot
 ///   1.7 — Session 29: DirectDistribution Sparkle "Check for Updates" menu command
+///   1.8 — Session 31: fix CitationLookupView download URL construction
 @main
 struct FRUSExplorerApp: App {
 

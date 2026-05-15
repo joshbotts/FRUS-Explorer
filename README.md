@@ -143,6 +143,38 @@ swift run ManifestGenerator
 swift run TaxonomyGenerator
 ```
 
+## Running Tests
+
+```sh
+# All unit tests (iOS simulator)
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 16"
+
+# Quick filter to a single test suite
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 16" \
+  -only-testing FRUSExplorerTests/CitationParserTests
+```
+
+### Manual Integration Tests
+
+The following integration tests require a live device, downloaded volumes, or
+network access and must be verified manually before each release:
+
+| Test | How to verify |
+|---|---|
+| **FullOnboardingTest** | Fresh install → onboarding → download ≥1 volume → confirm BrowserView appears |
+| **LargeCorpusIndexTest** | Index 10+ volumes; confirm search returns correct results |
+| **SearchPerformanceTest** | Search a large corpus; results appear in <1 second |
+| **GraphRenderPerformanceTest** | Open a document with 20+ cross-references; confirm smooth animation |
+| **CloudKitSyncTest** | Create a research note on device A; confirm it appears on device B |
+| **OfflineResilienceTest** | Disable network mid-session; confirm no crash or data loss |
+| **CrossPlatformVerification** | Verify all major workflows on macOS, iPadOS, and iPhone |
+
 ## Coding Standards
 
 All code must comply with the following standards (see `Planning/FRUS-Explorer-Specification.md` §22):
@@ -150,9 +182,11 @@ All code must comply with the following standards (see `Planning/FRUS-Explorer-S
 - **Swift 6 strict concurrency** — zero warnings under `SWIFT_STRICT_CONCURRENCY=complete`
 - **Localization** — all user-facing strings use `String(localized:)`; no hardcoded literals
 - **Documentation** — every new type, function, and significant property carries a doc comment
-- **Telemetry** — `#if DEBUG` print statements for all significant operations
+- **Telemetry** — `#if DEBUG` print statements for all significant operations; log prefixes match `[TypeName]` convention
 - **Testing** — each development session produces unit tests; all prior tests must continue passing
-- **OpenAPI** — `FRUS-API.openapi.yaml` updated in any session touching GitHub API or volume XML
+- **OpenAPI** — `FRUS-API.openapi.yaml` updated in any session touching the API surface; must remain valid OpenAPI 3.1.0
+
+The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of these requirements automatically.
 
 ## Architecture
 

@@ -294,7 +294,8 @@ struct CitationLookupView: View {
     private func initiateDownload(for match: CitationMatch) {
         guard let entry = match.volumeManifestEntry,
               let dm = appState.downloadManager else { return }
-        Task { await dm.enqueue(volumeId: entry.volumeId) }
+        let downloadUrl = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+        Task { await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: downloadUrl) }
     }
 }
 
