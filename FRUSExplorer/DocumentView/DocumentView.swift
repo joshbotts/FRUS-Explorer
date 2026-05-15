@@ -32,6 +32,7 @@ import SwiftData
 ///   1.0 — Session 12: initial implementation
 ///   1.1 — Session 20: add summarize toolbar button, prompt picker sheet, wasChunked indicator
 ///   1.2 — Session 23: add source explorer toolbar button and sheet
+///   1.3 — Session 27: Q5 curated badge icon; Q1 confidence-aware a11y label; tag hint
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -568,7 +569,12 @@ private struct DocumentTagChip: View {
             HStack(spacing: 4) {
                 Text(tag.displayName)
                     .font(.caption)
-                if tag.confidence == .stringMatch {
+                // Q5: non-color distinction between curated (checkmark) and string-match (question mark)
+                if tag.confidence == .curated {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.tint)
+                } else {
                     Image(systemName: "questionmark.circle")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -580,8 +586,13 @@ private struct DocumentTagChip: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
-        // Resolved accessibility pattern per spec §18: "<name>, subject tag"
-        .accessibilityLabel("\(tag.displayName), subject tag")
+        // Q1: "<name>, subject tag" — .isButton trait appends "button" in VoiceOver announcement
+        // Q5: label distinguishes confidence tier for low-sighted users
+        .accessibilityLabel(tag.confidence == .curated
+            ? "\(tag.displayName), subject tag"
+            : "\(tag.displayName), approximate subject tag match")
+        .accessibilityHint(String(localized: "document.tag.chip.hint",
+                                  defaultValue: "Filters search results by this tag"))
         .accessibilityAddTraits(.isButton)
     }
 

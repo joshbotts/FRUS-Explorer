@@ -35,6 +35,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 18: initial implementation
+///   1.1 — Session 27: Q3 structured-list a11y representation; Q4 Reduce Motion transition fix
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -131,6 +132,64 @@ struct CrossReferenceGraphView: View {
             // Info panel floats above the scaled canvas at a fixed location.
             nodeInfoPanel
                 .padding()
+                // Q4: suppress scale animation under Reduce Motion
+                .animation(
+                    reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
+                    value: vm.selectedNodeKey
+                )
+        }
+        // Q3: VoiceOver alternative — structured inbound/outbound reference list
+        .accessibilityRepresentation { graphAccessibilityList }
+    }
+
+    // MARK: - Accessibility List Representation (Q3)
+
+    @ViewBuilder
+    private var graphAccessibilityList: some View {
+        let inbound = vm.displayNodes.filter {
+            if case .inbound = $0.kind { return true }
+            if case .clusterInbound = $0.kind { return true }
+            return false
+        }
+        let outbound = vm.displayNodes.filter {
+            if case .outbound = $0.kind { return true }
+            if case .clusterOutbound = $0.kind { return true }
+            return false
+        }
+
+        VStack(alignment: .leading, spacing: 0) {
+            if !inbound.isEmpty {
+                Text(String(localized: "graph.a11y.section.inbound",
+                            defaultValue: "Inbound References"))
+                    .accessibilityAddTraits(.isHeader)
+                ForEach(inbound) { node in
+                    Button {
+                        #if os(macOS)
+                        vm.navigateToNode(node.id)
+                        #else
+                        vm.tapNode(node.id, reduceMotion: reduceMotion)
+                        #endif
+                    } label: {
+                        Text(node.accessibilityLabel)
+                    }
+                }
+            }
+            if !outbound.isEmpty {
+                Text(String(localized: "graph.a11y.section.outbound",
+                            defaultValue: "Outbound References"))
+                    .accessibilityAddTraits(.isHeader)
+                ForEach(outbound) { node in
+                    Button {
+                        #if os(macOS)
+                        vm.navigateToNode(node.id)
+                        #else
+                        vm.tapNode(node.id, reduceMotion: reduceMotion)
+                        #endif
+                    } label: {
+                        Text(node.accessibilityLabel)
+                    }
+                }
+            }
         }
     }
 
@@ -253,7 +312,10 @@ struct CrossReferenceGraphView: View {
             }
             .frame(maxWidth: 240)
             .fixedSize()
-            .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+            // Q4: scale part of transition is decorative; suppress it under Reduce Motion
+            .transition(reduceMotion
+                ? .opacity
+                : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
         }
     }
 
