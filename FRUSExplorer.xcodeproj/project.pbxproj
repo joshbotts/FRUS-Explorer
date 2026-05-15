@@ -186,6 +186,17 @@
 		AA20BB01CC03DD04EE2008 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */; };
 		AA20BB01CC03DD04EE2009 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */; };
 		AA20BB01CC03DD04EE200B /* SummarizationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */; };
+		AA22BB01CC03DD04EE2201 /* CollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2200 /* CollectionExporter.swift */; };
+		AA22BB01CC03DD04EE2202 /* CollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2200 /* CollectionExporter.swift */; };
+		AA22BB01CC03DD04EE2204 /* PDFCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2203 /* PDFCollectionExporter.swift */; };
+		AA22BB01CC03DD04EE2205 /* PDFCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2203 /* PDFCollectionExporter.swift */; };
+		AA22BB01CC03DD04EE2207 /* HTMLCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */; };
+		AA22BB01CC03DD04EE2208 /* HTMLCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */; };
+		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
+		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
+		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
+		AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
+		AA22BB01CC03DD04EE2216 /* CollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2215 /* CollectionTests.swift */; };
 		AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
@@ -318,6 +329,12 @@
 		AA20BB01CC03DD04EE2004 /* PromptsListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PromptsListView.swift; sourceTree = "<group>"; };
 		AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PromptEditorView.swift; sourceTree = "<group>"; };
 		AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationUITests.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2200 /* CollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionExporter.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2203 /* PDFCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PDFCollectionExporter.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLCollectionExporter.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2215 /* CollectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionTests.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
@@ -430,6 +447,7 @@
 				AA19BB01CC03DD04EE190D /* SummarizationServiceTests.swift */,
 				AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */,
 				AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */,
+				AA22BB01CC03DD04EE2215 /* CollectionTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -465,6 +483,7 @@
 				AA09BB02CC03DD04EE09F000 /* FTS5Store */,
 				AA09BB02CC03DD04EE090012 /* Search */,
 				AA17BB01CC03DD04EE1709 /* CrossReference */,
+				AA22BB01CC03DD04EE22FF /* Collections */,
 				AA19BB01CC03DD04EE190F /* Summarization */,
 				AA10BB01CC03DD04EE100000 /* Onboarding */,
 				AA11BB01CC03DD04EE1100 /* Browser */,
@@ -516,6 +535,18 @@
 				AA18BB01CC03DD04EE1804 /* CrossReferenceGraphView.swift */,
 			);
 			path = CrossReference;
+			sourceTree = "<group>";
+		};
+		AA22BB01CC03DD04EE22FF /* Collections */ = {
+			isa = PBXGroup;
+			children = (
+				AA22BB01CC03DD04EE2200 /* CollectionExporter.swift */,
+				AA22BB01CC03DD04EE2203 /* PDFCollectionExporter.swift */,
+				AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */,
+				AA22BB01CC03DD04EE2209 /* CollectionListView.swift */,
+				AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */,
+			);
+			path = Collections;
 			sourceTree = "<group>";
 		};
 		AA19BB01CC03DD04EE190F /* Summarization */ = {
@@ -854,6 +885,11 @@
 				AA20BB01CC03DD04EE2002 /* SummarizationPromptSeeder.swift in Sources */,
 				AA20BB01CC03DD04EE2005 /* PromptsListView.swift in Sources */,
 				AA20BB01CC03DD04EE2008 /* PromptEditorView.swift in Sources */,
+				AA22BB01CC03DD04EE2201 /* CollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2204 /* PDFCollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2207 /* HTMLCollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */,
+				AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */,
 				AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */,
 				AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
@@ -936,6 +972,11 @@
 				AA20BB01CC03DD04EE2009 /* PromptEditorView.swift in Sources */,
 				AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */,
 				AA21BB01CC03DD04EE2105 /* BackgroundSummarizationSettingsView.swift in Sources */,
+				AA22BB01CC03DD04EE2202 /* CollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2205 /* PDFCollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2208 /* HTMLCollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */,
+				AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -973,6 +1014,7 @@
 				AA19BB01CC03DD04EE190E /* SummarizationServiceTests.swift in Sources */,
 				AA20BB01CC03DD04EE200B /* SummarizationUITests.swift in Sources */,
 				AA21BB01CC03DD04EE2107 /* BackgroundSummarizationTests.swift in Sources */,
+				AA22BB01CC03DD04EE2216 /* CollectionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
