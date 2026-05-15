@@ -683,6 +683,77 @@ paths:
         "500":
           $ref: "#/components/responses/500ServerError"
 
+  /citation-lookup:
+    get:
+      summary: Resolve a FRUS citation to matching documents
+      description: |
+        Accepts structured citation fields and returns a ranked list of
+        `CitationMatch` results. Strategies are attempted in priority order:
+        exact document number, page range, superimposed document number,
+        fuzzy document number, title fragment disambiguation, and manifest-only
+        (volume not downloaded).
+
+        **Current implementation:** `CitationMatchingEngine` (Session 30) resolves
+        citations entirely on-device using the local FTS5 index and `page_ranges`
+        SQLite table. A future FRUS API could serve this endpoint to enable
+        citation resolution without downloading volumes.
+
+        For undownloaded volumes the response includes `requiresDownload: true`
+        and a populated `volumeManifestEntry` for display before the user confirms
+        a download.
+      operationId: lookupCitation
+      tags:
+        - Citation
+      parameters:
+        - name: subseries
+          in: query
+          schema:
+            type: string
+          description: |
+            Chronological subseries identifier, e.g. `"1969-76"`.
+            Hyphens and en dashes are treated interchangeably.
+        - name: volumeNumber
+          in: query
+          schema:
+            type: string
+          description: |
+            Volume number string, e.g. `"I"`, `"XIV"`, `"1"`.
+            Arabic and Roman numeral forms are normalized before matching.
+        - name: documentNumber
+          in: query
+          schema:
+            type: integer
+          description: Printed document number to resolve.
+        - name: pageNumber
+          in: query
+          schema:
+            type: integer
+          description: Page number for page-range–based resolution.
+        - name: titleFragment
+          in: query
+          schema:
+            type: string
+          description: |
+            Partial volume title text used to disambiguate when a volume number
+            matches multiple volumes in the same subseries.
+      responses:
+        "200":
+          description: Ranked list of citation matches (may be empty).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CitationMatch"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
 components:
 
   securitySchemes:
@@ -1480,3 +1551,53 @@ components:
             - prefixed
             - unparseable
           description: Normalised page number type derived from the `@n` value.
+
+    CitationMatch:
+      type: object
+      description: |
+        A single candidate match from the citation lookup engine.
+        Returned by `GET /citation-lookup`.
+      required:
+        - documentId
+        - volumeId
+        - rank
+        - matchStrategy
+        - confidenceLabel
+        - requiresDownload
+      properties:
+        documentId:
+          type: string
+          description: Document identifier. Empty string for manifest-only results.
+        volumeId:
+          type: string
+          description: Volume identifier.
+        rank:
+          type: integer
+          description: Result rank; 1 = most likely match.
+        matchStrategy:
+          type: string
+          enum:
+            - exactDocumentNumber
+            - pageRange
+            - superimposedDocumentNumber
+            - fuzzyDocumentNumber
+            - titleFragmentMatch
+            - manifestOnly
+            - bestGuess
+          description: Strategy used to make the match.
+        confidenceLabel:
+          type: string
+          description: Explicit human-readable match quality label shown in the UI.
+        correctionNote:
+          type:
+            - string
+            - "null"
+          description: |
+            Plain-language explanation when a correction or best-guess recovery
+            was applied. Displayed below the result card.
+        requiresDownload:
+          type: boolean
+          description: "`true` when the matched volume is not in the local corpus."
+        volumeManifestEntry:
+          $ref: "#/components/schemas/VolumeManifestEntry"
+          description: Populated for `requiresDownload: true` results.

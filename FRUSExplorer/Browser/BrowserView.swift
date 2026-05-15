@@ -26,6 +26,7 @@ struct BrowserView: View {
     @State private var viewModel: BrowserViewModel?
     @State private var showProjectContext = false
     @State private var showSearch = false
+    @State private var showCitationLookup = false
     @State private var showSettings = false
 
     #if os(iOS)
@@ -63,6 +64,9 @@ struct BrowserView: View {
                 )
             }
         }
+        .sheet(isPresented: $showCitationLookup) {
+            CitationLookupView()
+        }
         .onAppear { bootstrapViewModel() }
     }
 
@@ -86,6 +90,17 @@ struct BrowserView: View {
                         .accessibilityLabel(
                             String(localized: "browser.search.a11y",
                                    defaultValue: "Search documents")
+                        )
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showCitationLookup = true
+                        } label: {
+                            Image(systemName: "text.magnifyingglass")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "browser.citationLookup.a11y",
+                                   defaultValue: "Find by citation")
                         )
                     }
                     ToolbarItem(placement: .primaryAction) {
@@ -133,6 +148,17 @@ struct BrowserView: View {
                         .accessibilityLabel(
                             String(localized: "browser.search.a11y",
                                    defaultValue: "Search documents")
+                        )
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showCitationLookup = true
+                        } label: {
+                            Image(systemName: "text.magnifyingglass")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "browser.citationLookup.a11y",
+                                   defaultValue: "Find by citation")
                         )
                     }
                     ToolbarItem(placement: .primaryAction) {

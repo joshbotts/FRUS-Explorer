@@ -109,6 +109,18 @@ struct FRUSExplorerApp: App {
             appState.indexingPipeline = pipeline
             appState.searchService = SearchService(fts5Store: store, pipeline: pipeline)
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
+            let pageRangeStore = try? PageRangeStore(databaseURL: dbURL)
+            let downloadedIds = Set(
+                (try? FileManager.default.contentsOfDirectory(
+                    at: volumesDir, includingPropertiesForKeys: nil
+                ).map { $0.deletingPathExtension().lastPathComponent }) ?? []
+            )
+            appState.citationMatchingEngine = CitationMatchingEngine(
+                manifestStore: appState.manifestStore,
+                searchService: appState.searchService,
+                pageRangeStore: pageRangeStore,
+                downloadedVolumeIds: downloadedIds
+            )
         }
 
         let summarizationService = SummarizationService(modelContainer: modelContainer)

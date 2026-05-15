@@ -42,6 +42,7 @@ import Observation
 ///   1.4 — Session 10: manifestStore wired up
 ///   1.5 — Session 19: summarizationService added
 ///   1.6 — Session 21: backgroundSummarizationService and backgroundSummarizationProgress added
+///   1.7 — Session 30: citationMatchingEngine added
 @Observable
 @MainActor
 final class AppState {
@@ -111,6 +112,10 @@ final class AppState {
     /// The shared cross-reference store. Created at boot alongside `indexingPipeline`;
     /// `nil` if the database could not be opened.
     var crossReferenceStore: CrossReferenceStore?
+
+    /// The shared citation matching engine. Created at boot once a database URL is available.
+    /// `nil` until boot completes or if the database could not be opened.
+    var citationMatchingEngine: CitationMatchingEngine?
 
     /// The shared summarization service. Created at boot with the SwiftData container;
     /// always non-nil after boot. `AppleIntelligenceProvider.isAvailable` controls

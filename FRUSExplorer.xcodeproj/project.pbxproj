@@ -219,6 +219,19 @@
 		AA28BB01CC03DD04EE2801 /* OpenAPIValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */; };
 		AA29BB01CC03DD04EE2901 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29BB01CC03DD04EE2900 /* SparkleUpdater.swift */; };
 		AA29BB01CC03DD04EE2903 /* DistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29BB01CC03DD04EE2902 /* DistributionTests.swift */; };
+		AA30BB01CC03DD04EE3001 /* CitationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3000 /* CitationModels.swift */; };
+		AA30BB01CC03DD04EE3002 /* CitationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3000 /* CitationModels.swift */; };
+		AA30BB01CC03DD04EE3004 /* CitationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3003 /* CitationParser.swift */; };
+		AA30BB01CC03DD04EE3005 /* CitationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3003 /* CitationParser.swift */; };
+		AA30BB01CC03DD04EE3007 /* PageRangeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3006 /* PageRangeStore.swift */; };
+		AA30BB01CC03DD04EE3008 /* PageRangeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3006 /* PageRangeStore.swift */; };
+		AA30BB01CC03DD04EE3010 /* CitationMatchingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3009 /* CitationMatchingEngine.swift */; };
+		AA30BB01CC03DD04EE3011 /* CitationMatchingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3009 /* CitationMatchingEngine.swift */; };
+		AA30BB01CC03DD04EE3013 /* CitationLookupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3012 /* CitationLookupView.swift */; };
+		AA30BB01CC03DD04EE3014 /* CitationLookupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3012 /* CitationLookupView.swift */; };
+		AA30BB01CC03DD04EE3021 /* CitationParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3020 /* CitationParserTests.swift */; };
+		AA30BB01CC03DD04EE3023 /* PageRangeStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3022 /* PageRangeStoreTests.swift */; };
+		AA30BB01CC03DD04EE3025 /* CitationMatchingEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */; };
 		AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
@@ -372,6 +385,14 @@
 		AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAPIValidationTests.swift; sourceTree = "<group>"; };
 		AA29BB01CC03DD04EE2900 /* SparkleUpdater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		AA29BB01CC03DD04EE2902 /* DistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DistributionTests.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3000 /* CitationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationModels.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3003 /* CitationParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationParser.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3006 /* PageRangeStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PageRangeStore.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3009 /* CitationMatchingEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngine.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3012 /* CitationLookupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationLookupView.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3020 /* CitationParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationParserTests.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3022 /* PageRangeStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PageRangeStoreTests.swift; sourceTree = "<group>"; };
+		AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngineTests.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
@@ -492,6 +513,9 @@
 				AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */,
 				AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */,
 				AA29BB01CC03DD04EE2902 /* DistributionTests.swift */,
+				AA30BB01CC03DD04EE3020 /* CitationParserTests.swift */,
+				AA30BB01CC03DD04EE3022 /* PageRangeStoreTests.swift */,
+				AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -680,6 +704,11 @@
 			isa = PBXGroup;
 			children = (
 				AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */,
+				AA30BB01CC03DD04EE3000 /* CitationModels.swift */,
+				AA30BB01CC03DD04EE3003 /* CitationParser.swift */,
+				AA30BB01CC03DD04EE3006 /* PageRangeStore.swift */,
+				AA30BB01CC03DD04EE3009 /* CitationMatchingEngine.swift */,
+				AA30BB01CC03DD04EE3012 /* CitationLookupView.swift */,
 			);
 			path = Citation;
 			sourceTree = "<group>";
@@ -942,6 +971,11 @@
 				AA12BB01CC03DD04EE1202 /* DocumentViewModel.swift in Sources */,
 				AA12BB01CC03DD04EE1205 /* DocumentView.swift in Sources */,
 				AA13BB01CC03DD04EE1302 /* CitationFormatter.swift in Sources */,
+				AA30BB01CC03DD04EE3001 /* CitationModels.swift in Sources */,
+				AA30BB01CC03DD04EE3004 /* CitationParser.swift in Sources */,
+				AA30BB01CC03DD04EE3007 /* PageRangeStore.swift in Sources */,
+				AA30BB01CC03DD04EE3010 /* CitationMatchingEngine.swift in Sources */,
+				AA30BB01CC03DD04EE3013 /* CitationLookupView.swift in Sources */,
 				AA14BB01CC03DD04EE1402 /* ResearchNoteEditorViewModel.swift in Sources */,
 				AA14BB01CC03DD04EE1405 /* ResearchNoteEditorView.swift in Sources */,
 				AA15BB01CC03DD04EE1502 /* ProjectContextViewModel.swift in Sources */,
@@ -1035,6 +1069,11 @@
 				AA12BB01CC03DD04EE1203 /* DocumentViewModel.swift in Sources */,
 				AA12BB01CC03DD04EE1206 /* DocumentView.swift in Sources */,
 				AA13BB01CC03DD04EE1303 /* CitationFormatter.swift in Sources */,
+				AA30BB01CC03DD04EE3002 /* CitationModels.swift in Sources */,
+				AA30BB01CC03DD04EE3005 /* CitationParser.swift in Sources */,
+				AA30BB01CC03DD04EE3008 /* PageRangeStore.swift in Sources */,
+				AA30BB01CC03DD04EE3011 /* CitationMatchingEngine.swift in Sources */,
+				AA30BB01CC03DD04EE3014 /* CitationLookupView.swift in Sources */,
 				AA14BB01CC03DD04EE1403 /* ResearchNoteEditorViewModel.swift in Sources */,
 				AA14BB01CC03DD04EE1406 /* ResearchNoteEditorView.swift in Sources */,
 				AA15BB01CC03DD04EE1503 /* ProjectContextViewModel.swift in Sources */,
@@ -1113,6 +1152,9 @@
 				AA27BB01CC03DD04EE2701 /* AccessibilityTests.swift in Sources */,
 				AA28BB01CC03DD04EE2801 /* OpenAPIValidationTests.swift in Sources */,
 				AA29BB01CC03DD04EE2903 /* DistributionTests.swift in Sources */,
+				AA30BB01CC03DD04EE3021 /* CitationParserTests.swift in Sources */,
+				AA30BB01CC03DD04EE3023 /* PageRangeStoreTests.swift in Sources */,
+				AA30BB01CC03DD04EE3025 /* CitationMatchingEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
