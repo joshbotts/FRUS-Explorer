@@ -92,6 +92,7 @@ struct FRUSExplorerApp: App {
                subjectTagStore: appState.subjectTagStore
            ) {
             appState.indexingPipeline = pipeline
+            appState.searchService = SearchService(fts5Store: store, pipeline: pipeline)
         }
 
         let dm = DownloadManager(

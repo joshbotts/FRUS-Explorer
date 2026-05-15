@@ -102,6 +102,10 @@ final class AppState {
     /// `DownloadManager`; `nil` if the database could not be opened.
     var indexingPipeline: IndexingPipeline?
 
+    /// The shared search service. Created at boot alongside `indexingPipeline`;
+    /// `nil` if the FTS5 database could not be opened.
+    var searchService: SearchService?
+
     // MARK: - Network Monitor (private)
 
     /// Monitors network path changes and updates `isOnline`.

@@ -155,6 +155,11 @@
 		AA14BB01CC03DD04EE1405 /* ResearchNoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB01CC03DD04EE1404 /* ResearchNoteEditorView.swift */; };
 		AA14BB01CC03DD04EE1406 /* ResearchNoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB01CC03DD04EE1404 /* ResearchNoteEditorView.swift */; };
 		AA14BB01CC03DD04EE1408 /* ResearchNoteEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB01CC03DD04EE1407 /* ResearchNoteEditorTests.swift */; };
+		AA16BB01CC03DD04EE1602 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */; };
+		AA16BB01CC03DD04EE1603 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */; };
+		AA16BB01CC03DD04EE1605 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1604 /* SearchView.swift */; };
+		AA16BB01CC03DD04EE1606 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1604 /* SearchView.swift */; };
+		AA16BB01CC03DD04EE1608 /* SearchViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1607 /* SearchViewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -264,6 +269,9 @@
 		AA15BB01CC03DD04EE1513 /* ProjectContextTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProjectContextTests.swift; sourceTree = "<group>"; };
 		AA14BB01CC03DD04EE1404 /* ResearchNoteEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorView.swift; sourceTree = "<group>"; };
 		AA14BB01CC03DD04EE1407 /* ResearchNoteEditorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorTests.swift; sourceTree = "<group>"; };
+		AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
+		AA16BB01CC03DD04EE1604 /* SearchView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		AA16BB01CC03DD04EE1607 /* SearchViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchViewTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -367,6 +375,7 @@
 				AA13BB01CC03DD04EE1304 /* CitationFormatterTests.swift */,
 				AA14BB01CC03DD04EE1407 /* ResearchNoteEditorTests.swift */,
 				AA15BB01CC03DD04EE1513 /* ProjectContextTests.swift */,
+				AA16BB01CC03DD04EE1607 /* SearchViewTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -436,6 +445,8 @@
 				AA09BB02CC03DD04EE090003 /* SearchModels.swift */,
 				AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */,
 				AA09BB02CC03DD04EE090009 /* SearchService.swift */,
+				AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */,
+				AA16BB01CC03DD04EE1604 /* SearchView.swift */,
 			);
 			path = Search;
 			sourceTree = "<group>";
@@ -747,6 +758,8 @@
 				AA15BB01CC03DD04EE1505 /* ProjectPickerMenu.swift in Sources */,
 				AA15BB01CC03DD04EE1508 /* ProjectEditorView.swift in Sources */,
 				AA15BB01CC03DD04EE1511 /* ProjectContextView.swift in Sources */,
+				AA16BB01CC03DD04EE1602 /* SearchViewModel.swift in Sources */,
+				AA16BB01CC03DD04EE1605 /* SearchView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
@@ -812,6 +825,8 @@
 				AA15BB01CC03DD04EE1506 /* ProjectPickerMenu.swift in Sources */,
 				AA15BB01CC03DD04EE1509 /* ProjectEditorView.swift in Sources */,
 				AA15BB01CC03DD04EE1512 /* ProjectContextView.swift in Sources */,
+				AA16BB01CC03DD04EE1603 /* SearchViewModel.swift in Sources */,
+				AA16BB01CC03DD04EE1606 /* SearchView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -843,6 +858,7 @@
 				AA13BB01CC03DD04EE1305 /* CitationFormatterTests.swift in Sources */,
 				AA14BB01CC03DD04EE1408 /* ResearchNoteEditorTests.swift in Sources */,
 				AA15BB01CC03DD04EE1514 /* ProjectContextTests.swift in Sources */,
+				AA16BB01CC03DD04EE1608 /* SearchViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

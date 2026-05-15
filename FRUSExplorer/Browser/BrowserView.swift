@@ -25,6 +25,7 @@ struct BrowserView: View {
     @Environment(AppState.self) private var appState
     @State private var viewModel: BrowserViewModel?
     @State private var showProjectContext = false
+    @State private var showSearch = false
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -50,6 +51,14 @@ struct BrowserView: View {
         .sheet(isPresented: $showProjectContext) {
             ProjectContextView()
         }
+        .sheet(isPresented: $showSearch) {
+            if let service = appState.searchService {
+                SearchView(
+                    searchService: service,
+                    subjectTagStore: appState.subjectTagStore
+                )
+            }
+        }
         .onAppear { bootstrapViewModel() }
     }
 
@@ -63,6 +72,17 @@ struct BrowserView: View {
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu { showProjectContext = true }
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showSearch = true
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "browser.search.a11y",
+                                   defaultValue: "Search documents")
+                        )
                     }
                 }
         } detail: {
@@ -88,6 +108,17 @@ struct BrowserView: View {
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu { showProjectContext = true }
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showSearch = true
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "browser.search.a11y",
+                                   defaultValue: "Search documents")
+                        )
                     }
                 }
         }

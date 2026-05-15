@@ -83,7 +83,7 @@ public struct VolumeStructure: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
-public struct DocumentBrowserEntry: Sendable, Identifiable {
+public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
     /// The document's `xml:id` value within its volume.
     public let documentId: String
 
