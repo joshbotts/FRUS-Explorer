@@ -39,6 +39,7 @@ import Observation
 ///   1.1 — Session 04: SwiftData container injected at App level
 ///   1.2 — Session 05: NWPathMonitor, downloadManager, downloadQueue wired up
 ///   1.3 — Session 08: volumeLevelTagStore, subjectTagStore wired up
+///   1.4 — Session 10: manifestStore wired up
 @Observable
 @MainActor
 final class AppState {
@@ -91,6 +92,9 @@ final class AppState {
     /// Provides document-level subject tag lookups by document ID, subject ID, and category.
     /// Loaded synchronously from `taxonomy.json` and `subject-appearances.json` at init.
     let subjectTagStore: SubjectTagStore = SubjectTagStore()
+
+    /// Loads and merges the volume manifest. Loaded from bundle at init; live data fetched at boot.
+    var manifestStore: ManifestStore = ManifestStore()
 
     // MARK: - Network Monitor (private)
 

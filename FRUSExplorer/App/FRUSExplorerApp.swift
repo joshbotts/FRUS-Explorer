@@ -35,6 +35,7 @@ import SwiftData
 ///   1.0 — Session 01: initial implementation
 ///   1.1 — Session 04: inject SwiftData ModelContainer
 ///   1.2 — Session 05: create and wire DownloadManager; respond to network state changes
+///   1.3 — Session 10: fetch live manifest at boot
 @main
 struct FRUSExplorerApp: App {
 
@@ -86,6 +87,10 @@ struct FRUSExplorerApp: App {
             }
         )
         appState.downloadManager = dm
+
+        if appState.isOnline {
+            Task { await appState.manifestStore.fetchLiveManifest() }
+        }
 
         if appState.isOnline {
             await dm.resumeQueuedDownloads()

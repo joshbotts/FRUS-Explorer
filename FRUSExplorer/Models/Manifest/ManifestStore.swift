@@ -72,6 +72,13 @@ public final class ManifestStore {
     /// Non-nil if the live manifest fetch failed.
     public private(set) var liveFetchError: Error? = nil
 
+    // MARK: - Testing
+
+    /// Testing initializer — bypasses bundle I/O and uses provided entries directly.
+    init(bundledEntries: [VolumeManifestEntry]) {
+        self.bundledEntries = bundledEntries
+    }
+
     // MARK: - Initialization
 
     public init() {

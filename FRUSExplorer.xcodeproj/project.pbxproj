@@ -103,6 +103,21 @@
 		F80B3D8D9BBCFEDB3BA130EF /* ResearchNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966DE5E70455BCC0D63965D4 /* ResearchNote.swift */; };
 		FB68F396F2E101525612CB2D /* ModelContainer+FRUS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BF8333DAB9C9E6D2B7B886 /* ModelContainer+FRUS.swift */; };
 		FEB539CAABF37A5ED1E3A574 /* subject-appearances.json in Resources */ = {isa = PBXBuildFile; fileRef = 315FB3EB58D69FFBB9BC2C3C /* subject-appearances.json */; };
+		AA10BB01CC03DD04EE100002 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100001 /* OnboardingViewModel.swift */; };
+		AA10BB01CC03DD04EE100003 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100001 /* OnboardingViewModel.swift */; };
+		AA10BB01CC03DD04EE100005 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100004 /* OnboardingView.swift */; };
+		AA10BB01CC03DD04EE100006 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100004 /* OnboardingView.swift */; };
+		AA10BB01CC03DD04EE100008 /* OnboardingIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */; };
+		AA10BB01CC03DD04EE100009 /* OnboardingIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */; };
+		AA10BB01CC03DD04EE100011 /* OnboardingVolumePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */; };
+		AA10BB01CC03DD04EE100012 /* OnboardingVolumePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */; };
+		AA10BB01CC03DD04EE100014 /* OnboardingDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100013 /* OnboardingDownloadView.swift */; };
+		AA10BB01CC03DD04EE100015 /* OnboardingDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100013 /* OnboardingDownloadView.swift */; };
+		AA10BB01CC03DD04EE100017 /* OnboardingProjectSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100016 /* OnboardingProjectSetupView.swift */; };
+		AA10BB01CC03DD04EE100018 /* OnboardingProjectSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100016 /* OnboardingProjectSetupView.swift */; };
+		AA10BB01CC03DD04EE100020 /* OnboardingPromptSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */; };
+		AA10BB01CC03DD04EE100021 /* OnboardingPromptSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */; };
+		AA10BB01CC03DD04EE100023 /* OnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100022 /* OnboardingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -183,6 +198,14 @@
 		F1D767EB095F342A813EA1D2 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
 		F34208BE1028E5D565589526 /* volume-tag-taxonomy.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "volume-tag-taxonomy.json"; sourceTree = "<group>"; };
 		FF735149F415370F2B4A807F /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100001 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100004 /* OnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIntroView.swift; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingVolumePickerView.swift; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100013 /* OnboardingDownloadView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingDownloadView.swift; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100016 /* OnboardingProjectSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingProjectSetupView.swift; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingPromptSetupView.swift; sourceTree = "<group>"; };
+		AA10BB01CC03DD04EE100022 /* OnboardingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -280,6 +303,7 @@
 				AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */,
 				AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */,
 				AA09BB02CC03DD04EE090011 /* IndexingPipelineTests.swift */,
+				AA10BB01CC03DD04EE100022 /* OnboardingTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -314,6 +338,7 @@
 				EB3D26757D1E60EB072F06EC /* Models */,
 				AA09BB02CC03DD04EE09F000 /* FTS5Store */,
 				AA09BB02CC03DD04EE090012 /* Search */,
+				AA10BB01CC03DD04EE100000 /* Onboarding */,
 				AA06BB02CC03DD04EE060009 /* TEI */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
@@ -345,6 +370,20 @@
 				AA09BB02CC03DD04EE090009 /* SearchService.swift */,
 			);
 			path = Search;
+			sourceTree = "<group>";
+		};
+		AA10BB01CC03DD04EE100000 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				AA10BB01CC03DD04EE100001 /* OnboardingViewModel.swift */,
+				AA10BB01CC03DD04EE100004 /* OnboardingView.swift */,
+				AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */,
+				AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */,
+				AA10BB01CC03DD04EE100013 /* OnboardingDownloadView.swift */,
+				AA10BB01CC03DD04EE100016 /* OnboardingProjectSetupView.swift */,
+				AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */,
+			);
+			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		E5B6F78728D4945C82785AB6 /* Tags */ = {
@@ -566,6 +605,13 @@
 				0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */,
 				AA01BB02CC03DD04EE050011 /* DownloadModels.swift in Sources */,
 				AA01BB02CC03DD04EE050013 /* DownloadManager.swift in Sources */,
+				AA10BB01CC03DD04EE100002 /* OnboardingViewModel.swift in Sources */,
+				AA10BB01CC03DD04EE100005 /* OnboardingView.swift in Sources */,
+				AA10BB01CC03DD04EE100008 /* OnboardingIntroView.swift in Sources */,
+				AA10BB01CC03DD04EE100011 /* OnboardingVolumePickerView.swift in Sources */,
+				AA10BB01CC03DD04EE100014 /* OnboardingDownloadView.swift in Sources */,
+				AA10BB01CC03DD04EE100017 /* OnboardingProjectSetupView.swift in Sources */,
+				AA10BB01CC03DD04EE100020 /* OnboardingPromptSetupView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
@@ -608,6 +654,13 @@
 				0B2C4093DE65922F503D8FD7 /* KeychainStore.swift in Sources */,
 				AA01BB02CC03DD04EE050012 /* DownloadModels.swift in Sources */,
 				AA01BB02CC03DD04EE050014 /* DownloadManager.swift in Sources */,
+				AA10BB01CC03DD04EE100003 /* OnboardingViewModel.swift in Sources */,
+				AA10BB01CC03DD04EE100006 /* OnboardingView.swift in Sources */,
+				AA10BB01CC03DD04EE100009 /* OnboardingIntroView.swift in Sources */,
+				AA10BB01CC03DD04EE100012 /* OnboardingVolumePickerView.swift in Sources */,
+				AA10BB01CC03DD04EE100015 /* OnboardingDownloadView.swift in Sources */,
+				AA10BB01CC03DD04EE100018 /* OnboardingProjectSetupView.swift in Sources */,
+				AA10BB01CC03DD04EE100021 /* OnboardingPromptSetupView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -633,6 +686,7 @@
 				AA07BB02CC03DD04EE070001 /* FRUSParserSession07Tests.swift in Sources */,
 				AA08BB02CC03DD04EE080004 /* SubjectTagStoreTests.swift in Sources */,
 				AA09BB02CC03DD04EE090010 /* IndexingPipelineTests.swift in Sources */,
+				AA10BB01CC03DD04EE100023 /* OnboardingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

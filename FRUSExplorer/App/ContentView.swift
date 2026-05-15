@@ -8,25 +8,28 @@
 
 import SwiftUI
 
-/// Placeholder root view.
+/// Root routing view for FRUS Explorer.
 ///
-/// Replaced by the Onboarding → Browser → Document navigation hierarchy starting in Session 10.
-/// This stub exists solely so the app target compiles and launches during early sessions.
+/// Routes to `OnboardingView` when no volumes have been downloaded, or to the
+/// placeholder main app view when at least one .xml file exists in the volumes
+/// directory. Session 11 will replace the placeholder with the real browser.
+///
+/// The routing trigger is purely filesystem-based — no persistent flag is stored.
+///
+/// Version history:
+///   1.0 — Session 01: initial placeholder implementation
+///   1.1 — Session 10: replaced with onboarding / main-app routing
 struct ContentView: View {
 
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .imageScale(.large)
-                .font(.system(size: 64))
+        if OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory) {
+            Text(String(localized: "placeholder.main", defaultValue: "Main App — Session 11"))
+                .font(.title)
                 .foregroundStyle(.secondary)
-            Text(String(localized: "app.placeholder.title", defaultValue: "FRUS Explorer"))
-                .font(.largeTitle.bold())
-            Text(String(localized: "app.placeholder.subtitle", defaultValue: "Setup in progress"))
-                .foregroundStyle(.secondary)
+        } else {
+            OnboardingView()
         }
-        .padding()
     }
 }
