@@ -35,6 +35,7 @@ import UniformTypeIdentifiers
 ///
 /// Version history:
 ///   1.0 — Session 24: initial implementation
+///   1.1 — Session 26: add About row
 struct SettingsView: View {
 
     @Environment(\.dismiss) private var dismiss
@@ -88,6 +89,13 @@ struct SettingsView: View {
                         ResetView()
                     }
                     .foregroundStyle(.red)
+                }
+
+                Section {
+                    NavigationLink(String(localized: "settings.row.about",
+                                         defaultValue: "About FRUS Explorer")) {
+                        AboutView()
+                    }
                 }
             }
             .navigationTitle(String(localized: "settings.title", defaultValue: "Settings"))
