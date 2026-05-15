@@ -9,10 +9,11 @@
 
 import PackageDescription
 
-/// SPM package for FRUS Explorer command-line tools.
+/// SPM package for FRUS Explorer command-line tools and reusable library components.
 ///
 /// This package is separate from `FRUSExplorer.xcodeproj` (the iOS/macOS app).
-/// It defines two executable tools used in the release preparation workflow:
+///
+/// ## Command-Line Tools
 ///
 /// - **ManifestGenerator**: parses `<teiHeader>` from each FRUS volume XML hosted on
 ///   the HistoryAtState GitHub repository and produces `manifest.json`, committed into
@@ -21,6 +22,11 @@ import PackageDescription
 /// - **TaxonomyGenerator**: fetches and parses `history.state.gov/tags/all` to produce
 ///   `volume-tag-taxonomy.json`, which provides humanised display names and hierarchy for
 ///   volume-level subject tag slugs. Run manually when the taxonomy changes.
+///
+/// ## Library Components
+///
+/// - **FTS5Store**: Swift actor wrapping SQLite FTS5 for full-text search. Used by the
+///   app's search indexing pipeline. Designed for reuse outside FRUS Explorer.
 ///
 /// Each tool is split into a library target (all logic, fully testable) and a thin
 /// executable target (entry point only). Tests import the library targets directly.
@@ -84,6 +90,26 @@ let package = Package(
             name: "TaxonomyGeneratorTests",
             dependencies: [.target(name: "TaxonomyGeneratorCore")],
             path: "TaxonomyGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - FTS5Store
+
+        /// SQLite FTS5 Swift wrapper. Actor-based, async/await, Swift 6 strict concurrency.
+        /// Provides full-text search over FRUS documents with English stemming and BM25 ranking.
+        /// Designed for reuse outside FRUS Explorer.
+        .target(
+            name: "FTS5Store",
+            path: "FTS5Store",
+            swiftSettings: [.swiftLanguageMode(.v6)],
+            linkerSettings: [.linkedLibrary("sqlite3")]
+        ),
+
+        /// Unit tests for FTS5Store.
+        .testTarget(
+            name: "FTS5StoreTests",
+            dependencies: [.target(name: "FTS5Store")],
+            path: "FTS5StoreTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
