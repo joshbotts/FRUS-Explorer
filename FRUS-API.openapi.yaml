@@ -2,216 +2,563 @@ openapi: 3.1.0
 
 info:
   title: FRUS API
-  version: 0.1.0-draft
+  version: 0.2.0-draft
   description: |
-    # FRUS API — Living Specification
+    # FRUS API — Finalized Draft Specification
 
-    This document describes the ideal FRUS API that could replace FRUS Explorer's
-    current approach of calling the GitHub API for manifest data and downloading full
-    volume XML files for local parsing.
+    This document is the authoritative draft specification for a purpose-built
+    FRUS API that would replace FRUS Explorer's current approach of calling the
+    GitHub API for manifest data and downloading full volume XML files for local
+    parsing.
 
     ## Purpose
 
-    As FRUS Explorer is developed, each session that introduces a method calling:
-    - The GitHub API (manifest, volume downloads)
-    - Locally cached FRUS volume XML
-    - The HistoryAtState GitHub repository in any form
+    FRUS Explorer currently accesses FRUS data through two channels:
 
-    ...adds or updates the corresponding endpoint in this document, describing what
-    a purpose-built FRUS API could deliver more efficiently.
+    1. **GitHub API** — the `HistoryAtState/frus` repository's directory listing
+       provides file sizes and SHAs; raw.githubusercontent.com serves the volume
+       XML files.
+    2. **Local SQLite** — `IndexingPipeline` populates `FTS5Store` and a
+       `document_cache` table from the downloaded XML; all document browsing and
+       full-text search runs against this local store.
 
-    ## Status
+    A purpose-built FRUS API would deliver rich metadata and pre-extracted text
+    over HTTPS, eliminating the requirement to download 5–30 MB XML files per volume
+    and removing the dependency on GitHub as a data delivery mechanism.
 
-    This is a living document, not a stable specification. All endpoints are drafts
-    subject to revision as development proceeds. Endpoint definitions are added
-    session by session as the corresponding client code is written.
+    ## Relationship to the Current App
 
-    ## Rationale
+    Each endpoint in this document corresponds to a data access point in the app.
+    The `description` of each operation names the Swift type and session where the
+    corresponding client logic was implemented, so this document doubles as a
+    migration guide: replacing a local data source with a call to the future API
+    endpoint is a one-for-one substitution.
 
-    The current implementation:
-    - Fetches the GitHub directory listing for `HistoryAtState/frus` volumes to get
-      file sizes and SHAs (live manifest layer)
-    - Downloads complete volume XML files (often 5–30 MB each) to extract metadata
-      and full text locally
+    ## Authentication
 
-    A purpose-built FRUS API would deliver:
-    - Rich volume metadata without requiring XML download
-    - Pre-extracted document text for search indexing
-    - Page range data for citation lookup
-    - Subject tag appearances per volume
+    All endpoints require an API key passed in the `X-API-Key` request header.
+    Keys are issued by the Office of the Historian. In FRUS Explorer the key is
+    stored in iCloud Keychain; a missing key causes affected views to display a
+    prompt linking to Settings.
 
-    This document captures what those endpoints would look like, serving as both
-    a roadmap for a future official FRUS API and a reference for any future
-    migration away from direct GitHub access.
+    ```
+    GET /volumes HTTP/1.1
+    X-API-Key: your-api-key-here
+    ```
+
+    Public read-only endpoints (volume list, document browse, search) may in future
+    support an unauthenticated tier with a lower rate limit. The current draft
+    requires authentication for all endpoints.
+
+    ## Rate Limiting
+
+    Rate limit state is communicated through response headers on every call:
+
+    | Header | Description |
+    |--------|-------------|
+    | `X-RateLimit-Limit` | Maximum requests allowed per window |
+    | `X-RateLimit-Remaining` | Requests remaining in the current window |
+    | `X-RateLimit-Reset` | Unix timestamp when the window resets |
+
+    When the limit is exceeded the server responds `429 Too Many Requests` with a
+    `Retry-After` header.
+
+    ## Pagination
+
+    List endpoints (`GET /volumes`, `GET /volumes/{volumeId}/documents`,
+    `GET /search`) accept `limit` and `offset` query parameters. Responses include
+    a top-level `total` field giving the overall count. Callers should page until
+    `offset + limit >= total`.
+
+    ```json
+    {
+      "total": 312,
+      "items": [ ... ]
+    }
+    ```
+
+    The `total` field is an approximate count for search endpoints and an exact
+    count for browse endpoints.
+
+    ## Error Format
+
+    All error responses use the `Error` schema:
+
+    ```json
+    {
+      "code": "VOLUME_NOT_FOUND",
+      "message": "Volume 'frus1969-76v99' was not found.",
+      "detail": null
+    }
+    ```
 
   contact:
     name: Office of the Historian, U.S. Department of State
     url: https://history.state.gov
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
 
-# Paths are populated session by session as client code is written.
-# See DEVELOPMENT-PLAN.md for the session sequence.
+servers:
+  - url: https://api.history.state.gov/v1
+    description: |
+      Future production endpoint (not yet deployed). Described here as a
+      roadmap specification. The current app uses GitHub's raw CDN and local
+      SQLite in place of this server.
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Volumes
+    description: Volume manifest, download, and page range data
+  - name: Documents
+    description: Document browse and retrieval
+  - name: Subjects
+    description: Subject tag taxonomy and document appearances
+  - name: CrossReferences
+    description: Directed document cross-reference graph data
+  - name: Search
+    description: Full-text search across indexed FRUS documents
+  - name: CitationLookup
+    description: Page-number-to-document resolution (Session 30)
+
 paths:
 
   /volumes:
     get:
       summary: List all FRUS volumes
       description: |
-        Returns the full volume manifest: metadata for every published, partially
-        published, and planned FRUS volume.
+        Returns the paginated manifest of all FRUS volumes: every published,
+        partially published, and planned volume with its full metadata.
 
-        In the current implementation this data is bundled in `manifest.json`
-        (generated by `ManifestGenerator` from TEI headers in the HistoryAtState
-        GitHub repository). A future API would serve this endpoint directly.
+        **Current implementation:** Data is bundled in `manifest.json` (generated
+        by `ManifestGenerator` from TEI headers in the HistoryAtState GitHub
+        repository) and served from `ManifestStore`. Introduced in Session 02.
       operationId: listVolumes
       tags:
         - Volumes
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [published, partiallyPublished, planned]
+          description: Filter by publication status. Omit to return all statuses.
+        - name: subseries
+          in: query
+          schema:
+            type: string
+          description: |
+            Filter to volumes in a specific subseries (e.g. `1969-76`). Subseries
+            identifiers are derived from the filename prefix.
       responses:
         "200":
-          description: Array of volume manifest entries
+          description: Paginated list of volume manifest entries
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/VolumeManifestEntry"
+                $ref: "#/components/schemas/VolumeManifestList"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /volumes/{volumeId}:
+    get:
+      summary: Retrieve metadata for a single FRUS volume
+      description: |
+        Returns full metadata for one FRUS volume by its stable identifier.
+
+        **Current implementation:** Metadata is looked up by `volumeId` in the
+        in-memory manifest array held by `ManifestStore`. No separate per-volume
+        endpoint exists in the app — the full manifest is always fetched. This
+        endpoint would allow the app to refresh a single volume's metadata without
+        re-fetching the entire manifest. Introduced as a spec endpoint in Session 28.
+      operationId: getVolume
+      tags:
+        - Volumes
+      parameters:
+        - $ref: "#/components/parameters/VolumeId"
+      responses:
+        "200":
+          description: Volume manifest entry
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VolumeManifestEntry"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
 
   /volumes/{volumeId}/download:
     get:
       summary: Download a FRUS volume XML file
       description: |
-        Returns the full TEI XML for a single FRUS volume. In the current implementation
-        this is served directly from the HistoryAtState GitHub repository via its raw
-        content CDN (`raw.githubusercontent.com`). `DownloadManager` constructs the URL
-        from the GitHub API directory listing and fetches it with `URLSession`.
+        Returns the full TEI XML for a single FRUS volume.
+
+        **Current implementation:** `DownloadManager` constructs the URL as
+        `https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/{filename}`
+        and fetches it with `URLSession`. Introduced in Session 05.
 
         A purpose-built FRUS API would serve this endpoint with HTTP range support
-        (for resumable downloads) and pre-compressed payloads.
-
-        Added in Session 05 (Volume Download & Storage Manager).
+        (via `Accept-Ranges` / `Range` headers) for resumable downloads and
+        `Content-Encoding: gzip` for compressed transfer.
       operationId: downloadVolume
       tags:
         - Volumes
       parameters:
-        - name: volumeId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Volume identifier, e.g. `frus1969-76v01`
+        - $ref: "#/components/parameters/VolumeId"
       responses:
         "200":
           description: Full TEI XML content of the volume
+          headers:
+            Content-Length:
+              schema:
+                type: integer
+              description: File size in bytes.
+            ETag:
+              schema:
+                type: string
+              description: SHA-256 of the XML content, for cache validation.
+            Accept-Ranges:
+              schema:
+                type: string
+                example: bytes
+              description: Indicates range request support for resumable downloads.
           content:
             application/xml:
               schema:
                 type: string
                 format: binary
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
         "404":
-          description: Volume not found
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
 
   /volumes/{volumeId}/documents:
     get:
       summary: List document metadata for a volume
       description: |
-        Returns lightweight metadata for every document in a volume, in source order.
-        In the current implementation this is served entirely from the local SQLite
-        `document_cache` table populated by `IndexingPipeline`. The volume must be
-        indexed before this endpoint is meaningful; an unindexed volume returns an
-        empty array.
+        Returns paginated lightweight metadata for every document in a volume,
+        in source order (matching the order of `<div type="document">` elements
+        in the TEI XML).
 
-        Added in Session 11 (Browser View — Compilation/Chapter level).
+        **Current implementation:** Served from the local SQLite `document_cache`
+        table populated by `IndexingPipeline`. The volume must be downloaded and
+        indexed before this endpoint is meaningful. Introduced in Session 11.
       operationId: listDocuments
       tags:
         - Documents
       parameters:
-        - name: volumeId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Volume identifier, e.g. `frus1969-76v01`
+        - $ref: "#/components/parameters/VolumeId"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         "200":
-          description: Ordered list of document metadata entries
+          description: Ordered, paginated list of document metadata entries
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DocumentBrowserEntry"
+                $ref: "#/components/schemas/DocumentBrowserEntryList"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
         "404":
-          description: Volume not found
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
 
   /volumes/{volumeId}/documents/{documentId}:
     get:
       summary: Retrieve a single FRUS document
       description: |
-        Returns the TEI XML fragment for a single document (`<div type="document">`) within
-        a volume. In the current implementation there is no document-level API; `FRUSDocumentParser`
-        reads the full downloaded volume XML file locally and uses early-abort parsing to extract
-        the target document without processing the rest of the file.
+        Returns the fully-rendered representation of one FRUS document as a
+        structured JSON object ready for display by the Document view.
 
-        A purpose-built FRUS API would serve individual document fragments, eliminating the need
-        to download full volume files for single-document access.
+        **Current implementation:** No document-level API call exists. The full
+        volume XML is read from local storage and `FRUSDocumentParser` (Session 06)
+        uses early-abort SAX parsing to extract the target `<div type="document">`
+        fragment. `ASTToRenderNodeConverter` (Session 06) then converts the AST
+        to a `FRUSDocumentRenderModel` for rendering.
 
-        Added in Session 06 (TEI Parser — Core Elements).
+        A purpose-built API would serve pre-parsed render models, eliminating the
+        full-XML download requirement.
       operationId: getDocument
       tags:
         - Documents
       parameters:
-        - name: volumeId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Volume identifier, e.g. `frus1969-76v01`
-        - name: documentId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Document identifier matching the `xml:id` attribute on `<div type="document">`, e.g. `d1`
+        - $ref: "#/components/parameters/VolumeId"
+        - $ref: "#/components/parameters/DocumentId"
       responses:
         "200":
           description: Parsed document as a structured render model
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentRenderModel"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
         "404":
-          description: Volume or document not found
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /volumes/{volumeId}/documents/{documentId}/cross-references:
+    get:
+      summary: Cross-reference graph for a document
+      description: |
+        Returns the ego graph centred on one FRUS document: all inbound edges
+        (other documents that reference this one) and outbound edges (documents
+        this one references), plus display metadata for every reachable node.
+
+        **Current implementation:** `CrossReferenceStore` (Session 17) queries the
+        `cross_references` SQLite table, populated by `IndexingPipeline` from
+        `<ref>` elements inside footnote and editorial-note blocks. The graph is
+        built in memory and rendered by `CrossReferenceGraphView` (Session 18)
+        using a force-directed layout.
+
+        A `downloadedOnly` flag restricts the response to nodes whose volumes the
+        client has already downloaded, mirroring the `downloadedVolumeIds` filter
+        applied locally by `CrossReferenceStore`.
+      operationId: getDocumentCrossReferences
+      tags:
+        - CrossReferences
+      parameters:
+        - $ref: "#/components/parameters/VolumeId"
+        - $ref: "#/components/parameters/DocumentId"
+        - name: downloadedOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: |
+            When `true`, excludes nodes whose source volumes are not in the
+            caller-supplied `knownVolumeIds` list. Use to replicate the
+            client-side `downloadedVolumeIds` filter.
+        - name: knownVolumeIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: |
+            Volume IDs the client has already downloaded; used with `downloadedOnly`
+            to filter the response to locally-resolvable nodes only.
+      responses:
+        "200":
+          description: Cross-reference ego graph for the document
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrossReferenceGraph"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
 
   /volumes/{volumeId}/page-ranges:
     get:
       summary: Page range table for a volume
       description: |
-        Returns all page-break records extracted from the volume's TEI XML during
-        indexing. Used by the Citation Lookup feature (Session 30) to resolve
-        citations of the form "FRUS 1969–76 Vol. I, p. 47" to specific documents.
+        Returns all page-break records extracted from the volume's TEI XML
+        during indexing. Used by the Citation Lookup feature (Session 30) to
+        resolve citations of the form "FRUS 1969–76 Vol. I, p. 47" to specific
+        documents.
 
-        Added by Session 30 (Citation Lookup) to the Session 09 indexing pipeline.
+        **Current implementation:** Populated by `IndexingPipeline` from
+        `<pb>` elements in the TEI XML. Schema and storage logic will be
+        defined in Session 30. Endpoint specified here as a placeholder.
       operationId: getVolumePageRanges
       tags:
         - Volumes
-        - Citation Lookup
+        - CitationLookup
       parameters:
-        - name: volumeId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Volume identifier, e.g. `frus1969-76v01`
+        - $ref: "#/components/parameters/VolumeId"
       responses:
         "200":
           description: Array of page-range records for the volume
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/PageRangeRecord"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
         "404":
-          description: Volume not found or not yet indexed
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /subjects:
+    get:
+      summary: Full subject tag taxonomy
+      description: |
+        Returns the complete flat list of subject tags used across all FRUS
+        volumes and documents, each with its display name and category.
+
+        **Current implementation:** `SubjectTagStore` loads `taxonomy.json`
+        (bundled with the app) at launch and holds the taxonomy in memory.
+        No network call is made at runtime; the taxonomy is updated by
+        regenerating the bundle file. Introduced in Session 08.
+
+        A purpose-built API would serve the current taxonomy and allow the
+        app to fetch updates without a full app update.
+      operationId: listSubjects
+      tags:
+        - Subjects
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [people, places, topics]
+          description: Filter to one top-level category. Omit to return all.
+      responses:
+        "200":
+          description: Paginated subject tag list
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectTagList"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /subjects/appearances/{volumeId}:
+    get:
+      summary: Subject tag appearances for a volume
+      description: |
+        Returns all document-level subject tag assignments for a volume: each
+        record links a subject tag to a document with a confidence tier
+        (`curated` or `stringMatch`).
+
+        **Current implementation:** `SubjectTagStore` loads `subject-appearances.json`
+        (bundled with the app). The file is generated during corpus analysis and
+        bundled rather than fetched at runtime. `IndexingPipeline` also writes
+        appearances to the `subject_appearances` SQLite table for FTS5 filtering.
+        Introduced in Session 08.
+      operationId: getSubjectAppearances
+      tags:
+        - Subjects
+      parameters:
+        - name: volumeId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Volume identifier, e.g. `frus1969-76v01`
+        - name: confidence
+          in: query
+          schema:
+            type: string
+            enum: [curated, stringMatch]
+          description: Filter by confidence tier. Omit to return both tiers.
+      responses:
+        "200":
+          description: Array of subject tag appearances for the volume
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectAppearance"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
 
   /search:
     get:
@@ -223,9 +570,12 @@ paths:
         filtering.
 
         Results are ordered by BM25 relevance (lower score = more relevant).
-        Pagination is supported via `limit` and `offset`.
 
-        Added by Session 09 (Search Index Pipeline).
+        **Current implementation:** `SearchService` (Session 09) queries the
+        FTS5 virtual table inside `FTS5Store` and hydrates results from the
+        `document_cache` table. The `SearchViewModel` (Session 16) drives the
+        `SearchView` UI. Search runs entirely on-device against the local SQLite
+        database.
       operationId: searchDocuments
       tags:
         - Search
@@ -234,7 +584,9 @@ paths:
           in: query
           schema:
             type: string
-          description: Space-separated keywords combined via boolean AND (default) or OR.
+          description: |
+            Space-separated keywords combined via boolean AND (default) or OR.
+            Maps to the `keywords` field of `SearchQuery` in `SearchModels.swift`.
         - name: phrase
           in: query
           schema:
@@ -260,7 +612,9 @@ paths:
           in: query
           schema:
             type: string
-          description: Prefix for a wildcard search (e.g. `negoti` matches `negotiate`, `negotiated`).
+          description: |
+            Prefix for a wildcard search (e.g. `negoti` matches `negotiate`,
+            `negotiated`). Maps to the `prefixWildcard` field of `SearchQuery`.
         - name: dateRangeEarliest
           in: query
           schema:
@@ -290,7 +644,8 @@ paths:
               type: string
           style: form
           explode: true
-          description: Restrict results to these volume IDs. Omit to search all indexed volumes.
+          description: |
+            Restrict results to these volume IDs. Omit to search all indexed volumes.
         - name: includeSummaries
           in: query
           schema:
@@ -303,56 +658,281 @@ paths:
             type: boolean
             default: true
           description: Whether to search user research note text.
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-            maximum: 100
-          description: Maximum number of results to return.
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-          description: Number of results to skip (for pagination).
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         "200":
-          description: Ranked search results
+          description: Paginated ranked search results
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/SearchResult"
+                $ref: "#/components/schemas/SearchResultList"
         "400":
-          description: Invalid query (e.g. empty query with no searchable terms)
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
 
 components:
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key issued by the Office of the Historian. In FRUS Explorer the key
+        is stored in iCloud Keychain via `KeychainStore` (Session 05) under a
+        shared access group, allowing it to sync across the user's devices.
+        Keys are entered in the NARA API Key panel within the Settings screen.
+
+  parameters:
+    VolumeId:
+      name: volumeId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: |
+        Stable volume identifier derived from the XML filename without extension.
+        Example: `frus1969-76v01`
+
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: |
+        Document identifier matching the `xml:id` attribute on the
+        `<div type="document">` element. Example: `d1`
+
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      description: Maximum number of items to return in a single page.
+
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+      description: Number of items to skip before the first returned item.
+
+  headers:
+    X-RateLimit-Limit:
+      schema:
+        type: integer
+      description: Maximum requests allowed in the current rate-limit window.
+    X-RateLimit-Remaining:
+      schema:
+        type: integer
+      description: Requests remaining in the current rate-limit window.
+    X-RateLimit-Reset:
+      schema:
+        type: integer
+      description: Unix timestamp (seconds) when the current window resets.
+
+  responses:
+    400BadRequest:
+      description: The request was malformed or contained invalid parameters.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: INVALID_QUERY
+            message: "Search query must contain at least one searchable term."
+            detail: null
+
+    401Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: UNAUTHORIZED
+            message: "A valid X-API-Key header is required."
+            detail: null
+
+    404NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: NOT_FOUND
+            message: "Volume 'frus1999-00v00' was not found."
+            detail: null
+
+    429TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: RATE_LIMITED
+            message: "Rate limit exceeded. Retry after 47 seconds."
+            detail: null
+
+    500ServerError:
+      description: An unexpected server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: INTERNAL_ERROR
+            message: "An unexpected error occurred. Please try again later."
+            detail: null
+
   schemas:
+
+    # ── Shared ───────────────────────────────────────────────────────────────
+
+    Error:
+      type: object
+      description: |
+        Standard error response body returned for all 4xx and 5xx responses.
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code in SCREAMING_SNAKE_CASE.
+          example: VOLUME_NOT_FOUND
+        message:
+          type: string
+          description: Human-readable description of the error.
+          example: "Volume 'frus1969-76v99' was not found."
+        detail:
+          type:
+            - string
+            - "null"
+          description: |
+            Optional supplementary detail (e.g. a field name or constraint
+            that was violated). Null when no additional context is available.
 
     DateRange:
       type: object
-      description: Inclusive date range covered by a volume.
+      description: Inclusive date range covered by a volume or document set.
       properties:
         earliest:
-          type: string
+          type:
+            - string
+            - "null"
           format: date
-          nullable: true
-          description: ISO 8601 date of the earliest document in the volume.
+          description: ISO 8601 date of the earliest document in the range.
         latest:
-          type: string
+          type:
+            - string
+            - "null"
           format: date
-          nullable: true
-          description: ISO 8601 date of the latest document in the volume.
+          description: ISO 8601 date of the latest document in the range.
+
+    # ── Pagination wrappers ───────────────────────────────────────────────────
+
+    VolumeManifestList:
+      type: object
+      description: Paginated response wrapping a list of volume manifest entries.
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          description: Exact total count of volumes matching the filter parameters.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VolumeManifestEntry"
+
+    DocumentBrowserEntryList:
+      type: object
+      description: Paginated response wrapping a list of document metadata entries.
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          description: Exact total number of documents in the volume.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentBrowserEntry"
+
+    SearchResultList:
+      type: object
+      description: |
+        Paginated response wrapping ranked search results. The `total` field
+        is an approximate count (BM25 match counting is non-trivial at scale).
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          description: Approximate total count of matching documents.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+
+    SubjectTagList:
+      type: object
+      description: Paginated response wrapping subject tag entries.
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          description: Total number of subject tags in the taxonomy.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectTag"
+
+    # ── Volumes ───────────────────────────────────────────────────────────────
 
     VolumeManifestEntry:
       type: object
       description: |
         Rich metadata for a single FRUS volume, generated from its TEI header.
+
         The `tags` field contains volume-level subject tag slugs extracted from
         `/TEI/teiHeader/profileDesc/textClass/keywords[@scheme="https://history.state.gov/tags"]/term`.
-        These are authoritative OH-curated tags embedded in published TEI.
+        These are authoritative OH-curated tags embedded in the published TEI.
+
+        Corresponds to the `VolumeManifestEntry` Swift struct in
+        `FRUSExplorer/Models/Manifest/ManifestModels.swift`. Introduced in Session 02.
       required:
         - volumeId
         - filename
@@ -367,15 +947,16 @@ components:
       properties:
         volumeId:
           type: string
-          description: Stable volume identifier derived from the filename without extension.
+          description: |
+            Stable volume identifier derived from the filename without extension.
           example: frus1969-76v01
         filename:
           type: string
-          description: Original XML filename in the HistoryAtState/frus repository.
+          description: XML filename in the HistoryAtState/frus repository.
           example: frus1969-76v01.xml
         subseries:
           type: string
-          description: Subseries identifier derived from the filename.
+          description: Subseries identifier derived from the filename prefix.
           example: "1969-76"
         title:
           type: string
@@ -383,9 +964,10 @@ components:
         dateRange:
           $ref: "#/components/schemas/DateRange"
         publicationDate:
-          type: string
-          nullable: true
-          description: ISO 8601 publication year or date; null if absent from the TEI header.
+          type:
+            - string
+            - "null"
+          description: ISO 8601 publication year or date; null if absent.
           example: "2003"
         status:
           type: string
@@ -400,12 +982,15 @@ components:
             type: string
           description: Named editors (excluding the general editor).
         generalEditor:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
           description: General series editor, if named in the TEI header.
         documentCount:
           type: integer
-          description: Approximate number of documents; may be 0 if not available from the header.
+          description: |
+            Approximate number of documents. May be 0 for volumes predating
+            the `documentCount` field in the manifest generator.
         sizeBytes:
           type: integer
           description: File size in bytes as reported by the GitHub API.
@@ -414,22 +999,25 @@ components:
           items:
             type: string
           description: |
-            Volume-level subject tag slugs from the TEI teiHeader
-            (`keywords[@scheme="https://history.state.gov/tags"]`).
-            Empty array is valid for volumes predating the tagging system.
+            Volume-level subject tag slugs from the TEI teiHeader. Empty array
+            is valid for volumes predating the tagging system.
           example:
             - kissinger-henry-a
             - iran
             - arms-control-and-disarmament
 
+    # ── Documents ─────────────────────────────────────────────────────────────
+
     DocumentBrowserEntry:
       type: object
       description: |
-        Lightweight metadata for a single FRUS document, used by the Browser's
-        Compilation/Chapter level. Sourced from the `document_cache` SQLite table
-        populated by `IndexingPipeline`. Does not include document body content.
+        Lightweight metadata for a single FRUS document, used by the browser's
+        compilation/chapter list. Does not include document body content.
 
-        Added in Session 11 (Browser View — Compilation/Chapter level).
+        Corresponds to `DocumentBrowserEntry` in
+        `FRUSExplorer/Browser/BrowserViewModel.swift`. Sourced from the
+        `document_cache` SQLite table populated by `IndexingPipeline`.
+        Introduced in Session 11.
       required:
         - documentId
         - volumeId
@@ -437,96 +1025,371 @@ components:
       properties:
         documentId:
           type: string
-          description: The `xml:id` value of the `<div type="document">` element, e.g. `d1`
+          description: |
+            The `xml:id` attribute on `<div type="document">`, e.g. `d1`.
         volumeId:
           type: string
-          description: Volume this document belongs to, e.g. `frus1969-76v01`
+          description: Volume this document belongs to, e.g. `frus1969-76v01`.
         documentNumber:
-          type: string
-          nullable: true
-          description: Printed document number extracted from the `<head>`, if present, e.g. `"42"`
+          type:
+            - string
+            - "null"
+          description: Printed document number from the `<head>`, if present.
+          example: "42"
         header:
           type: string
-          description: Document heading or title line
+          description: Document heading or title line.
         dateline:
-          type: string
-          nullable: true
-          description: Dateline string, if present
+          type:
+            - string
+            - "null"
+          description: Dateline string (place and date of authorship), if present.
         sourceNote:
-          type: string
-          nullable: true
-          description: Archival provenance note, if present
+          type:
+            - string
+            - "null"
+          description: Archival provenance note, if present.
 
     DocumentRenderModel:
       type: object
       description: |
-        The fully-rendered representation of a single FRUS document, structured for
-        direct consumption by the Document view. Mirrors the `FRUSDocumentRenderModel`
-        Swift type produced by `ASTToRenderNodeConverter`.
-        Schema detail deferred — structure defined by Session 06 Swift types.
+        The fully-rendered representation of a single FRUS document, structured
+        for direct consumption by the Document view. Mirrors the
+        `FRUSDocumentRenderModel` Swift type produced by
+        `ASTToRenderNodeConverter` (Session 06).
+
+        Body content is represented as a tree of `FRUSRenderNode` values.
+        Footnote bodies are listed separately so the renderer can cross-reference
+        marker and body positions.
       required:
         - documentId
+        - volumeId
+        - header
         - bodyNodes
         - footnotes
       properties:
         documentId:
           type: string
-          description: The document identifier matching the `xml:id` attribute.
+          description: The document identifier, e.g. `d1`.
+        volumeId:
+          type: string
+          description: The volume this document belongs to.
+        header:
+          type: string
+          description: Document heading extracted from `<head>`.
+        dateline:
+          type:
+            - string
+            - "null"
+          description: Dateline string, if present.
+        sourceNote:
+          type:
+            - string
+            - "null"
+          description: Archival source note, if present.
         bodyNodes:
           type: array
           description: Main content render nodes in document order.
           items:
-            type: object
+            $ref: "#/components/schemas/FRUSRenderNode"
         footnotes:
           type: array
           description: Footnote body nodes in sequential display order.
           items:
-            type: object
+            $ref: "#/components/schemas/FRUSRenderNode"
 
-    PageRangeRecord:
+    FRUSRenderNode:
       type: object
       description: |
-        A single page-break record extracted from a volume's TEI XML during indexing.
-        Used by the Citation Lookup engine (Session 30) to resolve page number
-        references to specific documents and sections.
-        Schema and population logic defined in Session 31 task file.
+        A single node in the FRUS document render tree. Uses a `type` discriminator
+        to represent the different content structures produced by
+        `ASTToRenderNodeConverter` (Session 06).
+
+        The full set of node types mirrors the `FRUSRenderNode` Swift enum in
+        `FRUSExplorer/TEI/FRUSRenderNode.swift`. Complex recursive structures
+        (paragraph, heading, blockquote, list) carry a `children` array of
+        nested `FRUSRenderNode` objects.
       required:
-        - volumeId
-        - documentId
-        - pageNumber
-        - pageNumberType
+        - type
+      discriminator:
+        propertyName: type
       properties:
-        volumeId:
+        type:
           type: string
-          description: Volume this page break belongs to.
+          description: Node type discriminator.
+          enum:
+            - heading
+            - dateline
+            - letterOpener
+            - letterCloser
+            - salutation
+            - paragraph
+            - footnoteBody
+            - plainText
+            - boldText
+            - italicText
+            - smallCapsText
+            - underlineText
+            - termText
+            - footnoteMarker
+            - persNameLink
+            - glossLink
+            - crossRefLink
+            - pageBreak
+            - tableBlock
+            - listBlock
+            - editorialNoteBlock
+            - figureBlock
+            - suppliedText
+            - sicText
+            - corrText
+            - formulaText
+            - lineBreak
+            - unknown
+        text:
+          type: string
+          description: Present on leaf text nodes (`plainText`, `formulaText`).
+        children:
+          type: array
+          description: |
+            Child nodes for container types (paragraph, heading, boldText, etc.).
+          items:
+            $ref: "#/components/schemas/FRUSRenderNode"
+        id:
+          type:
+            - string
+            - "null"
+          description: |
+            Footnote ID for `footnoteBody` and `footnoteMarker` nodes.
+        number:
+          type: integer
+          description: Footnote display number for `footnoteBody` and `footnoteMarker`.
+        ref:
+          type:
+            - string
+            - "null"
+          description: |
+            Target reference string for `persNameLink`, `glossLink`, and
+            `crossRefLink` nodes.
+        target:
+          type: string
+          description: Cross-reference target document ID for `crossRefLink` nodes.
+
+    # ── Cross-References ──────────────────────────────────────────────────────
+
+    CrossReferenceGraph:
+      type: object
+      description: |
+        The ego graph centred on one FRUS document, containing all inbound and
+        outbound cross-references and display metadata for every reachable node.
+
+        Mirrors `CrossReferenceGraph` in
+        `FRUSExplorer/CrossReference/CrossReferenceModels.swift`.
+        Introduced in Session 17.
+      required:
+        - centralDocumentId
+        - centralVolumeId
+        - inboundEdges
+        - outboundEdges
+        - hasUndownloadedSources
+        - nodeMetadata
+      properties:
+        centralDocumentId:
+          type: string
+          description: Document ID of the ego-graph centre.
+        centralVolumeId:
+          type: string
+          description: Volume ID of the ego-graph centre.
+        inboundEdges:
+          type: array
+          description: References whose target is the central document.
+          items:
+            $ref: "#/components/schemas/CrossReferenceEdge"
+        outboundEdges:
+          type: array
+          description: References whose source is the central document.
+          items:
+            $ref: "#/components/schemas/CrossReferenceEdge"
+        hasUndownloadedSources:
+          type: boolean
+          description: |
+            `true` when at least one inbound edge has a source volume absent
+            from the `knownVolumeIds` filter, indicating potentially incomplete
+            inbound data.
+        nodeMetadata:
+          type: object
+          description: |
+            Display metadata keyed by `"volumeId/documentId"`. Includes the
+            central document and every reachable node. Values may have null
+            header/dateline for documents from volumes not in `document_cache`.
+          additionalProperties:
+            $ref: "#/components/schemas/CrossReferenceNodeMetadata"
+
+    CrossReferenceEdge:
+      type: object
+      description: |
+        A directed reference from one FRUS document to another, extracted from
+        a `<ref>` element inside a footnote or editorial-note block during
+        indexing. Mirrors `CrossReferenceEdge` in CrossReferenceModels.swift.
+      required:
+        - sourceDocumentId
+        - sourceVolumeId
+        - targetDocumentId
+        - targetVolumeId
+        - referenceType
+      properties:
+        sourceDocumentId:
+          type: string
+          description: Document ID of the citing document.
+        sourceVolumeId:
+          type: string
+          description: Volume ID of the citing document.
+        targetDocumentId:
+          type: string
+          description: Document ID of the cited document.
+        targetVolumeId:
+          type: string
+          description: Volume ID of the cited document.
+        context:
+          type:
+            - string
+            - "null"
+          description: |
+            Surrounding footnote or editorial-note text captured at index time.
+            Null for edges indexed before the `context` column was added.
+        referenceType:
+          $ref: "#/components/schemas/ReferenceType"
+
+    CrossReferenceNodeMetadata:
+      type: object
+      description: |
+        Display-ready metadata for one node (document) in the cross-reference
+        graph. Fields are null for documents whose volumes have not been indexed.
+        Mirrors `CrossReferenceNodeMetadata` in CrossReferenceModels.swift.
+      required:
+        - documentId
+        - volumeId
+      properties:
         documentId:
           type: string
-          description: Document within the volume containing this page break.
-        sectionId:
+          description: Document identifier within its volume.
+        volumeId:
           type: string
-          nullable: true
-          description: Section or compilation grouping within the document, if applicable.
-        pageNumber:
+          description: Volume the document belongs to.
+        documentNumber:
+          type:
+            - string
+            - "null"
+          description: Printed document number, if known.
+        header:
+          type:
+            - string
+            - "null"
+          description: Document header/title, or null if the volume is not indexed.
+        dateline:
+          type:
+            - string
+            - "null"
+          description: Dateline string, or null if the volume is not indexed.
+
+    ReferenceType:
+      type: string
+      description: |
+        Whether a cross-reference was extracted from a footnote or an editorial
+        note block. Mirrors `ReferenceType` in CrossReferenceModels.swift.
+      enum:
+        - footnote
+        - editorialNote
+
+    # ── Subjects ──────────────────────────────────────────────────────────────
+
+    SubjectTag:
+      type: object
+      description: |
+        A single entry in the FRUS subject taxonomy. Tags are used at both the
+        volume level (via `VolumeManifestEntry.tags`) and the document level
+        (via `SubjectAppearance`).
+
+        Mirrors `SubjectTag` and `SubjectTagEntry` in
+        `FRUSExplorer/Models/Tags/TaxonomyModels.swift`. Introduced in Session 08.
+      required:
+        - subjectId
+        - displayName
+        - category
+      properties:
+        subjectId:
           type: string
-          description: Raw `@n` attribute value from the `<pb>` element.
-        pageNumberType:
+          description: |
+            Stable slug, sharing the namespace with `VolumeManifestEntry.tags`.
+          example: kissinger-henry-a
+        displayName:
+          type: string
+          description: Human-readable tag name for display in the UI.
+          example: Kissinger, Henry A.
+        category:
           type: string
           enum:
-            - arabic
-            - roman
-            - prefixed
-            - unparseable
-          description: Normalised page number type derived from the `@n` value.
+            - people
+            - places
+            - topics
+          description: |
+            Top-level taxonomy category. Maps to `TagCategory` in
+            TaxonomyModels.swift.
+
+    SubjectAppearance:
+      type: object
+      description: |
+        A record linking a subject tag to a specific document, with a confidence
+        tier reflecting how the association was assigned.
+
+        Mirrors `SubjectAppearance` in TaxonomyModels.swift. Used by
+        `SubjectTagStore` to answer "which subjects appear in document X?" and
+        "which documents mention subject Y?". Introduced in Session 08.
+      required:
+        - subjectId
+        - documentId
+        - volumeId
+        - confidence
+      properties:
+        subjectId:
+          type: string
+          description: Subject tag identifier.
+        documentId:
+          type: string
+          description: Document carrying the tag.
+        volumeId:
+          type: string
+          description: Volume the document belongs to.
+        confidence:
+          $ref: "#/components/schemas/SubjectTagConfidence"
+
+    SubjectTagConfidence:
+      type: string
+      description: |
+        Confidence tier for a document-level subject tag assignment.
+
+        - `curated`: Manually verified by OH staff or the data pipeline operator.
+          Displayed in the UI with a checkmark badge (per accessibility decision Q5).
+        - `stringMatch`: Derived algorithmically via string matching. May include
+          false positives. Displayed with a question-mark badge.
+
+        Mirrors `SubjectTagConfidence` in TaxonomyModels.swift.
+      enum:
+        - curated
+        - stringMatch
+
+    # ── Search ────────────────────────────────────────────────────────────────
 
     SearchResult:
       type: object
       description: |
-        A single ranked full-text search result returned by `GET /search`.
-        Results are ordered by BM25 relevance score (lower = more relevant).
-        The `snippet` field contains the matching context with `<b>…</b>` delimiters
-        around the first matching run, suitable for display in search result lists.
+        A single ranked full-text search result. Results are ordered by BM25
+        relevance score (lower = more relevant). The `snippet` field contains
+        the matching context with `<b>…</b>` delimiters around the first
+        matching run, suitable for display in result lists.
 
-        Added by Session 09 (Search Index Pipeline).
+        Mirrors `SearchResult` in `FRUSExplorer/Search/SearchModels.swift`.
+        Introduced in Session 09.
       required:
         - documentId
         - volumeId
@@ -538,32 +1401,35 @@ components:
       properties:
         documentId:
           type: string
-          description: Document identifier (e.g. `d1`), unique within its volume.
+          description: Document identifier, unique within its volume.
         volumeId:
           type: string
-          description: Volume this document belongs to (e.g. `frus1969-76v01`).
+          description: Volume this document belongs to.
         documentNumber:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
           description: Printed document number, if present.
         header:
           type: string
           description: Document header / title line.
         dateline:
-          type: string
-          nullable: true
-          description: Dateline string (place and date of authorship).
+          type:
+            - string
+            - "null"
+          description: Dateline string.
         sourceNote:
-          type: string
-          nullable: true
-          description: Source note describing archival provenance.
+          type:
+            - string
+            - "null"
+          description: Archival source note.
         snippet:
           type: string
           description: Context snippet with matching terms wrapped in `<b>…</b>`.
         bm25Score:
           type: number
           format: double
-          description: BM25 relevance score. Lower (more negative) means more relevant.
+          description: BM25 relevance score. Lower (more negative) = more relevant.
         subjectTagIds:
           type: array
           items:
@@ -573,4 +1439,44 @@ components:
           type: array
           items:
             type: string
-          description: User tag IDs associated with this document.
+          description: User tag IDs from research notes linked to this document.
+
+    # ── Citation Lookup ───────────────────────────────────────────────────────
+
+    PageRangeRecord:
+      type: object
+      description: |
+        A single page-break record extracted from a volume's TEI XML during
+        indexing. Used by the Citation Lookup engine (Session 30) to resolve
+        page number references to specific documents and sections.
+
+        Storage logic and full schema detail will be finalized in Session 30.
+        Endpoint defined here as a forward specification.
+      required:
+        - volumeId
+        - documentId
+        - pageNumber
+        - pageNumberType
+      properties:
+        volumeId:
+          type: string
+          description: Volume this page break belongs to.
+        documentId:
+          type: string
+          description: Document containing this page break.
+        sectionId:
+          type:
+            - string
+            - "null"
+          description: Section or compilation grouping, if applicable.
+        pageNumber:
+          type: string
+          description: Raw `@n` attribute value from the `<pb>` element.
+        pageNumberType:
+          type: string
+          enum:
+            - arabic
+            - roman
+            - prefixed
+            - unparseable
+          description: Normalised page number type derived from the `@n` value.

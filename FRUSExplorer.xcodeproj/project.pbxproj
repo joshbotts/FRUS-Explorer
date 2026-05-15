@@ -216,6 +216,7 @@
 		AA26BB01CC03DD04EE2602 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA26BB01CC03DD04EE2600 /* AboutView.swift */; };
 		AA26BB01CC03DD04EE2604 /* AboutViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */; };
 		AA27BB01CC03DD04EE2701 /* AccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */; };
+		AA28BB01CC03DD04EE2801 /* OpenAPIValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */; };
 		AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
@@ -366,6 +367,7 @@
 		AA26BB01CC03DD04EE2600 /* AboutView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AboutViewTests.swift; sourceTree = "<group>"; };
 		AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityTests.swift; sourceTree = "<group>"; };
+		AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAPIValidationTests.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
@@ -484,6 +486,7 @@
 				AA25BB01CC03DD04EE2506 /* GlobalContextTests.swift */,
 				AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */,
 				AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */,
+				AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -1093,6 +1096,7 @@
 				AA25BB01CC03DD04EE2507 /* GlobalContextTests.swift in Sources */,
 				AA26BB01CC03DD04EE2604 /* AboutViewTests.swift in Sources */,
 				AA27BB01CC03DD04EE2701 /* AccessibilityTests.swift in Sources */,
+				AA28BB01CC03DD04EE2801 /* OpenAPIValidationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
