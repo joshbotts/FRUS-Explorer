@@ -37,6 +37,7 @@ import SwiftData
 ///   1.2 — Session 05: create and wire DownloadManager; respond to network state changes
 ///   1.3 — Session 10: fetch live manifest at boot
 ///   1.4 — Session 19: wire SummarizationService at boot
+///   1.5 — Session 20: seed standard prompts on first launch
 @main
 struct FRUSExplorerApp: App {
 
@@ -98,6 +99,7 @@ struct FRUSExplorerApp: App {
         }
 
         appState.summarizationService = SummarizationService(modelContainer: modelContainer)
+        SummarizationPromptSeeder.seed(in: modelContainer)
 
         let dm = DownloadManager(
             volumesDirectory: volumesDir,

@@ -14,8 +14,8 @@ import SwiftData
 /// Renders a single FRUS document using the TEI rendering pipeline.
 ///
 /// ## Layout (top to bottom)
-/// 1. Toolbar — research note, user tag, collection, citation, cross-reference actions
-/// 2. Summary strip — active generated summary with "View others" control
+/// 1. Toolbar — research note, user tag, collection, citation, cross-reference, summarize actions
+/// 2. Summary strip — active generated summary with "View others" control and chunked indicator
 /// 3. Document body — `FRUSDocumentRenderer` with persName/gloss/ref callbacks
 /// 4. Tag section — subject tag chips and user tag chips
 /// 5. Cross-project note indicator — disclosure if notes from other projects exist
@@ -30,6 +30,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 12: initial implementation
+///   1.1 — Session 20: add summarize toolbar button, prompt picker sheet, wasChunked indicator
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -184,6 +185,13 @@ struct DocumentView: View {
                 )
             }
         }
+        .sheet(isPresented: $vm.showSummarizeSheet) {
+            SummarizationPromptPickerSheet(
+                vm: vm,
+                service: appState.summarizationService,
+                activeProjectId: appState.activeProjectId
+            )
+        }
     }
 
     private var downloadedVolumeIds: Set<String> {
@@ -267,6 +275,29 @@ struct DocumentView: View {
             .accessibilityLabel(
                 String(localized: "document.toolbar.crossRef.a11y", defaultValue: "Explore cross-references")
             )
+
+            // Summarize — only shown when Apple Intelligence is available
+            if appState.summarizationService != nil
+                && AppleIntelligenceProvider.shared.isAvailable {
+                Button {
+                    vm.showSummarizeSheet = true
+                } label: {
+                    if vm.isSummarizing {
+                        ProgressView()
+                    } else {
+                        Label(
+                            String(localized: "document.toolbar.summarize",
+                                   defaultValue: "Summarize"),
+                            systemImage: "sparkles"
+                        )
+                    }
+                }
+                .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.summarize.a11y",
+                           defaultValue: "Generate AI summary")
+                )
+            }
         }
     }
 
@@ -350,8 +381,125 @@ private struct SummaryStripView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .lineLimit(4)
+            if summary.wasChunked {
+                Label(
+                    String(localized: "document.summary.chunked",
+                           defaultValue: "Summarized in sections"),
+                    systemImage: "info.circle"
+                )
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            }
         }
         .padding(.vertical, 8)
+    }
+}
+
+// MARK: - SummarizationPromptPickerSheet
+
+private struct SummarizationPromptPickerSheet: View {
+    let vm: DocumentViewModel
+    let service: SummarizationService?
+    let activeProjectId: UUID?
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(allPrompts) { prompt in
+                    Button {
+                        dismiss()
+                        guard let service else { return }
+                        Task {
+                            await vm.generateSummary(
+                                prompt: prompt,
+                                provider: AppleIntelligenceProvider.shared,
+                                service: service,
+                                activeProjectId: activeProjectId,
+                                context: modelContext
+                            )
+                        }
+                    } label: {
+                        PromptPickerRow(prompt: prompt)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .navigationTitle(
+                String(localized: "document.summarize.picker.title",
+                       defaultValue: "Choose a Prompt")
+            )
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "document.summarize.picker.cancel",
+                                  defaultValue: "Cancel")) {
+                        dismiss()
+                    }
+                }
+            }
+            .overlay {
+                if allPrompts.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "document.summarize.picker.empty.title",
+                               defaultValue: "No Prompts"),
+                        systemImage: "sparkles",
+                        description: Text(
+                            String(localized: "document.summarize.picker.empty.detail",
+                                   defaultValue: "Add a prompt in Settings → Summarization Prompts.")
+                        )
+                    )
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - PromptPickerRow
+
+private struct PromptPickerRow: View {
+    let prompt: SummarizationPrompt
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Text(prompt.name).font(.body)
+                if prompt.isStandard {
+                    Text(String(localized: "prompt.picker.row.standard",
+                                defaultValue: "Standard"))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.12))
+                        .clipShape(Capsule())
+                        .foregroundStyle(.accent)
+                }
+            }
+            Text(formatLabel)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var formatLabel: String {
+        switch prompt.responseFormat {
+        case .general:
+            return String(localized: "prompt.picker.row.format.general",
+                          defaultValue: "General prose")
+        case .structured(let schema):
+            let names = schema.fields.map(\.name).joined(separator: ", ")
+            return String(localized: "prompt.picker.row.format.structured \(names)",
+                          defaultValue: "Structured: \(names)")
+        }
     }
 }
 

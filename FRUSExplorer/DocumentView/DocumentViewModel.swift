@@ -27,8 +27,15 @@ import SwiftData
 /// sheet presentation. Cross-reference navigation appends a new `.document` level to
 /// `BrowserViewModel.navigationPath`.
 ///
+/// ## Summarization
+/// `generateSummary(prompt:provider:service:activeProjectId:context:)` builds a
+/// `SummarizationPromptSnapshot` on the main actor (safe for `@Model` access), then
+/// calls `SummarizationService.summarize` across the actor boundary.
+/// `documentPlainText` is populated during `load()` from `FRUSASTNode.plainText`.
+///
 /// Version history:
 ///   1.0 — Session 12: initial implementation
+///   1.1 — Session 20: add documentPlainText, isSummarizing, showSummarizeSheet, generateSummary
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -89,6 +96,17 @@ public final class DocumentViewModel {
         guard !summaries.isEmpty, summaries.indices.contains(activeSummaryIndex) else { return nil }
         return summaries[activeSummaryIndex]
     }
+
+    // MARK: - Summarization
+
+    /// Plain text of the document body, set during `load()`. Used as input to `SummarizationService`.
+    public var documentPlainText: String = ""
+
+    /// `true` while a summarization request is in flight.
+    public var isSummarizing: Bool = false
+
+    /// Whether the prompt picker sheet is currently presented.
+    public var showSummarizeSheet: Bool = false
 
     // MARK: - Citation
 
@@ -155,6 +173,9 @@ public final class DocumentViewModel {
             for t in terms { tByRef[t.ref] = t }
             personsByRef = pByRef
             termsByRef   = tByRef
+
+            // Store plain text for summarization before converting to render model
+            documentPlainText = ast.plainText
 
             // Convert AST → render model with lookup closures
             var converter = ASTToRenderNodeConverter(
@@ -236,6 +257,46 @@ public final class DocumentViewModel {
         summaries = ((try? context.fetch(descriptor)) ?? [])
             .sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
         activeSummaryIndex = 0
+    }
+
+    /// Generates a summary for the current document using the given prompt and provider.
+    ///
+    /// Creates a `SummarizationPromptSnapshot` on the main actor before crossing into
+    /// the `SummarizationService` actor, satisfying Swift 6 Sendable requirements.
+    /// Reloads `summaries` and resets `activeSummaryIndex` to 0 on completion.
+    public func generateSummary(
+        prompt: SummarizationPrompt,
+        provider: any SummarizationProvider,
+        service: SummarizationService,
+        activeProjectId: UUID?,
+        context: ModelContext
+    ) async {
+        guard !documentPlainText.isEmpty, !isSummarizing else { return }
+        isSummarizing = true
+
+        // Build snapshot on main actor before crossing actor boundary
+        let snapshot = SummarizationPromptSnapshot(from: prompt)
+
+        do {
+            _ = try await service.summarize(
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                documentText: documentPlainText,
+                prompt: snapshot,
+                provider: provider,
+                activeProjectId: activeProjectId
+            )
+            loadSummaries(context: context)
+            #if DEBUG
+            print("[SummarizationUI] Summary generated for \(entry.volumeId)/\(entry.documentId)")
+            #endif
+        } catch {
+            #if DEBUG
+            print("[SummarizationUI] Generation failed for \(entry.documentId): \(error)")
+            #endif
+        }
+
+        isSummarizing = false
     }
 }
 

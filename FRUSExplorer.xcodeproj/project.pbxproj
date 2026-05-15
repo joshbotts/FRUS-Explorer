@@ -179,6 +179,13 @@
 		AA19BB01CC03DD04EE190B /* SummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA19BB01CC03DD04EE190A /* SummarizationService.swift */; };
 		AA19BB01CC03DD04EE190C /* SummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA19BB01CC03DD04EE190A /* SummarizationService.swift */; };
 		AA19BB01CC03DD04EE190E /* SummarizationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA19BB01CC03DD04EE190D /* SummarizationServiceTests.swift */; };
+		AA20BB01CC03DD04EE2002 /* SummarizationPromptSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2001 /* SummarizationPromptSeeder.swift */; };
+		AA20BB01CC03DD04EE2003 /* SummarizationPromptSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2001 /* SummarizationPromptSeeder.swift */; };
+		AA20BB01CC03DD04EE2005 /* PromptsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2004 /* PromptsListView.swift */; };
+		AA20BB01CC03DD04EE2006 /* PromptsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2004 /* PromptsListView.swift */; };
+		AA20BB01CC03DD04EE2008 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */; };
+		AA20BB01CC03DD04EE2009 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */; };
+		AA20BB01CC03DD04EE200B /* SummarizationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -302,6 +309,10 @@
 		AA19BB01CC03DD04EE1907 /* AppleIntelligenceProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceProvider.swift; sourceTree = "<group>"; };
 		AA19BB01CC03DD04EE190A /* SummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationService.swift; sourceTree = "<group>"; };
 		AA19BB01CC03DD04EE190D /* SummarizationServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationServiceTests.swift; sourceTree = "<group>"; };
+		AA20BB01CC03DD04EE2001 /* SummarizationPromptSeeder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationPromptSeeder.swift; sourceTree = "<group>"; };
+		AA20BB01CC03DD04EE2004 /* PromptsListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PromptsListView.swift; sourceTree = "<group>"; };
+		AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PromptEditorView.swift; sourceTree = "<group>"; };
+		AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -409,6 +420,7 @@
 				AA17BB01CC03DD04EE1707 /* CrossReferenceStoreTests.swift */,
 				AA18BB01CC03DD04EE1807 /* CrossReferenceGraphTests.swift */,
 				AA19BB01CC03DD04EE190D /* SummarizationServiceTests.swift */,
+				AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -504,6 +516,9 @@
 				AA19BB01CC03DD04EE1904 /* SummarizationProvider.swift */,
 				AA19BB01CC03DD04EE1907 /* AppleIntelligenceProvider.swift */,
 				AA19BB01CC03DD04EE190A /* SummarizationService.swift */,
+				AA20BB01CC03DD04EE2001 /* SummarizationPromptSeeder.swift */,
+				AA20BB01CC03DD04EE2004 /* PromptsListView.swift */,
+				AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */,
 			);
 			path = Summarization;
 			sourceTree = "<group>";
@@ -825,6 +840,9 @@
 				AA19BB01CC03DD04EE1905 /* SummarizationProvider.swift in Sources */,
 				AA19BB01CC03DD04EE1908 /* AppleIntelligenceProvider.swift in Sources */,
 				AA19BB01CC03DD04EE190B /* SummarizationService.swift in Sources */,
+				AA20BB01CC03DD04EE2002 /* SummarizationPromptSeeder.swift in Sources */,
+				AA20BB01CC03DD04EE2005 /* PromptsListView.swift in Sources */,
+				AA20BB01CC03DD04EE2008 /* PromptEditorView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
@@ -900,6 +918,9 @@
 				AA19BB01CC03DD04EE1906 /* SummarizationProvider.swift in Sources */,
 				AA19BB01CC03DD04EE1909 /* AppleIntelligenceProvider.swift in Sources */,
 				AA19BB01CC03DD04EE190C /* SummarizationService.swift in Sources */,
+				AA20BB01CC03DD04EE2003 /* SummarizationPromptSeeder.swift in Sources */,
+				AA20BB01CC03DD04EE2006 /* PromptsListView.swift in Sources */,
+				AA20BB01CC03DD04EE2009 /* PromptEditorView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -935,6 +956,7 @@
 				AA17BB01CC03DD04EE1708 /* CrossReferenceStoreTests.swift in Sources */,
 				AA18BB01CC03DD04EE1808 /* CrossReferenceGraphTests.swift in Sources */,
 				AA19BB01CC03DD04EE190E /* SummarizationServiceTests.swift in Sources */,
+				AA20BB01CC03DD04EE200B /* SummarizationUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
