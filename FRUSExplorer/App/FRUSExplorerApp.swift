@@ -17,18 +17,24 @@ import SwiftData
 
 /// Root entry point for FRUS Explorer.
 ///
-/// Bootstraps `AppState` and the SwiftData `ModelContainer` and injects both into
-/// the SwiftUI environment. All descendant views can access persistent models via
-/// `@Environment(\.modelContext)` and application state via `@Environment(AppState.self)`.
+/// Bootstraps `AppState`, the SwiftData `ModelContainer`, and `DownloadManager`, and
+/// injects them into the SwiftUI environment. All descendant views can access:
+///   - Persistent models via `@Environment(\.modelContext)`
+///   - Application state via `@Environment(AppState.self)`
+///   - Download operations via `appState.downloadManager`
 ///
-/// ## ModelContainer
-/// Created once via `ModelContainer.makeFRUSContainer()` which configures CloudKit
-/// private-database sync. On failure (e.g., no iCloud account in simulator) the
-/// factory falls back to a local-only store so the app remains functional.
+/// ## Boot Sequence
+/// 1. `AppState` initialises synchronously: restores `activeProjectId`, starts `NWPathMonitor`.
+/// 2. `ModelContainer` is created synchronously via `makeFRUSContainer()`.
+/// 3. On the first `.task {}` fire (main actor, after first render):
+///    a. `DownloadManager` is created and assigned to `appState.downloadManager`.
+///    b. If online, `resumeQueuedDownloads()` is called to continue any persisted queue.
+/// 4. `onChange(of: appState.isOnline)` enables/suspends the download manager in real time.
 ///
-/// Version history:
+/// ## Version history
 ///   1.0 — Session 01: initial implementation
 ///   1.1 — Session 04: inject SwiftData ModelContainer
+///   1.2 — Session 05: create and wire DownloadManager; respond to network state changes
 @main
 struct FRUSExplorerApp: App {
 
@@ -41,6 +47,19 @@ struct FRUSExplorerApp: App {
             ContentView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task {
+                    await bootDownloadManager()
+                }
+                .onChange(of: appState.isOnline) { _, isOnline in
+                    guard let dm = appState.downloadManager else { return }
+                    Task {
+                        if isOnline {
+                            await dm.resumeQueuedDownloads()
+                        } else {
+                            await dm.suspend()
+                        }
+                    }
+                }
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
@@ -49,4 +68,43 @@ struct FRUSExplorerApp: App {
         }
         #endif
     }
+
+    // MARK: - Private
+
+    /// Creates the DownloadManager the first time `.task` fires, then immediately
+    /// resumes any queue that was persisted from the previous app session.
+    @MainActor
+    private func bootDownloadManager() async {
+        guard appState.downloadManager == nil else { return }
+
+        let volumesDir = Self.makeVolumesDirectory()
+        let dm = DownloadManager(
+            volumesDirectory: volumesDir,
+            concurrencyLimit: UserDefaults.standard.integer(forKey: "downloadConcurrencyLimit").nonZeroOrDefault(4),
+            onStateChanged: { @MainActor [appState] state in
+                appState.downloadQueue = state.allQueuedVolumeIds
+            }
+        )
+        appState.downloadManager = dm
+
+        if appState.isOnline {
+            await dm.resumeQueuedDownloads()
+        }
+    }
+
+    /// Returns (and creates if necessary) the volumes storage directory.
+    /// `{Application Support}/FRUSExplorer/Volumes/`
+    private static func makeVolumesDirectory() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appendingPathComponent("FRUSExplorer/Volumes", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+}
+
+// MARK: - Int Helper
+
+private extension Int {
+    /// Returns this value if positive, otherwise returns `default`.
+    func nonZeroOrDefault(_ default: Int) -> Int { self > 0 ? self : `default` }
 }

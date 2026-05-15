@@ -8,6 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		05F141E5842235D4942855CE /* GeneratedSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9871A159779B05DF3DAD1E9E /* GeneratedSummary.swift */; };
+		AA01BB02CC03DD04EE050011 /* DownloadModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050001 /* DownloadModels.swift */; };
+		AA01BB02CC03DD04EE050012 /* DownloadModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050001 /* DownloadModels.swift */; };
+		AA01BB02CC03DD04EE050013 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050002 /* DownloadManager.swift */; };
+		AA01BB02CC03DD04EE050014 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050002 /* DownloadManager.swift */; };
+		AA01BB02CC03DD04EE050015 /* DownloadManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */; };
 		0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
 		0B2C4093DE65922F503D8FD7 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
 		18C3D51FD0954E2581DBBE1B /* UserTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DF72C3D865EA2920533346 /* UserTag.swift */; };
@@ -81,6 +86,9 @@
 
 /* Begin PBXFileReference section */
 		00BF8333DAB9C9E6D2B7B886 /* ModelContainer+FRUS.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ModelContainer+FRUS.swift"; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE050001 /* DownloadModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadModels.swift; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE050002 /* DownloadManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
+		AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManagerTests.swift; sourceTree = "<group>"; };
 		12AD9CC40627F7281D079B75 /* SwiftDataModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SwiftDataModelTests.swift; sourceTree = "<group>"; };
 		138DA99A6075C0CE20F88129 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
 		193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
@@ -176,6 +184,15 @@
 			path = Manifest;
 			sourceTree = "<group>";
 		};
+		AA01BB02CC03DD04EE050004 /* Downloads */ = {
+			isa = PBXGroup;
+			children = (
+				AA01BB02CC03DD04EE050001 /* DownloadModels.swift */,
+				AA01BB02CC03DD04EE050002 /* DownloadManager.swift */,
+			);
+			path = Downloads;
+			sourceTree = "<group>";
+		};
 		8DDAF5D0CDD9AADCADEB1FAB /* FRUSExplorerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -186,6 +203,7 @@
 				12AD9CC40627F7281D079B75 /* SwiftDataModelTests.swift */,
 				5060E9B8DA5B24A97D247999 /* ResponseFormatCodingTests.swift */,
 				138DA99A6075C0CE20F88129 /* KeychainStoreTests.swift */,
+				AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -215,6 +233,7 @@
 			isa = PBXGroup;
 			children = (
 				63390DD720E0A093134DBA47 /* App */,
+				AA01BB02CC03DD04EE050004 /* Downloads */,
 				EB3D26757D1E60EB072F06EC /* Models */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
@@ -428,6 +447,8 @@
 				DED22DC37C4A695AFB43CB11 /* SummarizationPrompt.swift in Sources */,
 				FB68F396F2E101525612CB2D /* ModelContainer+FRUS.swift in Sources */,
 				0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */,
+				AA01BB02CC03DD04EE050011 /* DownloadModels.swift in Sources */,
+				AA01BB02CC03DD04EE050013 /* DownloadManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -452,6 +473,8 @@
 				30CB9A71DD47CD858B1EF38C /* SummarizationPrompt.swift in Sources */,
 				A47BD9453B4D595C7BC63443 /* ModelContainer+FRUS.swift in Sources */,
 				0B2C4093DE65922F503D8FD7 /* KeychainStore.swift in Sources */,
+				AA01BB02CC03DD04EE050012 /* DownloadModels.swift in Sources */,
+				AA01BB02CC03DD04EE050014 /* DownloadManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -466,6 +489,7 @@
 				5F43EAE260BA503B5E0B465B /* SwiftDataModelTests.swift in Sources */,
 				B4E3BD30BEED170BEE73254C /* ResponseFormatCodingTests.swift in Sources */,
 				8680243A81A8986D9C3C2E14 /* KeychainStoreTests.swift in Sources */,
+				AA01BB02CC03DD04EE050015 /* DownloadManagerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

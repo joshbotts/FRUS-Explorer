@@ -21,7 +21,7 @@ Define all SwiftData model types and configure CloudKit sync. This session estab
 Implement all models defined in Specification Section 5, with these implementation notes:
 
 ### General Requirements
-- Every model carries `lastModified: Date` (updated automatically on any mutation via a `willSet` observer pattern or model hook)
+- Every model carries `lastModified: Date?` (must be updated **explicitly at the call site** whenever a mutation occurs — `didSet`/`willSet` observers are syntactically accepted by `@Model` but are unreliable because the macro transforms stored properties to computed properties; do not rely on them for `lastModified` housekeeping)
 - Every model carries `createdAt: Date` (set at initialization, never mutated)
 - All `UUID` primary keys generated at initialization
 - All array properties that map to CloudKit use appropriate relationship types
@@ -90,13 +90,13 @@ actor KeychainStore {
 
 ## Tests
 - **ModelInitializationTest**: Each model type initializes with correct defaults
-- **LastModifiedTest**: Mutating a model property updates `lastModified`
+- **LastModifiedTest**: `lastModified` advances when explicitly assigned at the call site (do not test via property mutation — `didSet` is unreliable in `@Model` classes)
 - **ResponseFormatCodingTest**: `ResponseFormat` round-trips through `Codable` correctly for both cases
 - **KeychainStoreTest**: Set, get, and delete the NARA API key via `KeychainStore`
 
 ## Coding Standards Checklist
 - [ ] All model types documented with their role in the project
-- [ ] `lastModified` auto-update documented
+- [ ] `lastModified` explicit-update pattern documented (set at call site, not via observer)
 - [ ] `[SwiftData]` prefix on `#if DEBUG` model operation logs
 - [ ] Swift 6 strict concurrency: zero warnings
 

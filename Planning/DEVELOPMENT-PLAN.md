@@ -104,6 +104,13 @@ Present these files to Claude Code in order. The leading number matches the sess
 
 ---
 
+## Implementation Notes for All Sessions
+
+### `lastModified` must be updated explicitly at the call site
+`@Model` transforms stored properties into computed properties backed by persistent storage. `didSet`/`willSet` observers are syntactically accepted but do not fire reliably in practice. Any code that writes to a SwiftData model must set `instance.lastModified = .now` explicitly at the mutation site — never rely on an observer to do it automatically. This applies to every model type that carries `lastModified` (Session 04 models and any new models added in later sessions).
+
+---
+
 ## Cross-Session Dependency Additions
 
 The following items were added to earlier sessions by later feature requirements. Confirm they are implemented in the named session before beginning the dependent session.

@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import Network
 import Observation
 
 /// AppState is the root observable state object for FRUS Explorer.
@@ -20,9 +21,18 @@ import Observation
 /// Views observe AppState to react to project switching without requiring data migration —
 /// switching projects is a state change, never a data migration.
 ///
-/// Network monitoring and download queue management are expanded in Session 05
-/// (Volume Download & Storage Manager). For now these properties are stubs with
-/// sensible defaults.
+/// ## Network Monitoring
+/// AppState owns an `NWPathMonitor` and keeps `isOnline` accurate in real time.
+/// `FRUSExplorerApp` observes `isOnline` to enable/suspend the `DownloadManager`.
+///
+/// ## Download Manager
+/// `downloadManager` is set once at app launch by `FRUSExplorerApp`. Views that
+/// need to trigger or inspect downloads access it via `@Environment(AppState.self)`.
+///
+/// Version history:
+///   1.0 — Session 01: initial implementation
+///   1.1 — Session 04: SwiftData container injected at App level
+///   1.2 — Session 05: NWPathMonitor, downloadManager, downloadQueue wired up
 @Observable
 @MainActor
 final class AppState {
@@ -47,18 +57,30 @@ final class AppState {
 
     /// Whether the device currently has network connectivity.
     ///
-    /// Defaults to `true` (optimistic). Updated when the download manager initialises
-    /// its `NWPathMonitor` in Session 05. Kept here so views can observe reachability
-    /// without depending on the download manager directly.
+    /// Kept accurate in real time by the private `NWPathMonitor`. Views can observe
+    /// this property directly without importing Network.framework.
     var isOnline: Bool = true
+
+    // MARK: - Download Manager
+
+    /// The shared download manager. Set once at app launch by `FRUSExplorerApp`.
+    /// `nil` only during the brief window between app init and the first `.task {}` fire.
+    /// Views that need to trigger downloads should guard against `nil` gracefully.
+    var downloadManager: DownloadManager?
 
     // MARK: - Download Queue
 
-    /// Volume IDs currently queued for download.
+    /// Volume IDs currently queued for download (active + pending).
     ///
-    /// Managed by the download manager (Session 05). Exposed on AppState so any view
-    /// can show download progress without importing the download manager directly.
+    /// Updated by `DownloadManager` via its `onStateChanged` callback. Views observe
+    /// this to show download indicators without calling into the actor directly.
     var downloadQueue: [String] = []
+
+    // MARK: - Network Monitor (private)
+
+    /// Monitors network path changes and updates `isOnline`.
+    private let pathMonitor = NWPathMonitor()
+    private let pathMonitorQueue = DispatchQueue(label: "frus.networkMonitor", qos: .utility)
 
     // MARK: - Initialization
 
@@ -68,12 +90,32 @@ final class AppState {
             activeProjectId = uuid
         }
 
+        startNetworkMonitor()
+
         #if DEBUG
         print("[FRUSExplorer] AppState initialised. activeProjectId=\(activeProjectId?.uuidString ?? "nil")")
         #endif
     }
 
     // MARK: - Private
+
+    /// Starts the NWPathMonitor and keeps `isOnline` in sync with the network path.
+    private func startNetworkMonitor() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let online = path.status == .satisfied
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let wasOnline = self.isOnline
+                self.isOnline = online
+                #if DEBUG
+                if wasOnline != online {
+                    print("[FRUSExplorer] Network status changed: \(online ? "online" : "offline")")
+                }
+                #endif
+            }
+        }
+        pathMonitor.start(queue: pathMonitorQueue)
+    }
 
     private enum Keys {
         static let activeProjectId = "activeProjectId"

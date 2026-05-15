@@ -75,6 +75,40 @@ paths:
                 items:
                   $ref: "#/components/schemas/VolumeManifestEntry"
 
+  /volumes/{volumeId}/download:
+    get:
+      summary: Download a FRUS volume XML file
+      description: |
+        Returns the full TEI XML for a single FRUS volume. In the current implementation
+        this is served directly from the HistoryAtState GitHub repository via its raw
+        content CDN (`raw.githubusercontent.com`). `DownloadManager` constructs the URL
+        from the GitHub API directory listing and fetches it with `URLSession`.
+
+        A purpose-built FRUS API would serve this endpoint with HTTP range support
+        (for resumable downloads) and pre-compressed payloads.
+
+        Added in Session 05 (Volume Download & Storage Manager).
+      operationId: downloadVolume
+      tags:
+        - Volumes
+      parameters:
+        - name: volumeId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Volume identifier, e.g. `frus1969-76v01`
+      responses:
+        "200":
+          description: Full TEI XML content of the volume
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Volume not found
+
   /volumes/{volumeId}/page-ranges:
     get:
       summary: Page range table for a volume
