@@ -454,24 +454,51 @@ public actor IndexingPipeline {
     nonisolated static func extractCrossReferences(
         from nodes: [FRUSASTNode],
         sourceVolumeId: String,
-        sourceDocumentId: String
+        sourceDocumentId: String,
+        parentReferenceType: String? = nil
     ) -> [CrossReferenceRow] {
         var result: [CrossReferenceRow] = []
         for node in nodes {
-            if case .crossReference(let target, let targetVolumeId, _) = node {
+            switch node {
+            case .crossReference(let target, let targetVolumeId, let children):
                 let targetDocId = target.hasPrefix("#")
                     ? String(target.dropFirst())
                     : (target.components(separatedBy: "#").last ?? target)
                 if !targetDocId.isEmpty {
                     result.append(CrossReferenceRow(
                         sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
-                        targetVolumeId: targetVolumeId, targetDocumentId: targetDocId
+                        targetVolumeId: targetVolumeId, targetDocumentId: targetDocId,
+                        referenceType: parentReferenceType ?? "footnote",
+                        context: nil
                     ))
                 }
-            } else {
+                result.append(contentsOf: extractCrossReferences(
+                    from: children,
+                    sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
+                    parentReferenceType: parentReferenceType
+                ))
+            case .footnote(_, let type, let children):
+                let refType: String
+                switch type {
+                case .editorial: refType = "editorialNote"
+                default:         refType = "footnote"
+                }
+                result.append(contentsOf: extractCrossReferences(
+                    from: children,
+                    sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
+                    parentReferenceType: refType
+                ))
+            case .editorialNote(let children):
+                result.append(contentsOf: extractCrossReferences(
+                    from: children,
+                    sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
+                    parentReferenceType: "editorialNote"
+                ))
+            default:
                 result.append(contentsOf: extractCrossReferences(
                     from: node.children,
-                    sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId
+                    sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
+                    parentReferenceType: parentReferenceType
                 ))
             }
         }
@@ -588,6 +615,10 @@ public actor IndexingPipeline {
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_crossref_source ON cross_references(source_volume_id, source_document_id)")
         try exec("CREATE INDEX IF NOT EXISTS idx_crossref_target ON cross_references(target_document_id)")
+        // Migrate existing databases that predate Session 17. ALTER TABLE ignores
+        // "duplicate column" errors so re-running on an up-to-date DB is safe.
+        try? exec("ALTER TABLE cross_references ADD COLUMN reference_type TEXT")
+        try? exec("ALTER TABLE cross_references ADD COLUMN context TEXT")
         try exec("""
             CREATE TABLE IF NOT EXISTS page_ranges (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -632,15 +663,22 @@ public actor IndexingPipeline {
 
     private func auxInsertCrossReferences(_ rows: [CrossReferenceRow]) throws {
         guard !rows.isEmpty else { return }
-        let sql = "INSERT INTO cross_references (source_volume_id, source_document_id, target_volume_id, target_document_id) VALUES (?, ?, ?, ?)"
+        let sql = """
+            INSERT INTO cross_references
+            (source_volume_id, source_document_id, target_volume_id, target_document_id,
+             reference_type, context)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """
         try inTransaction {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
-                sqlite3_bind_text(stmt, 1, row.sourceVolumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 1, row.sourceVolumeId,   -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 2, row.sourceDocumentId, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 3, row.targetVolumeId)
                 sqlite3_bind_text(stmt, 4, row.targetDocumentId, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 5, row.referenceType)
+                auxBindOptional(stmt, 6, row.context)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -842,6 +880,8 @@ struct CrossReferenceRow: Sendable {
     let sourceDocumentId: String
     let targetVolumeId: String?
     let targetDocumentId: String
+    let referenceType: String?
+    let context: String?
 }
 
 struct PageRangeRow: Sendable {

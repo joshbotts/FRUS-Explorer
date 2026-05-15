@@ -93,6 +93,7 @@ struct FRUSExplorerApp: App {
            ) {
             appState.indexingPipeline = pipeline
             appState.searchService = SearchService(fts5Store: store, pipeline: pipeline)
+            appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
         }
 
         let dm = DownloadManager(

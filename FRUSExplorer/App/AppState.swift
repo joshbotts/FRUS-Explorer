@@ -106,6 +106,10 @@ final class AppState {
     /// `nil` if the FTS5 database could not be opened.
     var searchService: SearchService?
 
+    /// The shared cross-reference store. Created at boot alongside `indexingPipeline`;
+    /// `nil` if the database could not be opened.
+    var crossReferenceStore: CrossReferenceStore?
+
     // MARK: - Network Monitor (private)
 
     /// Monitors network path changes and updates `isOnline`.
