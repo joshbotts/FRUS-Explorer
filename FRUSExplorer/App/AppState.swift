@@ -40,6 +40,7 @@ import Observation
 ///   1.2 — Session 05: NWPathMonitor, downloadManager, downloadQueue wired up
 ///   1.3 — Session 08: volumeLevelTagStore, subjectTagStore wired up
 ///   1.4 — Session 10: manifestStore wired up
+///   1.5 — Session 19: summarizationService added
 @Observable
 @MainActor
 final class AppState {
@@ -109,6 +110,11 @@ final class AppState {
     /// The shared cross-reference store. Created at boot alongside `indexingPipeline`;
     /// `nil` if the database could not be opened.
     var crossReferenceStore: CrossReferenceStore?
+
+    /// The shared summarization service. Created at boot with the SwiftData container;
+    /// always non-nil after boot. `AppleIntelligenceProvider.isAvailable` controls
+    /// whether summarization features are presented in the UI.
+    var summarizationService: SummarizationService?
 
     // MARK: - Network Monitor (private)
 

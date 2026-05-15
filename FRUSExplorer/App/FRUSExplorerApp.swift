@@ -36,6 +36,7 @@ import SwiftData
 ///   1.1 — Session 04: inject SwiftData ModelContainer
 ///   1.2 — Session 05: create and wire DownloadManager; respond to network state changes
 ///   1.3 — Session 10: fetch live manifest at boot
+///   1.4 — Session 19: wire SummarizationService at boot
 @main
 struct FRUSExplorerApp: App {
 
@@ -95,6 +96,8 @@ struct FRUSExplorerApp: App {
             appState.searchService = SearchService(fts5Store: store, pipeline: pipeline)
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
         }
+
+        appState.summarizationService = SummarizationService(modelContainer: modelContainer)
 
         let dm = DownloadManager(
             volumesDirectory: volumesDir,
