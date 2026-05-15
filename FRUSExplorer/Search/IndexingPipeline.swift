@@ -578,61 +578,6 @@ public actor IndexingPipeline {
             """)
     }
 
-    private func createAuxiliaryTables() throws {
-        try auxExec("""
-            CREATE TABLE IF NOT EXISTS cross_references (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source_volume_id TEXT NOT NULL,
-                source_document_id TEXT NOT NULL,
-                target_volume_id TEXT,
-                target_document_id TEXT NOT NULL
-            )
-            """)
-        try auxExec("CREATE INDEX IF NOT EXISTS idx_crossref_source ON cross_references(source_volume_id, source_document_id)")
-        try auxExec("CREATE INDEX IF NOT EXISTS idx_crossref_target ON cross_references(target_document_id)")
-
-        try auxExec("""
-            CREATE TABLE IF NOT EXISTS page_ranges (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                volume_id TEXT NOT NULL,
-                document_id TEXT NOT NULL,
-                section_id TEXT NOT NULL,
-                page_number_type TEXT NOT NULL,
-                page_number_int INTEGER,
-                page_number_raw TEXT NOT NULL
-            )
-            """)
-        try auxExec("CREATE INDEX IF NOT EXISTS idx_page_ranges_volume ON page_ranges(volume_id, page_number_type, page_number_int)")
-        try auxExec("CREATE INDEX IF NOT EXISTS idx_page_ranges_document ON page_ranges(volume_id, document_id)")
-
-        try auxExec("""
-            CREATE TABLE IF NOT EXISTS document_dates (
-                volume_id TEXT NOT NULL,
-                document_id TEXT NOT NULL,
-                date_iso TEXT,
-                PRIMARY KEY (volume_id, document_id)
-            )
-            """)
-        try auxExec("CREATE INDEX IF NOT EXISTS idx_doc_dates ON document_dates(date_iso)")
-
-        try auxExec("""
-            CREATE TABLE IF NOT EXISTS document_cache (
-                volume_id TEXT NOT NULL,
-                document_id TEXT NOT NULL,
-                document_number TEXT,
-                header TEXT NOT NULL,
-                dateline TEXT,
-                source_note TEXT,
-                body_text TEXT NOT NULL,
-                subject_tag_ids TEXT,
-                user_tag_ids TEXT,
-                summary_text TEXT,
-                note_text TEXT,
-                PRIMARY KEY (volume_id, document_id)
-            )
-            """)
-    }
-
     // MARK: - Auxiliary Table DML
 
     private func auxInsertCrossReferences(_ rows: [CrossReferenceRow]) throws {
