@@ -13,6 +13,21 @@
 		AA01BB02CC03DD04EE050013 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050002 /* DownloadManager.swift */; };
 		AA01BB02CC03DD04EE050014 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050002 /* DownloadManager.swift */; };
 		AA01BB02CC03DD04EE050015 /* DownloadManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */; };
+		AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060001 /* FRUSASTNode.swift */; };
+		AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060001 /* FRUSASTNode.swift */; };
+		AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060002 /* FRUSDocumentParser.swift */; };
+		AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060002 /* FRUSDocumentParser.swift */; };
+		AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060003 /* TEIRenderingConfig.swift */; };
+		AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060003 /* TEIRenderingConfig.swift */; };
+		AA06BB02CC03DD04EE060027 /* FRUSRenderNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */; };
+		AA06BB02CC03DD04EE060028 /* FRUSRenderNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */; };
+		AA06BB02CC03DD04EE060029 /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */; };
+		AA06BB02CC03DD04EE060030 /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */; };
+		AA06BB02CC03DD04EE060031 /* FRUSDocumentRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */; };
+		AA06BB02CC03DD04EE060032 /* FRUSDocumentRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */; };
+		AA06BB02CC03DD04EE060033 /* TEIParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */; };
+		AA06BB02CC03DD04EE060034 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
+		AA06BB02CC03DD04EE060035 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
 		0B2C4093DE65922F503D8FD7 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
 		18C3D51FD0954E2581DBBE1B /* UserTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DF72C3D865EA2920533346 /* UserTag.swift */; };
@@ -89,6 +104,14 @@
 		AA01BB02CC03DD04EE050001 /* DownloadModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadModels.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE050002 /* DownloadManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManagerTests.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060001 /* FRUSASTNode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSASTNode.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060002 /* FRUSDocumentParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSDocumentParser.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060003 /* TEIRenderingConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TEIRenderingConfig.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSRenderNode.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ASTToRenderNodeConverter.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSDocumentRenderer.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TEIParserTests.swift; sourceTree = "<group>"; };
+		AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "tei-rendering-config.json"; sourceTree = "<group>"; };
 		12AD9CC40627F7281D079B75 /* SwiftDataModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SwiftDataModelTests.swift; sourceTree = "<group>"; };
 		138DA99A6075C0CE20F88129 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
 		193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
@@ -193,6 +216,19 @@
 			path = Downloads;
 			sourceTree = "<group>";
 		};
+		AA06BB02CC03DD04EE060009 /* TEI */ = {
+			isa = PBXGroup;
+			children = (
+				AA06BB02CC03DD04EE060001 /* FRUSASTNode.swift */,
+				AA06BB02CC03DD04EE060002 /* FRUSDocumentParser.swift */,
+				AA06BB02CC03DD04EE060003 /* TEIRenderingConfig.swift */,
+				AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */,
+				AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */,
+				AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */,
+			);
+			path = TEI;
+			sourceTree = "<group>";
+		};
 		8DDAF5D0CDD9AADCADEB1FAB /* FRUSExplorerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -204,6 +240,7 @@
 				5060E9B8DA5B24A97D247999 /* ResponseFormatCodingTests.swift */,
 				138DA99A6075C0CE20F88129 /* KeychainStoreTests.swift */,
 				AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */,
+				AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -215,6 +252,7 @@
 				315FB3EB58D69FFBB9BC2C3C /* subject-appearances.json */,
 				EC5C8DCD8DD7D1CB8A6B20E2 /* taxonomy.json */,
 				F34208BE1028E5D565589526 /* volume-tag-taxonomy.json */,
+				AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -235,6 +273,7 @@
 				63390DD720E0A093134DBA47 /* App */,
 				AA01BB02CC03DD04EE050004 /* Downloads */,
 				EB3D26757D1E60EB072F06EC /* Models */,
+				AA06BB02CC03DD04EE060009 /* TEI */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
 				8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */,
@@ -400,6 +439,7 @@
 				FEB539CAABF37A5ED1E3A574 /* subject-appearances.json in Resources */,
 				394289F250E39E55E732C0C2 /* taxonomy.json in Resources */,
 				90FFBCCFADB367D0A52C0291 /* volume-tag-taxonomy.json in Resources */,
+				AA06BB02CC03DD04EE060034 /* tei-rendering-config.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -412,6 +452,7 @@
 				642BC7EF029DFF8E71B1E780 /* subject-appearances.json in Resources */,
 				6299EF251CB1514312C72431 /* taxonomy.json in Resources */,
 				40D6C246CB8181B4C67AA895 /* volume-tag-taxonomy.json in Resources */,
+				AA06BB02CC03DD04EE060035 /* tei-rendering-config.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -449,6 +490,12 @@
 				0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */,
 				AA01BB02CC03DD04EE050011 /* DownloadModels.swift in Sources */,
 				AA01BB02CC03DD04EE050013 /* DownloadManager.swift in Sources */,
+				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
+				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
+				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
+				AA06BB02CC03DD04EE060028 /* FRUSRenderNode.swift in Sources */,
+				AA06BB02CC03DD04EE060030 /* ASTToRenderNodeConverter.swift in Sources */,
+				AA06BB02CC03DD04EE060032 /* FRUSDocumentRenderer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -475,6 +522,12 @@
 				0B2C4093DE65922F503D8FD7 /* KeychainStore.swift in Sources */,
 				AA01BB02CC03DD04EE050012 /* DownloadModels.swift in Sources */,
 				AA01BB02CC03DD04EE050014 /* DownloadManager.swift in Sources */,
+				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
+				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
+				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
+				AA06BB02CC03DD04EE060027 /* FRUSRenderNode.swift in Sources */,
+				AA06BB02CC03DD04EE060029 /* ASTToRenderNodeConverter.swift in Sources */,
+				AA06BB02CC03DD04EE060031 /* FRUSDocumentRenderer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -490,6 +543,7 @@
 				B4E3BD30BEED170BEE73254C /* ResponseFormatCodingTests.swift in Sources */,
 				8680243A81A8986D9C3C2E14 /* KeychainStoreTests.swift in Sources */,
 				AA01BB02CC03DD04EE050015 /* DownloadManagerTests.swift in Sources */,
+				AA06BB02CC03DD04EE060033 /* TEIParserTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

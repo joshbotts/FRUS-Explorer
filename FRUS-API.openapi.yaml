@@ -109,6 +109,45 @@ paths:
         "404":
           description: Volume not found
 
+  /volumes/{volumeId}/documents/{documentId}:
+    get:
+      summary: Retrieve a single FRUS document
+      description: |
+        Returns the TEI XML fragment for a single document (`<div type="document">`) within
+        a volume. In the current implementation there is no document-level API; `FRUSDocumentParser`
+        reads the full downloaded volume XML file locally and uses early-abort parsing to extract
+        the target document without processing the rest of the file.
+
+        A purpose-built FRUS API would serve individual document fragments, eliminating the need
+        to download full volume files for single-document access.
+
+        Added in Session 06 (TEI Parser — Core Elements).
+      operationId: getDocument
+      tags:
+        - Documents
+      parameters:
+        - name: volumeId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Volume identifier, e.g. `frus1969-76v01`
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Document identifier matching the `xml:id` attribute on `<div type="document">`, e.g. `d1`
+      responses:
+        "200":
+          description: Parsed document as a structured render model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentRenderModel"
+        "404":
+          description: Volume or document not found
+
   /volumes/{volumeId}/page-ranges:
     get:
       summary: Page range table for a volume
@@ -234,6 +273,32 @@ components:
             - kissinger-henry-a
             - iran
             - arms-control-and-disarmament
+
+    DocumentRenderModel:
+      type: object
+      description: |
+        The fully-rendered representation of a single FRUS document, structured for
+        direct consumption by the Document view. Mirrors the `FRUSDocumentRenderModel`
+        Swift type produced by `ASTToRenderNodeConverter`.
+        Schema detail deferred — structure defined by Session 06 Swift types.
+      required:
+        - documentId
+        - bodyNodes
+        - footnotes
+      properties:
+        documentId:
+          type: string
+          description: The document identifier matching the `xml:id` attribute.
+        bodyNodes:
+          type: array
+          description: Main content render nodes in document order.
+          items:
+            type: object
+        footnotes:
+          type: array
+          description: Footnote body nodes in sequential display order.
+          items:
+            type: object
 
     PageRangeRecord:
       type: object
