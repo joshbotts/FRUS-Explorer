@@ -189,17 +189,53 @@ public final class ManifestStore {
         )
     }
 
-    /// Best-effort subseries extraction from a filename, for newly-available volumes.
+    /// Best-effort subseries extraction from a FRUS filename, for newly-available volumes.
+    ///
+    /// Delegates to the module-level `frusSubseries(from:)` free function so that
+    /// the parsing logic is independently testable via `@testable import`.
     private func subseries(from filename: String) -> String? {
-        guard filename.hasSuffix(".xml") else { return nil }
-        let base = String(filename.dropLast(4))
-        guard base.hasPrefix("frus"), base.count > 4 else { return nil }
-        let afterFrus = String(base.dropFirst(4))
-        if let range = afterFrus.range(of: #"v\d+"#, options: .regularExpression) {
-            return String(afterFrus[..<range.lowerBound])
-        }
-        return afterFrus
+        frusSubseries(from: filename)
     }
+}
+
+// MARK: - Subseries Parsing
+
+/// Extracts the subseries identifier from a FRUS XML filename.
+///
+/// Captures all leading digits and dashes from the portion of the filename that
+/// follows the `"frus"` prefix, stopping at the first alphabetic character.
+/// This correctly handles the full range of FRUS naming conventions:
+///
+/// | Filename               | Suffix after "frus" | Result    |
+/// |---|---|---|
+/// | `frus1969-76v01.xml`   | `1969-76v01`        | `1969-76` |
+/// | `frus1977-80v12.xml`   | `1977-80v12`        | `1977-80` |
+/// | `frus1861.xml`         | `1861`              | `1861`    |
+/// | `frus1877app.xml`      | `1877app`           | `1877`    |
+/// | `frus1863p1.xml`       | `1863p1`            | `1863`    |
+/// | `frus1894Nicaragua.xml`| `1894Nicaragua`     | `1894`    |
+///
+/// The earlier implementation matched `v\d+` and returned everything before it,
+/// which silently failed for suffixes other than `v` + digits (e.g. `app`, `p1`,
+/// country names), falling back to the entire post-`frus` string.
+///
+/// Returns `nil` for filenames that are not `frus*.xml`, or where the suffix
+/// after `"frus"` contains no leading digits.
+///
+/// Declared at module scope (not inside `ManifestStore`) so that `ManifestStoreTests`
+/// can exercise it directly via `@testable import` without access-level friction.
+func frusSubseries(from filename: String) -> String? {
+    guard filename.hasSuffix(".xml") else { return nil }
+    let base = String(filename.dropLast(4))           // strip ".xml"
+    guard base.hasPrefix("frus"), base.count > 4 else { return nil }
+    let afterFrus = String(base.dropFirst(4))         // strip "frus"
+    // Match one or more leading digits or dashes, stopping at the first letter.
+    guard let range = afterFrus.range(of: #"^[\d-]+"#, options: .regularExpression) else {
+        return nil
+    }
+    let candidate = String(afterFrus[range])
+        .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+    return candidate.isEmpty ? nil : candidate
 }
 
 // MARK: - Internal Live Entry Type

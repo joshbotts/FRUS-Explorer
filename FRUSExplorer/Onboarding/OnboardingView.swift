@@ -54,10 +54,6 @@ struct OnboardingView: View {
                 )
             }
         }
-        .task {
-            guard let vm = viewModel else { return }
-            await vm.fetchIntroText()
-        }
     }
 
     // MARK: - Step Dispatch

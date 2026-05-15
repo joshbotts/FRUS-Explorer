@@ -278,7 +278,7 @@ public final class DocumentViewModel {
     /// Creates a `SummarizationPromptSnapshot` on the main actor before crossing into
     /// the `SummarizationService` actor, satisfying Swift 6 Sendable requirements.
     /// Reloads `summaries` and resets `activeSummaryIndex` to 0 on completion.
-    public func generateSummary(
+    func generateSummary(
         prompt: SummarizationPrompt,
         provider: any SummarizationProvider,
         service: SummarizationService,
@@ -292,7 +292,7 @@ public final class DocumentViewModel {
         let snapshot = SummarizationPromptSnapshot(from: prompt)
 
         do {
-            _ = try await service.summarize(
+            try await service.summarizeDiscarding(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 documentText: documentPlainText,

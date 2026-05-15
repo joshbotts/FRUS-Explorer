@@ -83,7 +83,7 @@ struct AboutView: View {
                     Text(String(localized: "about.appName", defaultValue: "FRUS Explorer"))
                         .font(.title2.bold())
 
-                    Text(String(localized: "about.version \(appVersion)",
+                    Text(String(localized: "about.version",
                                 defaultValue: "Version \(appVersion)"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -92,7 +92,7 @@ struct AboutView: View {
             .padding(.vertical, 8)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(
-                String(localized: "about.appHeader.a11y \(appVersion)",
+                String(localized: "about.appHeader.a11y",
                        defaultValue: "FRUS Explorer, version \(appVersion)")
             )
         }

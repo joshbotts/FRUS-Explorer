@@ -104,7 +104,11 @@ struct OnboardingVolumePickerView: View {
                     subseriesVolumeList
                 }
             }
-            .listStyle(.plain)
+            #if os(iOS)
+            .listStyle(.insetGrouped)
+            #else
+            .listStyle(.inset)
+            #endif
 
             Divider()
 

@@ -39,10 +39,10 @@ public enum NARACatalogError: Error, LocalizedError {
             return String(localized: "nara.error.missingKey",
                           defaultValue: "No NARA Catalog API key is stored. Add one in Settings.")
         case .networkError(let e):
-            return String(localized: "nara.error.network \(e.localizedDescription)",
+            return String(localized: "nara.error.network",
                           defaultValue: "Network error: \(e.localizedDescription)")
         case .unexpectedResponse(let code):
-            return String(localized: "nara.error.response \(code)",
+            return String(localized: "nara.error.response",
                           defaultValue: "Unexpected response from NARA Catalog (HTTP \(code)).")
         case .decodingError:
             return String(localized: "nara.error.decoding",

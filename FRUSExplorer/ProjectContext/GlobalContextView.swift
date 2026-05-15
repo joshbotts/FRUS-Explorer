@@ -96,7 +96,7 @@ struct GlobalContextView: View {
                 value: "\(vm.totalDocumentsAccessed)"
             )
             .accessibilityLabel(
-                String(localized: "global.context.summary.totalDocs.a11y \(vm.totalDocumentsAccessed)",
+                String(localized: "global.context.summary.totalDocs.a11y",
                        defaultValue: "\(vm.totalDocumentsAccessed) documents accessed across all projects")
             )
 
@@ -121,14 +121,14 @@ struct GlobalContextView: View {
                         Text(entry.name)
                             .font(.callout)
                         Spacer()
-                        Text(String(localized: "global.context.breakdown.docs \(entry.documentCount)",
+                        Text(String(localized: "global.context.breakdown.docs",
                                     defaultValue: "\(entry.documentCount) doc\(entry.documentCount == 1 ? "" : "s")"))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(
-                        String(localized: "global.context.breakdown.project.a11y \(entry.name) \(entry.documentCount)",
+                        String(localized: "global.context.breakdown.project.a11y",
                                defaultValue: "\(entry.name): \(entry.documentCount) document\(entry.documentCount == 1 ? "" : "s") accessed")
                     )
                 }
@@ -143,14 +143,14 @@ struct GlobalContextView: View {
                         Text(entry.volumeId)
                             .font(.callout)
                         Spacer()
-                        Text(String(localized: "global.context.breakdown.docs \(entry.documentCount)",
+                        Text(String(localized: "global.context.breakdown.docs",
                                     defaultValue: "\(entry.documentCount) doc\(entry.documentCount == 1 ? "" : "s")"))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(
-                        String(localized: "global.context.breakdown.volume.a11y \(entry.volumeId) \(entry.documentCount)",
+                        String(localized: "global.context.breakdown.volume.a11y",
                                defaultValue: "\(entry.volumeId): \(entry.documentCount) document\(entry.documentCount == 1 ? "" : "s") accessed")
                     )
                 }
@@ -283,13 +283,13 @@ struct GlobalContextView: View {
         let preview = note.bodyText.isEmpty
             ? String(localized: "global.context.note.empty", defaultValue: "Empty note")
             : note.bodyText.prefix(60).description
-        return String(localized: "global.context.note.a11y \(preview) \(note.volumeId) \(note.documentId)",
+        return String(localized: "global.context.note.a11y",
                       defaultValue: "\(preview), from \(note.volumeId)/\(note.documentId)")
     }
 
     private func collectionAccessibilityLabel(_ collection: Collection) -> String {
         let count = collection.documentEntries?.count ?? 0
-        return String(localized: "global.context.collection.a11y \(collection.name) \(count)",
+        return String(localized: "global.context.collection.a11y",
                       defaultValue: "\(collection.name), \(count) document\(count == 1 ? "" : "s")")
     }
 }
@@ -329,7 +329,7 @@ private struct NoteRowView: View {
                             .padding(.vertical, 2)
                             .background(Color.accentColor.opacity(0.1))
                             .clipShape(Capsule())
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(Color.accentColor)
                     }
                 } else {
                     Text(String(localized: "global.context.note.untagged",
@@ -363,7 +363,7 @@ private struct CollectionRowView: View {
 
             HStack(spacing: 6) {
                 let count = collection.documentEntries?.count ?? 0
-                Text(String(localized: "global.context.collection.count \(count)",
+                Text(String(localized: "global.context.collection.count",
                             defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -376,7 +376,7 @@ private struct CollectionRowView: View {
                             .padding(.vertical, 2)
                             .background(Color.accentColor.opacity(0.1))
                             .clipShape(Capsule())
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(Color.accentColor)
                     }
                 } else {
                     Text(String(localized: "global.context.collection.untagged",

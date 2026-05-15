@@ -216,7 +216,7 @@ private struct VolumeManagementView: View {
                     .buttonStyle(.borderless)
                     .foregroundStyle(.red)
                     .accessibilityLabel(
-                        String(localized: "settings.volumes.active.cancel.a11y \(volumeId)",
+                        String(localized: "settings.volumes.active.cancel.a11y",
                                defaultValue: "Cancel download for \(volumeId)")
                     )
                 }
@@ -252,7 +252,7 @@ private struct VolumeManagementView: View {
                     .buttonStyle(.borderless)
                     .foregroundStyle(.red)
                     .accessibilityLabel(
-                        String(localized: "settings.volumes.downloaded.delete.a11y \(entry.title)",
+                        String(localized: "settings.volumes.downloaded.delete.a11y",
                                defaultValue: "Delete \(entry.title)")
                     )
                 }
@@ -292,7 +292,7 @@ private struct VolumeManagementView: View {
                     .font(.callout)
                     .buttonStyle(.borderless)
                     .accessibilityLabel(
-                        String(localized: "settings.volumes.available.download.a11y \(entry.title)",
+                        String(localized: "settings.volumes.available.download.a11y",
                                defaultValue: "Download \(entry.title)")
                     )
                 }
@@ -422,13 +422,13 @@ enum SideloadError: LocalizedError {
             return String(localized: "sideload.error.notXML",
                           defaultValue: "The selected file is not valid XML.")
         case .notFRUSVolume(let reason):
-            return String(localized: "sideload.error.notFRUS \(reason)",
+            return String(localized: "sideload.error.notFRUS",
                           defaultValue: "This XML file does not appear to be a FRUS volume: \(reason)")
         case .duplicateVolume(let id):
-            return String(localized: "sideload.error.duplicate \(id)",
+            return String(localized: "sideload.error.duplicate",
                           defaultValue: "Volume '\(id)' is already present. Delete it first to replace it.")
         case .copyFailed(let error):
-            return String(localized: "sideload.error.copy \(error.localizedDescription)",
+            return String(localized: "sideload.error.copy",
                           defaultValue: "Could not import the file: \(error.localizedDescription)")
         }
     }
@@ -475,7 +475,7 @@ struct SideloadValidator {
 
         guard rootDelegate.looksLikeFRUS else {
             let reason = String(
-                localized: "sideload.error.unexpectedRoot \(rootDelegate.rootElementName ?? "")",
+                localized: "sideload.error.unexpectedRoot",
                 defaultValue: "Unexpected root element '\(rootDelegate.rootElementName ?? "unknown")'.")
             throw SideloadError.notFRUSVolume(reason: reason)
         }
@@ -581,7 +581,7 @@ private struct SideloadView: View {
                     switch result {
                     case .success(let volumeId):
                         Label(
-                            String(localized: "settings.sideload.success \(volumeId)",
+                            String(localized: "settings.sideload.success",
                                    defaultValue: "Imported '\(volumeId)' successfully."),
                             systemImage: "checkmark.circle"
                         )
@@ -688,7 +688,7 @@ private struct ReindexView: View {
 
                 if case .completed(let volumes, let docs) = progressState {
                     Label(
-                        String(localized: "settings.reindex.done \(volumes) \(docs)",
+                        String(localized: "settings.reindex.done",
                                defaultValue: "Completed: \(volumes) volume\(volumes == 1 ? "" : "s"), \(docs) documents"),
                         systemImage: "checkmark.circle"
                     )
@@ -715,7 +715,7 @@ private struct ReindexView: View {
             return String(localized: "settings.reindex.progress.starting",
                           defaultValue: "Starting…")
         case .indexing(let volumeId, let current, let total):
-            return String(localized: "settings.reindex.progress.indexing \(current) \(total) \(volumeId)",
+            return String(localized: "settings.reindex.progress.indexing",
                           defaultValue: "\(current)/\(total) — \(volumeId)")
         case .completed, .failed:
             return ""
@@ -773,8 +773,9 @@ private struct UserTagsView: View {
                         .font(.callout)
                 } else {
                     ForEach(tags) { tag in
+                        let isRenaming = renamingTag?.id == tag.id
                         HStack {
-                            if renamingTag?.id == tag.id {
+                            if isRenaming {
                                 TextField(
                                     String(localized: "settings.tags.rename.placeholder",
                                            defaultValue: "Tag name"),
@@ -782,14 +783,14 @@ private struct UserTagsView: View {
                                 )
                                 .onSubmit { commitRename() }
                                 .accessibilityLabel(
-                                    String(localized: "settings.tags.rename.a11y \(tag.name)",
+                                    String(localized: "settings.tags.rename.a11y",
                                            defaultValue: "Rename tag \(tag.name)")
                                 )
                             } else {
                                 Text(tag.name)
                             }
                             Spacer()
-                            if renamingTag?.id != tag.id {
+                            if !isRenaming {
                                 Button(String(localized: "settings.tags.merge.button",
                                               defaultValue: "Merge…")) {
                                     mergingTag = tag
@@ -799,7 +800,7 @@ private struct UserTagsView: View {
                                 .buttonStyle(.borderless)
                                 .foregroundStyle(.secondary)
                                 .accessibilityLabel(
-                                    String(localized: "settings.tags.merge.a11y \(tag.name)",
+                                    String(localized: "settings.tags.merge.a11y",
                                            defaultValue: "Merge tag \(tag.name) into another")
                                 )
                             }
@@ -891,24 +892,30 @@ private struct MergeTagSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTagId: UUID? = nil
 
+    @ViewBuilder
+    private func mergeTagRow(tag: UserTag) -> some View {
+        let isSelected: Bool = selectedTagId == tag.id
+        HStack {
+            Text(tag.name)
+            Spacer()
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { selectedTagId = tag.id }
+        .accessibilityLabel(tag.name)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
     var body: some View {
         NavigationStack {
             Form {
                 Section(String(localized: "settings.tags.merge.source.header",
                                defaultValue: "Merge '\(sourceTag.name)' into:")) {
                     ForEach(allTags) { tag in
-                        HStack {
-                            Text(tag.name)
-                            Spacer()
-                            if selectedTagId == tag.id {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.accentColor)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture { selectedTagId = tag.id }
-                        .accessibilityLabel(tag.name)
-                        .accessibilityAddTraits(selectedTagId == tag.id ? [.isSelected] : [])
+                        mergeTagRow(tag: tag)
                     }
                 }
 
@@ -1014,7 +1021,7 @@ private struct SummarizationPromptsSettingsView: View {
                         }
                     }
                     .accessibilityLabel(
-                        String(localized: "settings.summarization.prompt.a11y \(prompt.name)",
+                        String(localized: "settings.summarization.prompt.a11y",
                                defaultValue: "Edit prompt \(prompt.name)")
                     )
                 }
@@ -1048,7 +1055,7 @@ private struct SummarizationPromptsSettingsView: View {
 
     private func summaryCountLabel(for prompt: SummarizationPrompt) -> String {
         let count = allSummaries.filter { $0.promptId == prompt.id }.count
-        return String(localized: "settings.summarization.prompt.count \(count)",
+        return String(localized: "settings.summarization.prompt.count",
                       defaultValue: "\(count) summary\(count == 1 ? "" : "ies") generated")
     }
 }
@@ -1208,6 +1215,30 @@ private struct NARAKeyView: View {
 
 // MARK: - ResetView
 
+/// Two-step confirmation UI for the destructive "Reset App to Initial State" action.
+///
+/// ## What is deleted
+/// - All downloaded volume XML files (via `DownloadManager`)
+/// - All SwiftData user-generated records: `ResearchNote`, `UserTag`, `GeneratedSummary`,
+///   `ReadingHistoryEntry`, `Collection`, `CollectionEntry`, `SummarizationPrompt`, `Project`
+/// - Active project selection (`AppState.activeProjectId`)
+///
+/// ## Post-reset navigation
+/// After data deletion, `ResetView` does **not** set `hasCompletedOnboarding = false`
+/// directly. Instead it sets `AppState.pendingOnboardingAfterReset = true` and dismisses
+/// the Settings sheet by setting `AppState.showSettingsSheet = false`. `BrowserView`'s
+/// sheet `onDismiss` handler completes the transition to `OnboardingView` only after the
+/// sheet animation finishes, avoiding a SwiftUI race where `ContentView` tries to replace
+/// `BrowserView` while a modal is still on screen.
+///
+/// ## Confirmation gates
+/// The user must confirm twice (two `confirmationDialog` calls) before `performReset()`
+/// is invoked, guarding against accidental taps.
+///
+/// Version history:
+///   1.0 — Session 24: initial implementation
+///   1.1 — Session 32: added `Project` deletion; switched to two-phase sheet-dismissal
+///          for safe post-reset onboarding navigation
 private struct ResetView: View {
 
     @Environment(AppState.self) private var appState
@@ -1304,8 +1335,17 @@ private struct ResetView: View {
                 try modelContext.delete(model: Collection.self)
                 try modelContext.delete(model: CollectionEntry.self)
                 try modelContext.delete(model: SummarizationPrompt.self)
-                // Clear active project
-                await MainActor.run { appState.activeProjectId = nil }
+                try modelContext.delete(model: Project.self)
+                // Clear active project, then signal the Settings sheet to dismiss.
+                // BrowserView's onDismiss handler will set hasCompletedOnboarding = false
+                // only after the sheet has fully animated out, avoiding a SwiftUI
+                // race where ContentView tries to replace BrowserView while a modal
+                // is still on screen.
+                await MainActor.run {
+                    appState.activeProjectId = nil
+                    appState.pendingOnboardingAfterReset = true
+                    appState.showSettingsSheet = false
+                }
 
                 #if DEBUG
                 print("[Settings] App reset complete")

@@ -136,11 +136,11 @@ struct SourceExplorerView: View {
                 value: String(localized: "source.explorer.centralFiles.typeValue",
                               defaultValue: "State Dept. Central Files (\(recordGroup))")
             )
-            if let fileId {
+            if let fileIdentifier {
                 LabeledContent(
                     String(localized: "source.explorer.centralFiles.identifier",
                            defaultValue: "File Identifier"),
-                    value: fileId
+                    value: fileIdentifier
                 )
             }
         }
@@ -184,11 +184,11 @@ struct SourceExplorerView: View {
                 String(localized: "source.explorer.lotFile.lot", defaultValue: "Lot Number"),
                 value: lotNumber
             )
-            if let fileId {
+            if let fileIdentifier {
                 LabeledContent(
                     String(localized: "source.explorer.lotFile.fileId",
                            defaultValue: "File Identifier"),
-                    value: fileId
+                    value: fileIdentifier
                 )
             }
         }
@@ -222,11 +222,11 @@ struct SourceExplorerView: View {
                     value: collection
                 )
             }
-            if let fileId {
+            if let fileIdentifier {
                 LabeledContent(
                     String(localized: "source.explorer.presLib.fileId",
                            defaultValue: "File Identifier"),
-                    value: fileId
+                    value: fileIdentifier
                 )
             }
         }

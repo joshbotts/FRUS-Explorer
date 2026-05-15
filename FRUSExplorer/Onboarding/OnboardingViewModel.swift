@@ -22,6 +22,11 @@ import SwiftData
 /// wizard. All mutation is @MainActor; `hasDownloadedVolumes(in:)` is nonisolated static
 /// so ContentView can call it synchronously without actor hopping.
 ///
+/// ## Intro Text
+/// The intro screen displays a static bundled description of FRUS. An earlier version
+/// fetched live text from history.state.gov; this was removed and the intro now uses
+/// only bundled copy to avoid a network dependency on first launch.
+///
 /// ## Volume Filtering
 /// Volumes with `sizeBytes < 20_000` are excluded from all display lists.
 ///
@@ -31,6 +36,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 10: initial implementation
+///   1.1 — Session 32: removed `fetchIntroText()` — intro text is now static (bundled only)
 @Observable
 @MainActor
 final class OnboardingViewModel {
@@ -150,32 +156,6 @@ final class OnboardingViewModel {
     }
 
     // MARK: - Actions
-
-    /// Fetches intro text from history.state.gov and strips HTML tags.
-    /// Falls back silently to `bundledIntroText` on any error.
-    func fetchIntroText() async {
-        guard let url = URL(string: "https://history.state.gov/historicaldocuments/about-frus") else {
-            return
-        }
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            guard let raw = String(data: data, encoding: .utf8) else { return }
-            // Strip HTML tags with a simple regex, collapse whitespace, take first 1500 chars.
-            let stripped = raw.replacing(#/<[^>]+>/#, with: " ")
-            let collapsed = stripped.components(separatedBy: .whitespacesAndNewlines)
-                .filter { !$0.isEmpty }
-                .joined(separator: " ")
-            let trimmed = String(collapsed.prefix(1500))
-            if !trimmed.isEmpty {
-                introText = trimmed
-            }
-        } catch {
-            // Silently fall back to bundled text.
-            #if DEBUG
-            print("[Onboarding] fetchIntroText failed — \(error). Using bundled text.")
-            #endif
-        }
-    }
 
     /// Adds `slug` to `selectedTagSlugs` and sets `sortMode` to `.byTag`.
     func activateTagFilter(slug: String) {

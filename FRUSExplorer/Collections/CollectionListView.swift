@@ -140,7 +140,7 @@ private struct CollectionRow: View {
 
             HStack(spacing: 6) {
                 let count = collection.documentEntries?.count ?? 0
-                Text(String(localized: "collections.row.count \(count)",
+                Text(String(localized: "collections.row.count",
                             defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
                     .font(.caption)
                     .foregroundStyle(.secondary)

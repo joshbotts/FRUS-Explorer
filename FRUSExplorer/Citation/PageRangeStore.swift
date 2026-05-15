@@ -30,18 +30,26 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation (table built in Session 09)
+///   1.1 — Session 32: database opened with `SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX`
+///          directly in `init` (previously delegated to a private `openDatabase()` helper)
 public actor PageRangeStore {
 
     // MARK: - State
 
     private let databaseURL: URL
-    private var db: OpaquePointer?
+    private nonisolated(unsafe) var db: OpaquePointer?
 
     // MARK: - Init
 
     public init(databaseURL: URL) throws {
         self.databaseURL = databaseURL
-        try openDatabase()
+        var dbPtr: OpaquePointer?
+        let flags = SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX
+        let rc = sqlite3_open_v2(databaseURL.path, &dbPtr, flags, nil)
+        guard rc == SQLITE_OK else {
+            throw PageRangeStoreError.databaseOpenFailed(code: rc)
+        }
+        self.db = dbPtr
     }
 
     deinit {

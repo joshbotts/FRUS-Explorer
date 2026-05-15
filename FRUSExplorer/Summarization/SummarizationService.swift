@@ -46,6 +46,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 19: initial implementation
+///   1.1 — Session 32: added `summarizeDiscarding` helper used by `BackgroundSummarizationService`
+///          to avoid returning a non-`Sendable` `GeneratedSummary` across actor boundaries
 actor SummarizationService {
 
     // MARK: - Init
@@ -176,6 +178,30 @@ actor SummarizationService {
         }
 
         return chunks.isEmpty ? [text] : chunks
+    }
+
+    // MARK: - Background use
+
+    /// Runs `summarize` and discards the result, returning `Void`.
+    ///
+    /// Used by `BackgroundSummarizationService` to avoid crossing actor boundaries
+    /// with the non-`Sendable` `GeneratedSummary` result.
+    func summarizeDiscarding(
+        documentId: String,
+        volumeId: String,
+        documentText: String,
+        prompt: SummarizationPromptSnapshot,
+        provider: any SummarizationProvider,
+        activeProjectId: UUID?
+    ) async throws {
+        _ = try await summarize(
+            documentId: documentId,
+            volumeId: volumeId,
+            documentText: documentText,
+            prompt: prompt,
+            provider: provider,
+            activeProjectId: activeProjectId
+        )
     }
 
     // MARK: - Private

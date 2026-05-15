@@ -10,7 +10,11 @@ import Foundation
 
 // MARK: - HTMLCollectionExporter
 
-/// Exports a `Collection` to a self-contained HTML file with embedded CSS.
+/// Exports a collection's metadata and documents to a self-contained HTML file with embedded CSS.
+///
+/// Receives a `CollectionExportMetadata` snapshot (name, optional note) together with
+/// pre-resolved `CollectionExportDocument` payloads so no SwiftData access is needed
+/// during rendering.
 ///
 /// The output is a single `.html` file — no external resources required.
 /// Structure:
@@ -23,16 +27,17 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
-public final class HTMLCollectionExporter: CollectionExporter {
+///   1.1 — Session 32: replaced `Collection` parameter with `CollectionExportMetadata`
+final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
 
-    public func export(
-        collection: Collection,
+    func export(
+        metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument]
     ) async throws -> URL {
-        let html = buildHTML(collection: collection, documents: documents)
-        let filename = sanitized(collection.name) + ".html"
+        let html = buildHTML(collection: metadata, documents: documents)
+        let filename = sanitized(metadata.name) + ".html"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
             try html.write(to: url, atomically: true, encoding: .utf8)
@@ -44,7 +49,7 @@ public final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - HTML Construction
 
-    private func buildHTML(collection: Collection, documents: [CollectionExportDocument]) -> String {
+    private func buildHTML(collection: CollectionExportMetadata, documents: [CollectionExportDocument]) -> String {
         let title = escaped(collection.name)
         var body = ""
 

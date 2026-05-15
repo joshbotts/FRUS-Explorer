@@ -30,6 +30,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
+///   1.1 — Session 32: added `@unchecked Sendable` conformance; the model is only ever
+///          mutated on the `@MainActor` context that owns its `ModelContext`
 @Model final class GeneratedSummary {
 
     // MARK: - Identity
@@ -114,3 +116,5 @@ import SwiftData
         #endif
     }
 }
+
+extension GeneratedSummary: @unchecked Sendable {}

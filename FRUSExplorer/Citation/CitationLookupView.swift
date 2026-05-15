@@ -236,7 +236,7 @@ struct CitationLookupView: View {
                     }
                 }
             } header: {
-                Text(String(localized: "citation.results.header.\(matches.count)",
+                Text(String(localized: "citation.results.header",
                             defaultValue: "Results (\(matches.count) found)"))
             }
         }

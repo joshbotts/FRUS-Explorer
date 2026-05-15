@@ -81,13 +81,24 @@ struct SummarizationPromptSnapshot: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 19: initial implementation
-enum SummarizationError: Error, LocalizedError {
+///   1.1 — Session 32: added `Equatable` conformance (with manual `==`) to support
+///          equality checks in unit tests without exposing associated values
+enum SummarizationError: Error, LocalizedError, Equatable {
     /// The device does not have Apple Intelligence hardware or model assets available.
     case providerUnavailable
     /// The document contains no extractable text.
     case emptyDocumentText
     /// The synthesis pass after chunking failed.
     case synthesisFailed(underlying: Error)
+
+    static func == (lhs: SummarizationError, rhs: SummarizationError) -> Bool {
+        switch (lhs, rhs) {
+        case (.providerUnavailable, .providerUnavailable): return true
+        case (.emptyDocumentText, .emptyDocumentText): return true
+        case (.synthesisFailed, .synthesisFailed): return true
+        default: return false
+        }
+    }
 
     var errorDescription: String? {
         switch self {

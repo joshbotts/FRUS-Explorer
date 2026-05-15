@@ -43,6 +43,8 @@ import Observation
 ///   1.5 — Session 19: summarizationService added
 ///   1.6 — Session 21: backgroundSummarizationService and backgroundSummarizationProgress added
 ///   1.7 — Session 30: citationMatchingEngine added
+///   1.8 — Session 32: added `showSettingsSheet` and `pendingOnboardingAfterReset` for
+///          safe post-reset navigation; onboarding flag cleared only after sheet animates out
 @Observable
 @MainActor
 final class AppState {
@@ -62,6 +64,36 @@ final class AppState {
             #endif
         }
     }
+
+    // MARK: - Onboarding
+
+    /// `true` once the user has tapped "Get Started" on the final onboarding screen.
+    ///
+    /// Persisted via `UserDefaults` so subsequent launches skip onboarding even before
+    /// the first volume finishes downloading. `ContentView` routes to `BrowserView`
+    /// when this is `true` or when at least one volume is already on disk.
+    var hasCompletedOnboarding: Bool = UserDefaults.standard.bool(forKey: Keys.hasCompletedOnboarding) {
+        didSet {
+            UserDefaults.standard.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding)
+        }
+    }
+
+    // MARK: - Sheet Coordination
+
+    /// Controls whether the Settings sheet is presented from `BrowserView`.
+    ///
+    /// Stored here (rather than as a `@State` local in `BrowserView`) so that
+    /// `ResetView` can dismiss the sheet programmatically before triggering the
+    /// transition back to `OnboardingView`. The sequence is:
+    /// 1. Reset completes → `pendingOnboardingAfterReset = true`, `showSettingsSheet = false`
+    /// 2. Sheet animates out
+    /// 3. `BrowserView`'s `onDismiss` handler fires → `hasCompletedOnboarding = false`
+    /// 4. `ContentView` routes to `OnboardingView` cleanly after the sheet is gone
+    var showSettingsSheet: Bool = false
+
+    /// Set by `ResetView` after a successful reset so that `BrowserView`'s sheet
+    /// `onDismiss` handler knows to complete the transition to onboarding.
+    var pendingOnboardingAfterReset: Bool = false
 
     // MARK: - Network State
 
@@ -172,5 +204,6 @@ final class AppState {
 
     private enum Keys {
         static let activeProjectId = "activeProjectId"
+        static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
 }

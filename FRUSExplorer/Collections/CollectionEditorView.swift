@@ -333,7 +333,7 @@ private struct EntryRow: View {
             Text(entry.documentId)
                 .font(.body)
                 .accessibilityLabel(
-                    String(localized: "collection.entry.document.accessibility \(entry.documentId)",
+                    String(localized: "collection.entry.document.accessibility",
                            defaultValue: "Document \(entry.documentId)")
                 )
 
@@ -506,8 +506,9 @@ private struct ExportSheetView: View {
         exportError = nil
         do {
             let docs = resolveDocuments()
+            let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
             let exporter = selectedFormat.makeExporter()
-            let url = try await exporter.export(collection: collection, documents: docs)
+            let url = try await exporter.export(metadata: metadata, documents: docs)
             exportedURL = url
         } catch {
             exportError = error.localizedDescription

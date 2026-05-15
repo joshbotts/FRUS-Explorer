@@ -51,13 +51,10 @@ struct OnboardingPromptSetupView: View {
             }
 
             Button {
+                appState.hasCompletedOnboarding = true
                 #if DEBUG
                 print("[Onboarding] Step: promptSetup → complete (Get Started tapped)")
                 #endif
-                // Onboarding is done. ContentView will switch to the main app view
-                // once hasDownloadedVolumes returns true (after downloads complete).
-                // For now, nothing further to navigate — this view will remain until
-                // the first XML file lands in the volumes directory.
             } label: {
                 Text(String(localized: "onboarding.prompt.cta", defaultValue: "Get Started"))
                     .frame(minWidth: 200)

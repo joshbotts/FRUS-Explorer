@@ -16,23 +16,23 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
-public enum ExportFormat: String, CaseIterable, Identifiable {
+enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
 
-    public var id: String { rawValue }
+    var id: String { rawValue }
 
-    public var displayName: String {
+    var displayName: String {
         switch self {
         case .pdf:  return "PDF"
         case .html: return "HTML"
         }
     }
 
-    public var fileExtension: String { rawValue }
+    var fileExtension: String { rawValue }
 
     /// Returns a fresh exporter instance for this format.
-    public func makeExporter() -> any CollectionExporter {
+    func makeExporter() -> any CollectionExporter {
         switch self {
         case .pdf:  return PDFCollectionExporter()
         case .html: return HTMLCollectionExporter()
@@ -50,23 +50,23 @@ public enum ExportFormat: String, CaseIterable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
-public struct CollectionExportDocument: Sendable {
+struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
-    public let documentId: String
+    let documentId: String
     /// The containing volume identifier (e.g. `"frus1969-76v01"`).
-    public let volumeId: String
+    let volumeId: String
     /// Position within the collection (ascending).
-    public let sortOrder: Int
+    let sortOrder: Int
     /// Human-readable document title.
-    public let title: String
+    let title: String
     /// ISO 8601 date string, if known.
-    public let date: String?
+    let date: String?
     /// Plain-text body of the document (may be truncated for large volumes).
-    public let bodyText: String
+    let bodyText: String
     /// Optional research note text linked to this entry.
-    public let noteText: String?
+    let noteText: String?
 
-    public init(
+    init(
         documentId: String,
         volumeId: String,
         sortOrder: Int,
@@ -85,9 +85,23 @@ public struct CollectionExportDocument: Sendable {
     }
 }
 
+// MARK: - CollectionExportMetadata
+
+/// Sendable snapshot of a `Collection`'s display properties for use by exporters.
+///
+/// Extracted from the SwiftData model before crossing async boundaries so that
+/// exporters can run without holding a reference to the `@MainActor`-bound model.
+///
+/// Version history:
+///   1.0 — Session 32: introduced to satisfy Swift 6 Sendable requirements
+struct CollectionExportMetadata: Sendable {
+    let name: String
+    let note: String?
+}
+
 // MARK: - CollectionExporter
 
-/// Protocol for turning a `Collection` + its resolved documents into a file on disk.
+/// Protocol for turning a `CollectionExportMetadata` + its resolved documents into a file on disk.
 ///
 /// Implementations must write their output to a temporary URL and return it.
 /// The caller is responsible for presenting a share sheet or saving the file.
@@ -96,30 +110,31 @@ public struct CollectionExportDocument: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
-public protocol CollectionExporter {
-    /// Exports `collection` and its `documents` to a temporary file.
+///   1.1 — Session 32: replaced `Collection` parameter with `CollectionExportMetadata`
+protocol CollectionExporter {
+    /// Exports `metadata` and its `documents` to a temporary file.
     ///
     /// - Returns: A `file://` URL pointing to the written output.
     /// - Throws: `ExportError` on rendering or I/O failure.
     func export(
-        collection: Collection,
+        metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument]
     ) async throws -> URL
 }
 
 // MARK: - ExportError
 
-public enum ExportError: Error, LocalizedError {
+enum ExportError: Error, LocalizedError {
     case renderingFailed
     case writeFailure(underlying: Error)
 
-    public var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case .renderingFailed:
             return String(localized: "export.error.rendering",
                           defaultValue: "The export could not be rendered.")
         case .writeFailure(let e):
-            return String(localized: "export.error.write \(e.localizedDescription)",
+            return String(localized: "export.error.write",
                           defaultValue: "Could not write export file: \(e.localizedDescription)")
         }
     }

@@ -12,7 +12,11 @@ import CoreText
 
 // MARK: - PDFCollectionExporter
 
-/// Exports a `Collection` to a multi-page PDF using CoreGraphics + CoreText.
+/// Exports a collection's metadata and documents to a multi-page PDF using CoreGraphics + CoreText.
+///
+/// Receives a `CollectionExportMetadata` snapshot (name, optional note) together with
+/// pre-resolved `CollectionExportDocument` payloads so no SwiftData access is needed
+/// during rendering.
 ///
 /// ## Output structure
 /// 1. Cover page — collection title, optional note, table of contents
@@ -27,7 +31,8 @@ import CoreText
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
-public final class PDFCollectionExporter: CollectionExporter {
+///   1.1 — Session 32: replaced `Collection` parameter with `CollectionExportMetadata`
+final class PDFCollectionExporter: CollectionExporter {
 
     // MARK: - Page geometry
 
@@ -41,12 +46,12 @@ public final class PDFCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
 
-    public func export(
-        collection: Collection,
+    func export(
+        metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument]
     ) async throws -> URL {
-        let data = try buildPDF(collection: collection, documents: documents)
-        let filename = sanitized(collection.name) + ".pdf"
+        let data = try buildPDF(collection: metadata, documents: documents)
+        let filename = sanitized(metadata.name) + ".pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
             try data.write(to: url)
@@ -59,7 +64,7 @@ public final class PDFCollectionExporter: CollectionExporter {
     // MARK: - PDF Construction
 
     private func buildPDF(
-        collection: Collection,
+        collection: CollectionExportMetadata,
         documents: [CollectionExportDocument]
     ) throws -> Data {
         let mutableData = NSMutableData()
@@ -87,7 +92,7 @@ public final class PDFCollectionExporter: CollectionExporter {
 
     private func drawCoverPage(
         ctx: CGContext,
-        collection: Collection,
+        collection: CollectionExportMetadata,
         documents: [CollectionExportDocument]
     ) {
         let W = Self.pageWidth, H = Self.pageHeight, M = Self.margin

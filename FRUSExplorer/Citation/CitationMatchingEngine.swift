@@ -74,7 +74,7 @@ public actor CitationMatchingEngine {
             return []
         }
 
-        let candidates = resolveVolume(
+        let candidates = await resolveVolume(
             subseries: input.subseries,
             volumeNumber: input.volumeNumber,
             titleFragment: input.titleFragment
@@ -175,8 +175,8 @@ public actor CitationMatchingEngine {
         subseries: String?,
         volumeNumber: String?,
         titleFragment: String?
-    ) -> [VolumeManifestEntry] {
-        let allVolumes = manifestStore.bundledEntries
+    ) async -> [VolumeManifestEntry] {
+        let allVolumes = await manifestStore.bundledEntries
 
         var candidates = allVolumes
 
@@ -249,12 +249,12 @@ public actor CitationMatchingEngine {
     ) async throws -> CitationMatch? {
         guard let store = pageRangeStore else { return nil }
 
-        guard let documentId = try store.document(forPage: pageNumber, inVolume: volumeId) else {
+        guard let documentId = try await store.document(forPage: pageNumber, inVolume: volumeId) else {
             return nil
         }
 
         // Fetch page range for display in the confidence label
-        let range = try store.pageRange(forDocument: documentId, inVolume: volumeId)
+        let range = try await store.pageRange(forDocument: documentId, inVolume: volumeId)
         let label: String
         if let range {
             label = ConfidenceLabels.pageRange(page: pageNumber, first: range.first, last: range.last)
@@ -401,35 +401,35 @@ enum ConfidenceLabels {
 
     static func pageRange(page: Int, first: Int, last: Int) -> String {
         String(
-            localized: "citation.match.pageRange.\(page).\(first).\(last)",
+            localized: "citation.match.pageRange",
             defaultValue: "Matched by page number — page \(page) falls within this document (pages \(first)–\(last))"
         )
     }
 
     static func pageRangeShort(page: Int) -> String {
         String(
-            localized: "citation.match.pageRangeShort.\(page)",
+            localized: "citation.match.pageRangeShort",
             defaultValue: "Matched by page number — page \(page)"
         )
     }
 
     static func fuzzyDocument(requested: Int, nearest: Int) -> String {
         String(
-            localized: "citation.match.fuzzy.\(requested).\(nearest)",
+            localized: "citation.match.fuzzy",
             defaultValue: "Possible match — document \(requested) not found; nearest is document \(nearest)"
         )
     }
 
     static func fuzzyDocumentNote(requested: Int, nearest: Int, max: Int) -> String {
         String(
-            localized: "citation.match.fuzzyNote.\(requested).\(nearest).\(max)",
+            localized: "citation.match.fuzzyNote",
             defaultValue: "Document \(requested) was not found in this volume (last document is \(max)); the nearest available document is \(nearest)."
         )
     }
 
     static func bestGuess(_ explanation: String) -> String {
         String(
-            localized: "citation.match.bestGuess.\(explanation)",
+            localized: "citation.match.bestGuess",
             defaultValue: "Best guess — \(explanation)"
         )
     }

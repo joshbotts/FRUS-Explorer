@@ -18,8 +18,18 @@ import SwiftUI
 /// The sidebar (or root list) always shows the full subseries list so the user can
 /// jump between subseries without backtracking.
 ///
+/// ## Settings sheet coordination
+/// The Settings sheet presentation flag lives in `AppState` (not as a local `@State`)
+/// so that `ResetView` can dismiss the sheet programmatically. The sheet carries an
+/// `onDismiss` handler (`handleSettingsSheetDismiss`) that completes the post-reset
+/// transition to `OnboardingView` only after the sheet has fully animated out,
+/// preventing a SwiftUI race where `ContentView` tries to replace this view while
+/// a modal is still on screen.
+///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   1.1 — Session 32: moved Settings sheet flag to `AppState`; added `onDismiss`
+///          handler for safe post-reset navigation to `OnboardingView`
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -27,13 +37,15 @@ struct BrowserView: View {
     @State private var showProjectContext = false
     @State private var showSearch = false
     @State private var showCitationLookup = false
-    @State private var showSettings = false
+    // Settings sheet visibility is stored in AppState so ResetView can dismiss it
+    // programmatically before triggering the transition back to OnboardingView.
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
 
     var body: some View {
+        @Bindable var appState = appState
         Group {
             if let vm = viewModel {
                 #if os(macOS)
@@ -53,7 +65,8 @@ struct BrowserView: View {
         .sheet(isPresented: $showProjectContext) {
             ProjectContextView()
         }
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: $appState.showSettingsSheet,
+               onDismiss: handleSettingsSheetDismiss) {
             SettingsView()
         }
         .sheet(isPresented: $showSearch) {
@@ -68,6 +81,20 @@ struct BrowserView: View {
             CitationLookupView()
         }
         .onAppear { bootstrapViewModel() }
+    }
+
+    // MARK: - Sheet Dismiss Coordination
+
+    /// Called by SwiftUI after the Settings sheet has fully animated out.
+    ///
+    /// If the dismissal was triggered by a completed reset (signalled by
+    /// `appState.pendingOnboardingAfterReset`), this is the earliest safe moment
+    /// to clear `hasCompletedOnboarding` — the sheet is gone, so `ContentView`
+    /// can switch to `OnboardingView` without competing with a live modal.
+    private func handleSettingsSheetDismiss() {
+        guard appState.pendingOnboardingAfterReset else { return }
+        appState.pendingOnboardingAfterReset = false
+        appState.hasCompletedOnboarding = false
     }
 
     // MARK: - Layout Variants
@@ -105,7 +132,7 @@ struct BrowserView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
-                            showSettings = true
+                            appState.showSettingsSheet = true
                         } label: {
                             Image(systemName: "gear")
                         }
@@ -163,7 +190,7 @@ struct BrowserView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
-                            showSettings = true
+                            appState.showSettingsSheet = true
                         } label: {
                             Image(systemName: "gear")
                         }
@@ -180,18 +207,23 @@ struct BrowserView: View {
 
     @ViewBuilder
     private func levelView(for level: BrowserViewModel.BrowserLevel, vm: BrowserViewModel) -> some View {
-        switch level {
-        case .corpus:
-            CorpusView(vm: vm)
-        case .subseries(let group):
-            SubseriesView(vm: vm, group: group)
-        case .volume(let entry):
-            VolumeView(vm: vm, volume: entry)
-        case .compilation(let volumeId, let section):
-            CompilationView(vm: vm, volumeId: volumeId, section: section)
-        case .document(let entry):
-            DocumentView(entry: entry)
+        let content: AnyView = switch level {
+        case .corpus:            AnyView(CorpusView(vm: vm))
+        case .subseries(let g):  AnyView(SubseriesView(vm: vm, group: g))
+        case .volume(let e):     AnyView(VolumeView(vm: vm, volume: e))
+        case .compilation(let vid, let s): AnyView(CompilationView(vm: vm, volumeId: vid, section: s))
+        case .document(let e):   AnyView(DocumentView(entry: e))
         }
+        content
+            .safeAreaInset(edge: .top, spacing: 0) {
+                BrowserBreadcrumbBar(path: vm.navigationPath) { index in
+                    if let index {
+                        vm.navigationPath = Array(vm.navigationPath.prefix(index + 1))
+                    } else {
+                        vm.navigationPath = []
+                    }
+                }
+            }
     }
 
     // MARK: - Bootstrap

@@ -35,7 +35,9 @@ public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
     /// e.g. `"1969-76"`, `"1977-80"`, `"1861"`. Used to group volumes in the Browser view.
     public let subseries: String
 
-    /// Full volume title from the TEI `<titleStmt>`.
+    /// Full volume title from the TEI `<titleStmt>`, with whitespace normalized.
+    /// The raw TEI XML preserves indentation inside the title element, producing embedded
+    /// newlines and runs of spaces. These are collapsed to single spaces on decode.
     public let title: String
 
     /// Earliest and latest document dates within the volume.
@@ -65,6 +67,33 @@ public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
     public let tags: [String]
 
     public var id: String { volumeId }
+}
+
+// Custom Decodable conformance in an extension so the synthesized memberwise
+// initializer is preserved for test construction.
+extension VolumeManifestEntry {
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        volumeId        = try c.decode(String.self, forKey: .volumeId)
+        filename        = try c.decode(String.self, forKey: .filename)
+        subseries       = try c.decode(String.self, forKey: .subseries)
+        let rawTitle    = try c.decode(String.self, forKey: .title)
+        title           = rawTitle
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        dateRange       = try c.decode(DateRange.self, forKey: .dateRange)
+        publicationDate = try c.decodeIfPresent(String.self, forKey: .publicationDate)
+        status          = try c.decode(VolumeStatus.self, forKey: .status)
+        editors         = try c.decode([String].self, forKey: .editors)
+        generalEditor   = try c.decodeIfPresent(String.self, forKey: .generalEditor)
+        documentCount   = try c.decode(Int.self, forKey: .documentCount)
+        sizeBytes       = try c.decode(Int.self, forKey: .sizeBytes)
+        let rawTags     = try c.decode([String].self, forKey: .tags)
+        tags            = rawTags.reduce(into: [String]()) { seen, slug in
+            if !seen.contains(slug) { seen.append(slug) }
+        }
+    }
 }
 
 /// Publication status of a FRUS volume.

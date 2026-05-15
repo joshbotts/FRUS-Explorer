@@ -60,9 +60,10 @@ public final class BackgroundSummarizationProgress {
 ///
 /// ## Usage
 /// ```swift
+/// let snapshot = SummarizationPromptSnapshot(from: selectedPrompt)
 /// await service.start(
 ///     scope: .volume(volumeId: "frus1969-76v01"),
-///     prompt: selectedPrompt,
+///     promptSnapshot: snapshot,
 ///     provider: AppleIntelligenceProvider.shared,
 ///     concurrencyLimit: 3,
 ///     downloadedVolumeURLs: [volumeId: localURL],
@@ -98,6 +99,8 @@ public final class BackgroundSummarizationProgress {
 ///
 /// Version history:
 ///   1.0 — Session 21: initial implementation
+///   1.1 — Session 32: `start` takes `promptSnapshot: SummarizationPromptSnapshot` instead of
+///          a live `SummarizationPrompt` model, eliminating a cross-actor SwiftData reference
 public actor BackgroundSummarizationService {
 
     // MARK: - Public progress model (nonisolated — observed by views on @MainActor)
@@ -116,7 +119,7 @@ public actor BackgroundSummarizationService {
 
     // MARK: - Init
 
-    public init(
+    init(
         summarizationService: SummarizationService,
         modelContainer: ModelContainer,
         progress: BackgroundSummarizationProgress
@@ -130,9 +133,9 @@ public actor BackgroundSummarizationService {
     // MARK: - Public API
 
     /// Starts a background summarization run. Cancels any run already in progress.
-    public func start(
+    func start(
         scope: SummarizationScope,
-        prompt: SummarizationPrompt,
+        promptSnapshot: SummarizationPromptSnapshot,
         provider: any SummarizationProvider,
         concurrencyLimit: Int,
         downloadedVolumeURLs: [String: URL],
@@ -143,9 +146,8 @@ public actor BackgroundSummarizationService {
         // Cancel any existing run
         currentTask?.cancel()
 
-        // Snapshot prompt before crossing actor boundaries
-        let snapshot = SummarizationPromptSnapshot(from: prompt)
-        let promptId = prompt.id
+        let snapshot = promptSnapshot
+        let promptId = promptSnapshot.id
 
         let task = Task {
             await self.run(
@@ -164,7 +166,7 @@ public actor BackgroundSummarizationService {
     }
 
     /// Cancels the current run, if any. Progress state transitions to `.cancelled`.
-    public func stop() {
+    func stop() {
         currentTask?.cancel()
         currentTask = nil
         let p = progress
@@ -311,17 +313,18 @@ public actor BackgroundSummarizationService {
                     defer { Task { await semaphore.signal() } }
                     guard !Task.isCancelled, let self else { return }
 
+                    let currentCount = await counter.value
                     await MainActor.run {
                         p.state = .running(
-                            processed: counter.value,
+                            processed: currentCount,
                             total: total,
                             currentDocumentId: did
                         )
                     }
 
                     do {
-                        _ = try await self.withRetry(maxAttempts: 5) {
-                            try await self.summarizationService.summarize(
+                        try await self.withRetry(maxAttempts: 5) {
+                            try await self.summarizationService.summarizeDiscarding(
                                 documentId: did,
                                 volumeId: vid,
                                 documentText: text,
@@ -339,7 +342,7 @@ public actor BackgroundSummarizationService {
                         #endif
                     }
 
-                    let newCount = counter.increment()
+                    let newCount = await counter.increment()
                     await MainActor.run {
                         p.state = .running(processed: newCount, total: total, currentDocumentId: nil)
                     }
@@ -352,7 +355,7 @@ public actor BackgroundSummarizationService {
             return
         }
 
-        let finalCount = counter.value
+        let finalCount = await counter.value
         await MainActor.run { p.state = .completed(processed: finalCount) }
 
         #if DEBUG
@@ -416,7 +419,7 @@ public actor BackgroundSummarizationService {
         content.title = String(localized: "background.summarizer.notification.title",
                                defaultValue: "Summarization Complete")
         content.body = String(
-            localized: "background.summarizer.notification.body \(processed) \(total)",
+            localized: "background.summarizer.notification.body",
             defaultValue: "\(processed) of \(total) documents summarized."
         )
         let request = UNNotificationRequest(

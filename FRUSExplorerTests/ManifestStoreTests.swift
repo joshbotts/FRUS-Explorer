@@ -70,6 +70,47 @@ struct ManifestStoreTests {
         #expect(decoded[0].category == "places")
     }
 
+    // MARK: - Subseries Extraction
+
+    // frusSubseries(from:) extracts all leading digits and dashes from the post-"frus"
+    // portion of a filename, stopping at the first letter.
+    // Tests call the module-level free function directly to avoid access-level friction.
+
+    @Test("frusSubseries(from:): standard year-range volumes", arguments: [
+        ("frus1969-76v01.xml",   "1969-76"),
+        ("frus1977-80v12.xml",   "1977-80"),
+        ("frus1952-54v06p2.xml", "1952-54"),
+        ("frus1981-88v28.xml",   "1981-88"),
+    ])
+    func subseriesYearRange(filename: String, expected: String) {
+        #expect(frusSubseries(from: filename) == expected)
+    }
+
+    @Test("frusSubseries(from:): single-year volumes")
+    func subseriesSingleYear() {
+        #expect(frusSubseries(from: "frus1861.xml") == "1861")
+        #expect(frusSubseries(from: "frus1950.xml") == "1950")
+    }
+
+    @Test("frusSubseries(from:): non-v+digits suffixes are stripped correctly")
+    func subseriesNonVolumeLetterSuffix() {
+        // Appendix suffix — old code returned "1877app"
+        #expect(frusSubseries(from: "frus1877app.xml") == "1877")
+        // Part designators — old code returned "1863p1" / "1863p2"
+        #expect(frusSubseries(from: "frus1863p1.xml") == "1863")
+        #expect(frusSubseries(from: "frus1863p2.xml") == "1863")
+        // Country-name suffix
+        #expect(frusSubseries(from: "frus1894Nicaragua.xml") == "1894")
+    }
+
+    @Test("frusSubseries(from:): invalid inputs return nil")
+    func subseriesInvalidInputs() {
+        #expect(frusSubseries(from: "frus1969-76v01.json") == nil) // wrong extension
+        #expect(frusSubseries(from: "other1969-76v01.xml") == nil) // wrong prefix
+        #expect(frusSubseries(from: "frus.xml") == nil)            // nothing after "frus"
+        #expect(frusSubseries(from: "") == nil)
+    }
+
     // MARK: - Diff Logic
 
     @Test("LiveManifestDiff: volume in both → known")

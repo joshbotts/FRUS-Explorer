@@ -10,9 +10,13 @@ import SwiftUI
 
 /// Root routing view for FRUS Explorer.
 ///
-/// Routes to `OnboardingView` when no volumes have been downloaded, or to
-/// `BrowserView` when at least one .xml file exists in the volumes directory.
-/// The routing trigger is purely filesystem-based — no persistent flag is stored.
+/// Routes to `OnboardingView` unless at least one of these conditions is true:
+/// - `appState.hasCompletedOnboarding == true` (UserDefaults flag set at wizard completion)
+/// - At least one `.xml` volume file exists on disk
+///
+/// Setting `hasCompletedOnboarding = false` (e.g. from the Settings reset action) and
+/// deleting all downloaded volumes causes this view to re-route to `OnboardingView` on
+/// the next SwiftUI render pass, effectively re-triggering onboarding.
 ///
 /// Version history:
 ///   1.0 — Session 01: initial placeholder implementation
@@ -23,7 +27,8 @@ struct ContentView: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        if OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory) {
+        let hasVolumes = OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory)
+        if appState.hasCompletedOnboarding || hasVolumes {
             BrowserView()
         } else {
             OnboardingView()

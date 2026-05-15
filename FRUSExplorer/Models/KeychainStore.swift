@@ -152,6 +152,11 @@ public actor KeychainStore {
         }
     }
 
+    /// Returns `true` when a NARA Catalog API key is present in the keychain.
+    public func hasAPIKey() -> Bool {
+        (try? getNARACatalogAPIKey()) != nil
+    }
+
     /// Removes the stored NARA Catalog API key.
     ///
     /// Succeeds silently if the key does not exist.

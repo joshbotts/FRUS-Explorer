@@ -503,7 +503,7 @@ private struct PromptPickerRow: View {
                         .padding(.vertical, 2)
                         .background(Color.accentColor.opacity(0.12))
                         .clipShape(Capsule())
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             Text(formatLabel)
@@ -521,7 +521,7 @@ private struct PromptPickerRow: View {
                           defaultValue: "General prose")
         case .structured(let schema):
             let names = schema.fields.map(\.name).joined(separator: ", ")
-            return String(localized: "prompt.picker.row.format.structured \(names)",
+            return String(localized: "prompt.picker.row.format.structured",
                           defaultValue: "Structured: \(names)")
         }
     }
