@@ -71,6 +71,12 @@ public final class DocumentViewModel {
     /// project OTHER than the currently active project.
     public var crossProjectNoteCount: Int = 0
 
+    /// The actual notes counted above, stored for cross-project reveal UI.
+    var crossProjectNotes: [ResearchNote] = []
+
+    /// Whether the research note editor sheet is currently presented.
+    public var showNoteEditor: Bool = false
+
     // MARK: - Summaries
 
     /// Summaries for this document, ordered newest-first.
@@ -206,9 +212,12 @@ public final class DocumentViewModel {
         )
         let all = (try? context.fetch(descriptor)) ?? []
         if let pid = activeProjectId {
-            crossProjectNoteCount = all.filter { !$0.projectIds.contains(pid) }.count
+            let foreign = all.filter { !$0.projectIds.contains(pid) }
+            crossProjectNoteCount = foreign.count
+            crossProjectNotes = foreign
         } else {
             crossProjectNoteCount = 0
+            crossProjectNotes = []
         }
     }
 

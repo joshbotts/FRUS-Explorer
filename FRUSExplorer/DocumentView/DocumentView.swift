@@ -137,10 +137,21 @@ struct DocumentView: View {
                     .padding(.bottom, 8)
 
                 // Cross-project note indicator
-                if vm.crossProjectNoteCount > 0 {
-                    CrossProjectNoteIndicator(count: vm.crossProjectNoteCount)
-                        .padding(.horizontal)
-                        .padding(.bottom, 12)
+                if !vm.crossProjectNotes.isEmpty {
+                    CrossProjectNoteIndicator(
+                        notes: vm.crossProjectNotes,
+                        activeProjectId: appState.activeProjectId,
+                        onPromote: { note in
+                            guard let pid = appState.activeProjectId else { return }
+                            note.projectIds = note.projectIds + [pid]
+                            vm.refreshCrossProjectNoteCount(
+                                activeProjectId: appState.activeProjectId,
+                                context: modelContext
+                            )
+                        }
+                    )
+                    .padding(.horizontal)
+                    .padding(.bottom, 12)
                 }
             }
         }
@@ -156,6 +167,13 @@ struct DocumentView: View {
                 CitationSheetView(citation: citation)
             }
         }
+        .sheet(isPresented: $vm.showNoteEditor) {
+            ResearchNoteEditorView(
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                activeProjectId: appState.activeProjectId
+            )
+        }
     }
 
     // MARK: - Toolbar
@@ -165,7 +183,7 @@ struct DocumentView: View {
         ToolbarItemGroup(placement: .primaryAction) {
             // Add research note
             Button {
-                // Wired in Session 14
+                vm.showNoteEditor = true
             } label: {
                 Label(
                     String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
@@ -392,7 +410,10 @@ private struct DocumentTagChip: View {
 // MARK: - CrossProjectNoteIndicator
 
 private struct CrossProjectNoteIndicator: View {
-    let count: Int
+    let notes: [ResearchNote]
+    let activeProjectId: UUID?
+    let onPromote: (ResearchNote) -> Void
+
     @State private var isExpanded = false
 
     var body: some View {
@@ -403,7 +424,7 @@ private struct CrossProjectNoteIndicator: View {
                 HStack {
                     Image(systemName: "note.text")
                         .foregroundStyle(.secondary)
-                    Text("\(count) notes from other projects")
+                    Text("\(notes.count) notes from other projects")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -413,7 +434,7 @@ private struct CrossProjectNoteIndicator: View {
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(count) research notes from other projects")
+            .accessibilityLabel("\(notes.count) research notes from other projects")
             .accessibilityHint(
                 isExpanded
                     ? String(localized: "document.crossProject.collapse.hint",
@@ -423,14 +444,57 @@ private struct CrossProjectNoteIndicator: View {
             )
 
             if isExpanded {
-                Text(String(localized: "document.crossProject.detail",
-                            defaultValue: "Switch projects to view these notes."))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.leading, 24)
+                if activeProjectId != nil {
+                    ForEach(notes, id: \.id) { note in
+                        CrossProjectNoteRow(note: note, onPromote: { onPromote(note) })
+                    }
+                } else {
+                    Text(String(localized: "document.crossProject.detail",
+                                defaultValue: "Switch projects to view these notes."))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(.leading, 24)
+                }
             }
         }
         .padding(.vertical, 6)
+    }
+}
+
+// MARK: - CrossProjectNoteRow
+
+private struct CrossProjectNoteRow: View {
+    let note: ResearchNote
+    let onPromote: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            if note.bodyText.isEmpty {
+                Text(String(localized: "document.crossProject.emptyNote",
+                            defaultValue: "Empty note"))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .italic()
+            } else {
+                Text(note.bodyText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer()
+            Button(String(localized: "document.crossProject.promote",
+                          defaultValue: "Add to project")) {
+                onPromote()
+            }
+            .font(.caption)
+            .buttonStyle(.borderless)
+            .accessibilityLabel(
+                String(localized: "document.crossProject.promote.a11y",
+                       defaultValue: "Add this note to the current project")
+            )
+        }
+        .padding(.leading, 24)
+        .padding(.vertical, 4)
     }
 }
 
