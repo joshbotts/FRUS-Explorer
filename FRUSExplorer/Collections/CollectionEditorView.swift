@@ -32,6 +32,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
+///   1.1 — Session 35: macOS compatibility — guard navigationBarTitleDisplayMode,
+///          EditButton, and export sheet; add NSSavePanel / Reveal in Finder on macOS
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -92,7 +94,9 @@ struct CollectionEditorView: View {
             .navigationTitle(isNewCollection
                 ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
                 : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
@@ -205,10 +209,15 @@ struct CollectionEditorView: View {
             HStack {
                 Text(String(localized: "collection.editor.docs.header", defaultValue: "Documents"))
                 Spacer()
+                #if os(iOS)
+                // EditButton toggles edit mode so drag-handles and swipe-to-delete appear.
+                // On macOS, onMove and onDelete are accessible without explicit edit mode
+                // (drag handles appear automatically; Delete key / context menu handles deletion).
                 if !sortedEntries.isEmpty {
                     EditButton()
                         .font(.caption)
                 }
+                #endif
             }
         }
     }
@@ -406,7 +415,9 @@ private struct AddByTagSheet: View {
             }
             .navigationTitle(String(localized: "collection.addByTag.nav.title",
                                     defaultValue: "Add by Tag"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "collection.addByTag.cancel",
@@ -481,7 +492,9 @@ private struct ExportSheetView: View {
                 }
             }
             .navigationTitle(String(localized: "export.nav.title", defaultValue: "Export Collection"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "export.close", defaultValue: "Close")) {
@@ -494,8 +507,7 @@ private struct ExportSheetView: View {
                 ShareSheet(url: url)
                     .ignoresSafeArea()
                 #else
-                Text(url.lastPathComponent)
-                    .padding()
+                MacExportCompleteView(url: url)
                 #endif
             }
         }
@@ -544,6 +556,65 @@ private struct ExportSheetView: View {
         }
     }
 }
+
+// MARK: - MacExportCompleteView
+
+#if os(macOS)
+/// Shown after a successful export on macOS.
+///
+/// Offers two actions:
+/// - **Reveal in Finder** — opens the file's containing folder with the file selected.
+/// - **Save To…** — presents an `NSSavePanel` so the user can copy the exported file
+///   to a permanent location of their choice.
+///
+/// The file lives in `FileManager.temporaryDirectory` and will be cleaned up by
+/// the OS; using the Save panel is the recommended path for keeping the output.
+private struct MacExportCompleteView: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 52))
+                .foregroundStyle(.green)
+
+            Text(String(localized: "export.mac.success.title",
+                        defaultValue: "Export Complete"))
+                .font(.headline)
+
+            Text(url.lastPathComponent)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                Button(String(localized: "export.mac.reveal",
+                              defaultValue: "Reveal in Finder")) {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                    dismiss()
+                }
+
+                Button(String(localized: "export.mac.saveTo",
+                              defaultValue: "Save To\u{2026}")) {
+                    let panel = NSSavePanel()
+                    panel.nameFieldStringValue = url.lastPathComponent
+                    // Allow the OS to infer the content type from the extension.
+                    panel.canCreateDirectories = true
+                    if panel.runModal() == .OK, let dest = panel.url {
+                        try? FileManager.default.removeItem(at: dest)
+                        try? FileManager.default.copyItem(at: url, to: dest)
+                        NSWorkspace.shared.activateFileViewerSelecting([dest])
+                    }
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(28)
+        .frame(minWidth: 340)
+    }
+}
+#endif
 
 // MARK: - ShareSheet
 

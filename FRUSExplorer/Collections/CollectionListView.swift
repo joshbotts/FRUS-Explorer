@@ -27,6 +27,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
+///   1.1 — Session 35: macOS compatibility — guard `.insetGrouped` list style
 struct CollectionListView: View {
 
     @Environment(AppState.self) private var appState
@@ -85,7 +86,11 @@ struct CollectionListView: View {
                 deleteCollections(at: indexSet)
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
     }
 
     private var emptyState: some View {
