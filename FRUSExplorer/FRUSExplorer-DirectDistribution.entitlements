@@ -5,11 +5,11 @@
     FRUS Explorer — Direct Distribution Entitlements (macOS only)
     Used by: macOS target (DirectDistribution config)
 
-    Differs from AppStore entitlements only in signing context (Developer ID vs App Store).
-    The sandbox posture is identical to the App Store configuration by design.
-    Direct distribution build also links Sparkle (configured in target build settings).
+    Identical sandbox posture to the App Store configuration by design.
+    The Direct Distribution build additionally links Sparkle (configured in target
+    build settings). Manual notarization via notarytool is required before release.
 
-    See FRUSExplorer-AppStore.entitlements for notes on entitlement key accuracy.
+    See FRUSExplorer-AppStore.entitlements for notes on keychain sync approach.
 -->
 <dict>
     <!-- Sandbox: maintained identical to App Store build -->
@@ -21,23 +21,25 @@
     <true/>
 
     <!-- iCloud container for CloudKit (SwiftData sync) -->
-    <key>com.apple.developer.icloud-containers</key>
+    <key>com.apple.developer.icloud-container-identifiers</key>
     <array>
         <string>iCloud.bottsywattsy.FRUS-Explorer</string>
+    </array>
+
+    <!-- iCloud services enabled for this container -->
+    <key>com.apple.developer.icloud-services</key>
+    <array>
+        <string>CloudKit</string>
     </array>
 
     <!-- iCloud KV store -->
     <key>com.apple.developer.ubiquity-kvstore-identifier</key>
     <string>$(TeamIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
 
-    <!-- iCloud Keychain sharing: NARA API key synced across user's devices -->
-    <key>com.apple.developer.icloud-keychain-sharing</key>
+    <!-- Keychain access group for the NARA Catalog API key -->
+    <key>keychain-access-groups</key>
     <array>
-        <string>bottsywattsy.FRUS-Explorer.shared</string>
+        <string>$(AppIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
     </array>
-
-    <!-- CloudKit capability marker; corrected to icloud-services in Session 04 -->
-    <key>com.apple.developer.cloudkit</key>
-    <true/>
 </dict>
 </plist>

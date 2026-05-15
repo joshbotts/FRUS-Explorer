@@ -5,14 +5,10 @@
     FRUS Explorer — App Store Entitlements
     Used by: iOS/iPadOS target (all configs), macOS target (Debug + AppStore configs)
 
-    Note on com.apple.developer.icloud-containers: the spec uses this key; the equivalent
-    modern key is com.apple.developer.icloud-container-identifiers. Both are accepted by
-    Apple's entitlement validation. Update if a future Xcode version rejects this form.
-
-    Note on com.apple.developer.cloudkit: not a documented Apple entitlement key. The
-    correct key is com.apple.developer.icloud-services with value ["CloudKit"]. This will
-    be corrected when CloudKit is activated in the project capabilities (Session 04).
-    Kept here to match the specification verbatim and resolved during capability setup.
+    NARA API key storage note: items stored in the keychain with kSecAttrSynchronizable=true
+    sync across the user's devices via iCloud Keychain automatically — no special entitlement
+    is required for this. The keychain-access-groups entitlement below governs which access
+    group the NARA key is stored in; the iCloud sync is handled at the item level in code.
 -->
 <dict>
     <!-- Sandbox: required for all Mac App Store submissions -->
@@ -24,24 +20,30 @@
     <true/>
 
     <!-- iCloud container for CloudKit (SwiftData sync) -->
-    <key>com.apple.developer.icloud-containers</key>
+    <key>com.apple.developer.icloud-container-identifiers</key>
     <array>
         <string>iCloud.bottsywattsy.FRUS-Explorer</string>
     </array>
 
-    <!-- iCloud KV store for lightweight UserDefaults-style sync -->
+    <!-- iCloud services enabled for this container -->
+    <key>com.apple.developer.icloud-services</key>
+    <array>
+        <string>CloudKit</string>
+    </array>
+
+    <!-- iCloud KV store for lightweight cross-device defaults (e.g., active project ID) -->
     <key>com.apple.developer.ubiquity-kvstore-identifier</key>
     <string>$(TeamIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
 
-    <!-- iCloud Keychain sharing: NARA API key synced across user's devices -->
-    <key>com.apple.developer.icloud-keychain-sharing</key>
+    <!--
+        Keychain access group for the NARA Catalog API key.
+        Items stored in this group with kSecAttrSynchronizable=true sync via iCloud Keychain
+        without requiring any additional entitlement. The $(AppIdentifierPrefix) substitution
+        is resolved at build time to <TeamID>. (Session 05 implements the keychain service.)
+    -->
+    <key>keychain-access-groups</key>
     <array>
-        <!-- Shared access group identifier; established at project setup -->
-        <string>bottsywattsy.FRUS-Explorer.shared</string>
+        <string>$(AppIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
     </array>
-
-    <!-- CloudKit capability marker; corrected to icloud-services in Session 04 -->
-    <key>com.apple.developer.cloudkit</key>
-    <true/>
 </dict>
 </plist>

@@ -21,7 +21,6 @@ struct EntitlementsTests {
 
     // MARK: - Helpers
 
-    /// Loads a `.entitlements` plist from the test bundle and returns it as a dictionary.
     private func loadEntitlements(named name: String) throws -> [String: Any] {
         guard let url = Bundle.testBundle.url(forResource: name, withExtension: "entitlements") else {
             Issue.record("Entitlements file '\(name).entitlements' not found in test bundle. " +
@@ -50,11 +49,18 @@ struct EntitlementsTests {
         #expect(plist["com.apple.security.network.client"] as? Bool == true)
     }
 
-    @Test("AppStore entitlements: icloud-containers references correct container")
+    @Test("AppStore entitlements: icloud-container-identifiers references correct container")
     func appStoreHasCorrectICloudContainer() throws {
         let plist = try loadEntitlements(named: "FRUSExplorer-AppStore")
-        let containers = plist["com.apple.developer.icloud-containers"] as? [String]
+        let containers = plist["com.apple.developer.icloud-container-identifiers"] as? [String]
         #expect(containers?.contains("iCloud.bottsywattsy.FRUS-Explorer") == true)
+    }
+
+    @Test("AppStore entitlements: icloud-services includes CloudKit")
+    func appStoreHasCloudKitService() throws {
+        let plist = try loadEntitlements(named: "FRUSExplorer-AppStore")
+        let services = plist["com.apple.developer.icloud-services"] as? [String]
+        #expect(services?.contains("CloudKit") == true)
     }
 
     @Test("AppStore entitlements: ubiquity-kvstore-identifier is present")
@@ -64,11 +70,11 @@ struct EntitlementsTests {
         #expect(kvStore?.isEmpty == false)
     }
 
-    @Test("AppStore entitlements: icloud-keychain-sharing is present and non-empty")
-    func appStoreHasKeychainSharing() throws {
+    @Test("AppStore entitlements: keychain-access-groups is present and non-empty")
+    func appStoreHasKeychainAccessGroups() throws {
         let plist = try loadEntitlements(named: "FRUSExplorer-AppStore")
-        let group = plist["com.apple.developer.icloud-keychain-sharing"] as? [String]
-        #expect(group?.isEmpty == false)
+        let groups = plist["keychain-access-groups"] as? [String]
+        #expect(groups?.isEmpty == false)
     }
 
     // MARK: - Direct Distribution Entitlements
@@ -85,11 +91,18 @@ struct EntitlementsTests {
         #expect(plist["com.apple.security.network.client"] as? Bool == true)
     }
 
-    @Test("DirectDistribution entitlements: icloud-containers references correct container")
+    @Test("DirectDistribution entitlements: icloud-container-identifiers references correct container")
     func directDistributionHasCorrectICloudContainer() throws {
         let plist = try loadEntitlements(named: "FRUSExplorer-DirectDistribution")
-        let containers = plist["com.apple.developer.icloud-containers"] as? [String]
+        let containers = plist["com.apple.developer.icloud-container-identifiers"] as? [String]
         #expect(containers?.contains("iCloud.bottsywattsy.FRUS-Explorer") == true)
+    }
+
+    @Test("DirectDistribution entitlements: icloud-services includes CloudKit")
+    func directDistributionHasCloudKitService() throws {
+        let plist = try loadEntitlements(named: "FRUSExplorer-DirectDistribution")
+        let services = plist["com.apple.developer.icloud-services"] as? [String]
+        #expect(services?.contains("CloudKit") == true)
     }
 
     @Test("DirectDistribution entitlements: ubiquity-kvstore-identifier is present")
@@ -99,11 +112,11 @@ struct EntitlementsTests {
         #expect(kvStore?.isEmpty == false)
     }
 
-    @Test("DirectDistribution entitlements: icloud-keychain-sharing is present and non-empty")
-    func directDistributionHasKeychainSharing() throws {
+    @Test("DirectDistribution entitlements: keychain-access-groups is present and non-empty")
+    func directDistributionHasKeychainAccessGroups() throws {
         let plist = try loadEntitlements(named: "FRUSExplorer-DirectDistribution")
-        let group = plist["com.apple.developer.icloud-keychain-sharing"] as? [String]
-        #expect(group?.isEmpty == false)
+        let groups = plist["keychain-access-groups"] as? [String]
+        #expect(groups?.isEmpty == false)
     }
 
     // MARK: - Parity
@@ -112,14 +125,13 @@ struct EntitlementsTests {
     func entitlementFilesHaveIdenticalSandboxPosture() throws {
         let appStore = try loadEntitlements(named: "FRUSExplorer-AppStore")
         let direct = try loadEntitlements(named: "FRUSExplorer-DirectDistribution")
-        // Both must agree on sandbox, network, iCloud containers, and keychain sharing.
         #expect(appStore["com.apple.security.app-sandbox"] as? Bool ==
                 direct["com.apple.security.app-sandbox"] as? Bool)
         #expect(appStore["com.apple.security.network.client"] as? Bool ==
                 direct["com.apple.security.network.client"] as? Bool)
-        #expect(appStore["com.apple.developer.icloud-containers"] as? [String] ==
-                direct["com.apple.developer.icloud-containers"] as? [String])
-        #expect(appStore["com.apple.developer.icloud-keychain-sharing"] as? [String] ==
-                direct["com.apple.developer.icloud-keychain-sharing"] as? [String])
+        #expect(appStore["com.apple.developer.icloud-container-identifiers"] as? [String] ==
+                direct["com.apple.developer.icloud-container-identifiers"] as? [String])
+        #expect(appStore["com.apple.developer.icloud-services"] as? [String] ==
+                direct["com.apple.developer.icloud-services"] as? [String])
     }
 }
