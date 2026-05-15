@@ -84,9 +84,24 @@ public final class DocumentViewModel {
         return summaries[activeSummaryIndex]
     }
 
+    // MARK: - Citation
+
+    /// Whether the citation sheet is currently presented.
+    public var showCitationSheet: Bool = false
+
+    /// The formatted citation string, available when a volume entry was supplied at init.
+    public var formattedCitation: String? {
+        guard let volumeEntry else { return nil }
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = FRUSVolumeMetadata(volumeEntry)
+        return HistoryAtStateCitationFormatter().format(document: docMeta, volume: volMeta)
+    }
+
     // MARK: - Dependencies
 
     public let entry: DocumentBrowserEntry
+    /// Volume manifest entry used for citation generation. `nil` when not found in manifest.
+    public let volumeEntry: VolumeManifestEntry?
     private let parser: FRUSDocumentParser
     private let subjectTagStore: SubjectTagStore
 
@@ -94,10 +109,12 @@ public final class DocumentViewModel {
 
     public init(
         entry: DocumentBrowserEntry,
+        volumeEntry: VolumeManifestEntry?,
         parser: FRUSDocumentParser,
         subjectTagStore: SubjectTagStore
     ) {
         self.entry = entry
+        self.volumeEntry = volumeEntry
         self.parser = parser
         self.subjectTagStore = subjectTagStore
     }

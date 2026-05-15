@@ -59,6 +59,7 @@ struct DocumentViewTests {
         let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeEntry(),
+            volumeEntry: nil,
             parser: FRUSDocumentParser(),
             subjectTagStore: store
         )
@@ -80,6 +81,7 @@ struct DocumentViewTests {
         let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeEntry(documentId: "d42", volumeId: "frus1969-76v01"),
+            volumeEntry: nil,
             parser: FRUSDocumentParser(),
             subjectTagStore: store
         )
@@ -110,6 +112,7 @@ struct DocumentViewTests {
         let store = SubjectTagStore(entries: entries, appearances: appearances)
         let vm = DocumentViewModel(
             entry: makeEntry(documentId: "d1", volumeId: "frus1969-76v01"),
+            volumeEntry: nil,
             parser: FRUSDocumentParser(),
             subjectTagStore: store
         )
@@ -144,6 +147,7 @@ struct DocumentViewTests {
         let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeEntry(documentId: "d1", volumeId: "frus1969-76v01"),
+            volumeEntry: nil,
             parser: FRUSDocumentParser(),
             subjectTagStore: store
         )

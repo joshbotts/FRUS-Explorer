@@ -138,6 +138,9 @@
 		AA12BB01CC03DD04EE1205 /* DocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA12BB01CC03DD04EE1204 /* DocumentView.swift */; };
 		AA12BB01CC03DD04EE1206 /* DocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA12BB01CC03DD04EE1204 /* DocumentView.swift */; };
 		AA12BB01CC03DD04EE1208 /* DocumentViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA12BB01CC03DD04EE1207 /* DocumentViewTests.swift */; };
+		AA13BB01CC03DD04EE1302 /* CitationFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */; };
+		AA13BB01CC03DD04EE1303 /* CitationFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */; };
+		AA13BB01CC03DD04EE1305 /* CitationFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA13BB01CC03DD04EE1304 /* CitationFormatterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -237,6 +240,8 @@
 		AA12BB01CC03DD04EE1201 /* DocumentViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentViewModel.swift; sourceTree = "<group>"; };
 		AA12BB01CC03DD04EE1204 /* DocumentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentView.swift; sourceTree = "<group>"; };
 		AA12BB01CC03DD04EE1207 /* DocumentViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentViewTests.swift; sourceTree = "<group>"; };
+		AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationFormatter.swift; sourceTree = "<group>"; };
+		AA13BB01CC03DD04EE1304 /* CitationFormatterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationFormatterTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -337,6 +342,7 @@
 				AA10BB01CC03DD04EE100022 /* OnboardingTests.swift */,
 				AA11BB01CC03DD04EE1122 /* BrowserViewTests.swift */,
 				AA12BB01CC03DD04EE1207 /* DocumentViewTests.swift */,
+				AA13BB01CC03DD04EE1304 /* CitationFormatterTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -374,6 +380,7 @@
 				AA10BB01CC03DD04EE100000 /* Onboarding */,
 				AA11BB01CC03DD04EE1100 /* Browser */,
 				AA12BB01CC03DD04EE1200 /* DocumentView */,
+				AA13BB01CC03DD04EE1300 /* Citation */,
 				AA06BB02CC03DD04EE060009 /* TEI */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
@@ -442,6 +449,14 @@
 				AA12BB01CC03DD04EE1204 /* DocumentView.swift */,
 			);
 			path = DocumentView;
+			sourceTree = "<group>";
+		};
+		AA13BB01CC03DD04EE1300 /* Citation */ = {
+			isa = PBXGroup;
+			children = (
+				AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */,
+			);
+			path = Citation;
 			sourceTree = "<group>";
 		};
 		E5B6F78728D4945C82785AB6 /* Tags */ = {
@@ -679,6 +694,7 @@
 				AA11BB01CC03DD04EE1120 /* CompilationView.swift in Sources */,
 				AA12BB01CC03DD04EE1202 /* DocumentViewModel.swift in Sources */,
 				AA12BB01CC03DD04EE1205 /* DocumentView.swift in Sources */,
+				AA13BB01CC03DD04EE1302 /* CitationFormatter.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
@@ -737,6 +753,7 @@
 				AA11BB01CC03DD04EE1121 /* CompilationView.swift in Sources */,
 				AA12BB01CC03DD04EE1203 /* DocumentViewModel.swift in Sources */,
 				AA12BB01CC03DD04EE1206 /* DocumentView.swift in Sources */,
+				AA13BB01CC03DD04EE1303 /* CitationFormatter.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -765,6 +782,7 @@
 				AA10BB01CC03DD04EE100023 /* OnboardingTests.swift in Sources */,
 				AA11BB01CC03DD04EE1123 /* BrowserViewTests.swift in Sources */,
 				AA12BB01CC03DD04EE1208 /* DocumentViewTests.swift in Sources */,
+				AA13BB01CC03DD04EE1305 /* CitationFormatterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

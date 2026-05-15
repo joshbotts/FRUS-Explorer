@@ -59,8 +59,12 @@ struct DocumentView: View {
 
     private func bootstrapViewModel() {
         guard vm == nil else { return }
+        let allVolumes = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        let volumeEntry = allVolumes.first { $0.volumeId == entry.volumeId }
         vm = DocumentViewModel(
             entry: entry,
+            volumeEntry: volumeEntry,
             parser: FRUSDocumentParser(),
             subjectTagStore: appState.subjectTagStore
         )
@@ -147,6 +151,11 @@ struct DocumentView: View {
         .sheet(item: $vm.selectedGloss) { gloss in
             GlossDetailSheet(gloss: gloss)
         }
+        .sheet(isPresented: $vm.showCitationSheet) {
+            if let citation = vm.formattedCitation {
+                CitationSheetView(citation: citation)
+            }
+        }
     }
 
     // MARK: - Toolbar
@@ -183,21 +192,25 @@ struct DocumentView: View {
             // Citation
             Menu {
                 Button {
-                    // Wired in Session 13
+                    vm.showCitationSheet = true
                 } label: {
                     Label(
                         String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
                         systemImage: "doc.text"
                     )
                 }
+                .disabled(vm.formattedCitation == nil)
                 Button {
-                    // Wired in Session 13
+                    if let citation = vm.formattedCitation {
+                        copyToPasteboard(citation)
+                    }
                 } label: {
                     Label(
                         String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
                         systemImage: "doc.on.clipboard"
                     )
                 }
+                .disabled(vm.formattedCitation == nil)
             } label: {
                 Label(
                     String(localized: "document.toolbar.citation", defaultValue: "Citation"),
@@ -220,6 +233,49 @@ struct DocumentView: View {
             .accessibilityLabel(
                 String(localized: "document.toolbar.crossRef.a11y", defaultValue: "Explore cross-references")
             )
+        }
+    }
+
+    // MARK: - Clipboard
+
+    private func copyToPasteboard(_ text: String) {
+        #if os(iOS)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
+    }
+}
+
+// MARK: - CitationSheetView
+
+private struct CitationSheetView: View {
+    let citation: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                Text(citation)
+                    .font(.body)
+                    .textSelection(.enabled)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .navigationTitle(
+                String(localized: "document.citation.title", defaultValue: "Citation")
+            )
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "document.sheet.done", defaultValue: "Done")) {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }
