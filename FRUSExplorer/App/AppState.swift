@@ -96,6 +96,12 @@ final class AppState {
     /// Loads and merges the volume manifest. Loaded from bundle at init; live data fetched at boot.
     var manifestStore: ManifestStore = ManifestStore()
 
+    // MARK: - Search Infrastructure
+
+    /// The shared indexing pipeline. Created at boot by `FRUSExplorerApp` alongside
+    /// `DownloadManager`; `nil` if the database could not be opened.
+    var indexingPipeline: IndexingPipeline?
+
     // MARK: - Network Monitor (private)
 
     /// Monitors network path changes and updates `isOnline`.

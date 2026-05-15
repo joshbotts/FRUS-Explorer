@@ -79,6 +79,21 @@ struct FRUSExplorerApp: App {
         guard appState.downloadManager == nil else { return }
 
         let volumesDir = Self.makeVolumesDirectory()
+        let dbURL = Self.makeDatabaseURL()
+
+        // Create search infrastructure. Failures are non-fatal: the browser and search
+        // views degrade gracefully when indexingPipeline is nil.
+        let fts5Store = try? FTS5Store(databaseURL: dbURL)
+        if let store = fts5Store,
+           let pipeline = try? IndexingPipeline(
+               fts5Store: store,
+               databaseURL: dbURL,
+               volumesDirectory: volumesDir,
+               subjectTagStore: appState.subjectTagStore
+           ) {
+            appState.indexingPipeline = pipeline
+        }
+
         let dm = DownloadManager(
             volumesDirectory: volumesDir,
             concurrencyLimit: UserDefaults.standard.integer(forKey: "downloadConcurrencyLimit").nonZeroOrDefault(4),
@@ -104,6 +119,15 @@ struct FRUSExplorerApp: App {
         let dir = base.appendingPathComponent("FRUSExplorer/Volumes", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
+    }
+
+    /// Returns (and creates if necessary) the SQLite database URL.
+    /// `{Application Support}/FRUSExplorer/frus.db`
+    private static func makeDatabaseURL() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appendingPathComponent("FRUSExplorer", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("frus.db")
     }
 }
 

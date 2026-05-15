@@ -142,6 +142,208 @@ public actor FRUSDocumentParser {
         #endif
         return delegate.entries
     }
+
+    // MARK: - Volume Structure
+
+    /// Parses the structural outline of a volume without extracting document content.
+    ///
+    /// Performs a lightweight pass over the TEI XML to build the `VolumeStructure` —
+    /// the hierarchy of compilations, chapters, appendices, front matter, and back matter,
+    /// together with the `xml:id` values of the `<div type="document">` elements in each
+    /// section. Used by the Browser view's Volume and Compilation/Chapter levels.
+    ///
+    /// - Parameter volumeURL: Path to the downloaded volume XML file.
+    /// - Returns: The `VolumeStructure` for the volume.
+    /// - Throws: `FRUSParserError` if the file cannot be read or the XML is malformed.
+    public func parseVolumeStructure(volumeURL: URL) async throws -> VolumeStructure {
+        guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
+            throw FRUSParserError.fileUnreadable(volumeURL)
+        }
+        let delegate = VolumeStructureParserDelegate()
+        xmlParser.delegate = delegate
+        xmlParser.parse()
+        if let err = delegate.fatalError { throw FRUSParserError.xmlError(err) }
+        let volumeId = volumeURL.deletingPathExtension().lastPathComponent
+        #if DEBUG
+        print("[TEIParser] Parsed volume structure for \(volumeId): \(delegate.topLevelSections.count) sections.")
+        #endif
+        return VolumeStructure(volumeId: volumeId, sections: delegate.topLevelSections)
+    }
+}
+
+// MARK: - Volume Structure Parser Delegate
+
+/// Stack-based `XMLParserDelegate` that extracts only the structural hierarchy of a
+/// FRUS TEI volume: compilations, chapters, appendices, front/back matter, and the
+/// `xml:id` values of the `<div type="document">` elements in each section.
+///
+/// Documents, their content, editorial notes, and teiHeader are intentionally skipped.
+private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
+
+    // MARK: Output
+
+    var topLevelSections: [VolumeSection] = []
+    var fatalError: Error? = nil
+
+    // MARK: Private State
+
+    /// Stack frames for currently open structural sections.
+    private struct Frame {
+        var sectionId: String
+        var divType: String
+        var headParts: [String] = []
+        var documentIds: [String] = []
+        var subsections: [VolumeSection] = []
+    }
+
+    private var stack: [Frame] = []
+
+    /// Tracks how deep we are inside a `<div type="document">` or `<teiHeader>` so
+    /// that nested `<div>` elements inside documents are ignored.
+    private var skipDepth: Int = 0
+
+    /// Whether we are capturing text for the innermost section's `<head>`.
+    private var capturingHead: Bool = false
+    private var headNestDepth: Int = 0
+    private var autoIdCounter: Int = 0
+
+    // Div types that form structural sections above the document level.
+    private static let structuralTypes: Set<String> = [
+        "compilation", "chapter", "subchapter", "appendix",
+        "preface", "intro", "introduction", "errata", "index",
+    ]
+
+    // MARK: - XMLParserDelegate
+
+    func parser(_ parser: XMLParser,
+                didStartElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?,
+                attributes attrs: [String: String] = [:]) {
+
+        // Inside a document or header — count depth and ignore structure.
+        if skipDepth > 0 {
+            skipDepth += 1
+            return
+        }
+
+        switch elementName {
+        case "teiHeader":
+            skipDepth = 1
+
+        case "front":
+            autoIdCounter += 1
+            stack.append(Frame(sectionId: "front-\(autoIdCounter)", divType: "front"))
+
+        case "back":
+            autoIdCounter += 1
+            stack.append(Frame(sectionId: "back-\(autoIdCounter)", divType: "back"))
+
+        case "div":
+            let divType = attrs["type"] ?? ""
+            let xmlId   = attrs["xml:id"] ?? attrs["id"] ?? ""
+
+            if divType == "document" || divType == "editorialNote" {
+                // Start skipping — we don't descend into document content.
+                skipDepth = 1
+                // Record the document id in the current structural frame, if any.
+                if divType == "document", !xmlId.isEmpty, var top = stack.last {
+                    top.documentIds.append(xmlId)
+                    stack[stack.count - 1] = top
+                }
+            } else if Self.structuralTypes.contains(divType) {
+                autoIdCounter += 1
+                let id = xmlId.isEmpty ? "\(divType)-\(autoIdCounter)" : xmlId
+                stack.append(Frame(sectionId: id, divType: divType))
+            }
+            // Unrecognised div types (type="persons", "terms", "toc", etc.) are ignored.
+
+        case "head":
+            // Capture head text only when inside a structural section frame.
+            if !stack.isEmpty && !capturingHead {
+                capturingHead = true
+                headNestDepth = 1
+            } else if capturingHead {
+                headNestDepth += 1
+            }
+
+        default:
+            if capturingHead { headNestDepth += 1 }
+        }
+    }
+
+    func parser(_ parser: XMLParser,
+                didEndElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?) {
+
+        if skipDepth > 0 {
+            skipDepth -= 1
+            return
+        }
+
+        switch elementName {
+        case "head":
+            if capturingHead {
+                headNestDepth -= 1
+                if headNestDepth == 0 { capturingHead = false }
+            }
+
+        case "front", "back":
+            popFrame()
+
+        case "div":
+            if !stack.isEmpty {
+                popFrame()
+            }
+
+        default:
+            if capturingHead, headNestDepth > 0 { headNestDepth -= 1 }
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        guard capturingHead, !stack.isEmpty else { return }
+        stack[stack.count - 1].headParts.append(string)
+    }
+
+    func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
+        fatalError = parseError
+    }
+
+    // MARK: - Helpers
+
+    private func popFrame() {
+        guard var frame = stack.popLast() else { return }
+        let rawTitle = frame.headParts.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = rawTitle.isEmpty ? humanTitle(for: frame.divType) : rawTitle
+        let section = VolumeSection(
+            sectionId: frame.sectionId,
+            divType: frame.divType,
+            title: title,
+            documentIds: frame.documentIds,
+            subsections: frame.subsections
+        )
+        if stack.isEmpty {
+            topLevelSections.append(section)
+        } else {
+            stack[stack.count - 1].subsections.append(section)
+        }
+    }
+
+    private func humanTitle(for divType: String) -> String {
+        switch divType {
+        case "front":        return "Front Matter"
+        case "back":         return "Back Matter"
+        case "compilation":  return "Compilation"
+        case "chapter":      return "Chapter"
+        case "appendix":     return "Appendix"
+        case "preface":      return "Preface"
+        case "intro", "introduction": return "Introduction"
+        case "errata":       return "Errata"
+        default:             return divType.capitalized
+        }
+    }
 }
 
 // MARK: - Parser Error

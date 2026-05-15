@@ -249,6 +249,56 @@ public actor IndexingPipeline {
                               summaryText: cached.summaryText, noteText: note.bodyText)
     }
 
+    // MARK: - Browser Query (used by BrowserViewModel)
+
+    /// Returns all documents for a volume in insertion order (source document order).
+    ///
+    /// Reads `document_cache` which is populated by `indexVolume`. Returns an empty
+    /// array if the volume has not been indexed.
+    ///
+    /// - Parameter volumeId: The volume to query.
+    /// - Returns: `DocumentBrowserEntry` values ordered by their rowid.
+    public func documents(forVolume volumeId: String) throws -> [DocumentBrowserEntry] {
+        let sql = """
+            SELECT document_id, document_number, header, dateline, source_note
+            FROM document_cache WHERE volume_id = ?
+            ORDER BY rowid
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+
+        var entries: [DocumentBrowserEntry] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            entries.append(DocumentBrowserEntry(
+                documentId:     auxColumnString(stmt, 0) ?? "",
+                volumeId:       volumeId,
+                documentNumber: auxColumnString(stmt, 1),
+                header:         auxColumnString(stmt, 2) ?? "",
+                dateline:       auxColumnString(stmt, 3),
+                sourceNote:     auxColumnString(stmt, 4)
+            ))
+        }
+        return entries
+    }
+
+    /// Returns `true` if `document_cache` has at least one row for the given volume.
+    ///
+    /// Used by `BrowserViewModel` to distinguish indexed from unindexed volumes.
+    /// nonisolated: accesses `auxDb` (nonisolated(unsafe)) directly — safe as a read-only query.
+    public nonisolated func isVolumeIndexed(_ volumeId: String) throws -> Bool {
+        let sql = "SELECT 1 FROM document_cache WHERE volume_id = ? LIMIT 1"
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        sqlite3_bind_text(s, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        return sqlite3_step(s) == SQLITE_ROW
+    }
+
     // MARK: - Date Range Query (used by SearchService)
 
     /// Returns a set of `"volumeId/documentId"` composite keys for documents whose

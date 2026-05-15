@@ -118,6 +118,21 @@
 		AA10BB01CC03DD04EE100020 /* OnboardingPromptSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */; };
 		AA10BB01CC03DD04EE100021 /* OnboardingPromptSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */; };
 		AA10BB01CC03DD04EE100023 /* OnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100022 /* OnboardingTests.swift */; };
+		AA11BB01CC03DD04EE1102 /* VolumeStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1101 /* VolumeStructure.swift */; };
+		AA11BB01CC03DD04EE1103 /* VolumeStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1101 /* VolumeStructure.swift */; };
+		AA11BB01CC03DD04EE1105 /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1104 /* BrowserViewModel.swift */; };
+		AA11BB01CC03DD04EE1106 /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1104 /* BrowserViewModel.swift */; };
+		AA11BB01CC03DD04EE1108 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1107 /* BrowserView.swift */; };
+		AA11BB01CC03DD04EE1109 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1107 /* BrowserView.swift */; };
+		AA11BB01CC03DD04EE1111 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1110 /* CorpusView.swift */; };
+		AA11BB01CC03DD04EE1112 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1110 /* CorpusView.swift */; };
+		AA11BB01CC03DD04EE1114 /* SubseriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1113 /* SubseriesView.swift */; };
+		AA11BB01CC03DD04EE1115 /* SubseriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1113 /* SubseriesView.swift */; };
+		AA11BB01CC03DD04EE1117 /* VolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1116 /* VolumeView.swift */; };
+		AA11BB01CC03DD04EE1118 /* VolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1116 /* VolumeView.swift */; };
+		AA11BB01CC03DD04EE1120 /* CompilationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1119 /* CompilationView.swift */; };
+		AA11BB01CC03DD04EE1121 /* CompilationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1119 /* CompilationView.swift */; };
+		AA11BB01CC03DD04EE1123 /* BrowserViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1122 /* BrowserViewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -206,6 +221,14 @@
 		AA10BB01CC03DD04EE100016 /* OnboardingProjectSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingProjectSetupView.swift; sourceTree = "<group>"; };
 		AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingPromptSetupView.swift; sourceTree = "<group>"; };
 		AA10BB01CC03DD04EE100022 /* OnboardingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingTests.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1101 /* VolumeStructure.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VolumeStructure.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1104 /* BrowserViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserViewModel.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1107 /* BrowserView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1110 /* CorpusView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CorpusView.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1113 /* SubseriesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubseriesView.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1116 /* VolumeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VolumeView.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1119 /* CompilationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompilationView.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1122 /* BrowserViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserViewTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -304,6 +327,7 @@
 				AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */,
 				AA09BB02CC03DD04EE090011 /* IndexingPipelineTests.swift */,
 				AA10BB01CC03DD04EE100022 /* OnboardingTests.swift */,
+				AA11BB01CC03DD04EE1122 /* BrowserViewTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -339,6 +363,7 @@
 				AA09BB02CC03DD04EE09F000 /* FTS5Store */,
 				AA09BB02CC03DD04EE090012 /* Search */,
 				AA10BB01CC03DD04EE100000 /* Onboarding */,
+				AA11BB01CC03DD04EE1100 /* Browser */,
 				AA06BB02CC03DD04EE060009 /* TEI */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
@@ -384,6 +409,20 @@
 				AA10BB01CC03DD04EE100019 /* OnboardingPromptSetupView.swift */,
 			);
 			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		AA11BB01CC03DD04EE1100 /* Browser */ = {
+			isa = PBXGroup;
+			children = (
+				AA11BB01CC03DD04EE1101 /* VolumeStructure.swift */,
+				AA11BB01CC03DD04EE1104 /* BrowserViewModel.swift */,
+				AA11BB01CC03DD04EE1107 /* BrowserView.swift */,
+				AA11BB01CC03DD04EE1110 /* CorpusView.swift */,
+				AA11BB01CC03DD04EE1113 /* SubseriesView.swift */,
+				AA11BB01CC03DD04EE1116 /* VolumeView.swift */,
+				AA11BB01CC03DD04EE1119 /* CompilationView.swift */,
+			);
+			path = Browser;
 			sourceTree = "<group>";
 		};
 		E5B6F78728D4945C82785AB6 /* Tags */ = {
@@ -612,6 +651,13 @@
 				AA10BB01CC03DD04EE100014 /* OnboardingDownloadView.swift in Sources */,
 				AA10BB01CC03DD04EE100017 /* OnboardingProjectSetupView.swift in Sources */,
 				AA10BB01CC03DD04EE100020 /* OnboardingPromptSetupView.swift in Sources */,
+				AA11BB01CC03DD04EE1102 /* VolumeStructure.swift in Sources */,
+				AA11BB01CC03DD04EE1105 /* BrowserViewModel.swift in Sources */,
+				AA11BB01CC03DD04EE1108 /* BrowserView.swift in Sources */,
+				AA11BB01CC03DD04EE1111 /* CorpusView.swift in Sources */,
+				AA11BB01CC03DD04EE1114 /* SubseriesView.swift in Sources */,
+				AA11BB01CC03DD04EE1117 /* VolumeView.swift in Sources */,
+				AA11BB01CC03DD04EE1120 /* CompilationView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
@@ -661,6 +707,13 @@
 				AA10BB01CC03DD04EE100015 /* OnboardingDownloadView.swift in Sources */,
 				AA10BB01CC03DD04EE100018 /* OnboardingProjectSetupView.swift in Sources */,
 				AA10BB01CC03DD04EE100021 /* OnboardingPromptSetupView.swift in Sources */,
+				AA11BB01CC03DD04EE1103 /* VolumeStructure.swift in Sources */,
+				AA11BB01CC03DD04EE1106 /* BrowserViewModel.swift in Sources */,
+				AA11BB01CC03DD04EE1109 /* BrowserView.swift in Sources */,
+				AA11BB01CC03DD04EE1112 /* CorpusView.swift in Sources */,
+				AA11BB01CC03DD04EE1115 /* SubseriesView.swift in Sources */,
+				AA11BB01CC03DD04EE1118 /* VolumeView.swift in Sources */,
+				AA11BB01CC03DD04EE1121 /* CompilationView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -687,6 +740,7 @@
 				AA08BB02CC03DD04EE080004 /* SubjectTagStoreTests.swift in Sources */,
 				AA09BB02CC03DD04EE090010 /* IndexingPipelineTests.swift in Sources */,
 				AA10BB01CC03DD04EE100023 /* OnboardingTests.swift in Sources */,
+				AA11BB01CC03DD04EE1123 /* BrowserViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

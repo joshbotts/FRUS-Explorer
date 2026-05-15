@@ -109,6 +109,39 @@ paths:
         "404":
           description: Volume not found
 
+  /volumes/{volumeId}/documents:
+    get:
+      summary: List document metadata for a volume
+      description: |
+        Returns lightweight metadata for every document in a volume, in source order.
+        In the current implementation this is served entirely from the local SQLite
+        `document_cache` table populated by `IndexingPipeline`. The volume must be
+        indexed before this endpoint is meaningful; an unindexed volume returns an
+        empty array.
+
+        Added in Session 11 (Browser View — Compilation/Chapter level).
+      operationId: listDocuments
+      tags:
+        - Documents
+      parameters:
+        - name: volumeId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Volume identifier, e.g. `frus1969-76v01`
+      responses:
+        "200":
+          description: Ordered list of document metadata entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentBrowserEntry"
+        "404":
+          description: Volume not found
+
   /volumes/{volumeId}/documents/{documentId}:
     get:
       summary: Retrieve a single FRUS document
@@ -388,6 +421,41 @@ components:
             - kissinger-henry-a
             - iran
             - arms-control-and-disarmament
+
+    DocumentBrowserEntry:
+      type: object
+      description: |
+        Lightweight metadata for a single FRUS document, used by the Browser's
+        Compilation/Chapter level. Sourced from the `document_cache` SQLite table
+        populated by `IndexingPipeline`. Does not include document body content.
+
+        Added in Session 11 (Browser View — Compilation/Chapter level).
+      required:
+        - documentId
+        - volumeId
+        - header
+      properties:
+        documentId:
+          type: string
+          description: The `xml:id` value of the `<div type="document">` element, e.g. `d1`
+        volumeId:
+          type: string
+          description: Volume this document belongs to, e.g. `frus1969-76v01`
+        documentNumber:
+          type: string
+          nullable: true
+          description: Printed document number extracted from the `<head>`, if present, e.g. `"42"`
+        header:
+          type: string
+          description: Document heading or title line
+        dateline:
+          type: string
+          nullable: true
+          description: Dateline string, if present
+        sourceNote:
+          type: string
+          nullable: true
+          description: Archival provenance note, if present
 
     DocumentRenderModel:
       type: object

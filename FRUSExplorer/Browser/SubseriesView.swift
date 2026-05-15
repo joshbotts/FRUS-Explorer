@@ -1,0 +1,318 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import SwiftUI
+
+// MARK: - SubseriesView
+
+/// Browser level showing all volumes in a single subseries with optional tag filtering.
+///
+/// A tag filter bar allows the user to narrow the volume list by volume-level tag,
+/// using AND logic. Tag chips in the VolumeView can push a filter here via
+/// `BrowserViewModel.activateTagFilter(slug:forSubseries:)`.
+///
+/// Version history:
+///   1.0 — Session 11: initial implementation
+struct SubseriesView: View {
+
+    let vm: BrowserViewModel
+    let group: SubseriesGroup
+
+    var body: some View {
+        List {
+            // Subseries statistics
+            Section {
+                SubseriesStatsView(group: group)
+            }
+
+            // Tag filter bar
+            Section(header: Text(String(localized: "browser.subseries.filter.header",
+                                        defaultValue: "Filter by Tag"))) {
+                SubseriesTagFilterBar(vm: vm, subseries: group.subseries)
+            }
+
+            // Volume list
+            let volumes = vm.filteredVolumes(for: group.subseries)
+            Section(header: Text(
+                volumes.isEmpty
+                    ? String(localized: "browser.subseries.noResults", defaultValue: "No Matching Volumes")
+                    : "Volumes (\(volumes.count))"
+            )) {
+                if volumes.isEmpty {
+                    Text(String(localized: "browser.subseries.emptyState",
+                                defaultValue: "No volumes match the selected tags."))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(volumes) { volume in
+                        Button {
+                            vm.navigationPath.append(.volume(volume))
+                            #if DEBUG
+                            print("[BrowserView] Navigate → volume \(volume.volumeId)")
+                            #endif
+                        } label: {
+                            VolumeRowLabel(volume: volume, isDownloaded: vm.isDownloaded(volume.volumeId))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(group.subseries)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.large)
+        #endif
+    }
+}
+
+// MARK: - SubseriesStatsView
+
+private struct SubseriesStatsView: View {
+    let group: SubseriesGroup
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 20) {
+                StatPill(
+                    value: "\(group.publishedCount)",
+                    label: String(localized: "browser.subseries.published", defaultValue: "Published")
+                )
+                if group.partiallyPublishedCount > 0 {
+                    StatPill(
+                        value: "\(group.partiallyPublishedCount)",
+                        label: String(localized: "browser.subseries.partial", defaultValue: "Partial")
+                    )
+                }
+                if group.plannedCount > 0 {
+                    StatPill(
+                        value: "\(group.plannedCount)",
+                        label: String(localized: "browser.subseries.planned", defaultValue: "Planned")
+                    )
+                }
+            }
+            if let e = group.earliestDate, let l = group.latestDate {
+                Text("Documents: \(e.prefix(4)) – \(l.prefix(4))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct StatPill: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value).font(.headline)
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+        }
+    }
+}
+
+// MARK: - SubseriesTagFilterBar
+
+/// Inline tag picker with selected-tag chips for subseries-level filtering.
+struct SubseriesTagFilterBar: View {
+
+    let vm: BrowserViewModel
+    let subseries: String
+    @State private var showingPicker = false
+
+    private var activeFilter: Set<String> { vm.tagFilters[subseries] ?? [] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Active filter chips
+            if !activeFilter.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(Array(activeFilter).sorted(), id: \.self) { slug in
+                            let name = vm.tagStore.resolve(slug: slug)?.displayName ?? slug
+                            HStack(spacing: 4) {
+                                Text(name)
+                                    .font(.caption)
+                                    .padding(.leading, 8)
+                                Button {
+                                    vm.removeTagFilter(slug: slug, forSubseries: subseries)
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.caption2)
+                                }
+                                .buttonStyle(.borderless)
+                                .padding(.trailing, 6)
+                                .accessibilityLabel("Remove \(name) filter")
+                            }
+                            .padding(.vertical, 5)
+                            .background(Color.accentColor.opacity(0.15))
+                            .clipShape(Capsule())
+                        }
+                        Button {
+                            vm.clearTagFilters(forSubseries: subseries)
+                        } label: {
+                            Text(String(localized: "browser.filter.clearAll", defaultValue: "Clear All"))
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            // "Add filter" button
+            Button {
+                showingPicker = true
+            } label: {
+                Label(
+                    String(localized: "browser.filter.addTag", defaultValue: "Add Tag Filter"),
+                    systemImage: "tag"
+                )
+                .font(.callout)
+            }
+            .buttonStyle(.borderless)
+        }
+        .sheet(isPresented: $showingPicker) {
+            TagPickerSheet(vm: vm, subseries: subseries, isPresented: $showingPicker)
+        }
+    }
+}
+
+// MARK: - TagPickerSheet
+
+private struct TagPickerSheet: View {
+    let vm: BrowserViewModel
+    let subseries: String
+    @Binding var isPresented: Bool
+    @State private var searchText: String = ""
+
+    private var filteredEntries: [TagTaxonomyEntry] {
+        let all = vm.tagStore.allEntries
+        guard !searchText.isEmpty else { return all }
+        return all.filter { $0.displayName.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(TagCategory.allCases, id: \.self) { category in
+                    let entries = filteredEntries.filter { $0.category == category.rawValue }
+                    if !entries.isEmpty {
+                        Section(header: Text(category.displayName)) {
+                            ForEach(entries, id: \.slug) { entry in
+                                TagPickerRow(vm: vm, subseries: subseries, entry: entry)
+                            }
+                        }
+                    }
+                }
+            }
+            .searchable(text: $searchText,
+                        prompt: String(localized: "browser.filter.search",
+                                       defaultValue: "Search tags"))
+            .navigationTitle(String(localized: "browser.filter.title", defaultValue: "Filter by Tag"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "browser.filter.done", defaultValue: "Done")) {
+                        isPresented = false
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - VolumeRowLabel
+
+struct VolumeRowLabel: View {
+    let volume: VolumeManifestEntry
+    let isDownloaded: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(volume.title)
+                    .font(.body)
+                    .lineLimit(2)
+                Spacer()
+                if isDownloaded {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                        .accessibilityLabel(
+                            String(localized: "browser.volume.downloaded.a11y",
+                                   defaultValue: "Downloaded")
+                        )
+                }
+            }
+            HStack(spacing: 8) {
+                if let pub = volume.publicationDate {
+                    Text(pub).foregroundStyle(.secondary)
+                }
+                if volume.documentCount > 0 {
+                    Text("\(volume.documentCount) docs")
+                        .foregroundStyle(.secondary)
+                }
+                if volume.status == .partiallyPublished {
+                    Text(String(localized: "browser.volume.partial", defaultValue: "Partial"))
+                        .foregroundStyle(.orange)
+                }
+                if volume.status == .planned {
+                    Text(String(localized: "browser.volume.planned", defaultValue: "Planned"))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.caption)
+        }
+        .padding(.vertical, 3)
+    }
+}
+
+// MARK: - TagPickerRow
+
+private struct TagPickerRow: View {
+    let vm: BrowserViewModel
+    let subseries: String
+    let entry: TagTaxonomyEntry
+
+    var body: some View {
+        let isActive = vm.tagFilters[subseries]?.contains(entry.slug) ?? false
+        Button {
+            if isActive {
+                vm.removeTagFilter(slug: entry.slug, forSubseries: subseries)
+            } else {
+                vm.activateTagFilter(slug: entry.slug, forSubseries: subseries)
+            }
+        } label: {
+            HStack {
+                Text(entry.displayName)
+                Spacer()
+                if isActive {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - TagCategory display name
+
+private extension TagCategory {
+    var displayName: String {
+        switch self {
+        case .people: return String(localized: "browser.tag.category.people", defaultValue: "People")
+        case .places: return String(localized: "browser.tag.category.places", defaultValue: "Places")
+        case .topics: return String(localized: "browser.tag.category.topics", defaultValue: "Topics")
+        }
+    }
+}

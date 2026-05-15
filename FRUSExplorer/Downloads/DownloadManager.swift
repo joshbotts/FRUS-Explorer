@@ -128,12 +128,12 @@ public actor DownloadManager {
     }
 
     /// Returns `true` if the volume XML file exists on disk.
-    public func isVolumeDownloaded(_ volumeId: String) -> Bool {
+    public nonisolated func isVolumeDownloaded(_ volumeId: String) -> Bool {
         FileManager.default.fileExists(atPath: volumeURL(for: volumeId).path)
     }
 
     /// The on-disk URL for the volume, regardless of whether the file exists.
-    public func volumeURL(for volumeId: String) -> URL {
+    public nonisolated func volumeURL(for volumeId: String) -> URL {
         volumesDirectory.appendingPathComponent("\(volumeId).xml")
     }
 

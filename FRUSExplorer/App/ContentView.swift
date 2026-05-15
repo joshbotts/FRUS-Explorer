@@ -10,24 +10,21 @@ import SwiftUI
 
 /// Root routing view for FRUS Explorer.
 ///
-/// Routes to `OnboardingView` when no volumes have been downloaded, or to the
-/// placeholder main app view when at least one .xml file exists in the volumes
-/// directory. Session 11 will replace the placeholder with the real browser.
-///
+/// Routes to `OnboardingView` when no volumes have been downloaded, or to
+/// `BrowserView` when at least one .xml file exists in the volumes directory.
 /// The routing trigger is purely filesystem-based — no persistent flag is stored.
 ///
 /// Version history:
 ///   1.0 — Session 01: initial placeholder implementation
 ///   1.1 — Session 10: replaced with onboarding / main-app routing
+///   1.2 — Session 11: replaced placeholder with BrowserView
 struct ContentView: View {
 
     @Environment(AppState.self) private var appState
 
     var body: some View {
         if OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory) {
-            Text(String(localized: "placeholder.main", defaultValue: "Main App — Session 11"))
-                .font(.title)
-                .foregroundStyle(.secondary)
+            BrowserView()
         } else {
             OnboardingView()
         }
