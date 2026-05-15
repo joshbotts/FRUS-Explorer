@@ -205,25 +205,36 @@ struct BrowserView: View {
 
     // MARK: - Level Router
 
+    /// Routes a `BrowserLevel` to its corresponding view and injects the breadcrumb bar.
+    ///
+    /// `Group` is used instead of `AnyView` so that SwiftUI can look through the wrapper
+    /// and determine the concrete view type for each case. This preserves `@State` identity
+    /// across re-renders of `BrowserView.body` — critical for `DocumentView`, whose
+    /// `@State var vm: DocumentViewModel?` must survive parent re-renders without resetting.
+    ///
+    /// Using `AnyView` here erases structural identity. When `BrowserView.body` re-renders
+    /// (triggered by any change to `vm.navigationPath`), SwiftUI cannot diff through `AnyView`
+    /// and recreates the wrapped view, resetting `@State` and restarting document loading.
     @ViewBuilder
     private func levelView(for level: BrowserViewModel.BrowserLevel, vm: BrowserViewModel) -> some View {
-        let content: AnyView = switch level {
-        case .corpus:            AnyView(CorpusView(vm: vm))
-        case .subseries(let g):  AnyView(SubseriesView(vm: vm, group: g))
-        case .volume(let e):     AnyView(VolumeView(vm: vm, volume: e))
-        case .compilation(let vid, let s): AnyView(CompilationView(vm: vm, volumeId: vid, section: s))
-        case .document(let e):   AnyView(DocumentView(entry: e))
+        Group {
+            switch level {
+            case .corpus:            CorpusView(vm: vm)
+            case .subseries(let g):  SubseriesView(vm: vm, group: g)
+            case .volume(let e):     VolumeView(vm: vm, volume: e)
+            case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
+            case .document(let e):   DocumentView(entry: e)
+            }
         }
-        content
-            .safeAreaInset(edge: .top, spacing: 0) {
-                BrowserBreadcrumbBar(path: vm.navigationPath) { index in
-                    if let index {
-                        vm.navigationPath = Array(vm.navigationPath.prefix(index + 1))
-                    } else {
-                        vm.navigationPath = []
-                    }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            BrowserBreadcrumbBar(path: vm.navigationPath) { index in
+                if let index {
+                    vm.navigationPath = Array(vm.navigationPath.prefix(index + 1))
+                } else {
+                    vm.navigationPath = []
                 }
             }
+        }
     }
 
     // MARK: - Bootstrap
