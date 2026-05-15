@@ -142,6 +142,15 @@
 		AA13BB01CC03DD04EE1303 /* CitationFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */; };
 		AA13BB01CC03DD04EE1305 /* CitationFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA13BB01CC03DD04EE1304 /* CitationFormatterTests.swift */; };
 		AA14BB01CC03DD04EE1402 /* ResearchNoteEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB01CC03DD04EE1401 /* ResearchNoteEditorViewModel.swift */; };
+		AA15BB01CC03DD04EE1502 /* ProjectContextViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1501 /* ProjectContextViewModel.swift */; };
+		AA15BB01CC03DD04EE1503 /* ProjectContextViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1501 /* ProjectContextViewModel.swift */; };
+		AA15BB01CC03DD04EE1505 /* ProjectPickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1504 /* ProjectPickerMenu.swift */; };
+		AA15BB01CC03DD04EE1506 /* ProjectPickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1504 /* ProjectPickerMenu.swift */; };
+		AA15BB01CC03DD04EE1508 /* ProjectEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1507 /* ProjectEditorView.swift */; };
+		AA15BB01CC03DD04EE1509 /* ProjectEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1507 /* ProjectEditorView.swift */; };
+		AA15BB01CC03DD04EE1511 /* ProjectContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1510 /* ProjectContextView.swift */; };
+		AA15BB01CC03DD04EE1512 /* ProjectContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1510 /* ProjectContextView.swift */; };
+		AA15BB01CC03DD04EE1514 /* ProjectContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA15BB01CC03DD04EE1513 /* ProjectContextTests.swift */; };
 		AA14BB01CC03DD04EE1403 /* ResearchNoteEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB01CC03DD04EE1401 /* ResearchNoteEditorViewModel.swift */; };
 		AA14BB01CC03DD04EE1405 /* ResearchNoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB01CC03DD04EE1404 /* ResearchNoteEditorView.swift */; };
 		AA14BB01CC03DD04EE1406 /* ResearchNoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB01CC03DD04EE1404 /* ResearchNoteEditorView.swift */; };
@@ -248,6 +257,11 @@
 		AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationFormatter.swift; sourceTree = "<group>"; };
 		AA13BB01CC03DD04EE1304 /* CitationFormatterTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationFormatterTests.swift; sourceTree = "<group>"; };
 		AA14BB01CC03DD04EE1401 /* ResearchNoteEditorViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorViewModel.swift; sourceTree = "<group>"; };
+		AA15BB01CC03DD04EE1501 /* ProjectContextViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProjectContextViewModel.swift; sourceTree = "<group>"; };
+		AA15BB01CC03DD04EE1504 /* ProjectPickerMenu.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProjectPickerMenu.swift; sourceTree = "<group>"; };
+		AA15BB01CC03DD04EE1507 /* ProjectEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProjectEditorView.swift; sourceTree = "<group>"; };
+		AA15BB01CC03DD04EE1510 /* ProjectContextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProjectContextView.swift; sourceTree = "<group>"; };
+		AA15BB01CC03DD04EE1513 /* ProjectContextTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProjectContextTests.swift; sourceTree = "<group>"; };
 		AA14BB01CC03DD04EE1404 /* ResearchNoteEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorView.swift; sourceTree = "<group>"; };
 		AA14BB01CC03DD04EE1407 /* ResearchNoteEditorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -352,6 +366,7 @@
 				AA12BB01CC03DD04EE1207 /* DocumentViewTests.swift */,
 				AA13BB01CC03DD04EE1304 /* CitationFormatterTests.swift */,
 				AA14BB01CC03DD04EE1407 /* ResearchNoteEditorTests.swift */,
+				AA15BB01CC03DD04EE1513 /* ProjectContextTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -391,6 +406,7 @@
 				AA12BB01CC03DD04EE1200 /* DocumentView */,
 				AA13BB01CC03DD04EE1300 /* Citation */,
 				AA14BB01CC03DD04EE1400 /* ResearchNoteEditor */,
+				AA15BB01CC03DD04EE1500 /* ProjectContext */,
 				AA06BB02CC03DD04EE060009 /* TEI */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
@@ -476,6 +492,17 @@
 				AA14BB01CC03DD04EE1404 /* ResearchNoteEditorView.swift */,
 			);
 			path = ResearchNoteEditor;
+			sourceTree = "<group>";
+		};
+		AA15BB01CC03DD04EE1500 /* ProjectContext */ = {
+			isa = PBXGroup;
+			children = (
+				AA15BB01CC03DD04EE1501 /* ProjectContextViewModel.swift */,
+				AA15BB01CC03DD04EE1504 /* ProjectPickerMenu.swift */,
+				AA15BB01CC03DD04EE1507 /* ProjectEditorView.swift */,
+				AA15BB01CC03DD04EE1510 /* ProjectContextView.swift */,
+			);
+			path = ProjectContext;
 			sourceTree = "<group>";
 		};
 		E5B6F78728D4945C82785AB6 /* Tags */ = {
@@ -716,6 +743,10 @@
 				AA13BB01CC03DD04EE1302 /* CitationFormatter.swift in Sources */,
 				AA14BB01CC03DD04EE1402 /* ResearchNoteEditorViewModel.swift in Sources */,
 				AA14BB01CC03DD04EE1405 /* ResearchNoteEditorView.swift in Sources */,
+				AA15BB01CC03DD04EE1502 /* ProjectContextViewModel.swift in Sources */,
+				AA15BB01CC03DD04EE1505 /* ProjectPickerMenu.swift in Sources */,
+				AA15BB01CC03DD04EE1508 /* ProjectEditorView.swift in Sources */,
+				AA15BB01CC03DD04EE1511 /* ProjectContextView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
@@ -777,6 +808,10 @@
 				AA13BB01CC03DD04EE1303 /* CitationFormatter.swift in Sources */,
 				AA14BB01CC03DD04EE1403 /* ResearchNoteEditorViewModel.swift in Sources */,
 				AA14BB01CC03DD04EE1406 /* ResearchNoteEditorView.swift in Sources */,
+				AA15BB01CC03DD04EE1503 /* ProjectContextViewModel.swift in Sources */,
+				AA15BB01CC03DD04EE1506 /* ProjectPickerMenu.swift in Sources */,
+				AA15BB01CC03DD04EE1509 /* ProjectEditorView.swift in Sources */,
+				AA15BB01CC03DD04EE1512 /* ProjectContextView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -807,6 +842,7 @@
 				AA12BB01CC03DD04EE1208 /* DocumentViewTests.swift in Sources */,
 				AA13BB01CC03DD04EE1305 /* CitationFormatterTests.swift in Sources */,
 				AA14BB01CC03DD04EE1408 /* ResearchNoteEditorTests.swift in Sources */,
+				AA15BB01CC03DD04EE1514 /* ProjectContextTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

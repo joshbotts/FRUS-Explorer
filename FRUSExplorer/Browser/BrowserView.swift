@@ -24,6 +24,7 @@ struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
     @State private var viewModel: BrowserViewModel?
+    @State private var showProjectContext = false
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -46,6 +47,9 @@ struct BrowserView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .sheet(isPresented: $showProjectContext) {
+            ProjectContextView()
+        }
         .onAppear { bootstrapViewModel() }
     }
 
@@ -56,6 +60,11 @@ struct BrowserView: View {
         NavigationSplitView {
             SubseriesListView(vm: vm)
                 .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        ProjectPickerMenu { showProjectContext = true }
+                    }
+                }
         } detail: {
             if let last = vm.navigationPath.last {
                 levelView(for: last, vm: vm)
@@ -75,6 +84,11 @@ struct BrowserView: View {
                 .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
                 .navigationDestination(for: BrowserViewModel.BrowserLevel.self) { level in
                     levelView(for: level, vm: vm)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        ProjectPickerMenu { showProjectContext = true }
+                    }
                 }
         }
     }
