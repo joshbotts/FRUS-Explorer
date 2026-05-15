@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+    FRUS Explorer — Direct Distribution Entitlements (macOS only)
+    Used by: macOS target (DirectDistribution config)
+
+    Differs from AppStore entitlements only in signing context (Developer ID vs App Store).
+    The sandbox posture is identical to the App Store configuration by design.
+    Direct distribution build also links Sparkle (configured in target build settings).
+
+    See FRUSExplorer-AppStore.entitlements for notes on entitlement key accuracy.
+-->
+<dict>
+    <!-- Sandbox: maintained identical to App Store build -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- Outbound network: GitHub API, NARA Catalog API, Sparkle update feed -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- iCloud container for CloudKit (SwiftData sync) -->
+    <key>com.apple.developer.icloud-containers</key>
+    <array>
+        <string>iCloud.bottsywattsy.FRUS-Explorer</string>
+    </array>
+
+    <!-- iCloud KV store -->
+    <key>com.apple.developer.ubiquity-kvstore-identifier</key>
+    <string>$(TeamIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
+
+    <!-- iCloud Keychain sharing: NARA API key synced across user's devices -->
+    <key>com.apple.developer.icloud-keychain-sharing</key>
+    <array>
+        <string>bottsywattsy.FRUS-Explorer.shared</string>
+    </array>
+
+    <!-- CloudKit capability marker; corrected to icloud-services in Session 04 -->
+    <key>com.apple.developer.cloudkit</key>
+    <true/>
+</dict>
+</plist>

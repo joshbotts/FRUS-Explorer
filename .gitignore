@@ -1,0 +1,31 @@
+# Xcode
+*.xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+DerivedData/
+*.moved-aside
+xcuserdata/
+
+# SPM
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Archives and distributions
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.dmg
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Notarization
+notarization-*.json

@@ -1,0 +1,17 @@
+/* FRUS Explorer — English (Base) Localisation
+ *
+ * All user-facing string literals in view code MUST use String(localized:) and have
+ * a corresponding entry in this file. No hardcoded string literals in UI code.
+ *
+ * Format:
+ *   "key" = "English value";
+ *
+ * Keys use dot-separated namespacing: <feature>.<component>.<role>
+ * Example: "browser.volume.downloadButton" = "Download";
+ *
+ * Entries are added by each development session as new UI is introduced.
+ */
+
+/* Placeholder — ContentView (Session 01 stub; replaced in Session 10) */
+"app.placeholder.title" = "FRUS Explorer";
+"app.placeholder.subtitle" = "Setup in progress";

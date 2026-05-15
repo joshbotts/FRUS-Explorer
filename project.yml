@@ -1,0 +1,148 @@
+# XcodeGen project specification for FRUS Explorer.
+# Run `xcodegen generate` from the project root to regenerate FRUSExplorer.xcodeproj.
+# This file is the authoritative source for project structure; edit it rather than
+# modifying the .xcodeproj directly.
+
+name: FRUSExplorer
+
+options:
+  bundleIdPrefix: bottsywattsy
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: false
+  defaultConfig: Debug
+  xcodeVersion: "16.0"   # XcodeGen xcodeVersion; actual SDK is Xcode 26
+
+# Three build configurations:
+#   Debug              — development builds on all platforms
+#   AppStore           — App Store release (iOS/iPadOS + macOS)
+#   DirectDistribution — Developer ID release (macOS only; includes Sparkle)
+configs:
+  Debug: debug
+  AppStore: release
+  DirectDistribution: release
+
+packages:
+  # Sparkle: automatic update delivery for the Direct Distribution macOS build.
+  # Linked only to FRUSExplorerMac target. iOS target does not link Sparkle.
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    minorVersion: "2.0.0"
+
+# ---------------------------------------------------------------------------
+# Global build settings inherited by all targets
+# ---------------------------------------------------------------------------
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+
+# ---------------------------------------------------------------------------
+# Targets
+# ---------------------------------------------------------------------------
+targets:
+
+  # -------------------------------------------------------------------------
+  # iOS / iPadOS Application
+  # Supports iPhone (1) and iPad (2) via TARGETED_DEVICE_FAMILY.
+  # App Store distribution only; single AppStore entitlement file.
+  # -------------------------------------------------------------------------
+  FRUSExplorer:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    bundleId: bottsywattsy.FRUS-Explorer
+    sources:
+      - path: FRUSExplorer
+    settings:
+      base:
+        PRODUCT_NAME: "FRUS Explorer"
+        PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "FRUS Explorer"
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
+
+  # -------------------------------------------------------------------------
+  # macOS Application
+  # Two release configs: AppStore and DirectDistribution.
+  # DirectDistribution links Sparkle and uses the Developer ID entitlement file.
+  # -------------------------------------------------------------------------
+  FRUSExplorerMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "26.0"
+    bundleId: bottsywattsy.FRUS-Explorer
+    sources:
+      - path: FRUSExplorer
+    dependencies:
+      # Sparkle is always present as a package dependency; actual linkage is
+      # governed by EXCLUDED_SOURCE_FILE_NAMES / OTHER_LDFLAGS in non-DirectDistribution
+      # configs. For now it is linked in all macOS configurations. In a future session,
+      # conditional linking can be refined if needed.
+      - package: Sparkle
+        product: Sparkle
+    settings:
+      base:
+        PRODUCT_NAME: "FRUS Explorer"
+        PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "FRUS Explorer"
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.reference"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
+        AppStore:
+          CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
+          CODE_SIGN_STYLE: Automatic
+        DirectDistribution:
+          CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-DirectDistribution.entitlements"
+          # Developer ID signing requires manual profile selection.
+          # Set CODE_SIGN_IDENTITY and PROVISIONING_PROFILE_SPECIFIER when
+          # preparing the DirectDistribution release build (Session 29).
+          CODE_SIGN_STYLE: Automatic
+
+  # -------------------------------------------------------------------------
+  # Unit Tests
+  # Runs on iOS simulator. Tests are platform-agnostic Swift and cover
+  # AppState behaviour and entitlement file content.
+  # Entitlement files are included as resources so tests can parse them.
+  # -------------------------------------------------------------------------
+  FRUSExplorerTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "26.0"
+    bundleId: bottsywattsy.FRUS-Explorer.tests
+    sources:
+      - path: FRUSExplorerTests
+    resources:
+      - path: FRUSExplorer/FRUSExplorer-AppStore.entitlements
+      - path: FRUSExplorer/FRUSExplorer-DirectDistribution.entitlements
+    dependencies:
+      - target: FRUSExplorer
+    settings:
+      base:
+        PRODUCT_NAME: FRUSExplorerTests
+        PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer.tests"
+
+  # -------------------------------------------------------------------------
+  # UI Tests
+  # -------------------------------------------------------------------------
+  FRUSExplorerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "26.0"
+    bundleId: bottsywattsy.FRUS-Explorer.uitests
+    sources:
+      - path: FRUSExplorerUITests
+    dependencies:
+      - target: FRUSExplorer
+    settings:
+      base:
+        PRODUCT_NAME: FRUSExplorerUITests
+        PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer.uitests"

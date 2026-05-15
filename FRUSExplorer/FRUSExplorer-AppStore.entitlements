@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+    FRUS Explorer — App Store Entitlements
+    Used by: iOS/iPadOS target (all configs), macOS target (Debug + AppStore configs)
+
+    Note on com.apple.developer.icloud-containers: the spec uses this key; the equivalent
+    modern key is com.apple.developer.icloud-container-identifiers. Both are accepted by
+    Apple's entitlement validation. Update if a future Xcode version rejects this form.
+
+    Note on com.apple.developer.cloudkit: not a documented Apple entitlement key. The
+    correct key is com.apple.developer.icloud-services with value ["CloudKit"]. This will
+    be corrected when CloudKit is activated in the project capabilities (Session 04).
+    Kept here to match the specification verbatim and resolved during capability setup.
+-->
+<dict>
+    <!-- Sandbox: required for all Mac App Store submissions -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- Outbound network: GitHub API, NARA Catalog API -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- iCloud container for CloudKit (SwiftData sync) -->
+    <key>com.apple.developer.icloud-containers</key>
+    <array>
+        <string>iCloud.bottsywattsy.FRUS-Explorer</string>
+    </array>
+
+    <!-- iCloud KV store for lightweight UserDefaults-style sync -->
+    <key>com.apple.developer.ubiquity-kvstore-identifier</key>
+    <string>$(TeamIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
+
+    <!-- iCloud Keychain sharing: NARA API key synced across user's devices -->
+    <key>com.apple.developer.icloud-keychain-sharing</key>
+    <array>
+        <!-- Shared access group identifier; established at project setup -->
+        <string>bottsywattsy.FRUS-Explorer.shared</string>
+    </array>
+
+    <!-- CloudKit capability marker; corrected to icloud-services in Session 04 -->
+    <key>com.apple.developer.cloudkit</key>
+    <true/>
+</dict>
+</plist>

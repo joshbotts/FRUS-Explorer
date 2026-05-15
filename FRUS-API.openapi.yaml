@@ -1,0 +1,56 @@
+openapi: 3.1.0
+
+info:
+  title: FRUS API
+  version: 0.1.0-draft
+  description: |
+    # FRUS API — Living Specification
+
+    This document describes the ideal FRUS API that could replace FRUS Explorer's
+    current approach of calling the GitHub API for manifest data and downloading full
+    volume XML files for local parsing.
+
+    ## Purpose
+
+    As FRUS Explorer is developed, each session that introduces a method calling:
+    - The GitHub API (manifest, volume downloads)
+    - Locally cached FRUS volume XML
+    - The HistoryAtState GitHub repository in any form
+
+    ...adds or updates the corresponding endpoint in this document, describing what
+    a purpose-built FRUS API could deliver more efficiently.
+
+    ## Status
+
+    This is a living document, not a stable specification. All endpoints are drafts
+    subject to revision as development proceeds. Endpoint definitions are added
+    session by session as the corresponding client code is written.
+
+    ## Rationale
+
+    The current implementation:
+    - Fetches the GitHub directory listing for `HistoryAtState/frus` volumes to get
+      file sizes and SHAs (live manifest layer)
+    - Downloads complete volume XML files (often 5–30 MB each) to extract metadata
+      and full text locally
+
+    A purpose-built FRUS API would deliver:
+    - Rich volume metadata without requiring XML download
+    - Pre-extracted document text for search indexing
+    - Page range data for citation lookup
+    - Subject tag appearances per volume
+
+    This document captures what those endpoints would look like, serving as both
+    a roadmap for a future official FRUS API and a reference for any future
+    migration away from direct GitHub access.
+
+  contact:
+    name: Office of the Historian, U.S. Department of State
+    url: https://history.state.gov
+
+# Paths are populated session by session as client code is written.
+# See DEVELOPMENT-PLAN.md for the session sequence.
+paths: {}
+
+components:
+  schemas: {}
