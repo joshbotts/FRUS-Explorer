@@ -13,21 +13,34 @@
 // limitations under the License.
 
 import SwiftUI
+import SwiftData
 
 /// Root entry point for FRUS Explorer.
 ///
-/// Bootstraps `AppState` and injects it into the environment so that all descendant views
-/// can read application-level state without explicit prop-drilling.
-/// Platform-specific Scene configuration (window sizing on macOS) lives here.
+/// Bootstraps `AppState` and the SwiftData `ModelContainer` and injects both into
+/// the SwiftUI environment. All descendant views can access persistent models via
+/// `@Environment(\.modelContext)` and application state via `@Environment(AppState.self)`.
+///
+/// ## ModelContainer
+/// Created once via `ModelContainer.makeFRUSContainer()` which configures CloudKit
+/// private-database sync. On failure (e.g., no iCloud account in simulator) the
+/// factory falls back to a local-only store so the app remains functional.
+///
+/// Version history:
+///   1.0 — Session 01: initial implementation
+///   1.1 — Session 04: inject SwiftData ModelContainer
 @main
 struct FRUSExplorerApp: App {
 
     @State private var appState = AppState()
 
+    private let modelContainer: ModelContainer = ModelContainer.makeFRUSContainer()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(appState)
+                .modelContainer(modelContainer)
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)

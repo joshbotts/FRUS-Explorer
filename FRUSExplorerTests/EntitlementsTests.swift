@@ -9,6 +9,11 @@
 import Testing
 import Foundation
 
+// Entitlements tests are macOS-only: the entitlement files are part of the macOS app
+// target and are not included in the iOS test bundle. When running on macOS, both
+// `.entitlements` files must be added to FRUSExplorerTests Copy Bundle Resources.
+#if os(macOS)
+
 /// Tests that the macOS entitlement files contain all required keys.
 ///
 /// Both `.entitlements` files are added to the test target's Copy Bundle Resources
@@ -23,8 +28,7 @@ struct EntitlementsTests {
 
     private func loadEntitlements(named name: String) throws -> [String: Any] {
         guard let url = Bundle.testBundle.url(forResource: name, withExtension: "entitlements") else {
-            Issue.record("Entitlements file '\(name).entitlements' not found in test bundle. " +
-                         "Ensure it is added to FRUSExplorerTests Copy Bundle Resources phase.")
+            Issue.record("Entitlements file '\(name).entitlements' not found in test bundle. Ensure it is added to FRUSExplorerTests Copy Bundle Resources phase.")
             return [:]
         }
         let data = try Data(contentsOf: url)
@@ -135,3 +139,5 @@ struct EntitlementsTests {
                 direct["com.apple.developer.icloud-services"] as? [String])
     }
 }
+
+#endif // os(macOS)
