@@ -6,20 +6,21 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-/// TaxonomyGenerator — FRUS Explorer release tool.
+import Foundation
+import TaxonomyGeneratorCore
+
+/// TaxonomyGenerator entry point.
 ///
-/// Fetches and parses `history.state.gov/tags/all` to produce
-/// `Sources/FRUSExplorer/Resources/volume-tag-taxonomy.json`, which provides
-/// humanised display names, categories, and hierarchy for volume-level subject tag slugs.
-///
-/// Run manually when the history.state.gov tag taxonomy changes:
+/// Run from the project root whenever the history.state.gov tag taxonomy changes:
 /// ```
 /// swift run TaxonomyGenerator
 /// ```
+/// Review the JSON diff before committing — unexpected changes may indicate a page
+/// redesign requiring updates to `TaxonomyParser`.
 ///
-/// Full implementation delivered in Session 02.
-#if DEBUG
-print("[TaxonomyGenerator] Session 02 stub — not yet implemented.")
-#else
-print("TaxonomyGenerator — run via `swift run TaxonomyGenerator` in DEBUG mode during development.")
-#endif
+/// Optional environment variables:
+///   OUTPUT_PATH    — Override the default output path
+await TaxonomyGeneratorRunner.run(
+    outputPath: ProcessInfo.processInfo.environment["OUTPUT_PATH"]
+        ?? TaxonomyGeneratorRunner.defaultOutputPath
+)

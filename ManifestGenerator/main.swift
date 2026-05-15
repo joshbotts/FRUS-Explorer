@@ -6,21 +6,20 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-/// ManifestGenerator — FRUS Explorer release tool.
+import Foundation
+import ManifestGeneratorCore
+
+/// ManifestGenerator entry point.
 ///
-/// Fetches the HistoryAtState/frus GitHub repository volume listing, downloads
-/// only the `<teiHeader>` portion of each volume XML, and writes
-/// `Sources/FRUSExplorer/Resources/manifest.json` with rich metadata for all
-/// known FRUS volumes.
-///
-/// Run before each app release:
+/// Run from the project root to regenerate `FRUSExplorer/Resources/manifest.json`:
 /// ```
 /// swift run ManifestGenerator
 /// ```
 ///
-/// Full implementation delivered in Session 02.
-#if DEBUG
-print("[ManifestGenerator] Session 02 stub — not yet implemented.")
-#else
-print("ManifestGenerator — run via `swift run ManifestGenerator` in DEBUG mode during development.")
-#endif
+/// Optional environment variables:
+///   GITHUB_TOKEN   — GitHub personal access token (recommended; raises rate limit to 5,000/hr)
+///   OUTPUT_PATH    — Override the default output path
+await ManifestGeneratorRunner.run(
+    outputPath: ProcessInfo.processInfo.environment["OUTPUT_PATH"]
+        ?? ManifestGeneratorRunner.defaultOutputPath
+)

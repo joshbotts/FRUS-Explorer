@@ -17,14 +17,23 @@
 		40FCDBF62C82994384DD19A1 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 68671750974A6214CB151B5C /* Sparkle */; };
 		43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */; };
 		53194C160535CA23B08EFF8E /* AppStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD1B9BB52B39A607932B080 /* AppStateTests.swift */; };
+		57383AB4A7720F91DCEE13A1 /* VolumeLevelTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 805A3A8F83E1102E00B2D12C /* VolumeLevelTagStore.swift */; };
 		6299EF251CB1514312C72431 /* taxonomy.json in Resources */ = {isa = PBXBuildFile; fileRef = EC5C8DCD8DD7D1CB8A6B20E2 /* taxonomy.json */; };
 		642BC7EF029DFF8E71B1E780 /* subject-appearances.json in Resources */ = {isa = PBXBuildFile; fileRef = 315FB3EB58D69FFBB9BC2C3C /* subject-appearances.json */; };
+		64E69EF4C03F523D77453A8F /* ManifestStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */; };
+		6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29459906A446E922051D111D /* ManifestModels.swift */; };
+		79425B089B74B72978721CBB /* ManifestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6D9F9B89D5BE4E65871429 /* ManifestStore.swift */; };
 		7CF36496F4F9C03707E63F24 /* TestBundleBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF634FC412DCC8BBEDBFD194 /* TestBundleBridge.swift */; };
+		887D4D10D94B9100A232EB57 /* VolumeLevelTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 805A3A8F83E1102E00B2D12C /* VolumeLevelTagStore.swift */; };
 		90FFBCCFADB367D0A52C0291 /* volume-tag-taxonomy.json in Resources */ = {isa = PBXBuildFile; fileRef = F34208BE1028E5D565589526 /* volume-tag-taxonomy.json */; };
 		9D39AD7B0DDEAB44B7C81CAF /* FRUSExplorerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */; };
+		AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29459906A446E922051D111D /* ManifestModels.swift */; };
 		AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F862248B58178F5619CFDC6 /* AppState.swift */; };
+		B0130650A3D9513A0E58368C /* TaxonomyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */; };
+		CB79768B4C635DCD4164AA09 /* TaxonomyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */; };
 		D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
 		E336CB3BC326A02994D0B575 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = F1D767EB095F342A813EA1D2 /* manifest.json */; };
+		E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6D9F9B89D5BE4E65871429 /* ManifestStore.swift */; };
 		EFD9C62455CC8C3876EE4B5E /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = FF735149F415370F2B4A807F /* Localizable.strings */; };
 		F38326ED7268F68B3EC17242 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = FF735149F415370F2B4A807F /* Localizable.strings */; };
 		FEB539CAABF37A5ED1E3A574 /* subject-appearances.json in Resources */ = {isa = PBXBuildFile; fileRef = 315FB3EB58D69FFBB9BC2C3C /* subject-appearances.json */; };
@@ -48,12 +57,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestStoreTests.swift; sourceTree = "<group>"; };
+		29459906A446E922051D111D /* ManifestModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestModels.swift; sourceTree = "<group>"; };
 		315FB3EB58D69FFBB9BC2C3C /* subject-appearances.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "subject-appearances.json"; sourceTree = "<group>"; };
 		34E0D9272977D9EFB4A94EE1 /* FRUSExplorerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FRUSExplorerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BD1B9BB52B39A607932B080 /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
 		3C76858EB2BD9B44B3BF02F4 /* FRUSExplorer.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FRUSExplorer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaxonomyModels.swift; sourceTree = "<group>"; };
 		5F862248B58178F5619CFDC6 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSExplorerUITests.swift; sourceTree = "<group>"; };
+		805A3A8F83E1102E00B2D12C /* VolumeLevelTagStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeLevelTagStore.swift; sourceTree = "<group>"; };
 		8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-DirectDistribution.entitlements"; sourceTree = "<group>"; };
 		9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-AppStore.entitlements"; sourceTree = "<group>"; };
 		A64B4DAD6C89EFA87310EC25 /* FRUSExplorerMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FRUSExplorerMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -63,6 +76,7 @@
 		DF634FC412DCC8BBEDBFD194 /* TestBundleBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestBundleBridge.swift; sourceTree = "<group>"; };
 		EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSExplorerApp.swift; sourceTree = "<group>"; };
 		EC5C8DCD8DD7D1CB8A6B20E2 /* taxonomy.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = taxonomy.json; sourceTree = "<group>"; };
+		EF6D9F9B89D5BE4E65871429 /* ManifestStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestStore.swift; sourceTree = "<group>"; };
 		F1D767EB095F342A813EA1D2 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
 		F34208BE1028E5D565589526 /* volume-tag-taxonomy.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "volume-tag-taxonomy.json"; sourceTree = "<group>"; };
 		FF735149F415370F2B4A807F /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
@@ -117,12 +131,22 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		8BF0ACF1AB0D743F17D329E9 /* Manifest */ = {
+			isa = PBXGroup;
+			children = (
+				29459906A446E922051D111D /* ManifestModels.swift */,
+				EF6D9F9B89D5BE4E65871429 /* ManifestStore.swift */,
+			);
+			path = Manifest;
+			sourceTree = "<group>";
+		};
 		8DDAF5D0CDD9AADCADEB1FAB /* FRUSExplorerTests */ = {
 			isa = PBXGroup;
 			children = (
 				2B4B2ACB153E004A64D118C0 /* Support */,
 				3BD1B9BB52B39A607932B080 /* AppStateTests.swift */,
 				C0114AD73FF8B5C9D0446099 /* EntitlementsTests.swift */,
+				260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -152,12 +176,31 @@
 			isa = PBXGroup;
 			children = (
 				63390DD720E0A093134DBA47 /* App */,
+				EB3D26757D1E60EB072F06EC /* Models */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
 				8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */,
 				FF735149F415370F2B4A807F /* Localizable.strings */,
 			);
 			path = FRUSExplorer;
+			sourceTree = "<group>";
+		};
+		E5B6F78728D4945C82785AB6 /* Tags */ = {
+			isa = PBXGroup;
+			children = (
+				48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */,
+				805A3A8F83E1102E00B2D12C /* VolumeLevelTagStore.swift */,
+			);
+			path = Tags;
+			sourceTree = "<group>";
+		};
+		EB3D26757D1E60EB072F06EC /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				8BF0ACF1AB0D743F17D329E9 /* Manifest */,
+				E5B6F78728D4945C82785AB6 /* Tags */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -325,6 +368,10 @@
 				AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */,
 				D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */,
 				9D39AD7B0DDEAB44B7C81CAF /* FRUSExplorerApp.swift in Sources */,
+				6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */,
+				79425B089B74B72978721CBB /* ManifestStore.swift in Sources */,
+				CB79768B4C635DCD4164AA09 /* TaxonomyModels.swift in Sources */,
+				57383AB4A7720F91DCEE13A1 /* VolumeLevelTagStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,6 +382,10 @@
 				3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */,
 				1E9C0A2CDFE9A3CA083C51D2 /* ContentView.swift in Sources */,
 				36CDFA52541406F20DF89A33 /* FRUSExplorerApp.swift in Sources */,
+				AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */,
+				E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */,
+				B0130650A3D9513A0E58368C /* TaxonomyModels.swift in Sources */,
+				887D4D10D94B9100A232EB57 /* VolumeLevelTagStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,6 +395,7 @@
 			files = (
 				53194C160535CA23B08EFF8E /* AppStateTests.swift in Sources */,
 				38A26A564699691DA7AC0274 /* EntitlementsTests.swift in Sources */,
+				64E69EF4C03F523D77453A8F /* ManifestStoreTests.swift in Sources */,
 				7CF36496F4F9C03707E63F24 /* TestBundleBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

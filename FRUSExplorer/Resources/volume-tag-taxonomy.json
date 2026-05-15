@@ -1,1 +1,3568 @@
-[]
+[
+  {
+    "category" : "people",
+    "displayName" : "Acheson, Dean Gooderham",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "acheson-dean-gooderham",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Adams, John",
+    "parentSlug" : "presidents",
+    "slug" : "adams-john",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Adams, John Quincy (P)",
+    "parentSlug" : "presidents",
+    "slug" : "adams-john-quincy-p",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Adams, John Quincy (S)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "adams-john-quincy-s",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Afghanistan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "afghanistan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "topics",
+    "description" : "U.S. military presence in Afghanistan post-2001",
+    "displayName" : "Afghanistan Conflict (2001)",
+    "parentSlug" : "warfare",
+    "slug" : "afghanistan-conflict-2001",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Agriculture",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "agriculture",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Akrotiri",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "akrotiri",
+    "subcategory" : "akrotiri"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Albania",
+    "parentSlug" : "europe",
+    "slug" : "albania",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Albright, Madeleine Korbel",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "albright-madeleine-korbel",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Algeria",
+    "parentSlug" : "near-east",
+    "slug" : "algeria",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Alliances",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "alliances",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "American Revolutionary War",
+    "parentSlug" : "warfare",
+    "slug" : "american-revolutionary-war",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "American Samoa",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "american-samoa",
+    "subcategory" : "american-samoa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Andorra",
+    "parentSlug" : "europe",
+    "slug" : "andorra",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Angola",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "angola",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Anguilla",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "anguilla",
+    "subcategory" : "anguilla"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Antarctica",
+    "parentSlug" : "other",
+    "slug" : "antarctica",
+    "subcategory" : "other"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Antigua and Barbuda",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "antigua-and-barbuda",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "topics",
+    "description" : "Includes anti-Jewish attitudes and policies as well as programs to\n                    combat anti-Jewish sentiments, discrimination, and governmental action against\n                    individuals, property, community institutions, and\/or religious facilities\n                    affiliated or perceived to be affiliated with Jewish persons or\n                    faith.",
+    "displayName" : "Antisemitism",
+    "parentSlug" : "human-rights",
+    "slug" : "antisemitism",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "topics",
+    "description" : "Documents that chronicle the U.S. foreign policy establishment’s\n                        response to the rise of anti-Jewish sentiment, discrimination, and actions\n                        in Europe in the period between the end of World War I and the start of\n                        World War II.",
+    "displayName" : "Antisemitism: Europe, 1919–1939",
+    "parentSlug" : "antisemitism",
+    "slug" : "antisemitism-europe",
+    "subcategory" : "antisemitism"
+  },
+  {
+    "category" : "topics",
+    "description" : "Documents that chronicle the the U.S. foreign policy establishment’s\n                        response to continued anti-Jewish attitudes and policies in the Soviet Union\n                        and Eastern Europe in the aftermath of World War II.",
+    "displayName" : "Antisemitism: Soviet Union and Eastern Europe, post-1945",
+    "parentSlug" : "antisemitism",
+    "slug" : "antisemitism-post-world-war-ii",
+    "subcategory" : "antisemitism"
+  },
+  {
+    "category" : "topics",
+    "description" : "Documents that chronicle the U.S. foreign policy establishment’s\n                        response to the systematic persecution of persons of Jewish descent during\n                        World War II.",
+    "displayName" : "Antisemitism: World War II",
+    "parentSlug" : "antisemitism",
+    "slug" : "antisemitism-world-war-ii",
+    "subcategory" : "antisemitism"
+  },
+  {
+    "category" : "topics",
+    "description" : "The ongoing conflict in the Middle East",
+    "displayName" : "Arab-Israeli Dispute",
+    "parentSlug" : "warfare",
+    "slug" : "arab-israeli-dispute",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Argentina",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "argentina",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Armenia",
+    "parentSlug" : "europe",
+    "slug" : "armenia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Armistices",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "armistices",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Arms Control and Disarmament",
+    "slug" : "arms-control-and-disarmament",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Arms Embargoes",
+    "parentSlug" : "arms-control-and-disarmament",
+    "slug" : "arms-embargoes",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Arms Transfers",
+    "parentSlug" : "arms-control-and-disarmament",
+    "slug" : "arms-transfers",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Arthur, Chester A.",
+    "parentSlug" : "presidents",
+    "slug" : "arthur-chester-a",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Aruba",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "aruba",
+    "subcategory" : "aruba"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Ashmore and Cartier Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "ashmore-and-cartier-islands",
+    "subcategory" : "ashmore-and-cartier-islands"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Association of Southeast Asian Nations",
+    "parentSlug" : "international-organizations",
+    "slug" : "association-of-southeast-asian-nations",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Asylum",
+    "parentSlug" : "human-rights",
+    "slug" : "asylum",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Atomic Energy",
+    "parentSlug" : "science-and-technology",
+    "slug" : "atomic-energy",
+    "subcategory" : "science-and-technology"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Australia",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "australia",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Austria",
+    "parentSlug" : "europe",
+    "slug" : "austria",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Azerbaijan",
+    "parentSlug" : "europe",
+    "slug" : "azerbaijan",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Azores",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "azores",
+    "subcategory" : "azores"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Bacon, Robert",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "bacon-robert",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bahrain",
+    "parentSlug" : "near-east",
+    "slug" : "bahrain",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Baker Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "baker-island",
+    "subcategory" : "baker-island"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Baker, James Addison",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "baker-james-addison",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bangladesh",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "bangladesh",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Barbados",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "barbados",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Bayard, Thomas Francis",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "bayard-thomas-francis",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Belarus",
+    "parentSlug" : "europe",
+    "slug" : "belarus",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Belgium",
+    "parentSlug" : "europe",
+    "slug" : "belgium",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Belize",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "belize",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Benin",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "benin",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bermuda",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "bermuda",
+    "subcategory" : "bermuda"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bhutan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "bhutan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Biden, Joseph R.",
+    "parentSlug" : "presidents",
+    "slug" : "biden-joseph-r",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Black, Jeremiah Sullivan",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "black-jeremiah-sullivan",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Blaine, James Gillespie (1881)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "blaine-james-gillespie-1881",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Blaine, James Gillespie (1889–1892)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "blaine-james-gillespie-1889-1892",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Blinken, Antony",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "blinken-antony",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bolivia",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "bolivia",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Border Administration",
+    "parentSlug" : "global-issues",
+    "slug" : "border-administration",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bosnia and Herzegovina",
+    "parentSlug" : "europe",
+    "slug" : "bosnia-and-herzegovina",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Botswana",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "botswana",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bouvet Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "bouvet-island",
+    "subcategory" : "bouvet-island"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Brazil",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "brazil",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "British Indian Ocean Territory",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "british-indian-ocean-territory",
+    "subcategory" : "british-indian-ocean-territory"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Brunei",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "brunei",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Bryan, William Jennings",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "bryan-william-jennings",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Buchanan, James (P)",
+    "parentSlug" : "presidents",
+    "slug" : "buchanan-james-p",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Buchanan, James (S)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "buchanan-james-s",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Buildings: Domestic",
+    "parentSlug" : "department-of-state",
+    "slug" : "buildings-domestic",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Buildings: Foreign",
+    "parentSlug" : "department-of-state",
+    "slug" : "buildings-foreign",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Bulgaria",
+    "parentSlug" : "europe",
+    "slug" : "bulgaria",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Burkina Faso",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "burkina-faso",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Burma",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "burma",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Burundi",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "burundi",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Bush, George H.W.",
+    "parentSlug" : "presidents",
+    "slug" : "bush-george-h-w",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Bush, George W.",
+    "parentSlug" : "presidents",
+    "slug" : "bush-george-w",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Byrnes, James Francis",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "byrnes-james-francis",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Calhoun, John Caldwell",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "calhoun-john-caldwell",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cambodia",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "cambodia",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cameroon",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "cameroon",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Canada",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "canada",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cape Verde",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "cape-verde",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Carter, Jimmy",
+    "parentSlug" : "presidents",
+    "slug" : "carter-jimmy",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Cass, Lewis",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "cass-lewis",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cayman Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "cayman-islands",
+    "subcategory" : "cayman-islands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Central African Republic",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "central-african-republic",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Chad",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "chad",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Chemical and Bacteriological Warfare",
+    "parentSlug" : "arms-control-and-disarmament",
+    "slug" : "chemical-and-bacteriological-warfare",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Chile",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "chile",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "China",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "china",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "topics",
+    "description" : "The Chinese Exclusion Act of 1882 suspended the immigration of Chinese\n                    laborers for a period of 10 years. It was the first in American history to place\n                    broad restrictions on immigration. More severe exclusion followed in subsequent\n                    legislation. The Act was repealed in 1943.",
+    "displayName" : "Chinese Exclusion Act (1882)",
+    "parentSlug" : "human-rights",
+    "slug" : "chinese-exclusion-act-1882",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Christmas Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "christmas-island",
+    "subcategory" : "christmas-island"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Christopher, Warren Minor",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "christopher-warren-minor",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "description" : "Citizens’ rights as established by law and protected by national or\n                    state constitution in domestic and foreign contexts.",
+    "displayName" : "Civil Rights",
+    "parentSlug" : "human-rights",
+    "slug" : "civil-rights",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "topics",
+    "description" : "Documents that chronicle the civil rights movement against racial\n                        segregation and discrimination in the United States, including events and\n                        policies leading up to and following the passage of the Civil Rights Act of\n                        1964.",
+    "displayName" : "Civil Rights: Domestic",
+    "parentSlug" : "civil-rights",
+    "slug" : "civil-rights-domestic",
+    "subcategory" : "civil-rights"
+  },
+  {
+    "category" : "topics",
+    "description" : "Citizens’ rights outside the United States as established by law of\n                        a nation or sovereign territory and protected by national or state\n                        constitution.",
+    "displayName" : "Civil Rights: Foreign",
+    "parentSlug" : "civil-rights",
+    "slug" : "civil-rights-foreign",
+    "subcategory" : "civil-rights"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Civil War (U.S.)",
+    "parentSlug" : "warfare",
+    "slug" : "civil-war-u-s",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Clay, Henry",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "clay-henry",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Clayton, John Middleton",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "clayton-john-middleton",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Cleveland, Grover (1885–1889)",
+    "parentSlug" : "presidents",
+    "slug" : "cleveland-grover-1885-1889",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Cleveland, Grover (1893–1897)",
+    "parentSlug" : "presidents",
+    "slug" : "cleveland-grover-1893-1897",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Clinton, Hillary Rodham",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "clinton-hillary-rodham",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Clinton, William J.",
+    "parentSlug" : "presidents",
+    "slug" : "clinton-william-j",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Clipperton Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "clipperton-island",
+    "subcategory" : "clipperton-island"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cocos (Keeling) Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "cocos-keeling-islands",
+    "subcategory" : "cocos-keeling-islands"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Colby, Bainbridge",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "colby-bainbridge",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "description" : "The general concept of collective security. Specific treaties and\n                    organizations have their own tags.",
+    "displayName" : "Collective Security",
+    "parentSlug" : "arms-control-and-disarmament",
+    "slug" : "collective-security",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Colombia",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "colombia",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Comoros",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "comoros",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Conference on Security and Cooperation in Europe",
+    "parentSlug" : "international-organizations",
+    "slug" : "conference-on-security-and-cooperation-in-europe",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "description" : "Measures taken to reduce fear of attack.",
+    "displayName" : "Confidence-Building Measures",
+    "parentSlug" : "arms-control-and-disarmament",
+    "slug" : "confidence-building-measures",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Congo (Brazzaville)",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "congo-brazzaville",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Congressional Relations",
+    "parentSlug" : "department-of-state",
+    "slug" : "congressional-relations",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cook Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "cook-islands",
+    "subcategory" : "cook-islands"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Coolidge, Calvin",
+    "parentSlug" : "presidents",
+    "slug" : "coolidge-calvin",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Coral Sea Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "coral-sea-islands",
+    "subcategory" : "coral-sea-islands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Costa Rica",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "costa-rica",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cote d’Ivoire",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "cote-divoire",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Covert Action",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "covert-actions",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Croatia",
+    "parentSlug" : "europe",
+    "slug" : "croatia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cuba",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "cuba",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Cuban Missile Crisis",
+    "parentSlug" : "warfare",
+    "slug" : "cuban-missile-crisis",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Curacao",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "curacao",
+    "subcategory" : "curacao"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Cyprus",
+    "parentSlug" : "europe",
+    "slug" : "cyprus",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Czech Republic",
+    "parentSlug" : "europe",
+    "slug" : "czech-republic",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Day, William Rufus",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "day-william-rufus",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Decolonization",
+    "parentSlug" : "global-issues",
+    "slug" : "decolonization",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Democratic Republic of the Congo (Kinshasa)",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "democratic-republic-of-the-congo-kinshasa",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Denmark",
+    "parentSlug" : "europe",
+    "slug" : "denmark",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Department of State",
+    "slug" : "department-of-state",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Dependencies and Areas of Special Sovereignty",
+    "slug" : "dependencies-and-areas-of-special-sovereignty",
+    "subcategory" : "dependencies-and-areas-of-special-sovereignty"
+  },
+  {
+    "category" : "topics",
+    "description" : "People held in custody or confinement who are not accorded the legal\n                    status of other terms in this taxonomy—i.e., <a href=\"\/tags\/asylum\">Asylum<\/a> or <a href=\"\/tags\/refugees\">Refugees<\/a>",
+    "displayName" : "Detainees",
+    "parentSlug" : "human-rights",
+    "slug" : "detainees",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Dhekelia",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "dhekelia",
+    "subcategory" : "dhekelia"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Diplomatic Recognition",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "diplomatic-recognition",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "topics",
+    "description" : "Includes policies, programs, negotiations, and treatment related to the\n                    equal employment, accomodations, and rights of individuals with disabilities,\n                    including veterans and employees of the federal government.",
+    "displayName" : "Disability Rights",
+    "parentSlug" : "human-rights",
+    "slug" : "disability-rights",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Djibouti",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "djibouti",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Domestic Protest against U.S. Activity",
+    "parentSlug" : "international-law",
+    "slug" : "domestic-protest-against-u-s-activity",
+    "subcategory" : "international-law"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Dominica",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "dominica",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Dominican Republic",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "dominican-republic",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Dulles, John Foster",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "dulles-john-foster",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Eagleburger, Lawrence Sidney",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "eagleburger-lawrence-sidney",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "East Asia and Pacific",
+    "parentSlug" : "sovereign-territories",
+    "slug" : "east-asia-and-pacific",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Economic Sanctions",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "economic-sanctions",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Economic Summit Meetings",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "economic-summit-meetings",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Ecuador",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "ecuador",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Egypt",
+    "parentSlug" : "near-east",
+    "slug" : "egypt",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Eisenhower, Dwight D.",
+    "parentSlug" : "presidents",
+    "slug" : "eisenhower-dwight-d",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "El Salvador",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "el-salvador",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Elections",
+    "parentSlug" : "global-issues",
+    "slug" : "elections",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Energy and Natural Resources",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "energy-and-natural-resources",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Equatorial Guinea",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "equatorial-guinea",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Eritrea",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "eritrea",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Estonia",
+    "parentSlug" : "europe",
+    "slug" : "estonia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Ethiopia",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "ethiopia",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Europe",
+    "parentSlug" : "sovereign-territories",
+    "slug" : "europe",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "European Advisory Commission",
+    "parentSlug" : "international-organizations",
+    "slug" : "european-advisory-commission",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "European Economic Community",
+    "parentSlug" : "international-organizations",
+    "slug" : "european-economic-community",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Evarts, William Maxwell",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "evarts-william-maxwell",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Everett, Edward",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "everett-edward",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Falkland Islands (Islas Malvinas)",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "falkland-islands-islas-malvinas",
+    "subcategory" : "falkland-islands-islas-malvinas"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Far Eastern Commission",
+    "parentSlug" : "international-organizations",
+    "slug" : "far-eastern-commission",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Faroe Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "faroe-islands",
+    "subcategory" : "faroe-islands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Fiji",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "fiji",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Fillmore, Millard",
+    "parentSlug" : "presidents",
+    "slug" : "fillmore-millard",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Financial and Monetary Policy",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "financial-and-monetary-policy",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Finland",
+    "parentSlug" : "europe",
+    "slug" : "finland",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Fish, Hamilton",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "fish-hamilton",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Ford, Gerald",
+    "parentSlug" : "presidents",
+    "slug" : "ford-gerald",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Foreign Aid",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "foreign-aid",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Foreign Economic Policy",
+    "slug" : "foreign-economic-policy",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Foreign Investment",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "foreign-investment",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Foreign Protest against U.S. Activity",
+    "parentSlug" : "international-law",
+    "slug" : "foreign-protest-against-u-s-activity",
+    "subcategory" : "international-law"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Forsyth, John",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "forsyth-john",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Foster, John Watson",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "foster-john-watson",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "France",
+    "parentSlug" : "europe",
+    "slug" : "france",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Frelinghuysen, Frederick Theodore",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "frelinghuysen-frederick-theodore",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "French Guiana",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "french-guiana",
+    "subcategory" : "french-guiana"
+  },
+  {
+    "category" : "places",
+    "displayName" : "French Polynesia",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "french-polynesia",
+    "subcategory" : "french-polynesia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "French Southern and Antarctic Lands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "french-southern-and-antarctic-lands",
+    "subcategory" : "french-southern-and-antarctic-lands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Gabon",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "gabon",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Garfield, James A.",
+    "parentSlug" : "presidents",
+    "slug" : "garfield-james-a",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "General Agreement on Tariffs and Trade",
+    "parentSlug" : "international-organizations",
+    "slug" : "general-agreement-on-tariffs-and-trade",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Geneva Convention",
+    "parentSlug" : "warfare",
+    "slug" : "geneva-convention",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Genocide",
+    "parentSlug" : "human-rights",
+    "slug" : "genocide",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Georgia",
+    "parentSlug" : "europe",
+    "slug" : "georgia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Germany",
+    "parentSlug" : "europe",
+    "slug" : "germany",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Ghana",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "ghana",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Gibraltar",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "gibraltar",
+    "subcategory" : "gibraltar"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Global Issues",
+    "slug" : "global-issues",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Grant, Ulysses S.",
+    "parentSlug" : "presidents",
+    "slug" : "grant-ulysses-s",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Greece",
+    "parentSlug" : "europe",
+    "slug" : "greece",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Greenland",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "greenland",
+    "subcategory" : "greenland"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Grenada",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "grenada",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Gresham, Walter Quintin",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "gresham-walter-quintin",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Guadeloupe",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "guadeloupe",
+    "subcategory" : "guadeloupe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Guam",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "guam",
+    "subcategory" : "guam"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Guatemala",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "guatemala",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Guernsey",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "guernsey",
+    "subcategory" : "guernsey"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Guinea",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "guinea",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Guinea-Bissau",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "guinea-bissau",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Guyana",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "guyana",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Haig, Alexander Meigs",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "haig-alexander-meigs",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Haiti",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "haiti",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Harding, Warren G.",
+    "parentSlug" : "presidents",
+    "slug" : "harding-warren-g",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Harrison, Benjamin",
+    "parentSlug" : "presidents",
+    "slug" : "harrison-benjamin",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Harrison, William Henry",
+    "parentSlug" : "presidents",
+    "slug" : "harrison-william-henry",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Hay, John Milton",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "hay-john-milton",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Hayes, Rutherford B.",
+    "parentSlug" : "presidents",
+    "slug" : "hayes-rutherford-b",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Heard Island and McDonald Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "heard-island-and-mcdonald-islands",
+    "subcategory" : "heard-island-and-mcdonald-islands"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Herter, Christian Archibald",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "herter-christian-archibald",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "description" : "Includes monitoring, research, and efforts to treat and control human\n                    immunodeficiency virus (HIV) infections and acquired immunodeficiency syndrome\n                    (AIDS) disease as well as policies affecting individuals and communities\n                    impacted by HIV\/AIDS.",
+    "displayName" : "HIV\/AIDS",
+    "parentSlug" : "human-rights",
+    "slug" : "hiv-aids",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Holy See",
+    "parentSlug" : "europe",
+    "slug" : "holy-see",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Honduras",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "honduras",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Hong Kong",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "hong-kong",
+    "subcategory" : "hong-kong"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Hoover, Herbert",
+    "parentSlug" : "presidents",
+    "slug" : "hoover-herbert",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Howland Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "howland-island",
+    "subcategory" : "howland-island"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Hughes, Charles Evans",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "hughes-charles-evans",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Hull, Cordell",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "hull-cordell",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Human Rights",
+    "slug" : "human-rights",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Hungary",
+    "parentSlug" : "europe",
+    "slug" : "hungary",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Iceland",
+    "parentSlug" : "europe",
+    "slug" : "iceland",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Immigration",
+    "parentSlug" : "global-issues",
+    "slug" : "immigration",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "India",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "india",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Indonesia",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "indonesia",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "topics",
+    "description" : "U.S. information activity in foreign countries",
+    "displayName" : "Information Programs",
+    "slug" : "information-programs",
+    "subcategory" : "information-programs"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "International Atomic Energy Agency",
+    "parentSlug" : "international-organizations",
+    "slug" : "international-atomic-energy-agency",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "International Law",
+    "slug" : "international-law",
+    "subcategory" : "international-law"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "International Monetary Fund",
+    "parentSlug" : "international-organizations",
+    "slug" : "international-monetary-fund",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "description" : "Organizations which do not have specific tags, or for general works on\n                international organizations.",
+    "displayName" : "International Organizations",
+    "slug" : "international-organizations",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Iran",
+    "parentSlug" : "near-east",
+    "slug" : "iran",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Iraq",
+    "parentSlug" : "near-east",
+    "slug" : "iraq",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "topics",
+    "description" : "U.S. military presence in Iraq post-2003",
+    "displayName" : "Iraq War (2003)",
+    "parentSlug" : "warfare",
+    "slug" : "iraq-war-2003",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Ireland",
+    "parentSlug" : "europe",
+    "slug" : "ireland",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Isle of Man",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "isle-of-man",
+    "subcategory" : "isle-of-man"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Israel",
+    "parentSlug" : "near-east",
+    "slug" : "israel",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Italy",
+    "parentSlug" : "europe",
+    "slug" : "italy",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Jackson, Andrew",
+    "parentSlug" : "presidents",
+    "slug" : "jackson-andrew",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Jamaica",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "jamaica",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Jan Mayen",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "jan-mayen",
+    "subcategory" : "jan-mayen"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Japan",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "japan",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Jarvis Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "jarvis-island",
+    "subcategory" : "jarvis-island"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Jefferson, Thomas (P)",
+    "parentSlug" : "presidents",
+    "slug" : "jefferson-thomas-p",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Jefferson, Thomas (S)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "jefferson-thomas-s",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Jersey",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "jersey",
+    "subcategory" : "jersey"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Johnson, Andrew",
+    "parentSlug" : "presidents",
+    "slug" : "johnson-andrew",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Johnson Atoll",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "johnson-atoll",
+    "subcategory" : "johnson-atoll"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Johnson, Lyndon B.",
+    "parentSlug" : "presidents",
+    "slug" : "johnson-lyndon-b",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Jordan",
+    "parentSlug" : "near-east",
+    "slug" : "jordan",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Kazakhstan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "kazakhstan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Kellogg, Frank Billings",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "kellogg-frank-billings",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Kennedy, John F.",
+    "parentSlug" : "presidents",
+    "slug" : "kennedy-john-f",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Kenya",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "kenya",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Kerry, John Forbes",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "kerry-john-forbes",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Kingman Reef",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "kingman-reef",
+    "subcategory" : "kingman-reef"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Kiribati",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "kiribati",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Kissinger, Henry A.",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "kissinger-henry-a",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Knox, Philander Chase",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "knox-philander-chase",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Korean War",
+    "parentSlug" : "warfare",
+    "slug" : "korean-war",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Kosovo",
+    "parentSlug" : "europe",
+    "slug" : "kosovo",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Kuwait",
+    "parentSlug" : "near-east",
+    "slug" : "kuwait",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Kyrgyzstan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "kyrgyzstan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Labor",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "labor",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Lansing, Robert",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "lansing-robert",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Laos",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "laos",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Latvia",
+    "parentSlug" : "europe",
+    "slug" : "latvia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Law of the Sea",
+    "parentSlug" : "international-law",
+    "slug" : "law-of-the-sea",
+    "subcategory" : "international-law"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "League of Nations",
+    "parentSlug" : "international-organizations",
+    "slug" : "league-of-nations",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Lebanon",
+    "parentSlug" : "near-east",
+    "slug" : "lebanon",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Lesotho",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "lesotho",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Liberia",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "liberia",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Libya",
+    "parentSlug" : "near-east",
+    "slug" : "libya",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Liechtenstein",
+    "parentSlug" : "europe",
+    "slug" : "liechtenstein",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Lincoln, Abraham",
+    "parentSlug" : "presidents",
+    "slug" : "lincoln-abraham",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Lithuania",
+    "parentSlug" : "europe",
+    "slug" : "lithuania",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Livingston, Edward",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "livingston-edward",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Luxembourg",
+    "parentSlug" : "europe",
+    "slug" : "luxembourg",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Macau",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "macau",
+    "subcategory" : "macau"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Macedonia",
+    "parentSlug" : "europe",
+    "slug" : "macedonia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Madagascar",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "madagascar",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Madison, James (P)",
+    "parentSlug" : "presidents",
+    "slug" : "madison-james-p",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Madison, James (S)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "madison-james-s",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Malawi",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "malawi",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Malaysia",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "malaysia",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Maldives",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "maldives",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Mali",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "mali",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Malta",
+    "parentSlug" : "europe",
+    "slug" : "malta",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Marcy, William Learned",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "marcy-william-learned",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Marshall, George Catlett",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "marshall-george-catlett",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Marshall Islands",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "marshall-islands",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Marshall, John",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "marshall-john",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Martinique",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "martinique",
+    "subcategory" : "martinique"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Mauritania",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "mauritania",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Mauritius",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "mauritius",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Mayotte",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "mayotte",
+    "subcategory" : "mayotte"
+  },
+  {
+    "category" : "people",
+    "displayName" : "McKinley, William",
+    "parentSlug" : "presidents",
+    "slug" : "mckinley-william",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "McLane, Louis",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "mclane-louis",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Mexican-American War",
+    "parentSlug" : "warfare",
+    "slug" : "mexican-american-war",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Mexico",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "mexico",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Midway Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "midway-islands",
+    "subcategory" : "midway-islands"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Military Bases",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "military-bases",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "topics",
+    "description" : "Military action not covered by a specific tag under <a href=\"\/tags\/warfare\">Warfare<\/a>",
+    "displayName" : "Military Intervention, Presence and Withdrawal",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "military-intervention-presence-and-withdrawal",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Moldova",
+    "parentSlug" : "europe",
+    "slug" : "moldova",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Monaco",
+    "parentSlug" : "europe",
+    "slug" : "monaco",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Mongolia",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "mongolia",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Monroe, James (P)",
+    "parentSlug" : "presidents",
+    "slug" : "monroe-james-p",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Monroe, James (S)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "monroe-james-s",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Montenegro",
+    "parentSlug" : "europe",
+    "slug" : "montenegro",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Monterserrat",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "monterserrat",
+    "subcategory" : "monterserrat"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Morocco",
+    "parentSlug" : "near-east",
+    "slug" : "morocco",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Mozambique",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "mozambique",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Muskie, Edmund Sixtus",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "muskie-edmund-sixtus",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Namibia",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "namibia",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Narcotics",
+    "parentSlug" : "global-issues",
+    "slug" : "narcotics",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "National Security Council",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "national-security-council",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "National Security Policy",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "national-security-policy",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Nauru",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "nauru",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Navassa Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "navassa-island",
+    "subcategory" : "navassa-island"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Near East",
+    "parentSlug" : "sovereign-territories",
+    "slug" : "near-east",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Nepal",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "nepal",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Netherlands",
+    "parentSlug" : "europe",
+    "slug" : "netherlands",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Neutrality",
+    "parentSlug" : "warfare",
+    "slug" : "neutrality",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "New Caledonia",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "new-caledonia",
+    "subcategory" : "new-caledonia"
+  },
+  {
+    "category" : "topics",
+    "description" : "The proposal made in the 1970s by developing countries to replace the\n                    Bretton Woods system",
+    "displayName" : "New International Economic Order",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "new-international-economic-order",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "places",
+    "displayName" : "New Zealand",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "new-zealand",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Nicaragua",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "nicaragua",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Niger",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "niger",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Nigeria",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "nigeria",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Niue",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "niue",
+    "subcategory" : "niue"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Nixon, Richard",
+    "parentSlug" : "presidents",
+    "slug" : "nixon-richard",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "description" : "Organizations which are not affiliated with governments—e.g., Red Cross,\n                    Human Rights Watch, Doctors without Borders.",
+    "displayName" : "Non-governmental Organizations",
+    "parentSlug" : "international-organizations",
+    "slug" : "non-governmental-organizations",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Norfolk Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "norfolk-island",
+    "subcategory" : "norfolk-island"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "North Atlantic Treaty Organization",
+    "parentSlug" : "international-organizations",
+    "slug" : "north-atlantic-treaty-organization",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "places",
+    "displayName" : "North Korea",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "north-korea",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Northern Mariana Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "northern-mariana-islands",
+    "subcategory" : "northern-mariana-islands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Norway",
+    "parentSlug" : "europe",
+    "slug" : "norway",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Nuclear Nonproliferation",
+    "parentSlug" : "arms-control-and-disarmament",
+    "slug" : "nuclear-nonproliferation",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Nuclear Weapons",
+    "parentSlug" : "arms-control-and-disarmament",
+    "slug" : "nuclear-weapons",
+    "subcategory" : "arms-control-and-disarmament"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Obama, Barack",
+    "parentSlug" : "presidents",
+    "slug" : "obama-barack",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Olney, Richard",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "olney-richard",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Oman",
+    "parentSlug" : "near-east",
+    "slug" : "oman",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "topics",
+    "description" : "Internal management of the Department itself—i.e., rules, regulations,\n                    (re-)organization, etc.—rather than the management of foreign\n                    relations.",
+    "displayName" : "Organization and Management",
+    "parentSlug" : "department-of-state",
+    "slug" : "organization-and-management",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Organization of American States",
+    "parentSlug" : "international-organizations",
+    "slug" : "organization-of-american-states",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Organization of Petroleum Exporting Countries",
+    "parentSlug" : "international-organizations",
+    "slug" : "organization-of-petroleum-exporting-countries",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Other",
+    "slug" : "other",
+    "subcategory" : "other"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Outer Space",
+    "parentSlug" : "global-issues",
+    "slug" : "outer-space",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Pakistan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "pakistan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Palau",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "palau",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Palestine",
+    "parentSlug" : "other",
+    "slug" : "palestine",
+    "subcategory" : "other"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Palmyra Atoll",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "palmyra-atoll",
+    "subcategory" : "palmyra-atoll"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Panama",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "panama",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Papua New Guinea",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "papua-new-guinea",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Paracel Islands",
+    "parentSlug" : "other",
+    "slug" : "paracel-islands",
+    "subcategory" : "other"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Paraguay",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "paraguay",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Peace",
+    "parentSlug" : "global-issues",
+    "slug" : "peace",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Personnel: Civil Service",
+    "parentSlug" : "department-of-state",
+    "slug" : "personnel-civil-service",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "topics",
+    "description" : "Analyses or censuses of the composition of Department personnel—e.g.,\n                    race, gender, educational background, etc.",
+    "displayName" : "Personnel: Demographics",
+    "parentSlug" : "department-of-state",
+    "slug" : "personnel-demographics",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Personnel: Foreign Service",
+    "parentSlug" : "department-of-state",
+    "slug" : "personnel-foreign-service",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Personnel: Locally Employed Staff",
+    "parentSlug" : "department-of-state",
+    "slug" : "personnel-locally-employed-staff",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Peru",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "peru",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Philippines",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "philippines",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Pickering, Timothy",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "pickering-timothy",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Pierce, Franklin",
+    "parentSlug" : "presidents",
+    "slug" : "pierce-franklin",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Pitcairn Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "pitcairn-islands",
+    "subcategory" : "pitcairn-islands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Poland",
+    "parentSlug" : "europe",
+    "slug" : "poland",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Polar Affairs",
+    "parentSlug" : "global-issues",
+    "slug" : "polar-affairs",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Political Prisoners",
+    "parentSlug" : "human-rights",
+    "slug" : "political-prisoners",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Politico-Military issues",
+    "slug" : "politico-military-issues",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Polk, James K.",
+    "parentSlug" : "presidents",
+    "slug" : "polk-james-k",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Pompeo, Michael R.",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "pompeo-michael-r",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Population Demographics",
+    "parentSlug" : "global-issues",
+    "slug" : "population-demographics",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Portugal",
+    "parentSlug" : "europe",
+    "slug" : "portugal",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Powell, Colin Luther",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "powell-colin-luther",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "description" : "Presidential administrations in chronological order. (P) is appended to a\n                President's name in cases where the President also served as Secretary of State. A\n                range of years is appended in cases where the President served in two\n                non-consecutive administrations.",
+    "displayName" : "Presidents",
+    "slug" : "presidents",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Prisoners of War",
+    "parentSlug" : "warfare",
+    "slug" : "prisoners-of-war",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Property Claims",
+    "parentSlug" : "international-law",
+    "slug" : "property-claims",
+    "subcategory" : "international-law"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Protection of Americans Abroad",
+    "parentSlug" : "department-of-state",
+    "slug" : "protection-of-americans-abroad",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Protocol",
+    "parentSlug" : "department-of-state",
+    "slug" : "protocol",
+    "subcategory" : "department-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Puerto Rico",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "puerto-rico",
+    "subcategory" : "puerto-rico"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Qatar",
+    "parentSlug" : "near-east",
+    "slug" : "qatar",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Quarantine (Blockade)",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "quarantine-blockade",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Randolph, Edmund Jennings",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "randolph-edmund-jennings",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Reagan, Ronald",
+    "parentSlug" : "presidents",
+    "slug" : "reagan-ronald",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Refugees",
+    "parentSlug" : "human-rights",
+    "slug" : "refugees",
+    "subcategory" : "human-rights"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Reunion",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "reunion",
+    "subcategory" : "reunion"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Rice, Condoleezza",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "rice-condoleezza",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Rogers, William Pierce",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "rogers-william-pierce",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Romania",
+    "parentSlug" : "europe",
+    "slug" : "romania",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Roosevelt, Franklin D.",
+    "parentSlug" : "presidents",
+    "slug" : "roosevelt-franklin-d",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Roosevelt, Theodore",
+    "parentSlug" : "presidents",
+    "slug" : "roosevelt-theodore",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Root, Elihu",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "root-elihu",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Rubio, Marco",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "rubio-marco",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Rusk, David Dean",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "rusk-david-dean",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Russia",
+    "parentSlug" : "europe",
+    "slug" : "russia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Rwanda",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "rwanda",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Saint Barthelemy",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "saint-barthelemy",
+    "subcategory" : "saint-barthelemy"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Saint Helena",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "saint-helena",
+    "subcategory" : "saint-helena"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Saint Martin",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "saint-martin",
+    "subcategory" : "saint-martin"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Saint Pierre and Miquelon",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "saint-pierre-and-miquelon",
+    "subcategory" : "saint-pierre-and-miquelon"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Samoa",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "samoa",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "San Marino",
+    "parentSlug" : "europe",
+    "slug" : "san-marino",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sao Tome and Principe",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "sao-tome-and-principe",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Saudi Arabia",
+    "parentSlug" : "near-east",
+    "slug" : "saudi-arabia",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Science and Technology",
+    "slug" : "science-and-technology",
+    "subcategory" : "science-and-technology"
+  },
+  {
+    "category" : "people",
+    "description" : "Secretaries of State in chronological order. (S) is appended to a\n                Secretary's name in cases where the Secretary also served as President. A range of\n                years is appended in cases where the Secretary served\n                non-consecutively.",
+    "displayName" : "Secretaries of State",
+    "slug" : "secretaries-of-state",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Self-Determination",
+    "parentSlug" : "global-issues",
+    "slug" : "self-determination",
+    "subcategory" : "global-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Senegal",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "senegal",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Serbia",
+    "parentSlug" : "europe",
+    "slug" : "serbia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Seward, William Henry",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "seward-william-henry",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Seychelles",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "seychelles",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Sherman, John",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "sherman-john",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Shultz, George Pratt",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "shultz-george-pratt",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sierra Leone",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "sierra-leone",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Singapore",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "singapore",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sint Maarten",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "sint-maarten",
+    "subcategory" : "sint-maarten"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Slovakia",
+    "parentSlug" : "europe",
+    "slug" : "slovakia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Slovenia",
+    "parentSlug" : "europe",
+    "slug" : "slovenia",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Smith, Robert",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "smith-robert",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Solomon Islands",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "solomon-islands",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Somalia",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "somalia",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "South Africa",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "south-africa",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "South and Central Asia",
+    "parentSlug" : "sovereign-territories",
+    "slug" : "south-and-central-asia",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "South Georgia and the South Sandwich Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "south-georgia-and-the-south-sandwich-islands",
+    "subcategory" : "south-georgia-and-the-south-sandwich-islands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "South Korea",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "south-korea",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "South Sudan",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "south-sudan",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Southeast Asia Treaty Organization",
+    "parentSlug" : "international-organizations",
+    "slug" : "southeast-asia-treaty-organization",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sovereign Territories",
+    "slug" : "sovereign-territories",
+    "subcategory" : "sovereign-territories"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Spain",
+    "parentSlug" : "europe",
+    "slug" : "spain",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Spanish-American War",
+    "parentSlug" : "warfare",
+    "slug" : "spanish-american-war",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Spratly Islands",
+    "parentSlug" : "other",
+    "slug" : "spratly-islands",
+    "subcategory" : "other"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sri Lanka",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "sri-lanka",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "St. Kitts and Nevis",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "st-kitts-and-nevis",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "St. Lucia",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "st-lucia",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "St. Vincent and the Grenadines",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "st-vincent-and-the-grenadines",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Stettinius, Edward Reilly",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "stettinius-edward-reilly",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Stimson, Henry Lewis",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "stimson-henry-lewis",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sub-Saharan Africa",
+    "parentSlug" : "sovereign-territories",
+    "slug" : "sub-saharan-africa",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sudan",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "sudan",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "topics",
+    "description" : "Suez Crisis of 1956",
+    "displayName" : "Suez Canal",
+    "parentSlug" : "warfare",
+    "slug" : "suez-canal",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Suriname",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "suriname",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Svalbard",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "svalbard",
+    "subcategory" : "svalbard"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Swaziland",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "swaziland",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Sweden",
+    "parentSlug" : "europe",
+    "slug" : "sweden",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Switzerland",
+    "parentSlug" : "europe",
+    "slug" : "switzerland",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Syria",
+    "parentSlug" : "near-east",
+    "slug" : "syria",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Taft, William Howard",
+    "parentSlug" : "presidents",
+    "slug" : "taft-william-howard",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Taiwan",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "taiwan",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Tajikistan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "tajikistan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Tanzania",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "tanzania",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Taylor, Zachary",
+    "parentSlug" : "presidents",
+    "slug" : "taylor-zachary",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Terrorism",
+    "parentSlug" : "politico-military-issues",
+    "slug" : "terrorism",
+    "subcategory" : "politico-military-issues"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Thailand",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "thailand",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "The Bahamas",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "the-bahamas",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "The Federated States of Micronesia",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "the-federated-states-of-micronesia",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "The Gambia",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "the-gambia",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Tillerson, Rex W.",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "tillerson-rex-w",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Timor-Leste",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "timor-leste",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Togo",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "togo",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Tokelau",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "tokelau",
+    "subcategory" : "tokelau"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Tonga",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "tonga",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Trade and Commercial Policy\/Agreements",
+    "parentSlug" : "foreign-economic-policy",
+    "slug" : "trade-and-commercial-policy-agreements",
+    "subcategory" : "foreign-economic-policy"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Trinidad and Tobago",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "trinidad-and-tobago",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Truman, Harry S.",
+    "parentSlug" : "presidents",
+    "slug" : "truman-harry-s",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Trump, Donald J. (2017–2021)",
+    "parentSlug" : "presidents",
+    "slug" : "trump-donald-j-45",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Trump, Donald J. (2025–)",
+    "parentSlug" : "presidents",
+    "slug" : "trump-donald-j-47",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Tunisia",
+    "parentSlug" : "near-east",
+    "slug" : "tunisia",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Turkey",
+    "parentSlug" : "europe",
+    "slug" : "turkey",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Turkmenistan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "turkmenistan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Turks and Caicos Islands",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "turks-and-caicos-islands",
+    "subcategory" : "turks-and-caicos-islands"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Tuvalu",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "tuvalu",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Tyler, John",
+    "parentSlug" : "presidents",
+    "slug" : "tyler-john",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Uganda",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "uganda",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Ukraine",
+    "parentSlug" : "europe",
+    "slug" : "ukraine",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "places",
+    "displayName" : "United Arab Emirates",
+    "parentSlug" : "near-east",
+    "slug" : "united-arab-emirates",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "United Kingdom",
+    "parentSlug" : "europe",
+    "slug" : "united-kingdom",
+    "subcategory" : "europe"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "United Nations",
+    "parentSlug" : "international-organizations",
+    "slug" : "united-nations",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Universal Postal Union",
+    "parentSlug" : "international-organizations",
+    "slug" : "universal-postal-union",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Upshur, Abel Parker",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "upshur-abel-parker",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Uruguay",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "uruguay",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Uzbekistan",
+    "parentSlug" : "south-and-central-asia",
+    "slug" : "uzbekistan",
+    "subcategory" : "south-and-central-asia"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Van Buren, Martin (P)",
+    "parentSlug" : "presidents",
+    "slug" : "van-buren-martin-p",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Van Buren, Martin (S)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "van-buren-martin-s",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Vance, Cyrus Roberts",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "vance-cyrus-roberts",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Vanuatu",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "vanuatu",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Venezuela",
+    "parentSlug" : "western-hemisphere",
+    "slug" : "venezuela",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Vietnam",
+    "parentSlug" : "east-asia-and-pacific",
+    "slug" : "vietnam",
+    "subcategory" : "east-asia-and-pacific"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Vietnam Conflict",
+    "parentSlug" : "warfare",
+    "slug" : "vietnam-conflict",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Virgin Islands, British",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "virgin-islands-british",
+    "subcategory" : "virgin-islands-british"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Virgin Islands, U.S.",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "virgin-islands-u-s",
+    "subcategory" : "virgin-islands-u-s"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Wake Island",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "wake-island",
+    "subcategory" : "wake-island"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Wallis and Futuna",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "wallis-and-futuna",
+    "subcategory" : "wallis-and-futuna"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "War Crimes and War Criminals",
+    "parentSlug" : "warfare",
+    "slug" : "war-crimes-and-war-criminals",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "War of 1812",
+    "parentSlug" : "warfare",
+    "slug" : "war-of-1812",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "Warfare",
+    "slug" : "warfare",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Washburne, Elihu Benjamin",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "washburne-elihu-benjamin",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Washington, George",
+    "parentSlug" : "presidents",
+    "slug" : "washington-george",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Webster, Daniel (1841–1843)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "webster-daniel-1841-1843",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Webster, Daniel (1850–1852)",
+    "parentSlug" : "secretaries-of-state",
+    "slug" : "webster-daniel-1850-1852",
+    "subcategory" : "secretaries-of-state"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Western Hemisphere",
+    "parentSlug" : "sovereign-territories",
+    "slug" : "western-hemisphere",
+    "subcategory" : "western-hemisphere"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Western Sahara",
+    "parentSlug" : "other",
+    "slug" : "western-sahara",
+    "subcategory" : "other"
+  },
+  {
+    "category" : "people",
+    "displayName" : "Wilson, Woodrow",
+    "parentSlug" : "presidents",
+    "slug" : "wilson-woodrow",
+    "subcategory" : "presidents"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "World Trade Organization",
+    "parentSlug" : "international-organizations",
+    "slug" : "world-trade-organization",
+    "subcategory" : "international-organizations"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "World War I",
+    "parentSlug" : "warfare",
+    "slug" : "world-war-i",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "topics",
+    "displayName" : "World War II",
+    "parentSlug" : "warfare",
+    "slug" : "world-war-ii",
+    "subcategory" : "warfare"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Yemen",
+    "parentSlug" : "near-east",
+    "slug" : "yemen",
+    "subcategory" : "near-east"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Zambia",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "zambia",
+    "subcategory" : "sub-saharan-africa"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Zanzibar",
+    "parentSlug" : "dependencies-and-areas-of-special-sovereignty",
+    "slug" : "zanzibar",
+    "subcategory" : "zanzibar"
+  },
+  {
+    "category" : "places",
+    "displayName" : "Zimbabwe",
+    "parentSlug" : "sub-saharan-africa",
+    "slug" : "zimbabwe",
+    "subcategory" : "sub-saharan-africa"
+  }
+]
