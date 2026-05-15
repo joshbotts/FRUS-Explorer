@@ -38,6 +38,7 @@ struct DocumentView: View {
     let entry: DocumentBrowserEntry
 
     @State private var vm: DocumentViewModel?
+    @State private var showGraph = false
 
     var body: some View {
         Group {
@@ -174,6 +175,21 @@ struct DocumentView: View {
                 activeProjectId: appState.activeProjectId
             )
         }
+        .sheet(isPresented: $showGraph) {
+            if let store = appState.crossReferenceStore {
+                CrossReferenceGraphView(
+                    entry: entry,
+                    crossReferenceStore: store,
+                    downloadedVolumeIds: downloadedVolumeIds
+                )
+            }
+        }
+    }
+
+    private var downloadedVolumeIds: Set<String> {
+        guard let dm = appState.downloadManager else { return [] }
+        let known = appState.manifestStore.diffResult?.known ?? []
+        return Set(known.compactMap { dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil })
     }
 
     // MARK: - Toolbar
@@ -241,7 +257,7 @@ struct DocumentView: View {
 
             // Cross-references
             Button {
-                // Wired in Session 17 (Cross-Reference Graph)
+                showGraph = true
             } label: {
                 Label(
                     String(localized: "document.toolbar.crossRef", defaultValue: "Cross-References"),
