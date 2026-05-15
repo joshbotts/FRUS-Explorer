@@ -46,6 +46,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 06: initial implementation (core elements)
 ///   1.1 — Session 07: full element coverage; parsePersons / parseTerms methods added
+///   1.2 — Session 34: structural-section fallback in TEIParserDelegate so front matter
+///          (preface, introduction, errata) can be opened by xml:id in DocumentView
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -76,13 +78,20 @@ public actor FRUSDocumentParser {
 
     /// Parses a single document by ID from the volume XML file.
     ///
-    /// Parsing stops immediately after the target document's closing `</div>` tag,
+    /// Parsing stops immediately after the target element's closing `</div>` tag,
     /// avoiding the cost of processing the remainder of potentially large volume files.
     ///
+    /// Handles two cases:
+    ///   - `<div type="document" xml:id="...">` — a normal numbered FRUS document.
+    ///   - Structural sections (`<div type="preface">`, `<div type="introduction">`, etc.)
+    ///     that contain prose directly (no document sub-divs). These are matched by
+    ///     `xml:id` and captured as quasi-documents so front matter is accessible via
+    ///     `DocumentView` without requiring FTS indexing.
+    ///
     /// - Parameters:
-    ///   - documentId: The `xml:id` of the target `<div type="document">`.
+    ///   - documentId: The `xml:id` of the target `<div>`.
     ///   - volumeURL: The local file URL of the downloaded volume XML.
-    /// - Returns: The parsed document, or `nil` if no document with that ID exists.
+    /// - Returns: The parsed document, or `nil` if no element with that ID exists.
     /// - Throws: `FRUSParserError` if the file cannot be read or parsed.
     public func parseDocument(documentId: String, volumeURL: URL) async throws -> FRUSDocumentAST? {
         guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
@@ -439,6 +448,20 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 parserRef?.abortParsing()
                 return
             }
+        } else if elementName == "div",
+                  let targetId = targetDocumentId,
+                  !targetId.isEmpty,
+                  (frame.attributes["xml:id"] ?? frame.attributes["id"]) == targetId {
+            // Structural section div (e.g. preface, introduction) whose xml:id matches the
+            // search target. Captured as a quasi-document so that `CompilationView` can open
+            // prose-only front matter sections in DocumentView without FTS indexing.
+            // Only reached when targetDocumentId is set (i.e. called from parseDocument).
+            let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
+            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
+            documents.append(doc)
+            foundTargetDocument = true
+            parserRef?.abortParsing()
+            return
         } else if isTransparent(elementName: elementName, attributes: frame.attributes) {
             // Transparent element: pass children up to the parent frame.
             if !stack.isEmpty {

@@ -16,8 +16,19 @@ import SwiftUI
 /// appear. If the volume has not been indexed, an "Index Required" prompt is shown with
 /// an "Index Now" action that triggers `BrowserViewModel.indexVolume(_:)`.
 ///
+/// ## Front Matter Support
+/// Structural sections whose `divType` is one of `"preface"`, `"intro"`,
+/// `"introduction"`, or `"errata"` and that contain bare prose (no nested
+/// `<div type="document">` children) are handled specially: instead of showing
+/// "No documents in this section", `CompilationView` shows a "Read [Title]" button.
+/// Tapping it creates a synthetic `DocumentBrowserEntry` (using the section's
+/// `sectionId` as the `documentId`) and navigates to `DocumentView`.
+/// `FRUSDocumentParser.parseDocument(documentId:)` matches the structural div by
+/// `xml:id` (Session 34 fallback) and renders its prose content.
+///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   1.1 — Session 34: front matter direct-read support for prose-only structural sections
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -80,11 +91,76 @@ struct CompilationView: View {
         }
     }
 
+    // MARK: - Front Matter Direct Read
+
+    /// `true` when this section contains prose directly (no document sub-divs) and
+    /// belongs to a type that should be readable without FTS indexing.
+    ///
+    /// Covers `<div type="preface">`, `<div type="introduction">`, `<div type="intro">`,
+    /// and `<div type="errata">` that are leaf sections (no subsections, no document IDs).
+    ///
+    /// Sections with auto-generated `sectionId` values (e.g. `"preface-3"`, produced when
+    /// the TEI element has no `xml:id` attribute) are excluded because
+    /// `FRUSDocumentParser.parseDocument(documentId:)` cannot locate them by ID.
+    private var canReadSectionDirectly: Bool {
+        let proseTypes: Set<String> = ["preface", "intro", "introduction", "errata"]
+        guard proseTypes.contains(section.divType),
+              section.allDocumentIds.isEmpty,
+              section.subsections.isEmpty
+        else { return false }
+        // Guard against auto-generated sectionIds like "preface-3" — these have no
+        // xml:id in the TEI source and parseDocument would return nil.
+        let autoPrefix = "\(section.divType)-"
+        if section.sectionId.hasPrefix(autoPrefix) {
+            let suffix = section.sectionId.dropFirst(autoPrefix.count)
+            if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) { return false }
+        }
+        return !section.sectionId.isEmpty
+    }
+
+    @ViewBuilder
+    private var readSectionDirectlySection: some View {
+        Section {
+            Button {
+                let entry = DocumentBrowserEntry(
+                    documentId: section.sectionId,
+                    volumeId: volumeId,
+                    documentNumber: nil,
+                    header: section.title,
+                    dateline: nil,
+                    sourceNote: nil
+                )
+                vm.navigationPath.append(.document(entry))
+                #if DEBUG
+                print("[BrowserView] Navigate → front matter section \(section.sectionId)")
+                #endif
+            } label: {
+                Label(
+                    String(
+                        format: String(localized: "browser.compilation.readSection",
+                                       defaultValue: "Read %@"),
+                        section.title
+                    ),
+                    systemImage: "doc.text"
+                )
+            }
+            .buttonStyle(.borderedProminent)
+        } footer: {
+            Text(String(localized: "browser.compilation.readSection.footer",
+                        defaultValue: "This section contains prose content rather than individual numbered documents."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     // MARK: - Document List
 
     @ViewBuilder
     private var documentListSection: some View {
-        if !vm.isIndexed(volumeId) {
+        if canReadSectionDirectly {
+            // Prose-only front matter section — bypass indexing and open directly.
+            readSectionDirectlySection
+        } else if !vm.isIndexed(volumeId) {
             indexRequiredSection
         } else if vm.isLoadingDocuments {
             Section {
