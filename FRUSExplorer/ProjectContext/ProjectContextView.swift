@@ -32,6 +32,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 15: initial implementation
+///   1.1 — Session 25: add Global Context View entry point
 struct ProjectContextView: View {
 
     @Environment(AppState.self) private var appState
@@ -39,6 +40,7 @@ struct ProjectContextView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var vm = ProjectContextViewModel()
+    @State private var showGlobalContext = false
 
     var body: some View {
         @Bindable var vm = vm
@@ -77,6 +79,9 @@ struct ProjectContextView: View {
                 ProjectEditorView(projectToEdit: vm.projectToEdit) {
                     vm.load(context: modelContext)
                 }
+            }
+            .sheet(isPresented: $showGlobalContext) {
+                GlobalContextView()
             }
             .confirmationDialog(
                 String(localized: "project.context.delete.title",
@@ -185,6 +190,22 @@ struct ProjectContextView: View {
                     systemImage: "books.vertical"
                 )
             }
+        }
+
+        Section {
+            Button {
+                showGlobalContext = true
+            } label: {
+                Label(
+                    String(localized: "project.context.globalContext.button",
+                           defaultValue: "All Activity (Global Context)"),
+                    systemImage: "globe"
+                )
+            }
+            .accessibilityLabel(
+                String(localized: "project.context.globalContext.a11y",
+                       defaultValue: "View all activity across all projects")
+            )
         }
     }
 }

@@ -207,6 +207,11 @@
 		AA24BB01CC03DD04EE2401 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA24BB01CC03DD04EE2400 /* SettingsView.swift */; };
 		AA24BB01CC03DD04EE2402 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA24BB01CC03DD04EE2400 /* SettingsView.swift */; };
 		AA24BB01CC03DD04EE2404 /* SettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA24BB01CC03DD04EE2403 /* SettingsTests.swift */; };
+		AA25BB01CC03DD04EE2501 /* GlobalContextViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA25BB01CC03DD04EE2500 /* GlobalContextViewModel.swift */; };
+		AA25BB01CC03DD04EE2502 /* GlobalContextViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA25BB01CC03DD04EE2500 /* GlobalContextViewModel.swift */; };
+		AA25BB01CC03DD04EE2504 /* GlobalContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA25BB01CC03DD04EE2503 /* GlobalContextView.swift */; };
+		AA25BB01CC03DD04EE2505 /* GlobalContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA25BB01CC03DD04EE2503 /* GlobalContextView.swift */; };
+		AA25BB01CC03DD04EE2507 /* GlobalContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA25BB01CC03DD04EE2506 /* GlobalContextTests.swift */; };
 		AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
@@ -351,6 +356,9 @@
 		AA23BB01CC03DD04EE2309 /* SourceExplorerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceExplorerTests.swift; sourceTree = "<group>"; };
 		AA24BB01CC03DD04EE2400 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AA24BB01CC03DD04EE2403 /* SettingsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsTests.swift; sourceTree = "<group>"; };
+		AA25BB01CC03DD04EE2500 /* GlobalContextViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalContextViewModel.swift; sourceTree = "<group>"; };
+		AA25BB01CC03DD04EE2503 /* GlobalContextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalContextView.swift; sourceTree = "<group>"; };
+		AA25BB01CC03DD04EE2506 /* GlobalContextTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalContextTests.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
@@ -466,6 +474,7 @@
 				AA22BB01CC03DD04EE2215 /* CollectionTests.swift */,
 				AA23BB01CC03DD04EE2309 /* SourceExplorerTests.swift */,
 				AA24BB01CC03DD04EE2403 /* SettingsTests.swift */,
+				AA25BB01CC03DD04EE2506 /* GlobalContextTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -664,6 +673,8 @@
 				AA15BB01CC03DD04EE1504 /* ProjectPickerMenu.swift */,
 				AA15BB01CC03DD04EE1507 /* ProjectEditorView.swift */,
 				AA15BB01CC03DD04EE1510 /* ProjectContextView.swift */,
+				AA25BB01CC03DD04EE2500 /* GlobalContextViewModel.swift */,
+				AA25BB01CC03DD04EE2503 /* GlobalContextView.swift */,
 			);
 			path = ProjectContext;
 			sourceTree = "<group>";
@@ -932,6 +943,8 @@
 				AA23BB01CC03DD04EE2304 /* NARACatalogClient.swift in Sources */,
 				AA23BB01CC03DD04EE2307 /* SourceExplorerView.swift in Sources */,
 				AA24BB01CC03DD04EE2401 /* SettingsView.swift in Sources */,
+				AA25BB01CC03DD04EE2501 /* GlobalContextViewModel.swift in Sources */,
+				AA25BB01CC03DD04EE2504 /* GlobalContextView.swift in Sources */,
 				AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */,
 				AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
@@ -1023,6 +1036,8 @@
 				AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */,
 				AA23BB01CC03DD04EE2308 /* SourceExplorerView.swift in Sources */,
 				AA24BB01CC03DD04EE2402 /* SettingsView.swift in Sources */,
+				AA25BB01CC03DD04EE2502 /* GlobalContextViewModel.swift in Sources */,
+				AA25BB01CC03DD04EE2505 /* GlobalContextView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -1063,6 +1078,7 @@
 				AA22BB01CC03DD04EE2216 /* CollectionTests.swift in Sources */,
 				AA23BB01CC03DD04EE2310 /* SourceExplorerTests.swift in Sources */,
 				AA24BB01CC03DD04EE2404 /* SettingsTests.swift in Sources */,
+				AA25BB01CC03DD04EE2507 /* GlobalContextTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
