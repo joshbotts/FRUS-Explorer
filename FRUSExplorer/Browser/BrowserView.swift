@@ -26,6 +26,7 @@ struct BrowserView: View {
     @State private var viewModel: BrowserViewModel?
     @State private var showProjectContext = false
     @State private var showSearch = false
+    @State private var showSettings = false
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -50,6 +51,9 @@ struct BrowserView: View {
         }
         .sheet(isPresented: $showProjectContext) {
             ProjectContextView()
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
         .sheet(isPresented: $showSearch) {
             if let service = appState.searchService {
@@ -82,6 +86,17 @@ struct BrowserView: View {
                         .accessibilityLabel(
                             String(localized: "browser.search.a11y",
                                    defaultValue: "Search documents")
+                        )
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gear")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "browser.settings.a11y",
+                                   defaultValue: "Open settings")
                         )
                     }
                 }
@@ -118,6 +133,17 @@ struct BrowserView: View {
                         .accessibilityLabel(
                             String(localized: "browser.search.a11y",
                                    defaultValue: "Search documents")
+                        )
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gear")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "browser.settings.a11y",
+                                   defaultValue: "Open settings")
                         )
                     }
                 }
