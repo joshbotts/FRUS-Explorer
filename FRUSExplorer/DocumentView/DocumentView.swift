@@ -31,6 +31,7 @@ import SwiftData
 /// Version history:
 ///   1.0 — Session 12: initial implementation
 ///   1.1 — Session 20: add summarize toolbar button, prompt picker sheet, wasChunked indicator
+///   1.2 — Session 23: add source explorer toolbar button and sheet
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -192,6 +193,11 @@ struct DocumentView: View {
                 activeProjectId: appState.activeProjectId
             )
         }
+        .sheet(isPresented: $vm.showSourceExplorer) {
+            if let note = vm.sourceNote {
+                SourceExplorerView(rawSourceNote: note)
+            }
+        }
     }
 
     private var downloadedVolumeIds: Set<String> {
@@ -262,6 +268,23 @@ struct DocumentView: View {
             .accessibilityLabel(
                 String(localized: "document.toolbar.citation.a11y", defaultValue: "Citation options")
             )
+
+            // Source Explorer — only shown when a source note is present
+            if vm.sourceNote != nil {
+                Button {
+                    vm.showSourceExplorer = true
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.sourceExplorer",
+                               defaultValue: "Source Explorer"),
+                        systemImage: "archivebox"
+                    )
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.sourceExplorer.a11y",
+                           defaultValue: "Open NARA Source Explorer")
+                )
+            }
 
             // Cross-references
             Button {

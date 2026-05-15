@@ -108,6 +108,14 @@ public final class DocumentViewModel {
     /// Whether the prompt picker sheet is currently presented.
     public var showSummarizeSheet: Bool = false
 
+    // MARK: - Source Explorer
+
+    /// Raw plain-text source note extracted during `load()`. `nil` if the document has no source note.
+    public var sourceNote: String? = nil
+
+    /// Whether the Source Explorer sheet is currently presented.
+    public var showSourceExplorer: Bool = false
+
     // MARK: - Citation
 
     /// Whether the citation sheet is currently presented.
@@ -179,6 +187,9 @@ public final class DocumentViewModel {
                 .map(\.plainText)
                 .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
                 .joined(separator: "\n\n")
+
+            // Extract source note for Source Explorer
+            sourceNote = extractSourceNote(from: ast.nodes)
 
             // Convert AST → render model with lookup closures
             var converter = ASTToRenderNodeConverter(
@@ -300,6 +311,21 @@ public final class DocumentViewModel {
         }
 
         isSummarizing = false
+    }
+
+    // MARK: - Source Note Extraction
+
+    private func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            if case .footnote(_, let type, let children) = node, type == .source {
+                let text = children
+                    .map(\.plainText)
+                    .joined(separator: " ")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return text.isEmpty ? nil : text
+            }
+        }
+        return nil
     }
 }
 

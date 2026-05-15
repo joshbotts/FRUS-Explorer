@@ -197,6 +197,13 @@
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
 		AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
 		AA22BB01CC03DD04EE2216 /* CollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2215 /* CollectionTests.swift */; };
+		AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */; };
+		AA23BB01CC03DD04EE2302 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */; };
+		AA23BB01CC03DD04EE2304 /* NARACatalogClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */; };
+		AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */; };
+		AA23BB01CC03DD04EE2307 /* SourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */; };
+		AA23BB01CC03DD04EE2308 /* SourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */; };
+		AA23BB01CC03DD04EE2310 /* SourceExplorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2309 /* SourceExplorerTests.swift */; };
 		AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
 		AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
@@ -335,6 +342,10 @@
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2215 /* CollectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionTests.swift; sourceTree = "<group>"; };
+		AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
+		AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARACatalogClient.swift; sourceTree = "<group>"; };
+		AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceExplorerView.swift; sourceTree = "<group>"; };
+		AA23BB01CC03DD04EE2309 /* SourceExplorerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceExplorerTests.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
 		AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
@@ -448,6 +459,7 @@
 				AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */,
 				AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */,
 				AA22BB01CC03DD04EE2215 /* CollectionTests.swift */,
+				AA23BB01CC03DD04EE2309 /* SourceExplorerTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -484,6 +496,7 @@
 				AA09BB02CC03DD04EE090012 /* Search */,
 				AA17BB01CC03DD04EE1709 /* CrossReference */,
 				AA22BB01CC03DD04EE22FF /* Collections */,
+				AA23BB01CC03DD04EE23FF /* SourceExplorer */,
 				AA19BB01CC03DD04EE190F /* Summarization */,
 				AA10BB01CC03DD04EE100000 /* Onboarding */,
 				AA11BB01CC03DD04EE1100 /* Browser */,
@@ -547,6 +560,16 @@
 				AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */,
 			);
 			path = Collections;
+			sourceTree = "<group>";
+		};
+		AA23BB01CC03DD04EE23FF /* SourceExplorer */ = {
+			isa = PBXGroup;
+			children = (
+				AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */,
+				AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */,
+				AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */,
+			);
+			path = SourceExplorer;
 			sourceTree = "<group>";
 		};
 		AA19BB01CC03DD04EE190F /* Summarization */ = {
@@ -890,6 +913,9 @@
 				AA22BB01CC03DD04EE2207 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */,
+				AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */,
+				AA23BB01CC03DD04EE2304 /* NARACatalogClient.swift in Sources */,
+				AA23BB01CC03DD04EE2307 /* SourceExplorerView.swift in Sources */,
 				AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */,
 				AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
@@ -977,6 +1003,9 @@
 				AA22BB01CC03DD04EE2208 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */,
+				AA23BB01CC03DD04EE2302 /* SourceNoteParser.swift in Sources */,
+				AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */,
+				AA23BB01CC03DD04EE2308 /* SourceExplorerView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -1015,6 +1044,7 @@
 				AA20BB01CC03DD04EE200B /* SummarizationUITests.swift in Sources */,
 				AA21BB01CC03DD04EE2107 /* BackgroundSummarizationTests.swift in Sources */,
 				AA22BB01CC03DD04EE2216 /* CollectionTests.swift in Sources */,
+				AA23BB01CC03DD04EE2310 /* SourceExplorerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
