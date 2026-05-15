@@ -30,6 +30,25 @@
 		AA08BB02CC03DD04EE080001 /* SubjectTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */; };
 		AA08BB02CC03DD04EE080002 /* SubjectTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */; };
 		AA08BB02CC03DD04EE080004 /* SubjectTagStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */; };
+		AA09BB02CC03DD04EE090001 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090003 /* SearchModels.swift */; };
+		AA09BB02CC03DD04EE090002 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090003 /* SearchModels.swift */; };
+		AA09BB02CC03DD04EE090004 /* IndexingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */; };
+		AA09BB02CC03DD04EE090005 /* IndexingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */; };
+		AA09BB02CC03DD04EE090007 /* SearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090009 /* SearchService.swift */; };
+		AA09BB02CC03DD04EE090008 /* SearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090009 /* SearchService.swift */; };
+		AA09BB02CC03DD04EE090010 /* IndexingPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090011 /* IndexingPipelineTests.swift */; };
+		AA09BB02CC03DD04EE09F001 /* FTS5Store.swift in Sources (macOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F007 /* FTS5Store.swift */; };
+		AA09BB02CC03DD04EE09F002 /* FTS5Store.swift in Sources (iOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F007 /* FTS5Store.swift */; };
+		AA09BB02CC03DD04EE09F003 /* FTS5Query.swift in Sources (macOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F008 /* FTS5Query.swift */; };
+		AA09BB02CC03DD04EE09F004 /* FTS5Query.swift in Sources (iOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F008 /* FTS5Query.swift */; };
+		AA09BB02CC03DD04EE09F005 /* FTS5Types.swift in Sources (macOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F009 /* FTS5Types.swift */; };
+		AA09BB02CC03DD04EE09F006 /* FTS5Types.swift in Sources (iOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F009 /* FTS5Types.swift */; };
+		AA09BB02CC03DD04EE09F010 /* FTS5Errors.swift in Sources (macOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F011 /* FTS5Errors.swift */; };
+		AA09BB02CC03DD04EE09F012 /* FTS5Errors.swift in Sources (iOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F011 /* FTS5Errors.swift */; };
+		AA09BB02CC03DD04EE09F013 /* FTS5Tokenizer.swift in Sources (macOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F014 /* FTS5Tokenizer.swift */; };
+		AA09BB02CC03DD04EE09F015 /* FTS5Tokenizer.swift in Sources (iOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F014 /* FTS5Tokenizer.swift */; };
+		AA09BB02CC03DD04EE09F016 /* FTS5Connection.swift in Sources (macOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F017 /* FTS5Connection.swift */; };
+		AA09BB02CC03DD04EE09F018 /* FTS5Connection.swift in Sources (iOS) */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F017 /* FTS5Connection.swift */; };
 		AA06BB02CC03DD04EE060034 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		AA06BB02CC03DD04EE060035 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
@@ -118,6 +137,16 @@
 		AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSParserSession07Tests.swift; sourceTree = "<group>"; };
 		AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubjectTagStore.swift; sourceTree = "<group>"; };
 		AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubjectTagStoreTests.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE090003 /* SearchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingPipeline.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE090009 /* SearchService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE090011 /* IndexingPipelineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingPipelineTests.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE09F007 /* FTS5Store.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FTS5Store.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE09F008 /* FTS5Query.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FTS5Query.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE09F009 /* FTS5Types.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FTS5Types.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE09F011 /* FTS5Errors.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FTS5Errors.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE09F014 /* FTS5Tokenizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FTS5Tokenizer.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE09F017 /* FTS5Connection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FTS5Connection.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "tei-rendering-config.json"; sourceTree = "<group>"; };
 		12AD9CC40627F7281D079B75 /* SwiftDataModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SwiftDataModelTests.swift; sourceTree = "<group>"; };
 		138DA99A6075C0CE20F88129 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
@@ -250,6 +279,7 @@
 				AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */,
 				AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */,
 				AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */,
+				AA09BB02CC03DD04EE090011 /* IndexingPipelineTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -282,6 +312,8 @@
 				63390DD720E0A093134DBA47 /* App */,
 				AA01BB02CC03DD04EE050004 /* Downloads */,
 				EB3D26757D1E60EB072F06EC /* Models */,
+				AA09BB02CC03DD04EE09F000 /* FTS5Store */,
+				AA09BB02CC03DD04EE090012 /* Search */,
 				AA06BB02CC03DD04EE060009 /* TEI */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
@@ -289,6 +321,30 @@
 				FF735149F415370F2B4A807F /* Localizable.strings */,
 			);
 			path = FRUSExplorer;
+			sourceTree = "<group>";
+		};
+		AA09BB02CC03DD04EE09F000 /* FTS5Store */ = {
+			isa = PBXGroup;
+			children = (
+				AA09BB02CC03DD04EE09F017 /* FTS5Connection.swift */,
+				AA09BB02CC03DD04EE09F011 /* FTS5Errors.swift */,
+				AA09BB02CC03DD04EE09F008 /* FTS5Query.swift */,
+				AA09BB02CC03DD04EE09F007 /* FTS5Store.swift */,
+				AA09BB02CC03DD04EE09F014 /* FTS5Tokenizer.swift */,
+				AA09BB02CC03DD04EE09F009 /* FTS5Types.swift */,
+			);
+			name = FTS5Store;
+			path = FTS5Store;
+			sourceTree = SOURCE_ROOT;
+		};
+		AA09BB02CC03DD04EE090012 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+				AA09BB02CC03DD04EE090003 /* SearchModels.swift */,
+				AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */,
+				AA09BB02CC03DD04EE090009 /* SearchService.swift */,
+			);
+			path = Search;
 			sourceTree = "<group>";
 		};
 		E5B6F78728D4945C82785AB6 /* Tags */ = {
@@ -489,6 +545,15 @@
 				CB79768B4C635DCD4164AA09 /* TaxonomyModels.swift in Sources */,
 				57383AB4A7720F91DCEE13A1 /* VolumeLevelTagStore.swift in Sources */,
 				AA08BB02CC03DD04EE080001 /* SubjectTagStore.swift in Sources */,
+				AA09BB02CC03DD04EE09F001 /* FTS5Store.swift in Sources (macOS) */,
+				AA09BB02CC03DD04EE09F003 /* FTS5Query.swift in Sources (macOS) */,
+				AA09BB02CC03DD04EE09F005 /* FTS5Types.swift in Sources (macOS) */,
+				AA09BB02CC03DD04EE09F010 /* FTS5Errors.swift in Sources (macOS) */,
+				AA09BB02CC03DD04EE09F013 /* FTS5Tokenizer.swift in Sources (macOS) */,
+				AA09BB02CC03DD04EE09F016 /* FTS5Connection.swift in Sources (macOS) */,
+				AA09BB02CC03DD04EE090001 /* SearchModels.swift in Sources */,
+				AA09BB02CC03DD04EE090004 /* IndexingPipeline.swift in Sources */,
+				AA09BB02CC03DD04EE090007 /* SearchService.swift in Sources */,
 				E83FB53D20F4585C41AAAB73 /* SupportingTypes.swift in Sources */,
 				DCAADA810C1FCDA065DBE283 /* Project.swift in Sources */,
 				CCC8365E667F068DDD2789AB /* ResearchNote.swift in Sources */,
@@ -522,6 +587,15 @@
 				B0130650A3D9513A0E58368C /* TaxonomyModels.swift in Sources */,
 				887D4D10D94B9100A232EB57 /* VolumeLevelTagStore.swift in Sources */,
 				AA08BB02CC03DD04EE080002 /* SubjectTagStore.swift in Sources */,
+				AA09BB02CC03DD04EE09F002 /* FTS5Store.swift in Sources (iOS) */,
+				AA09BB02CC03DD04EE09F004 /* FTS5Query.swift in Sources (iOS) */,
+				AA09BB02CC03DD04EE09F006 /* FTS5Types.swift in Sources (iOS) */,
+				AA09BB02CC03DD04EE09F012 /* FTS5Errors.swift in Sources (iOS) */,
+				AA09BB02CC03DD04EE09F015 /* FTS5Tokenizer.swift in Sources (iOS) */,
+				AA09BB02CC03DD04EE09F018 /* FTS5Connection.swift in Sources (iOS) */,
+				AA09BB02CC03DD04EE090002 /* SearchModels.swift in Sources */,
+				AA09BB02CC03DD04EE090005 /* IndexingPipeline.swift in Sources */,
+				AA09BB02CC03DD04EE090008 /* SearchService.swift in Sources */,
 				A715CE19074448DDA44E1980 /* SupportingTypes.swift in Sources */,
 				727AA985E27DFD88FB9D2340 /* Project.swift in Sources */,
 				F80B3D8D9BBCFEDB3BA130EF /* ResearchNote.swift in Sources */,
@@ -558,6 +632,7 @@
 				AA06BB02CC03DD04EE060033 /* TEIParserTests.swift in Sources */,
 				AA07BB02CC03DD04EE070001 /* FRUSParserSession07Tests.swift in Sources */,
 				AA08BB02CC03DD04EE080004 /* SubjectTagStoreTests.swift in Sources */,
+				AA09BB02CC03DD04EE090010 /* IndexingPipelineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -611,6 +686,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				OTHER_LDFLAGS = "-lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = macosx;
@@ -787,6 +863,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				OTHER_LDFLAGS = "-lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = macosx;
@@ -828,6 +905,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = "-lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_MODULE_NAME = FRUSExplorer;
 				PRODUCT_NAME = "FRUS Explorer";
@@ -852,6 +930,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = "-lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_MODULE_NAME = FRUSExplorer;
 				PRODUCT_NAME = "FRUS Explorer";
@@ -895,6 +974,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = "-lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_MODULE_NAME = FRUSExplorer;
 				PRODUCT_NAME = "FRUS Explorer";
@@ -937,6 +1017,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				OTHER_LDFLAGS = "-lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = macosx;

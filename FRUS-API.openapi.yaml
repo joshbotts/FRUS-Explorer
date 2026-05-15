@@ -180,6 +180,121 @@ paths:
         "404":
           description: Volume not found or not yet indexed
 
+  /search:
+    get:
+      summary: Full-text search across indexed FRUS documents
+      description: |
+        Executes a BM25-ranked full-text search across all indexed FRUS volumes.
+        Supports keyword queries, phrase search, prefix wildcard, boolean NOT,
+        subject-tag filtering, volume-scoped filtering, and optional date-range
+        filtering.
+
+        Results are ordered by BM25 relevance (lower score = more relevant).
+        Pagination is supported via `limit` and `offset`.
+
+        Added by Session 09 (Search Index Pipeline).
+      operationId: searchDocuments
+      tags:
+        - Search
+      parameters:
+        - name: keywords
+          in: query
+          schema:
+            type: string
+          description: Space-separated keywords combined via boolean AND (default) or OR.
+        - name: phrase
+          in: query
+          schema:
+            type: string
+          description: Exact phrase that must appear in order.
+        - name: booleanMode
+          in: query
+          schema:
+            type: string
+            enum: [and, or]
+            default: and
+          description: How multiple keywords are combined.
+        - name: excludedTerms
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Terms that must NOT appear in matching documents.
+        - name: prefixWildcard
+          in: query
+          schema:
+            type: string
+          description: Prefix for a wildcard search (e.g. `negoti` matches `negotiate`, `negotiated`).
+        - name: dateRangeEarliest
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Only return documents on or after this ISO 8601 date.
+        - name: dateRangeLatest
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Only return documents on or before this ISO 8601 date.
+        - name: subjectTagIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Restrict to documents carrying ALL of the given subject tag IDs.
+        - name: volumeIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Restrict results to these volume IDs. Omit to search all indexed volumes.
+        - name: includeSummaries
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Whether to search AI-generated summary text.
+        - name: includeNotes
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Whether to search user research note text.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Maximum number of results to return.
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Number of results to skip (for pagination).
+      responses:
+        "200":
+          description: Ranked search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchResult"
+        "400":
+          description: Invalid query (e.g. empty query with no searchable terms)
+
 components:
   schemas:
 
@@ -334,3 +449,60 @@ components:
             - prefixed
             - unparseable
           description: Normalised page number type derived from the `@n` value.
+
+    SearchResult:
+      type: object
+      description: |
+        A single ranked full-text search result returned by `GET /search`.
+        Results are ordered by BM25 relevance score (lower = more relevant).
+        The `snippet` field contains the matching context with `<b>…</b>` delimiters
+        around the first matching run, suitable for display in search result lists.
+
+        Added by Session 09 (Search Index Pipeline).
+      required:
+        - documentId
+        - volumeId
+        - header
+        - snippet
+        - bm25Score
+        - subjectTagIds
+        - userTagIds
+      properties:
+        documentId:
+          type: string
+          description: Document identifier (e.g. `d1`), unique within its volume.
+        volumeId:
+          type: string
+          description: Volume this document belongs to (e.g. `frus1969-76v01`).
+        documentNumber:
+          type: string
+          nullable: true
+          description: Printed document number, if present.
+        header:
+          type: string
+          description: Document header / title line.
+        dateline:
+          type: string
+          nullable: true
+          description: Dateline string (place and date of authorship).
+        sourceNote:
+          type: string
+          nullable: true
+          description: Source note describing archival provenance.
+        snippet:
+          type: string
+          description: Context snippet with matching terms wrapped in `<b>…</b>`.
+        bm25Score:
+          type: number
+          format: double
+          description: BM25 relevance score. Lower (more negative) means more relevant.
+        subjectTagIds:
+          type: array
+          items:
+            type: string
+          description: Subject tag IDs associated with this document.
+        userTagIds:
+          type: array
+          items:
+            type: string
+          description: User tag IDs associated with this document.

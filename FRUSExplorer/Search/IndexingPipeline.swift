@@ -1,0 +1,964 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Foundation
+import SQLite3
+
+private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
+// MARK: - IndexingPipeline
+
+/// Processes downloaded FRUS volume XML files into the FTS5 search index and
+/// auxiliary SQLite tables (`cross_references`, `page_ranges`, `document_cache`,
+/// `document_dates`).
+///
+/// ## Architecture
+/// `IndexingPipeline` is an actor. It owns:
+/// - A reference to `FTS5Store` for all FTS5 virtual-table operations.
+/// - A raw SQLite connection to the same database file for four auxiliary tables.
+///
+/// Both connections share the same WAL-mode SQLite file; SQLite serialises writers
+/// automatically so concurrent access is safe.
+///
+/// ## Concurrency
+/// `indexAllVolumes()` uses `withThrowingTaskGroup` with a sliding-window pattern
+/// to run up to `concurrencyLimit` XML parsers concurrently. XML parsing runs via
+/// `nonisolated parseAndExtract`, which leaves the actor's executor free. Storage
+/// into SQLite is serialised through the actor.
+///
+/// ## Auxiliary Tables
+/// | Table | Purpose |
+/// |---|---|
+/// | `cross_references` | Directed edges from `<ref>` elements |
+/// | `page_ranges` | One row per `<pb>` element (Session 30 citation lookup) |
+/// | `document_cache` | Un-stemmed field text enabling incremental summary/note updates |
+/// | `document_dates` | Best-effort ISO 8601 dates for `SearchService` date filtering |
+///
+/// ## section_id in page_ranges
+/// `section_id` equals the containing document's `xml:id`. Pagination restarts between
+/// FRUS compilation sections are therefore distinguished naturally because each document
+/// has a unique `xml:id`. This matches the Session 30 citation-lookup requirement.
+///
+/// Version history:
+///   1.0 — Session 09: initial implementation
+public actor IndexingPipeline {
+
+    // MARK: - Configuration
+
+    /// Maximum number of volume XML parsers running concurrently. Default 4.
+    public let concurrencyLimit: Int
+
+    // MARK: - Dependencies (let — accessible from nonisolated methods)
+
+    private let fts5Store: FTS5Store
+    private let volumesDirectory: URL
+    private let subjectTagStore: SubjectTagStore
+
+    // MARK: - Auxiliary SQLite connection
+
+    nonisolated(unsafe) private var auxDb: OpaquePointer?
+    private let databaseURL: URL
+
+    // MARK: - Progress stream
+
+    private let progressContinuation: AsyncStream<IndexingProgress>.Continuation
+    private let _progress: AsyncStream<IndexingProgress>
+
+    /// Yields `IndexingProgress` events during and after indexing operations.
+    public nonisolated var progress: AsyncStream<IndexingProgress> { _progress }
+
+    // MARK: - Initialisation
+
+    /// Creates an `IndexingPipeline`.
+    ///
+    /// Opens a SQLite connection to `databaseURL` for the auxiliary tables (which share
+    /// the same database file as `FTS5Store`). Creates all auxiliary tables if absent.
+    ///
+    /// - Parameters:
+    ///   - fts5Store: The shared FTS5 store. Must use the same `databaseURL`.
+    ///   - databaseURL: Path to the shared SQLite database file.
+    ///   - volumesDirectory: Directory containing downloaded volume XML files.
+    ///   - subjectTagStore: Provides subject tag IDs for indexed documents.
+    ///   - concurrencyLimit: Maximum simultaneous XML parsers. Default 4.
+    public init(
+        fts5Store: FTS5Store,
+        databaseURL: URL,
+        volumesDirectory: URL,
+        subjectTagStore: SubjectTagStore,
+        concurrencyLimit: Int = 4
+    ) throws {
+        self.fts5Store = fts5Store
+        self.databaseURL = databaseURL
+        self.volumesDirectory = volumesDirectory
+        self.subjectTagStore = subjectTagStore
+        self.concurrencyLimit = concurrencyLimit
+
+        let (stream, continuation) = AsyncStream.makeStream(of: IndexingProgress.self)
+        _progress = stream
+        progressContinuation = continuation
+
+        var handle: OpaquePointer?
+        let rc = sqlite3_open_v2(
+            databaseURL.path,
+            &handle,
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+            nil
+        )
+        guard rc == SQLITE_OK, let h = handle else {
+            let msg = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            sqlite3_close(handle)
+            throw IndexingError.databaseOpenFailed(message: msg)
+        }
+        try Self.setupDatabase(h)
+        auxDb = h
+
+        #if DEBUG
+        print("[IndexingPipeline] Initialised. volumesDir=\(volumesDirectory.path)")
+        #endif
+    }
+
+    deinit {
+        progressContinuation.finish()
+        if let db = auxDb { sqlite3_close_v2(db) }
+    }
+
+    // MARK: - Public API
+
+    /// Indexes a single downloaded volume by ID.
+    ///
+    /// Parses the volume XML, inserts FTS5 documents, and populates all auxiliary tables.
+    /// - Throws: `IndexingError.volumeNotFound` if the XML file is absent.
+    public func indexVolume(_ volumeId: String) async throws {
+        let url = volumesDirectory.appendingPathComponent("\(volumeId).xml")
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw IndexingError.volumeNotFound(volumeId: volumeId)
+        }
+        emit(.indexing(volumeId: volumeId, current: 0, total: 1))
+        let data = try await parseAndExtract(volumeId: volumeId, url: url)
+        try await storeIndexData(data)
+        emit(.completed(volumeCount: 1, documentCount: data.documents.count))
+
+        #if DEBUG
+        print("[IndexingPipeline] Indexed \(volumeId): \(data.documents.count) documents")
+        #endif
+    }
+
+    /// Indexes all downloaded volumes concurrently.
+    ///
+    /// Uses a sliding-window `TaskGroup` limited to `concurrencyLimit` concurrent
+    /// XML parsers. Storage is serialised through the actor after each parse completes.
+    public func indexAllVolumes() async throws {
+        let files = Self.findDownloadedVolumes(in: volumesDirectory)
+        guard !files.isEmpty else {
+            emit(.completed(volumeCount: 0, documentCount: 0))
+            return
+        }
+
+        let total = files.count
+        var completedVolumes = 0
+        var totalDocuments = 0
+
+        emit(.indexing(volumeId: files[0].volumeId, current: 0, total: total))
+
+        try await withThrowingTaskGroup(of: VolumeIndexData.self) { group in
+            var iterator = files.makeIterator()
+
+            // Seed the initial window.
+            for _ in 0..<min(concurrencyLimit, total) {
+                if let file = iterator.next() {
+                    group.addTask { [self] in
+                        try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
+                    }
+                }
+            }
+
+            // Process results and slide the window forward.
+            for try await data in group {
+                try await storeIndexData(data)
+                completedVolumes += 1
+                totalDocuments += data.documents.count
+                emit(.indexing(volumeId: data.volumeId, current: completedVolumes, total: total))
+
+                if let file = iterator.next() {
+                    group.addTask { [self] in
+                        try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
+                    }
+                }
+            }
+        }
+
+        emit(.completed(volumeCount: completedVolumes, documentCount: totalDocuments))
+
+        #if DEBUG
+        print("[IndexingPipeline] indexAllVolumes complete: \(completedVolumes) volumes, \(totalDocuments) docs")
+        #endif
+    }
+
+    /// Removes all index data for a volume from FTS5 and all auxiliary tables.
+    ///
+    /// Enumerates document IDs from `document_cache`, calls `FTS5Store.delete` for
+    /// each, then deletes auxiliary rows in a single transaction per table.
+    public func removeVolume(_ volumeId: String) async throws {
+        let docIds = try fetchDocumentIds(forVolume: volumeId)
+        for docId in docIds {
+            try await fts5Store.delete(documentId: docId)
+        }
+        try auxDeleteVolume(volumeId)
+
+        #if DEBUG
+        print("[IndexingPipeline] Removed \(docIds.count) FTS5 documents for \(volumeId)")
+        #endif
+    }
+
+    /// Updates the summary text for a document that is already in the index.
+    ///
+    /// Reads original field text from `document_cache`, merges in `summary.responseText`,
+    /// and calls `FTS5Store.update` so the new text is immediately searchable.
+    func updateSummary(_ summary: GeneratedSummary) async throws {
+        guard let cached = try fetchCache(volumeId: summary.volumeId, documentId: summary.documentId) else {
+            #if DEBUG
+            print("[IndexingPipeline] updateSummary: \(summary.volumeId)/\(summary.documentId) not in cache")
+            #endif
+            return
+        }
+        let updated = cached.toFTS5Document(summaryText: summary.responseText, noteText: cached.noteText)
+        try await fts5Store.update(document: updated)
+        try updateCacheFields(volumeId: summary.volumeId, documentId: summary.documentId,
+                              summaryText: summary.responseText, noteText: cached.noteText)
+    }
+
+    /// Updates the research note text for a document that is already in the index.
+    ///
+    /// Reads original field text from `document_cache`, merges in `note.bodyText`,
+    /// and calls `FTS5Store.update` so the new text is immediately searchable.
+    func updateResearchNote(_ note: ResearchNote) async throws {
+        guard let cached = try fetchCache(volumeId: note.volumeId, documentId: note.documentId) else {
+            #if DEBUG
+            print("[IndexingPipeline] updateResearchNote: \(note.volumeId)/\(note.documentId) not in cache")
+            #endif
+            return
+        }
+        let updated = cached.toFTS5Document(summaryText: cached.summaryText, noteText: note.bodyText)
+        try await fts5Store.update(document: updated)
+        try updateCacheFields(volumeId: note.volumeId, documentId: note.documentId,
+                              summaryText: cached.summaryText, noteText: note.bodyText)
+    }
+
+    // MARK: - Date Range Query (used by SearchService)
+
+    /// Returns a set of `"volumeId/documentId"` composite keys for documents whose
+    /// best-effort date falls within `range`. Used by `SearchService` for date filtering.
+    func documentKeysInDateRange(_ range: DateRange, limitToVolumeIds volumeIds: [String]?) throws -> Set<String> {
+        var parts: [String] = ["date_iso IS NOT NULL"]
+        var args: [String] = []
+
+        if let e = range.earliest { parts.append("date_iso >= ?"); args.append(e) }
+        if let l = range.latest   { parts.append("date_iso <= ?"); args.append(l) }
+
+        if let vids = volumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            parts.append("volume_id IN (\(placeholders))")
+            args.append(contentsOf: vids)
+        }
+
+        let sql = "SELECT volume_id, document_id FROM document_dates WHERE " + parts.joined(separator: " AND ")
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, arg) in args.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), arg, -1, SQLITE_TRANSIENT_IP)
+        }
+
+        var keys = Set<String>()
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let vid = auxColumnString(stmt, 0), let did = auxColumnString(stmt, 1) {
+                keys.insert("\(vid)/\(did)")
+            }
+        }
+        return keys
+    }
+
+    // MARK: - Parsing (nonisolated — runs off the actor's executor for concurrency)
+
+    nonisolated private func parseAndExtract(volumeId: String, url: URL) async throws -> VolumeIndexData {
+        let parser = FRUSDocumentParser()
+        let astDocs = try await parser.parse(volumeURL: url)
+
+        var fts5Docs: [FTS5Document] = []
+        var crossRefs: [CrossReferenceRow] = []
+        var pageRangeRows: [PageRangeRow] = []
+        var dateRows: [DocumentDateRow] = []
+        var cacheRows: [DocumentCacheRow] = []
+
+        for astDoc in astDocs {
+            let did = astDoc.documentId
+            let header     = Self.extractHeader(from: astDoc.nodes)
+            let dateline   = Self.extractDateline(from: astDoc.nodes)
+            let sourceNote = Self.extractSourceNote(from: astDoc.nodes)
+            let bodyText   = Self.extractBodyText(from: astDoc.nodes)
+            let docNumber  = Self.extractDocumentNumber(from: astDoc.nodes)
+
+            let subjectTags   = await subjectTagStore.tags(forDocumentId: did)
+            let subjectTagStr = subjectTags.isEmpty ? nil : subjectTags.map(\.subjectId).joined(separator: " ")
+
+            fts5Docs.append(FTS5Document(
+                id: did, volumeId: volumeId, documentNumber: docNumber,
+                header: header, dateline: dateline, sourceNote: sourceNote,
+                bodyText: bodyText, subjectTagIds: subjectTagStr,
+                userTagIds: nil, summaryText: nil, noteText: nil
+            ))
+
+            crossRefs.append(contentsOf: Self.extractCrossReferences(
+                from: astDoc.nodes, sourceVolumeId: volumeId, sourceDocumentId: did))
+            pageRangeRows.append(contentsOf: Self.extractPageRanges(
+                from: astDoc.nodes, volumeId: volumeId, documentId: did))
+            dateRows.append(DocumentDateRow(
+                volumeId: volumeId, documentId: did,
+                dateISO: dateline.flatMap { Self.parseDateISO(from: $0) }
+            ))
+            cacheRows.append(DocumentCacheRow(
+                volumeId: volumeId, documentId: did, documentNumber: docNumber,
+                header: header, dateline: dateline, sourceNote: sourceNote,
+                bodyText: bodyText, subjectTagIds: subjectTagStr,
+                userTagIds: nil, summaryText: nil, noteText: nil
+            ))
+        }
+
+        return VolumeIndexData(
+            volumeId: volumeId, documents: fts5Docs, crossReferences: crossRefs,
+            pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows
+        )
+    }
+
+    // MARK: - Storage
+
+    private func storeIndexData(_ data: VolumeIndexData) async throws {
+        guard !data.documents.isEmpty else { return }
+        try await fts5Store.insertBatch(data.documents)
+        try auxInsertCrossReferences(data.crossReferences)
+        try auxInsertPageRanges(data.pageRanges)
+        try auxInsertDocumentDates(data.documentDates)
+        try auxInsertDocumentCache(data.documentCache)
+    }
+
+    // MARK: - Progress
+
+    private func emit(_ state: IndexingProgress.State) {
+        progressContinuation.yield(IndexingProgress(state: state))
+    }
+
+    // MARK: - Static Text Extraction Helpers
+
+    nonisolated static func extractHeader(from nodes: [FRUSASTNode]) -> String {
+        for node in nodes {
+            if case .head(let c) = node { return c.map(\.plainText).joined(separator: " ").normalizedWhitespace }
+        }
+        return ""
+    }
+
+    nonisolated static func extractDateline(from nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            switch node {
+            case .dateline(let c):
+                let t = c.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                return t.isEmpty ? nil : t
+            case .opener(let c):
+                if let dl = extractDateline(from: c) { return dl }
+            default: break
+            }
+        }
+        return nil
+    }
+
+    nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            if case .footnote(_, let type, let c) = node, type == .source {
+                let t = c.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                return t.isEmpty ? nil : t
+            }
+        }
+        return nil
+    }
+
+    nonisolated static func extractBodyText(from nodes: [FRUSASTNode]) -> String {
+        nodes.map(\.plainText).joined(separator: " ").normalizedWhitespace
+    }
+
+    nonisolated static func extractDocumentNumber(from nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            if case .head(let c) = node {
+                let text = c.map(\.plainText).joined(separator: " ").trimmingCharacters(in: .whitespaces)
+                let parts = text.split(separator: ".", maxSplits: 1)
+                if let first = parts.first?.trimmingCharacters(in: .whitespaces), Int(first) != nil {
+                    return first
+                }
+            }
+        }
+        return nil
+    }
+
+    nonisolated static func extractCrossReferences(
+        from nodes: [FRUSASTNode],
+        sourceVolumeId: String,
+        sourceDocumentId: String
+    ) -> [CrossReferenceRow] {
+        var result: [CrossReferenceRow] = []
+        for node in nodes {
+            if case .crossReference(let target, let targetVolumeId, _) = node {
+                let targetDocId = target.hasPrefix("#")
+                    ? String(target.dropFirst())
+                    : (target.components(separatedBy: "#").last ?? target)
+                if !targetDocId.isEmpty {
+                    result.append(CrossReferenceRow(
+                        sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
+                        targetVolumeId: targetVolumeId, targetDocumentId: targetDocId
+                    ))
+                }
+            } else {
+                result.append(contentsOf: extractCrossReferences(
+                    from: node.children,
+                    sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId
+                ))
+            }
+        }
+        return result
+    }
+
+    nonisolated static func extractPageRanges(
+        from nodes: [FRUSASTNode],
+        volumeId: String,
+        documentId: String
+    ) -> [PageRangeRow] {
+        var result: [PageRangeRow] = []
+        for node in nodes {
+            if case .pageBreak(let pageNumber) = node {
+                let type: String; let intVal: Int?; let raw: String
+                switch pageNumber {
+                case .arabic(let n):      (type, intVal, raw) = ("arabic", n, "\(n)")
+                case .roman(let n):       (type, intVal, raw) = ("roman", n, "\(n)")
+                case .prefixed(let s):    (type, intVal, raw) = ("prefixed", nil, s)
+                case .unparseable(let s): (type, intVal, raw) = ("unparseable", nil, s)
+                }
+                result.append(PageRangeRow(
+                    volumeId: volumeId, documentId: documentId, sectionId: documentId,
+                    pageNumberType: type, pageNumberInt: intVal, pageNumberRaw: raw
+                ))
+            } else {
+                result.append(contentsOf: extractPageRanges(
+                    from: node.children, volumeId: volumeId, documentId: documentId
+                ))
+            }
+        }
+        return result
+    }
+
+    /// Best-effort ISO 8601 date extraction from a dateline string.
+    ///
+    /// Returns `nil` if no recognizable date pattern is found. Documents without a
+    /// parseable date are excluded from date-range–filtered search results.
+    nonisolated static func parseDateISO(from dateline: String) -> String? {
+        // Strip trailing periods and city prefixes
+        let cleaned = dateline
+            .trimmingCharacters(in: .punctuationCharacters)
+            .trimmingCharacters(in: .whitespaces)
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        // Try sliding window over comma-separated segments
+        let segments = cleaned.components(separatedBy: ", ")
+        let formats: [(String, String)] = [
+            ("MMMM d yyyy",  "yyyy-MM-dd"),
+            ("MMMM dd yyyy", "yyyy-MM-dd"),
+            ("MMMM yyyy",    "yyyy-MM"),
+        ]
+        for (inFmt, outFmt) in formats {
+            formatter.dateFormat = inFmt
+            for start in 0..<segments.count {
+                for length in stride(from: segments.count - start, through: 1, by: -1) {
+                    let candidate = segments[start..<(start + length)]
+                        .joined(separator: " ")
+                        .replacingOccurrences(of: ",", with: "")
+                    if let date = formatter.date(from: candidate) {
+                        formatter.dateFormat = outFmt
+                        return formatter.string(from: date)
+                    }
+                }
+            }
+        }
+
+        // Last resort: 4-digit year
+        if let range = cleaned.range(of: #"\b(1[89]\d\d|20[012]\d)\b"#, options: .regularExpression) {
+            return String(cleaned[range])
+        }
+        return nil
+    }
+
+    // MARK: - File Discovery
+
+    nonisolated static func findDownloadedVolumes(in directory: URL) -> [(volumeId: String, url: URL)] {
+        guard let contents = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil,
+            options: .skipsHiddenFiles
+        ) else { return [] }
+        return contents
+            .filter { $0.pathExtension == "xml" }
+            .map { (volumeId: $0.deletingPathExtension().lastPathComponent, url: $0) }
+            .sorted { $0.volumeId < $1.volumeId }
+    }
+
+    // MARK: - Auxiliary Table DDL
+
+    /// Called from `init` (nonisolated context) to configure WAL mode and create tables.
+    private static func setupDatabase(_ db: OpaquePointer) throws {
+        func exec(_ sql: String) throws {
+            var errmsg: UnsafeMutablePointer<CChar>?
+            let rc = sqlite3_exec(db, sql, nil, nil, &errmsg)
+            guard rc == SQLITE_OK else {
+                let msg = errmsg.map { String(cString: $0) } ?? "unknown"
+                sqlite3_free(errmsg)
+                throw IndexingError.sqliteError(code: rc, message: msg)
+            }
+        }
+        try exec("PRAGMA journal_mode=WAL")
+        try exec("PRAGMA synchronous=NORMAL")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS cross_references (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_volume_id TEXT NOT NULL,
+                source_document_id TEXT NOT NULL,
+                target_volume_id TEXT,
+                target_document_id TEXT NOT NULL
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_crossref_source ON cross_references(source_volume_id, source_document_id)")
+        try exec("CREATE INDEX IF NOT EXISTS idx_crossref_target ON cross_references(target_document_id)")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS page_ranges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                section_id TEXT NOT NULL,
+                page_number_type TEXT NOT NULL,
+                page_number_int INTEGER,
+                page_number_raw TEXT NOT NULL
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_page_ranges_volume ON page_ranges(volume_id, page_number_type, page_number_int)")
+        try exec("CREATE INDEX IF NOT EXISTS idx_page_ranges_document ON page_ranges(volume_id, document_id)")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS document_dates (
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                date_iso TEXT,
+                PRIMARY KEY (volume_id, document_id)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_dates ON document_dates(date_iso)")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS document_cache (
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                document_number TEXT,
+                header TEXT NOT NULL,
+                dateline TEXT,
+                source_note TEXT,
+                body_text TEXT NOT NULL,
+                subject_tag_ids TEXT,
+                user_tag_ids TEXT,
+                summary_text TEXT,
+                note_text TEXT,
+                PRIMARY KEY (volume_id, document_id)
+            )
+            """)
+    }
+
+    private func createAuxiliaryTables() throws {
+        try auxExec("""
+            CREATE TABLE IF NOT EXISTS cross_references (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_volume_id TEXT NOT NULL,
+                source_document_id TEXT NOT NULL,
+                target_volume_id TEXT,
+                target_document_id TEXT NOT NULL
+            )
+            """)
+        try auxExec("CREATE INDEX IF NOT EXISTS idx_crossref_source ON cross_references(source_volume_id, source_document_id)")
+        try auxExec("CREATE INDEX IF NOT EXISTS idx_crossref_target ON cross_references(target_document_id)")
+
+        try auxExec("""
+            CREATE TABLE IF NOT EXISTS page_ranges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                section_id TEXT NOT NULL,
+                page_number_type TEXT NOT NULL,
+                page_number_int INTEGER,
+                page_number_raw TEXT NOT NULL
+            )
+            """)
+        try auxExec("CREATE INDEX IF NOT EXISTS idx_page_ranges_volume ON page_ranges(volume_id, page_number_type, page_number_int)")
+        try auxExec("CREATE INDEX IF NOT EXISTS idx_page_ranges_document ON page_ranges(volume_id, document_id)")
+
+        try auxExec("""
+            CREATE TABLE IF NOT EXISTS document_dates (
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                date_iso TEXT,
+                PRIMARY KEY (volume_id, document_id)
+            )
+            """)
+        try auxExec("CREATE INDEX IF NOT EXISTS idx_doc_dates ON document_dates(date_iso)")
+
+        try auxExec("""
+            CREATE TABLE IF NOT EXISTS document_cache (
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                document_number TEXT,
+                header TEXT NOT NULL,
+                dateline TEXT,
+                source_note TEXT,
+                body_text TEXT NOT NULL,
+                subject_tag_ids TEXT,
+                user_tag_ids TEXT,
+                summary_text TEXT,
+                note_text TEXT,
+                PRIMARY KEY (volume_id, document_id)
+            )
+            """)
+    }
+
+    // MARK: - Auxiliary Table DML
+
+    private func auxInsertCrossReferences(_ rows: [CrossReferenceRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = "INSERT INTO cross_references (source_volume_id, source_document_id, target_volume_id, target_document_id) VALUES (?, ?, ?, ?)"
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.sourceVolumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.sourceDocumentId, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 3, row.targetVolumeId)
+                sqlite3_bind_text(stmt, 4, row.targetDocumentId, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+    }
+
+    private func auxInsertPageRanges(_ rows: [PageRangeRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = "INSERT INTO page_ranges (volume_id, document_id, section_id, page_number_type, page_number_int, page_number_raw) VALUES (?, ?, ?, ?, ?, ?)"
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, row.sectionId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 4, row.pageNumberType, -1, SQLITE_TRANSIENT_IP)
+                if let n = row.pageNumberInt { sqlite3_bind_int64(stmt, 5, Int64(n)) }
+                else { sqlite3_bind_null(stmt, 5) }
+                sqlite3_bind_text(stmt, 6, row.pageNumberRaw, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+    }
+
+    private func auxInsertDocumentDates(_ rows: [DocumentDateRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = "INSERT OR REPLACE INTO document_dates (volume_id, document_id, date_iso) VALUES (?, ?, ?)"
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 3, row.dateISO)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+    }
+
+    private func auxInsertDocumentCache(_ rows: [DocumentCacheRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = """
+            INSERT OR REPLACE INTO document_cache
+            (volume_id, document_id, document_number, header, dateline, source_note, body_text,
+             subject_tag_ids, user_tag_ids, summary_text, note_text)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 3, row.documentNumber)
+                sqlite3_bind_text(stmt, 4, row.header, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 5, row.dateline)
+                auxBindOptional(stmt, 6, row.sourceNote)
+                sqlite3_bind_text(stmt, 7, row.bodyText, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 8, row.subjectTagIds)
+                auxBindOptional(stmt, 9, row.userTagIds)
+                auxBindOptional(stmt, 10, row.summaryText)
+                auxBindOptional(stmt, 11, row.noteText)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+    }
+
+    private func auxDeleteVolume(_ volumeId: String) throws {
+        for (table, col) in [
+            ("cross_references", "source_volume_id"),
+            ("page_ranges", "volume_id"),
+            ("document_dates", "volume_id"),
+            ("document_cache", "volume_id"),
+        ] {
+            let stmt = try auxPrepare("DELETE FROM \(table) WHERE \(col) = ?")
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            try auxStep(stmt)
+        }
+    }
+
+    private func fetchDocumentIds(forVolume volumeId: String) throws -> [String] {
+        let stmt = try auxPrepare("SELECT document_id FROM document_cache WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        var ids: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let id = auxColumnString(stmt, 0) { ids.append(id) }
+        }
+        return ids
+    }
+
+    private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {
+        let sql = """
+            SELECT document_number, header, dateline, source_note, body_text,
+                   subject_tag_ids, user_tag_ids, summary_text, note_text
+            FROM document_cache WHERE volume_id = ? AND document_id = ?
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return DocumentCacheRow(
+            volumeId: volumeId, documentId: documentId,
+            documentNumber: auxColumnString(stmt, 0),
+            header: auxColumnString(stmt, 1) ?? "",
+            dateline: auxColumnString(stmt, 2),
+            sourceNote: auxColumnString(stmt, 3),
+            bodyText: auxColumnString(stmt, 4) ?? "",
+            subjectTagIds: auxColumnString(stmt, 5),
+            userTagIds: auxColumnString(stmt, 6),
+            summaryText: auxColumnString(stmt, 7),
+            noteText: auxColumnString(stmt, 8)
+        )
+    }
+
+    private func updateCacheFields(volumeId: String, documentId: String, summaryText: String?, noteText: String?) throws {
+        let sql = "UPDATE document_cache SET summary_text = ?, note_text = ? WHERE volume_id = ? AND document_id = ?"
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        auxBindOptional(stmt, 1, summaryText)
+        auxBindOptional(stmt, 2, noteText)
+        sqlite3_bind_text(stmt, 3, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 4, documentId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    // MARK: - Raw SQLite Helpers
+
+    private func inTransaction(_ body: () throws -> Void) throws {
+        try auxExec("BEGIN")
+        do {
+            try body()
+            try auxExec("COMMIT")
+        } catch {
+            try? auxExec("ROLLBACK")
+            throw error
+        }
+    }
+
+    private func auxExec(_ sql: String) throws {
+        var errmsg: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(auxDb, sql, nil, nil, &errmsg)
+        guard rc == SQLITE_OK else {
+            let msg = errmsg.map { String(cString: $0) } ?? "unknown"
+            sqlite3_free(errmsg)
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+    }
+
+    private func auxPrepare(_ sql: String) throws -> OpaquePointer {
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        return s
+    }
+
+    @discardableResult
+    private func auxStep(_ stmt: OpaquePointer) throws -> Bool {
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW  { return true  }
+        if rc == SQLITE_DONE { return false }
+        let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+        throw IndexingError.sqliteError(code: rc, message: msg)
+    }
+
+    private func auxBindOptional(_ stmt: OpaquePointer, _ col: Int32, _ value: String?) {
+        if let v = value { sqlite3_bind_text(stmt, col, v, -1, SQLITE_TRANSIENT_IP) }
+        else              { sqlite3_bind_null(stmt, col) }
+    }
+
+    private func auxColumnString(_ stmt: OpaquePointer, _ col: Int32) -> String? {
+        guard let ptr = sqlite3_column_text(stmt, col) else { return nil }
+        return String(cString: ptr)
+    }
+}
+
+// MARK: - Private Data Structures
+
+private struct VolumeIndexData: Sendable {
+    let volumeId: String
+    let documents: [FTS5Document]
+    let crossReferences: [CrossReferenceRow]
+    let pageRanges: [PageRangeRow]
+    let documentDates: [DocumentDateRow]
+    let documentCache: [DocumentCacheRow]
+}
+
+struct CrossReferenceRow: Sendable {
+    let sourceVolumeId: String
+    let sourceDocumentId: String
+    let targetVolumeId: String?
+    let targetDocumentId: String
+}
+
+struct PageRangeRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    let sectionId: String
+    let pageNumberType: String
+    let pageNumberInt: Int?
+    let pageNumberRaw: String
+}
+
+private struct DocumentDateRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    let dateISO: String?
+}
+
+struct DocumentCacheRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    let documentNumber: String?
+    let header: String
+    let dateline: String?
+    let sourceNote: String?
+    let bodyText: String
+    let subjectTagIds: String?
+    let userTagIds: String?
+    let summaryText: String?
+    let noteText: String?
+
+    func toFTS5Document(summaryText: String?, noteText: String?) -> FTS5Document {
+        FTS5Document(
+            id: documentId, volumeId: volumeId, documentNumber: documentNumber,
+            header: header, dateline: dateline, sourceNote: sourceNote,
+            bodyText: bodyText, subjectTagIds: subjectTagIds, userTagIds: userTagIds,
+            summaryText: summaryText, noteText: noteText
+        )
+    }
+}
+
+// MARK: - FRUSASTNode Extensions
+
+extension FRUSASTNode {
+    /// All plain text content of this node and its descendants.
+    var plainText: String {
+        switch self {
+        case .text(let s):   return s
+        case .formula(let s): return s
+        case .lineBreak:     return " "
+        case .pageBreak, .document: return ""
+        case .head(let c), .dateline(let c), .paragraph(let c),
+             .opener(let c), .closer(let c), .salute(let c),
+             .term(let c), .editorialNote(let c), .titlePage(let c),
+             .supplied(let c), .sic(let c), .corr(let c):
+            return c.map(\.plainText).joined(separator: " ")
+        case .emphasis(_, let c): return c.map(\.plainText).joined(separator: " ")
+        case .persName(_, let c): return c.map(\.plainText).joined(separator: " ")
+        case .gloss(_, let c):    return c.map(\.plainText).joined(separator: " ")
+        case .crossReference(_, _, let c): return c.map(\.plainText).joined(separator: " ")
+        case .figure(_, let c):   return c.map(\.plainText).joined(separator: " ")
+        case .footnote(_, _, let c): return c.map(\.plainText).joined(separator: " ")
+        case .table(let rows):    return rows.map(\.plainText).joined(separator: " ")
+        case .tableRow(let cells): return cells.map(\.plainText).joined(separator: " ")
+        case .tableCell(_, _, let c): return c.map(\.plainText).joined(separator: " ")
+        case .list(_, let items): return items.map(\.plainText).joined(separator: " ")
+        case .listItem(let c):    return c.map(\.plainText).joined(separator: " ")
+        case .unknown(_, _, let c): return c.map(\.plainText).joined(separator: " ")
+        }
+    }
+
+    /// Direct and indirect child nodes (used for recursive cross-reference and page-range extraction).
+    var children: [FRUSASTNode] {
+        switch self {
+        case .text, .formula, .lineBreak, .pageBreak: return []
+        case .document(_, _, let c): return c
+        case .head(let c), .dateline(let c), .paragraph(let c),
+             .opener(let c), .closer(let c), .salute(let c),
+             .term(let c), .editorialNote(let c), .titlePage(let c),
+             .supplied(let c), .sic(let c), .corr(let c):
+            return c
+        case .emphasis(_, let c): return c
+        case .persName(_, let c): return c
+        case .gloss(_, let c):    return c
+        case .crossReference(_, _, let c): return c
+        case .figure(_, let c):   return c
+        case .footnote(_, _, let c): return c
+        case .table(let rows):    return rows
+        case .tableRow(let cells): return cells
+        case .tableCell(_, _, let c): return c
+        case .list(_, let items): return items
+        case .listItem(let c):    return c
+        case .unknown(_, _, let c): return c
+        }
+    }
+}
+
+// MARK: - String helper
+
+private extension String {
+    var normalizedWhitespace: String {
+        split(whereSeparator: \.isWhitespace).filter { !$0.isEmpty }.joined(separator: " ")
+    }
+}
+
+// MARK: - IndexingError
+
+/// Errors thrown by `IndexingPipeline`.
+public enum IndexingError: Error, Sendable {
+    /// The volume XML file was not found in the volumes directory.
+    case volumeNotFound(volumeId: String)
+    /// The SQLite database could not be opened at the given path.
+    case databaseOpenFailed(message: String)
+    /// A SQLite operation returned a non-OK result code.
+    case sqliteError(code: Int32, message: String)
+}
