@@ -149,7 +149,7 @@ private struct PromptRow: View {
                             .padding(.vertical, 2)
                             .background(Color.accentColor.opacity(0.12))
                             .clipShape(Capsule())
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(Color.accentColor)
                     }
                 }
                 HStack(spacing: 8) {
@@ -195,7 +195,7 @@ private struct PromptRow: View {
         summaryCount == 1
             ? String(localized: "prompts.list.row.summaryCount.singular",
                      defaultValue: "1 summary")
-            : String(localized: "prompts.list.row.summaryCount.plural \(summaryCount)",
+            : String(localized: "prompts.list.row.summaryCount.plural",
                      defaultValue: "\(summaryCount) summaries")
     }
 

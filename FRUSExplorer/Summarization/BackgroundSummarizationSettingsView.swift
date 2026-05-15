@@ -160,14 +160,18 @@ struct BackgroundSummarizationSettingsView: View {
                        defaultValue: "Earliest (YYYY)"),
                 text: $dateRangeEarliest
             )
+            #if os(iOS)
             .keyboardType(.numbersAndPunctuation)
+            #endif
             Text("–").foregroundStyle(.secondary)
             TextField(
                 String(localized: "bg.summarizer.scope.dateRange.latest",
                        defaultValue: "Latest (YYYY)"),
                 text: $dateRangeLatest
             )
+            #if os(iOS)
             .keyboardType(.numbersAndPunctuation)
+            #endif
         }
     }
 
@@ -206,7 +210,7 @@ struct BackgroundSummarizationSettingsView: View {
         Section(String(localized: "bg.summarizer.concurrency.header",
                        defaultValue: "Concurrency")) {
             Stepper(
-                String(localized: "bg.summarizer.concurrency.label \(concurrencyLimit)",
+                String(localized: "bg.summarizer.concurrency.label",
                        defaultValue: "\(concurrencyLimit) parallel document\(concurrencyLimit == 1 ? "" : "s")"),
                 value: $concurrencyLimit,
                 in: 1...6
@@ -275,7 +279,7 @@ struct BackgroundSummarizationSettingsView: View {
             .padding(.vertical, 4)
         case .completed(let processed):
             Label(
-                String(localized: "bg.summarizer.progress.completed \(processed)",
+                String(localized: "bg.summarizer.progress.completed",
                        defaultValue: "Completed — \(processed) document\(processed == 1 ? "" : "s") summarized"),
                 systemImage: "checkmark.circle"
             )
@@ -345,10 +349,11 @@ struct BackgroundSummarizationSettingsView: View {
             urls[entry.volumeId] = dm.volumeURL(for: entry.volumeId)
         }
 
+        let promptSnapshot = SummarizationPromptSnapshot(from: prompt)
         Task {
             await service.start(
                 scope: scope,
-                prompt: prompt,
+                promptSnapshot: promptSnapshot,
                 provider: AppleIntelligenceProvider.shared,
                 concurrencyLimit: concurrencyLimit,
                 downloadedVolumeURLs: urls,

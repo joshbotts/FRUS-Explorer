@@ -71,7 +71,9 @@ struct SourceExplorerView: View {
             }
             .navigationTitle(String(localized: "source.explorer.title",
                                     defaultValue: "Source Explorer"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "source.explorer.done",

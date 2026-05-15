@@ -132,7 +132,9 @@ struct CitationLookupView: View {
                 TextField(String(localized: "citation.field.subseries.placeholder",
                                  defaultValue: "e.g. 1969-76"),
                           text: $subseriesField)
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
+                    #endif
                     .disableAutocorrection(true)
             } label: {
                 Text(String(localized: "citation.field.subseries", defaultValue: "Subseries"))
@@ -142,7 +144,9 @@ struct CitationLookupView: View {
                 TextField(String(localized: "citation.field.volume.placeholder",
                                  defaultValue: "e.g. I or 1"),
                           text: $volumeField)
+                    #if os(iOS)
                     .textInputAutocapitalization(.characters)
+                    #endif
                     .disableAutocorrection(true)
             } label: {
                 Text(String(localized: "citation.field.volume", defaultValue: "Volume"))
