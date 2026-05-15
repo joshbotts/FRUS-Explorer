@@ -61,16 +61,69 @@ Select the **FRUSExplorerMac** scheme with the **AppStore** build configuration.
 ### macOS — Direct Distribution
 
 Select the **FRUSExplorerMac** scheme with the **DirectDistribution** build configuration.
-This configuration links Sparkle for automatic updates. Before release, notarize the
-built app via `notarytool`:
+This configuration:
+- Links **Sparkle 2** for automatic updates (configured in `project.yml`)
+- Sets the `-DDIRECT_DISTRIBUTION` compiler flag to enable `SparkleUpdater.swift`
+- Uses `CODE_SIGN_STYLE: Manual` with Developer ID signing
+- Includes a "Check for Updates…" menu item in the application menu
+
+#### Release workflow (Direct Distribution)
+
+**Prerequisites:**
+
+1. Export credentials to your environment:
+   ```sh
+   export TEAM_ID=XXXXXXXXXX
+   ```
+
+2. Create a notarytool credential profile (one-time setup):
+   ```sh
+   xcrun notarytool store-credentials "FRUS-Notary" \
+     --apple-id "your@email.com" \
+     --team-id "$TEAM_ID" \
+     --password "xxxx-xxxx-xxxx-xxxx"
+   ```
+
+3. Update the `SUFeedURL` in `project.yml` to point to your actual appcast endpoint:
+   ```yaml
+   INFOPLIST_KEY_SUFeedURL: "https://your-domain.example.com/appcast.xml"
+   ```
+
+4. Set `CODE_SIGN_IDENTITY` and `PROVISIONING_PROFILE_SPECIFIER` in `project.yml`
+   (or pass them on the command line) matching your Developer ID certificate.
+
+**Build, notarize, and package:**
 
 ```sh
-xcrun notarytool submit FRUSExplorer.dmg \
-  --apple-id YOUR_APPLE_ID \
-  --team-id YOUR_TEAM_ID \
-  --password APP_SPECIFIC_PASSWORD \
-  --wait
+# Full workflow (archive → export → notarize → staple → DMG):
+TEAM_ID=XXXXXXXXXX ./Scripts/notarize.sh
+
+# Dry run to preview commands without executing them:
+TEAM_ID=XXXXXXXXXX ./Scripts/notarize.sh --dry-run
+
+# With an explicit app bundle and custom notarytool profile:
+TEAM_ID=XXXXXXXXXX ./Scripts/notarize.sh \
+  --app-path build/export/FRUS\ Explorer.app \
+  --profile MyNotaryProfile
 ```
+
+The script produces:
+- `build/FRUSExplorer.xcarchive` — Xcode archive
+- `build/export/FRUS Explorer.app` — notarized, stapled app bundle
+- `build/FRUSExplorer.dmg` — distributable disk image
+
+**Verifying notarization manually:**
+
+```sh
+xcrun stapler validate "build/export/FRUS Explorer.app"
+spctl --assess --type execute --verbose "build/export/FRUS Explorer.app"
+```
+
+#### Release workflow (App Store)
+
+1. Select the **AppStore** build configuration
+2. In Xcode Product → Archive
+3. Distribute via Xcode Organizer → "Distribute App" → App Store Connect
 
 ### Regenerating the Xcode Project
 

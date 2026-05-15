@@ -14,6 +14,9 @@
 
 import SwiftUI
 import SwiftData
+#if os(macOS) && DIRECT_DISTRIBUTION
+import Sparkle
+#endif
 
 /// Root entry point for FRUS Explorer.
 ///
@@ -39,6 +42,7 @@ import SwiftData
 ///   1.4 — Session 19: wire SummarizationService at boot
 ///   1.5 — Session 20: seed standard prompts on first launch
 ///   1.6 — Session 21: wire BackgroundSummarizationService at boot
+///   1.7 — Session 29: DirectDistribution Sparkle "Check for Updates" menu command
 @main
 struct FRUSExplorerApp: App {
 
@@ -68,7 +72,15 @@ struct FRUSExplorerApp: App {
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
         .commands {
-            // macOS-specific menu commands added in future sessions.
+            #if DIRECT_DISTRIBUTION
+            CommandGroup(after: .appInfo) {
+                Button(String(localized: "menu.checkForUpdates",
+                              defaultValue: "Check for Updates\u{2026}")) {
+                    SparkleUpdater.shared.checkForUpdates()
+                }
+                .disabled(!SparkleUpdater.shared.canCheckForUpdates)
+            }
+            #endif
         }
         #endif
     }

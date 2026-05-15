@@ -102,10 +102,10 @@ targets:
           CODE_SIGN_STYLE: Automatic
         DirectDistribution:
           CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-DirectDistribution.entitlements"
-          # Developer ID signing requires manual profile selection.
-          # Set CODE_SIGN_IDENTITY and PROVISIONING_PROFILE_SPECIFIER when
-          # preparing the DirectDistribution release build (Session 29).
-          CODE_SIGN_STYLE: Automatic
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          OTHER_SWIFT_FLAGS: "-DDIRECT_DISTRIBUTION"
+          INFOPLIST_KEY_SUFeedURL: "https://frusexplorer.example.com/appcast.xml"
 
   # -------------------------------------------------------------------------
   # Unit Tests
