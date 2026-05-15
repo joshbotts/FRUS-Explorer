@@ -175,7 +175,10 @@ public final class DocumentViewModel {
             termsByRef   = tByRef
 
             // Store plain text for summarization before converting to render model
-            documentPlainText = ast.plainText
+            documentPlainText = ast.nodes
+                .map(\.plainText)
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                .joined(separator: "\n\n")
 
             // Convert AST → render model with lookup closures
             var converter = ASTToRenderNodeConverter(

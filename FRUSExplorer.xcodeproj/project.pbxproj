@@ -186,6 +186,11 @@
 		AA20BB01CC03DD04EE2008 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */; };
 		AA20BB01CC03DD04EE2009 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */; };
 		AA20BB01CC03DD04EE200B /* SummarizationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */; };
+		AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
+		AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */; };
+		AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
+		AA21BB01CC03DD04EE2105 /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */; };
+		AA21BB01CC03DD04EE2107 /* BackgroundSummarizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -313,6 +318,9 @@
 		AA20BB01CC03DD04EE2004 /* PromptsListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PromptsListView.swift; sourceTree = "<group>"; };
 		AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PromptEditorView.swift; sourceTree = "<group>"; };
 		AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationUITests.swift; sourceTree = "<group>"; };
+		AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationService.swift; sourceTree = "<group>"; };
+		AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
+		AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -421,6 +429,7 @@
 				AA18BB01CC03DD04EE1807 /* CrossReferenceGraphTests.swift */,
 				AA19BB01CC03DD04EE190D /* SummarizationServiceTests.swift */,
 				AA20BB01CC03DD04EE200A /* SummarizationUITests.swift */,
+				AA21BB01CC03DD04EE2106 /* BackgroundSummarizationTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -519,6 +528,8 @@
 				AA20BB01CC03DD04EE2001 /* SummarizationPromptSeeder.swift */,
 				AA20BB01CC03DD04EE2004 /* PromptsListView.swift */,
 				AA20BB01CC03DD04EE2007 /* PromptEditorView.swift */,
+				AA21BB01CC03DD04EE2100 /* BackgroundSummarizationService.swift */,
+				AA21BB01CC03DD04EE2103 /* BackgroundSummarizationSettingsView.swift */,
 			);
 			path = Summarization;
 			sourceTree = "<group>";
@@ -843,6 +854,8 @@
 				AA20BB01CC03DD04EE2002 /* SummarizationPromptSeeder.swift in Sources */,
 				AA20BB01CC03DD04EE2005 /* PromptsListView.swift in Sources */,
 				AA20BB01CC03DD04EE2008 /* PromptEditorView.swift in Sources */,
+				AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */,
+				AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
@@ -921,6 +934,8 @@
 				AA20BB01CC03DD04EE2003 /* SummarizationPromptSeeder.swift in Sources */,
 				AA20BB01CC03DD04EE2006 /* PromptsListView.swift in Sources */,
 				AA20BB01CC03DD04EE2009 /* PromptEditorView.swift in Sources */,
+				AA21BB01CC03DD04EE2102 /* BackgroundSummarizationService.swift in Sources */,
+				AA21BB01CC03DD04EE2105 /* BackgroundSummarizationSettingsView.swift in Sources */,
 				AA06BB02CC03DD04EE060021 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060023 /* FRUSDocumentParser.swift in Sources */,
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
@@ -957,6 +972,7 @@
 				AA18BB01CC03DD04EE1808 /* CrossReferenceGraphTests.swift in Sources */,
 				AA19BB01CC03DD04EE190E /* SummarizationServiceTests.swift in Sources */,
 				AA20BB01CC03DD04EE200B /* SummarizationUITests.swift in Sources */,
+				AA21BB01CC03DD04EE2107 /* BackgroundSummarizationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

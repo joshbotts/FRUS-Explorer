@@ -38,6 +38,7 @@ import SwiftData
 ///   1.3 — Session 10: fetch live manifest at boot
 ///   1.4 — Session 19: wire SummarizationService at boot
 ///   1.5 — Session 20: seed standard prompts on first launch
+///   1.6 — Session 21: wire BackgroundSummarizationService at boot
 @main
 struct FRUSExplorerApp: App {
 
@@ -98,7 +99,13 @@ struct FRUSExplorerApp: App {
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
         }
 
-        appState.summarizationService = SummarizationService(modelContainer: modelContainer)
+        let summarizationService = SummarizationService(modelContainer: modelContainer)
+        appState.summarizationService = summarizationService
+        appState.backgroundSummarizationService = BackgroundSummarizationService(
+            summarizationService: summarizationService,
+            modelContainer: modelContainer,
+            progress: appState.backgroundSummarizationProgress
+        )
         SummarizationPromptSeeder.seed(in: modelContainer)
 
         let dm = DownloadManager(

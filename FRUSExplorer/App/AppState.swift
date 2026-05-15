@@ -41,6 +41,7 @@ import Observation
 ///   1.3 — Session 08: volumeLevelTagStore, subjectTagStore wired up
 ///   1.4 — Session 10: manifestStore wired up
 ///   1.5 — Session 19: summarizationService added
+///   1.6 — Session 21: backgroundSummarizationService and backgroundSummarizationProgress added
 @Observable
 @MainActor
 final class AppState {
@@ -115,6 +116,13 @@ final class AppState {
     /// always non-nil after boot. `AppleIntelligenceProvider.isAvailable` controls
     /// whether summarization features are presented in the UI.
     var summarizationService: SummarizationService?
+
+    /// The background summarization service. Created at boot alongside `summarizationService`.
+    var backgroundSummarizationService: BackgroundSummarizationService?
+
+    /// Observable progress model for the background summarization service.
+    /// Views observe this to display progress without calling into the actor.
+    let backgroundSummarizationProgress: BackgroundSummarizationProgress = BackgroundSummarizationProgress()
 
     // MARK: - Network Monitor (private)
 
