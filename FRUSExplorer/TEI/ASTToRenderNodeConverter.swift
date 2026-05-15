@@ -140,6 +140,72 @@ public struct ASTToRenderNodeConverter {
         case .text(let string):
             return string.isEmpty ? [] : [.plainText(string)]
 
+        // MARK: Page breaks (Session 07)
+
+        case .pageBreak(let number):
+            return [.pageBreak(pageNumber: number)]
+
+        // MARK: Tables (Session 07)
+
+        case .table(let rows):
+            let renderRows: [[TableCell]] = rows.compactMap { row in
+                guard case .tableRow(let cells) = row else { return nil }
+                return cells.compactMap { cell -> TableCell? in
+                    guard case .tableCell(let rs, let cs, let ch) = cell else { return nil }
+                    return TableCell(rowSpan: rs, colSpan: cs, children: convertNodes(ch))
+                }
+            }
+            return [.tableBlock(rows: renderRows)]
+
+        case .tableRow, .tableCell:
+            // Handled as children of .table; should not appear standalone.
+            return []
+
+        // MARK: Lists (Session 07)
+
+        case .list(let type, let items):
+            let renderItems: [[FRUSRenderNode]] = items.compactMap { item in
+                guard case .listItem(let ch) = item else { return nil }
+                return convertNodes(ch)
+            }
+            return [.listBlock(type: type?.rawValue, items: renderItems)]
+
+        case .listItem:
+            // Handled as children of .list; should not appear standalone.
+            return []
+
+        // MARK: Structural divisions (Session 07)
+
+        case .editorialNote(let children):
+            return [.editorialNoteBlock(convertNodes(children))]
+
+        case .titlePage(let children):
+            return [.unknown(name: "titlePage", children: convertNodes(children))]
+
+        // MARK: Figures and formulas (Session 07)
+
+        case .figure(let graphic, _):
+            return [.figureBlock(altText: graphic)]
+
+        case .formula(let text):
+            return [.formulaText(text)]
+
+        // MARK: Inline editorial marks (Session 07)
+
+        case .supplied(let children):
+            return [.suppliedText(convertNodes(children))]
+
+        case .sic(let children):
+            return [.sicText(convertNodes(children))]
+
+        case .corr(let children):
+            return [.corrText(convertNodes(children))]
+
+        // MARK: Line breaks (Session 07)
+
+        case .lineBreak:
+            return [.lineBreak]
+
         case .unknown(let name, _, let children):
             return [.unknown(name: name, children: convertNodes(children))]
         }

@@ -38,12 +38,9 @@ public struct FRUSDocumentAST: Sendable {
 /// rather than being dropped. This ensures forward compatibility: documents using elements
 /// added in future FRUS.odd revisions parse without crashing and their content is preserved.
 ///
-/// ## Session 07 Extensions
-/// Session 07 extends this enum with: `pageBreak`, `tableElement`, `listElement`, `listItem`,
-/// `editorialNote`, `lineBreak`, `figure`, `supplied`, `sic`, `correction`.
-///
 /// Version history:
-///   1.0 — Session 06: initial implementation
+///   1.0 — Session 06: initial implementation (core elements)
+///   1.1 — Session 07: full element coverage (page breaks, tables, lists, editorial notes, etc.)
 public indirect enum FRUSASTNode: Sendable {
 
     // MARK: Document Structure
@@ -104,6 +101,64 @@ public indirect enum FRUSASTNode: Sendable {
     /// A run of character data. Whitespace is normalized by the parser.
     case text(String)
 
+    // MARK: Page Breaks (Session 07)
+
+    /// `<pb>` — page break. Carries the normalized page number from the `@n` attribute.
+    /// Not rendered visually; required by Session 30 (Citation Lookup) for page range resolution.
+    case pageBreak(pageNumber: PageNumber)
+
+    // MARK: Tables (Session 07)
+
+    /// `<table>` — a tabular structure. Children are `.tableRow` nodes.
+    case table([FRUSASTNode])
+
+    /// `<row>` — a row within a table. Children are `.tableCell` nodes.
+    case tableRow([FRUSASTNode])
+
+    /// `<cell>` — a cell within a table row.
+    /// `rowSpan` / `colSpan` come from the TEI `@rows` / `@cols` spanning attributes (default 1).
+    case tableCell(rowSpan: Int, colSpan: Int, children: [FRUSASTNode])
+
+    // MARK: Lists (Session 07)
+
+    /// `<list>` — an ordered or unordered list. Children are `.listItem` nodes.
+    case list(type: ListType?, items: [FRUSASTNode])
+
+    /// `<item>` — a single list item.
+    case listItem([FRUSASTNode])
+
+    // MARK: Structural Divisions (Session 07)
+
+    /// `<div type="editorialNote">` — an editorial note block.
+    case editorialNote([FRUSASTNode])
+
+    /// `<titlePage>` — the title page element in front matter.
+    case titlePage([FRUSASTNode])
+
+    // MARK: Inline Editorial Marks (Session 07)
+
+    /// `<supplied>` — text supplied by the editor to fill a gap in the source.
+    case supplied([FRUSASTNode])
+
+    /// `<sic>` — an error in the source text, preserved as-is.
+    case sic([FRUSASTNode])
+
+    /// `<corr>` — a correction replacing an error in the source.
+    case corr([FRUSASTNode])
+
+    // MARK: Figures and Formulas (Session 07)
+
+    /// `<figure>` — a figure element. `graphic` is the URL from a nested `<graphic url="..."/>`.
+    case figure(graphic: String?, children: [FRUSASTNode])
+
+    /// `<formula>` — a mathematical or chemical formula. Contains the raw formula text.
+    case formula(String)
+
+    // MARK: Line Breaks (Session 07)
+
+    /// `<lb>` — a line break within flowing text.
+    case lineBreak
+
     // MARK: Unknown (Forward Compatibility)
 
     /// Any TEI element not explicitly handled above. Never dropped.
@@ -130,6 +185,64 @@ public enum EmphasisStyle: String, Sendable, Codable {
     case underline
     /// Used when the `rend` attribute is absent or unrecognized.
     case unspecified
+}
+
+// MARK: - Session 07 Supporting Types
+
+/// Normalized page number extracted from a `<pb @n="...">` element.
+///
+/// Normalization rules:
+/// - Leading zeros stripped before arabic conversion.
+/// - Roman numerals parsed case-insensitively (i, v, x, l, c, d, m).
+/// - Prefixed forms (e.g. `"A-12"`) preserved verbatim.
+/// - Unparseable values preserved and logged as a `[TEIParser]` warning.
+///
+/// Required by Session 30 (Citation Lookup) for page range resolution.
+///
+/// Version history:
+///   1.0 — Session 07: initial implementation
+public enum PageNumber: Sendable, Equatable {
+    case arabic(Int)
+    case roman(Int)
+    case prefixed(String)
+    case unparseable(String)
+
+    public static func parse(_ raw: String) -> PageNumber {
+        let s = raw.trimmingCharacters(in: .whitespaces)
+        guard !s.isEmpty else { return .unparseable(raw) }
+        if let n = Int(s) { return .arabic(n) }
+        let lower = s.lowercased()
+        if lower.allSatisfy({ "ivxlcdm".contains($0) }), let r = romanToInt(lower), r > 0 {
+            return .roman(r)
+        }
+        // Prefixed: letter(s) + hyphen/en-dash + digits, e.g. "A-12"
+        if s.range(of: #"^[A-Za-z]+[-–]\d+"#, options: .regularExpression) != nil {
+            return .prefixed(s)
+        }
+        #if DEBUG
+        print("[TEIParser] Warning: unparseable <pb n=\"\(s)\">")
+        #endif
+        return .unparseable(s)
+    }
+
+    private static func romanToInt(_ s: String) -> Int? {
+        let map: [Character: Int] = ["i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000]
+        var result = 0
+        var prev = 0
+        for ch in s.reversed() {
+            guard let val = map[ch] else { return nil }
+            if val < prev { result -= val } else { result += val }
+            prev = val
+        }
+        return result > 0 ? result : nil
+    }
+}
+
+/// The display style for a `<list>` element.
+public enum ListType: String, Sendable, Codable {
+    case ordered
+    case unordered
+    case simple
 }
 
 // MARK: - Lookup Types

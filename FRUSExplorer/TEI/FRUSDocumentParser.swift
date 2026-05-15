@@ -44,7 +44,8 @@ import Foundation
 /// documents that omit the namespace prefix.
 ///
 /// Version history:
-///   1.0 — Session 06: initial implementation
+///   1.0 — Session 06: initial implementation (core elements)
+///   1.1 — Session 07: full element coverage; parsePersons / parseTerms methods added
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -106,6 +107,40 @@ public actor FRUSDocumentParser {
         }
         #endif
         return result
+    }
+
+    /// Parses all person entries from `<div type="persons">` or `<listPerson>` in the volume.
+    ///
+    /// Each entry maps to the `xml:id` that `<persName ref="...">` elements reference.
+    /// Returns an empty array if the volume contains no persons div.
+    public func parsePersons(volumeURL: URL) async throws -> [PersonEntry] {
+        guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
+            throw FRUSParserError.fileUnreadable(volumeURL)
+        }
+        let delegate = PersonsParserDelegate()
+        xmlParser.delegate = delegate
+        xmlParser.parse()
+        #if DEBUG
+        print("[TEIParser] Parsed \(delegate.entries.count) person entries from \(volumeURL.lastPathComponent).")
+        #endif
+        return delegate.entries
+    }
+
+    /// Parses all term entries from `<div type="terms">` in the volume.
+    ///
+    /// Each entry maps to the `xml:id` that `<gloss ref="...">` elements reference.
+    /// Returns an empty array if the volume contains no terms div.
+    public func parseTerms(volumeURL: URL) async throws -> [GlossEntry] {
+        guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
+            throw FRUSParserError.fileUnreadable(volumeURL)
+        }
+        let delegate = TermsParserDelegate()
+        xmlParser.delegate = delegate
+        xmlParser.parse()
+        #if DEBUG
+        print("[TEIParser] Parsed \(delegate.entries.count) term entries from \(volumeURL.lastPathComponent).")
+        #endif
+        return delegate.entries
     }
 }
 
@@ -276,9 +311,11 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         case "TEI", "text", "body", "front", "back", "group":
             return true
         case "div":
-            // Non-document div types are transparent in Session 06; Session 07 adds specific handling.
             let divType = attributes["type"] ?? ""
-            return divType != "document"
+            // "document" and "editorialNote" produce their own AST nodes.
+            // All other div types (compilation, chapter, subseries, volume, persons, terms, etc.)
+            // pass their children through to the parent — they are structural wrappers.
+            return divType != "document" && divType != "editorialNote"
         default:
             return false
         }
@@ -343,6 +380,77 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         case "term":
             return .term(children: children)
 
+        // MARK: Page breaks (Session 07)
+        case "pb":
+            let n = attributes["n"] ?? ""
+            return .pageBreak(pageNumber: PageNumber.parse(n))
+
+        // MARK: Tables (Session 07)
+        case "table":
+            return .table(children)
+
+        case "row":
+            return .tableRow(children)
+
+        case "cell":
+            let rowSpan = Int(attributes["rows"] ?? "1") ?? 1
+            let colSpan = Int(attributes["cols"] ?? "1") ?? 1
+            return .tableCell(rowSpan: rowSpan, colSpan: colSpan, children: children)
+
+        // MARK: Lists (Session 07)
+        case "list":
+            let listType = ListType(rawValue: attributes["type"] ?? "")
+            return .list(type: listType, items: children)
+
+        case "item":
+            return .listItem(children)
+
+        // MARK: Structural divisions (Session 07)
+        case "div":
+            // Only "editorialNote" reaches buildNode; "document" is handled in didEndElement.
+            return .editorialNote(children)
+
+        case "titlePage":
+            return .titlePage(children)
+
+        // MARK: Figures and formulas (Session 07)
+        case "figure":
+            // Extract the graphic URL from a nested <graphic url="..."/> child if present.
+            let graphicUrl: String? = children.compactMap { node -> String? in
+                guard case .unknown(let name, let attrs, _) = node, name == "graphic" else { return nil }
+                return attrs["url"]
+            }.first
+            let contentChildren = children.filter {
+                guard case .unknown(let name, _, _) = $0 else { return true }
+                return name != "graphic"
+            }
+            return .figure(graphic: graphicUrl, children: contentChildren)
+
+        case "graphic":
+            // Preserved as .unknown so the parent <figure> can extract the url attribute.
+            return .unknown(name: "graphic", attributes: attributes, children: children)
+
+        case "formula":
+            let text = children.compactMap { node -> String? in
+                guard case .text(let s) = node else { return nil }
+                return s
+            }.joined()
+            return .formula(text)
+
+        // MARK: Inline editorial marks (Session 07)
+        case "supplied":
+            return .supplied(children)
+
+        case "sic":
+            return .sic(children)
+
+        case "corr":
+            return .corr(children)
+
+        // MARK: Line breaks (Session 07)
+        case "lb":
+            return .lineBreak
+
         // MARK: Root-level suppressed wrappers
         case "teiHeader", "fileDesc", "encodingDesc", "profileDesc", "revisionDesc",
              "titleStmt", "publicationStmt", "sourceDesc", "textClass":
@@ -384,6 +492,166 @@ private struct ParseFrame {
     let attributes: [String: String]
     var children: [FRUSASTNode] = []
     var textBuffer: String = ""
+}
+
+// MARK: - Persons Parser Delegate
+
+/// Minimal SAX delegate that extracts `PersonEntry` records from a FRUS volume.
+///
+/// Handles two common structures found across the corpus:
+///   - `<listPerson><person xml:id="p1"><persName>Name</persName><note>Desc</note></person></listPerson>`
+///   - `<div type="persons"><list><item xml:id="p1">Name: description</item></list></div>`
+private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
+
+    var entries: [PersonEntry] = []
+
+    private var inPersonsSection = false
+    private var inPersonElement = false
+    private var currentId: String?
+    private var currentName: String?
+    private var textBuffer = ""
+    private var elementDepth = 0
+    private var personsSectionDepth = -1
+
+    func parser(_ parser: XMLParser,
+                didStartElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?,
+                attributes attributeDict: [String: String] = [:]) {
+        elementDepth += 1
+        if (elementName == "div" && attributeDict["type"] == "persons") ||
+            elementName == "listPerson" {
+            inPersonsSection = true
+            personsSectionDepth = elementDepth
+        }
+        guard inPersonsSection else { return }
+        if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0) {
+            inPersonElement = true
+            currentId = attributeDict["xml:id"] ?? attributeDict["id"]
+            currentName = nil
+            textBuffer = ""
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        guard inPersonElement else { return }
+        textBuffer += string
+    }
+
+    func parser(_ parser: XMLParser,
+                didEndElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?) {
+        defer { elementDepth -= 1 }
+        guard inPersonsSection else { return }
+        if elementName == "persName" && currentName == nil {
+            currentName = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            textBuffer = ""
+        }
+        if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0) {
+            let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            let id = currentId ?? raw
+            if !id.isEmpty {
+                let parts = raw.components(separatedBy: ":")
+                let name = currentName
+                    ?? parts.first?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ?? raw
+                let desc = parts.count > 1
+                    ? parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
+                    : nil
+                if !name.isEmpty {
+                    entries.append(PersonEntry(ref: id, name: name, description: desc?.isEmpty == true ? nil : desc))
+                }
+            }
+            inPersonElement = false
+            currentId = nil
+            currentName = nil
+            textBuffer = ""
+        }
+        if elementDepth < personsSectionDepth {
+            inPersonsSection = false
+            personsSectionDepth = -1
+        }
+    }
+}
+
+// MARK: - Terms Parser Delegate
+
+/// Minimal SAX delegate that extracts `GlossEntry` records from a FRUS volume.
+///
+/// Handles the `<div type="terms">` structure:
+///   `<list><item xml:id="t1"><term>Abbr.</term>: definition text</item></list>`
+private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
+
+    var entries: [GlossEntry] = []
+
+    private var inTermsSection = false
+    private var inItem = false
+    private var currentId: String?
+    private var currentTerm: String?
+    private var textBuffer = ""
+    private var elementDepth = 0
+    private var termsSectionDepth = -1
+
+    func parser(_ parser: XMLParser,
+                didStartElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?,
+                attributes attributeDict: [String: String] = [:]) {
+        elementDepth += 1
+        if elementName == "div" && attributeDict["type"] == "terms" {
+            inTermsSection = true
+            termsSectionDepth = elementDepth
+        }
+        guard inTermsSection else { return }
+        if elementName == "item" {
+            inItem = true
+            currentId = attributeDict["xml:id"] ?? attributeDict["id"]
+            currentTerm = nil
+            textBuffer = ""
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        guard inItem else { return }
+        textBuffer += string
+    }
+
+    func parser(_ parser: XMLParser,
+                didEndElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?) {
+        defer { elementDepth -= 1 }
+        guard inTermsSection else { return }
+        if elementName == "term" && currentTerm == nil {
+            currentTerm = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            textBuffer = ""
+        }
+        if elementName == "item" {
+            let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            let id = currentId ?? (currentTerm ?? raw)
+            if !id.isEmpty {
+                let parts = raw.components(separatedBy: ":")
+                let term = currentTerm
+                    ?? parts.first?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ?? raw
+                let def = parts.count > 1
+                    ? parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
+                    : nil
+                if !term.isEmpty {
+                    entries.append(GlossEntry(ref: id, term: term, definition: def?.isEmpty == true ? nil : def))
+                }
+            }
+            inItem = false
+            currentId = nil
+            currentTerm = nil
+            textBuffer = ""
+        }
+        if elementDepth < termsSectionDepth {
+            inTermsSection = false
+            termsSectionDepth = -1
+        }
+    }
 }
 
 // MARK: - EmphasisStyle Extension

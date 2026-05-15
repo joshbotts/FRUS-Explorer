@@ -33,16 +33,27 @@ private func makeTEIFixture(body: String) throws -> URL {
 private func containsCase(in nodes: [FRUSASTNode], where predicate: (FRUSASTNode) -> Bool) -> Bool {
     for node in nodes {
         if predicate(node) { return true }
+        let children: [FRUSASTNode]
         switch node {
         case .document(_, _, let c), .head(let c), .dateline(let c),
              .opener(let c), .closer(let c), .salute(let c),
              .paragraph(let c), .footnote(_, _, let c),
              .persName(_, let c), .gloss(_, let c), .crossReference(_, _, let c),
-             .emphasis(_, let c), .term(let c), .unknown(_, _, let c):
-            if containsCase(in: c, where: predicate) { return true }
-        case .text:
-            break
+             .emphasis(_, let c), .term(let c),
+             .supplied(let c), .sic(let c), .corr(let c),
+             .editorialNote(let c), .titlePage(let c), .figure(_, let c),
+             .unknown(_, _, let c):
+            children = c
+        case .table(let c), .tableRow(let c), .listItem(let c):
+            children = c
+        case .tableCell(_, _, let c):
+            children = c
+        case .list(_, let c):
+            children = c
+        case .text, .lineBreak, .pageBreak, .formula:
+            children = []
         }
+        if containsCase(in: children, where: predicate) { return true }
     }
     return false
 }
@@ -52,13 +63,27 @@ private func extractAllText(from nodes: [FRUSASTNode]) -> String {
     var result = ""
     for node in nodes {
         switch node {
-        case .text(let s): result += s
+        case .text(let s):
+            result += s
+        case .formula(let s):
+            result += s
         case .document(_, _, let c), .head(let c), .dateline(let c),
              .opener(let c), .closer(let c), .salute(let c),
              .paragraph(let c), .footnote(_, _, let c),
              .persName(_, let c), .gloss(_, let c), .crossReference(_, _, let c),
-             .emphasis(_, let c), .term(let c), .unknown(_, _, let c):
+             .emphasis(_, let c), .term(let c),
+             .supplied(let c), .sic(let c), .corr(let c),
+             .editorialNote(let c), .titlePage(let c), .figure(_, let c),
+             .unknown(_, _, let c):
             result += extractAllText(from: c)
+        case .table(let c), .tableRow(let c), .listItem(let c):
+            result += extractAllText(from: c)
+        case .tableCell(_, _, let c):
+            result += extractAllText(from: c)
+        case .list(_, let c):
+            result += extractAllText(from: c)
+        case .lineBreak, .pageBreak:
+            break
         }
     }
     return result
@@ -342,15 +367,27 @@ struct TEIParserTests {
         func hasWhitespaceOnlyText(_ nodes: [FRUSASTNode]) -> Bool {
             for node in nodes {
                 if case .text(let s) = node, s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return true }
+                let children: [FRUSASTNode]
                 switch node {
                 case .document(_, _, let c), .head(let c), .dateline(let c),
                      .opener(let c), .closer(let c), .salute(let c),
                      .paragraph(let c), .footnote(_, _, let c),
                      .persName(_, let c), .gloss(_, let c), .crossReference(_, _, let c),
-                     .emphasis(_, let c), .term(let c), .unknown(_, _, let c):
-                    if hasWhitespaceOnlyText(c) { return true }
-                case .text: break
+                     .emphasis(_, let c), .term(let c),
+                     .supplied(let c), .sic(let c), .corr(let c),
+                     .editorialNote(let c), .titlePage(let c), .figure(_, let c),
+                     .unknown(_, _, let c):
+                    children = c
+                case .table(let c), .tableRow(let c), .listItem(let c):
+                    children = c
+                case .tableCell(_, _, let c):
+                    children = c
+                case .list(_, let c):
+                    children = c
+                case .text, .lineBreak, .pageBreak, .formula:
+                    children = []
                 }
+                if hasWhitespaceOnlyText(children) { return true }
             }
             return false
         }

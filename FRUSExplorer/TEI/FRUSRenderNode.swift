@@ -26,7 +26,8 @@ import Foundation
 /// The converter assigns sequential numbers during the single conversion pass.
 ///
 /// Version history:
-///   1.0 — Session 06: initial implementation
+///   1.0 — Session 06: initial implementation (core elements)
+///   1.1 — Session 07: full element coverage (page breaks, tables, lists, editorial notes, etc.)
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -92,11 +93,72 @@ public indirect enum FRUSRenderNode: Sendable {
     /// A cross-reference link (`<ref>`).
     case crossRefLink(target: String, volumeId: String?, children: [FRUSRenderNode])
 
+    // MARK: Page Breaks (Session 07)
+
+    /// Page break marker. Not visually rendered; retained for Session 30 citation lookup.
+    case pageBreak(pageNumber: PageNumber)
+
+    // MARK: Tables (Session 07)
+
+    /// A rendered table. Each outer array element is a row; each inner element is a cell.
+    case tableBlock(rows: [[TableCell]])
+
+    // MARK: Lists (Session 07)
+
+    /// A rendered list. `type` is the raw `@type` attribute value (e.g. `"ordered"`).
+    case listBlock(type: String?, items: [[FRUSRenderNode]])
+
+    // MARK: Structural Blocks (Session 07)
+
+    /// An editorial note block, rendered with a visual distinction from body text.
+    case editorialNoteBlock([FRUSRenderNode])
+
+    /// A figure placeholder, rendered with an alt-text caption.
+    case figureBlock(altText: String?)
+
+    // MARK: Inline Editorial Marks (Session 07)
+
+    /// Supplied text (`<supplied>`), rendered in square brackets.
+    case suppliedText([FRUSRenderNode])
+
+    /// Source error (`<sic>`), rendered with strikethrough.
+    case sicText([FRUSRenderNode])
+
+    /// Editorial correction (`<corr>`), rendered normally.
+    case corrText([FRUSRenderNode])
+
+    /// Formula text, rendered verbatim in an italic fixed-width style.
+    case formulaText(String)
+
+    /// Line break within flowing text.
+    case lineBreak
+
     // MARK: Passthrough / Unknown
 
     /// Preserves unrecognised elements for forward compatibility.
     /// Children are rendered as their own nodes.
     case unknown(name: String, children: [FRUSRenderNode])
+}
+
+// MARK: - Table Cell
+
+/// A single cell within a `tableBlock` row.
+///
+/// `rowSpan` and `colSpan` preserve the TEI `@rows` / `@cols` spanning attributes
+/// for Session 07's functional table rendering and future precise layout.
+///
+/// Version history:
+///   1.0 — Session 07: initial implementation
+public struct TableCell: Sendable {
+    public let rowSpan: Int
+    public let colSpan: Int
+    public let children: [FRUSRenderNode]
+
+    public init(rowSpan: Int = 1, colSpan: Int = 1, children: [FRUSRenderNode]) {
+        self.rowSpan = rowSpan
+        self.colSpan = colSpan
+        self.children = children
+    }
 }
 
 // MARK: - Document Render Model

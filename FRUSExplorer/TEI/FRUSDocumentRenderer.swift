@@ -130,6 +130,73 @@ public struct FRUSDocumentRenderer: View {
                 }
             )
 
+        case .pageBreak:
+            // Not rendered visually; present for Session 30 citation lookup.
+            AnyView(EmptyView())
+
+        case .tableBlock(let rows):
+            AnyView(
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                        HStack(alignment: .top, spacing: 0) {
+                            ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                                inlineText(cell.children)
+                                    .font(.footnote)
+                                    .padding(4)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .overlay(Rectangle().stroke(.separator, lineWidth: 0.5))
+                            }
+                        }
+                    }
+                }
+                .overlay(Rectangle().stroke(.separator, lineWidth: 0.5))
+                .padding(.vertical, 4)
+            )
+
+        case .listBlock(let type, let items):
+            AnyView(
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                        HStack(alignment: .top, spacing: 6) {
+                            if type == "ordered" {
+                                Text(verbatim: "\(index + 1).")
+                                    .font(.body)
+                                    .frame(width: 24, alignment: .trailing)
+                            } else {
+                                Text(verbatim: "•")
+                                    .font(.body)
+                                    .frame(width: 16, alignment: .trailing)
+                            }
+                            inlineText(item).font(.body)
+                        }
+                    }
+                }
+            )
+
+        case .editorialNoteBlock(let children):
+            AnyView(
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(blockOrInlineNodes(children).enumerated()), id: \.offset) { _, child in
+                        blockView(child)
+                    }
+                }
+                .padding(.leading, 12)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color.accentColor.opacity(0.5))
+                        .frame(width: 3)
+                }
+            )
+
+        case .figureBlock(let altText):
+            AnyView(
+                Text(verbatim: altText.map { "[Figure: \($0)]" } ?? "[Figure]")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .italic()
+                    .padding(.vertical, 2)
+            )
+
         case .unknown(_, let children):
             AnyView(
                 ForEach(Array(children.enumerated()), id: \.offset) { _, child in
@@ -187,6 +254,21 @@ public struct FRUSDocumentRenderer: View {
         case .crossRefLink(_, _, let children):
             return inlineText(children).foregroundColor(.accentColor)
 
+        case .suppliedText(let children):
+            return Text("[\(inlineText(children))]")
+
+        case .sicText(let children):
+            return inlineText(children).strikethrough()
+
+        case .corrText(let children):
+            return inlineText(children)
+
+        case .formulaText(let s):
+            return Text(verbatim: s).italic()
+
+        case .lineBreak:
+            return Text(verbatim: "\n")
+
         case .unknown(_, let children):
             return inlineText(children)
 
@@ -220,7 +302,8 @@ public struct FRUSDocumentRenderer: View {
 
     private func isBlockNode(_ node: FRUSRenderNode) -> Bool {
         switch node {
-        case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph, .footnoteBody:
+        case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph, .footnoteBody,
+             .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock, .pageBreak:
             return true
         default:
             return false
@@ -235,10 +318,15 @@ public struct FRUSDocumentRenderer: View {
              .boldText(let c), .italicText(let c), .smallCapsText(let c),
              .underlineText(let c), .termText(let c),
              .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, let c),
+             .editorialNoteBlock(let c), .suppliedText(let c), .sicText(let c), .corrText(let c),
              .unknown(_, let c):
             return c.flatMap { extractInlineContent($0) }
         case .footnoteBody(_, _, _, let c):
             return c.flatMap { extractInlineContent($0) }
+        case .listBlock(_, let items):
+            return items.flatMap { $0 }.flatMap { extractInlineContent($0) }
+        case .tableBlock(let rows):
+            return rows.flatMap { $0 }.flatMap { $0.children }.flatMap { extractInlineContent($0) }
         default:
             return [node]
         }
