@@ -38,6 +38,7 @@ public enum DocumentTypeFilter: Sendable, Equatable {
 /// Version history:
 ///   1.0 — Session 09: initial implementation
 ///   1.1 — Session 38: `documentTypeFilter` added
+///   1.2 — Session 39: `personRef` filter added
 public struct SearchParameters: Sendable {
 
     // MARK: - Full-text fields
@@ -96,6 +97,19 @@ public struct SearchParameters: Sendable {
     /// Restricts results to a specific document type. Default `.all`.
     public var documentTypeFilter: DocumentTypeFilter
 
+    // MARK: - Person ref filter
+
+    /// If non-nil, restrict results to documents that mention this person ref.
+    ///
+    /// Applied as a post-processing filter in `SearchService.search`: only
+    /// document keys returned by `PersonMentionStore.documents(forPersonRef:)`
+    /// are eligible. A document that matches the personRef but has no FTS5
+    /// keyword match will not appear in results unless `keywords` is also nil.
+    ///
+    /// Note: a nil keywords field is not currently a valid search; this parameter
+    /// only restricts an existing keyword search's result set.
+    public var personRef: String?
+
     // MARK: - Initialiser
 
     public init(
@@ -111,7 +125,8 @@ public struct SearchParameters: Sendable {
         includeSummaries: Bool = true,
         includeNotes: Bool = true,
         projectId: UUID? = nil,
-        documentTypeFilter: DocumentTypeFilter = .all
+        documentTypeFilter: DocumentTypeFilter = .all,
+        personRef: String? = nil
     ) {
         self.keywords = keywords
         self.phrase = phrase
@@ -126,6 +141,7 @@ public struct SearchParameters: Sendable {
         self.includeNotes = includeNotes
         self.projectId = projectId
         self.documentTypeFilter = documentTypeFilter
+        self.personRef = personRef
     }
 }
 

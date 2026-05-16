@@ -145,6 +145,10 @@ final class AppState {
     /// `nil` if the database could not be opened.
     var crossReferenceStore: CrossReferenceStore?
 
+    /// The shared person mention store. Created at boot alongside `crossReferenceStore`;
+    /// `nil` if the database could not be opened.
+    var personMentionStore: PersonMentionStore?
+
     /// The shared citation matching engine. Created at boot once a database URL is available.
     /// `nil` until boot completes or if the database could not be opened.
     var citationMatchingEngine: CitationMatchingEngine?

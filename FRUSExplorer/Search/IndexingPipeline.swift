@@ -38,6 +38,7 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 /// | `page_ranges` | One row per `<pb>` element (Session 30 citation lookup) |
 /// | `document_cache` | Un-stemmed field text enabling incremental summary/note updates |
 /// | `document_dates` | Structured ISO 8601 dates for `SearchService` date filtering |
+/// | `person_mentions` | One row per unique person ref per document (Session 39) |
 ///
 /// ## section_id in page_ranges
 /// `section_id` equals the containing document's `xml:id`. Pagination restarts between
@@ -54,6 +55,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          truncated at word boundary); `<ref>` in bare paragraphs still gets nil context
 ///   1.3 — Session 38: `is_editorial_note` column added to `document_cache` and `frus_documents`;
 ///          `DocumentBrowserEntry.isEditorialNote` populated from the new column
+///   1.4 — Session 39: `person_mentions` table added; `extractPersonRefs` populates it
+///          during indexing; `PersonMentionRow` private struct added
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -383,6 +386,7 @@ public actor IndexingPipeline {
         var pageRangeRows: [PageRangeRow] = []
         var dateRows: [DocumentDateRow] = []
         var cacheRows: [DocumentCacheRow] = []
+        var personMentionRows: [PersonMentionRow] = []
 
         for astDoc in astDocs {
             let did = astDoc.documentId
@@ -423,11 +427,19 @@ public actor IndexingPipeline {
                 userTagIds: nil, summaryText: nil, noteText: nil,
                 isEditorialNote: isEditorialNote
             ))
+
+            let personRefs = Self.extractPersonRefs(from: astDoc.nodes)
+            for ref in personRefs {
+                personMentionRows.append(PersonMentionRow(
+                    volumeId: volumeId, documentId: did, personRef: ref
+                ))
+            }
         }
 
         return VolumeIndexData(
             volumeId: volumeId, documents: fts5Docs, crossReferences: crossRefs,
-            pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows
+            pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
+            personMentions: personMentionRows
         )
     }
 
@@ -440,6 +452,7 @@ public actor IndexingPipeline {
         try auxInsertPageRanges(data.pageRanges)
         try auxInsertDocumentDates(data.documentDates)
         try auxInsertDocumentCache(data.documentCache)
+        try auxInsertPersonMentions(data.personMentions)
     }
 
     // MARK: - Progress
@@ -594,6 +607,26 @@ public actor IndexingPipeline {
         }
         // No word boundary found — hard truncate.
         return String(prefix) + "…"
+    }
+
+    /// Recursively collects all `ref` attribute values from `.persName` nodes.
+    ///
+    /// Returns a `Set<String>` so each `person_ref` appears at most once per document,
+    /// regardless of how many times the name is mentioned. This matches the
+    /// `person_mentions` table design: one row per unique person per document.
+    ///
+    /// Only `.persName` nodes whose `ref` is non-nil and non-empty are included.
+    nonisolated static func extractPersonRefs(from nodes: [FRUSASTNode]) -> Set<String> {
+        var result = Set<String>()
+        for node in nodes {
+            if case .persName(let ref, let children) = node {
+                if let ref, !ref.isEmpty { result.insert(ref) }
+                result.formUnion(extractPersonRefs(from: children))
+            } else {
+                result.formUnion(extractPersonRefs(from: node.children))
+            }
+        }
+        return result
     }
 
     nonisolated static func extractPageRanges(
@@ -837,6 +870,16 @@ public actor IndexingPipeline {
             """)
         // Idempotent migration for databases that predate Session 38.
         try? exec("ALTER TABLE document_cache ADD COLUMN is_editorial_note INTEGER NOT NULL DEFAULT 0")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS person_mentions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                person_ref TEXT NOT NULL
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_ref ON person_mentions(person_ref)")
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_doc ON person_mentions(volume_id, document_id)")
     }
 
     // MARK: - Auxiliary Table DML
@@ -931,12 +974,29 @@ public actor IndexingPipeline {
         }
     }
 
+    private func auxInsertPersonMentions(_ rows: [PersonMentionRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = "INSERT INTO person_mentions (volume_id, document_id, person_ref) VALUES (?, ?, ?)"
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId,   -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, row.personRef,  -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+    }
+
     private func auxDeleteVolume(_ volumeId: String) throws {
         for (table, col) in [
             ("cross_references", "source_volume_id"),
             ("page_ranges", "volume_id"),
             ("document_dates", "volume_id"),
             ("document_cache", "volume_id"),
+            ("person_mentions", "volume_id"),
         ] {
             let stmt = try auxPrepare("DELETE FROM \(table) WHERE \(col) = ?")
             defer { sqlite3_finalize(stmt) }
@@ -1055,6 +1115,13 @@ private struct VolumeIndexData: Sendable {
     let pageRanges: [PageRangeRow]
     let documentDates: [DocumentDateRow]
     let documentCache: [DocumentCacheRow]
+    let personMentions: [PersonMentionRow]
+}
+
+private struct PersonMentionRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    let personRef: String
 }
 
 struct CrossReferenceRow: Sendable {

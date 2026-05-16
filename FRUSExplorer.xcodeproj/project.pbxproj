@@ -223,6 +223,9 @@
 		AA30BB01CC03DD04EE3025 /* CitationMatchingEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */; };
 		AA31BB01CC03DD04EE3101 /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */; };
 		AA31BB01CC03DD04EE3103 /* CodingStandardsAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */; };
+		AA39BB01CC03DD04EE3902 /* PersonMentionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA39BB01CC03DD04EE3901 /* PersonMentionStore.swift */; };
+		AA39BB01CC03DD04EE3903 /* PersonMentionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA39BB01CC03DD04EE3901 /* PersonMentionStore.swift */; };
+		AA39BB01CC03DD04EE3905 /* PersonMentionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA39BB01CC03DD04EE3904 /* PersonMentionStoreTests.swift */; };
 		AA32BB01CC03DD04EE3202 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA32BB01CC03DD04EE3201 /* Assets.xcassets */; };
 		AA32BB01CC03DD04EE3203 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA32BB01CC03DD04EE3201 /* Assets.xcassets */; };
 		AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29459906A446E922051D111D /* ManifestModels.swift */; };
@@ -393,6 +396,8 @@
 		AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngineTests.swift; sourceTree = "<group>"; };
 		AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
 		AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodingStandardsAuditTests.swift; sourceTree = "<group>"; };
+		AA39BB01CC03DD04EE3901 /* PersonMentionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonMentionStore.swift; sourceTree = "<group>"; };
+		AA39BB01CC03DD04EE3904 /* PersonMentionStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonMentionStoreTests.swift; sourceTree = "<group>"; };
 		AA32BB01CC03DD04EE3201 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B9B3538710154855A5E7E7D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C0114AD73FF8B5C9D0446099 /* EntitlementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementsTests.swift; sourceTree = "<group>"; };
@@ -506,6 +511,7 @@
 				AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */,
 				AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */,
 				AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */,
+				AA39BB01CC03DD04EE3904 /* PersonMentionStoreTests.swift */,
 			);
 			path = FRUSExplorerTests;
 			sourceTree = "<group>";
@@ -773,6 +779,7 @@
 				1DB23FF6B4BC644BE0AE4E3C /* SummarizationPrompt.swift */,
 				00BF8333DAB9C9E6D2B7B886 /* ModelContainer+FRUS.swift */,
 				193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */,
+				AA39BB01CC03DD04EE3901 /* PersonMentionStore.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1032,6 +1039,7 @@
 				AA06BB02CC03DD04EE060028 /* FRUSRenderNode.swift in Sources */,
 				AA06BB02CC03DD04EE060030 /* ASTToRenderNodeConverter.swift in Sources */,
 				AA06BB02CC03DD04EE060032 /* FRUSDocumentRenderer.swift in Sources */,
+				AA39BB01CC03DD04EE3902 /* PersonMentionStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1130,6 +1138,7 @@
 				AA06BB02CC03DD04EE060027 /* FRUSRenderNode.swift in Sources */,
 				AA06BB02CC03DD04EE060029 /* ASTToRenderNodeConverter.swift in Sources */,
 				AA06BB02CC03DD04EE060031 /* FRUSDocumentRenderer.swift in Sources */,
+				AA39BB01CC03DD04EE3903 /* PersonMentionStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1174,6 +1183,7 @@
 				AA30BB01CC03DD04EE3025 /* CitationMatchingEngineTests.swift in Sources */,
 				AA31BB01CC03DD04EE3101 /* IntegrationTests.swift in Sources */,
 				AA31BB01CC03DD04EE3103 /* CodingStandardsAuditTests.swift in Sources */,
+				AA39BB01CC03DD04EE3905 /* PersonMentionStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

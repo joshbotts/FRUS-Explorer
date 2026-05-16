@@ -957,3 +957,93 @@ struct EditorialNoteFilterTests {
         #expect(ids.contains("en1"), "Default filter must include editorial note")
     }
 }
+
+// MARK: - PersonMentionIndexingTests
+
+/// Verifies that `extractPersonRefs` and the indexing pipeline correctly
+/// populate the `person_mentions` table.
+///
+/// Version history:
+///   1.0 — Session 39: initial implementation
+@Suite("PersonMentionIndexingTests")
+struct PersonMentionIndexingTests {
+
+    @Test("personRefsExtractedFromDocument — deduplication: two refs from same doc, only 2 rows")
+    func personRefsExtractedFromDocument() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // d1 mentions p1 three times and p2 once; expect 2 unique rows for d1
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("vol1.xml"),
+                volumeId: "vol1",
+                documents: [
+                    ("d1", """
+                    <head>1. Report</head>
+                    <p><persName ref="p1">Kissinger</persName> met <persName ref="p1">Kissinger</persName>
+                    and <persName ref="p2">Nixon</persName>.</p>
+                    """),
+                ]
+            )
+            try await pipeline.indexVolume("vol1")
+
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let store = try PersonMentionStore(databaseURL: dbURL)
+            let refs = try await store.personRefs(forDocumentId: "d1", volumeId: "vol1")
+            #expect(refs.sorted() == ["p1", "p2"],
+                    "p1 mentioned 3 times must yield exactly 1 row; p2 gives 1 row; total 2")
+        }
+    }
+
+    @Test("personRefWithNoRefAttribute — <persName> with no ref yields no row")
+    func personRefWithNoRefAttribute() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("vol1.xml"),
+                volumeId: "vol1",
+                documents: [
+                    ("d1", "<head>1. Report</head><p><persName>No Ref Here</persName></p>"),
+                ]
+            )
+            try await pipeline.indexVolume("vol1")
+
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let store = try PersonMentionStore(databaseURL: dbURL)
+            let refs = try await store.personRefs(forDocumentId: "d1", volumeId: "vol1")
+            #expect(refs.isEmpty, "<persName> with no ref must produce no person_mentions row")
+        }
+    }
+
+    @Test("removeVolumeDeletesPersonMentions — person_mentions rows removed after removeVolume")
+    func removeVolumeDeletesPersonMentions() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("vol1.xml"),
+                volumeId: "vol1",
+                documents: [
+                    ("d1", "<head>1. Doc</head><p><persName ref=\"p1\">Name</persName></p>"),
+                ]
+            )
+            try await pipeline.indexVolume("vol1")
+
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let store = try PersonMentionStore(databaseURL: dbURL)
+
+            // Verify rows exist before removal
+            let beforeCount = try await store.documentCount(forPersonRef: "p1")
+            #expect(beforeCount == 1, "Row must exist before removal")
+
+            try await pipeline.removeVolume("vol1")
+
+            let afterCount = try await store.documentCount(forPersonRef: "p1")
+            #expect(afterCount == 0, "person_mentions rows must be deleted when volume is removed")
+        }
+    }
+}

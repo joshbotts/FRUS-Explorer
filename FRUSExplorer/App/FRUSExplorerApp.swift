@@ -111,8 +111,13 @@ struct FRUSExplorerApp: App {
                subjectTagStore: appState.subjectTagStore
            ) {
             appState.indexingPipeline = pipeline
-            appState.searchService = SearchService(fts5Store: store, pipeline: pipeline)
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
+            appState.personMentionStore = try? PersonMentionStore(databaseURL: dbURL)
+            appState.searchService = SearchService(
+                fts5Store: store,
+                pipeline: pipeline,
+                personMentionStore: appState.personMentionStore
+            )
             let pageRangeStore = try? PageRangeStore(databaseURL: dbURL)
             let downloadedIds = Set(
                 (try? FileManager.default.contentsOfDirectory(

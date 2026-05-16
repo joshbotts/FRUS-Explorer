@@ -32,12 +32,14 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 09: initial implementation
 ///   1.1 — Session 38: document type filter applied in `search(_:limit:offset:)`
+///   1.2 — Session 39: `personMentionStore` added; `personRef` filter applied in `search`
 public actor SearchService {
 
     // MARK: - Dependencies
 
     private let fts5Store: FTS5Store
     private let pipeline: IndexingPipeline
+    private let personMentionStore: PersonMentionStore?
 
     // MARK: - Pagination defaults
 
@@ -51,9 +53,16 @@ public actor SearchService {
     /// - Parameters:
     ///   - fts5Store: The shared FTS5 store containing indexed documents.
     ///   - pipeline: The indexing pipeline that owns the `document_dates` auxiliary table.
-    public init(fts5Store: FTS5Store, pipeline: IndexingPipeline) {
+    ///   - personMentionStore: Optional store for person ref filtering. When `nil`,
+    ///     `SearchParameters.personRef` is silently ignored.
+    public init(
+        fts5Store: FTS5Store,
+        pipeline: IndexingPipeline,
+        personMentionStore: PersonMentionStore? = nil
+    ) {
         self.fts5Store = fts5Store
         self.pipeline = pipeline
+        self.personMentionStore = personMentionStore
     }
 
     // MARK: - Public API
@@ -80,6 +89,14 @@ public actor SearchService {
             return try await pipeline.documentKeysInDateRange(range, limitToVolumeIds: parameters.volumeIds)
         }()
 
+        // Build person-ref whitelist if requested.
+        let personKeys: Set<String>? = try await {
+            guard let ref = parameters.personRef,
+                  let store = personMentionStore else { return nil }
+            let pairs = try await store.documents(forPersonRef: ref)
+            return Set(pairs.map { "\($0.volumeId)/\($0.documentId)" })
+        }()
+
         let rawResults = try await fts5Store.search(
             query: query,
             limit: effectiveLimit + 200,   // overscan to account for post-processing
@@ -93,6 +110,9 @@ public actor SearchService {
 
             // Date filter
             if let keys = dateKeys, !keys.contains("\(raw.volumeId)/\(raw.documentId)") { continue }
+
+            // Person ref filter
+            if let keys = personKeys, !keys.contains("\(raw.volumeId)/\(raw.documentId)") { continue }
 
             // Subject tag AND filter
             if !parameters.subjectTagIds.isEmpty {
