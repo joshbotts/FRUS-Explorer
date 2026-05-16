@@ -8,8 +8,13 @@ series more effectively.
 
 - Full-text search and filtering across the FRUS corpus (FTS5, English stemming)
 - TEI-rendered document view faithful to history.state.gov content and annotation
+- Structured date indexing from TEI `<date>` attributes; accurate date-range filtering
+- Editorial note distinction: index and filter primary documents vs. editorial notes separately
+- Person mention indexing: cross-volume search by person reference with mention counts
+- Persons and terms glossaries persisted to SQLite; live autocomplete person picker
+- Accurate footnote numbers from TEI `@n` attributes (matching printed volume numbering)
+- Cross-reference graph with footnote and editorial note context on each edge
 - Document-level research notes and user tagging
-- Cross-reference visualization showing linkages between documents
 - AI summarization via Apple Intelligence (FoundationModels framework)
 - User-configurable summarization prompts with structured output support
 - Citation formatter (history.state.gov recommended style)
@@ -17,7 +22,11 @@ series more effectively.
 - NARA Source Explorer: link document source notes to NARA Catalog records
 - Composable document collections with PDF and HTML export
 - CloudKit-synced user data (notes, tags, collections, projects)
-- Offline functionality with download queue management
+- Offline functionality with download queue; volumes indexed automatically after download
+- Breadcrumb navigation trail in the volume browser
+- Front matter sections (preface, introduction, errata) browsable directly from the corpus
+- **iOS/iPadOS (iPhone)**: five-tab navigation — Browse, Search, Activity, Collections, Settings
+- **macOS**: native Settings scene (⌘,) with tabbed preferences window; ⌘F / ⌘⇧F shortcuts
 
 ## Requirements
 
@@ -150,13 +159,13 @@ swift run TaxonomyGenerator
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPhone 16"
+  -destination "platform=iOS Simulator,name=iPhone 17"
 
 # Quick filter to a single test suite
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPhone 16" \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
   -only-testing FRUSExplorerTests/CitationParserTests
 ```
 
@@ -167,13 +176,20 @@ network access and must be verified manually before each release:
 
 | Test | How to verify |
 |---|---|
-| **FullOnboardingTest** | Fresh install → onboarding → download ≥1 volume → confirm BrowserView appears |
+| **FullOnboardingTest** | Fresh install → onboarding → download ≥1 volume → confirm browser appears |
+| **AutoIndexTest** | Download a volume; confirm it appears in search results without manual reindex |
 | **LargeCorpusIndexTest** | Index 10+ volumes; confirm search returns correct results |
+| **PersonMentionTest** | Search by person reference; confirm results filtered correctly |
+| **DateRangeFilterTest** | Filter search by date range; confirm only documents with `<date @when>` in range returned |
+| **EditorialNoteFilterTest** | Switch Document Type filter; confirm editorial notes included/excluded correctly |
+| **FrontMatterTest** | Navigate to a volume preface; confirm "Read" button appears and opens document |
 | **SearchPerformanceTest** | Search a large corpus; results appear in <1 second |
-| **GraphRenderPerformanceTest** | Open a document with 20+ cross-references; confirm smooth animation |
+| **GraphRenderPerformanceTest** | Open a document with 20+ cross-references; confirm smooth animation; hover an edge to see context |
 | **CloudKitSyncTest** | Create a research note on device A; confirm it appears on device B |
 | **OfflineResilienceTest** | Disable network mid-session; confirm no crash or data loss |
 | **CrossPlatformVerification** | Verify all major workflows on macOS, iPadOS, and iPhone |
+| **iOSTabNavigationTest** | Verify all five tabs (Browse, Search, Activity, Collections, Settings) on iPhone |
+| **macOSSettingsSceneTest** | Open macOS Settings via ⌘, and App menu; verify four pane tabs render correctly |
 
 ## Coding Standards
 
@@ -191,24 +207,29 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│                  SwiftUI Views               │
-├─────────────────────────────────────────────┤
-│              Service Layer                   │
-│  (Summarization, Search, Export, Citation,  │
-│   NARA Resolution, Download, Indexing)       │
-├──────────────────┬──────────────────────────┤
-│   SwiftData      │   SQLite FTS5 + Edge DB  │
-│  (User Data +    │   (Search Index +        │
-│   CloudKit Sync) │    Cross-References)     │
-├──────────────────┴──────────────────────────┤
-│           TEI Rendering Pipeline             │
-│    (XML Parser → Swift AST → SwiftUI)        │
-├─────────────────────────────────────────────┤
-│           Network & Storage Layer            │
-│  (GitHub API, NARA API, Volume Files,        │
-│   Manifest, iCloud Keychain)                 │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│                  SwiftUI Views                    │
+│  iOS: MainTabView (5 tabs)                        │
+│  macOS: NavigationSplitView + Settings scene (⌘,) │
+├──────────────────────────────────────────────────┤
+│              Service Layer                        │
+│  (Summarization, Search, Export, Citation,        │
+│   NARA Resolution, Download, Indexing)            │
+├──────────────────┬───────────────────────────────┤
+│   SwiftData      │   SQLite FTS5 + Edge DB        │
+│  (User Data +    │   (Search Index +              │
+│   CloudKit Sync) │    Cross-References +          │
+│                  │    Person Mentions +            │
+│                  │    Persons/Terms Glossaries)   │
+├──────────────────┴───────────────────────────────┤
+│           TEI Rendering Pipeline                  │
+│    (XML Parser → Swift AST → SwiftUI)             │
+│    AST nodes: date, persName, footnote(@n), …     │
+├──────────────────────────────────────────────────┤
+│           Network & Storage Layer                 │
+│  (GitHub API, NARA API, Volume Files,             │
+│   Manifest, iCloud Keychain)                      │
+└──────────────────────────────────────────────────┘
 ```
 
 ## Bundle Identifiers
@@ -231,7 +252,9 @@ All source files carry the Apache 2.0 license header.
 
 1. Read `Planning/FRUS-Explorer-Specification.md` to understand the full application design
 2. Read `Planning/DEVELOPMENT-PLAN.md` for the session sequence and dependency graph
-3. Each session's task file (e.g. `Planning/03-FTS5-Wrapper.md`) describes prerequisites,
-   outputs, and tests for that unit of work
+3. Each session's task file (e.g. `Planning/36-42-Extended-Indexing.md`) describes
+   prerequisites, key changes, and tests for that block of sessions
 4. Ensure all existing tests pass before committing session output
-5. Update `FRUS-API.openapi.yaml` if your session touches GitHub API or volume XML
+5. Update `FRUS-API.openapi.yaml` if your session touches any stored or queryable data surface
+6. After every commit, both `FRUSExplorer` (iOS) and `FRUSExplorerMac` (macOS) must build
+   cleanly with zero warnings under Swift 6 strict concurrency

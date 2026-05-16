@@ -1,7 +1,7 @@
 # FRUS Explorer — Development Plan
 
-**Version**: 1.1  
-**Date**: 2026-05-14
+**Version**: 1.2  
+**Date**: 2026-05-16
 
 Each task below corresponds to a single development session. Tasks are ordered so that each session's outputs are available as inputs for subsequent sessions. All sessions share the same Xcode workspace.
 
@@ -42,6 +42,22 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 29 | Direct Distribution Build & Notarization | Sparkle integration, Developer ID signing, notarization workflow | All prior |
 | 30 | Citation Lookup | Citation parser, page range store, matching engine, Citation Lookup view | 07, 09, 12, 16 |
 | 31 | Final Integration Testing | End-to-end tests, performance testing, corpus-scale validation | All prior |
+| 32 | Breadcrumbs, App Reset, App Icon & Subseries Fix | `BrowserBreadcrumbBar`; correct reset flow; app icon; subseries regex fix | 11, 24 |
+| 33 | Auto-index After Download | `DownloadManager.onVolumeDownloaded` callback; automatic post-download indexing | 09, 05 |
+| 34 | Front Matter Browser Support | Structural-section parse fallback; "Read" button in `CompilationView` | 07, 11 |
+| 35 | macOS Compatibility | Collection/Export macOS fixes; iOS modifier guards; blank settings sub-view fix; subject tag assets | 22, 24, 08 |
+| 36 | Structured Date Indexing | `.date` AST node; `extractStructuredDate`; `DateCertainty`; re-index migration | 07, 09 |
+| 37 | Cross-Reference Context Population | `cross_references.context` populated; edge labels in graph popover | 17, 18 |
+| 38 | Editorial Note Distinction | `is_editorial_note` flag; `DocumentTypeFilter`; italic rendering in browser | 09, 16 |
+| 39 | Person Mention Indexing — Data | `person_mentions` table; `PersonMentionStore`; `SearchParameters.personRef` | 09 |
+| 40 | Person Mention Indexing — UI | Person filter in Search; mention count in `PersonDetailSheet`; `pendingSearch` navigation | 39, 16, 12 |
+| 41 | Persons & Terms Glossaries Persisted | `persons`/`terms` SQLite tables; SQLite-first `DocumentViewModel`; autocomplete picker | 39 |
+| 42 | Footnote Number Indexing (`@n`) | `printedNumber` in AST and render model; `displayLabel` for rendering | 07, 13 |
+| 43 | Shared Navigation State & iOS Tab Shell | `AppTab`; `activeTab`; `MainTabView` shell; `ContentView` routing | 01, 11 |
+| 44 | Full Navigation Wiring — All Platforms | iOS tabs wired; sheets removed from iOS; Done buttons guarded; `handleCrossRefTap` cross-platform | 43, 15, 16, 24 |
+| 45 | Tab Bar Polish & Two-Platform Audit | Badges; `lastActivityTabVisit`; `unindexedVolumeCount`; build audit | 44, 27 |
+| 46 | macOS Settings Scene & Toolbar | `Settings` scene; `MacSettingsView`; ⌘F / ⌘⇧F shortcuts; Collections button | 44 |
+| 47 | Documentation Update | Planning docs for sessions 32–46; spec and README updated | All prior |
 
 ---
 
@@ -69,6 +85,19 @@ Each task below corresponds to a single development session. Tasks are ordered s
 09 ──┼── 30 (Citation Lookup) ── 31 (Final Testing)
 12 ──┤
 16 ──┘
+
+31 → 32 (Breadcrumbs/Reset/Icon) → 33 (Auto-index) → 34 (Front Matter)
+     └→ 35 (macOS Compat)
+
+35 → 36 (Structured Dates) → 37 (XRef Context) → 38 (Editorial Notes)
+       ┌──────────────────────────────────────────────────────┘
+       └→ 39 (Person Mentions Data) → 40 (Person UI) → 41 (Glossaries)
+                                                       ↑
+                                                      42 (Footnote @n) [independent]
+
+41 → 43 (Nav State Shell) → 44 (Full Wiring) → 45 (Polish) ──┐
+                                                               ├── 47 (Docs)
+                                                     46 (macOS) ─┘
 ```
 
 ---
@@ -88,6 +117,9 @@ Present these files to Claude Code in order. The leading number matches the sess
 | `25-29-Polish-Audit-Distribution.md` | 25, 26, 27, 28, 29 |
 | `30-Citation-Lookup.md` | 30 |
 | `31-Final-Integration-Testing.md` | 31 |
+| `32-35-Breadcrumbs-AutoIndex-FrontMatter-macOSCompat.md` | 32, 33, 34, 35 |
+| `36-42-Extended-Indexing.md` | 36, 37, 38, 39, 40, 41, 42 |
+| `43-46-Navigation-Redesign.md` | 43, 44, 45, 46 |
 
 ---
 
@@ -127,3 +159,19 @@ The following items were added to earlier sessions by later feature requirements
 - Schema and index definitions documented in Session 31 task file
 - Population logic: extract `<pb>` nodes from AST, record document containment and section grouping
 - `FRUS-API.openapi.yaml` updated with `GET /volumes/{volumeId}/page-ranges`
+
+**Added by Sessions 36–39 (Extended Indexing)**:
+- `document_dates` populated from `<date>` attribute extraction rather than plain-text heuristic
+- `person_mentions` table added alongside existing tables; `removeVolume` must delete from it
+- `is_editorial_note` column added to `document_cache` and the FTS5 virtual table
+- `persons` and `terms` tables added; `removeVolume` must delete from both
+
+### Session 07 — TEI Parser Full Coverage
+**Added by Sessions 36 and 42 (Extended Indexing)**:
+- `<date>` element mapped to `.date(when:from:to:notBefore:notAfter:children:)` AST node
+- `<note @n>` attribute captured as `printedNumber: String?` on `.footnote` case (breaking change; all switch sites must add `printedNumber: nil` default)
+
+### Session 12 — Document View Core
+**Added by Session 40 (Person Mention UI)**:
+- `PersonDetailSheet` must accept a `PersonMentionStore` dependency for mention count display
+- "Find all mentions" button writes `appState.pendingSearch`; `BrowserView` must observe this property
