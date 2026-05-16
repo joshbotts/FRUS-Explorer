@@ -345,7 +345,7 @@ public final class DocumentViewModel {
 
     private func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
-            if case .footnote(_, let type, let children) = node, type == .source {
+            if case .footnote(_, let type, _, let children) = node, type == .source {
                 let text = children
                     .map(\.plainText)
                     .joined(separator: " ")

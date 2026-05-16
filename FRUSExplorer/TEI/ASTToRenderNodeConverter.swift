@@ -32,6 +32,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 06: initial implementation
+///   1.x — Session 42: prefer `printedNumber` over sequential counter for display
 public struct ASTToRenderNodeConverter {
 
     // MARK: Dependencies
@@ -102,16 +103,22 @@ public struct ASTToRenderNodeConverter {
         case .paragraph(let children):
             return [.paragraph(convertNodes(children))]
 
-        case .footnote(let id, let type, let children):
+        case .footnote(let id, let type, let printedNumber, let children):
             footnoteCounter += 1
-            let number = footnoteCounter
-            // Collect the body for bottom-of-document rendering.
+            let sequentialNumber = footnoteCounter
+            // Use the printed number for display if available; fall back to sequential counter.
+            // The counter is always incremented to keep bookkeeping consistent even when
+            // some notes have @n and others do not within the same document.
+            let displayLabel = printedNumber ?? "\(sequentialNumber)"
             let body = FRUSRenderNode.footnoteBody(
-                id: id, type: type, number: number, children: convertNodes(children)
+                id: id, type: type,
+                printedNumber: printedNumber,
+                sequentialNumber: sequentialNumber,
+                displayLabel: displayLabel,
+                children: convertNodes(children)
             )
             collectedFootnotes.append(body)
-            // Return the inline marker at the reference point.
-            return [.footnoteMarker(id: id, number: number)]
+            return [.footnoteMarker(id: id, displayLabel: displayLabel)]
 
         case .persName(let ref, let children):
             let person = ref.flatMap { personLookup?($0) }

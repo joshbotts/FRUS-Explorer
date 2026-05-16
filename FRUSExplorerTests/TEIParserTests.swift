@@ -37,7 +37,7 @@ private func containsCase(in nodes: [FRUSASTNode], where predicate: (FRUSASTNode
         switch node {
         case .document(_, _, let c), .head(let c), .dateline(let c),
              .opener(let c), .closer(let c), .salute(let c),
-             .paragraph(let c), .footnote(_, _, let c),
+             .paragraph(let c), .footnote(_, _, _, let c),
              .persName(_, let c), .gloss(_, let c), .crossReference(_, _, let c),
              .emphasis(_, let c), .term(let c),
              .supplied(let c), .sic(let c), .corr(let c),
@@ -71,7 +71,7 @@ private func extractAllText(from nodes: [FRUSASTNode]) -> String {
             result += s
         case .document(_, _, let c), .head(let c), .dateline(let c),
              .opener(let c), .closer(let c), .salute(let c),
-             .paragraph(let c), .footnote(_, _, let c),
+             .paragraph(let c), .footnote(_, _, _, let c),
              .persName(_, let c), .gloss(_, let c), .crossReference(_, _, let c),
              .emphasis(_, let c), .term(let c),
              .supplied(let c), .sic(let c), .corr(let c),
@@ -173,7 +173,7 @@ struct TEIParserTests {
         for node in docs[0].nodes {
             if case .paragraph(let children) = node {
                 for child in children {
-                    if case .footnote(let id, let type, _) = child {
+                    if case .footnote(let id, let type, _, _) = child {
                         #expect(id == "fn1")
                         #expect(type == .footnote)
                         found = true
@@ -195,7 +195,7 @@ struct TEIParserTests {
 
         let docs = try await FRUSDocumentParser().parse(volumeURL: url)
         #expect(containsCase(in: docs[0].nodes) {
-            if case .footnote(_, let t, _) = $0, t == .source { return true }
+            if case .footnote(_, let t, _, _) = $0, t == .source { return true }
             return false
         })
     }
@@ -375,7 +375,7 @@ struct TEIParserTests {
                 switch node {
                 case .document(_, _, let c), .head(let c), .dateline(let c),
                      .opener(let c), .closer(let c), .salute(let c),
-                     .paragraph(let c), .footnote(_, _, let c),
+                     .paragraph(let c), .footnote(_, _, _, let c),
                      .persName(_, let c), .gloss(_, let c), .crossReference(_, _, let c),
                      .emphasis(_, let c), .term(let c),
                      .supplied(let c), .sic(let c), .corr(let c),
@@ -608,8 +608,14 @@ struct TEIParserTests {
         let model = converter.convert(docs[0])
 
         #expect(model.footnotes.count == 2, "Two footnotes in source must produce two footnote bodies")
-        if case .footnoteBody(_, _, let n1, _) = model.footnotes[0] { #expect(n1 == 1) }
-        if case .footnoteBody(_, _, let n2, _) = model.footnotes[1] { #expect(n2 == 2) }
+        if case .footnoteBody(_, _, _, let n1, let l1, _) = model.footnotes[0] {
+            #expect(n1 == 1)
+            #expect(l1 == "1")
+        }
+        if case .footnoteBody(_, _, _, let n2, let l2, _) = model.footnotes[1] {
+            #expect(n2 == 2)
+            #expect(l2 == "2")
+        }
     }
 
     @Test("Converter: footnoteMarker appears in body, footnoteBody in footnotes array")
@@ -879,5 +885,163 @@ struct EditorialNoteIndexingTests {
         let c1 = try #require(structure.sections.first { $0.sectionId == "c1" })
         #expect(c1.documentIds.contains("d1"), "Normal document must appear in documentIds")
         #expect(c1.documentIds.contains("en1"), "Editorial note must also appear in documentIds")
+    }
+}
+
+// MARK: - FootnoteNumberTests (Session 42)
+
+struct FootnoteNumberTests {
+
+    private func parseFixture(_ xml: String) async throws -> FRUSDocumentRenderModel? {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fn-test-\(UUID().uuidString).xml")
+        try xml.data(using: .utf8)!.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let parser = FRUSDocumentParser()
+        guard let ast = try await parser.parseDocument(documentId: "d1", volumeURL: url) else {
+            return nil
+        }
+        var converter = ASTToRenderNodeConverter()
+        return converter.convert(ast)
+    }
+
+    @Test("noteWithNAttributeCaptured — @n value stored as printedNumber in AST")
+    func noteWithNAttributeCaptured() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <p>Body<note type="footnote" n="3">Third footnote.</note></p>
+        </div>
+        </body></text></TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fn-ast-\(UUID().uuidString).xml")
+        try xml.data(using: .utf8)!.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        guard let ast = try await parser.parseDocument(documentId: "d1", volumeURL: url) else {
+            Issue.record("AST parse returned nil"); return
+        }
+        // Walk nodes to find the footnote AST node
+        func findFootnote(_ nodes: [FRUSASTNode]) -> FRUSASTNode? {
+            for node in nodes {
+                if case .footnote = node { return node }
+                if let found = findFootnote(node.children) { return found }
+            }
+            return nil
+        }
+        guard let fn = findFootnote(ast.nodes) else {
+            Issue.record("No .footnote node found in AST"); return
+        }
+        guard case .footnote(_, _, let printedNumber, _) = fn else {
+            Issue.record("Node is not .footnote"); return
+        }
+        #expect(printedNumber == "3", "printedNumber must equal the @n attribute value")
+    }
+
+    @Test("noteWithoutNAttributeIsNil — missing @n produces nil printedNumber")
+    func noteWithoutNAttributeIsNil() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <p>Body<note type="footnote">No number.</note></p>
+        </div>
+        </body></text></TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fn-nil-\(UUID().uuidString).xml")
+        try xml.data(using: .utf8)!.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        guard let ast = try await parser.parseDocument(documentId: "d1", volumeURL: url) else {
+            Issue.record("AST parse returned nil"); return
+        }
+        func findFootnote(_ nodes: [FRUSASTNode]) -> FRUSASTNode? {
+            for node in nodes {
+                if case .footnote = node { return node }
+                if let found = findFootnote(node.children) { return found }
+            }
+            return nil
+        }
+        guard let fn = findFootnote(ast.nodes) else {
+            Issue.record("No .footnote node found"); return
+        }
+        guard case .footnote(_, _, let printedNumber, _) = fn else {
+            Issue.record("Node is not .footnote"); return
+        }
+        #expect(printedNumber == nil, "printedNumber must be nil when @n is absent")
+    }
+
+    @Test("nonSequentialNValues — displayLabel uses @n; sequential counter still increments")
+    func nonSequentialNValues() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <p>A<note type="footnote" n="1">First.</note>
+             B<note type="footnote" n="3">Third.</note>
+             C<note type="footnote" n="5">Fifth.</note></p>
+        </div>
+        </body></text></TEI>
+        """
+        guard let model = try await parseFixture(xml) else {
+            Issue.record("Model is nil"); return
+        }
+        #expect(model.footnotes.count == 3)
+
+        // displayLabels should follow @n values: 1, 3, 5
+        let labels: [String] = model.footnotes.compactMap {
+            if case .footnoteBody(_, _, _, _, let label, _) = $0 { return label }
+            return nil
+        }
+        #expect(labels == ["1", "3", "5"],
+                "displayLabels must reflect @n values, not the sequential counter")
+
+        // sequentialNumbers should be 1, 2, 3
+        let seqs: [Int] = model.footnotes.compactMap {
+            if case .footnoteBody(_, _, _, let seq, _, _) = $0 { return seq }
+            return nil
+        }
+        #expect(seqs == [1, 2, 3], "sequentialNumbers must still increment 1–3")
+    }
+
+    @Test("renderNodeDisplayLabelMatchesPrintedNumber — marker displayLabel matches body displayLabel")
+    func renderNodeDisplayLabelMatchesPrintedNumber() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <p>Text<note type="footnote" n="7">Note text.</note></p>
+        </div>
+        </body></text></TEI>
+        """
+        guard let model = try await parseFixture(xml) else {
+            Issue.record("Model is nil"); return
+        }
+        // The body should have displayLabel "7"
+        guard case .footnoteBody(_, _, _, _, let bodyLabel, _) = model.footnotes.first else {
+            Issue.record("No footnoteBody"); return
+        }
+        #expect(bodyLabel == "7")
+
+        // The inline marker in bodyNodes should also have displayLabel "7"
+        func findMarker(_ nodes: [FRUSRenderNode]) -> String? {
+            for node in nodes {
+                if case .footnoteMarker(_, let label) = node { return label }
+                switch node {
+                case .paragraph(let c), .boldText(let c), .italicText(let c),
+                     .smallCapsText(let c), .underlineText(let c), .termText(let c):
+                    if let found = findMarker(c) { return found }
+                default: break
+                }
+            }
+            return nil
+        }
+        let markerLabel = findMarker(model.bodyNodes)
+        #expect(markerLabel == "7", "footnoteMarker displayLabel must match footnoteBody displayLabel")
     }
 }

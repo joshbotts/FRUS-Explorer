@@ -28,6 +28,7 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 06: initial implementation (core elements)
 ///   1.1 — Session 07: full element coverage (page breaks, tables, lists, editorial notes, etc.)
+///   1.x — Session 42: `.footnoteBody` and `.footnoteMarker` gain `displayLabel: String` and `printedNumber: String?`
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -51,8 +52,10 @@ public indirect enum FRUSRenderNode: Sendable {
     case paragraph([FRUSRenderNode])
 
     /// Footnote body, rendered in the footnote section at the bottom of the document.
-    /// `number` is the sequential 1-based display number assigned by the converter.
-    case footnoteBody(id: String?, type: FootnoteType, number: Int, children: [FRUSRenderNode])
+    /// `printedNumber` is the TEI `@n` value (nil for notes without `@n`).
+    /// `sequentialNumber` is the 1-based counter assigned by the converter.
+    /// `displayLabel` is `printedNumber ?? "\(sequentialNumber)"` — use this for rendering.
+    case footnoteBody(id: String?, type: FootnoteType, printedNumber: String?, sequentialNumber: Int, displayLabel: String, children: [FRUSRenderNode])
 
     // MARK: Inline Elements
 
@@ -77,8 +80,8 @@ public indirect enum FRUSRenderNode: Sendable {
     // MARK: Footnote Marker
 
     /// Inline superscript footnote reference number.
-    /// The matching body is in `FRUSDocumentRenderModel.footnotes`.
-    case footnoteMarker(id: String?, number: Int)
+    /// `displayLabel` matches the corresponding `footnoteBody.displayLabel`.
+    case footnoteMarker(id: String?, displayLabel: String)
 
     // MARK: Interactive Elements
 

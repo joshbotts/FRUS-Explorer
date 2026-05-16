@@ -32,6 +32,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 06: initial implementation (functional, not final UI)
+///   1.x — Session 42: footnote bodies and markers use `displayLabel`
 public struct FRUSDocumentRenderer: View {
 
     public let model: FRUSDocumentRenderModel
@@ -120,10 +121,10 @@ public struct FRUSDocumentRenderer: View {
                     .font(.body)
             )
 
-        case .footnoteBody(_, let type, let number, let children):
+        case .footnoteBody(_, let type, _, _, let displayLabel, let children):
             AnyView(
                 HStack(alignment: .top, spacing: 6) {
-                    Text("\(number).")
+                    Text("\(displayLabel).")
                         .font(.footnote)
                         .foregroundStyle(footnoteColor(type))
                     inlineText(children).font(.footnote)
@@ -240,8 +241,8 @@ public struct FRUSDocumentRenderer: View {
         case .termText(let children):
             return inlineText(children).italic()
 
-        case .footnoteMarker(_, let number):
-            return Text(verbatim: "\(number)")
+        case .footnoteMarker(_, let displayLabel):
+            return Text(verbatim: displayLabel)
                 .font(.system(size: 9))
                 .baselineOffset(6)
 
@@ -321,7 +322,7 @@ public struct FRUSDocumentRenderer: View {
              .editorialNoteBlock(let c), .suppliedText(let c), .sicText(let c), .corrText(let c),
              .unknown(_, let c):
             return c.flatMap { extractInlineContent($0) }
-        case .footnoteBody(_, _, _, let c):
+        case .footnoteBody(_, _, _, _, _, let c):
             return c.flatMap { extractInlineContent($0) }
         case .listBlock(_, let items):
             return items.flatMap { $0 }.flatMap { extractInlineContent($0) }
@@ -357,11 +358,11 @@ struct FRUSDocumentRenderer_Previews: PreviewProvider {
                     .plainText(" to discuss "),
                     .italicText([.plainText("détente")]),
                     .plainText(" policy."),
-                    .footnoteMarker(id: "fn1", number: 1)
+                    .footnoteMarker(id: "fn1", displayLabel: "1")
                 ])
             ],
             footnotes: [
-                .footnoteBody(id: "fn1", type: .footnote, number: 1, children: [
+                .footnoteBody(id: "fn1", type: .footnote, printedNumber: nil, sequentialNumber: 1, displayLabel: "1", children: [
                     .plainText("Source: National Security Council Files, Box 1.")
                 ])
             ]

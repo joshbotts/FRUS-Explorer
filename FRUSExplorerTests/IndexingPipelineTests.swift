@@ -594,8 +594,8 @@ struct TextExtractionTests {
     @Test("extractSourceNote finds source footnote")
     func sourceNoteExtraction() {
         let nodes: [FRUSASTNode] = [
-            .footnote(id: nil, type: .source, children: [.text("Source: National Archives, RG 59.")]),
-            .footnote(id: nil, type: .footnote, children: [.text("Regular footnote.")]),
+            .footnote(id: nil, type: .source, printedNumber: nil, children: [.text("Source: National Archives, RG 59.")]),
+            .footnote(id: nil, type: .footnote, printedNumber: nil, children: [.text("Regular footnote.")]),
         ]
         let note = IndexingPipeline.extractSourceNote(from: nodes)
         #expect(note?.contains("National Archives") == true)
@@ -752,7 +752,7 @@ struct CrossReferenceContextTests {
     @Test("contextExtractedFromFootnote — <ref> inside footnote gets enclosing text")
     func contextExtractedFromFootnote() throws {
         let nodes: [FRUSASTNode] = [
-            .footnote(id: nil, type: .footnote, children: [
+            .footnote(id: nil, type: .footnote, printedNumber: nil, children: [
                 .text("See "),
                 .crossReference(target: "#d2", targetVolumeId: nil,
                                 children: [.text("Document 2")]),
@@ -772,7 +772,7 @@ struct CrossReferenceContextTests {
         // Build a footnote whose plain text exceeds 500 characters.
         let longText = String(repeating: "word ", count: 120) // 600 chars
         let nodes: [FRUSASTNode] = [
-            .footnote(id: nil, type: .footnote, children: [
+            .footnote(id: nil, type: .footnote, printedNumber: nil, children: [
                 .text(longText),
                 .crossReference(target: "#d3", targetVolumeId: nil,
                                 children: [.text("Document 3")])
@@ -831,7 +831,7 @@ struct CrossReferenceContextTests {
     func nestedRefInheritsFunctionContext() throws {
         // <ref> inside an emphasis inside a footnote — context should still be the footnote text.
         let nodes: [FRUSASTNode] = [
-            .footnote(id: nil, type: .footnote, children: [
+            .footnote(id: nil, type: .footnote, printedNumber: nil, children: [
                 .text("Confirmed in "),
                 .emphasis(style: .italic, children: [
                     .crossReference(target: "#d6", targetVolumeId: nil,

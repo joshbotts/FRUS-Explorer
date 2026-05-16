@@ -502,7 +502,7 @@ public actor IndexingPipeline {
 
     nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
-            if case .footnote(_, let type, let c) = node, type == .source {
+            if case .footnote(_, let type, _, let c) = node, type == .source {
                 let t = c.map(\.plainText).joined(separator: " ").normalizedWhitespace
                 return t.isEmpty ? nil : t
             }
@@ -573,7 +573,7 @@ public actor IndexingPipeline {
                     parentReferenceType: parentReferenceType,
                     enclosingText: enclosingText
                 ))
-            case .footnote(_, let type, let children):
+            case .footnote(_, let type, _, let children):
                 let refType: String
                 switch type {
                 case .editorial: refType = "editorialNote"
@@ -1296,7 +1296,7 @@ extension FRUSASTNode {
         case .gloss(_, let c):    return c.map(\.plainText).joined(separator: " ")
         case .crossReference(_, _, let c): return c.map(\.plainText).joined(separator: " ")
         case .figure(_, let c):   return c.map(\.plainText).joined(separator: " ")
-        case .footnote(_, _, let c): return c.map(\.plainText).joined(separator: " ")
+        case .footnote(_, _, _, let c): return c.map(\.plainText).joined(separator: " ")
         case .table(let rows):    return rows.map(\.plainText).joined(separator: " ")
         case .tableRow(let cells): return cells.map(\.plainText).joined(separator: " ")
         case .tableCell(_, _, let c): return c.map(\.plainText).joined(separator: " ")
@@ -1322,7 +1322,7 @@ extension FRUSASTNode {
         case .gloss(_, let c):    return c
         case .crossReference(_, _, let c): return c
         case .figure(_, let c):   return c
-        case .footnote(_, _, let c): return c
+        case .footnote(_, _, _, let c): return c
         case .table(let rows):    return rows
         case .tableRow(let cells): return cells
         case .tableCell(_, _, let c): return c

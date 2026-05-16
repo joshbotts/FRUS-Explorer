@@ -52,6 +52,7 @@ import Foundation
 ///          `@from`, `@to`, `@notBefore`, `@notAfter` for structured date indexing
 ///   1.4 — Session 38: `<div type="editorialNote">` promoted to full `FRUSDocumentAST` entries;
 ///          `VolumeStructureParserDelegate` records editorial note IDs in parent section's `documentIds`
+///   1.5 — Session 42: `@n` attribute captured in `.footnote` as `printedNumber`
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -601,9 +602,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             return .paragraph(children: children)
 
         case "note":
-            let noteId = attributes["xml:id"] ?? attributes["id"]
-            let type = FootnoteType(rawValue: attributes["type"] ?? "") ?? .unclassified
-            return .footnote(id: noteId, type: type, children: children)
+            let noteId       = attributes["xml:id"] ?? attributes["id"]
+            let printedNum   = attributes["n"]
+            let type         = FootnoteType(rawValue: attributes["type"] ?? "") ?? .unclassified
+            return .footnote(id: noteId, type: type, printedNumber: printedNum, children: children)
 
         // MARK: Inline links
         case "persName":

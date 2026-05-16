@@ -42,6 +42,7 @@ public struct FRUSDocumentAST: Sendable {
 ///   1.0 — Session 06: initial implementation (core elements)
 ///   1.1 — Session 07: full element coverage (page breaks, tables, lists, editorial notes, etc.)
 ///   1.2 — Session 36: `.date` case added for structured date attribute extraction
+///   1.2 — Session 42: `.footnote` gains `printedNumber: String?` for TEI `@n` attribute
 public indirect enum FRUSASTNode: Sendable {
 
     // MARK: Document Structure
@@ -90,7 +91,10 @@ public indirect enum FRUSASTNode: Sendable {
 
     /// `<note>` — footnote, editorial note, or source note embedded in the document.
     /// `id` is the `xml:id` attribute (may be absent). `type` classifies the note.
-    case footnote(id: String?, type: FootnoteType, children: [FRUSASTNode])
+    /// `printedNumber` is the `@n` attribute value as it appears in the printed volume.
+    /// May differ from the sequential display number assigned by the converter when
+    /// footnotes are renumbered or have gaps in the source TEI.
+    case footnote(id: String?, type: FootnoteType, printedNumber: String?, children: [FRUSASTNode])
 
     // MARK: Inline Links
 

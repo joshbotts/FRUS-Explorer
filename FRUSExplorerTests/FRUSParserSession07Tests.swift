@@ -55,7 +55,7 @@ private func containsCase(in nodes: [FRUSASTNode],
         switch node {
         case .document(_, _, let c), .head(let c), .dateline(let c),
              .opener(let c), .closer(let c), .salute(let c), .paragraph(let c),
-             .footnote(_, _, let c), .persName(_, let c), .gloss(_, let c),
+             .footnote(_, _, _, let c), .persName(_, let c), .gloss(_, let c),
              .crossReference(_, _, let c), .emphasis(_, let c), .term(let c),
              .supplied(let c), .sic(let c), .corr(let c),
              .editorialNote(let c), .titlePage(let c), .figure(_, let c),
@@ -517,7 +517,7 @@ struct RegressionTests {
         let parser = FRUSDocumentParser()
         let docs = try await parser.parse(volumeURL: url)
         #expect(containsCase(in: docs.flatMap(\.nodes)) {
-            if case .footnote(_, .source, _) = $0 { return true }; return false
+            if case .footnote(_, .source, _, _) = $0 { return true }; return false
         })
     }
 }
