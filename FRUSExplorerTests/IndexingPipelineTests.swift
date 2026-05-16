@@ -1047,3 +1047,170 @@ struct PersonMentionIndexingTests {
         }
     }
 }
+
+// MARK: - GlossaryPersistenceTests
+
+struct GlossaryPersistenceTests {
+
+    // Shared helper: write a TEI volume with a persons list and a terms section.
+    private func writeGlossaryFixture(to url: URL, volumeId: String) throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+          <publicationStmt><date>1969</date></publicationStmt>
+          <sourceDesc><p>Test</p></sourceDesc></fileDesc></teiHeader>
+          <text><body>
+            <div type="document" xml:id="d1">
+              <head>1. Memorandum</head>
+              <p>Text mentioning <persName ref="p_kissinger">Kissinger</persName>.</p>
+            </div>
+            <div type="persons">
+              <list>
+                <item xml:id="p_kissinger">Kissinger, Henry A.: National Security Advisor.</item>
+                <item xml:id="p_nixon">Nixon, Richard M.: President of the United States.</item>
+                <item xml:id="p_rogers">Rogers, William P.: Secretary of State.</item>
+              </list>
+            </div>
+            <div type="terms">
+              <list>
+                <item xml:id="t_nsc"><term>NSC</term>: National Security Council</item>
+                <item xml:id="t_nssm"><term>NSSM</term>: National Security Study Memorandum</item>
+              </list>
+            </div>
+          </body></text>
+        </TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: url)
+    }
+
+    private func makeGlossaryPipeline() throws -> (dir: URL, dbURL: URL, store: PersonMentionStore, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSGlossary-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5,
+            databaseURL: dbURL,
+            volumesDirectory: volDir,
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+            concurrencyLimit: 1
+        )
+        let store = try PersonMentionStore(databaseURL: dbURL)
+        return (dir, dbURL, store, pipeline)
+    }
+
+    @Test("personsIndexedAfterVolumeIndex — persons table has correct rows after indexing")
+    func personsIndexedAfterVolumeIndex() async throws {
+        let (dir, dbURL, store, pipeline) = try makeGlossaryPipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try writeGlossaryFixture(
+            to: dbURL.deletingLastPathComponent().appendingPathComponent("volumes/frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01"
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        let persons = try await store.allPersons(forVolumeId: "frus1969-76v01")
+        #expect(persons.count == 3)
+        let names = persons.map(\.name).sorted()
+        #expect(names.contains("Kissinger, Henry A."))
+        #expect(names.contains("Nixon, Richard M."))
+        #expect(names.contains("Rogers, William P."))
+
+        // Verify volume_id is correctly recorded
+        let kissinger = try await store.person(forRef: "p_kissinger", volumeId: "frus1969-76v01")
+        #expect(kissinger?.name == "Kissinger, Henry A.")
+    }
+
+    @Test("termsIndexedAfterVolumeIndex — terms table has correct rows after indexing")
+    func termsIndexedAfterVolumeIndex() async throws {
+        let (dir, dbURL, _, pipeline) = try makeGlossaryPipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try writeGlossaryFixture(
+            to: dbURL.deletingLastPathComponent().appendingPathComponent("volumes/frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01"
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        // Query terms directly via SQLite
+        let store = try PersonMentionStore(databaseURL: dbURL)
+        let terms = try await store.allTerms(forVolumeId: "frus1969-76v01")
+        #expect(terms.count == 2)
+        let termTexts = terms.map(\.term).sorted()
+        #expect(termTexts == ["NSC", "NSSM"])
+
+        let nsc = try await store.term(forRef: "t_nsc", volumeId: "frus1969-76v01")
+        #expect(nsc?.term == "NSC")
+        #expect(nsc?.definition?.contains("National Security Council") == true)
+    }
+
+    @Test("personsRemovedOnVolumeRemoval — persons and terms cleared when volume is removed")
+    func personsRemovedOnVolumeRemoval() async throws {
+        let (dir, dbURL, store, pipeline) = try makeGlossaryPipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try writeGlossaryFixture(
+            to: dbURL.deletingLastPathComponent().appendingPathComponent("volumes/frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01"
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        // Confirm data present before removal
+        let beforePersons = try await store.allPersons(forVolumeId: "frus1969-76v01")
+        #expect(beforePersons.count == 3)
+
+        try await pipeline.removeVolume("frus1969-76v01")
+
+        let afterPersons = try await store.allPersons(forVolumeId: "frus1969-76v01")
+        #expect(afterPersons.isEmpty)
+
+        let afterTerms = try await store.allTerms(forVolumeId: "frus1969-76v01")
+        #expect(afterTerms.isEmpty)
+    }
+
+    @Test("personsUpdatedOnReindex — INSERT OR REPLACE refreshes rows on re-index")
+    func personsUpdatedOnReindex() async throws {
+        let (dir, dbURL, store, pipeline) = try makeGlossaryPipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let volPath = dbURL.deletingLastPathComponent().appendingPathComponent("volumes/frus1969-76v01.xml")
+        try writeGlossaryFixture(to: volPath, volumeId: "frus1969-76v01")
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        let before = try await store.allPersons(forVolumeId: "frus1969-76v01")
+        #expect(before.count == 3)
+
+        // Write a revised fixture with an extra person
+        let xml2 = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>frus1969-76v01</title></titleStmt>
+          <publicationStmt><date>1969</date></publicationStmt>
+          <sourceDesc><p>Test</p></sourceDesc></fileDesc></teiHeader>
+          <text><body>
+            <div type="document" xml:id="d1"><head>1. Memo</head><p>Body.</p></div>
+            <div type="persons">
+              <list>
+                <item xml:id="p_kissinger">Kissinger, Henry A.: NSA.</item>
+                <item xml:id="p_nixon">Nixon, Richard M.: President.</item>
+                <item xml:id="p_rogers">Rogers, William P.: Secretary of State.</item>
+                <item xml:id="p_haig">Haig, Alexander M.: Deputy NSA.</item>
+              </list>
+            </div>
+          </body></text>
+        </TEI>
+        """
+        try xml2.data(using: .utf8)!.write(to: volPath)
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        let after = try await store.allPersons(forVolumeId: "frus1969-76v01")
+        // The new index added p_haig; INSERT OR REPLACE keeps all rows fresh.
+        #expect(after.map(\.ref).contains("p_haig"))
+    }
+}

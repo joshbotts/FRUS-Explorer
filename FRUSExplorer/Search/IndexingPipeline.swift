@@ -57,6 +57,7 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `DocumentBrowserEntry.isEditorialNote` populated from the new column
 ///   1.4 — Session 39: `person_mentions` table added; `extractPersonRefs` populates it
 ///          during indexing; `PersonMentionRow` private struct added
+///   1.5 — Session 41: `persons` and `terms` tables added; glossaries persisted during indexing
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -436,10 +437,23 @@ public actor IndexingPipeline {
             }
         }
 
+        // Parse and persist persons and terms glossaries.
+        let parsedPersons = (try? await parser.parsePersons(volumeURL: url)) ?? []
+        let personRows = parsedPersons.map { p in
+            PersonRow(volumeId: volumeId, ref: p.ref, name: p.name, description: p.description)
+        }
+
+        let parsedTerms = (try? await parser.parseTerms(volumeURL: url)) ?? []
+        let termRows = parsedTerms.map { t in
+            TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
+        }
+
         return VolumeIndexData(
             volumeId: volumeId, documents: fts5Docs, crossReferences: crossRefs,
             pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
-            personMentions: personMentionRows
+            personMentions: personMentionRows,
+            persons: personRows,
+            terms: termRows
         )
     }
 
@@ -453,6 +467,8 @@ public actor IndexingPipeline {
         try auxInsertDocumentDates(data.documentDates)
         try auxInsertDocumentCache(data.documentCache)
         try auxInsertPersonMentions(data.personMentions)
+        try auxInsertPersons(data.persons)
+        try auxInsertTerms(data.terms)
     }
 
     // MARK: - Progress
@@ -880,6 +896,26 @@ public actor IndexingPipeline {
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_ref ON person_mentions(person_ref)")
         try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_doc ON person_mentions(volume_id, document_id)")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS persons (
+                volume_id    TEXT NOT NULL,
+                ref          TEXT NOT NULL,
+                name         TEXT NOT NULL,
+                description  TEXT,
+                PRIMARY KEY (volume_id, ref)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name)")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS terms (
+                volume_id   TEXT NOT NULL,
+                ref         TEXT NOT NULL,
+                term        TEXT NOT NULL,
+                definition  TEXT,
+                PRIMARY KEY (volume_id, ref)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_terms_term ON terms(term)")
     }
 
     // MARK: - Auxiliary Table DML
@@ -990,6 +1026,54 @@ public actor IndexingPipeline {
         }
     }
 
+    private func auxInsertPersons(_ rows: [PersonRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = """
+            INSERT OR REPLACE INTO persons (volume_id, ref, name, description)
+            VALUES (?, ?, ?, ?)
+            """
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId,    -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.ref,         -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, row.name,        -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 4, row.description)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+
+        #if DEBUG
+        print("[IndexingPipeline] Inserted \(rows.count) persons for \(rows.first?.volumeId ?? "?")")
+        #endif
+    }
+
+    private func auxInsertTerms(_ rows: [TermRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = """
+            INSERT OR REPLACE INTO terms (volume_id, ref, term, definition)
+            VALUES (?, ?, ?, ?)
+            """
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId,  -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.ref,       -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, row.term,      -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 4, row.definition)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+
+        #if DEBUG
+        print("[IndexingPipeline] Inserted \(rows.count) terms for \(rows.first?.volumeId ?? "?")")
+        #endif
+    }
+
     private func auxDeleteVolume(_ volumeId: String) throws {
         for (table, col) in [
             ("cross_references", "source_volume_id"),
@@ -997,6 +1081,8 @@ public actor IndexingPipeline {
             ("document_dates", "volume_id"),
             ("document_cache", "volume_id"),
             ("person_mentions", "volume_id"),
+            ("persons", "volume_id"),
+            ("terms",   "volume_id"),
         ] {
             let stmt = try auxPrepare("DELETE FROM \(table) WHERE \(col) = ?")
             defer { sqlite3_finalize(stmt) }
@@ -1116,12 +1202,28 @@ private struct VolumeIndexData: Sendable {
     let documentDates: [DocumentDateRow]
     let documentCache: [DocumentCacheRow]
     let personMentions: [PersonMentionRow]
+    let persons: [PersonRow]
+    let terms: [TermRow]
 }
 
 private struct PersonMentionRow: Sendable {
     let volumeId: String
     let documentId: String
     let personRef: String
+}
+
+private struct PersonRow: Sendable {
+    let volumeId: String
+    let ref: String
+    let name: String
+    let description: String?
+}
+
+private struct TermRow: Sendable {
+    let volumeId: String
+    let ref: String
+    let term: String
+    let definition: String?
 }
 
 struct CrossReferenceRow: Sendable {

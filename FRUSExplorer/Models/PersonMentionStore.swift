@@ -21,6 +21,7 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Session 39: initial implementation
+///   1.1 — Session 41: persons/terms table queries; name autocomplete support
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -112,6 +113,119 @@ public actor PersonMentionStore {
         bind(stmt, 1, ref)
         guard step(stmt) else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    // MARK: - Persons Table Queries (Session 41)
+
+    /// Looks up a single person entry by volume and ref.
+    ///
+    /// Returns `nil` if the persons table has no row for this volume/ref pair
+    /// (e.g. the volume has not been indexed yet).
+    public func person(forRef ref: String, volumeId: String) throws -> PersonEntry? {
+        let sql = """
+            SELECT ref, name, description FROM persons
+            WHERE volume_id = ? AND ref = ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, ref)
+        guard step(stmt) else { return nil }
+        let r    = columnString(stmt, 0) ?? ref
+        let name = columnString(stmt, 1) ?? ""
+        let desc = columnString(stmt, 2)
+        return PersonEntry(ref: r, name: name, description: desc)
+    }
+
+    /// All person entries for a volume, sorted by name.
+    ///
+    /// Returns an empty array if the volume has not been indexed or has no persons list.
+    public func allPersons(forVolumeId volumeId: String) throws -> [PersonEntry] {
+        let sql = """
+            SELECT ref, name, description FROM persons
+            WHERE volume_id = ?
+            ORDER BY name
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        var results: [PersonEntry] = []
+        while step(stmt) {
+            let ref  = columnString(stmt, 0) ?? ""
+            let name = columnString(stmt, 1) ?? ""
+            let desc = columnString(stmt, 2)
+            results.append(PersonEntry(ref: ref, name: name, description: desc))
+        }
+        return results
+    }
+
+    /// Persons across all indexed volumes whose name contains `query` (case-insensitive LIKE).
+    ///
+    /// Returns at most `limit` results (default 20), ordered by name.
+    /// Used by the Search view autocomplete picker.
+    public func personsMatchingName(_ query: String, limit: Int = 20) throws -> [PersonEntry] {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+        let sql = """
+            SELECT ref, name, description, volume_id FROM persons
+            WHERE name LIKE ?
+            ORDER BY name
+            LIMIT ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, "%\(query)%")
+        sqlite3_bind_int64(stmt, 2, Int64(limit))
+        var results: [PersonEntry] = []
+        while step(stmt) {
+            let ref  = columnString(stmt, 0) ?? ""
+            let name = columnString(stmt, 1) ?? ""
+            let desc = columnString(stmt, 2)
+            results.append(PersonEntry(ref: ref, name: name, description: desc))
+        }
+        return results
+    }
+
+    // MARK: - Terms Table Queries (Session 41)
+
+    /// All glossary term entries for a volume, sorted by term.
+    ///
+    /// Returns an empty array if the volume has not been indexed or has no terms list.
+    public func allTerms(forVolumeId volumeId: String) throws -> [GlossEntry] {
+        let sql = """
+            SELECT ref, term, definition FROM terms
+            WHERE volume_id = ?
+            ORDER BY term
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        var results: [GlossEntry] = []
+        while step(stmt) {
+            let ref  = columnString(stmt, 0) ?? ""
+            let term = columnString(stmt, 1) ?? ""
+            let def  = columnString(stmt, 2)
+            results.append(GlossEntry(ref: ref, term: term, definition: def))
+        }
+        return results
+    }
+
+    /// Looks up a single glossary term by volume and ref.
+    ///
+    /// Returns `nil` if not found.
+    public func term(forRef ref: String, volumeId: String) throws -> GlossEntry? {
+        let sql = """
+            SELECT ref, term, definition FROM terms
+            WHERE volume_id = ? AND ref = ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, ref)
+        guard step(stmt) else { return nil }
+        let r    = columnString(stmt, 0) ?? ref
+        let term = columnString(stmt, 1) ?? ""
+        let def  = columnString(stmt, 2)
+        return GlossEntry(ref: r, term: term, definition: def)
     }
 
     // MARK: - SQLite Helpers

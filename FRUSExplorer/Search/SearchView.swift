@@ -31,6 +31,7 @@ import SwiftData
 ///   1.0 — Session 16: initial implementation
 ///   1.1 — Session 38: document type filter section added to filter panel
 ///   1.2 — Session 40: person ref filter field added; `initialParameters` support
+///   1.3 — Session 41: person ref field replaced with autocomplete picker backed by SQLite
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -39,6 +40,11 @@ struct SearchView: View {
 
     @State private var vm: SearchViewModel
     private let initialParameters: SearchParameters?
+
+    /// Live text typed by the user in the person name search field.
+    @State private var personSearchText: String = ""
+    /// Person entries matching `personSearchText`, shown as a dropdown.
+    @State private var personSuggestions: [PersonEntry] = []
 
     init(
         searchService: SearchService,
@@ -102,6 +108,9 @@ struct SearchView: View {
         .task {
             if let params = initialParameters {
                 vm.applyParameters(params)
+                // Pre-populate the display field from the ref when launched via pendingSearch.
+                // We show the ref value directly since a name lookup would require a volumeId.
+                personSearchText = params.personRef ?? ""
             }
             await vm.loadAvailableSubjectTags()
             vm.loadAvailableUserTags(context: modelContext)
@@ -280,13 +289,13 @@ struct SearchView: View {
                     Text(String(localized: "search.section.doctype", defaultValue: "Document Type"))
                 }
 
-                // Person reference filter
+                // Person autocomplete filter (Session 41)
                 Section {
                     @Bindable var vm = vm
                     TextField(
                         String(localized: "search.personref.placeholder",
-                               defaultValue: "Person @ref (e.g. kissinger)"),
-                        text: $vm.personRefText
+                               defaultValue: "Search by person name…"),
+                        text: $personSearchText
                     )
                     .autocorrectionDisabled()
                     #if os(iOS)
@@ -294,10 +303,74 @@ struct SearchView: View {
                     #endif
                     .accessibilityLabel(
                         String(localized: "search.personref.a11y",
-                               defaultValue: "Person reference filter")
+                               defaultValue: "Person name search")
                     )
+                    .onChange(of: personSearchText) { _, query in
+                        let trimmed = query.trimmingCharacters(in: .whitespaces)
+                        if trimmed.isEmpty {
+                            personSuggestions = []
+                            if vm.personRefText.isEmpty == false { vm.personRefText = "" }
+                        } else {
+                            Task {
+                                personSuggestions = (try? await appState.personMentionStore?
+                                    .personsMatchingName(trimmed)) ?? []
+                            }
+                        }
+                    }
+
+                    // Suggestion list
+                    if !personSuggestions.isEmpty {
+                        ForEach(personSuggestions) { person in
+                            Button {
+                                vm.personRefText  = person.ref
+                                personSearchText  = person.name
+                                personSuggestions = []
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(person.name)
+                                        .font(.body)
+                                    if let desc = person.description {
+                                        Text(desc)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(person.name)
+                        }
+                    }
+
+                    // Active filter badge
+                    if !vm.personRefText.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.fill")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(vm.personRefText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button {
+                                vm.personRefText  = ""
+                                personSearchText  = ""
+                                personSuggestions = []
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(
+                                String(localized: "search.personref.clear.a11y",
+                                       defaultValue: "Clear person filter")
+                            )
+                        }
+                    }
+
                     Text(String(localized: "search.personref.help",
-                                defaultValue: "Restrict results to documents that mention a specific person. Enter the XML @ref value from the List of Persons."))
+                                defaultValue: "Type a person's name to filter results to documents that mention them."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } header: {

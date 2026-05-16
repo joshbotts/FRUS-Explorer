@@ -152,3 +152,105 @@ struct PersonMentionStoreTests {
         #expect(!ids.contains("d2"), "d2 does not mention p_kissinger and must be filtered out")
     }
 }
+
+// MARK: - PersonsByNameTests
+
+struct PersonsByNameTests {
+
+    private func makeStore() throws -> (dir: URL, dbURL: URL, store: PersonMentionStore) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSByName-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        _ = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir,
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+            concurrencyLimit: 1
+        )
+        let store = try PersonMentionStore(databaseURL: dbURL)
+        return (dir, dbURL, store)
+    }
+
+    private func insertPerson(dbURL: URL, volumeId: String, ref: String,
+                               name: String, description: String? = nil) throws {
+        var db: OpaquePointer?
+        sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil)
+        defer { sqlite3_close_v2(db) }
+        let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        var stmt: OpaquePointer?
+        sqlite3_prepare_v2(db,
+            "INSERT OR REPLACE INTO persons (volume_id, ref, name, description) VALUES (?, ?, ?, ?)",
+            -1, &stmt, nil)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId,    -1, TRANSIENT)
+        sqlite3_bind_text(stmt, 2, ref,         -1, TRANSIENT)
+        sqlite3_bind_text(stmt, 3, name,        -1, TRANSIENT)
+        if let d = description { sqlite3_bind_text(stmt, 4, d, -1, TRANSIENT) }
+        else { sqlite3_bind_null(stmt, 4) }
+        sqlite3_step(stmt)
+    }
+
+    @Test("personsMatchingNameCaseInsensitive — LIKE search is case-insensitive")
+    func personsMatchingNameCaseInsensitive() async throws {
+        let (dir, dbURL, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertPerson(dbURL: dbURL, volumeId: "vol1", ref: "p_kiss",
+                         name: "Kissinger, Henry A.", description: "NSA")
+
+        let results = try await store.personsMatchingName("kissinger")
+        #expect(results.count == 1)
+        #expect(results.first?.name == "Kissinger, Henry A.")
+    }
+
+    @Test("personsMatchingNamePartial — partial substring match is supported")
+    func personsMatchingNamePartial() async throws {
+        let (dir, dbURL, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertPerson(dbURL: dbURL, volumeId: "vol1", ref: "p_kiss",
+                         name: "Kissinger, Henry A.")
+        try insertPerson(dbURL: dbURL, volumeId: "vol1", ref: "p_nixon",
+                         name: "Nixon, Richard M.")
+
+        let results = try await store.personsMatchingName("Kiss")
+        #expect(results.count == 1)
+        #expect(results.first?.ref == "p_kiss")
+    }
+
+    @Test("personsMatchingNameLimit — result count is capped at the specified limit")
+    func personsMatchingNameLimit() async throws {
+        let (dir, dbURL, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        for i in 1...25 {
+            try insertPerson(dbURL: dbURL, volumeId: "vol1", ref: "p_smith\(i)",
+                             name: "Smith, Person \(i)")
+        }
+
+        let results = try await store.personsMatchingName("Smith", limit: 20)
+        #expect(results.count == 20)
+    }
+
+    @Test("personLookupByRefAndVolume — single person retrieved by ref and volumeId")
+    func personLookupByRefAndVolume() async throws {
+        let (dir, dbURL, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertPerson(dbURL: dbURL, volumeId: "frus1969-76v01", ref: "p1",
+                         name: "Kissinger, Henry A.", description: "National Security Advisor")
+
+        let entry = try await store.person(forRef: "p1", volumeId: "frus1969-76v01")
+        let found = try #require(entry)
+        #expect(found.name == "Kissinger, Henry A.")
+        #expect(found.description == "National Security Advisor")
+
+        // Wrong volume → nil
+        let missing = try await store.person(forRef: "p1", volumeId: "other-vol")
+        #expect(missing == nil)
+    }
+}

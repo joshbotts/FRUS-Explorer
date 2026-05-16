@@ -37,6 +37,7 @@ import SwiftData
 ///   1.0 — Session 12: initial implementation
 ///   1.1 — Session 20: add documentPlainText, isSummarizing, showSummarizeSheet, generateSummary
 ///   1.2 — Session 40: personMentionStore dependency; selectedPersonMentionCount; loadPersonMentionCount
+///   1.3 — Session 41: persons/terms resolved from SQLite first; XML parse kept as fallback
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -170,19 +171,36 @@ public final class DocumentViewModel {
         isLoading = true
         loadError = nil
         do {
-            // Parse document AST, persons, and terms concurrently
+            // Parse document AST concurrently with SQLite glossary lookup.
+            // For indexed volumes the SQLite path is fast and avoids re-parsing the
+            // full volume XML. The XML parse is kept as a fallback for volumes that
+            // are downloaded but not yet indexed.
             async let astResult = parser.parseDocument(documentId: entry.documentId,
                                                        volumeURL: volumeURL)
-            async let personsResult = parser.parsePersons(volumeURL: volumeURL)
-            async let termsResult = parser.parseTerms(volumeURL: volumeURL)
+
+            // SQLite-first persons lookup
+            let persons: [PersonEntry]
+            let sqlPersons = (try? await personMentionStore?.allPersons(forVolumeId: entry.volumeId)) ?? []
+            if sqlPersons.isEmpty {
+                persons = (try? await parser.parsePersons(volumeURL: volumeURL)) ?? []
+            } else {
+                persons = sqlPersons
+            }
+
+            // SQLite-first terms lookup
+            let terms: [GlossEntry]
+            let sqlTerms = (try? await personMentionStore?.allTerms(forVolumeId: entry.volumeId)) ?? []
+            if sqlTerms.isEmpty {
+                terms = (try? await parser.parseTerms(volumeURL: volumeURL)) ?? []
+            } else {
+                terms = sqlTerms
+            }
 
             guard let ast = try await astResult else {
                 loadError = DocumentLoadError.documentNotFound(entry.documentId)
                 isLoading = false
                 return
             }
-            let persons = try await personsResult
-            let terms   = try await termsResult
 
             // Build lookup tables
             var pByRef: [String: PersonEntry] = [:]
