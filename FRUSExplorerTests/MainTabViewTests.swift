@@ -52,11 +52,39 @@ struct MainTabViewTests {
     func projectPickerClosureSwitchesToActivityTabOnIOS() {
         clearTabDefault()
         let state = AppState()
-        // Simulate what the ProjectPickerMenu closure does on iOS (Session 44):
-        // sets activeTab to .activity so the Activity tab comes to the foreground.
         state.activeTab = .activity
         #expect(state.activeTab == .activity)
         clearTabDefault()
+    }
+
+    @Test("activeTabPersistenceRoundTrip — cycling all five tabs persists and restores each")
+    func activeTabPersistenceRoundTrip() {
+        clearTabDefault()
+        for tab in AppTab.allCases {
+            UserDefaults.standard.set(tab.rawValue, forKey: tabKey)
+            let restored = AppState()
+            #expect(restored.activeTab == tab,
+                    "Expected \(tab) to restore from UserDefaults but got \(restored.activeTab)")
+        }
+        clearTabDefault()
+    }
+
+    @Test("lastActivityTabVisitUpdatesOnActivityTabSelect — stamped near .now when Activity selected")
+    func lastActivityTabVisitUpdatesOnActivityTabSelect() {
+        clearTabDefault()
+        UserDefaults.standard.removeObject(forKey: "frus.lastActivityTabVisit")
+        let state = AppState()
+        state.lastActivityTabVisit = .distantPast
+
+        state.activeTab = .browse   // must NOT stamp
+        #expect(state.lastActivityTabVisit == .distantPast)
+
+        state.activeTab = .activity // MUST stamp
+        let elapsed = Date.now.timeIntervalSince(state.lastActivityTabVisit)
+        #expect(elapsed < 2, "lastActivityTabVisit should be near .now after selecting Activity tab")
+
+        clearTabDefault()
+        UserDefaults.standard.removeObject(forKey: "frus.lastActivityTabVisit")
     }
     #endif
 

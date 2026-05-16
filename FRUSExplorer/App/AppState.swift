@@ -49,6 +49,7 @@ import Observation
 ///   2.0 — Session 43: AppTab enum; activeTab (iOS); pendingBrowseDocument;
 ///          showSearch and showCitationLookup promoted from BrowserView local state
 ///   2.1 — Session 44: showSettingsSheet and pendingOnboardingAfterReset guarded to macOS
+///   2.2 — Session 45: lastActivityTabVisit and unindexedVolumeCount (iOS)
 
 // MARK: - AppTab
 
@@ -208,7 +209,51 @@ final class AppState {
     }() {
         didSet {
             UserDefaults.standard.set(activeTab.rawValue, forKey: Keys.activeTab)
+            if activeTab == .activity {
+                lastActivityTabVisit = .now
+            }
+            #if DEBUG
+            print("[FRUSExplorer] Active tab: \(activeTab.rawValue)")
+            #endif
         }
+    }
+
+    /// The timestamp of the most recent visit to the Activity tab.
+    ///
+    /// Persisted via `UserDefaults` so the badge count ("notes since last visit")
+    /// survives app relaunch. `MainTabView` stamps `.now` whenever `activeTab` changes
+    /// to `.activity`. Defaults to `.distantPast` so all existing notes appear as new
+    /// on first launch.
+    ///
+    /// Version history:
+    ///   1.0 — Session 45: initial implementation
+    var lastActivityTabVisit: Date = {
+        UserDefaults.standard.object(forKey: Keys.lastActivityTabVisit) as? Date ?? .distantPast
+    }() {
+        didSet {
+            UserDefaults.standard.set(lastActivityTabVisit, forKey: Keys.lastActivityTabVisit)
+            #if DEBUG
+            print("[FRUSExplorer] lastActivityTabVisit updated to \(lastActivityTabVisit)")
+            #endif
+        }
+    }
+
+    /// Count of volumes that are downloaded but not yet present in the search index.
+    ///
+    /// Used to drive the Settings tab badge, prompting the user to run Reindex.
+    /// Returns 0 if `downloadManager` or `indexingPipeline` is nil (i.e. during boot).
+    /// Uses `try?` so an unexpected SQLite error conservatively returns 0 (no badge)
+    /// rather than crashing.
+    ///
+    /// Version history:
+    ///   1.0 — Session 45: initial implementation
+    var unindexedVolumeCount: Int {
+        guard let dm = downloadManager, let pipeline = indexingPipeline else { return 0 }
+        let all = manifestStore.diffResult?.known ?? manifestStore.bundledEntries
+        return all.filter { entry in
+            dm.isVolumeDownloaded(entry.volumeId)
+            && (try? !pipeline.isVolumeIndexed(entry.volumeId)) == true
+        }.count
     }
     #endif
 
@@ -273,5 +318,6 @@ final class AppState {
         static let activeProjectId = "activeProjectId"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let activeTab = "frus.activeTab"
+        static let lastActivityTabVisit = "frus.lastActivityTabVisit"
     }
 }

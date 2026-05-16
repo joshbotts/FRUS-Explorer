@@ -180,3 +180,56 @@ struct ReduceMotionTests {
         #expect(!vm.isAnimatingLayout)
     }
 }
+
+// MARK: - TabBarAccessibilityTests
+
+/// Accessibility and badge behaviour tests for the iOS tab bar introduced in Sessions 43–45.
+///
+/// iOS-guarded where the `AppTab` type is unavailable on macOS.
+///
+/// Version history:
+///   1.0 — Session 45: initial implementation
+#if os(iOS)
+@MainActor
+struct TabBarAccessibilityTests {
+
+    private let tabKey  = "frus.activeTab"
+    private let visitKey = "frus.lastActivityTabVisit"
+
+    private func cleanup() {
+        UserDefaults.standard.removeObject(forKey: tabKey)
+        UserDefaults.standard.removeObject(forKey: visitKey)
+    }
+
+    @Test("tabTitleRawValuesAreNonEmpty — all five AppTab cases have a non-empty rawValue")
+    func tabTitleRawValuesAreNonEmpty() {
+        for tab in AppTab.allCases {
+            #expect(!tab.rawValue.isEmpty,
+                    "AppTab.\(tab) has an empty rawValue")
+        }
+    }
+
+    @Test("activityTabBadgeClearsOnVisit — lastActivityTabVisit stamped when Activity tab selected")
+    func activityTabBadgeClearsOnVisit() {
+        cleanup()
+        let state = AppState()
+        // Simulate "user has not visited Activity tab recently"
+        state.lastActivityTabVisit = .distantPast
+        #expect(state.lastActivityTabVisit == .distantPast)
+
+        // Select Activity tab — AppState.activeTab.didSet stamps lastActivityTabVisit = .now
+        state.activeTab = .activity
+        let elapsed = Date.now.timeIntervalSince(state.lastActivityTabVisit)
+        #expect(elapsed < 2, "lastActivityTabVisit should be stamped to near-now")
+        cleanup()
+    }
+
+    @Test("settingsTabBadgeReturnsZeroWhenInfrastructureAbsent — no crash on nil pipeline or dm")
+    func settingsTabBadgeReturnsZeroWhenInfrastructureAbsent() {
+        // Fresh AppState has nil downloadManager and nil indexingPipeline.
+        let state = AppState()
+        // unindexedVolumeCount must return 0 rather than crash.
+        #expect(state.unindexedVolumeCount == 0)
+    }
+}
+#endif

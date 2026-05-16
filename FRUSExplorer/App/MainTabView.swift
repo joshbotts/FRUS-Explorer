@@ -8,6 +8,7 @@
 
 #if os(iOS)
 import SwiftUI
+import SwiftData
 
 // MARK: - MainTabView
 
@@ -17,15 +18,36 @@ import SwiftUI
 /// drives selection and persists across launches. All five tabs are fully wired
 /// as of Session 44.
 ///
+/// ## Badges
+/// - **Activity** tab: count of `ResearchNote`s with `createdAt` newer than
+///   `appState.lastActivityTabVisit`. Cleared automatically when the user selects
+///   the Activity tab (the timestamp is stamped in the `.onChange` handler).
+/// - **Settings** tab: count of downloaded-but-unindexed volumes, via
+///   `appState.unindexedVolumeCount`. Prompts the user to run Reindex.
+///
 /// `MainTabView` is instantiated by `ContentView` on iOS after the user has
 /// completed onboarding. macOS continues to use `BrowserView` directly.
 ///
 /// Version history:
 ///   1.0 — Session 43: initial iOS tab shell with Browse + 4 placeholder tabs
 ///   1.1 — Session 44: all four placeholder tabs wired with real content
+///   1.2 — Session 45: activity + settings badges; lastActivityTabVisit stamping
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
+
+    /// All research notes; filtered in `newNoteCount` to those newer than last visit.
+    @Query private var allNotes: [ResearchNote]
+
+    /// Count of notes created after the last visit to the Activity tab.
+    ///
+    /// Uses `createdAt`; notes with a nil `createdAt` (legacy) are not counted.
+    private var newNoteCount: Int {
+        allNotes.filter { note in
+            guard let created = note.createdAt else { return false }
+            return created > appState.lastActivityTabVisit
+        }.count
+    }
 
     var body: some View {
         @Bindable var appState = appState
@@ -51,6 +73,7 @@ struct MainTabView: View {
             ) {
                 ActivityTabView()
             }
+            .badge(newNoteCount)
             Tab(
                 String(localized: "tab.collections", defaultValue: "Collections"),
                 systemImage: "tray.2",
@@ -65,6 +88,7 @@ struct MainTabView: View {
             ) {
                 SettingsView()
             }
+            .badge(appState.unindexedVolumeCount)
         }
     }
 }
