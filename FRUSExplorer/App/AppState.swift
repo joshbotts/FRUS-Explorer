@@ -46,6 +46,24 @@ import Observation
 ///   1.8 — Session 32: added `showSettingsSheet` and `pendingOnboardingAfterReset` for
 ///          safe post-reset navigation; onboarding flag cleared only after sheet animates out
 ///   1.9 — Session 40: pendingSearch for cross-view person-mention navigation
+///   2.0 — Session 43: AppTab enum; activeTab (iOS); pendingBrowseDocument;
+///          showSearch and showCitationLookup promoted from BrowserView local state
+
+// MARK: - AppTab
+
+/// The five top-level tabs available on iOS.
+///
+/// `rawValue` is persisted to `UserDefaults` so the active tab survives app relaunch.
+#if os(iOS)
+enum AppTab: String, CaseIterable, Sendable {
+    case browse      = "browse"
+    case search      = "search"
+    case activity    = "activity"
+    case collections = "collections"
+    case settings    = "settings"
+}
+#endif
+
 @Observable
 @MainActor
 final class AppState {
@@ -154,6 +172,39 @@ final class AppState {
     /// with a `personRef` filter. `BrowserView` consumes this and clears it.
     var pendingSearch: SearchParameters? = nil
 
+    /// Set by cross-reference navigation to push a document into the Browse tab's
+    /// NavigationStack/NavigationSplitView. `BrowserView` observes via `.onChange`
+    /// and appends the entry to its path, then this property is cleared.
+    var pendingBrowseDocument: DocumentBrowserEntry? = nil
+
+    /// Controls presentation of the full-text Search sheet.
+    ///
+    /// Promoted from `BrowserView` local `@State` to `AppState` so that macOS
+    /// menu commands and the iOS Search tab can trigger the sheet without a direct
+    /// view reference. Session 43.
+    var showSearch: Bool = false
+
+    /// Controls presentation of the Citation Lookup sheet.
+    ///
+    /// Promoted from `BrowserView` local `@State` to `AppState`. Session 43.
+    var showCitationLookup: Bool = false
+
+    #if os(iOS)
+    /// The currently selected tab on iOS.
+    ///
+    /// Persisted via `UserDefaults` key `"frus.activeTab"` so the active tab
+    /// survives app relaunch. Defaults to `.browse`.
+    var activeTab: AppTab = {
+        guard let raw = UserDefaults.standard.string(forKey: Keys.activeTab),
+              let tab = AppTab(rawValue: raw) else { return .browse }
+        return tab
+    }() {
+        didSet {
+            UserDefaults.standard.set(activeTab.rawValue, forKey: Keys.activeTab)
+        }
+    }
+    #endif
+
     /// The shared citation matching engine. Created at boot once a database URL is available.
     /// `nil` until boot completes or if the database could not be opened.
     var citationMatchingEngine: CitationMatchingEngine?
@@ -214,5 +265,6 @@ final class AppState {
     private enum Keys {
         static let activeProjectId = "activeProjectId"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
+        static let activeTab = "frus.activeTab"
     }
 }

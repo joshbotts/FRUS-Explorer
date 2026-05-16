@@ -22,6 +22,7 @@ import SwiftUI
 ///   1.0 — Session 01: initial placeholder implementation
 ///   1.1 — Session 10: replaced with onboarding / main-app routing
 ///   1.2 — Session 11: replaced placeholder with BrowserView
+///   1.3 — Session 43: iOS routes to MainTabView; macOS stays on BrowserView
 struct ContentView: View {
 
     @Environment(AppState.self) private var appState
@@ -29,7 +30,11 @@ struct ContentView: View {
     var body: some View {
         let hasVolumes = OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory)
         if appState.hasCompletedOnboarding || hasVolumes {
+            #if os(iOS)
+            MainTabView()
+            #else
             BrowserView()
+            #endif
         } else {
             OnboardingView()
         }

@@ -11,6 +11,7 @@
 		0925AA4DBAD51623842CD5C5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
 		0B2C4093DE65922F503D8FD7 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C4CF80DBD95F6B2257B5F /* KeychainStore.swift */; };
 		18C3D51FD0954E2581DBBE1B /* UserTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DF72C3D865EA2920533346 /* UserTag.swift */; };
+		1D450CCEF5BF408FB3368C6E /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF07DB80C5D47BA8F6CEC99 /* MainTabView.swift */; };
 		1E9C0A2CDFE9A3CA083C51D2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
 		2535DC6998A028F5511DE0F8 /* UserTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DF72C3D865EA2920533346 /* UserTag.swift */; };
 		29F10C943388E055406A717D /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = F1D767EB095F342A813EA1D2 /* manifest.json */; };
@@ -235,6 +236,7 @@
 		BBE988FD32B6E62CDC64D145 /* ReadingHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836BC9B536D70E5FAD237CA0 /* ReadingHistoryEntry.swift */; };
 		CB79768B4C635DCD4164AA09 /* TaxonomyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */; };
 		CCC8365E667F068DDD2789AB /* ResearchNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966DE5E70455BCC0D63965D4 /* ResearchNote.swift */; };
+		96D3EA2639884EDD9E2065AF /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF07DB80C5D47BA8F6CEC99 /* MainTabView.swift */; };
 		D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
 		DCAADA810C1FCDA065DBE283 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A3B4DDDD1E49D1C18217E20 /* Project.swift */; };
 		DED22DC37C4A695AFB43CB11 /* SummarizationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB23FF6B4BC644BE0AE4E3C /* SummarizationPrompt.swift */; };
@@ -399,6 +401,7 @@
 		AA39BB01CC03DD04EE3901 /* PersonMentionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonMentionStore.swift; sourceTree = "<group>"; };
 		AA39BB01CC03DD04EE3904 /* PersonMentionStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonMentionStoreTests.swift; sourceTree = "<group>"; };
 		AA32BB01CC03DD04EE3201 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4EF07DB80C5D47BA8F6CEC99 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		B9B3538710154855A5E7E7D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C0114AD73FF8B5C9D0446099 /* EntitlementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementsTests.swift; sourceTree = "<group>"; };
 		CFD448362EA354DDBDF78A63 /* Collection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
@@ -439,6 +442,7 @@
 				5F862248B58178F5619CFDC6 /* AppState.swift */,
 				B9B3538710154855A5E7E7D7 /* ContentView.swift */,
 				EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */,
+				4EF07DB80C5D47BA8F6CEC99 /* MainTabView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -950,6 +954,7 @@
 				AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */,
 				D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */,
 				9D39AD7B0DDEAB44B7C81CAF /* FRUSExplorerApp.swift in Sources */,
+				96D3EA2639884EDD9E2065AF /* MainTabView.swift in Sources */,
 				6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */,
 				79425B089B74B72978721CBB /* ManifestStore.swift in Sources */,
 				CB79768B4C635DCD4164AA09 /* TaxonomyModels.swift in Sources */,
@@ -1050,6 +1055,7 @@
 				3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */,
 				1E9C0A2CDFE9A3CA083C51D2 /* ContentView.swift in Sources */,
 				36CDFA52541406F20DF89A33 /* FRUSExplorerApp.swift in Sources */,
+				1D450CCEF5BF408FB3368C6E /* MainTabView.swift in Sources */,
 				AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */,
 				E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */,
 				B0130650A3D9513A0E58368C /* TaxonomyModels.swift in Sources */,

@@ -34,14 +34,15 @@ import SwiftUI
 ///          `handleSettingsSheetDismiss()` fires even when `onDismiss` is skipped
 ///          by SwiftUI on programmatic sheet dismissal (known macOS limitation)
 ///   1.3 — Session 40: pendingSearch observation — opens search sheet pre-filled
+///   1.4 — Session 43: showSearch and showCitationLookup promoted to AppState
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
     @State private var viewModel: BrowserViewModel?
     @State private var showProjectContext = false
-    @State private var showSearch = false
     @State private var pendingSearchParams: SearchParameters? = nil
-    @State private var showCitationLookup = false
+    // showSearch and showCitationLookup live in AppState (promoted in Session 43)
+    // so that macOS menu commands and future iOS tab navigation can trigger them.
     // Settings sheet visibility is stored in AppState so ResetView can dismiss it
     // programmatically before triggering the transition back to OnboardingView.
 
@@ -87,7 +88,7 @@ struct BrowserView: View {
             }
         }
         #endif
-        .sheet(isPresented: $showSearch) {
+        .sheet(isPresented: $appState.showSearch) {
             if let service = appState.searchService {
                 SearchView(
                     searchService: service,
@@ -100,9 +101,9 @@ struct BrowserView: View {
             guard let params else { return }
             pendingSearchParams = params
             appState.pendingSearch = nil
-            showSearch = true
+            appState.showSearch = true
         }
-        .sheet(isPresented: $showCitationLookup) {
+        .sheet(isPresented: $appState.showCitationLookup) {
             CitationLookupView()
         }
         .onAppear { bootstrapViewModel() }
@@ -135,7 +136,7 @@ struct BrowserView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
-                            showSearch = true
+                            appState.showSearch = true
                         } label: {
                             Image(systemName: "magnifyingglass")
                         }
@@ -146,7 +147,7 @@ struct BrowserView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
-                            showCitationLookup = true
+                            appState.showCitationLookup = true
                         } label: {
                             Image(systemName: "text.magnifyingglass")
                         }
@@ -193,7 +194,7 @@ struct BrowserView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
-                            showSearch = true
+                            appState.showSearch = true
                         } label: {
                             Image(systemName: "magnifyingglass")
                         }
@@ -204,7 +205,7 @@ struct BrowserView: View {
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
-                            showCitationLookup = true
+                            appState.showCitationLookup = true
                         } label: {
                             Image(systemName: "text.magnifyingglass")
                         }

@@ -87,3 +87,86 @@ struct AppStateTests {
         #expect(state.downloadQueue.isEmpty)
     }
 }
+
+// MARK: - AppTabTests
+
+#if os(iOS)
+/// Tests for the `AppTab` enum introduced in Session 43.
+///
+/// All tests run on the main actor because `AppState` is `@MainActor`-isolated.
+@MainActor
+struct AppTabTests {
+
+    private let key = "frus.activeTab"
+
+    private func clearPersistedTab() {
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+
+    @Test("AppTab rawValues match expected persistence strings")
+    func appTabRawValues() {
+        #expect(AppTab.browse.rawValue      == "browse")
+        #expect(AppTab.search.rawValue      == "search")
+        #expect(AppTab.activity.rawValue    == "activity")
+        #expect(AppTab.collections.rawValue == "collections")
+        #expect(AppTab.settings.rawValue    == "settings")
+    }
+
+    @Test("AppTab.CaseIterable contains all five cases")
+    func appTabAllCasesCount() {
+        #expect(AppTab.allCases.count == 5)
+    }
+
+    @Test("AppState.activeTab defaults to .browse when nothing is persisted")
+    func activeTabDefaultsToBrowse() {
+        clearPersistedTab()
+        let state = AppState()
+        #expect(state.activeTab == .browse)
+        clearPersistedTab()
+    }
+
+    @Test("Setting activeTab persists rawValue to UserDefaults")
+    func settingActiveTabPersists() {
+        clearPersistedTab()
+        let state = AppState()
+        state.activeTab = .search
+        let stored = UserDefaults.standard.string(forKey: key)
+        #expect(stored == AppTab.search.rawValue)
+        clearPersistedTab()
+    }
+
+    @Test("AppState restores activeTab from UserDefaults on next launch")
+    func activeTabRestoredFromUserDefaults() {
+        clearPersistedTab()
+        UserDefaults.standard.set(AppTab.collections.rawValue, forKey: key)
+        let state = AppState()
+        #expect(state.activeTab == .collections)
+        clearPersistedTab()
+    }
+}
+#endif
+
+// MARK: - NavigationStateTests
+
+/// Tests for navigation-related properties added to AppState in Session 43.
+@MainActor
+struct NavigationStateTests {
+
+    @Test("AppState.pendingBrowseDocument initialises to nil")
+    func pendingBrowseDocumentInitiallyNil() {
+        let state = AppState()
+        #expect(state.pendingBrowseDocument == nil)
+    }
+
+    @Test("AppState.showSearch initialises to false")
+    func showSearchInitiallyFalse() {
+        let state = AppState()
+        #expect(state.showSearch == false)
+    }
+
+    @Test("AppState.showCitationLookup initialises to false")
+    func showCitationLookupInitiallyFalse() {
+        let state = AppState()
+        #expect(state.showCitationLookup == false)
+    }
+}
