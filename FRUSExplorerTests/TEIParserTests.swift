@@ -44,6 +44,8 @@ private func containsCase(in nodes: [FRUSASTNode], where predicate: (FRUSASTNode
              .editorialNote(let c), .titlePage(let c), .figure(_, let c),
              .unknown(_, _, let c):
             children = c
+        case .date(_, _, _, _, _, let c):
+            children = c
         case .table(let c), .tableRow(let c), .listItem(let c):
             children = c
         case .tableCell(_, _, let c):
@@ -75,6 +77,8 @@ private func extractAllText(from nodes: [FRUSASTNode]) -> String {
              .supplied(let c), .sic(let c), .corr(let c),
              .editorialNote(let c), .titlePage(let c), .figure(_, let c),
              .unknown(_, _, let c):
+            result += extractAllText(from: c)
+        case .date(_, _, _, _, _, let c):
             result += extractAllText(from: c)
         case .table(let c), .tableRow(let c), .listItem(let c):
             result += extractAllText(from: c)
@@ -378,6 +382,8 @@ struct TEIParserTests {
                      .editorialNote(let c), .titlePage(let c), .figure(_, let c),
                      .unknown(_, _, let c):
                     children = c
+                case .date(_, _, _, _, _, let c):
+                    children = c
                 case .table(let c), .tableRow(let c), .listItem(let c):
                     children = c
                 case .tableCell(_, _, let c):
@@ -633,5 +639,165 @@ struct TEIParserTests {
         }
         #expect(hasMarker(model.bodyNodes), "footnoteMarker must appear in the body nodes")
         #expect(model.footnotes.count == 1, "footnoteBody must appear in the footnotes array")
+    }
+}
+
+// MARK: - DateAttributeParsingTests
+
+/// Verifies that `<date>` elements inside `<dateline>` and document body are
+/// captured in the AST with their machine-readable attributes intact.
+///
+/// Version history:
+///   1.0 — Session 36: initial implementation
+@Suite("DateAttributeParsingTests")
+struct DateAttributeParsingTests {
+
+    // MARK: - Helpers
+
+    /// Recursively finds the first `.date` node in an AST.
+    private func firstDate(in nodes: [FRUSASTNode]) -> FRUSASTNode? {
+        for node in nodes {
+            if case .date = node { return node }
+            if let found = firstDate(in: node.children) { return found }
+        }
+        return nil
+    }
+
+    // MARK: - Tests
+
+    @Test("exactDateWhenAttribute — @when inside dateline produces .date(when:)")
+    func exactDateWhenAttribute() async throws {
+        let url = try makeTEIFixture(body: """
+            <div type="document" xml:id="d1">
+              <dateline>Washington, <date when="1969-01-15">January 15, 1969</date></dateline>
+              <p>Body.</p>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+
+        guard let dateNode = firstDate(in: docs[0].nodes) else {
+            Issue.record("No .date node found in AST")
+            return
+        }
+        guard case .date(let when, _, _, _, _, _) = dateNode else {
+            Issue.record("Node is not .date")
+            return
+        }
+        #expect(when == "1969-01-15")
+    }
+
+    @Test("dateRangeFromTo — @from and @to both captured")
+    func dateRangeFromTo() async throws {
+        let url = try makeTEIFixture(body: """
+            <div type="document" xml:id="d1">
+              <dateline>Washington, <date from="1969-01" to="1969-03">January–March 1969</date></dateline>
+              <p>Body.</p>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        guard let dateNode = firstDate(in: docs[0].nodes),
+              case .date(_, let from, let to, _, _, _) = dateNode else {
+            Issue.record("No .date node with from/to found")
+            return
+        }
+        #expect(from == "1969-01")
+        #expect(to   == "1969-03")
+    }
+
+    @Test("approximateDateNotBefore — @notBefore captured")
+    func approximateDateNotBefore() async throws {
+        let url = try makeTEIFixture(body: """
+            <div type="document" xml:id="d1">
+              <dateline><date notBefore="1952">circa 1952</date></dateline>
+              <p>Body.</p>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        guard let dateNode = firstDate(in: docs[0].nodes),
+              case .date(_, _, _, let notBefore, _, _) = dateNode else {
+            Issue.record("No .date node with notBefore found")
+            return
+        }
+        #expect(notBefore == "1952")
+    }
+
+    @Test("dateWithNoAttributes — no machine-readable attrs, text in children")
+    func dateWithNoAttributes() async throws {
+        let url = try makeTEIFixture(body: """
+            <div type="document" xml:id="d1">
+              <dateline><date>January 1969</date></dateline>
+              <p>Body.</p>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        guard let dateNode = firstDate(in: docs[0].nodes),
+              case .date(let when, let from, let to, let notBefore, let notAfter, let children) = dateNode else {
+            Issue.record("No .date node found")
+            return
+        }
+        #expect(when == nil)
+        #expect(from == nil)
+        #expect(to == nil)
+        #expect(notBefore == nil)
+        #expect(notAfter == nil)
+        #expect(children.map(\.plainText).joined() == "January 1969")
+    }
+
+    @Test("dateOutsideDateline — @when in body paragraph produces .date node")
+    func dateOutsideDateline() async throws {
+        let url = try makeTEIFixture(body: """
+            <div type="document" xml:id="d1">
+              <p>The meeting took place on <date when="1969-05-01">May 1</date>.</p>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        guard let dateNode = firstDate(in: docs[0].nodes),
+              case .date(let when, _, _, _, _, _) = dateNode else {
+            Issue.record("No .date node found in body")
+            return
+        }
+        #expect(when == "1969-05-01")
+    }
+
+    @Test("dateRendersAsPlainText — .date children appear in dateline display text")
+    func dateRendersAsPlainText() async throws {
+        let url = try makeTEIFixture(body: """
+            <div type="document" xml:id="d1">
+              <dateline>Washington, <date when="1969-01-15">January 15, 1969</date></dateline>
+              <p>Body.</p>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        var converter = ASTToRenderNodeConverter()
+        let model = converter.convert(docs[0])
+
+        // The dateline render node should contain the display text, not be empty.
+        func datelineText(_ nodes: [FRUSRenderNode]) -> String? {
+            for node in nodes {
+                if case .dateline(let children) = node {
+                    return children.compactMap { n -> String? in
+                        if case .plainText(let s) = n { return s }
+                        return nil
+                    }.joined(separator: " ")
+                }
+            }
+            return nil
+        }
+        let text = datelineText(model.bodyNodes) ?? ""
+        #expect(text.contains("January 15, 1969"),
+                "Dateline should contain the display text of the <date> element")
     }
 }

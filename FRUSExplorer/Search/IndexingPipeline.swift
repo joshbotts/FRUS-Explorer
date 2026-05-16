@@ -37,7 +37,7 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 /// | `cross_references` | Directed edges from `<ref>` elements |
 /// | `page_ranges` | One row per `<pb>` element (Session 30 citation lookup) |
 /// | `document_cache` | Un-stemmed field text enabling incremental summary/note updates |
-/// | `document_dates` | Best-effort ISO 8601 dates for `SearchService` date filtering |
+/// | `document_dates` | Structured ISO 8601 dates for `SearchService` date filtering |
 ///
 /// ## section_id in page_ranges
 /// `section_id` equals the containing document's `xml:id`. Pagination restarts between
@@ -46,12 +46,46 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///
 /// Version history:
 ///   1.0 — Session 09: initial implementation
+///   1.1 — Session 36: structured date extraction via `<date @when/@from/@to>` AST nodes;
+///          `extractStructuredDate(from:)` replaces `parseDateISO` as primary call site;
+///          `dateIndexVersion` UserDefaults key added for migration detection
 public actor IndexingPipeline {
 
     // MARK: - Configuration
 
     /// Maximum number of volume XML parsers running concurrently. Default 4.
     public let concurrencyLimit: Int
+
+    // MARK: - Date Index Migration
+
+    /// Current date-index schema version.
+    ///
+    /// Increment this value whenever `extractStructuredDate` or the `document_dates`
+    /// schema changes in a way that requires previously-indexed volumes to be re-indexed.
+    ///
+    /// - Version 1: plain-text heuristic only (`parseDateISO`)
+    /// - Version 2: structured `<date @when/@from/@to>` extraction (Session 36)
+    public static let currentDateIndexVersion: Int = 2
+
+    /// UserDefaults key under which the installed date-index version is persisted.
+    public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
+
+    /// Returns `true` if the on-disk date index was built with an older extraction
+    /// strategy and volumes should be re-indexed to improve date accuracy.
+    public nonisolated var needsDateReindex: Bool {
+        let installed = UserDefaults.standard.integer(forKey: Self.dateIndexVersionKey)
+        // `integer(forKey:)` returns 0 when the key is absent, which is < 2.
+        return installed < Self.currentDateIndexVersion
+    }
+
+    /// Records that the date index has been rebuilt at the current schema version.
+    /// Call this after a successful background re-index triggered by `needsDateReindex`.
+    public func markDateReindexComplete() {
+        UserDefaults.standard.set(Self.currentDateIndexVersion, forKey: Self.dateIndexVersionKey)
+        #if DEBUG
+        print("[IndexingPipeline] Date index marked at version \(Self.currentDateIndexVersion).")
+        #endif
+    }
 
     // MARK: - Dependencies (let — accessible from nonisolated methods)
 
@@ -368,7 +402,7 @@ public actor IndexingPipeline {
                 from: astDoc.nodes, volumeId: volumeId, documentId: did))
             dateRows.append(DocumentDateRow(
                 volumeId: volumeId, documentId: did,
-                dateISO: dateline.flatMap { Self.parseDateISO(from: $0) }
+                dateISO: Self.extractStructuredDate(from: astDoc.nodes)
             ))
             cacheRows.append(DocumentCacheRow(
                 volumeId: volumeId, documentId: did, documentNumber: docNumber,
@@ -533,7 +567,93 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// Extracts the best available ISO 8601 date string from the document's AST nodes.
+    ///
+    /// Priority order:
+    ///   1. `@when` on a `.date` node inside a `.dateline` — exact day-level date.
+    ///   2. `@from` on a `.date` node inside a `.dateline` — range start.
+    ///   3. `@notBefore` on a `.date` node inside a `.dateline` — approximate start.
+    ///   4. `@when` on a `.date` node anywhere in the document body.
+    ///   5. Plain-text heuristic (`parseDateISO`) applied to the dateline string — legacy fallback.
+    ///
+    /// Returns `nil` only when no date information of any kind can be extracted.
+    ///
+    /// The heuristic `parseDateISO` is called only as the step-5 last resort, clearly
+    /// separated so it can be removed once all corpora have been re-indexed on the
+    /// structured path.
+    nonisolated static func extractStructuredDate(from nodes: [FRUSASTNode]) -> String? {
+
+        // Collect all `.date` nodes in document order, tagged with whether they
+        // are inside a `.dateline` (primary) or elsewhere (secondary).
+        struct DateNode {
+            let when: String?
+            let from: String?
+            let to: String?
+            let notBefore: String?
+            let notAfter: String?
+            let inDateline: Bool
+        }
+
+        func collectDateNodes(_ nodes: [FRUSASTNode], inDateline: Bool) -> [DateNode] {
+            var results: [DateNode] = []
+            for node in nodes {
+                switch node {
+                case .date(let when, let from, let to, let notBefore, let notAfter, let children):
+                    results.append(DateNode(when: when, from: from, to: to,
+                                            notBefore: notBefore, notAfter: notAfter,
+                                            inDateline: inDateline))
+                    // Recurse into children in case dates are nested (uncommon but valid TEI)
+                    results.append(contentsOf: collectDateNodes(children, inDateline: inDateline))
+                case .dateline(let children):
+                    results.append(contentsOf: collectDateNodes(children, inDateline: true))
+                case .opener(let children):
+                    // Datelines inside openers are still datelines
+                    results.append(contentsOf: collectDateNodes(children, inDateline: inDateline))
+                default:
+                    results.append(contentsOf: collectDateNodes(node.children, inDateline: inDateline))
+                }
+            }
+            return results
+        }
+
+        let dateNodes = collectDateNodes(nodes, inDateline: false)
+
+        // Step 1: @when inside a dateline
+        if let node = dateNodes.first(where: { $0.inDateline && $0.when != nil }),
+           let value = node.when {
+            return value
+        }
+        // Step 2: @from inside a dateline
+        if let node = dateNodes.first(where: { $0.inDateline && $0.from != nil }),
+           let value = node.from {
+            return value
+        }
+        // Step 3: @notBefore inside a dateline
+        if let node = dateNodes.first(where: { $0.inDateline && $0.notBefore != nil }),
+           let value = node.notBefore {
+            return value
+        }
+        // Step 4: @when anywhere in the document
+        if let node = dateNodes.first(where: { $0.when != nil }),
+           let value = node.when {
+            return value
+        }
+
+        // Step 5: Plain-text heuristic on the dateline string (legacy fallback).
+        // Retained for documents pre-dating structured <date> markup in the corpus.
+        if let datelineText = extractDateline(from: nodes) {
+            return parseDateISO(from: datelineText)
+        }
+        return nil
+    }
+
     /// Best-effort ISO 8601 date extraction from a dateline string.
+    ///
+    /// **Legacy fallback only.** Prefer `extractStructuredDate(from:)` which reads
+    /// machine-readable `@when`/`@from`/`@to` attributes directly from the AST.
+    /// This method is retained only for documents whose `<dateline>` lacks a `<date>`
+    /// child element with machine-readable attributes (common in older FRUS volumes
+    /// and volumes not yet tagged with `<date when="...">` elements).
     ///
     /// Returns `nil` if no recognizable date pattern is found. Documents without a
     /// parseable date are excluded from date-range–filtered search results.
@@ -937,6 +1057,7 @@ extension FRUSASTNode {
              .term(let c), .editorialNote(let c), .titlePage(let c),
              .supplied(let c), .sic(let c), .corr(let c):
             return c.map(\.plainText).joined(separator: " ")
+        case .date(_, _, _, _, _, let c): return c.map(\.plainText).joined(separator: " ")
         case .emphasis(_, let c): return c.map(\.plainText).joined(separator: " ")
         case .persName(_, let c): return c.map(\.plainText).joined(separator: " ")
         case .gloss(_, let c):    return c.map(\.plainText).joined(separator: " ")
@@ -962,6 +1083,7 @@ extension FRUSASTNode {
              .term(let c), .editorialNote(let c), .titlePage(let c),
              .supplied(let c), .sic(let c), .corr(let c):
             return c
+        case .date(_, _, _, _, _, let c): return c
         case .emphasis(_, let c): return c
         case .persName(_, let c): return c
         case .gloss(_, let c):    return c

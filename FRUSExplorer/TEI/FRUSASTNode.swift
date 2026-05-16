@@ -41,6 +41,7 @@ public struct FRUSDocumentAST: Sendable {
 /// Version history:
 ///   1.0 — Session 06: initial implementation (core elements)
 ///   1.1 — Session 07: full element coverage (page breaks, tables, lists, editorial notes, etc.)
+///   1.2 — Session 36: `.date` case added for structured date attribute extraction
 public indirect enum FRUSASTNode: Sendable {
 
     // MARK: Document Structure
@@ -54,6 +55,24 @@ public indirect enum FRUSASTNode: Sendable {
 
     /// `<dateline>` — date and location line at the top of a document.
     case dateline(children: [FRUSASTNode])
+
+    /// `<date>` — a date element, typically inside a `<dateline>` or document body.
+    ///
+    /// Preserves machine-readable ISO 8601 values from TEI date attributes so the
+    /// indexing pipeline can extract structured dates without heuristic parsing.
+    ///
+    /// - `when`:      Exact point-in-time value (`@when`), e.g. `"1969-01-15"`.
+    /// - `from`/`to`: Inclusive range endpoints (`@from`, `@to`).
+    /// - `notBefore`/`notAfter`: Approximate bounds (`@notBefore`, `@notAfter`).
+    /// - `children`:  Original display text nodes (used for rendering; unchanged).
+    case date(
+        when: String?,
+        from: String?,
+        to: String?,
+        notBefore: String?,
+        notAfter: String?,
+        children: [FRUSASTNode]
+    )
 
     /// `<opener>` — opening block of a letter or memorandum.
     case opener(children: [FRUSASTNode])
@@ -168,6 +187,24 @@ public indirect enum FRUSASTNode: Sendable {
 
 // MARK: - Supporting Enums
 
+/// Certainty of a structured date value extracted from a `.date` AST node.
+///
+/// Derived from which TEI date attributes are present on the `<date>` element.
+/// Used by `IndexingPipeline.extractStructuredDate(from:)` to rank candidates.
+///
+/// Version history:
+///   1.0 — Session 36: initial implementation
+public enum DateCertainty: Sendable, Comparable {
+    /// `@when` present — an exact point-in-time date.
+    case exact
+    /// `@from` and/or `@to` present — a defined date range.
+    case range
+    /// Only `@notBefore` and/or `@notAfter` — an approximate bound.
+    case approximate
+    /// No machine-readable attributes; content is display text only.
+    case textOnly
+}
+
 /// Classification of a `<note>` element by its `type` attribute.
 public enum FootnoteType: String, Sendable, Codable {
     case footnote
@@ -194,6 +231,7 @@ public enum EmphasisStyle: String, Sendable, Codable {
 /// Normalization rules:
 /// - Leading zeros stripped before arabic conversion.
 /// - Roman numerals parsed case-insensitively (i, v, x, l, c, d, m).
+/// - Bracketed Roman numerals (e.g. `"[XII]"`) stripped of brackets then parsed as roman.
 /// - Prefixed forms (e.g. `"A-12"`) preserved verbatim.
 /// - Unparseable values preserved and logged as a `[TEIParser]` warning.
 ///
@@ -211,8 +249,15 @@ public enum PageNumber: Sendable, Equatable {
         let s = raw.trimmingCharacters(in: .whitespaces)
         guard !s.isEmpty else { return .unparseable(raw) }
         if let n = Int(s) { return .arabic(n) }
-        let lower = s.lowercased()
-        if lower.allSatisfy({ "ivxlcdm".contains($0) }), let r = romanToInt(lower), r > 0 {
+        // Strip enclosing brackets, e.g. "[XII]" → "XII" (FRUS front-matter convention)
+        let unbracketed: String
+        if s.hasPrefix("["), s.hasSuffix("]") {
+            unbracketed = String(s.dropFirst().dropLast())
+        } else {
+            unbracketed = s
+        }
+        let lower = unbracketed.lowercased()
+        if !lower.isEmpty, lower.allSatisfy({ "ivxlcdm".contains($0) }), let r = romanToInt(lower), r > 0 {
             return .roman(r)
         }
         // Prefixed: letter(s) + hyphen/en-dash + digits, e.g. "A-12"

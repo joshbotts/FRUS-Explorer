@@ -48,6 +48,8 @@ import Foundation
 ///   1.1 — Session 07: full element coverage; parsePersons / parseTerms methods added
 ///   1.2 — Session 34: structural-section fallback in TEIParserDelegate so front matter
 ///          (preface, introduction, errata) can be opened by xml:id in DocumentView
+///   1.3 — Session 36: `<date>` element mapped to `.date` AST node; captures `@when`,
+///          `@from`, `@to`, `@notBefore`, `@notAfter` for structured date indexing
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -564,6 +566,16 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
         case "dateline":
             return .dateline(children: children)
+
+        case "date":
+            return .date(
+                when:      attributes["when"],
+                from:      attributes["from"],
+                to:        attributes["to"],
+                notBefore: attributes["notBefore"],
+                notAfter:  attributes["notAfter"],
+                children:  children
+            )
 
         case "opener":
             return .opener(children: children)

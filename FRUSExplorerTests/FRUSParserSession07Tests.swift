@@ -61,6 +61,8 @@ private func containsCase(in nodes: [FRUSASTNode],
              .editorialNote(let c), .titlePage(let c), .figure(_, let c),
              .unknown(_, _, let c):
             children = c
+        case .date(_, _, _, _, _, let c):
+            children = c
         case .table(let c), .tableRow(let c), .listItem(let c):
             children = c
         case .tableCell(_, _, let c):
@@ -103,6 +105,15 @@ struct PageBreakTests {
     @Test("PageNumber: prefixed form A-12 preserved")
     func pageBreakPrefixed() {
         #expect(PageNumber.parse("A-12") == .prefixed("A-12"))
+    }
+
+    @Test("PageNumber: bracketed roman numeral [X] parsed as roman(10)")
+    func pageBreakBracketedRoman() {
+        #expect(PageNumber.parse("[X]") == .roman(10))
+        #expect(PageNumber.parse("[XII]") == .roman(12))
+        #expect(PageNumber.parse("[XVI]") == .roman(16))
+        #expect(PageNumber.parse("[XX]") == .roman(20))
+        #expect(PageNumber.parse("[XXVI]") == .roman(26))
     }
 
     @Test("PageNumber: unparseable value preserved, no crash")

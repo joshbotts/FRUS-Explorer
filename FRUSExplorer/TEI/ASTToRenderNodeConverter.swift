@@ -206,6 +206,14 @@ public struct ASTToRenderNodeConverter {
         case .lineBreak:
             return [.lineBreak]
 
+        // MARK: Dates (Session 36)
+
+        case .date(_, _, _, _, _, let children):
+            // The structured date attributes (@when/@from/@to) are consumed by the
+            // indexing pipeline only. Rendering passes through the display-text children
+            // unchanged so the dateline reads identically to before this change.
+            return convertNodes(children)
+
         case .unknown(let name, _, let children):
             return [.unknown(name: name, children: convertNodes(children))]
         }

@@ -601,3 +601,139 @@ struct TextExtractionTests {
         #expect(note?.contains("National Archives") == true)
     }
 }
+
+// MARK: - DateIndexingAccuracyTests
+
+/// Verifies that `extractStructuredDate` extracts dates from `.date` AST nodes
+/// with correct priority ordering, falls back to the heuristic only when needed,
+/// and that the date filtering pipeline accepts structured-date documents.
+///
+/// Version history:
+///   1.0 — Session 36: initial implementation
+@Suite("DateIndexingAccuracyTests")
+struct DateIndexingAccuracyTests {
+
+    @Test("structuredDatePreferredOverHeuristic — @when wins over plain-text parse")
+    func structuredDatePreferredOverHeuristic() {
+        // Document whose dateline text WOULD parse to a different month via heuristic.
+        // The @when attribute should take priority.
+        let nodes: [FRUSASTNode] = [
+            .dateline(children: [
+                .text("Washington, "),
+                .date(when: "1969-01-15", from: nil, to: nil,
+                      notBefore: nil, notAfter: nil,
+                      children: [.text("January 15, 1969")])
+            ])
+        ]
+        let result = IndexingPipeline.extractStructuredDate(from: nodes)
+        #expect(result == "1969-01-15")
+    }
+
+    @Test("rangeStartUsedWhenNoExact — @from used when @when absent")
+    func rangeStartUsedWhenNoExact() {
+        let nodes: [FRUSASTNode] = [
+            .dateline(children: [
+                .date(when: nil, from: "1969-03", to: "1969-04",
+                      notBefore: nil, notAfter: nil,
+                      children: [.text("March–April 1969")])
+            ])
+        ]
+        let result = IndexingPipeline.extractStructuredDate(from: nodes)
+        #expect(result == "1969-03")
+    }
+
+    @Test("notBeforeUsedWhenNoWhenOrFrom — @notBefore used when @when and @from absent")
+    func notBeforeUsedWhenNoWhenOrFrom() {
+        let nodes: [FRUSASTNode] = [
+            .dateline(children: [
+                .date(when: nil, from: nil, to: nil,
+                      notBefore: "1952", notAfter: "1953",
+                      children: [.text("circa 1952–1953")])
+            ])
+        ]
+        let result = IndexingPipeline.extractStructuredDate(from: nodes)
+        #expect(result == "1952")
+    }
+
+    @Test("bodyDateUsedWhenNoDatelineDate — @when in body paragraph, no dateline date")
+    func bodyDateUsedWhenNoDatelineDate() {
+        let nodes: [FRUSASTNode] = [
+            .dateline(children: [.text("Washington")]),
+            .paragraph(children: [
+                .text("The memorandum is dated "),
+                .date(when: "1963-11-22", from: nil, to: nil,
+                      notBefore: nil, notAfter: nil,
+                      children: [.text("November 22, 1963")])
+            ])
+        ]
+        let result = IndexingPipeline.extractStructuredDate(from: nodes)
+        #expect(result == "1963-11-22")
+    }
+
+    @Test("fallbackToHeuristicWhenNoAttributes — plain dateline without <date> element")
+    func fallbackToHeuristicWhenNoAttributes() {
+        // Dateline has no <date> child, just plain text — heuristic must fire.
+        let nodes: [FRUSASTNode] = [
+            .dateline(children: [.text("Washington, January 1969.")])
+        ]
+        let result = IndexingPipeline.extractStructuredDate(from: nodes)
+        // Heuristic should extract year-month
+        #expect(result == "1969-01")
+    }
+
+    @Test("nullWhenTrulyUnparseable — no date information at all")
+    func nullWhenTrulyUnparseable() {
+        let nodes: [FRUSASTNode] = [
+            .paragraph(children: [.text("Undated memorandum.")])
+        ]
+        let result = IndexingPipeline.extractStructuredDate(from: nodes)
+        #expect(result == nil)
+    }
+
+    @Test("dateFilterReturnsDocumentWithStructuredDate — end-to-end structured date query")
+    func dateFilterReturnsDocumentWithStructuredDate() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+            let volURL = volDir.appendingPathComponent("frus1961-63v01.xml")
+            // Document with a structured @when date of 1961-08-13
+            try writeTEIVolume(to: volURL, volumeId: "frus1961-63v01", documents: [
+                (id: "d1", xml: """
+                    <dateline>Berlin, <date when="1961-08-13">August 13, 1961</date></dateline>
+                    <p>The wall went up.</p>
+                    """)
+            ])
+
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, volumesDir: volDir)
+            try await pipeline.indexVolume("frus1961-63v01")
+
+            let range = DateRange(earliest: "1961-01-01", latest: "1961-12-31")
+            // documentKeysInDateRange returns Set<String> of "volumeId/documentId" composites
+            let keys = try await pipeline.documentKeysInDateRange(range, limitToVolumeIds: nil)
+            #expect(keys.contains("frus1961-63v01/d1"),
+                    "Document with @when=1961-08-13 must appear in 1961 date-range query")
+        }
+    }
+
+    @Test("needsDateReindex — returns true before markDateReindexComplete is called")
+    func needsDateReindexTrue() async throws {
+        try await withTempDir { dir in
+            // Remove any pre-existing key that would make this test flaky
+            UserDefaults.standard.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            #expect(pipeline.needsDateReindex == true)
+        }
+    }
+
+    @Test("needsDateReindex — false after markDateReindexComplete")
+    func needsDateReindexFalse() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            await pipeline.markDateReindexComplete()
+            #expect(pipeline.needsDateReindex == false)
+            // Cleanup
+            UserDefaults.standard.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
+        }
+    }
+}
