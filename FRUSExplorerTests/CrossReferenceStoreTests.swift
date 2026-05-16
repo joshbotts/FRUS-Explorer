@@ -231,4 +231,50 @@ struct CrossReferenceStoreTests {
 
         #expect(!graph.hasUndownloadedSources)
     }
+
+    // MARK: - Context Round-Trip (Session 37)
+
+    @Test("contextSurvivesStoreRoundTrip — context written by IndexingPipeline is returned by CrossReferenceStore")
+    func contextSurvivesStoreRoundTrip() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let expectedContext = "See Document 2 for the Secretary's initial response to the proposal."
+
+        // Insert an edge with a non-nil context directly via the fixture helper.
+        try insertEdge(
+            dbURL: dbURL,
+            sourceVolumeId: "vol1", sourceDocumentId: "d1",
+            targetVolumeId: "vol1", targetDocumentId: "d2",
+            referenceType: "footnote",
+            context: expectedContext
+        )
+
+        // Retrieve outbound edges from d1 and verify context survives the round-trip.
+        let edges = try await store.outboundEdges(
+            forDocumentId: "d1", volumeId: "vol1"
+        )
+        #expect(edges.count == 1)
+        let edge = try #require(edges.first)
+        #expect(edge.context == expectedContext,
+                "Context must survive the insert → CrossReferenceStore.outboundEdges round-trip")
+    }
+
+    @Test("contextNilEdgeSurvivesStoreRoundTrip — nil context is returned as nil")
+    func contextNilEdgeSurvivesStoreRoundTrip() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertEdge(
+            dbURL: dbURL,
+            sourceVolumeId: "vol1", sourceDocumentId: "d1",
+            targetVolumeId: "vol1", targetDocumentId: "d2",
+            referenceType: "footnote",
+            context: nil
+        )
+
+        let edges = try await store.outboundEdges(forDocumentId: "d1", volumeId: "vol1")
+        #expect(edges.first?.context == nil,
+                "nil context must be returned as nil, not an empty string")
+    }
 }

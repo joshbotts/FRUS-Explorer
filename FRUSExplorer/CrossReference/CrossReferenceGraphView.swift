@@ -36,6 +36,7 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 18: initial implementation
 ///   1.1 — Session 27: Q3 structured-list a11y representation; Q4 Reduce Motion transition fix
+///   1.2 — Session 37: context passage shown in node info panel when available
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -276,6 +277,14 @@ struct CrossReferenceGraphView: View {
                             .foregroundStyle(.tertiary)
                     }
 
+                    // Context passage — shown only when the edge carries footnote text.
+                    if let context = vm.contextForSelectedNode() {
+                        EdgeContextView(
+                            context: context,
+                            directionLabel: edgeContextLabel(for: node)
+                        )
+                    }
+
                     if !node.isDownloaded && !node.isCentral {
                         Label(
                             String(localized: "graph.node.notDownloaded",
@@ -310,12 +319,29 @@ struct CrossReferenceGraphView: View {
                     }
                 }
             }
-            .frame(maxWidth: 240)
+            .frame(maxWidth: 280)
             .fixedSize()
             // Q4: scale part of transition is decorative; suppress it under Reduce Motion
             .transition(reduceMotion
                 ? .opacity
                 : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+        }
+    }
+
+    // MARK: - Edge Context Helpers
+
+    /// Returns the direction label for the context disclosure based on node kind.
+    private func edgeContextLabel(for node: DisplayNode) -> String {
+        switch node.kind {
+        case .inbound:
+            return String(localized: "graph.context.referencedIn",
+                          defaultValue: "Referenced in")
+        case .outbound:
+            return String(localized: "graph.context.referencesFrom",
+                          defaultValue: "References from")
+        default:
+            return String(localized: "graph.context.context",
+                          defaultValue: "Context")
         }
     }
 
@@ -392,7 +418,7 @@ struct CrossReferenceGraphView: View {
     }
 
     private func drawNode(
-        _ context: inout GraphicsContext,
+        _ context: inout GraphicsContext,   // shadows the outer `context` intentionally
         node: DisplayNode,
         at pos: CGPoint,
         isSelected: Bool
@@ -426,5 +452,61 @@ struct CrossReferenceGraphView: View {
         let symbolRect = rect.insetBy(dx: r * 0.3, dy: r * 0.3)
         let image = Image(systemName: symbolName)
         context.draw(image, in: symbolRect)
+    }
+}
+
+// MARK: - EdgeContextView
+
+/// Displays the plain-text passage from the footnote or editorial note that contained
+/// a cross-reference `<ref>` element, with a directional label and "Show more" disclosure.
+///
+/// Shows up to 3 lines by default; the DisclosureGroup reveals the full text.
+/// Only rendered when the edge's `context` is non-nil.
+///
+/// Version history:
+///   1.0 — Session 37: initial implementation
+private struct EdgeContextView: View {
+
+    let context: String
+    let directionLabel: String
+
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Divider()
+
+            Text(directionLabel)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            if isExpanded {
+                Text(context)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(context)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                Text(isExpanded
+                     ? String(localized: "graph.context.showLess", defaultValue: "Show less")
+                     : String(localized: "graph.context.showMore", defaultValue: "Show more"))
+                    .font(.caption2)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+        }
+        .padding(.top, 2)
     }
 }

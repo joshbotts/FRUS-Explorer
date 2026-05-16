@@ -33,6 +33,7 @@ struct IntegrationTests {}
 
 /// Verifies all per-session service types can be instantiated and satisfy basic
 /// structural invariants without requiring real data.
+@MainActor
 struct ComponentWiringTests {
 
     // MARK: - Session 02 — ManifestStore
@@ -49,10 +50,11 @@ struct ComponentWiringTests {
     // MARK: - Session 08 — SubjectTagStore
 
     @Test("ComponentWiringTest: SubjectTagStore initialises without crashing")
-    func subjectTagStoreInitialises() {
+    func subjectTagStoreInitialises() async {
         let store = SubjectTagStore()
         // Empty store is valid in a test bundle without the JSON fixtures.
-        #expect(store.allSubjectIds.count >= 0)
+        let count = await store.allTags().count
+        #expect(count >= 0)
     }
 
     // MARK: - Session 13 — CitationFormatter
@@ -95,8 +97,9 @@ struct ComponentWiringTests {
 
     @Test("ComponentWiringTest: CitationMatchingEngine initialises with nil optional services")
     func citationMatchingEngineInitialises() async throws {
+        let store = await MainActor.run { ManifestStore(bundledEntries: []) }
         let engine = CitationMatchingEngine(
-            manifestStore: ManifestStore(bundledEntries: []),
+            manifestStore: store,
             searchService: nil,
             pageRangeStore: nil,
             downloadedVolumeIds: []
@@ -175,8 +178,7 @@ struct WorkflowStructureTests {
         let note = ResearchNote(
             documentId: "d1",
             volumeId: "frus1969-76v01",
-            content: "Important NSC meeting.",
-            projectId: nil
+            bodyText: "Important NSC meeting."
         )
         ctx.insert(note)
         try ctx.save()
@@ -204,8 +206,9 @@ struct WorkflowStructureTests {
         let parser = CitationParser()
         let input = parser.parse("FRUS, 1969–76, vol. I, doc. 15")
 
+        let store = await MainActor.run { ManifestStore(bundledEntries: []) }
         let engine = CitationMatchingEngine(
-            manifestStore: ManifestStore(bundledEntries: []),
+            manifestStore: store,
             searchService: nil,
             pageRangeStore: nil,
             downloadedVolumeIds: []
@@ -218,12 +221,12 @@ struct WorkflowStructureTests {
     // MARK: - Summarization Prompt Seeder
 
     @Test("WorkflowStructureTest: SummarizationPromptSeeder does not crash on empty container")
-    func promptSeederDoesNotCrash() throws {
+    func promptSeederDoesNotCrash() async throws {
         let schema = Schema([SummarizationPrompt.self])
         let container = try ModelContainer(for: schema,
                                            configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         // Should not throw or crash
-        SummarizationPromptSeeder.seed(in: container)
+        await MainActor.run { SummarizationPromptSeeder.seed(in: container) }
         let ctx = ModelContext(container)
         let prompts = try ctx.fetch(FetchDescriptor<SummarizationPrompt>())
         #expect(prompts.count >= 1, "Seeder should insert at least one default prompt")

@@ -243,10 +243,9 @@ private extension ResearchNote {
         self.init(
             documentId: documentId,
             volumeId: volumeId,
-            activeProjectId: projectIds.first
+            projectIds: projectIds,
+            userTagIds: userTagIds
         )
-        self.projectIds = projectIds
-        self.userTagIds = userTagIds
     }
 }
 

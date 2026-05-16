@@ -106,10 +106,6 @@
 		AA11BB01CC03DD04EE1106 /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1104 /* BrowserViewModel.swift */; };
 		AA11BB01CC03DD04EE1108 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1107 /* BrowserView.swift */; };
 		AA11BB01CC03DD04EE1109 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1107 /* BrowserView.swift */; };
-		AA11BB01CC03DD04EE1125 /* BrowserBreadcrumbBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1124 /* BrowserBreadcrumbBar.swift */; };
-		AA11BB01CC03DD04EE1126 /* BrowserBreadcrumbBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1124 /* BrowserBreadcrumbBar.swift */; };
-		AA32BB01CC03DD04EE3202 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA32BB01CC03DD04EE3201 /* Assets.xcassets */; };
-		AA32BB01CC03DD04EE3203 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA32BB01CC03DD04EE3201 /* Assets.xcassets */; };
 		AA11BB01CC03DD04EE1111 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1110 /* CorpusView.swift */; };
 		AA11BB01CC03DD04EE1112 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1110 /* CorpusView.swift */; };
 		AA11BB01CC03DD04EE1114 /* SubseriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1113 /* SubseriesView.swift */; };
@@ -119,6 +115,8 @@
 		AA11BB01CC03DD04EE1120 /* CompilationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1119 /* CompilationView.swift */; };
 		AA11BB01CC03DD04EE1121 /* CompilationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1119 /* CompilationView.swift */; };
 		AA11BB01CC03DD04EE1123 /* BrowserViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1122 /* BrowserViewTests.swift */; };
+		AA11BB01CC03DD04EE1125 /* BrowserBreadcrumbBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1124 /* BrowserBreadcrumbBar.swift */; };
+		AA11BB01CC03DD04EE1126 /* BrowserBreadcrumbBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB01CC03DD04EE1124 /* BrowserBreadcrumbBar.swift */; };
 		AA12BB01CC03DD04EE1202 /* DocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA12BB01CC03DD04EE1201 /* DocumentViewModel.swift */; };
 		AA12BB01CC03DD04EE1203 /* DocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA12BB01CC03DD04EE1201 /* DocumentViewModel.swift */; };
 		AA12BB01CC03DD04EE1205 /* DocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA12BB01CC03DD04EE1204 /* DocumentView.swift */; };
@@ -225,6 +223,8 @@
 		AA30BB01CC03DD04EE3025 /* CitationMatchingEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */; };
 		AA31BB01CC03DD04EE3101 /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */; };
 		AA31BB01CC03DD04EE3103 /* CodingStandardsAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */; };
+		AA32BB01CC03DD04EE3202 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA32BB01CC03DD04EE3201 /* Assets.xcassets */; };
+		AA32BB01CC03DD04EE3203 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA32BB01CC03DD04EE3201 /* Assets.xcassets */; };
 		AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29459906A446E922051D111D /* ManifestModels.swift */; };
 		AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F862248B58178F5619CFDC6 /* AppState.swift */; };
 		B0130650A3D9513A0E58368C /* TaxonomyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */; };
@@ -286,7 +286,7 @@
 		9871A159779B05DF3DAD1E9E /* GeneratedSummary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GeneratedSummary.swift; sourceTree = "<group>"; };
 		9A3B4DDDD1E49D1C18217E20 /* Project.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
 		9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-AppStore.entitlements"; sourceTree = "<group>"; };
-		A64B4DAD6C89EFA87310EC25 /* FRUSExplorerMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = FRUSExplorerMac.app; path = "FRUS Explorer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A64B4DAD6C89EFA87310EC25 /* FRUS Explorer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FRUS Explorer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA01BB02CC03DD04EE050001 /* DownloadModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadModels.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE050002 /* DownloadManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		AA01BB02CC03DD04EE050003 /* DownloadManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManagerTests.swift; sourceTree = "<group>"; };
@@ -322,13 +322,12 @@
 		AA11BB01CC03DD04EE1101 /* VolumeStructure.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VolumeStructure.swift; sourceTree = "<group>"; };
 		AA11BB01CC03DD04EE1104 /* BrowserViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserViewModel.swift; sourceTree = "<group>"; };
 		AA11BB01CC03DD04EE1107 /* BrowserView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
-		AA11BB01CC03DD04EE1124 /* BrowserBreadcrumbBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserBreadcrumbBar.swift; sourceTree = "<group>"; };
-		AA32BB01CC03DD04EE3201 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA11BB01CC03DD04EE1110 /* CorpusView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CorpusView.swift; sourceTree = "<group>"; };
 		AA11BB01CC03DD04EE1113 /* SubseriesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubseriesView.swift; sourceTree = "<group>"; };
 		AA11BB01CC03DD04EE1116 /* VolumeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VolumeView.swift; sourceTree = "<group>"; };
 		AA11BB01CC03DD04EE1119 /* CompilationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompilationView.swift; sourceTree = "<group>"; };
 		AA11BB01CC03DD04EE1122 /* BrowserViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserViewTests.swift; sourceTree = "<group>"; };
+		AA11BB01CC03DD04EE1124 /* BrowserBreadcrumbBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrowserBreadcrumbBar.swift; sourceTree = "<group>"; };
 		AA12BB01CC03DD04EE1201 /* DocumentViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentViewModel.swift; sourceTree = "<group>"; };
 		AA12BB01CC03DD04EE1204 /* DocumentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentView.swift; sourceTree = "<group>"; };
 		AA12BB01CC03DD04EE1207 /* DocumentViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentViewTests.swift; sourceTree = "<group>"; };
@@ -394,6 +393,7 @@
 		AA30BB01CC03DD04EE3024 /* CitationMatchingEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngineTests.swift; sourceTree = "<group>"; };
 		AA31BB01CC03DD04EE3100 /* IntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
 		AA31BB01CC03DD04EE3102 /* CodingStandardsAuditTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CodingStandardsAuditTests.swift; sourceTree = "<group>"; };
+		AA32BB01CC03DD04EE3201 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B9B3538710154855A5E7E7D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C0114AD73FF8B5C9D0446099 /* EntitlementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementsTests.swift; sourceTree = "<group>"; };
 		CFD448362EA354DDBDF78A63 /* Collection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
@@ -450,7 +450,7 @@
 			isa = PBXGroup;
 			children = (
 				3C76858EB2BD9B44B3BF02F4 /* FRUS Explorer.app */,
-				A64B4DAD6C89EFA87310EC25 /* FRUSExplorerMac.app */,
+				A64B4DAD6C89EFA87310EC25 /* FRUS Explorer.app */,
 				34E0D9272977D9EFB4A94EE1 /* FRUSExplorerTests.xctest */,
 				D707625BB386335733C8C9E5 /* FRUSExplorerUITests.xctest */,
 			);
@@ -845,7 +845,7 @@
 				68671750974A6214CB151B5C /* Sparkle */,
 			);
 			productName = FRUSExplorerMac;
-			productReference = A64B4DAD6C89EFA87310EC25 /* FRUSExplorerMac.app */;
+			productReference = A64B4DAD6C89EFA87310EC25 /* FRUS Explorer.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1219,6 +1219,7 @@
 				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-AppStore.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 828S8SXVLC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";

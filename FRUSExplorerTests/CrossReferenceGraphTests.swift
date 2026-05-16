@@ -73,6 +73,7 @@ private func makeTestGraph(
 
 // MARK: - CrossReferenceGraphTests
 
+@MainActor
 struct CrossReferenceGraphTests {
 
     let canvasSize = CGSize(width: 800, height: 600)

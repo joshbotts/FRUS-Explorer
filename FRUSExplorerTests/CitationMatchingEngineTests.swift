@@ -12,12 +12,13 @@ import Foundation
 
 // MARK: - CitationMatchingEngineTests
 
+@MainActor
 struct CitationMatchingEngineTests {
 
     // MARK: - Helpers
 
     /// Returns a minimal `VolumeManifestEntry` for test fixtures.
-    private static func makeVolume(
+    private func makeVolume(
         volumeId: String,
         subseries: String,
         title: String,
@@ -39,7 +40,7 @@ struct CitationMatchingEngineTests {
         )
     }
 
-    private static func makeManifestStore(volumes: [VolumeManifestEntry]) -> ManifestStore {
+    private func makeManifestStore(volumes: [VolumeManifestEntry]) -> ManifestStore {
         ManifestStore(bundledEntries: volumes)
     }
 

@@ -214,7 +214,7 @@ struct BackgroundSummarizationTests {
         // Scope that resolves to no downloaded volumes → completes immediately with 0
         await service.start(
             scope: .volume(volumeId: "nonexistent"),
-            prompt: prompt,
+            promptSnapshot: SummarizationPromptSnapshot(from: prompt),
             provider: MockSummarizationProvider(),
             concurrencyLimit: 1,
             downloadedVolumeURLs: [:],

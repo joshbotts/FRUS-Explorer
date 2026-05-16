@@ -85,6 +85,10 @@ struct DisplayEdge: Sendable {
     let source: String
     let target: String
     let referenceType: ReferenceType
+    /// Plain text of the footnote or editorial note that contained the `<ref>`.
+    /// `nil` when the reference was not inside a note block, or for edges indexed
+    /// before Session 37 populated this column.
+    let context: String?
 }
 
 // MARK: - CrossReferenceGraphViewModel
@@ -103,6 +107,8 @@ struct DisplayEdge: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 18: initial implementation
+///   1.1 — Session 37: `DisplayEdge.context` added; `contextForSelectedNode()` helper
+///          surfaces footnote text in the info panel
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -264,6 +270,26 @@ final class CrossReferenceGraphViewModel {
             dateline: meta.dateline,
             sourceNote: nil
         )
+    }
+
+    /// Returns the edge context text for the currently selected node, if any.
+    ///
+    /// For inbound nodes the context is the text of the footnote in the source document
+    /// that contained the `<ref>` pointing to the central document.
+    /// For outbound nodes it is the text from the central document's footnote.
+    /// Returns `nil` for cluster nodes, the central node, or edges without context.
+    func contextForSelectedNode() -> String? {
+        guard let key = selectedNodeKey,
+              let node = displayNodes.first(where: { $0.id == key }),
+              !node.isCentral, !node.isCluster else { return nil }
+        switch node.kind {
+        case .inbound:
+            return displayEdges.first(where: { $0.source == key && $0.target == centralKey })?.context
+        case .outbound:
+            return displayEdges.first(where: { $0.source == centralKey && $0.target == key })?.context
+        default:
+            return nil
+        }
     }
 
     /// Returns the node key for the first node whose centre is within its hit radius of `point`.
@@ -515,14 +541,16 @@ final class CrossReferenceGraphViewModel {
                             nodes.append(DisplayNode(id: key, kind: .inbound,
                                 metadata: graph.nodeMetadata[key],
                                 isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId)))
-                            edges.append(DisplayEdge(source: key, target: centralKey, referenceType: e.referenceType))
+                            edges.append(DisplayEdge(source: key, target: centralKey,
+                                referenceType: e.referenceType, context: e.context))
                         }
                     } else {
                         nodes.append(DisplayNode(id: clusterKey,
                             kind: .clusterInbound(volumeId: vol, count: volEdges.count),
                             metadata: nil,
                             isDownloaded: downloadedVolumeIds.contains(vol)))
-                        edges.append(DisplayEdge(source: clusterKey, target: centralKey, referenceType: .footnote))
+                        edges.append(DisplayEdge(source: clusterKey, target: centralKey,
+                            referenceType: .footnote, context: nil))
                     }
                 }
             } else {
@@ -531,7 +559,8 @@ final class CrossReferenceGraphViewModel {
                     nodes.append(DisplayNode(id: key, kind: .inbound,
                         metadata: graph.nodeMetadata[key],
                         isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId)))
-                    edges.append(DisplayEdge(source: key, target: centralKey, referenceType: e.referenceType))
+                    edges.append(DisplayEdge(source: key, target: centralKey,
+                        referenceType: e.referenceType, context: e.context))
                 }
             }
         }
@@ -547,14 +576,16 @@ final class CrossReferenceGraphViewModel {
                             nodes.append(DisplayNode(id: key, kind: .outbound,
                                 metadata: graph.nodeMetadata[key],
                                 isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId)))
-                            edges.append(DisplayEdge(source: centralKey, target: key, referenceType: e.referenceType))
+                            edges.append(DisplayEdge(source: centralKey, target: key,
+                                referenceType: e.referenceType, context: e.context))
                         }
                     } else {
                         nodes.append(DisplayNode(id: clusterKey,
                             kind: .clusterOutbound(volumeId: vol, count: volEdges.count),
                             metadata: nil,
                             isDownloaded: downloadedVolumeIds.contains(vol)))
-                        edges.append(DisplayEdge(source: centralKey, target: clusterKey, referenceType: .footnote))
+                        edges.append(DisplayEdge(source: centralKey, target: clusterKey,
+                            referenceType: .footnote, context: nil))
                     }
                 }
             } else {
@@ -563,7 +594,8 @@ final class CrossReferenceGraphViewModel {
                     nodes.append(DisplayNode(id: key, kind: .outbound,
                         metadata: graph.nodeMetadata[key],
                         isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId)))
-                    edges.append(DisplayEdge(source: centralKey, target: key, referenceType: e.referenceType))
+                    edges.append(DisplayEdge(source: centralKey, target: key,
+                        referenceType: e.referenceType, context: e.context))
                 }
             }
         }

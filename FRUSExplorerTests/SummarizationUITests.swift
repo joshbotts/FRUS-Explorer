@@ -13,6 +13,7 @@ import SwiftData
 
 // MARK: - SummarizationUITests
 
+@MainActor
 struct SummarizationUITests {
 
     // MARK: - PromptCreationTest

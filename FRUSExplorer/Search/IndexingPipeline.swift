@@ -49,6 +49,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///   1.1 — Session 36: structured date extraction via `<date @when/@from/@to>` AST nodes;
 ///          `extractStructuredDate(from:)` replaces `parseDateISO` as primary call site;
 ///          `dateIndexVersion` UserDefaults key added for migration detection
+///   1.2 — Session 37: `extractCrossReferences` now populates `context` with the plain
+///          text of the enclosing `<note>` or `<div type="editorialNote">` (≤500 chars,
+///          truncated at word boundary); `<ref>` in bare paragraphs still gets nil context
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -485,11 +488,30 @@ public actor IndexingPipeline {
         return nil
     }
 
+    /// Recursively extracts `<ref>` cross-references from an AST node array.
+    ///
+    /// When a `<ref>` element appears inside a `<note>` or `<div type="editorialNote">`,
+    /// the surrounding note's plain text is captured and stored in `context` (truncated
+    /// to 500 characters at the nearest word boundary). This allows the cross-reference
+    /// graph view to display the surrounding passage as an edge label.
+    ///
+    /// `<ref>` elements that appear directly in a paragraph (not inside a note) receive
+    /// `context: nil` because there is no meaningful enclosing text to surface.
+    ///
+    /// - Parameters:
+    ///   - nodes: The AST nodes to search.
+    ///   - sourceVolumeId: Volume ID of the document containing the `<ref>`.
+    ///   - sourceDocumentId: Document ID of the document containing the `<ref>`.
+    ///   - parentReferenceType: Reference type inherited from the enclosing note.
+    ///   - enclosingText: Plain text of the immediately enclosing `<note>` or
+    ///     `<div type="editorialNote">`, truncated to 500 characters. `nil` when
+    ///     the `<ref>` is not inside any note element.
     nonisolated static func extractCrossReferences(
         from nodes: [FRUSASTNode],
         sourceVolumeId: String,
         sourceDocumentId: String,
-        parentReferenceType: String? = nil
+        parentReferenceType: String? = nil,
+        enclosingText: String? = nil
     ) -> [CrossReferenceRow] {
         var result: [CrossReferenceRow] = []
         for node in nodes {
@@ -503,13 +525,14 @@ public actor IndexingPipeline {
                         sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
                         targetVolumeId: targetVolumeId, targetDocumentId: targetDocId,
                         referenceType: parentReferenceType ?? "footnote",
-                        context: nil
+                        context: enclosingText
                     ))
                 }
                 result.append(contentsOf: extractCrossReferences(
                     from: children,
                     sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
-                    parentReferenceType: parentReferenceType
+                    parentReferenceType: parentReferenceType,
+                    enclosingText: enclosingText
                 ))
             case .footnote(_, let type, let children):
                 let refType: String
@@ -517,26 +540,50 @@ public actor IndexingPipeline {
                 case .editorial: refType = "editorialNote"
                 default:         refType = "footnote"
                 }
+                // Compute plain text of this note to pass as context for any <ref> inside it.
+                let noteText = truncateContext(
+                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                )
                 result.append(contentsOf: extractCrossReferences(
                     from: children,
                     sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
-                    parentReferenceType: refType
+                    parentReferenceType: refType,
+                    enclosingText: noteText.isEmpty ? nil : noteText
                 ))
             case .editorialNote(let children):
+                let editorialText = truncateContext(
+                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                )
                 result.append(contentsOf: extractCrossReferences(
                     from: children,
                     sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
-                    parentReferenceType: "editorialNote"
+                    parentReferenceType: "editorialNote",
+                    enclosingText: editorialText.isEmpty ? nil : editorialText
                 ))
             default:
                 result.append(contentsOf: extractCrossReferences(
                     from: node.children,
                     sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
-                    parentReferenceType: parentReferenceType
+                    parentReferenceType: parentReferenceType,
+                    enclosingText: enclosingText
                 ))
             }
         }
         return result
+    }
+
+    /// Truncates `text` to `maxLength` characters at the last word boundary within
+    /// that limit, appending `"…"` when truncation occurs.
+    ///
+    /// Preserves the full text when it is ≤ `maxLength` characters.
+    nonisolated private static func truncateContext(_ text: String, maxLength: Int = 500) -> String {
+        guard text.count > maxLength else { return text }
+        let prefix = text.prefix(maxLength)
+        if let lastSpace = prefix.lastIndex(of: " ") {
+            return String(prefix[..<lastSpace]) + "…"
+        }
+        // No word boundary found — hard truncate.
+        return String(prefix) + "…"
     }
 
     nonisolated static func extractPageRanges(

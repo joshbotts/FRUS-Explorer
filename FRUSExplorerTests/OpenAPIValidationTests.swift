@@ -108,7 +108,7 @@ struct OpenAPIValidationTests {
         let content = try loadDocument()
 
         // Extract all schema reference names: $ref: "#/components/schemas/Foo"
-        let pattern = #"\$ref: "#/components/schemas/([A-Za-z][A-Za-z0-9]*)"#
+        let pattern = ##"\$ref: "#/components/schemas/([A-Za-z][A-Za-z0-9]*)"##
         guard let regex = try? NSRegularExpression(pattern: pattern) else {
             Issue.record("Failed to compile $ref regex")
             return

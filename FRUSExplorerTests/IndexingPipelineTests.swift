@@ -737,3 +737,114 @@ struct DateIndexingAccuracyTests {
         }
     }
 }
+
+// MARK: - CrossReferenceContextTests
+
+/// Verifies that `extractCrossReferences` populates the `context` column with the
+/// plain text of the enclosing `<note>` or `<div type="editorialNote">`, and that
+/// `<ref>` elements outside any note produce nil context.
+///
+/// Version history:
+///   1.0 — Session 37: initial implementation
+@Suite("CrossReferenceContextTests")
+struct CrossReferenceContextTests {
+
+    @Test("contextExtractedFromFootnote — <ref> inside footnote gets enclosing text")
+    func contextExtractedFromFootnote() throws {
+        let nodes: [FRUSASTNode] = [
+            .footnote(id: nil, type: .footnote, children: [
+                .text("See "),
+                .crossReference(target: "#d2", targetVolumeId: nil,
+                                children: [.text("Document 2")]),
+                .text(" for the Secretary's response.")
+            ])
+        ]
+        let rows = IndexingPipeline.extractCrossReferences(
+            from: nodes, sourceVolumeId: "vol1", sourceDocumentId: "d1"
+        )
+        #expect(rows.count == 1)
+        let ctx = try #require(rows.first?.context)
+        #expect(ctx.contains("Secretary's response"), "Context must contain the footnote text")
+    }
+
+    @Test("contextTruncatedAt500Chars — long footnote text is truncated with ellipsis")
+    func contextTruncatedAt500Chars() throws {
+        // Build a footnote whose plain text exceeds 500 characters.
+        let longText = String(repeating: "word ", count: 120) // 600 chars
+        let nodes: [FRUSASTNode] = [
+            .footnote(id: nil, type: .footnote, children: [
+                .text(longText),
+                .crossReference(target: "#d3", targetVolumeId: nil,
+                                children: [.text("Document 3")])
+            ])
+        ]
+        let rows = IndexingPipeline.extractCrossReferences(
+            from: nodes, sourceVolumeId: "vol1", sourceDocumentId: "d1"
+        )
+        #expect(rows.count == 1)
+        let ctx = try #require(rows.first?.context)
+        // Context must be truncated: ≤ 501 characters (500 + the "…" ellipsis).
+        #expect(ctx.count <= 501, "Truncated context must be ≤ 501 characters")
+        #expect(ctx.hasSuffix("…"), "Truncated context must end with an ellipsis")
+    }
+
+    @Test("contextNullForTopLevelRef — <ref> in bare paragraph gets nil context")
+    func contextNullForTopLevelRef() {
+        let nodes: [FRUSASTNode] = [
+            .paragraph(children: [
+                .text("As noted in "),
+                .crossReference(target: "#d4", targetVolumeId: nil,
+                                children: [.text("Document 4")]),
+                .text(".")
+            ])
+        ]
+        let rows = IndexingPipeline.extractCrossReferences(
+            from: nodes, sourceVolumeId: "vol1", sourceDocumentId: "d1"
+        )
+        #expect(rows.count == 1)
+        #expect(rows.first?.context == nil,
+                "<ref> outside a note block must produce nil context")
+    }
+
+    @Test("editorialNoteContextExtracted — <ref> inside editorial note gets context")
+    func editorialNoteContextExtracted() throws {
+        let nodes: [FRUSASTNode] = [
+            .editorialNote([
+                .text("This editorial note references "),
+                .crossReference(target: "#d5", targetVolumeId: nil,
+                                children: [.text("Document 5")]),
+                .text(" as background.")
+            ])
+        ]
+        let rows = IndexingPipeline.extractCrossReferences(
+            from: nodes, sourceVolumeId: "vol1", sourceDocumentId: "d1"
+        )
+        #expect(rows.count == 1)
+        let row = try #require(rows.first)
+        #expect(row.referenceType == "editorialNote")
+        let ctx = try #require(row.context)
+        #expect(ctx.contains("editorial note"), "Context must contain editorial note text")
+        #expect(ctx.contains("background"))
+    }
+
+    @Test("nestedRefInheritsFunctionContext — deeply nested <ref> still captures enclosing note")
+    func nestedRefInheritsFunctionContext() throws {
+        // <ref> inside an emphasis inside a footnote — context should still be the footnote text.
+        let nodes: [FRUSASTNode] = [
+            .footnote(id: nil, type: .footnote, children: [
+                .text("Confirmed in "),
+                .emphasis(style: .italic, children: [
+                    .crossReference(target: "#d6", targetVolumeId: nil,
+                                    children: [.text("Memorandum")])
+                ]),
+                .text(", p. 5.")
+            ])
+        ]
+        let rows = IndexingPipeline.extractCrossReferences(
+            from: nodes, sourceVolumeId: "vol1", sourceDocumentId: "d1"
+        )
+        #expect(rows.count == 1)
+        let ctx = try #require(rows.first?.context)
+        #expect(ctx.contains("Confirmed"), "Nested <ref> must inherit enclosing footnote context")
+    }
+}

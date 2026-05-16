@@ -185,7 +185,8 @@ struct CollectionTests {
         ]
 
         let exporter = PDFCollectionExporter()
-        let url = try await exporter.export(collection: collection, documents: docs)
+        let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
+        let url = try await exporter.export(metadata: metadata, documents: docs)
 
         #expect(FileManager.default.fileExists(atPath: url.path))
         let data = try Data(contentsOf: url)
@@ -219,7 +220,8 @@ struct CollectionTests {
         ]
 
         let exporter = HTMLCollectionExporter()
-        let url = try await exporter.export(collection: collection, documents: docs)
+        let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
+        let url = try await exporter.export(metadata: metadata, documents: docs)
 
         #expect(FileManager.default.fileExists(atPath: url.path))
         let html = try String(contentsOf: url, encoding: .utf8)
