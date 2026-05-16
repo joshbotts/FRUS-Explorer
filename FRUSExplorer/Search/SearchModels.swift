@@ -39,7 +39,7 @@ public enum DocumentTypeFilter: Sendable, Equatable {
 ///   1.0 — Session 09: initial implementation
 ///   1.1 — Session 38: `documentTypeFilter` added
 ///   1.2 — Session 39: `personRef` filter added
-public struct SearchParameters: Sendable {
+public struct SearchParameters: Sendable, Equatable {
 
     // MARK: - Full-text fields
 

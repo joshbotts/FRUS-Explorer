@@ -36,6 +36,7 @@ import SwiftData
 /// Version history:
 ///   1.0 — Session 12: initial implementation
 ///   1.1 — Session 20: add documentPlainText, isSummarizing, showSummarizeSheet, generateSummary
+///   1.2 — Session 40: personMentionStore dependency; selectedPersonMentionCount; loadPersonMentionCount
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -71,6 +72,10 @@ public final class DocumentViewModel {
 
     /// Gloss entry selected via a `<gloss>` tap; drives the Terms sheet.
     public var selectedGloss: GlossEntry? = nil
+
+    /// Count of indexed documents that mention the currently-selected person.
+    /// Set to 0 when no person is selected or when `personMentionStore` is nil.
+    public var selectedPersonMentionCount: Int = 0
 
     // MARK: - Research Note Indicator
 
@@ -136,6 +141,9 @@ public final class DocumentViewModel {
     public let volumeEntry: VolumeManifestEntry?
     private let parser: FRUSDocumentParser
     private let subjectTagStore: SubjectTagStore
+    /// Person mention store for "Find all mentions" feature. Optional — `nil` if the
+    /// database could not be opened at boot or in test contexts that don't need it.
+    private let personMentionStore: PersonMentionStore?
 
     // MARK: - Init
 
@@ -143,12 +151,14 @@ public final class DocumentViewModel {
         entry: DocumentBrowserEntry,
         volumeEntry: VolumeManifestEntry?,
         parser: FRUSDocumentParser,
-        subjectTagStore: SubjectTagStore
+        subjectTagStore: SubjectTagStore,
+        personMentionStore: PersonMentionStore? = nil
     ) {
         self.entry = entry
         self.volumeEntry = volumeEntry
         self.parser = parser
         self.subjectTagStore = subjectTagStore
+        self.personMentionStore = personMentionStore
     }
 
     // MARK: - Loading
@@ -326,6 +336,18 @@ public final class DocumentViewModel {
             }
         }
         return nil
+    }
+
+    // MARK: - Person Mention Count
+
+    /// Fetches and stores the number of indexed documents that mention `person`.
+    /// Resets to 0 if `personMentionStore` is nil (e.g. during testing).
+    public func loadPersonMentionCount(for person: PersonEntry) async {
+        guard let store = personMentionStore else {
+            selectedPersonMentionCount = 0
+            return
+        }
+        selectedPersonMentionCount = (try? await store.documentCount(forPersonRef: person.ref)) ?? 0
     }
 }
 

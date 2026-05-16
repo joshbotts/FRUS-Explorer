@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 import SwiftData
 @testable import FRUSExplorer
 
@@ -155,4 +156,108 @@ struct DocumentViewTests {
 
         #expect(vm.crossProjectNoteCount == 2)
     }
+}
+
+// MARK: - PersonMentionBadgeTests
+
+@MainActor
+struct PersonMentionBadgeTests {
+
+    // MARK: - MentionCountLoadedFromStore
+
+    @Test("loadPersonMentionCount populates selectedPersonMentionCount from the store")
+    func mentionCountLoadedFromStore() async throws {
+        let (dir, dbURL, personStore) = try makePersonMentionStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Insert two documents that mention the same person ref
+        try insertPersonMention(dbURL: dbURL, volumeId: "vol1", documentId: "d1", personRef: "kissinger-henry-a")
+        try insertPersonMention(dbURL: dbURL, volumeId: "vol1", documentId: "d2", personRef: "kissinger-henry-a")
+        try insertPersonMention(dbURL: dbURL, volumeId: "vol1", documentId: "d3", personRef: "nixon-richard-m")
+
+        let entry = DocumentBrowserEntry(
+            documentId: "d1", volumeId: "vol1",
+            documentNumber: "1", header: "Test", dateline: nil, sourceNote: nil
+        )
+        let vm = DocumentViewModel(
+            entry: entry,
+            volumeEntry: nil,
+            parser: FRUSDocumentParser(),
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+            personMentionStore: personStore
+        )
+
+        let person = PersonEntry(ref: "kissinger-henry-a", name: "Kissinger, Henry A.", description: nil)
+        await vm.loadPersonMentionCount(for: person)
+
+        #expect(vm.selectedPersonMentionCount == 2)
+    }
+
+    // MARK: - MentionCountZeroWithoutStore
+
+    @Test("loadPersonMentionCount sets count to 0 when personMentionStore is nil")
+    func mentionCountZeroWithoutStore() async throws {
+        let entry = DocumentBrowserEntry(
+            documentId: "d1", volumeId: "vol1",
+            documentNumber: "1", header: "Test", dateline: nil, sourceNote: nil
+        )
+        let vm = DocumentViewModel(
+            entry: entry,
+            volumeEntry: nil,
+            parser: FRUSDocumentParser(),
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+            personMentionStore: nil
+        )
+
+        let person = PersonEntry(ref: "kissinger-henry-a", name: "Kissinger, Henry A.", description: nil)
+        await vm.loadPersonMentionCount(for: person)
+
+        #expect(vm.selectedPersonMentionCount == 0)
+    }
+}
+
+// MARK: - PersonMentionBadge Fixture Helpers
+
+private func makePersonMentionStore() throws -> (dir: URL, dbURL: URL, store: PersonMentionStore) {
+    let dir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("FRUSPersonBadge-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let dbURL = dir.appendingPathComponent("test.sqlite")
+
+    let fts5 = try FTS5Store(databaseURL: dbURL)
+    let volDir = dir.appendingPathComponent("volumes")
+    try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+    _ = try IndexingPipeline(
+        fts5Store: fts5,
+        databaseURL: dbURL,
+        volumesDirectory: volDir,
+        subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+        concurrencyLimit: 1
+    )
+    let store = try PersonMentionStore(databaseURL: dbURL)
+    return (dir, dbURL, store)
+}
+
+private func insertPersonMention(
+    dbURL: URL,
+    volumeId: String,
+    documentId: String,
+    personRef: String
+) throws {
+    var db: OpaquePointer?
+    let rc = sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil)
+    guard rc == SQLITE_OK, let db else {
+        throw PersonMentionError.databaseOpenFailed(message: "insertPersonMention: cannot open")
+    }
+    defer { sqlite3_close_v2(db) }
+    let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    var stmt: OpaquePointer?
+    sqlite3_prepare_v2(db,
+        "INSERT OR IGNORE INTO person_mentions (volume_id, document_id, person_ref) VALUES (?, ?, ?)",
+        -1, &stmt, nil)
+    defer { sqlite3_finalize(stmt) }
+    sqlite3_bind_text(stmt, 1, volumeId,   -1, TRANSIENT)
+    sqlite3_bind_text(stmt, 2, documentId, -1, TRANSIENT)
+    sqlite3_bind_text(stmt, 3, personRef,  -1, TRANSIENT)
+    sqlite3_step(stmt)
 }

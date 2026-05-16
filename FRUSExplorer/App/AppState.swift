@@ -45,6 +45,7 @@ import Observation
 ///   1.7 — Session 30: citationMatchingEngine added
 ///   1.8 — Session 32: added `showSettingsSheet` and `pendingOnboardingAfterReset` for
 ///          safe post-reset navigation; onboarding flag cleared only after sheet animates out
+///   1.9 — Session 40: pendingSearch for cross-view person-mention navigation
 @Observable
 @MainActor
 final class AppState {
@@ -148,6 +149,10 @@ final class AppState {
     /// The shared person mention store. Created at boot alongside `crossReferenceStore`;
     /// `nil` if the database could not be opened.
     var personMentionStore: PersonMentionStore?
+
+    /// Set by `PersonDetailSheet` "Find all mentions" to trigger search pre-filled
+    /// with a `personRef` filter. `BrowserView` consumes this and clears it.
+    var pendingSearch: SearchParameters? = nil
 
     /// The shared citation matching engine. Created at boot once a database URL is available.
     /// `nil` until boot completes or if the database could not be opened.

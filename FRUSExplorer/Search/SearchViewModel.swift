@@ -37,6 +37,7 @@ import Observation
 /// Version history:
 ///   1.0 — Session 16: initial implementation
 ///   1.1 — Session 38: `documentTypeFilter` property added
+///   1.2 — Session 40: `personRefText` property and `applyParameters(_:)` added
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -79,6 +80,12 @@ final class SearchViewModel {
 
     /// Which document types to include in results. Default `.all`.
     var documentTypeFilter: DocumentTypeFilter = .all
+
+    // MARK: - Person Reference Filter
+
+    /// `@ref` attribute value from `<persName>` to restrict results to documents
+    /// that mention a specific person. Empty string means no filter.
+    var personRefText: String = ""
 
     // MARK: - Results
 
@@ -175,6 +182,7 @@ final class SearchViewModel {
         includeSummaries = true
         includeNotes = true
         documentTypeFilter = .all
+        personRefText = ""
     }
 
     func clearAll() {
@@ -212,7 +220,10 @@ final class SearchViewModel {
             userTagIds: selectedUserTagIds.map(\.uuidString),
             includeSummaries: includeSummaries,
             includeNotes: includeNotes,
-            documentTypeFilter: documentTypeFilter
+            documentTypeFilter: documentTypeFilter,
+            personRef: personRefText.trimmingCharacters(in: .whitespaces).isEmpty
+                ? nil
+                : personRefText.trimmingCharacters(in: .whitespaces)
         )
     }
 
@@ -220,6 +231,7 @@ final class SearchViewModel {
 
     var hasActiveFilters: Bool {
         if documentTypeFilter != .all { return true }
+        if !personRefText.trimmingCharacters(in: .whitespaces).isEmpty { return true }
         if dateRangeEnabled { return true }
         if !selectedSubjectTagIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
@@ -243,6 +255,34 @@ final class SearchViewModel {
             sourceNote: result.sourceNote,
             isEditorialNote: result.isEditorialNote
         )
+    }
+
+    // MARK: - Parameter Application (used by pendingSearch)
+
+    /// Applies a `SearchParameters` snapshot to all filter fields.
+    /// Called by `SearchView` when presented with pre-filled parameters via
+    /// `AppState.pendingSearch`.
+    func applyParameters(_ params: SearchParameters) {
+        keywords          = params.keywords ?? ""
+        phrase            = params.phrase ?? ""
+        prefixWildcard    = params.prefixWildcard ?? ""
+        booleanMode       = params.booleanMode
+        excludedTermsText = params.excludedTerms.joined(separator: ", ")
+        personRefText     = params.personRef ?? ""
+        if let range = params.dateRange {
+            dateRangeEnabled = true
+            let fmt = ISO8601DateFormatter()
+            fmt.formatOptions = [.withFullDate]
+            if let earliest = range.earliest { dateRangeStart = fmt.date(from: earliest) ?? dateRangeStart }
+            if let latest   = range.latest   { dateRangeEnd   = fmt.date(from: latest)   ?? dateRangeEnd }
+        } else {
+            dateRangeEnabled = false
+        }
+        selectedSubjectTagIds = Set(params.subjectTagIds)
+        selectedUserTagIds    = Set(params.userTagIds.compactMap { UUID(uuidString: $0) })
+        includeSummaries      = params.includeSummaries
+        includeNotes          = params.includeNotes
+        documentTypeFilter    = params.documentTypeFilter
     }
 
     // MARK: - Private Helpers

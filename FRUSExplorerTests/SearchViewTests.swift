@@ -277,3 +277,69 @@ struct SearchViewTests {
         #expect(vm.selectedSubjectTagIds.count == 2)
     }
 }
+
+// MARK: - PersonFilterTests
+
+@MainActor
+struct PersonFilterTests {
+
+    // MARK: - PersonRefFlowsToParameters
+
+    @Test("personRefText flows into SearchParameters.personRef")
+    func personRefFlowsToParameters() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSearchPR-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dbURL = dir.appendingPathComponent("pr.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let subjectStore = SubjectTagStore(entries: [], appearances: [])
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            subjectTagStore: subjectStore, concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        vm.personRefText = "kissinger-henry-a"
+        vm.keywords = "détente"
+
+        let params = vm.searchParameters
+        #expect(params.personRef == "kissinger-henry-a")
+    }
+
+    // MARK: - ApplyParametersTest
+
+    @Test("applyParameters populates all fields from a SearchParameters snapshot")
+    func applyParametersPopulatesFields() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSearchAP-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dbURL = dir.appendingPathComponent("ap.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let subjectStore = SubjectTagStore(entries: [], appearances: [])
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            subjectTagStore: subjectStore, concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let params = SearchParameters(
+            keywords: "détente",
+            personRef: "kissinger-henry-a"
+        )
+        vm.applyParameters(params)
+
+        #expect(vm.keywords == "détente")
+        #expect(vm.personRefText == "kissinger-henry-a")
+        #expect(vm.searchParameters.personRef == "kissinger-henry-a")
+    }
+}

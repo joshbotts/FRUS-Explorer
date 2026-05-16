@@ -33,6 +33,7 @@ import SwiftData
 ///   1.1 — Session 20: add summarize toolbar button, prompt picker sheet, wasChunked indicator
 ///   1.2 — Session 23: add source explorer toolbar button and sheet
 ///   1.3 — Session 27: Q5 curated badge icon; Q1 confidence-aware a11y label; tag hint
+///   1.4 — Session 40: personMentionStore wired; PersonDetailSheet gains mention count + Find all mentions
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -70,7 +71,8 @@ struct DocumentView: View {
             entry: entry,
             volumeEntry: volumeEntry,
             parser: FRUSDocumentParser(),
-            subjectTagStore: appState.subjectTagStore
+            subjectTagStore: appState.subjectTagStore,
+            personMentionStore: appState.personMentionStore
         )
         guard let vm else { return }
         guard let dm = appState.downloadManager,
@@ -161,7 +163,18 @@ struct DocumentView: View {
         }
         .toolbar { documentToolbar(vm: vm) }
         .sheet(item: $vm.selectedPerson) { person in
-            PersonDetailSheet(person: person)
+            PersonDetailSheet(
+                person: person,
+                mentionCount: vm.selectedPersonMentionCount,
+                onFindAllMentions: {
+                    vm.selectedPerson = nil
+                    appState.pendingSearch = SearchParameters(personRef: person.ref)
+                }
+            )
+        }
+        .task(id: vm.selectedPerson?.ref) {
+            guard let person = vm.selectedPerson else { return }
+            await vm.loadPersonMentionCount(for: person)
         }
         .sheet(item: $vm.selectedGloss) { gloss in
             GlossDetailSheet(gloss: gloss)
@@ -700,6 +713,8 @@ private struct CrossProjectNoteRow: View {
 
 private struct PersonDetailSheet: View {
     let person: PersonEntry
+    let mentionCount: Int
+    let onFindAllMentions: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -710,6 +725,43 @@ private struct PersonDetailSheet: View {
                     if let desc = person.description {
                         Text(desc).font(.body).foregroundStyle(.secondary)
                     }
+                }
+
+                Section {
+                    if mentionCount > 0 {
+                        Label(
+                            String(
+                                localized: "document.persons.mentionCount",
+                                defaultValue: "Mentioned in \(mentionCount) indexed \(mentionCount == 1 ? "document" : "documents")"
+                            ),
+                            systemImage: "doc.text.magnifyingglass"
+                        )
+                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
+
+                        Button {
+                            dismiss()
+                            onFindAllMentions()
+                        } label: {
+                            Label(
+                                String(localized: "document.persons.findAll",
+                                       defaultValue: "Find all mentions"),
+                                systemImage: "magnifyingglass"
+                            )
+                        }
+                        .accessibilityLabel(
+                            String(localized: "document.persons.findAll.a11y",
+                                   defaultValue: "Find all documents mentioning this person")
+                        )
+                    } else {
+                        Text(String(localized: "document.persons.noMentions",
+                                    defaultValue: "Not found in indexed documents"))
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
+                    }
+                } header: {
+                    Text(String(localized: "document.persons.section.indexed",
+                                defaultValue: "In Indexed Documents"))
                 }
             }
             #if os(iOS)

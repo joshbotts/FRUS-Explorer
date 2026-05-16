@@ -30,6 +30,7 @@ import SwiftData
 /// Version history:
 ///   1.0 — Session 16: initial implementation
 ///   1.1 — Session 38: document type filter section added to filter panel
+///   1.2 — Session 40: person ref filter field added; `initialParameters` support
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -37,12 +38,18 @@ struct SearchView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var vm: SearchViewModel
+    private let initialParameters: SearchParameters?
 
-    init(searchService: SearchService, subjectTagStore: SubjectTagStore) {
+    init(
+        searchService: SearchService,
+        subjectTagStore: SubjectTagStore,
+        initialParameters: SearchParameters? = nil
+    ) {
         _vm = State(initialValue: SearchViewModel(
             searchService: searchService,
             subjectTagStore: subjectTagStore
         ))
+        self.initialParameters = initialParameters
     }
 
     var body: some View {
@@ -93,6 +100,9 @@ struct SearchView: View {
             }
         }
         .task {
+            if let params = initialParameters {
+                vm.applyParameters(params)
+            }
             await vm.loadAvailableSubjectTags()
             vm.loadAvailableUserTags(context: modelContext)
             if let pid = appState.activeProjectId {
@@ -268,6 +278,31 @@ struct SearchView: View {
                     )
                 } header: {
                     Text(String(localized: "search.section.doctype", defaultValue: "Document Type"))
+                }
+
+                // Person reference filter
+                Section {
+                    @Bindable var vm = vm
+                    TextField(
+                        String(localized: "search.personref.placeholder",
+                               defaultValue: "Person @ref (e.g. kissinger)"),
+                        text: $vm.personRefText
+                    )
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    #endif
+                    .accessibilityLabel(
+                        String(localized: "search.personref.a11y",
+                               defaultValue: "Person reference filter")
+                    )
+                    Text(String(localized: "search.personref.help",
+                                defaultValue: "Restrict results to documents that mention a specific person. Enter the XML @ref value from the List of Persons."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text(String(localized: "search.section.personref",
+                                defaultValue: "Person"))
                 }
 
                 // Subject tags

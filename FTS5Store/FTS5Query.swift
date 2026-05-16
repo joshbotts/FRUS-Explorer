@@ -39,7 +39,7 @@ public struct FTS5Query: Sendable {
     // MARK: - Nested Types
 
     /// Controls how multiple keyword terms are combined.
-    public enum BooleanMode: Sendable {
+    public enum BooleanMode: Sendable, Equatable {
         /// All keyword terms must appear in the document (default).
         case and
         /// Any keyword term suffices.

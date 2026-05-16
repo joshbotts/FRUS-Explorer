@@ -33,12 +33,14 @@ import SwiftUI
 ///   1.2 — Session 35: macOS fallback — `onChange(of: showSettingsSheet)` ensures
 ///          `handleSettingsSheetDismiss()` fires even when `onDismiss` is skipped
 ///          by SwiftUI on programmatic sheet dismissal (known macOS limitation)
+///   1.3 — Session 40: pendingSearch observation — opens search sheet pre-filled
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
     @State private var viewModel: BrowserViewModel?
     @State private var showProjectContext = false
     @State private var showSearch = false
+    @State private var pendingSearchParams: SearchParameters? = nil
     @State private var showCitationLookup = false
     // Settings sheet visibility is stored in AppState so ResetView can dismiss it
     // programmatically before triggering the transition back to OnboardingView.
@@ -89,9 +91,16 @@ struct BrowserView: View {
             if let service = appState.searchService {
                 SearchView(
                     searchService: service,
-                    subjectTagStore: appState.subjectTagStore
+                    subjectTagStore: appState.subjectTagStore,
+                    initialParameters: pendingSearchParams
                 )
             }
+        }
+        .onChange(of: appState.pendingSearch) { _, params in
+            guard let params else { return }
+            pendingSearchParams = params
+            appState.pendingSearch = nil
+            showSearch = true
         }
         .sheet(isPresented: $showCitationLookup) {
             CitationLookupView()
