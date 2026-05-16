@@ -36,6 +36,7 @@ import UniformTypeIdentifiers
 /// Version history:
 ///   1.0 — Session 24: initial implementation
 ///   1.1 — Session 26: add About row
+///   1.2 — Session 35: fix macOS blank NavigationLink destinations via frame expansion
 struct SettingsView: View {
 
     @Environment(\.dismiss) private var dismiss
@@ -110,6 +111,11 @@ struct SettingsView: View {
                 }
             }
         }
+        #if os(macOS)
+        // Provides stable minimum dimensions for the settings sheet on macOS so that
+        // NavigationLink destinations inherit a proper sized container and render correctly.
+        .frame(minWidth: 500, minHeight: 440)
+        #endif
     }
 }
 
@@ -189,6 +195,9 @@ private struct VolumeManagementView: View {
                                 defaultValue: "Volume Management"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
     }
 
@@ -393,6 +402,9 @@ private struct StorageManagementView: View {
                                 defaultValue: "Storage"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
         .task {
             do {
@@ -600,6 +612,9 @@ private struct SideloadView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
         .fileImporter(
             isPresented: $isImporting,
             allowedContentTypes: [.xml],
@@ -706,6 +721,9 @@ private struct ReindexView: View {
         .navigationTitle(String(localized: "settings.reindex.title", defaultValue: "Reindex"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
     }
 
@@ -829,6 +847,9 @@ private struct UserTagsView: View {
         .navigationTitle(String(localized: "settings.tags.title", defaultValue: "User Tags"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
         .toolbar {
             if renamingTag != nil {
@@ -971,6 +992,9 @@ private struct SummarizationPromptsSettingsView: View {
                                 defaultValue: "Summarization Prompts"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
     }
 
@@ -1170,6 +1194,9 @@ private struct NARAKeyView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
         .task {
             hasExistingKey = await keychainStore.hasAPIKey()
         }
@@ -1279,6 +1306,9 @@ private struct ResetView: View {
         .navigationTitle(String(localized: "settings.reset.title", defaultValue: "Reset App"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
         .confirmationDialog(
             String(localized: "settings.reset.confirm1.title",
