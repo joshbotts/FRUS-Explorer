@@ -33,14 +33,18 @@ import SwiftData
 /// Version history:
 ///   1.0 — Session 15: initial implementation
 ///   1.1 — Session 25: add Global Context View entry point
+///   1.2 — Session 44: Done button and dismiss guarded to non-iOS; GlobalContextView
+///          presented as NavigationLink on iOS, sheet on macOS
 struct ProjectContextView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
+    @State private var showGlobalContext = false
+    #endif
 
     @State private var vm = ProjectContextViewModel()
-    @State private var showGlobalContext = false
 
     var body: some View {
         @Bindable var vm = vm
@@ -57,12 +61,14 @@ struct ProjectContextView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if !os(iOS)
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "project.context.done",
                                   defaultValue: "Done")) {
                         dismiss()
                     }
                 }
+                #endif
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         vm.openCreate()
@@ -80,9 +86,11 @@ struct ProjectContextView: View {
                     vm.load(context: modelContext)
                 }
             }
+            #if !os(iOS)
             .sheet(isPresented: $showGlobalContext) {
                 GlobalContextView()
             }
+            #endif
             .confirmationDialog(
                 String(localized: "project.context.delete.title",
                        defaultValue: "Delete Project?"),
@@ -193,6 +201,21 @@ struct ProjectContextView: View {
         }
 
         Section {
+            #if os(iOS)
+            NavigationLink {
+                GlobalContextView()
+            } label: {
+                Label(
+                    String(localized: "project.context.globalContext.button",
+                           defaultValue: "All Activity (Global Context)"),
+                    systemImage: "globe"
+                )
+            }
+            .accessibilityLabel(
+                String(localized: "project.context.globalContext.a11y",
+                       defaultValue: "View all activity across all projects")
+            )
+            #else
             Button {
                 showGlobalContext = true
             } label: {
@@ -206,6 +229,7 @@ struct ProjectContextView: View {
                 String(localized: "project.context.globalContext.a11y",
                        defaultValue: "View all activity across all projects")
             )
+            #endif
         }
     }
 }

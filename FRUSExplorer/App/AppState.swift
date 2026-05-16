@@ -48,6 +48,7 @@ import Observation
 ///   1.9 — Session 40: pendingSearch for cross-view person-mention navigation
 ///   2.0 — Session 43: AppTab enum; activeTab (iOS); pendingBrowseDocument;
 ///          showSearch and showCitationLookup promoted from BrowserView local state
+///   2.1 — Session 44: showSettingsSheet and pendingOnboardingAfterReset guarded to macOS
 
 // MARK: - AppTab
 
@@ -97,22 +98,28 @@ final class AppState {
         }
     }
 
-    // MARK: - Sheet Coordination
+    // MARK: - Sheet Coordination (macOS only)
 
-    /// Controls whether the Settings sheet is presented from `BrowserView`.
+    /// Controls whether the Settings sheet is presented from `BrowserView` on macOS.
     ///
-    /// Stored here (rather than as a `@State` local in `BrowserView`) so that
-    /// `ResetView` can dismiss the sheet programmatically before triggering the
-    /// transition back to `OnboardingView`. The sequence is:
+    /// On macOS, Settings is presented as a sheet from `BrowserView` until Session 46
+    /// converts it to a `Settings` scene. On iOS, Settings is a persistent tab —
+    /// this property is unused on iOS.
+    ///
+    /// The sequence on macOS after reset:
     /// 1. Reset completes → `pendingOnboardingAfterReset = true`, `showSettingsSheet = false`
     /// 2. Sheet animates out
     /// 3. `BrowserView`'s `onDismiss` handler fires → `hasCompletedOnboarding = false`
     /// 4. `ContentView` routes to `OnboardingView` cleanly after the sheet is gone
+    #if os(macOS)
     var showSettingsSheet: Bool = false
 
-    /// Set by `ResetView` after a successful reset so that `BrowserView`'s sheet
+    /// Set by `ResetView` after a successful macOS reset so that `BrowserView`'s sheet
     /// `onDismiss` handler knows to complete the transition to onboarding.
+    /// On iOS, the reset path assigns `hasCompletedOnboarding = false` directly —
+    /// no sheet dismissal race exists because Settings is a tab, not a modal.
     var pendingOnboardingAfterReset: Bool = false
+    #endif
 
     // MARK: - Network State
 

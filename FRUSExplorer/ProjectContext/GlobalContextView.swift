@@ -34,11 +34,15 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 25: initial implementation
+///   1.1 — Session 44: Done button guarded to non-iOS (GlobalContextView is a NavigationLink
+///          destination on iOS, a sheet on macOS)
 struct GlobalContextView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
+    #endif
 
     @State private var vm = GlobalContextViewModel()
     @State private var noteToEdit: ResearchNote? = nil
@@ -62,12 +66,14 @@ struct GlobalContextView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if !os(iOS)
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "global.context.done",
                                   defaultValue: "Done")) {
                         dismiss()
                     }
                 }
+                #endif
             }
             .task { vm.load(context: modelContext) }
             .sheet(item: $noteToEdit) { note in

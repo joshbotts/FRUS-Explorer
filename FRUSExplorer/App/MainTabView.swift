@@ -14,15 +14,15 @@ import SwiftUI
 /// Root tab bar view for FRUS Explorer on iOS.
 ///
 /// Uses the iOS 18+ `Tab` API with `value:` parameter so `appState.activeTab`
-/// drives selection and persists across launches. Only the Browse tab contains
-/// live content in Session 43; the remaining four tabs show placeholder views
-/// that will be replaced in Sessions 44–46.
+/// drives selection and persists across launches. All five tabs are fully wired
+/// as of Session 44.
 ///
 /// `MainTabView` is instantiated by `ContentView` on iOS after the user has
 /// completed onboarding. macOS continues to use `BrowserView` directly.
 ///
 /// Version history:
 ///   1.0 — Session 43: initial iOS tab shell with Browse + 4 placeholder tabs
+///   1.1 — Session 44: all four placeholder tabs wired with real content
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -42,40 +42,28 @@ struct MainTabView: View {
                 systemImage: "magnifyingglass",
                 value: AppTab.search
             ) {
-                PlaceholderTabView(
-                    title: String(localized: "tab.search", defaultValue: "Search"),
-                    systemImage: "magnifyingglass"
-                )
+                SearchTabView()
             }
             Tab(
                 String(localized: "tab.activity", defaultValue: "Activity"),
-                systemImage: "clock.arrow.circlepath",
+                systemImage: "person.crop.rectangle.stack",
                 value: AppTab.activity
             ) {
-                PlaceholderTabView(
-                    title: String(localized: "tab.activity", defaultValue: "Activity"),
-                    systemImage: "clock.arrow.circlepath"
-                )
+                ActivityTabView()
             }
             Tab(
                 String(localized: "tab.collections", defaultValue: "Collections"),
-                systemImage: "folder",
+                systemImage: "tray.2",
                 value: AppTab.collections
             ) {
-                PlaceholderTabView(
-                    title: String(localized: "tab.collections", defaultValue: "Collections"),
-                    systemImage: "folder"
-                )
+                CollectionListView()
             }
             Tab(
                 String(localized: "tab.settings", defaultValue: "Settings"),
                 systemImage: "gear",
                 value: AppTab.settings
             ) {
-                PlaceholderTabView(
-                    title: String(localized: "tab.settings", defaultValue: "Settings"),
-                    systemImage: "gear"
-                )
+                SettingsView()
             }
         }
     }
@@ -89,31 +77,81 @@ struct MainTabView: View {
 /// `BrowserView`'s `viewModel` across tab switches. Without the wrapper, switching
 /// away from and back to the Browse tab could recreate `BrowserView` and reset
 /// navigation state.
+///
+/// Version history:
+///   1.0 — Session 43: initial implementation
 struct BrowserTabView: View {
     var body: some View {
         BrowserView()
     }
 }
 
-// MARK: - PlaceholderTabView
+// MARK: - SearchTabView
 
-/// Minimal placeholder shown for tabs not yet implemented (Sessions 44–46).
-private struct PlaceholderTabView: View {
-    let title: String
-    let systemImage: String
+/// Search tab root on iOS.
+///
+/// Embeds `SearchView` directly (no sheet wrapper). A Citation Lookup toolbar
+/// button opens `CitationLookupView` as a local sheet — the sheet is tied to
+/// the Search tab rather than the Browse tab so it stays in context.
+///
+/// When `appState.searchService` is unavailable (database not yet opened),
+/// a `ContentUnavailableView` placeholder is shown instead.
+///
+/// Version history:
+///   1.0 — Session 44: initial implementation
+private struct SearchTabView: View {
+
+    @Environment(AppState.self) private var appState
+    @State private var showCitationLookup = false
 
     var body: some View {
-        NavigationStack {
+        if let service = appState.searchService {
+            SearchView(
+                searchService: service,
+                subjectTagStore: appState.subjectTagStore
+            )
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showCitationLookup = true
+                    } label: {
+                        Image(systemName: "text.magnifyingglass")
+                    }
+                    .accessibilityLabel(
+                        String(localized: "search.citationLookup.a11y",
+                               defaultValue: "Find by citation")
+                    )
+                }
+            }
+            .sheet(isPresented: $showCitationLookup) {
+                CitationLookupView()
+            }
+        } else {
             ContentUnavailableView(
-                title,
-                systemImage: systemImage,
+                String(localized: "search.unavailable.title",
+                       defaultValue: "Search Unavailable"),
+                systemImage: "magnifyingglass",
                 description: Text(
-                    String(localized: "tab.placeholder.description",
-                           defaultValue: "Coming soon")
+                    String(localized: "search.unavailable.detail",
+                           defaultValue: "The search index is not available.")
                 )
             )
-            .navigationTitle(title)
         }
+    }
+}
+
+// MARK: - ActivityTabView
+
+/// Activity tab root on iOS.
+///
+/// `ProjectContextView` renders as a persistent tab root — the user sees their
+/// projects and activity feeds without tapping a toolbar button or dismissing a sheet.
+///
+/// Version history:
+///   1.0 — Session 44: initial implementation
+private struct ActivityTabView: View {
+    var body: some View {
+        ProjectContextView()
     }
 }
 #endif

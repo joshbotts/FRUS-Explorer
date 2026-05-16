@@ -37,9 +37,12 @@ import UniformTypeIdentifiers
 ///   1.0 — Session 24: initial implementation
 ///   1.1 — Session 26: add About row
 ///   1.2 — Session 35: fix macOS blank NavigationLink destinations via frame expansion
+///   1.3 — Session 44: Done button and dismiss guarded to non-iOS (Settings is a tab on iOS)
 struct SettingsView: View {
 
+    #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -104,11 +107,13 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if !os(iOS)
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "settings.done", defaultValue: "Done")) {
                         dismiss()
                     }
                 }
+                #endif
             }
         }
         #if os(macOS)
@@ -1251,12 +1256,15 @@ private struct NARAKeyView: View {
 /// - Active project selection (`AppState.activeProjectId`)
 ///
 /// ## Post-reset navigation
-/// After data deletion, `ResetView` does **not** set `hasCompletedOnboarding = false`
-/// directly. Instead it sets `AppState.pendingOnboardingAfterReset = true` and dismisses
-/// the Settings sheet by setting `AppState.showSettingsSheet = false`. `BrowserView`'s
-/// sheet `onDismiss` handler completes the transition to `OnboardingView` only after the
-/// sheet animation finishes, avoiding a SwiftUI race where `ContentView` tries to replace
-/// `BrowserView` while a modal is still on screen.
+/// **iOS:** `ResetView` sets `hasCompletedOnboarding = false` directly. Settings is a
+/// persistent tab — no sheet is on screen, so there is no animation race with `ContentView`.
+///
+/// **macOS:** `ResetView` sets `pendingOnboardingAfterReset = true` and dismisses the
+/// Settings sheet by setting `showSettingsSheet = false`. `BrowserView`'s `onDismiss`
+/// handler then clears `hasCompletedOnboarding` only after the sheet has fully animated out,
+/// avoiding a SwiftUI race where `ContentView` tries to replace `BrowserView` while a modal
+/// is still on screen. This two-phase sequence is removed in Session 46 when Settings becomes
+/// a `Settings` scene (independent window, not a modal).
 ///
 /// ## Confirmation gates
 /// The user must confirm twice (two `confirmationDialog` calls) before `performReset()`
@@ -1265,7 +1273,8 @@ private struct NARAKeyView: View {
 /// Version history:
 ///   1.0 — Session 24: initial implementation
 ///   1.1 — Session 32: added `Project` deletion; switched to two-phase sheet-dismissal
-///          for safe post-reset onboarding navigation
+///          for safe post-reset onboarding navigation (macOS)
+///   1.2 — Session 44: iOS path simplified to direct assignment; macOS path unchanged
 private struct ResetView: View {
 
     @Environment(AppState.self) private var appState
@@ -1366,15 +1375,23 @@ private struct ResetView: View {
                 try modelContext.delete(model: CollectionEntry.self)
                 try modelContext.delete(model: SummarizationPrompt.self)
                 try modelContext.delete(model: Project.self)
-                // Clear active project, then signal the Settings sheet to dismiss.
-                // BrowserView's onDismiss handler will set hasCompletedOnboarding = false
-                // only after the sheet has fully animated out, avoiding a SwiftUI
-                // race where ContentView tries to replace BrowserView while a modal
-                // is still on screen.
                 await MainActor.run {
                     appState.activeProjectId = nil
+                    #if os(iOS)
+                    // iOS: Settings is a persistent tab. Direct assignment is safe —
+                    // no sheet is on screen, so ContentView can route to OnboardingView
+                    // immediately without competing with a modal dismissal animation.
+                    appState.hasCompletedOnboarding = false
+                    #else
+                    // macOS: Settings is presented as a sheet. Use the two-phase
+                    // dismissal sequence: signal BrowserView's onDismiss handler via
+                    // pendingOnboardingAfterReset, then close the sheet. BrowserView
+                    // clears hasCompletedOnboarding only after the sheet animates out.
+                    // This sequence is removed in Session 46 when Settings becomes a
+                    // Settings scene (independent window, not a modal).
                     appState.pendingOnboardingAfterReset = true
                     appState.showSettingsSheet = false
+                    #endif
                 }
 
                 #if DEBUG

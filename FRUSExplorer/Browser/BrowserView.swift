@@ -35,16 +35,22 @@ import SwiftUI
 ///          by SwiftUI on programmatic sheet dismissal (known macOS limitation)
 ///   1.3 — Session 40: pendingSearch observation — opens search sheet pre-filled
 ///   1.4 — Session 43: showSearch and showCitationLookup promoted to AppState
+///   1.5 — Session 44: iOS stackLayout sheets/toolbar buttons removed; Settings/Search/
+///          CitationLookup are tabs on iOS; pendingBrowseDocument observer added both platforms
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
     @State private var viewModel: BrowserViewModel?
-    @State private var showProjectContext = false
     @State private var pendingSearchParams: SearchParameters? = nil
+    // On macOS: showProjectContext drives the ProjectContext sheet.
+    // On iOS: tapping ProjectPickerMenu switches to the Activity tab instead.
+    #if os(macOS)
+    @State private var showProjectContext = false
+    #endif
     // showSearch and showCitationLookup live in AppState (promoted in Session 43)
     // so that macOS menu commands and future iOS tab navigation can trigger them.
-    // Settings sheet visibility is stored in AppState so ResetView can dismiss it
-    // programmatically before triggering the transition back to OnboardingView.
+    // On macOS, showSettingsSheet/pendingOnboardingAfterReset remain in AppState for
+    // the sheet-based Settings flow (converted to a Settings scene in Session 46).
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -68,6 +74,7 @@ struct BrowserView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        #if os(macOS)
         .sheet(isPresented: $showProjectContext) {
             ProjectContextView()
         }
@@ -75,7 +82,6 @@ struct BrowserView: View {
                onDismiss: handleSettingsSheetDismiss) {
             SettingsView()
         }
-        #if os(macOS)
         // Fallback for macOS: `.sheet(isPresented:onDismiss:)` does not reliably fire
         // `onDismiss` when `isPresented` is set to `false` programmatically (a known
         // SwiftUI macOS limitation). Watching `showSettingsSheet` directly ensures
@@ -87,7 +93,6 @@ struct BrowserView: View {
                 handleSettingsSheetDismiss()
             }
         }
-        #endif
         .sheet(isPresented: $appState.showSearch) {
             if let service = appState.searchService {
                 SearchView(
@@ -106,22 +111,36 @@ struct BrowserView: View {
         .sheet(isPresented: $appState.showCitationLookup) {
             CitationLookupView()
         }
+        #endif
+        .onChange(of: appState.pendingBrowseDocument) { _, entry in
+            guard let entry else { return }
+            viewModel?.navigationPath.append(.document(entry))
+            appState.pendingBrowseDocument = nil
+            #if DEBUG
+            print("[BrowserView] pendingBrowseDocument consumed: \(entry.volumeId)/\(entry.documentId)")
+            #endif
+        }
         .onAppear { bootstrapViewModel() }
     }
 
-    // MARK: - Sheet Dismiss Coordination
+    // MARK: - Sheet Dismiss Coordination (macOS only)
 
-    /// Called by SwiftUI after the Settings sheet has fully animated out.
+    #if os(macOS)
+    /// Called by SwiftUI after the Settings sheet has fully animated out (macOS only).
     ///
     /// If the dismissal was triggered by a completed reset (signalled by
     /// `appState.pendingOnboardingAfterReset`), this is the earliest safe moment
     /// to clear `hasCompletedOnboarding` — the sheet is gone, so `ContentView`
     /// can switch to `OnboardingView` without competing with a live modal.
+    ///
+    /// On iOS, Settings is a persistent tab — no sheet animation race exists, so
+    /// `ResetView` sets `hasCompletedOnboarding = false` directly.
     private func handleSettingsSheetDismiss() {
         guard appState.pendingOnboardingAfterReset else { return }
         appState.pendingOnboardingAfterReset = false
         appState.hasCompletedOnboarding = false
     }
+    #endif
 
     // MARK: - Layout Variants
 
@@ -132,7 +151,13 @@ struct BrowserView: View {
                 .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
-                        ProjectPickerMenu { showProjectContext = true }
+                        ProjectPickerMenu {
+                            #if os(iOS)
+                            appState.activeTab = .activity
+                            #else
+                            showProjectContext = true
+                            #endif
+                        }
                     }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
@@ -156,6 +181,7 @@ struct BrowserView: View {
                                    defaultValue: "Find by citation")
                         )
                     }
+                    #if os(macOS)
                     ToolbarItem(placement: .primaryAction) {
                         Button {
                             appState.showSettingsSheet = true
@@ -167,6 +193,7 @@ struct BrowserView: View {
                                    defaultValue: "Open settings")
                         )
                     }
+                    #endif
                 }
         } detail: {
             if let last = vm.navigationPath.last {
@@ -189,41 +216,16 @@ struct BrowserView: View {
                     levelView(for: level, vm: vm)
                 }
                 .toolbar {
+                    // On iOS, Search/CitationLookup/Settings are persistent tabs.
+                    // Only the ProjectPickerMenu remains in the Browse toolbar.
                     ToolbarItem(placement: .primaryAction) {
-                        ProjectPickerMenu { showProjectContext = true }
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            appState.showSearch = true
-                        } label: {
-                            Image(systemName: "magnifyingglass")
+                        ProjectPickerMenu {
+                            #if os(iOS)
+                            appState.activeTab = .activity
+                            #else
+                            showProjectContext = true
+                            #endif
                         }
-                        .accessibilityLabel(
-                            String(localized: "browser.search.a11y",
-                                   defaultValue: "Search documents")
-                        )
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            appState.showCitationLookup = true
-                        } label: {
-                            Image(systemName: "text.magnifyingglass")
-                        }
-                        .accessibilityLabel(
-                            String(localized: "browser.citationLookup.a11y",
-                                   defaultValue: "Find by citation")
-                        )
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            appState.showSettingsSheet = true
-                        } label: {
-                            Image(systemName: "gear")
-                        }
-                        .accessibilityLabel(
-                            String(localized: "browser.settings.a11y",
-                                   defaultValue: "Open settings")
-                        )
                     }
                 }
         }

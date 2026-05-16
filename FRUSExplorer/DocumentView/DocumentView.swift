@@ -34,6 +34,7 @@ import SwiftData
 ///   1.2 — Session 23: add source explorer toolbar button and sheet
 ///   1.3 — Session 27: Q5 curated badge icon; Q1 confidence-aware a11y label; tag hint
 ///   1.4 — Session 40: personMentionStore wired; PersonDetailSheet gains mention count + Find all mentions
+///   1.5 — Session 44: handleCrossRefTap wired cross-platform via pendingBrowseDocument
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -132,7 +133,9 @@ struct DocumentView: View {
                     model: model,
                     onPersNameTap: { person in vm.selectedPerson = person },
                     onGlossTap:    { entry in vm.selectedGloss = entry },
-                    onCrossRefTap: { _, _ in }
+                    onCrossRefTap: { target, targetVolumeId in
+                        handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
+                    }
                 )
 
                 Divider().padding(.horizontal)
@@ -218,6 +221,66 @@ struct DocumentView: View {
         guard let dm = appState.downloadManager else { return [] }
         let known = appState.manifestStore.diffResult?.known ?? []
         return Set(known.compactMap { dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil })
+    }
+
+    // MARK: - Cross-Reference Navigation
+
+    /// Resolves a cross-reference `<ref>` tap to document navigation.
+    ///
+    /// Extracts the document ID from `target` (strips a leading `#` or takes the
+    /// fragment after `#`). Determines the target volume from `targetVolumeId` if
+    /// provided, otherwise falls back to the current document's volume.
+    ///
+    /// If the target volume is not downloaded, falls back to the cross-reference
+    /// graph sheet (`showGraph = true`). Otherwise:
+    /// - **iOS**: sets `appState.activeTab = .browse` so the Browse tab comes to
+    ///   the foreground, then writes `appState.pendingBrowseDocument`.
+    /// - **macOS**: writes `appState.pendingBrowseDocument` directly.
+    ///
+    /// `BrowserView.onChange(of: appState.pendingBrowseDocument)` observes the write
+    /// and appends the entry to the navigation stack/split-view path.
+    ///
+    /// The `DocumentBrowserEntry` is constructed with an empty `header` because the
+    /// document title is not known until the XML is parsed. `DocumentView` repopulates
+    /// the navigation title from the AST on load — the placeholder is visible only
+    /// during the push animation.
+    ///
+    /// Version history:
+    ///   1.0 — Session 44: initial implementation
+    private func handleCrossRefTap(target: String, targetVolumeId: String?) {
+        let docId: String
+        if target.hasPrefix("#") {
+            docId = String(target.dropFirst())
+        } else {
+            docId = target.components(separatedBy: "#").last ?? target
+        }
+        guard !docId.isEmpty else { return }
+        let volId = targetVolumeId ?? entry.volumeId
+
+        guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volId) else {
+            showGraph = true
+            #if DEBUG
+            print("[DocumentView] Cross-ref: \(volId) not downloaded, opening graph")
+            #endif
+            return
+        }
+
+        let crossEntry = DocumentBrowserEntry(
+            documentId: docId,
+            volumeId: volId,
+            documentNumber: nil,
+            header: "",
+            dateline: nil,
+            sourceNote: nil
+        )
+        #if os(iOS)
+        appState.activeTab = .browse
+        #endif
+        appState.pendingBrowseDocument = crossEntry
+
+        #if DEBUG
+        print("[DocumentView] Cross-ref tap → \(volId)/\(docId)")
+        #endif
     }
 
     // MARK: - Toolbar

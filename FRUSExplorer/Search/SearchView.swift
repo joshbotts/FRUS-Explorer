@@ -32,11 +32,14 @@ import SwiftData
 ///   1.1 — Session 38: document type filter section added to filter panel
 ///   1.2 — Session 40: person ref filter field added; `initialParameters` support
 ///   1.3 — Session 41: person ref field replaced with autocomplete picker backed by SQLite
+///   1.4 — Session 44: Done button and dismiss guarded to non-iOS (Search is a tab on iOS)
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
+    #endif
 
     @State private var vm: SearchViewModel
     private let initialParameters: SearchParameters?
@@ -82,11 +85,13 @@ struct SearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if !os(iOS)
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "search.done", defaultValue: "Done")) {
                         dismiss()
                     }
                 }
+                #endif
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         vm.showFilterPanel.toggle()
