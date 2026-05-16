@@ -36,6 +36,7 @@ import Observation
 ///
 /// Version history:
 ///   1.0 — Session 16: initial implementation
+///   1.1 — Session 38: `documentTypeFilter` property added
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -73,6 +74,11 @@ final class SearchViewModel {
 
     var includeSummaries: Bool = true
     var includeNotes: Bool = true
+
+    // MARK: - Document Type Filter
+
+    /// Which document types to include in results. Default `.all`.
+    var documentTypeFilter: DocumentTypeFilter = .all
 
     // MARK: - Results
 
@@ -168,6 +174,7 @@ final class SearchViewModel {
         selectedUserTagIds = []
         includeSummaries = true
         includeNotes = true
+        documentTypeFilter = .all
     }
 
     func clearAll() {
@@ -204,13 +211,15 @@ final class SearchViewModel {
             subjectTagIds: Array(selectedSubjectTagIds),
             userTagIds: selectedUserTagIds.map(\.uuidString),
             includeSummaries: includeSummaries,
-            includeNotes: includeNotes
+            includeNotes: includeNotes,
+            documentTypeFilter: documentTypeFilter
         )
     }
 
     var resultCount: Int { results.count }
 
     var hasActiveFilters: Bool {
+        if documentTypeFilter != .all { return true }
         if dateRangeEnabled { return true }
         if !selectedSubjectTagIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
@@ -231,7 +240,8 @@ final class SearchViewModel {
             documentNumber: result.documentNumber,
             header: result.header,
             dateline: result.dateline,
-            sourceNote: result.sourceNote
+            sourceNote: result.sourceNote,
+            isEditorialNote: result.isEditorialNote
         )
     }
 

@@ -658,6 +658,17 @@ paths:
             type: boolean
             default: true
           description: Whether to search user research note text.
+        - name: documentType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, documentsOnly, editorialNotesOnly]
+            default: all
+          description: >
+            Filter results by document type. `all` returns all indexed content (default).
+            `documentsOnly` excludes editorial notes. `editorialNotesOnly` returns only
+            editorial notes. Added in Session 38.
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
       responses:
@@ -1511,6 +1522,13 @@ components:
           items:
             type: string
           description: User tag IDs from research notes linked to this document.
+        isEditorialNote:
+          type: boolean
+          description: >
+            True if this entry is a FRUS editorial note rather than a primary-source
+            document. Editorial notes carry contextual commentary inserted by editors
+            rather than original diplomatic correspondence. Added in Session 38.
+          default: false
 
     # ── Citation Lookup ───────────────────────────────────────────────────────
 

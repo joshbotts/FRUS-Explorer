@@ -29,6 +29,7 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 34: front matter direct-read support for prose-only structural sections
+///   1.2 — Session 38: `DocumentRowLabel` shows italic header and editorial note badge
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -274,6 +275,7 @@ struct DocumentRowLabel: View {
                 }
                 Text(doc.header)
                     .font(.body)
+                    .italic(doc.isEditorialNote)
                     .lineLimit(2)
             }
             if let dateline = doc.dateline {
@@ -286,6 +288,14 @@ struct DocumentRowLabel: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
+            }
+            if doc.isEditorialNote {
+                Label(
+                    String(localized: "browser.editorialnote.badge", defaultValue: "Editorial Note"),
+                    systemImage: "text.badge.checkmark"
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 3)

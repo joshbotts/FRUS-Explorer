@@ -8,6 +8,23 @@
 
 import Foundation
 
+// MARK: - DocumentTypeFilter
+
+/// Controls which document types are included in search results.
+///
+/// Applied as a post-processing filter in `SearchService.search`.
+///
+/// Version history:
+///   1.0 — Session 38: initial implementation
+public enum DocumentTypeFilter: Sendable, Equatable {
+    /// Return all documents regardless of type (default).
+    case all
+    /// Exclude editorial notes — return only primary-source documents.
+    case documentsOnly
+    /// Return only editorial notes.
+    case editorialNotesOnly
+}
+
 // MARK: - SearchParameters
 
 /// Full set of parameters for a `SearchService` query.
@@ -20,6 +37,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 09: initial implementation
+///   1.1 — Session 38: `documentTypeFilter` added
 public struct SearchParameters: Sendable {
 
     // MARK: - Full-text fields
@@ -73,6 +91,11 @@ public struct SearchParameters: Sendable {
     /// `nil` = global context (all user tags visible).
     public var projectId: UUID?
 
+    // MARK: - Document type
+
+    /// Restricts results to a specific document type. Default `.all`.
+    public var documentTypeFilter: DocumentTypeFilter
+
     // MARK: - Initialiser
 
     public init(
@@ -87,7 +110,8 @@ public struct SearchParameters: Sendable {
         volumeIds: [String]? = nil,
         includeSummaries: Bool = true,
         includeNotes: Bool = true,
-        projectId: UUID? = nil
+        projectId: UUID? = nil,
+        documentTypeFilter: DocumentTypeFilter = .all
     ) {
         self.keywords = keywords
         self.phrase = phrase
@@ -101,6 +125,7 @@ public struct SearchParameters: Sendable {
         self.includeSummaries = includeSummaries
         self.includeNotes = includeNotes
         self.projectId = projectId
+        self.documentTypeFilter = documentTypeFilter
     }
 }
 
@@ -114,6 +139,7 @@ public struct SearchParameters: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 09: initial implementation
+///   1.1 — Session 38: `isEditorialNote` field added
 public struct SearchResult: Sendable, Identifiable {
 
     /// Document identifier (e.g. `"d1"`), unique within its volume.
@@ -146,7 +172,36 @@ public struct SearchResult: Sendable, Identifiable {
     /// User tag IDs associated with this document.
     public let userTagIds: [String]
 
+    /// Whether this document is a FRUS editorial note rather than a primary-source document.
+    public let isEditorialNote: Bool
+
     public var id: String { "\(volumeId)/\(documentId)" }
+
+    public init(
+        documentId: String,
+        volumeId: String,
+        documentNumber: String? = nil,
+        header: String,
+        dateline: String? = nil,
+        sourceNote: String? = nil,
+        snippet: String,
+        bm25Score: Double,
+        subjectTagIds: [String] = [],
+        userTagIds: [String] = [],
+        isEditorialNote: Bool = false
+    ) {
+        self.documentId = documentId
+        self.volumeId = volumeId
+        self.documentNumber = documentNumber
+        self.header = header
+        self.dateline = dateline
+        self.sourceNote = sourceNote
+        self.snippet = snippet
+        self.bm25Score = bm25Score
+        self.subjectTagIds = subjectTagIds
+        self.userTagIds = userTagIds
+        self.isEditorialNote = isEditorialNote
+    }
 }
 
 // MARK: - IndexingProgress

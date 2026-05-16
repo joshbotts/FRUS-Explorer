@@ -83,6 +83,7 @@ public struct VolumeStructure: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   1.1 — Session 38: `isEditorialNote` field added
 public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
     /// The document's `xml:id` value within its volume.
     public let documentId: String
@@ -102,7 +103,29 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
     /// Source note (archival provenance), if present.
     public let sourceNote: String?
 
+    /// Whether this entry is a FRUS editorial note rather than a primary-source document.
+    /// Set to `true` for entries whose `document_cache.is_editorial_note` value is 1.
+    public let isEditorialNote: Bool
+
     public var id: String { "\(volumeId)/\(documentId)" }
+
+    public init(
+        documentId: String,
+        volumeId: String,
+        documentNumber: String? = nil,
+        header: String,
+        dateline: String? = nil,
+        sourceNote: String? = nil,
+        isEditorialNote: Bool = false
+    ) {
+        self.documentId = documentId
+        self.volumeId = volumeId
+        self.documentNumber = documentNumber
+        self.header = header
+        self.dateline = dateline
+        self.sourceNote = sourceNote
+        self.isEditorialNote = isEditorialNote
+    }
 }
 
 // MARK: - CorpusStats

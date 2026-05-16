@@ -52,6 +52,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///   1.2 — Session 37: `extractCrossReferences` now populates `context` with the plain
 ///          text of the enclosing `<note>` or `<div type="editorialNote">` (≤500 chars,
 ///          truncated at word boundary); `<ref>` in bare paragraphs still gets nil context
+///   1.3 — Session 38: `is_editorial_note` column added to `document_cache` and `frus_documents`;
+///          `DocumentBrowserEntry.isEditorialNote` populated from the new column
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -297,7 +299,7 @@ public actor IndexingPipeline {
     /// - Returns: `DocumentBrowserEntry` values ordered by their rowid.
     public func documents(forVolume volumeId: String) throws -> [DocumentBrowserEntry] {
         let sql = """
-            SELECT document_id, document_number, header, dateline, source_note
+            SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
             FROM document_cache WHERE volume_id = ?
             ORDER BY rowid
             """
@@ -313,7 +315,8 @@ public actor IndexingPipeline {
                 documentNumber: auxColumnString(stmt, 1),
                 header:         auxColumnString(stmt, 2) ?? "",
                 dateline:       auxColumnString(stmt, 3),
-                sourceNote:     auxColumnString(stmt, 4)
+                sourceNote:     auxColumnString(stmt, 4),
+                isEditorialNote: sqlite3_column_int(stmt, 5) != 0
             ))
         }
         return entries
@@ -389,6 +392,11 @@ public actor IndexingPipeline {
             let bodyText   = Self.extractBodyText(from: astDoc.nodes)
             let docNumber  = Self.extractDocumentNumber(from: astDoc.nodes)
 
+            let isEditorialNote: Bool = {
+                guard let first = astDoc.nodes.first, case .editorialNote = first else { return false }
+                return true
+            }()
+
             let subjectTags   = await subjectTagStore.tags(forDocumentId: did)
             let subjectTagStr = subjectTags.isEmpty ? nil : subjectTags.map(\.subjectId).joined(separator: " ")
 
@@ -396,7 +404,8 @@ public actor IndexingPipeline {
                 id: did, volumeId: volumeId, documentNumber: docNumber,
                 header: header, dateline: dateline, sourceNote: sourceNote,
                 bodyText: bodyText, subjectTagIds: subjectTagStr,
-                userTagIds: nil, summaryText: nil, noteText: nil
+                userTagIds: nil, summaryText: nil, noteText: nil,
+                isEditorialNote: isEditorialNote
             ))
 
             crossRefs.append(contentsOf: Self.extractCrossReferences(
@@ -411,7 +420,8 @@ public actor IndexingPipeline {
                 volumeId: volumeId, documentId: did, documentNumber: docNumber,
                 header: header, dateline: dateline, sourceNote: sourceNote,
                 bodyText: bodyText, subjectTagIds: subjectTagStr,
-                userTagIds: nil, summaryText: nil, noteText: nil
+                userTagIds: nil, summaryText: nil, noteText: nil,
+                isEditorialNote: isEditorialNote
             ))
         }
 
@@ -821,9 +831,12 @@ public actor IndexingPipeline {
                 user_tag_ids TEXT,
                 summary_text TEXT,
                 note_text TEXT,
+                is_editorial_note INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
+        // Idempotent migration for databases that predate Session 38.
+        try? exec("ALTER TABLE document_cache ADD COLUMN is_editorial_note INTEGER NOT NULL DEFAULT 0")
     }
 
     // MARK: - Auxiliary Table DML
@@ -893,8 +906,8 @@ public actor IndexingPipeline {
         let sql = """
             INSERT OR REPLACE INTO document_cache
             (volume_id, document_id, document_number, header, dateline, source_note, body_text,
-             subject_tag_ids, user_tag_ids, summary_text, note_text)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try inTransaction {
             let stmt = try auxPrepare(sql)
@@ -911,6 +924,7 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 9, row.userTagIds)
                 auxBindOptional(stmt, 10, row.summaryText)
                 auxBindOptional(stmt, 11, row.noteText)
+                sqlite3_bind_int(stmt, 12, row.isEditorialNote ? 1 : 0)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -945,7 +959,7 @@ public actor IndexingPipeline {
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {
         let sql = """
             SELECT document_number, header, dateline, source_note, body_text,
-                   subject_tag_ids, user_tag_ids, summary_text, note_text
+                   subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note
             FROM document_cache WHERE volume_id = ? AND document_id = ?
             """
         let stmt = try auxPrepare(sql)
@@ -963,7 +977,8 @@ public actor IndexingPipeline {
             subjectTagIds: auxColumnString(stmt, 5),
             userTagIds: auxColumnString(stmt, 6),
             summaryText: auxColumnString(stmt, 7),
-            noteText: auxColumnString(stmt, 8)
+            noteText: auxColumnString(stmt, 8),
+            isEditorialNote: sqlite3_column_int(stmt, 9) != 0
         )
     }
 
@@ -1078,13 +1093,15 @@ struct DocumentCacheRow: Sendable {
     let userTagIds: String?
     let summaryText: String?
     let noteText: String?
+    let isEditorialNote: Bool
 
     func toFTS5Document(summaryText: String?, noteText: String?) -> FTS5Document {
         FTS5Document(
             id: documentId, volumeId: volumeId, documentNumber: documentNumber,
             header: header, dateline: dateline, sourceNote: sourceNote,
             bodyText: bodyText, subjectTagIds: subjectTagIds, userTagIds: userTagIds,
-            summaryText: summaryText, noteText: noteText
+            summaryText: summaryText, noteText: noteText,
+            isEditorialNote: isEditorialNote
         )
     }
 }

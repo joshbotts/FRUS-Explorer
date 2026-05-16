@@ -848,3 +848,112 @@ struct CrossReferenceContextTests {
         #expect(ctx.contains("Confirmed"), "Nested <ref> must inherit enclosing footnote context")
     }
 }
+
+// MARK: - EditorialNoteFilterTests
+
+/// Verifies that `<div type="editorialNote">` is indexed with `is_editorial_note = 1`
+/// and that `SearchParameters.documentTypeFilter` correctly filters search results.
+///
+/// Version history:
+///   1.0 — Session 38: initial implementation
+@Suite("EditorialNoteFilterTests")
+struct EditorialNoteFilterTests {
+
+    // Build a minimal volume XML with one document and one editorial note.
+    private func makeVolumeXML() -> String {
+        """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <head>1. Memorandum of Conversation</head>
+          <p>The Secretary discussed editorial policy.</p>
+        </div>
+        <div type="editorialNote" xml:id="en1">
+          <p>This editorial note explains the editorial policy discussed above.</p>
+        </div>
+        </body></text></TEI>
+        """
+    }
+
+    private func makePipelineFixture() async throws -> (dir: URL, pipeline: IndexingPipeline, searchService: SearchService) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSEditNote-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+        // Write the volume XML.
+        let volURL = volDir.appendingPathComponent("vol1.xml")
+        try makeVolumeXML().data(using: .utf8)!.write(to: volURL)
+
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5,
+            databaseURL: dbURL,
+            volumesDirectory: volDir,
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+            concurrencyLimit: 1
+        )
+        try await pipeline.indexVolume("vol1")
+
+        let searchService = SearchService(fts5Store: fts5, pipeline: pipeline)
+        return (dir, pipeline, searchService)
+    }
+
+    @Test("editorialNoteIndexedWithFlag — document_cache row for en1 has is_editorial_note = 1")
+    func editorialNoteIndexedWithFlag() async throws {
+        let (dir, pipeline, _) = try await makePipelineFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let docs = try await pipeline.documents(forVolume: "vol1")
+        let en1 = try #require(docs.first { $0.documentId == "en1" },
+                               "Editorial note en1 must appear in documents(forVolume:)")
+        #expect(en1.isEditorialNote == true,
+                "en1 must have isEditorialNote = true")
+
+        let d1 = try #require(docs.first { $0.documentId == "d1" })
+        #expect(d1.isEditorialNote == false,
+                "Primary document d1 must have isEditorialNote = false")
+    }
+
+    @Test("documentsOnlyFilterExcludesEditorialNote — search with .documentsOnly omits en1")
+    func documentsOnlyFilterExcludesEditorialNote() async throws {
+        let (dir, _, searchService) = try await makePipelineFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        var params = SearchParameters(keywords: "editorial")
+        params.documentTypeFilter = .documentsOnly
+        let results = try await searchService.search(parameters: params)
+        let ids = results.map(\.documentId)
+        #expect(!ids.contains("en1"),
+                "documentsOnly filter must exclude the editorial note")
+    }
+
+    @Test("editorialNotesOnlyFilterReturnsOnlyNotes — search with .editorialNotesOnly returns only en1")
+    func editorialNotesOnlyFilterReturnsOnlyNotes() async throws {
+        let (dir, _, searchService) = try await makePipelineFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        var params = SearchParameters(keywords: "editorial")
+        params.documentTypeFilter = .editorialNotesOnly
+        let results = try await searchService.search(parameters: params)
+        #expect(!results.isEmpty, "Editorial notes only filter must return en1")
+        let allAreEditorialNotes = results.allSatisfy { $0.isEditorialNote }
+        #expect(allAreEditorialNotes,
+                "All results with editorialNotesOnly must be editorial notes")
+    }
+
+    @Test("defaultFilterReturnsAll — search with .all returns both d1 and en1")
+    func defaultFilterReturnsAll() async throws {
+        let (dir, _, searchService) = try await makePipelineFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        var params = SearchParameters(keywords: "editorial")
+        params.documentTypeFilter = .all
+        let results = try await searchService.search(parameters: params)
+        let ids = Set(results.map(\.documentId))
+        // Both d1 and en1 contain "editorial" in their text; both must appear.
+        #expect(ids.contains("en1"), "Default filter must include editorial note")
+    }
+}

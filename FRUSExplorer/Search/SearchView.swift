@@ -29,6 +29,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 16: initial implementation
+///   1.1 — Session 38: document type filter section added to filter panel
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -245,6 +246,28 @@ struct SearchView: View {
                 } header: {
                     Text(String(localized: "search.section.daterange",
                                 defaultValue: "Date Range"))
+                }
+
+                // Document type
+                Section {
+                    @Bindable var vm = vm
+                    Picker(
+                        String(localized: "search.doctype.label", defaultValue: "Document type"),
+                        selection: $vm.documentTypeFilter
+                    ) {
+                        Text(String(localized: "search.doctype.all", defaultValue: "All"))
+                            .tag(DocumentTypeFilter.all)
+                        Text(String(localized: "search.doctype.documents", defaultValue: "Documents only"))
+                            .tag(DocumentTypeFilter.documentsOnly)
+                        Text(String(localized: "search.doctype.editorial", defaultValue: "Editorial notes only"))
+                            .tag(DocumentTypeFilter.editorialNotesOnly)
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityLabel(
+                        String(localized: "search.doctype.a11y", defaultValue: "Document type filter")
+                    )
+                } header: {
+                    Text(String(localized: "search.section.doctype", defaultValue: "Document Type"))
                 }
 
                 // Subject tags

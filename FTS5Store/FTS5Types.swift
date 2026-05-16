@@ -27,6 +27,7 @@ public enum FTS5Column: String, Sendable, CaseIterable {
     case userTagIds   = "user_tag_ids"
     case summaryText  = "summary_text"
     case noteText     = "note_text"
+    case isEditorialNote = "is_editorial_note"
 }
 
 // MARK: - FTS5Schema
@@ -86,7 +87,7 @@ public struct FTS5Schema: Sendable {
 
     // Columns that should be marked UNINDEXED in the CREATE VIRTUAL TABLE statement.
     static let unindexedColumns: Set<FTS5Column> = [
-        .documentId, .volumeId, .documentNumber, .subjectTagIds, .userTagIds,
+        .documentId, .volumeId, .documentNumber, .subjectTagIds, .userTagIds, .isEditorialNote,
     ]
 }
 
@@ -102,6 +103,7 @@ public struct FTS5Schema: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
+///   1.1 — Session 38: `isEditorialNote` field added
 public struct FTS5Document: Sendable {
     /// Unique document identifier (e.g. `"d1"` within a volume).
     public let id: String
@@ -125,6 +127,9 @@ public struct FTS5Document: Sendable {
     public let summaryText: String?
     /// Research note body text, if the user has attached a note.
     public let noteText: String?
+    /// Whether this document is a FRUS editorial note rather than a primary-source document.
+    /// Stored as UNINDEXED in the FTS5 virtual table; not tokenized.
+    public let isEditorialNote: Bool
 
     public init(
         id: String,
@@ -137,7 +142,8 @@ public struct FTS5Document: Sendable {
         subjectTagIds: String? = nil,
         userTagIds: String? = nil,
         summaryText: String? = nil,
-        noteText: String? = nil
+        noteText: String? = nil,
+        isEditorialNote: Bool = false
     ) {
         self.id = id
         self.volumeId = volumeId
@@ -150,6 +156,7 @@ public struct FTS5Document: Sendable {
         self.userTagIds = userTagIds
         self.summaryText = summaryText
         self.noteText = noteText
+        self.isEditorialNote = isEditorialNote
     }
 }
 
@@ -166,6 +173,7 @@ public struct FTS5Document: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
+///   1.1 — Session 38: `isEditorialNote` field added
 public struct FTS5Result: Sendable {
     /// Document identifier (matches `FTS5Document.id`).
     public let documentId: String
@@ -185,6 +193,8 @@ public struct FTS5Result: Sendable {
     public let subjectTagIds: [String]
     /// User tag IDs associated with this document.
     public let userTagIds: [String]
+    /// Whether this document is an editorial note rather than a primary-source document.
+    public let isEditorialNote: Bool
 
     /// Convenience: subject tag IDs split from the space-separated storage string.
     static func splitTagIds(_ raw: String?) -> [String] {

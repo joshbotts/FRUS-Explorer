@@ -50,6 +50,8 @@ import Foundation
 ///          (preface, introduction, errata) can be opened by xml:id in DocumentView
 ///   1.3 — Session 36: `<date>` element mapped to `.date` AST node; captures `@when`,
 ///          `@from`, `@to`, `@notBefore`, `@notAfter` for structured date indexing
+///   1.4 — Session 38: `<div type="editorialNote">` promoted to full `FRUSDocumentAST` entries;
+///          `VolumeStructureParserDelegate` records editorial note IDs in parent section's `documentIds`
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -258,7 +260,7 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
                 // Start skipping — we don't descend into document content.
                 skipDepth = 1
                 // Record the document id in the current structural frame, if any.
-                if divType == "document", !xmlId.isEmpty, var top = stack.last {
+                if (divType == "document" || divType == "editorialNote"), !xmlId.isEmpty, var top = stack.last {
                     top.documentIds.append(xmlId)
                     stack[stack.count - 1] = top
                 }
@@ -464,6 +466,14 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             foundTargetDocument = true
             parserRef?.abortParsing()
             return
+        } else if elementName == "div", frame.attributes["type"] == "editorialNote" {
+            // Promote editorial note divs to full FRUSDocumentAST entries (Session 38).
+            // The .editorialNote([children]) wrapper ensures DocumentView renders them with
+            // the editorial note visual treatment (left-border block).
+            let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
+            let wrappedChildren: [FRUSASTNode] = [.editorialNote(frame.children)]
+            let doc = FRUSDocumentAST(documentId: docId, nodes: wrappedChildren)
+            documents.append(doc)
         } else if isTransparent(elementName: elementName, attributes: frame.attributes) {
             // Transparent element: pass children up to the parent frame.
             if !stack.isEmpty {

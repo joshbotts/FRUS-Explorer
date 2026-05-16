@@ -801,3 +801,83 @@ struct DateAttributeParsingTests {
                 "Dateline should contain the display text of the <date> element")
     }
 }
+
+// MARK: - EditorialNoteIndexingTests
+
+/// Verifies that `<div type="editorialNote">` elements are promoted to separate
+/// `FRUSDocumentAST` instances with the top-level `.editorialNote([...])` wrapper.
+///
+/// Version history:
+///   1.0 — Session 38: initial implementation
+@Suite("EditorialNoteIndexingTests")
+struct EditorialNoteIndexingTests {
+
+    private func parseEditorialNoteXML(_ xml: String) async throws -> [FRUSDocumentAST] {
+        let data = xml.data(using: .utf8)!
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("test-\(UUID().uuidString).xml")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let parser = FRUSDocumentParser()
+        return try await parser.parse(volumeURL: url)
+    }
+
+    @Test("editorialNoteProducesSeparateAST — <div type=editorialNote xml:id=en1> yields its own FRUSDocumentAST")
+    func editorialNoteProducesSeparateAST() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1"><head>1. Document One</head><p>Body text.</p></div>
+        <div type="editorialNote" xml:id="en1"><p>This is an editorial note.</p></div>
+        </body></text></TEI>
+        """
+        let docs = try await parseEditorialNoteXML(xml)
+        #expect(docs.count == 2, "Both the document and editorial note must be promoted to FRUSDocumentAST entries")
+        let en = try #require(docs.first { $0.documentId == "en1" })
+        #expect(en.documentId == "en1")
+    }
+
+    @Test("editorialNoteNodesWrappedInEditorialNoteCase — top-level node is .editorialNote")
+    func editorialNoteNodesWrappedInEditorialNoteCase() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="editorialNote" xml:id="en2"><p>Editorial content here.</p></div>
+        </body></text></TEI>
+        """
+        let docs = try await parseEditorialNoteXML(xml)
+        let en = try #require(docs.first { $0.documentId == "en2" })
+        // The first node must be .editorialNote wrapping the paragraph.
+        guard case .editorialNote(let children) = en.nodes.first else {
+            Issue.record("First node must be .editorialNote; got \(String(describing: en.nodes.first))")
+            return
+        }
+        #expect(!children.isEmpty, "Editorial note must contain its children")
+    }
+
+    @Test("editorialNoteAppearsInStructure — parseVolumeStructure includes en1 in parent section documentIds")
+    func editorialNoteAppearsInStructure() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="compilation" xml:id="c1">
+          <head>Compilation One</head>
+          <div type="document" xml:id="d1"><head>1. Doc</head><p>Body.</p></div>
+          <div type="editorialNote" xml:id="en1"><p>Note.</p></div>
+        </div>
+        </body></text></TEI>
+        """
+        let data = xml.data(using: .utf8)!
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("struct-\(UUID().uuidString).xml")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        let structure = try await parser.parseVolumeStructure(volumeURL: url)
+
+        let c1 = try #require(structure.sections.first { $0.sectionId == "c1" })
+        #expect(c1.documentIds.contains("d1"), "Normal document must appear in documentIds")
+        #expect(c1.documentIds.contains("en1"), "Editorial note must also appear in documentIds")
+    }
+}

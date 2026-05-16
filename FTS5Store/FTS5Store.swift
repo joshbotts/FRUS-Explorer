@@ -184,7 +184,8 @@ public actor FTS5Store {
             document_id, volume_id, header, dateline, source_note,
             subject_tag_ids, user_tag_ids,
             snippet(\(schema.tableName), 6, '<b>', '</b>', '…', 3) AS snip,
-            bm25(\(schema.tableName)) AS score
+            bm25(\(schema.tableName)) AS score,
+            is_editorial_note
         FROM \(schema.tableName)
         WHERE \(schema.tableName) MATCH ?
         ORDER BY score
@@ -216,7 +217,8 @@ public actor FTS5Store {
                 snippet:      columnString(stmt, 7) ?? "",
                 bm25Score:    sqlite3_column_double(stmt, 8),
                 subjectTagIds: subjectIds,
-                userTagIds:   userIds
+                userTagIds:   userIds,
+                isEditorialNote: sqlite3_column_int(stmt, 9) != 0
             )
             results.append(result)
             if results.count >= limit { break }
@@ -319,6 +321,7 @@ public actor FTS5Store {
         bindOptional(stmt, 9,  doc.userTagIds)
         bindOptional(stmt, 10, doc.summaryText.map { stemForIndex($0) })
         bindOptional(stmt, 11, doc.noteText.map { stemForIndex($0) })
+        sqlite3_bind_int(stmt, 12, doc.isEditorialNote ? 1 : 0)
     }
 
     private func bindOptional(_ stmt: OpaquePointer, _ col: Int32, _ value: String?) {

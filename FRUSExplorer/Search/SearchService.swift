@@ -31,6 +31,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 09: initial implementation
+///   1.1 — Session 38: document type filter applied in `search(_:limit:offset:)`
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -105,6 +106,16 @@ public actor SearchService {
                 if !has { continue }
             }
 
+            // Document type filter
+            switch parameters.documentTypeFilter {
+            case .documentsOnly:
+                if raw.isEditorialNote { continue }
+            case .editorialNotesOnly:
+                if !raw.isEditorialNote { continue }
+            case .all:
+                break
+            }
+
             filtered.append(SearchResult(
                 documentId: raw.documentId,
                 volumeId: raw.volumeId,
@@ -115,7 +126,8 @@ public actor SearchService {
                 snippet: raw.snippet,
                 bm25Score: raw.bm25Score,
                 subjectTagIds: raw.subjectTagIds,
-                userTagIds: raw.userTagIds
+                userTagIds: raw.userTagIds,
+                isEditorialNote: raw.isEditorialNote
             ))
 
             if filtered.count >= effectiveLimit { break }
