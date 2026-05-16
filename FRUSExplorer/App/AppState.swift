@@ -50,6 +50,8 @@ import Observation
 ///          showSearch and showCitationLookup promoted from BrowserView local state
 ///   2.1 — Session 44: showSettingsSheet and pendingOnboardingAfterReset guarded to macOS
 ///   2.2 — Session 45: lastActivityTabVisit and unindexedVolumeCount (iOS)
+///   2.3 — Session 46: showSettingsSheet and pendingOnboardingAfterReset removed;
+///          Settings is now a Settings scene on macOS (no sheet needed)
 
 // MARK: - AppTab
 
@@ -98,29 +100,6 @@ final class AppState {
             UserDefaults.standard.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding)
         }
     }
-
-    // MARK: - Sheet Coordination (macOS only)
-
-    /// Controls whether the Settings sheet is presented from `BrowserView` on macOS.
-    ///
-    /// On macOS, Settings is presented as a sheet from `BrowserView` until Session 46
-    /// converts it to a `Settings` scene. On iOS, Settings is a persistent tab —
-    /// this property is unused on iOS.
-    ///
-    /// The sequence on macOS after reset:
-    /// 1. Reset completes → `pendingOnboardingAfterReset = true`, `showSettingsSheet = false`
-    /// 2. Sheet animates out
-    /// 3. `BrowserView`'s `onDismiss` handler fires → `hasCompletedOnboarding = false`
-    /// 4. `ContentView` routes to `OnboardingView` cleanly after the sheet is gone
-    #if os(macOS)
-    var showSettingsSheet: Bool = false
-
-    /// Set by `ResetView` after a successful macOS reset so that `BrowserView`'s sheet
-    /// `onDismiss` handler knows to complete the transition to onboarding.
-    /// On iOS, the reset path assigns `hasCompletedOnboarding = false` directly —
-    /// no sheet dismissal race exists because Settings is a tab, not a modal.
-    var pendingOnboardingAfterReset: Bool = false
-    #endif
 
     // MARK: - Network State
 

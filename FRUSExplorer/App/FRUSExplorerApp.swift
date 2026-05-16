@@ -47,6 +47,7 @@ import Sparkle
 ///   1.7 — Session 29: DirectDistribution Sparkle "Check for Updates" menu command
 ///   1.8 — Session 31: fix CitationLookupView download URL construction
 ///   1.9 — Session 33: wire onVolumeDownloaded → indexVolume for automatic post-download indexing
+///   2.0 — Session 46: macOS Settings scene added; ⌘F / ⌘⇧F Search/CitationLookup commands added
 @main
 struct FRUSExplorerApp: App {
 
@@ -55,6 +56,18 @@ struct FRUSExplorerApp: App {
     private let modelContainer: ModelContainer = ModelContainer.makeFRUSContainer()
 
     var body: some Scene {
+        mainWindowScene
+        #if os(macOS)
+        Settings {
+            MacSettingsView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        #endif
+    }
+
+    /// The primary `WindowGroup` scene, with macOS-specific modifiers applied conditionally.
+    private var mainWindowScene: some Scene {
         WindowGroup {
             ContentView()
                 .environment(appState)
@@ -85,6 +98,23 @@ struct FRUSExplorerApp: App {
                 .disabled(!SparkleUpdater.shared.canCheckForUpdates)
             }
             #endif
+
+            // Search and Citation Lookup keyboard shortcuts (⌘F and ⌘⇧F).
+            // These write to AppState properties observed by BrowserView's sheet modifiers.
+            CommandGroup(after: .textEditing) {
+                Button(String(localized: "menu.search",
+                              defaultValue: "Search\u{2026}")) {
+                    appState.showSearch = true
+                }
+                .keyboardShortcut("f", modifiers: .command)
+                .disabled(appState.searchService == nil)
+
+                Button(String(localized: "menu.citationLookup",
+                              defaultValue: "Find by Citation\u{2026}")) {
+                    appState.showCitationLookup = true
+                }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+            }
         }
         #endif
     }

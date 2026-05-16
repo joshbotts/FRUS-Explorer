@@ -207,6 +207,7 @@
 		AA26BB01CC03DD04EE2602 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA26BB01CC03DD04EE2600 /* AboutView.swift */; };
 		AA26BB01CC03DD04EE2604 /* AboutViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */; };
 		AA27BB01CC03DD04EE2701 /* AccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */; };
+		AA46BB01CC03DD04EE4601 /* MacSettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA46BB01CC03DD04EE4600 /* MacSettingsViewTests.swift */; };
 		AA28BB01CC03DD04EE2801 /* OpenAPIValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */; };
 		AA29BB01CC03DD04EE2901 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29BB01CC03DD04EE2900 /* SparkleUpdater.swift */; };
 		AA29BB01CC03DD04EE2903 /* DistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29BB01CC03DD04EE2902 /* DistributionTests.swift */; };
@@ -387,6 +388,7 @@
 		AA26BB01CC03DD04EE2600 /* AboutView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AboutViewTests.swift; sourceTree = "<group>"; };
 		AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityTests.swift; sourceTree = "<group>"; };
+		AA46BB01CC03DD04EE4600 /* MacSettingsViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacSettingsViewTests.swift; sourceTree = "<group>"; };
 		AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAPIValidationTests.swift; sourceTree = "<group>"; };
 		AA29BB01CC03DD04EE2900 /* SparkleUpdater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		AA29BB01CC03DD04EE2902 /* DistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DistributionTests.swift; sourceTree = "<group>"; };
@@ -511,6 +513,7 @@
 				AA25BB01CC03DD04EE2506 /* GlobalContextTests.swift */,
 				AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */,
 				AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */,
+				AA46BB01CC03DD04EE4600 /* MacSettingsViewTests.swift */,
 				AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */,
 				AA29BB01CC03DD04EE2902 /* DistributionTests.swift */,
 				AA30BB01CC03DD04EE3020 /* CitationParserTests.swift */,
@@ -1186,6 +1189,7 @@
 				AA25BB01CC03DD04EE2507 /* GlobalContextTests.swift in Sources */,
 				AA26BB01CC03DD04EE2604 /* AboutViewTests.swift in Sources */,
 				AA27BB01CC03DD04EE2701 /* AccessibilityTests.swift in Sources */,
+				AA46BB01CC03DD04EE4601 /* MacSettingsViewTests.swift in Sources */,
 				AA28BB01CC03DD04EE2801 /* OpenAPIValidationTests.swift in Sources */,
 				AA29BB01CC03DD04EE2903 /* DistributionTests.swift in Sources */,
 				AA30BB01CC03DD04EE3021 /* CitationParserTests.swift in Sources */,

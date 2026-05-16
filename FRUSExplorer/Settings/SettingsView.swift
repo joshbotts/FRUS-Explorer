@@ -1256,15 +1256,10 @@ private struct NARAKeyView: View {
 /// - Active project selection (`AppState.activeProjectId`)
 ///
 /// ## Post-reset navigation
-/// **iOS:** `ResetView` sets `hasCompletedOnboarding = false` directly. Settings is a
-/// persistent tab — no sheet is on screen, so there is no animation race with `ContentView`.
-///
-/// **macOS:** `ResetView` sets `pendingOnboardingAfterReset = true` and dismisses the
-/// Settings sheet by setting `showSettingsSheet = false`. `BrowserView`'s `onDismiss`
-/// handler then clears `hasCompletedOnboarding` only after the sheet has fully animated out,
-/// avoiding a SwiftUI race where `ContentView` tries to replace `BrowserView` while a modal
-/// is still on screen. This two-phase sequence is removed in Session 46 when Settings becomes
-/// a `Settings` scene (independent window, not a modal).
+/// Both platforms now set `hasCompletedOnboarding = false` directly after clearing data.
+/// - **iOS**: Settings is a persistent tab — no sheet is on screen.
+/// - **macOS**: Settings is now a `Settings` scene (independent window, not a modal sheet).
+///   There is no animation race with `ContentView`, so direct assignment is safe.
 ///
 /// ## Confirmation gates
 /// The user must confirm twice (two `confirmationDialog` calls) before `performReset()`
@@ -1274,7 +1269,8 @@ private struct NARAKeyView: View {
 ///   1.0 — Session 24: initial implementation
 ///   1.1 — Session 32: added `Project` deletion; switched to two-phase sheet-dismissal
 ///          for safe post-reset onboarding navigation (macOS)
-///   1.2 — Session 44: iOS path simplified to direct assignment; macOS path unchanged
+///   1.2 — Session 44: iOS path simplified to direct assignment
+///   1.3 — Session 46: macOS path also simplified; pendingOnboardingAfterReset removed
 private struct ResetView: View {
 
     @Environment(AppState.self) private var appState
@@ -1377,21 +1373,11 @@ private struct ResetView: View {
                 try modelContext.delete(model: Project.self)
                 await MainActor.run {
                     appState.activeProjectId = nil
-                    #if os(iOS)
-                    // iOS: Settings is a persistent tab. Direct assignment is safe —
-                    // no sheet is on screen, so ContentView can route to OnboardingView
-                    // immediately without competing with a modal dismissal animation.
+                    // Both iOS and macOS now use direct assignment. On iOS, Settings is
+                    // a persistent tab; on macOS, Settings is a Settings scene (independent
+                    // window). Neither path has a modal sheet on screen that could race
+                    // with ContentView's transition to OnboardingView.
                     appState.hasCompletedOnboarding = false
-                    #else
-                    // macOS: Settings is presented as a sheet. Use the two-phase
-                    // dismissal sequence: signal BrowserView's onDismiss handler via
-                    // pendingOnboardingAfterReset, then close the sheet. BrowserView
-                    // clears hasCompletedOnboarding only after the sheet animates out.
-                    // This sequence is removed in Session 46 when Settings becomes a
-                    // Settings scene (independent window, not a modal).
-                    appState.pendingOnboardingAfterReset = true
-                    appState.showSettingsSheet = false
-                    #endif
                 }
 
                 #if DEBUG
@@ -1424,3 +1410,141 @@ func formattedBytes(_ bytes: Int) -> String {
 enum SettingsKeys {
     static let concurrentDownloadLimit = "frus.concurrentDownloadLimit"
 }
+
+// MARK: - MacSettingsView
+
+#if os(macOS)
+
+/// macOS Settings window content.
+///
+/// Replaces the sheet-based `SettingsView` used before Session 46.
+/// Presented by the system `Settings` scene declared in `FRUSExplorerApp`.
+/// The system opens this window via ⌘, and the App menu > Settings item.
+///
+/// Eight settings panels are consolidated into four logical tabs:
+///
+/// | Tab | Panels |
+/// |---|---|
+/// | Volumes | Volume Management, Storage, Sideload, Reindex |
+/// | Research | User Tags, Summarization Prompts |
+/// | Integrations | NARA Catalog API Key |
+/// | Advanced | Reset App, About |
+///
+/// Each tab hosts a `NavigationStack` + `Form` with `NavigationLink` rows so
+/// sub-panels retain the same drill-down structure as the iOS `SettingsView`.
+///
+/// Version history:
+///   1.0 — Session 46: initial implementation
+struct MacSettingsView: View {
+
+    var body: some View {
+        TabView {
+            Tab(String(localized: "settings.mac.tab.volumes",
+                       defaultValue: "Volumes"),
+                systemImage: "arrow.down.circle") {
+                VolumesSettingsPane()
+            }
+            Tab(String(localized: "settings.mac.tab.research",
+                       defaultValue: "Research"),
+                systemImage: "note.text") {
+                ResearchSettingsPane()
+            }
+            Tab(String(localized: "settings.mac.tab.integrations",
+                       defaultValue: "Integrations"),
+                systemImage: "network") {
+                NavigationStack {
+                    NARAKeyView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            Tab(String(localized: "settings.mac.tab.advanced",
+                       defaultValue: "Advanced"),
+                systemImage: "gearshape.2") {
+                AdvancedSettingsPane()
+            }
+        }
+        .frame(width: 560, height: 480)
+    }
+}
+
+/// Volumes pane: Volume Management, Storage, Sideload, Reindex.
+private struct VolumesSettingsPane: View {
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    NavigationLink(String(localized: "settings.row.volumeManagement",
+                                         defaultValue: "Volume Management")) {
+                        VolumeManagementView()
+                    }
+                    NavigationLink(String(localized: "settings.row.storage",
+                                         defaultValue: "Storage")) {
+                        StorageManagementView()
+                    }
+                    NavigationLink(String(localized: "settings.row.sideload",
+                                         defaultValue: "Sideload Volume")) {
+                        SideloadView()
+                    }
+                    NavigationLink(String(localized: "settings.row.reindex",
+                                         defaultValue: "Reindex")) {
+                        ReindexView()
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "settings.mac.tab.volumes",
+                                    defaultValue: "Volumes"))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+/// Research pane: User Tags, Summarization Prompts.
+private struct ResearchSettingsPane: View {
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    NavigationLink(String(localized: "settings.row.tags",
+                                         defaultValue: "User Tags")) {
+                        UserTagsView()
+                    }
+                    NavigationLink(String(localized: "settings.row.summarization",
+                                         defaultValue: "Summarization Prompts")) {
+                        SummarizationPromptsSettingsView()
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "settings.mac.tab.research",
+                                    defaultValue: "Research"))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+/// Advanced pane: Reset App, About.
+private struct AdvancedSettingsPane: View {
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    NavigationLink(String(localized: "settings.row.reset",
+                                         defaultValue: "Reset App")) {
+                        ResetView()
+                    }
+                    .foregroundStyle(.red)
+                }
+                Section {
+                    NavigationLink(String(localized: "settings.row.about",
+                                         defaultValue: "About FRUS Explorer")) {
+                        AboutView()
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "settings.mac.tab.advanced",
+                                    defaultValue: "Advanced"))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+#endif

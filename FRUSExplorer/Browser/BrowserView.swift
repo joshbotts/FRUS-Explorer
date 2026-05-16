@@ -37,6 +37,8 @@ import SwiftUI
 ///   1.4 — Session 43: showSearch and showCitationLookup promoted to AppState
 ///   1.5 — Session 44: iOS stackLayout sheets/toolbar buttons removed; Settings/Search/
 ///          CitationLookup are tabs on iOS; pendingBrowseDocument observer added both platforms
+///   1.6 — Session 46: macOS Settings sheet removed (now a Settings scene); gear button
+///          removed; handleSettingsSheetDismiss removed; Collections toolbar button added
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -46,6 +48,7 @@ struct BrowserView: View {
     // On iOS: tapping ProjectPickerMenu switches to the Activity tab instead.
     #if os(macOS)
     @State private var showProjectContext = false
+    @State private var showCollections = false
     #endif
     // showSearch and showCitationLookup live in AppState (promoted in Session 43)
     // so that macOS menu commands and future iOS tab navigation can trigger them.
@@ -78,20 +81,9 @@ struct BrowserView: View {
         .sheet(isPresented: $showProjectContext) {
             ProjectContextView()
         }
-        .sheet(isPresented: $appState.showSettingsSheet,
-               onDismiss: handleSettingsSheetDismiss) {
-            SettingsView()
-        }
-        // Fallback for macOS: `.sheet(isPresented:onDismiss:)` does not reliably fire
-        // `onDismiss` when `isPresented` is set to `false` programmatically (a known
-        // SwiftUI macOS limitation). Watching `showSettingsSheet` directly ensures
-        // `handleSettingsSheetDismiss()` runs after a programmatic reset dismissal.
-        // The function is idempotent — its `pendingOnboardingAfterReset` guard makes
-        // a redundant call from the `onDismiss` path a safe no-op.
-        .onChange(of: appState.showSettingsSheet) { _, isShowing in
-            if !isShowing {
-                handleSettingsSheetDismiss()
-            }
+        .sheet(isPresented: $showCollections) {
+            CollectionListView()
+                .frame(minWidth: 480, minHeight: 560)
         }
         .sheet(isPresented: $appState.showSearch) {
             if let service = appState.searchService {
@@ -122,25 +114,6 @@ struct BrowserView: View {
         }
         .onAppear { bootstrapViewModel() }
     }
-
-    // MARK: - Sheet Dismiss Coordination (macOS only)
-
-    #if os(macOS)
-    /// Called by SwiftUI after the Settings sheet has fully animated out (macOS only).
-    ///
-    /// If the dismissal was triggered by a completed reset (signalled by
-    /// `appState.pendingOnboardingAfterReset`), this is the earliest safe moment
-    /// to clear `hasCompletedOnboarding` — the sheet is gone, so `ContentView`
-    /// can switch to `OnboardingView` without competing with a live modal.
-    ///
-    /// On iOS, Settings is a persistent tab — no sheet animation race exists, so
-    /// `ResetView` sets `hasCompletedOnboarding = false` directly.
-    private func handleSettingsSheetDismiss() {
-        guard appState.pendingOnboardingAfterReset else { return }
-        appState.pendingOnboardingAfterReset = false
-        appState.hasCompletedOnboarding = false
-    }
-    #endif
 
     // MARK: - Layout Variants
 
@@ -184,13 +157,13 @@ struct BrowserView: View {
                     #if os(macOS)
                     ToolbarItem(placement: .primaryAction) {
                         Button {
-                            appState.showSettingsSheet = true
+                            showCollections = true
                         } label: {
-                            Image(systemName: "gear")
+                            Image(systemName: "tray.2")
                         }
                         .accessibilityLabel(
-                            String(localized: "browser.settings.a11y",
-                                   defaultValue: "Open settings")
+                            String(localized: "browser.collections.a11y",
+                                   defaultValue: "Open Collections")
                         )
                     }
                     #endif

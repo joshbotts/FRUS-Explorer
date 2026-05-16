@@ -151,18 +151,14 @@ struct ResetFlowTests {
     #endif
 
     #if os(macOS)
-    @Test("resetFlowMacOS — pendingOnboardingAfterReset toggled, showSettingsSheet cleared")
+    @Test("resetFlowMacOS — hasCompletedOnboarding set to false directly on macOS")
     func resetFlowMacOS() {
         let state = AppState()
         state.hasCompletedOnboarding = true
-        state.showSettingsSheet = true
-        // macOS reset path: two-phase dismissal.
-        state.pendingOnboardingAfterReset = true
-        state.showSettingsSheet = false
-        #expect(state.pendingOnboardingAfterReset == true)
-        #expect(state.showSettingsSheet == false)
-        // BrowserView.handleSettingsSheetDismiss would then do:
-        state.pendingOnboardingAfterReset = false
+        // macOS reset path (Session 46): Settings is now a Settings scene (independent window),
+        // not a modal sheet. showSettingsSheet and pendingOnboardingAfterReset have been removed
+        // from AppState. Direct assignment is safe on both platforms — there is no animation
+        // race with ContentView.
         state.hasCompletedOnboarding = false
         #expect(state.hasCompletedOnboarding == false)
     }
