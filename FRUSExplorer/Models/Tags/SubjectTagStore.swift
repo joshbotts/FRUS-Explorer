@@ -14,6 +14,17 @@ import Foundation
 /// `taxonomy.json` (subject definitions) and `subject-appearances.json` (per-document
 /// assignments) once at init, then provides fast lookups via in-memory indexes.
 ///
+/// ## Bundle Asset Provenance
+/// Both JSON files are generated from the `frus-subject-taxonomy` repository by
+/// `scripts/export_app_bundle.py`. The taxonomy is sourced from the Office of the
+/// Historian's manually reviewed subject index (1,465 raw terms, 683 after deduplication).
+///
+/// `subject-appearances.json` applies a `--max-volumes=150` filter: subjects that appear
+/// in more than 150 of the ~560 FRUS volumes are too broad to be useful for document-level
+/// discovery (e.g. "War", "United States — Foreign policy"). All 683 subjects appear in
+/// `taxonomy.json` for browsing; only the 405 most specific have document-level entries.
+/// Appearances for included subjects are always `.curated` confidence.
+///
 /// ## Confidence Tiers
 /// Each `SubjectAppearance` carries a `confidence` value: `.curated` (manually verified)
 /// or `.stringMatch` (algorithmically assigned, higher false-positive rate). Callers
@@ -28,6 +39,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 08: initial implementation
+///   1.1 — Session 35: bundle assets populated from frus-subject-taxonomy export pipeline
 public actor SubjectTagStore {
 
     // MARK: - Indexes

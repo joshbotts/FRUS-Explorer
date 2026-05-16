@@ -30,6 +30,9 @@ import SwiftUI
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 32: moved Settings sheet flag to `AppState`; added `onDismiss`
 ///          handler for safe post-reset navigation to `OnboardingView`
+///   1.2 — Session 35: macOS fallback — `onChange(of: showSettingsSheet)` ensures
+///          `handleSettingsSheetDismiss()` fires even when `onDismiss` is skipped
+///          by SwiftUI on programmatic sheet dismissal (known macOS limitation)
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -69,6 +72,19 @@ struct BrowserView: View {
                onDismiss: handleSettingsSheetDismiss) {
             SettingsView()
         }
+        #if os(macOS)
+        // Fallback for macOS: `.sheet(isPresented:onDismiss:)` does not reliably fire
+        // `onDismiss` when `isPresented` is set to `false` programmatically (a known
+        // SwiftUI macOS limitation). Watching `showSettingsSheet` directly ensures
+        // `handleSettingsSheetDismiss()` runs after a programmatic reset dismissal.
+        // The function is idempotent — its `pendingOnboardingAfterReset` guard makes
+        // a redundant call from the `onDismiss` path a safe no-op.
+        .onChange(of: appState.showSettingsSheet) { _, isShowing in
+            if !isShowing {
+                handleSettingsSheetDismiss()
+            }
+        }
+        #endif
         .sheet(isPresented: $showSearch) {
             if let service = appState.searchService {
                 SearchView(
