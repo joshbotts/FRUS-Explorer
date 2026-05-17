@@ -162,13 +162,13 @@ public final class BrowserViewModel {
         manifestStore.diffResult?.known ?? manifestStore.bundledEntries
     }
 
-    /// All subseries groups, sorted chronologically by start year.
+    /// All subseries groups, sorted chronologically by start year (most recent first).
     public var allSubseriesGroups: [SubseriesGroup] {
         var dict: [String: [VolumeManifestEntry]] = [:]
         for v in allVolumes { dict[v.subseries, default: []].append(v) }
         return dict
             .map { SubseriesGroup(subseries: $0.key, volumes: $0.value) }
-            .sorted { $0.startYear < $1.startYear }
+            .sorted { $0.startYear > $1.startYear }
     }
 
     /// Volumes within a subseries after applying the active tag filter.
