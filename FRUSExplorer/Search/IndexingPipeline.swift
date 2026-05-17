@@ -58,12 +58,43 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///   1.4 — Session 39: `person_mentions` table added; `extractPersonRefs` populates it
 ///          during indexing; `PersonMentionRow` private struct added
 ///   1.5 — Session 41: `persons` and `terms` tables added; glossaries persisted during indexing
+///   1.6 — Session 48: FTS5 schema version tracking added; `needsFTSRebuildReindex` / `markFTSRebuildReindexComplete()`
 public actor IndexingPipeline {
 
     // MARK: - Configuration
 
     /// Maximum number of volume XML parsers running concurrently. Default 4.
     public let concurrencyLimit: Int
+
+    // MARK: - FTS5 Schema Migration (Session 48)
+
+    /// Current FTS5 virtual table schema version.
+    ///
+    /// Increment this value when the `frus_documents` FTS5 schema changes in a way
+    /// that requires all downloaded volumes to be re-indexed.
+    ///
+    /// - Version 3: `is_editorial_note UNINDEXED` column added (Session 38/48).
+    ///   Prior databases lacked this column (FTS5 `ALTER TABLE` is silently ignored);
+    ///   `FTS5Connection.createSchema` detects and rebuilds when absent.
+    public static let currentFTSSchemaVersion: Int = 3
+
+    /// UserDefaults key tracking whether the post-FTS5-rebuild re-index is complete.
+    public static let ftsSchemaVersionKey = "frusExplorer.ftsSchemaVersion"
+
+    /// Returns `true` if a FTS5 schema rebuild occurred this launch and volumes need
+    /// re-indexing so that `is_editorial_note` is correctly populated in the index.
+    public nonisolated var needsFTSRebuildReindex: Bool {
+        UserDefaults.standard.integer(forKey: Self.ftsSchemaVersionKey) < Self.currentFTSSchemaVersion
+    }
+
+    /// Records that the post–FTS5-rebuild re-index is complete.
+    /// Call this after `indexAllVolumes()` completes following a schema rebuild.
+    public func markFTSRebuildReindexComplete() {
+        UserDefaults.standard.set(Self.currentFTSSchemaVersion, forKey: Self.ftsSchemaVersionKey)
+        #if DEBUG
+        print("[IndexingPipeline] FTS5 schema re-index marked at version \(Self.currentFTSSchemaVersion).")
+        #endif
+    }
 
     // MARK: - Date Index Migration
 

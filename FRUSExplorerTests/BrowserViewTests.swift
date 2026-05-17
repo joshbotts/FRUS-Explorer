@@ -82,7 +82,7 @@ struct BrowserViewTests {
         #expect(group7780?.volumes.count == 1)
     }
 
-    @Test("allSubseriesGroups sorts groups chronologically by start year")
+    @Test("allSubseriesGroups sorts groups chronologically by start year (most recent first)")
     func groupsSortedByStartYear() {
         let entries = [
             makeEntry(volumeId: "frus1977-80v01", subseries: "1977-80"),
@@ -91,7 +91,7 @@ struct BrowserViewTests {
         ]
         let vm = makeViewModel(volumes: entries)
         let years = vm.allSubseriesGroups.map(\.startYear)
-        #expect(years == years.sorted())
+        #expect(years == years.sorted(by: >))
     }
 
     // MARK: - Filtered Volumes

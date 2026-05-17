@@ -36,7 +36,7 @@ import Sparkle
 ///    c. If online, `resumeQueuedDownloads()` is called to continue any persisted queue.
 /// 4. `onChange(of: appState.isOnline)` enables/suspends the download manager in real time.
 ///
-/// ## Version history
+/// Version history:
 ///   1.0 — Session 01: initial implementation
 ///   1.1 — Session 04: inject SwiftData ModelContainer
 ///   1.2 — Session 05: create and wire DownloadManager; respond to network state changes
@@ -48,6 +48,7 @@ import Sparkle
 ///   1.8 — Session 31: fix CitationLookupView download URL construction
 ///   1.9 — Session 33: wire onVolumeDownloaded → indexVolume for automatic post-download indexing
 ///   2.0 — Session 46: macOS Settings scene added; ⌘F / ⌘⇧F Search/CitationLookup commands added
+///   2.1 — Session 48: background re-index wired for FTS5 schema rebuild and date reindex migrations
 @main
 struct FRUSExplorerApp: App {
 
@@ -160,6 +161,31 @@ struct FRUSExplorerApp: App {
                 pageRangeStore: pageRangeStore,
                 downloadedVolumeIds: downloadedIds
             )
+
+            // Trigger a background re-index when schema migrations require it.
+            // Two independent flags can each demand a re-index:
+            //   • store.didRebuildSchema + pipeline.needsFTSRebuildReindex:
+            //     FTS5 table was rebuilt (is_editorial_note column was absent).
+            //   • pipeline.needsDateReindex:
+            //     Date extraction strategy was upgraded in Session 36.
+            //
+            // Both conditions are checked before launching the task so the captures
+            // are immutable and don't require actor isolation inside the Task closure.
+            let ftsRebuildNeeded = store.didRebuildSchema && pipeline.needsFTSRebuildReindex
+            let dateReindexNeeded = pipeline.needsDateReindex
+            if ftsRebuildNeeded || dateReindexNeeded {
+                Task {
+                    #if DEBUG
+                    print("[FRUSExplorer] Background re-index triggered (ftsRebuild=\(ftsRebuildNeeded), dateReindex=\(dateReindexNeeded)).")
+                    #endif
+                    try? await pipeline.indexAllVolumes()
+                    if ftsRebuildNeeded  { await pipeline.markFTSRebuildReindexComplete() }
+                    if dateReindexNeeded { await pipeline.markDateReindexComplete() }
+                    #if DEBUG
+                    print("[FRUSExplorer] Background re-index complete.")
+                    #endif
+                }
+            }
         }
 
         let summarizationService = SummarizationService(modelContainer: modelContainer)

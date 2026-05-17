@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FRUSExplorer
 
 // MARK: - Test Helpers
@@ -1212,5 +1213,145 @@ struct GlossaryPersistenceTests {
         let after = try await store.allPersons(forVolumeId: "frus1969-76v01")
         // The new index added p_haig; INSERT OR REPLACE keeps all rows fresh.
         #expect(after.map(\.ref).contains("p_haig"))
+    }
+}
+
+// MARK: - FTS5RebuildTests
+
+/// Tests for the Session 48 FTS5 schema migration that adds `is_editorial_note`.
+///
+/// The migration detects when `is_editorial_note` is absent from an existing
+/// `frus_documents` FTS5 virtual table and drops/recreates the table.
+/// `PRAGMA user_version = 3` marks the schema as current after migration.
+@Suite("FTS5RebuildTests")
+struct FTS5RebuildTests {
+
+    // MARK: - Helpers
+
+    /// Creates an FTS5 database with the pre–Session 38 schema (no `is_editorial_note`).
+    ///
+    /// Uses raw SQLite3 calls to build the legacy table so `FTS5Store.init` sees
+    /// an existing database with the outdated schema.
+    private func createLegacyDatabase(at url: URL) throws {
+        var db: OpaquePointer?
+        let rc = sqlite3_open_v2(
+            url.path, &db,
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+            nil
+        )
+        guard rc == SQLITE_OK, let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "FTS5RebuildTests", code: Int(rc))
+        }
+        defer { sqlite3_close_v2(handle) }
+
+        // Create the FTS5 table with only 11 columns (missing is_editorial_note).
+        let legacySQL = """
+        CREATE VIRTUAL TABLE frus_documents USING fts5(
+            document_id UNINDEXED,
+            volume_id UNINDEXED,
+            document_number UNINDEXED,
+            header,
+            dateline,
+            source_note,
+            body_text,
+            subject_tag_ids UNINDEXED,
+            user_tag_ids UNINDEXED,
+            summary_text,
+            note_text,
+            tokenize = 'unicode61'
+        )
+        """
+        var errmsg: UnsafeMutablePointer<CChar>?
+        sqlite3_exec(handle, legacySQL, nil, nil, &errmsg)
+        sqlite3_free(errmsg)
+        // Insert one row so that the table is non-empty and row survival can be tested.
+        sqlite3_exec(
+            handle,
+            "INSERT INTO frus_documents (document_id, volume_id, header, body_text) VALUES ('d1', 'frus1861', 'Test Header', 'Test body')",
+            nil, nil, &errmsg
+        )
+        sqlite3_free(errmsg)
+        // user_version intentionally left at 0 (simulates pre-migration database).
+    }
+
+    // MARK: - Tests
+
+    /// Opening an FTS5 database that lacks `is_editorial_note` triggers a rebuild.
+    ///
+    /// `FTS5Store.didRebuildSchema` must be `true` and INSERTs that reference the
+    /// column must succeed after the migration.
+    @Test("ftsSchemaUpgradeAddsEditorialNoteColumn")
+    func ftsSchemaUpgradeAddsEditorialNoteColumn() async throws {
+        try await withTempDir { dir in
+            let dbURL = dir.appendingPathComponent("legacy.sqlite")
+            try createLegacyDatabase(at: dbURL)
+
+            let store = try FTS5Store(databaseURL: dbURL)
+            #expect(store.didRebuildSchema == true,
+                    "FTS5Store should detect the missing column and set didRebuildSchema")
+
+            // After rebuild, an INSERT with is_editorial_note must succeed.
+            let doc = FTS5Document(
+                id: "d2", volumeId: "frus1861",
+                header: "Rebuilt Header", bodyText: "Rebuilt body",
+                isEditorialNote: true
+            )
+            try await store.insert(document: doc)
+        }
+    }
+
+    /// The FTS5 table is functional for search after a schema rebuild.
+    @Test("ftsRebuildPreservesTableFunctionality")
+    func ftsRebuildPreservesTableFunctionality() async throws {
+        try await withTempDir { dir in
+            let dbURL = dir.appendingPathComponent("legacy2.sqlite")
+            try createLegacyDatabase(at: dbURL)
+
+            let store = try FTS5Store(databaseURL: dbURL)
+            #expect(store.didRebuildSchema == true)
+
+            let doc = FTS5Document(
+                id: "d3", volumeId: "frus1861",
+                header: "Rebuilt document", bodyText: "searchable content after rebuild",
+                isEditorialNote: false
+            )
+            try await store.insert(document: doc)
+            let query = FTS5Query(keywords: ["searchable"], booleanMode: .and)
+            let results = try await store.search(query: query, limit: 10, offset: 0)
+            #expect(!results.isEmpty, "Search should return results after schema rebuild")
+        }
+    }
+
+    /// `needsFTSRebuildReindex` returns `true` before marking complete and `false` after.
+    @Test("migrationFlagTriggersReindexMarker")
+    func migrationFlagTriggersReindexMarker() async throws {
+        // Clear any prior state so the test starts clean.
+        UserDefaults.standard.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
+
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+
+            // UserDefaults key is absent (integer returns 0) → needs reindex.
+            #expect(pipeline.needsFTSRebuildReindex == true)
+
+            await pipeline.markFTSRebuildReindexComplete()
+            #expect(pipeline.needsFTSRebuildReindex == false)
+
+            // Cleanup: restore UserDefaults to a clean state.
+            UserDefaults.standard.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
+        }
+    }
+
+    /// A fresh database (no prior FTS5 table) does not trigger a rebuild.
+    @Test("freshInstallDoesNotRebuild")
+    func freshInstallDoesNotRebuild() async throws {
+        try await withTempDir { dir in
+            let dbURL = dir.appendingPathComponent("fresh.sqlite")
+            // No pre-existing table — FTS5Store creates it fresh.
+            let store = try FTS5Store(databaseURL: dbURL)
+            #expect(store.didRebuildSchema == false,
+                    "Fresh install should create the correct schema without a rebuild")
+        }
     }
 }

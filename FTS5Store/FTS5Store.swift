@@ -56,10 +56,19 @@ public actor FTS5Store {
     private let connection: FTS5Connection
     private let schema: FTS5Schema
 
+    /// `true` if the FTS5 virtual table was dropped and recreated on this launch
+    /// because the `is_editorial_note` column was absent (schema migration from
+    /// pre–Session 38 databases).
+    ///
+    /// Immutable after `init`; safe to read from any concurrency context without
+    /// `await`. When `true`, the caller should trigger a full re-index of all
+    /// downloaded volumes so that `is_editorial_note` data is populated correctly.
+    public nonisolated let didRebuildSchema: Bool
+
     // MARK: - Initialisation
 
-    /// Opens (or creates) the SQLite database at `databaseURL` and creates the
-    /// FTS5 virtual table if it does not already exist.
+    /// Opens (or creates) the SQLite database at `databaseURL` and creates (or
+    /// migrates) the FTS5 virtual table.
     ///
     /// The database file is excluded from iCloud Backup immediately after creation
     /// via `isExcludedFromBackupKey`. This exclusion is silent (non-fatal) if the
@@ -71,7 +80,7 @@ public actor FTS5Store {
     public init(databaseURL: URL, schema: FTS5Schema = .frusDocuments) throws {
         self.schema = schema
         self.connection = try FTS5Connection(databaseURL: databaseURL)
-        try connection.createSchema(schema: schema)
+        self.didRebuildSchema = try connection.createSchema(schema: schema)
         FTS5Store.excludeFromBackup(url: databaseURL)
 
         #if DEBUG

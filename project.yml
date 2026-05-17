@@ -54,15 +54,26 @@ targets:
     bundleId: bottsywattsy.FRUS-Explorer
     sources:
       - path: FRUSExplorer
+    # XcodeGen generates Info.plist at info.path and sets INFOPLIST_FILE accordingly.
+    # Using an explicit info section (instead of GENERATE_INFOPLIST_FILE) allows
+    # UIBackgroundModes, which is an array and cannot be set via INFOPLIST_KEY_*.
+    info:
+      path: FRUSExplorer/Info.plist
+      properties:
+        CFBundleDisplayName: "FRUS Explorer"
+        UIApplicationSupportsIndirectInputEvents: YES
+        UILaunchScreen: {}
+        # Required for CloudKit push notifications. Without this entry CloudKit
+        # falls back to BGTaskScheduler background-fetch tasks and logs:
+        # "BUG IN CLIENT OF CLOUDKIT: CloudKit push notifications require the
+        #  'remote-notification' background mode in your info plist."
+        UIBackgroundModes:
+          - remote-notification
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         TARGETED_DEVICE_FAMILY: "1,2"
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: "FRUS Explorer"
-        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
 
