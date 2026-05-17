@@ -39,10 +39,25 @@ extension ModelContainer {
     /// All model types are synced. The container falls back to a local-only store
     /// if CloudKit is unavailable (e.g., user not signed in), logging a warning.
     ///
+    /// When running under the XCTest host (detected via `XCTestConfigurationFilePath`),
+    /// CloudKit is skipped entirely. Without a CloudKit entitlement the background sync
+    /// setup fires a SIGTRAP ~30 s after launch, crashing the test host before the
+    /// runner can establish its XPC connection.
+    ///
     /// ## Calling convention
     /// Call once at app startup from `FRUSExplorerApp`. The resulting container
     /// is injected into the SwiftUI environment via `.modelContainer(_:)`.
     static func makeFRUSContainer() -> ModelContainer {
+        // Skip CloudKit when running under the XCTest host to avoid the 30-second
+        // background-sync trap that fires when entitlements are absent.
+        let isTestHost = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        guard !isTestHost else {
+            #if DEBUG
+            print("[SwiftData] XCTest host detected — using local store (no CloudKit)")
+            #endif
+            return makeLocalContainer()
+        }
+
         // Use a fresh schema for the CloudKit attempt.
         let cloudSchema = Schema(frusModelTypes)
         let cloudConfig = ModelConfiguration(
@@ -58,34 +73,11 @@ extension ModelContainer {
             return container
         } catch {
             // CloudKit unavailable (e.g., simulator without iCloud account, entitlement missing,
-            // or schema not yet fully CloudKit-compatible). Fall back to a local SQLite store
-            // using a fresh Schema so CloudKit validation does not contaminate the local attempt.
+            // or schema not yet fully CloudKit-compatible). Fall back to a local SQLite store.
             #if DEBUG
             print("[SwiftData] CloudKit container failed (\(error)); falling back to local store")
             #endif
-            do {
-                let localSchema = Schema(frusModelTypes)
-                let localConfig = ModelConfiguration(
-                    "FRUSExplorerLocal",
-                    schema: localSchema,
-                    isStoredInMemoryOnly: false,
-                    cloudKitDatabase: .none
-                )
-                let container = try ModelContainer(for: localSchema, configurations: [localConfig])
-                #if DEBUG
-                print("[SwiftData] ModelContainer created with local store")
-                #endif
-                return container
-            } catch {
-                // Schema is fundamentally broken — use in-memory so the app can at least start.
-                // Data won't persist across launches; this path should not occur in production.
-                #if DEBUG
-                print("[SwiftData] Local store also failed (\(error)); using in-memory store")
-                #endif
-                let memSchema = Schema(frusModelTypes)
-                let memConfig = ModelConfiguration(schema: memSchema, isStoredInMemoryOnly: true)
-                return try! ModelContainer(for: memSchema, configurations: [memConfig])
-            }
+            return makeLocalContainer()
         }
     }
 
@@ -98,5 +90,35 @@ extension ModelContainer {
         let schema = Schema(frusModelTypes)
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: [config])
+    }
+
+    /// Creates a persistent local-only (non-CloudKit) container.
+    ///
+    /// Used as the fallback when CloudKit init fails, and as the primary container
+    /// when running under the XCTest host.
+    private static func makeLocalContainer() -> ModelContainer {
+        do {
+            let localSchema = Schema(frusModelTypes)
+            let localConfig = ModelConfiguration(
+                "FRUSExplorerLocal",
+                schema: localSchema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .none
+            )
+            let container = try ModelContainer(for: localSchema, configurations: [localConfig])
+            #if DEBUG
+            print("[SwiftData] ModelContainer created with local store")
+            #endif
+            return container
+        } catch {
+            // Schema is fundamentally broken — use in-memory so the app can at least start.
+            // Data won't persist across launches; this path should not occur in production.
+            #if DEBUG
+            print("[SwiftData] Local store failed (\(error)); using in-memory store")
+            #endif
+            let memSchema = Schema(frusModelTypes)
+            let memConfig = ModelConfiguration(schema: memSchema, isStoredInMemoryOnly: true)
+            return try! ModelContainer(for: memSchema, configurations: [memConfig])
+        }
     }
 }

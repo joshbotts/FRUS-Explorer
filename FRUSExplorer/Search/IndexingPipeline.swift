@@ -8,6 +8,9 @@
 
 import Foundation
 import SQLite3
+#if canImport(UIKit)
+import UIKit
+#endif
 
 private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
@@ -59,12 +62,48 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          during indexing; `PersonMentionRow` private struct added
 ///   1.5 — Session 41: `persons` and `terms` tables added; glossaries persisted during indexing
 ///   1.6 — Session 48: FTS5 schema version tracking added; `needsFTSRebuildReindex` / `markFTSRebuildReindexComplete()`
+///   1.7 — Session 51: iOS batch-size throttle; memory-warning observer; `Task.yield()` between
+///          FTS5 batches; `progressStream: AsyncStream<IndexingProgressUpdate>` for inline capsule
 public actor IndexingPipeline {
 
     // MARK: - Configuration
 
     /// Maximum number of volume XML parsers running concurrently. Default 4.
     public let concurrencyLimit: Int
+
+    // MARK: - Batch-size throttle (Session 51)
+
+    /// Default FTS5 insertion batch size per platform.
+    ///
+    /// On iOS the batch is capped at 50 documents to keep peak RSS below the
+    /// system's memory-pressure threshold. On macOS the entire volume is written
+    /// in a single transaction (effectively unlimited).
+    public static let platformDefaultBatchSize: Int = {
+        #if os(iOS)
+        return 50
+        #else
+        return Int.max
+        #endif
+    }()
+
+    /// Override set by the memory-warning observer or by `setTestBatchSize(_:)`.
+    /// When `nil`, `effectiveBatchSize` falls back to `platformDefaultBatchSize`.
+    private var _dynamicBatchSize: Int?
+
+    /// The batch size currently in effect for FTS5 insertions.
+    var effectiveBatchSize: Int { _dynamicBatchSize ?? Self.platformDefaultBatchSize }
+
+    /// Reduces the effective batch size to 20 when the system reports memory pressure.
+    /// Called on the actor from the notification observer.
+    private func reduceForMemoryPressure() {
+        _dynamicBatchSize = 20
+        #if DEBUG
+        print("[IndexingPipeline] Memory warning — batch size reduced to 20.")
+        #endif
+    }
+
+    /// Test hook: overrides the effective batch size.
+    func setTestBatchSize(_ size: Int) { _dynamicBatchSize = size }
 
     // MARK: - FTS5 Schema Migration (Session 48)
 
@@ -138,13 +177,30 @@ public actor IndexingPipeline {
     nonisolated(unsafe) private var auxDb: OpaquePointer?
     private let databaseURL: URL
 
-    // MARK: - Progress stream
+    // MARK: - Progress stream (volume-level, consumed by ReindexView)
 
     private let progressContinuation: AsyncStream<IndexingProgress>.Continuation
     private let _progress: AsyncStream<IndexingProgress>
 
     /// Yields `IndexingProgress` events during and after indexing operations.
     public nonisolated var progress: AsyncStream<IndexingProgress> { _progress }
+
+    // MARK: - Fine-grained progress stream (per-document, consumed by IndexingCapsule on iOS)
+
+    private let progressUpdateContinuation: AsyncStream<IndexingProgressUpdate>.Continuation
+    private let _progressStream: AsyncStream<IndexingProgressUpdate>
+
+    /// Yields `IndexingProgressUpdate` events at each batch boundary and stage transition.
+    ///
+    /// Consumers receive per-document throughput and stage information suitable for
+    /// an inline progress capsule. The stream is unbuffered (`.bufferingNewest(1)`) so
+    /// a slow consumer never causes memory growth.
+    public nonisolated var progressStream: AsyncStream<IndexingProgressUpdate> { _progressStream }
+
+    // MARK: - Per-volume throughput tracking
+
+    private var volumeIndexingStartTime: Date?
+    private var volumeDocumentsProcessed: Int = 0
 
     // MARK: - Initialisation
 
@@ -176,6 +232,13 @@ public actor IndexingPipeline {
         _progress = stream
         progressContinuation = continuation
 
+        let (updateStream, updateContinuation) = AsyncStream.makeStream(
+            of: IndexingProgressUpdate.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        _progressStream = updateStream
+        progressUpdateContinuation = updateContinuation
+
         var handle: OpaquePointer?
         let rc = sqlite3_open_v2(
             databaseURL.path,
@@ -191,6 +254,20 @@ public actor IndexingPipeline {
         try Self.setupDatabase(h)
         auxDb = h
 
+        // Register for iOS memory-pressure notifications so we can reduce batch size
+        // before the OS terminates the process. The observer fires on the main thread;
+        // we hop to the actor via an unstructured Task so isolation is maintained.
+        #if canImport(UIKit)
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { await self.reduceForMemoryPressure() }
+        }
+        #endif
+
         #if DEBUG
         print("[IndexingPipeline] Initialised. volumesDir=\(volumesDirectory.path)")
         #endif
@@ -198,6 +275,7 @@ public actor IndexingPipeline {
 
     deinit {
         progressContinuation.finish()
+        progressUpdateContinuation.finish()
         if let db = auxDb { sqlite3_close_v2(db) }
     }
 
@@ -213,9 +291,23 @@ public actor IndexingPipeline {
             throw IndexingError.volumeNotFound(volumeId: volumeId)
         }
         emit(.indexing(volumeId: volumeId, current: 0, total: 1))
+        volumeIndexingStartTime = Date()
+        volumeDocumentsProcessed = 0
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: volumeId, stage: .parsing,
+            completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
+        ))
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
         try await storeIndexData(data)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: volumeId, stage: .complete,
+            completedDocuments: data.documents.count,
+            totalDocuments: data.documents.count,
+            docsPerSecond: currentDocsPerSecond(forTotal: data.documents.count)
+        ))
+        volumeIndexingStartTime = nil
+        volumeDocumentsProcessed = 0
 
         #if DEBUG
         print("[IndexingPipeline] Indexed \(volumeId): \(data.documents.count) documents")
@@ -492,7 +584,30 @@ public actor IndexingPipeline {
 
     private func storeIndexData(_ data: VolumeIndexData) async throws {
         guard !data.documents.isEmpty else { return }
-        try await fts5Store.insertBatch(data.documents)
+
+        // --- FTS5 insertion, chunked for iOS memory throttle ---
+        let batchSize = effectiveBatchSize
+        let totalDocs = data.documents.count
+        var processed = 0
+
+        for chunkStart in stride(from: 0, to: totalDocs, by: batchSize) {
+            let chunkEnd = min(chunkStart + batchSize, totalDocs)
+            let chunk = Array(data.documents[chunkStart..<chunkEnd])
+            try await fts5Store.insertBatch(chunk)
+            processed += chunk.count
+            volumeDocumentsProcessed = processed
+            emitUpdate(IndexingProgressUpdate(
+                volumeId: data.volumeId,
+                stage: .buildingFTS5,
+                completedDocuments: processed,
+                totalDocuments: totalDocs,
+                docsPerSecond: currentDocsPerSecond(forTotal: processed)
+            ))
+            // Yield between batches so iOS can reclaim memory between transactions.
+            await Task.yield()
+        }
+
+        // --- Auxiliary tables (no chunking needed) ---
         try auxInsertCrossReferences(data.crossReferences)
         try auxInsertPageRanges(data.pageRanges)
         try auxInsertDocumentDates(data.documentDates)
@@ -506,6 +621,18 @@ public actor IndexingPipeline {
 
     private func emit(_ state: IndexingProgress.State) {
         progressContinuation.yield(IndexingProgress(state: state))
+    }
+
+    private func emitUpdate(_ update: IndexingProgressUpdate) {
+        progressUpdateContinuation.yield(update)
+    }
+
+    /// Rolling throughput estimate: documents processed ÷ elapsed seconds.
+    private func currentDocsPerSecond(forTotal total: Int) -> Double {
+        guard let start = volumeIndexingStartTime, total > 0 else { return 0 }
+        let elapsed = Date().timeIntervalSince(start)
+        guard elapsed > 0 else { return 0 }
+        return Double(total) / elapsed
     }
 
     // MARK: - Static Text Extraction Helpers

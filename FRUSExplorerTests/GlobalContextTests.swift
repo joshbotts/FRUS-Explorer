@@ -234,6 +234,8 @@ struct GlobalContextTests {
 // MARK: - ResearchNote test convenience init
 
 private extension ResearchNote {
+    /// Convenience initialiser for tests — omits `bodyText` and `selectedSummaryIds`.
+    /// Calls the designated initialiser explicitly to avoid infinite self-recursion.
     convenience init(
         documentId: String,
         volumeId: String,
@@ -243,17 +245,13 @@ private extension ResearchNote {
         self.init(
             documentId: documentId,
             volumeId: volumeId,
+            bodyText: "",
             projectIds: projectIds,
-            userTagIds: userTagIds
+            userTagIds: userTagIds,
+            selectedSummaryIds: []
         )
     }
 }
 
-// MARK: - Collection test convenience init
-
-private extension Collection {
-    convenience init(name: String, projectIds: [UUID] = []) {
-        self.init(name: name)
-        self.projectIds = projectIds
-    }
-}
+// Note: Collection.init(name:note:projectIds:) already accepts projectIds directly;
+// no convenience init needed — tests call the production initialiser.

@@ -51,6 +51,7 @@ import Sparkle
 ///   2.1 — Session 48: background re-index wired for FTS5 schema rebuild and date reindex migrations
 ///   2.2 — Session 49: deferred onboarding scope enqueue after DownloadManager boot
 ///   2.3 — Session 50: CommandGroup(replacing: .appInfo) → About FRUS Explorer sheet
+///   2.4 — Session 51: connectIndexingProgress wired on iOS; Task.yield() before auto-indexVolume
 @main
 struct FRUSExplorerApp: App {
 
@@ -153,6 +154,9 @@ struct FRUSExplorerApp: App {
                subjectTagStore: appState.subjectTagStore
            ) {
             appState.indexingPipeline = pipeline
+            #if os(iOS)
+            appState.connectIndexingProgress(pipeline: pipeline)
+            #endif
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
             appState.personMentionStore = try? PersonMentionStore(databaseURL: dbURL)
             appState.searchService = SearchService(
@@ -224,6 +228,9 @@ struct FRUSExplorerApp: App {
                 // Errors are suppressed with try? — a failed index attempt is recoverable
                 // via Settings > Reindex.
                 { @Sendable volumeId in
+                    // Yield before indexing so the download completion write can
+                    // fully flush before we begin a potentially long CPU/DB task.
+                    await Task.yield()
                     try? await pipeline.indexVolume(volumeId)
                     #if DEBUG
                     print("[FRUSExplorer] Auto-indexed \(volumeId) after download.")

@@ -9,6 +9,9 @@
 import Testing
 import Foundation
 import SQLite3
+#if canImport(UIKit)
+import UIKit
+#endif
 @testable import FRUSExplorer
 
 // MARK: - Test Helpers
@@ -90,7 +93,8 @@ struct IndexVolumeTests {
                 limit: 10, offset: 0
             )
             #expect(!results.isEmpty)
-            #expect(results.contains(where: { $0.documentId == "d1" && $0.volumeId == "frus1969-76v01" }))
+            let hasDoc = results.contains { $0.documentId == "d1" && $0.volumeId == "frus1969-76v01" }
+            #expect(hasDoc, "Search results must include the indexed document d1")
         }
     }
 
@@ -1352,6 +1356,195 @@ struct FTS5RebuildTests {
             let store = try FTS5Store(databaseURL: dbURL)
             #expect(store.didRebuildSchema == false,
                     "Fresh install should create the correct schema without a rebuild")
+        }
+    }
+}
+
+// MARK: - IndexingThrottleTests
+
+@Suite("IndexingPipeline — iOS batch-size throttle")
+struct IndexingThrottleTests {
+
+    @Test("platformDefaultBatchSize is 50 on iOS and Int.max on macOS")
+    func batchSizeiOS50MacUnlimited() {
+        #if os(iOS)
+        #expect(IndexingPipeline.platformDefaultBatchSize == 50,
+                "iOS batch size must be capped at 50 to limit peak RSS")
+        #else
+        #expect(IndexingPipeline.platformDefaultBatchSize == Int.max,
+                "macOS should use a single unlimited transaction")
+        #endif
+    }
+
+    #if os(iOS)
+    @Test("memory warning notification reduces effective batch size to 20")
+    func batchSizeIsReducedUnderMemoryPressure() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // Confirm default before warning.
+            let before = await pipeline.effectiveBatchSize
+            let platformDefault = IndexingPipeline.platformDefaultBatchSize
+            #expect(before == platformDefault,
+                    "Effective batch size should start at platform default")
+
+            // Simulate a memory warning on the main thread (exactly as UIKit fires it).
+            await MainActor.run {
+                NotificationCenter.default.post(
+                    name: UIApplication.didReceiveMemoryWarningNotification,
+                    object: nil
+                )
+            }
+            // Give the actor Task a chance to run.
+            try await Task.sleep(for: .milliseconds(50))
+
+            let after = await pipeline.effectiveBatchSize
+            #expect(after == 20, "Memory warning must reduce batch size to 20")
+        }
+    }
+    #endif
+
+    @Test("setTestBatchSize overrides batch size; all documents still indexed correctly")
+    func taskYieldCalledBetweenBatches() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let (pipeline, store) = try await makeTestPipeline(dir: dir, volumesDir: volDir)
+
+            // Write a volume with 5 documents, then force batch size = 1 so we get
+            // 5 separate insertBatch calls, each followed by Task.yield().
+            let documents = (1...5).map { n in
+                (id: "doc-\(n)", xml: "<head>Doc \(n)</head><p>Content \(n) searchable</p>")
+            }
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: documents
+            )
+            await pipeline.setTestBatchSize(1)
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // Verify all 5 documents were indexed despite 1-doc batches.
+            let query = FTS5Query(keywords: ["searchable"], booleanMode: .and)
+            let results = try await store.search(query: query, limit: 20, offset: 0)
+            #expect(results.count == 5,
+                    "All 5 documents must be indexed even with batch size 1")
+        }
+    }
+}
+
+// MARK: - IndexingProgressStreamTests
+
+/// Helper: collect all `IndexingProgressUpdate` values up to (and including)
+/// the first `.complete` update. Runs in an unstructured Task and uses an
+/// `@unchecked Sendable` box so Swift 6 strict-concurrency is satisfied without
+/// actor overhead in tests.
+private final class UpdateBox: @unchecked Sendable {
+    var updates: [IndexingProgressUpdate] = []
+}
+
+@Suite("IndexingPipeline — progressStream")
+struct IndexingProgressStreamTests {
+
+    @Test("progressStream emits a buildingFTS5 update during indexing")
+    func progressStreamEmitsOnStageTransition() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, volumesDir: volDir)
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [(id: "doc-1", xml: "<head>Test</head><p>body</p>")]
+            )
+
+            let box = UpdateBox()
+            let collectTask = Task {
+                for await update in await pipeline.progressStream {
+                    box.updates.append(update)
+                    if update.stage == .complete { break }
+                }
+            }
+
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await Task.sleep(for: .milliseconds(50))
+            collectTask.cancel()
+
+            let hasFTS5 = box.updates.contains { $0.stage == .buildingFTS5 }
+            #expect(hasFTS5,
+                    "progressStream must emit at least one .buildingFTS5 update during indexVolume")
+        }
+    }
+
+    @Test("progressStream emits a complete update when indexing finishes")
+    func progressStreamEmitsCompleteOnFinish() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, volumesDir: volDir)
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [(id: "doc-1", xml: "<head>Test</head><p>body</p>")]
+            )
+
+            let box = UpdateBox()
+            let collectTask = Task {
+                for await update in await pipeline.progressStream {
+                    box.updates.append(update)
+                    if update.stage == .complete { break }
+                }
+            }
+
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await Task.sleep(for: .milliseconds(50))
+            collectTask.cancel()
+
+            let finalStage = box.updates.last?.stage
+            #expect(finalStage == .complete,
+                    "The last emitted update must have stage .complete")
+        }
+    }
+
+    @Test("progressStream docsPerSecond is non-negative and completedDocuments > 0 after indexing")
+    func progressStreamDocsPerSecIsRollingAverage() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, volumesDir: volDir)
+
+            let docs = (1...3).map { n in
+                (id: "doc-\(n)", xml: "<head>Doc \(n)</head><p>Body \(n)</p>")
+            }
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: docs
+            )
+
+            let box = UpdateBox()
+            let collectTask = Task {
+                for await update in await pipeline.progressStream {
+                    box.updates.append(update)
+                    if update.stage == .complete { break }
+                }
+            }
+
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await Task.sleep(for: .milliseconds(50))
+            collectTask.cancel()
+
+            if let u = box.updates.first(where: { $0.stage == .buildingFTS5 }) {
+                let dps = u.docsPerSecond
+                let completed = u.completedDocuments
+                let total = u.totalDocuments
+                #expect(dps >= 0, "docsPerSecond must be non-negative")
+                #expect(completed > 0, "completedDocuments must be > 0 during buildingFTS5 stage")
+                #expect(total == 3, "totalDocuments must equal volume document count")
+            } else {
+                Issue.record("No .buildingFTS5 update was emitted")
+            }
         }
     }
 }

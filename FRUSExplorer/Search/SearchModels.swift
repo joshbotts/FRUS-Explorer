@@ -220,6 +220,64 @@ public struct SearchResult: Sendable, Identifiable {
     }
 }
 
+// MARK: - IndexingStage
+
+/// The current phase of a single-volume indexing pass.
+///
+/// Emitted as part of `IndexingProgressUpdate` on the `IndexingPipeline.progressStream`.
+///
+/// Version history:
+///   1.0 — Session 51: initial implementation
+public enum IndexingStage: String, Sendable {
+    /// XML is being parsed and document text extracted.
+    case parsing
+    /// Date fields are being extracted from document headers.
+    case extractingDates
+    /// Person mentions are being resolved and stored.
+    case indexingPersons
+    /// Documents are being written to the FTS5 full-text index.
+    case buildingFTS5
+    /// All stages are complete for this volume.
+    case complete
+}
+
+// MARK: - IndexingProgressUpdate
+
+/// A fine-grained per-document progress event emitted by `IndexingPipeline.progressStream`.
+///
+/// Unlike `IndexingProgress` (which tracks volume-level state for `ReindexView`), this
+/// type carries per-document detail and throughput metrics for the inline `IndexingCapsule`
+/// shown in `VolumeRowLabel` on iOS.
+///
+/// Version history:
+///   1.0 — Session 51: initial implementation
+public struct IndexingProgressUpdate: Sendable {
+    /// The volume currently being indexed.
+    public let volumeId: String
+    /// The current pipeline stage.
+    public let stage: IndexingStage
+    /// Number of documents fully processed so far in this volume.
+    public let completedDocuments: Int
+    /// Total documents in the volume (0 if not yet known).
+    public let totalDocuments: Int
+    /// Rolling throughput estimate in documents per second (≥ 0).
+    public let docsPerSecond: Double
+
+    public init(
+        volumeId: String,
+        stage: IndexingStage,
+        completedDocuments: Int,
+        totalDocuments: Int,
+        docsPerSecond: Double
+    ) {
+        self.volumeId = volumeId
+        self.stage = stage
+        self.completedDocuments = completedDocuments
+        self.totalDocuments = totalDocuments
+        self.docsPerSecond = docsPerSecond
+    }
+}
+
 // MARK: - IndexingProgress
 
 /// A progress event emitted by `IndexingPipeline.progress`.

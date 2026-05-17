@@ -238,9 +238,22 @@ private struct TagPickerSheet: View {
 
 // MARK: - VolumeRowLabel
 
+/// Row content for a single volume in `SubseriesView`.
+///
+/// On iOS, displays an `IndexingCapsule` below the metadata line while this
+/// volume is being indexed, so the user gets real-time throughput feedback
+/// without navigating away from the browser.
+///
+/// Version history:
+///   1.0 — Session 11: initial implementation
+///   1.1 — Session 51: iOS IndexingCapsule wired via AppState.currentIndexingProgress
 struct VolumeRowLabel: View {
     let volume: VolumeManifestEntry
     let isDownloaded: Bool
+
+    #if os(iOS)
+    @Environment(AppState.self) private var appState
+    #endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -277,10 +290,74 @@ struct VolumeRowLabel: View {
                 }
             }
             .font(.caption)
+            #if os(iOS)
+            if let progress = appState.currentIndexingProgress,
+               progress.volumeId == volume.volumeId {
+                IndexingCapsule(progress: progress)
+            }
+            #endif
         }
         .padding(.vertical, 3)
     }
 }
+
+// MARK: - IndexingCapsule
+
+#if os(iOS)
+/// An inline pill showing live FTS5 indexing progress for a volume.
+///
+/// Displayed in `VolumeRowLabel` while `AppState.currentIndexingProgress`
+/// references the matching volume. Disappears automatically when indexing
+/// completes (the parent condition becomes `false`).
+///
+/// Version history:
+///   1.0 — Session 51: initial implementation
+private struct IndexingCapsule: View {
+    let progress: IndexingProgressUpdate
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ProgressView(value: progressFraction)
+                .progressViewStyle(.linear)
+                .frame(maxWidth: 80)
+                .tint(.accentColor)
+            Text(stageLabel)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            if progress.docsPerSecond > 0 {
+                Text(String(format: "%.0f doc/s", progress.docsPerSecond))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            String(localized: "browser.indexingCapsule.a11y",
+                   defaultValue: "Indexing: \(stageLabel)")
+        )
+    }
+
+    private var progressFraction: Double {
+        guard progress.totalDocuments > 0 else { return 0 }
+        return Double(progress.completedDocuments) / Double(progress.totalDocuments)
+    }
+
+    private var stageLabel: String {
+        switch progress.stage {
+        case .parsing:           return String(localized: "indexing.stage.parsing",
+                                               defaultValue: "Parsing…")
+        case .extractingDates:   return String(localized: "indexing.stage.dates",
+                                               defaultValue: "Extracting dates…")
+        case .indexingPersons:   return String(localized: "indexing.stage.persons",
+                                               defaultValue: "Indexing persons…")
+        case .buildingFTS5:      return String(localized: "indexing.stage.fts5",
+                                               defaultValue: "Building index…")
+        case .complete:          return String(localized: "indexing.stage.complete",
+                                               defaultValue: "Complete")
+        }
+    }
+}
+#endif
 
 // MARK: - TagPickerRow
 
