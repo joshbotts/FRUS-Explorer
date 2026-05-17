@@ -135,11 +135,23 @@ public struct FTS5Query: Sendable {
             parts.append(keywordExpr)
         }
 
-        // Phrase search (always full-table, ignores column prefix)
+        // Phrase search (always full-table, ignores column prefix).
+        // Each word is Porter-stemmed — the same transform applied at index time via
+        // FTS5Store.stemForIndex — so the quoted FTS5 phrase matches pre-stemmed tokens.
         if let phrase, !phrase.isEmpty {
             let sanitized = sanitizePhrase(phrase)
             if !sanitized.isEmpty {
-                parts.append("\"\(sanitized)\"")
+                let stemmedPhrase = sanitized
+                    .split(whereSeparator: \.isWhitespace)
+                    .map { word -> String in
+                        let lower = String(word).lowercased()
+                        let alpha = lower.filter { $0.isLetter }
+                        return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
+                    }
+                    .joined(separator: " ")
+                if !stemmedPhrase.isEmpty {
+                    parts.append("\"\(stemmedPhrase)\"")
+                }
             }
         }
 

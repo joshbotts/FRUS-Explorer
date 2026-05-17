@@ -297,11 +297,13 @@ public actor FTS5Store {
         text.split(whereSeparator: \.isWhitespace)
             .map { token -> String in
                 let lower = String(token).lowercased()
-                // Strip non-ASCII-alphabetic characters (trailing periods, hyphens, etc.)
-                // to get the word's alphabetic core for Porter stemming. Tokens with no
-                // alphabetic content (e.g. "1969-76") are passed through as-is so numeric
-                // references remain searchable via FTS5's own tokenizer.
-                let alpha = lower.filter { ($0.asciiValue ?? 0) >= 97 && ($0.asciiValue ?? 0) <= 122 }
+                // Strip non-letter characters (trailing periods, hyphens, digits, etc.)
+                // to get the word's alphabetic core for Porter stemming. Unicode letters
+                // (é, ñ, ü, …) are preserved so accented words index consistently with
+                // how the same words appear in queries. Tokens with no letter content
+                // (e.g. "1969-76") are passed through as-is so numeric references remain
+                // searchable via FTS5's own tokenizer.
+                let alpha = lower.filter { $0.isLetter }
                 guard !alpha.isEmpty else { return lower }
                 return PorterStemmer.stem(alpha)
             }

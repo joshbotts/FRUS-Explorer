@@ -817,7 +817,11 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             currentName = nil
             textBuffer = ""
         }
-        if elementDepth < personsSectionDepth {
+        // Use <= because elementDepth still equals personsSectionDepth at the
+        // start of didEndElement (before the defer runs). This clears the section
+        // flag when the persons <div> itself closes, preventing sibling elements
+        // (e.g. <div type="terms">) from being captured as person entries.
+        if elementDepth <= personsSectionDepth {
             inPersonsSection = false
             personsSectionDepth = -1
         }
@@ -896,7 +900,7 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             currentTerm = nil
             textBuffer = ""
         }
-        if elementDepth < termsSectionDepth {
+        if elementDepth <= termsSectionDepth {
             inTermsSection = false
             termsSectionDepth = -1
         }

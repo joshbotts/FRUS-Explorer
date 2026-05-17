@@ -142,8 +142,12 @@ struct DistributionTests {
         let content = try String(contentsOf: Self.projectYMLURL, encoding: .utf8)
         // Find DirectDistribution block and check CODE_SIGN_STYLE: Manual
         let lines = content.components(separatedBy: .newlines)
-        guard let ddLine = lines.firstIndex(where: { $0.contains("DirectDistribution:") }) else {
-            Issue.record("DirectDistribution config not found in project.yml")
+        // Look for the per-target settings block: `DirectDistribution:` with nothing
+        // after the colon (not the top-level `DirectDistribution: release` configs entry).
+        guard let ddLine = lines.firstIndex(where: {
+            $0.trimmingCharacters(in: .whitespaces) == "DirectDistribution:"
+        }) else {
+            Issue.record("DirectDistribution per-target config block not found in project.yml")
             return
         }
         let window = lines[ddLine..<min(ddLine + 20, lines.count)]
