@@ -64,12 +64,28 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///   1.6 — Session 48: FTS5 schema version tracking added; `needsFTSRebuildReindex` / `markFTSRebuildReindexComplete()`
 ///   1.7 — Session 51: iOS batch-size throttle; memory-warning observer; `Task.yield()` between
 ///          FTS5 batches; `progressStream: AsyncStream<IndexingProgressUpdate>` for inline capsule
+///   1.8 — Session 54: `effectiveConcurrencyLimit` caps `indexAllVolumes` to 1 on iOS;
+///          `storeIndexData` co-batches FTS5 and `document_cache` writes to reduce peak RSS
 public actor IndexingPipeline {
 
     // MARK: - Configuration
 
     /// Maximum number of volume XML parsers running concurrently. Default 4.
     public let concurrencyLimit: Int
+
+    /// Effective concurrency cap used by `indexAllVolumes`.
+    ///
+    /// On iOS, parallel XML parsing of multiple large volumes simultaneously can
+    /// exhaust the process memory budget even when each individual volume is processed
+    /// in small FTS5 write batches. Capping to 1 on iOS ensures only one volume's
+    /// parsed data is in memory at a time during bulk re-index operations.
+    private var effectiveConcurrencyLimit: Int {
+        #if os(iOS)
+        return 1
+        #else
+        return concurrencyLimit
+        #endif
+    }
 
     // MARK: - Batch-size throttle (Session 51)
 
@@ -104,6 +120,9 @@ public actor IndexingPipeline {
 
     /// Test hook: overrides the effective batch size.
     func setTestBatchSize(_ size: Int) { _dynamicBatchSize = size }
+
+    /// Test hook: exposes `effectiveConcurrencyLimit` for platform-specific assertions.
+    func testEffectiveConcurrencyLimit() -> Int { effectiveConcurrencyLimit }
 
     // MARK: - FTS5 Schema Migration (Session 48)
 
@@ -335,7 +354,10 @@ public actor IndexingPipeline {
             var iterator = files.makeIterator()
 
             // Seed the initial window.
-            for _ in 0..<min(concurrencyLimit, total) {
+            // On iOS effectiveConcurrencyLimit == 1, keeping only one volume's parsed
+            // data in memory at a time; on macOS the caller-supplied concurrencyLimit
+            // is used for throughput.
+            for _ in 0..<min(effectiveConcurrencyLimit, total) {
                 if let file = iterator.next() {
                     group.addTask { [self] in
                         try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
@@ -585,16 +607,24 @@ public actor IndexingPipeline {
     private func storeIndexData(_ data: VolumeIndexData) async throws {
         guard !data.documents.isEmpty else { return }
 
-        // --- FTS5 insertion, chunked for iOS memory throttle ---
+        // --- FTS5 + document_cache insertion, co-batched for iOS memory throttle ---
+        //
+        // Both arrays are written in the same chunk so that each batch's allocations
+        // can be freed by ARC before the next batch begins. On iOS, batchSize == 50
+        // (or 20 under memory pressure); on macOS it is effectively unlimited.
         let batchSize = effectiveBatchSize
         let totalDocs = data.documents.count
         var processed = 0
 
         for chunkStart in stride(from: 0, to: totalDocs, by: batchSize) {
             let chunkEnd = min(chunkStart + batchSize, totalDocs)
-            let chunk = Array(data.documents[chunkStart..<chunkEnd])
-            try await fts5Store.insertBatch(chunk)
-            processed += chunk.count
+            let fts5Chunk  = Array(data.documents[chunkStart..<chunkEnd])
+            let cacheChunk = Array(data.documentCache[chunkStart..<chunkEnd])
+
+            try await fts5Store.insertBatch(fts5Chunk)
+            try auxInsertDocumentCache(cacheChunk)
+
+            processed += fts5Chunk.count
             volumeDocumentsProcessed = processed
             emitUpdate(IndexingProgressUpdate(
                 volumeId: data.volumeId,
@@ -603,15 +633,14 @@ public actor IndexingPipeline {
                 totalDocuments: totalDocs,
                 docsPerSecond: currentDocsPerSecond(forTotal: processed)
             ))
-            // Yield between batches so iOS can reclaim memory between transactions.
+            // Yield between batches so the OS can reclaim per-batch allocations.
             await Task.yield()
         }
 
-        // --- Auxiliary tables (no chunking needed) ---
+        // --- Remaining auxiliary tables (small; no chunking needed) ---
         try auxInsertCrossReferences(data.crossReferences)
         try auxInsertPageRanges(data.pageRanges)
         try auxInsertDocumentDates(data.documentDates)
-        try auxInsertDocumentCache(data.documentCache)
         try auxInsertPersonMentions(data.personMentions)
         try auxInsertPersons(data.persons)
         try auxInsertTerms(data.terms)

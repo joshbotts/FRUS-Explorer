@@ -72,11 +72,62 @@ struct VolumeIDParserTests {
         #expect(result?.subseries == "1977-80")
     }
 
-    @Test("Special topic suffix: frus1894China.xml")
+    @Test("Special topic suffix: frus1894China.xml — single-word topic groups under year")
     func specialTopicSuffix() {
         let result = VolumeIDParser.parse(filename: "frus1894China.xml")
         #expect(result?.volumeId == "frus1894China")
-        #expect(result?.subseries == "1894China")
+        #expect(result?.subseries == "1894")
+    }
+
+    // MARK: - Session 54 Edge Cases
+
+    @Test("Bare part number (no volume marker): frus1863p2.xml → 1863")
+    func barePartNumber() {
+        let result = VolumeIDParser.parse(filename: "frus1863p2.xml")
+        #expect(result?.volumeId == "frus1863p2")
+        #expect(result?.subseries == "1863")
+    }
+
+    @Test("Bare part 1 groups with part 2: frus1863p1.xml → 1863")
+    func barePartNumberPart1() {
+        let result = VolumeIDParser.parse(filename: "frus1863p1.xml")
+        #expect(result?.volumeId == "frus1863p1")
+        #expect(result?.subseries == "1863")
+    }
+
+    @Test("Vietnam-extras volume: frus1969-76ve01.xml → 1969-76")
+    func vietnamExtrasVolume() {
+        let result = VolumeIDParser.parse(filename: "frus1969-76ve01.xml")
+        #expect(result?.volumeId == "frus1969-76ve01")
+        #expect(result?.subseries == "1969-76")
+    }
+
+    @Test("Vietnam-extras + part: frus1969-76ve05p1.xml → 1969-76")
+    func vietnamExtrasPart() {
+        let result = VolumeIDParser.parse(filename: "frus1969-76ve05p1.xml")
+        #expect(result?.volumeId == "frus1969-76ve05p1")
+        #expect(result?.subseries == "1969-76")
+    }
+
+    @Test("Multi-word conference suffix: frus1943CairoTehran.xml → 1943")
+    func conferenceMultiWordSuffix() {
+        let result = VolumeIDParser.parse(filename: "frus1943CairoTehran.xml")
+        #expect(result?.volumeId == "frus1943CairoTehran")
+        #expect(result?.subseries == "1943")
+    }
+
+    @Test("Single-word conference suffix: frus1943China.xml → 1943")
+    func conferenceSingleWordSuffix() {
+        let result = VolumeIDParser.parse(filename: "frus1943China.xml")
+        #expect(result?.volumeId == "frus1943China")
+        #expect(result?.subseries == "1943")
+    }
+
+    @Test("Sub-series letter not stripped: frus1952-54Gv01.xml → 1952-54G (no regression)")
+    func subSeriesLetterNotStripped() {
+        let result = VolumeIDParser.parse(filename: "frus1952-54Gv01.xml")
+        #expect(result?.volumeId == "frus1952-54Gv01")
+        #expect(result?.subseries == "1952-54G")
     }
 
     @Test("Recent volume: frus2011-12v02.xml")

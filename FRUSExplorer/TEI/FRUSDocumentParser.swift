@@ -26,11 +26,11 @@ import Foundation
 ///
 /// ## Whitespace Normalization
 /// Rules applied during parsing (see `TEIParserDelegate.normalizedText`):
-/// - Leading and trailing whitespace is trimmed from all text content.
-/// - Multiple consecutive whitespace characters are collapsed to a single space.
-/// - Text nodes containing only whitespace after normalization are discarded.
-/// - These rules apply uniformly to both block and inline contexts in Session 06.
-///   Session 07 may refine this for `<lb>` and `<formula>` elements.
+/// - Whitespace-only text nodes are discarded (suppress XML indentation noise).
+/// - Leading/trailing whitespace in a non-empty text node is collapsed to a single
+///   space, preserving the word-boundary space around inline styled elements
+///   (e.g. `"Secretary "` before `<hi rend="italic">Kissinger</hi>`).
+/// - Internal whitespace runs are collapsed to a single space.
 ///
 /// ## Unknown Element Handling
 /// Any TEI element not in the known-element table produces a `.unknown` AST node.
@@ -514,27 +514,35 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     }
 
     /// Normalizes whitespace in character data:
-    /// - Trims leading and trailing whitespace (spaces, tabs, newlines).
-    /// - Collapses internal runs of whitespace to a single space.
-    /// - Returns an empty string for whitespace-only input (caller discards these).
+    /// - Whitespace-only nodes are discarded (returns `""`); this suppresses the
+    ///   inter-element newlines and indentation that appear throughout FRUS XML.
+    /// - Leading and trailing whitespace is collapsed to a single space when present;
+    ///   this preserves the single space that separates inline styled runs from
+    ///   adjacent text (e.g. the space around `<hi rend="italic">word</hi>`).
+    /// - Internal runs of whitespace are collapsed to a single space.
     ///
-    /// This rule applies uniformly across block and inline contexts in Session 06.
-    /// The effect is that inter-element newlines and indentation in the XML source
-    /// do not produce spurious blank text nodes in the AST.
+    /// Version history:
+    ///   1.0 — Session 06: trim-and-collapse (uniform block+inline rule)
+    ///   1.1 — Session 54: preserve single boundary spaces for inline contexts
     private func normalizedText(_ raw: String) -> String {
+        // Whitespace-only nodes are still discarded.
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "" }
-        // Collapse internal whitespace runs.
-        var result = ""
+        // Restore a single space at each boundary where the original had whitespace.
+        // This keeps the space between e.g. "Secretary " and "<hi>Kissinger</hi>".
+        let lead  = raw.first?.isWhitespace == true ? " " : ""
+        let trail = raw.last?.isWhitespace  == true ? " " : ""
+        // Collapse internal whitespace runs in the trimmed interior.
+        var collapsed = ""
         var prevWasSpace = false
         for ch in trimmed {
             if ch.isWhitespace {
-                if !prevWasSpace { result.append(" "); prevWasSpace = true }
+                if !prevWasSpace { collapsed.append(" "); prevWasSpace = true }
             } else {
-                result.append(ch); prevWasSpace = false
+                collapsed.append(ch); prevWasSpace = false
             }
         }
-        return result
+        return lead + collapsed + trail
     }
 
     // MARK: - Transparent Elements

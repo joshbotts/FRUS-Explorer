@@ -324,8 +324,13 @@ struct TEIParserTests {
 
     // MARK: - WhitespaceTest
 
-    @Test("Whitespace: leading/trailing whitespace in text nodes is trimmed")
-    func whitespaceLeadingTrailingTrimmed() async throws {
+    @Test("Whitespace: XML indentation noise does not produce multi-space or newline artefacts")
+    func whitespaceIndentationNoise() async throws {
+        // A paragraph whose text content is surrounded by XML indentation whitespace
+        // ("\n  Hello world.\n  ") should not produce newline characters or multiple
+        // consecutive spaces in the AST. Single boundary spaces are acceptable
+        // (they are visually invisible in SwiftUI Text) but newlines and multi-space
+        // runs must be collapsed.
         let url = try makeTEIFixture(body: """
         <div type="document" xml:id="d1">
           <p>
@@ -337,9 +342,9 @@ struct TEIParserTests {
 
         let docs = try await FRUSDocumentParser().parse(volumeURL: url)
         let text = extractAllText(from: docs[0].nodes)
-        #expect(!text.hasPrefix(" "), "Text must not start with whitespace after normalization")
-        #expect(!text.hasSuffix(" "), "Text must not end with whitespace after normalization")
-        #expect(!text.hasPrefix("\n"))
+        #expect(text.contains("Hello world."), "Core text content must be present")
+        #expect(!text.contains("\n"), "Newlines must be collapsed; found: \"\(text)\"")
+        #expect(!text.contains("  "), "Multiple consecutive spaces must be collapsed; found: \"\(text)\"")
     }
 
     @Test("Whitespace: multiple spaces collapsed to single space")
@@ -1043,5 +1048,115 @@ struct FootnoteNumberTests {
         }
         let markerLabel = findMarker(model.bodyNodes)
         #expect(markerLabel == "7", "footnoteMarker displayLabel must match footnoteBody displayLabel")
+    }
+
+    // MARK: - Session 54: Inline Whitespace Preservation
+
+    @Test("normalizedText preserves leading space")
+    func normalizedTextLeadingSpace() async throws {
+        // The private normalizedText is exercised via the full parse pipeline.
+        // A paragraph containing " word" (leading space) should produce a plainText
+        // node that starts with a space — verifiable by checking the rendered text
+        // includes the space between adjacent nodes.
+        //
+        // We test this end-to-end: a paragraph with italic text adjacent to plain text
+        // must not lose the space between them.
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>T</title></titleStmt></fileDesc></teiHeader>
+          <text><body>
+            <div type="document" xml:id="d1">
+              <p>Secretary <hi rend="italic">Kissinger</hi> said hello.</p>
+            </div>
+          </body></text>
+        </TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ws-test-\(UUID().uuidString).xml")
+        try xml.write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        let docs = try await parser.parse(volumeURL: url)
+        guard let doc = docs.first else { Issue.record("No document parsed"); return }
+
+        // Extract all text content from the first paragraph node.
+        func paragraphText(in nodes: [FRUSASTNode]) -> String? {
+            for node in nodes {
+                if case .paragraph(let children) = node {
+                    return children.map(\.plainText).joined()
+                }
+                if case .document(_, _, let ch) = node, let t = paragraphText(in: ch) { return t }
+            }
+            return nil
+        }
+        let text = paragraphText(in: doc.nodes) ?? ""
+        // The space between "Secretary" and "Kissinger" and between "Kissinger"
+        // and "said" must be preserved — no word-cramming.
+        #expect(text.contains("Secretary Kissinger"), "Space before italic run lost: \"\(text)\"")
+        #expect(text.contains("Kissinger said"), "Space after italic run lost: \"\(text)\"")
+    }
+
+    @Test("normalizedText discards whitespace-only nodes")
+    func normalizedTextDiscardsWhitespaceOnly() async throws {
+        // Inter-element indentation (newlines + spaces between tags) must not become
+        // spurious plainText(" ") or plainText("\n") nodes in the AST.
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>T</title></titleStmt></fileDesc></teiHeader>
+          <text><body>
+            <div type="document" xml:id="d1">
+              <p>Word.</p>
+            </div>
+          </body></text>
+        </TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ws-test2-\(UUID().uuidString).xml")
+        try xml.write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        let docs = try await parser.parse(volumeURL: url)
+        guard let doc = docs.first else { Issue.record("No document parsed"); return }
+
+        // The body text for the single-paragraph document must be just "Word." with no
+        // leading or trailing whitespace injected from XML indentation.
+        let body = IndexingPipeline.extractBodyText(from: doc.nodes)
+        #expect(body.trimmingCharacters(in: .whitespacesAndNewlines) == body,
+                "Body text has spurious leading/trailing whitespace: \"\(body)\"")
+    }
+
+    // MARK: - Session 54: Cross-Ref AttributedString Rendering
+
+    @Test("Paragraph with crossRefLink renders AttributedString with frusexplorer:// link")
+    @MainActor
+    func crossRefLinkAttributedStringContainsURL() throws {
+        // Build a minimal render model containing a crossRefLink node.
+        let nodes: [FRUSRenderNode] = [
+            .plainText("See "),
+            .crossRefLink(target: "#d185", volumeId: "frus1989-92v31",
+                          children: [.plainText("Document 185")]),
+            .plainText(".")
+        ]
+        let renderer = FRUSDocumentRenderer(
+            model: FRUSDocumentRenderModel(documentId: "d186", bodyNodes: [], footnotes: [])
+        )
+
+        // Access the AttributedString via the internal helper.
+        // We test the public observable effect: containsCrossRef must return true
+        // and the attributed string must carry a .link attribute on the cross-ref run.
+        let attrStr = renderer.testInlineAttributedString(nodes)
+        var foundLink = false
+        for run in attrStr.runs {
+            if let url = run.link, url.scheme == "frusexplorer" {
+                foundLink = true
+                #expect(url.absoluteString.contains("d185"), "URL should encode target doc ID")
+                #expect(url.absoluteString.contains("frus1989-92v31"), "URL should encode volume ID")
+            }
+        }
+        #expect(foundLink, "No frusexplorer:// link found in AttributedString runs")
     }
 }

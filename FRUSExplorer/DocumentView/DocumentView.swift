@@ -35,6 +35,7 @@ import SwiftData
 ///   1.3 — Session 27: Q5 curated badge icon; Q1 confidence-aware a11y label; tag hint
 ///   1.4 — Session 40: personMentionStore wired; PersonDetailSheet gains mention count + Find all mentions
 ///   1.5 — Session 44: handleCrossRefTap wired cross-platform via pendingBrowseDocument
+///   1.6 — Session 54: OpenURLAction handles frusexplorer://doc/… links from AttributedString cross-refs
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -215,6 +216,21 @@ struct DocumentView: View {
                 SourceExplorerView(rawSourceNote: note)
             }
         }
+        // Handle frusexplorer://doc/{volumeId}/{documentId} links emitted by
+        // FRUSDocumentRenderer for <ref> cross-reference nodes. The volumeId
+        // component is "_" when the renderer had no explicit target volume,
+        // meaning the target lives in the same volume as the current document.
+        .environment(\.openURL, OpenURLAction { url in
+            guard url.scheme == "frusexplorer",
+                  url.host == "doc" else { return .systemAction }
+            let parts = url.pathComponents.filter { $0 != "/" }
+            guard parts.count == 2 else { return .systemAction }
+            let volComponent = parts[0]
+            let docId        = parts[1]
+            let targetVol    = volComponent == "_" ? nil : volComponent
+            handleCrossRefTap(target: docId, targetVolumeId: targetVol)
+            return .handled
+        })
     }
 
     private var downloadedVolumeIds: Set<String> {

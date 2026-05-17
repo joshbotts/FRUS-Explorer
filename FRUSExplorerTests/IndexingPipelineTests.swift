@@ -1548,3 +1548,64 @@ struct IndexingProgressStreamTests {
         }
     }
 }
+
+// MARK: - Session 54: Memory & Concurrency Tests
+
+@Suite("IndexingPipeline — Session 54 memory fixes")
+struct IndexingMemoryTests {
+
+    /// Verifies that `storeIndexData` writes FTS5 + document_cache in co-batched chunks.
+    ///
+    /// With batchSize = 2 and 5 documents, we expect 3 write batches (2 + 2 + 1).
+    /// The test confirms all 5 documents end up indexed and searchable — the
+    /// co-batching must not drop or duplicate any rows.
+    @Test("Co-batched writes store all documents correctly")
+    func batchWriteStoresAllDocuments() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            // Reduce batch size so the co-batching path is exercised with a small fixture.
+            await pipeline.setTestBatchSize(2)
+
+            let volDir = dir.appendingPathComponent("volumes")
+            // Use unique single-word search terms to avoid FTS5 tokenizer ambiguity.
+            let uniqueWords = ["quorum", "lacuna", "veritas", "nexus", "ephemeral"]
+            let docs = uniqueWords.enumerated().map { (n, word) in
+                (id: "d\(n + 1)", xml: "<head>Document \(n + 1)</head><p>Unique term \(word) here.</p>")
+            }
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: docs
+            )
+
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // All 5 documents must be searchable after co-batched writes.
+            for (n, word) in uniqueWords.enumerated() {
+                let results = try await store.search(
+                    query: FTS5Query(keywords: [word]),
+                    limit: 5, offset: 0
+                )
+                #expect(!results.isEmpty, "Document d\(n + 1) (\(word)) not found after co-batched write")
+                if let first = results.first {
+                    #expect(first.documentId == "d\(n + 1)")
+                }
+            }
+        }
+    }
+
+    /// Verifies that `effectiveConcurrencyLimit` is 1 on iOS and equals
+    /// `concurrencyLimit` on macOS, keeping the iOS memory cap in place.
+    @Test("effectiveConcurrencyLimit is 1 on iOS, concurrencyLimit on macOS")
+    func effectiveConcurrencyLimitPlatform() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let limit = await pipeline.testEffectiveConcurrencyLimit()
+            #if os(iOS)
+            #expect(limit == 1, "iOS must cap concurrency to 1 to bound peak RSS")
+            #else
+            #expect(limit == 2, "macOS should use the caller-supplied concurrencyLimit (2 in tests)")
+            #endif
+        }
+    }
+}

@@ -33,6 +33,8 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 06: initial implementation (functional, not final UI)
 ///   1.x — Session 42: footnote bodies and markers use `displayLabel`
+///   1.1 — Session 54: `inlineAttributedString` path for paragraphs/footnotes that
+///          contain `crossRefLink` nodes; links encoded as `frusexplorer://doc/…` URLs
 public struct FRUSDocumentRenderer: View {
 
     public let model: FRUSDocumentRenderModel
@@ -117,8 +119,14 @@ public struct FRUSDocumentRenderer: View {
 
         case .paragraph(let children):
             AnyView(
-                inlineText(children)
-                    .font(.body)
+                Group {
+                    if containsCrossRef(children) {
+                        Text(inlineAttributedString(children))
+                    } else {
+                        inlineText(children)
+                    }
+                }
+                .font(.body)
             )
 
         case .footnoteBody(_, let type, _, _, let displayLabel, let children):
@@ -127,7 +135,14 @@ public struct FRUSDocumentRenderer: View {
                     Text("\(displayLabel).")
                         .font(.footnote)
                         .foregroundStyle(footnoteColor(type))
-                    inlineText(children).font(.footnote)
+                    Group {
+                        if containsCrossRef(children) {
+                            Text(inlineAttributedString(children))
+                        } else {
+                            inlineText(children)
+                        }
+                    }
+                    .font(.footnote)
                 }
             )
 
@@ -338,6 +353,131 @@ public struct FRUSDocumentRenderer: View {
         case .source: return .secondary
         case .editorial: return .accentColor
         default: return .primary
+        }
+    }
+
+    // MARK: - Test hooks
+
+    /// Exposes `inlineAttributedString` for unit testing via `@testable import`.
+    func testInlineAttributedString(_ nodes: [FRUSRenderNode]) -> AttributedString {
+        inlineAttributedString(nodes)
+    }
+
+    // MARK: - Cross-ref AttributedString path
+
+    /// Returns `true` when any node in the tree is a `crossRefLink`.
+    ///
+    /// Used to decide whether to take the `AttributedString` rendering path for a
+    /// paragraph. Only paragraphs that actually contain cross-refs incur the extra
+    /// allocation; all other paragraphs continue to use the fast `Text` path.
+    private func containsCrossRef(_ nodes: [FRUSRenderNode]) -> Bool {
+        nodes.contains { node in
+            switch node {
+            case .crossRefLink: return true
+            case .boldText(let c), .italicText(let c), .smallCapsText(let c),
+                 .underlineText(let c), .termText(let c),
+                 .persNameLink(_, let c, _), .glossLink(_, let c, _),
+                 .suppliedText(let c), .sicText(let c), .corrText(let c),
+                 .paragraph(let c), .unknown(_, let c):
+                return containsCrossRef(c)
+            default: return false
+            }
+        }
+    }
+
+    /// Builds an `AttributedString` from inline render nodes.
+    ///
+    /// Cross-ref nodes embed a `frusexplorer://doc/{volumeId}/{documentId}` link
+    /// attribute so that `Text(attributedString)` makes them tappable via SwiftUI's
+    /// standard `openURL` environment action.
+    ///
+    /// All other styling (bold, italic, color) is applied through
+    /// `AttributedString` container attributes so the result can be concatenated
+    /// with `+` without losing attributes.
+    private func inlineAttributedString(_ nodes: [FRUSRenderNode]) -> AttributedString {
+        nodes.reduce(AttributedString()) { acc, node in
+            acc + inlineAttributedStringNode(node)
+        }
+    }
+
+    private func inlineAttributedStringNode(_ node: FRUSRenderNode) -> AttributedString {
+        switch node {
+        case .plainText(let s):
+            return AttributedString(s)
+
+        case .boldText(let c):
+            var a = inlineAttributedString(c)
+            a.font = .body.bold()
+            return a
+
+        case .italicText(let c):
+            var a = inlineAttributedString(c)
+            a.font = .body.italic()
+            return a
+
+        case .smallCapsText(let c):
+            return inlineAttributedString(c)
+
+        case .underlineText(let c):
+            var a = inlineAttributedString(c)
+            a.underlineStyle = .single
+            return a
+
+        case .termText(let c):
+            var a = inlineAttributedString(c)
+            a.font = .body.italic()
+            return a
+
+        case .persNameLink(_, let c, _):
+            var a = inlineAttributedString(c)
+            a.foregroundColor = .accentColor
+            return a
+
+        case .glossLink(_, let c, _):
+            var a = inlineAttributedString(c)
+            a.foregroundColor = .accentColor
+            a.underlineStyle = .single
+            return a
+
+        case .crossRefLink(let target, let volumeId, let c):
+            var a = inlineAttributedString(c)
+            a.foregroundColor = .accentColor
+            // Encode as frusexplorer://doc/{volumeId}/{documentId}
+            // volumeId uses "_" as sentinel when absent (resolved at tap time).
+            let docId = target.hasPrefix("#") ? String(target.dropFirst()) : target
+            let vol   = volumeId ?? "_"
+            if let url = URL(string: "frusexplorer://doc/\(vol)/\(docId)") {
+                a.link = url
+            }
+            return a
+
+        case .suppliedText(let c):
+            return AttributedString("[") + inlineAttributedString(c) + AttributedString("]")
+
+        case .sicText(let c):
+            var a = inlineAttributedString(c)
+            a.strikethroughStyle = .single
+            return a
+
+        case .corrText(let c):
+            return inlineAttributedString(c)
+
+        case .footnoteMarker(_, let label):
+            var a = AttributedString(label)
+            a.font = .system(size: 9)
+            // Superscript is not directly expressible in AttributedString on SwiftUI;
+            // fall back to plain small text. The Text path handles baseline offset.
+            return a
+
+        case .formulaText(let s):
+            var a = AttributedString(s)
+            a.font = .body.italic()
+            return a
+
+        default:
+            // Graceful degradation: extract plain text for any unhandled node type.
+            let children = extractInlineContent(node)
+            return inlineAttributedString(children)
         }
     }
 }
