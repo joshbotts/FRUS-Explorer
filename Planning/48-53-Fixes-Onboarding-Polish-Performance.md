@@ -274,15 +274,29 @@ auto-indexes.
 
 ### Indexing Progress Visualization
 
-**Decision point**: Choose one of the following options before implementing. Options
-presented to the user but answer deferred — to be confirmed at session start.
+**Selected option: D — Inline capsule in BrowserView volume rows.**
 
-| Option | Description |
-|--------|-------------|
-| A | Per-row progress bar in volume list (inline in Manage Volumes) |
-| B | Persistent thin banner above tab bar; taps to expand queue sheet |
-| C | Live cards in Activity tab with docs/sec rate; persists as history |
-| D | Inline capsule in BrowserView volume rows (minimal new surface) |
+While a volume is being indexed its row in the browser shows a small progress capsule
+that mirrors the existing download indicator style. No new UI surface; fits the existing
+download-to-index visual flow. Disappears when indexing completes.
+
+**Option D implementation**:
+
+`VolumeRowView` (or the equivalent row view in `BrowserView`) gains an
+`IndexingCapsule` subview rendered below the volume title when
+`appState.currentIndexingProgress?.volumeId == volume.volumeId`:
+
+```
+ frus1969-76v10
+ Foreign Relations… Vietnam, 1973
+ ╰─ [⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬡⬡⬡⬡⬡⬡] Indexing persons… (62%)
+```
+
+`IndexingCapsule`:
+- Matches the visual style of the existing download progress indicator
+- Label: `"Indexing \(stage.localizedLabel)… (\(percent)%)"` using `String(localized:)`
+- Hidden (`opacity(0)`) when `currentIndexingProgress` is `nil` or for a different volume
+- Animated with `.animation(.linear, value: progress.completedDocuments)`
 
 **Implementation regardless of option**:
 
