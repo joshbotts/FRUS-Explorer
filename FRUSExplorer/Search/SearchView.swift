@@ -110,6 +110,9 @@ struct SearchView: View {
                 DocumentView(entry: entry)
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 680, minHeight: 520)
+        #endif
         .task {
             if let params = initialParameters {
                 vm.applyParameters(params)

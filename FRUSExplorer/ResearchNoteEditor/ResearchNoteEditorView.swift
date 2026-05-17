@@ -73,6 +73,9 @@ struct ResearchNoteEditorView: View {
             #endif
             .toolbar { editorToolbar }
         }
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 440)
+        #endif
         .onAppear { vm.load(context: modelContext) }
     }
 

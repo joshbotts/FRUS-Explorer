@@ -458,6 +458,9 @@ private struct CitationSheetView: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 380, minHeight: 220)
+        #endif
     }
 }
 
@@ -574,7 +577,11 @@ private struct SummarizationPromptPickerSheet: View {
                 }
             }
         }
+        #if os(iOS)
         .presentationDetents([.medium, .large])
+        #else
+        .frame(minWidth: 400, minHeight: 340)
+        #endif
     }
 }
 
@@ -862,6 +869,9 @@ private struct PersonDetailSheet: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 400, minHeight: 300)
+        #endif
     }
 }
 
@@ -900,5 +910,8 @@ private struct GlossDetailSheet: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 380, minHeight: 220)
+        #endif
     }
 }

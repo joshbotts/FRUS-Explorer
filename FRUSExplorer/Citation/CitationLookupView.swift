@@ -85,6 +85,9 @@ struct CitationLookupView: View {
                 DocumentView(entry: entry)
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 560, minHeight: 440)
+        #endif
     }
 
     // MARK: - Sections

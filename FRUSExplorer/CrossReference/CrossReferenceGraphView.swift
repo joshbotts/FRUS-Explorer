@@ -108,6 +108,9 @@ struct CrossReferenceGraphView: View {
                 DocumentView(entry: entry)
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 640, minHeight: 520)
+        #endif
         .task { await vm.loadGraph() }
     }
 

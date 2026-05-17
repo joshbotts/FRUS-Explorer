@@ -28,10 +28,14 @@ import SwiftData
 /// Version history:
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 35: macOS compatibility — guard `.insetGrouped` list style
+///   1.2 — Session 55: add Done toolbar button on macOS (previously no close control)
 struct CollectionListView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    #if !os(iOS)
+    @Environment(\.dismiss) private var dismiss
+    #endif
 
     @Query(sort: \Collection.lastModified, order: .reverse) private var allCollections: [Collection]
 
@@ -52,6 +56,14 @@ struct CollectionListView: View {
             .navigationTitle(String(localized: "collections.nav.title",
                                     defaultValue: "Collections"))
             .toolbar {
+                #if !os(iOS)
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "collections.toolbar.done",
+                                  defaultValue: "Done")) {
+                        dismiss()
+                    }
+                }
+                #endif
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         isCreating = true

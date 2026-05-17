@@ -982,6 +982,9 @@ private struct MergeTagSheet: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 380, minHeight: 260)
+        #endif
     }
 }
 
@@ -1429,20 +1432,20 @@ enum SettingsKeys {
 /// Presented by the system `Settings` scene declared in `FRUSExplorerApp`.
 /// The system opens this window via ⌘, and the App menu > Settings item.
 ///
-/// Eight settings panels are consolidated into four logical tabs:
+/// Four logical tabs each use a sidebar + detail layout (`NavigationSplitView`)
+/// rather than the iOS-style NavigationStack drill-down used before Session 55.
 ///
-/// | Tab | Panels |
+/// | Tab | Sidebar items |
 /// |---|---|
-/// | Volumes | Volume Management, Storage, Sideload, Reindex |
+/// | Volumes | Download Manager, Volume Management, Storage, Sideload, Reindex |
 /// | Research | User Tags, Summarization Prompts |
-/// | Integrations | NARA Catalog API Key |
-/// | Advanced | Reset App, About |
-///
-/// Each tab hosts a `NavigationStack` + `Form` with `NavigationLink` rows so
-/// sub-panels retain the same drill-down structure as the iOS `SettingsView`.
+/// | Integrations | (single view — no sidebar needed) |
+/// | Advanced | Reset App |
 ///
 /// Version history:
 ///   1.0 — Session 46: initial implementation
+///   1.1 — Session 55: replace NavigationStack+NavigationLink with
+///          NavigationSplitView sidebar+detail in each pane; make window resizable
 struct MacSettingsView: View {
 
     var body: some View {
@@ -1460,10 +1463,9 @@ struct MacSettingsView: View {
             Tab(String(localized: "settings.mac.tab.integrations",
                        defaultValue: "Integrations"),
                 systemImage: "network") {
-                NavigationStack {
-                    NARAKeyView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+                NARAKeyView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding()
             }
             Tab(String(localized: "settings.mac.tab.advanced",
                        defaultValue: "Advanced"),
@@ -1471,88 +1473,126 @@ struct MacSettingsView: View {
                 AdvancedSettingsPane()
             }
         }
-        .frame(width: 560, height: 480)
+        // minWidth accommodates the widest sidebar+detail split; resizable so the
+        // user can widen panes like Download Manager that have substantial content.
+        .frame(minWidth: 700, minHeight: 480)
     }
 }
 
-/// Volumes pane: Download Manager, Volume Management, Storage, Sideload, Reindex.
+// MARK: - Volumes pane
+
+/// Volumes pane: sidebar lists the five sub-panels; detail shows the selected one.
 private struct VolumesSettingsPane: View {
+
+    enum Item: String, CaseIterable, Hashable {
+        case downloadManager, volumeManagement, storage, sideload, reindex
+
+        var title: String {
+            switch self {
+            case .downloadManager:  String(localized: "settings.row.downloadManager",
+                                           defaultValue: "Download Manager")
+            case .volumeManagement: String(localized: "settings.row.volumeManagement",
+                                           defaultValue: "Volume Management")
+            case .storage:          String(localized: "settings.row.storage",
+                                           defaultValue: "Storage")
+            case .sideload:         String(localized: "settings.row.sideload",
+                                           defaultValue: "Sideload Volume")
+            case .reindex:          String(localized: "settings.row.reindex",
+                                           defaultValue: "Reindex")
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .downloadManager:  "arrow.down.circle"
+            case .volumeManagement: "folder"
+            case .storage:          "internaldrive"
+            case .sideload:         "tray.and.arrow.down"
+            case .reindex:          "arrow.triangle.2.circlepath"
+            }
+        }
+    }
+
+    @State private var selection: Item? = .downloadManager
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    NavigationLink(String(localized: "settings.row.downloadManager",
-                                         defaultValue: "Download Manager")) {
-                        DownloadManagerSettingsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.volumeManagement",
-                                         defaultValue: "Volume Management")) {
-                        VolumeManagementView()
-                    }
-                    NavigationLink(String(localized: "settings.row.storage",
-                                         defaultValue: "Storage")) {
-                        StorageManagementView()
-                    }
-                    NavigationLink(String(localized: "settings.row.sideload",
-                                         defaultValue: "Sideload Volume")) {
-                        SideloadView()
-                    }
-                    NavigationLink(String(localized: "settings.row.reindex",
-                                         defaultValue: "Reindex")) {
-                        ReindexView()
-                    }
+        NavigationSplitView {
+            List(Item.allCases, id: \.self, selection: $selection) { item in
+                Label(item.title, systemImage: item.systemImage)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+        } detail: {
+            Group {
+                switch selection {
+                case .downloadManager, nil: DownloadManagerSettingsView()
+                case .volumeManagement:     VolumeManagementView()
+                case .storage:              StorageManagementView()
+                case .sideload:             SideloadView()
+                case .reindex:              ReindexView()
                 }
             }
-            .navigationTitle(String(localized: "settings.mac.tab.volumes",
-                                    defaultValue: "Volumes"))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
 
-/// Research pane: User Tags, Summarization Prompts.
+// MARK: - Research pane
+
+/// Research pane: sidebar lists User Tags and Summarization Prompts.
 private struct ResearchSettingsPane: View {
+
+    enum Item: String, CaseIterable, Hashable {
+        case userTags, summarization
+
+        var title: String {
+            switch self {
+            case .userTags:      String(localized: "settings.row.tags",
+                                        defaultValue: "User Tags")
+            case .summarization: String(localized: "settings.row.summarization",
+                                        defaultValue: "Summarization Prompts")
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .userTags:      "tag"
+            case .summarization: "sparkles"
+            }
+        }
+    }
+
+    @State private var selection: Item? = .userTags
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    NavigationLink(String(localized: "settings.row.tags",
-                                         defaultValue: "User Tags")) {
-                        UserTagsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.summarization",
-                                         defaultValue: "Summarization Prompts")) {
-                        SummarizationPromptsSettingsView()
-                    }
+        NavigationSplitView {
+            List(Item.allCases, id: \.self, selection: $selection) { item in
+                Label(item.title, systemImage: item.systemImage)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+        } detail: {
+            Group {
+                switch selection {
+                case .userTags, nil: UserTagsView()
+                case .summarization: SummarizationPromptsSettingsView()
                 }
             }
-            .navigationTitle(String(localized: "settings.mac.tab.research",
-                                    defaultValue: "Research"))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
 
-/// Advanced pane: Reset App.
+// MARK: - Advanced pane
+
+/// Advanced pane: shows `ResetView` directly — no sidebar needed for a single item.
 ///
-/// The "About FRUS Explorer" item was removed in Session 50; About is now
-/// accessible via the App menu (`CommandGroup(replacing: .appInfo)`).
+/// "About FRUS Explorer" was removed in Session 50; About is now accessible via
+/// the App menu (`CommandGroup(replacing: .appInfo)`).
 private struct AdvancedSettingsPane: View {
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    NavigationLink(String(localized: "settings.row.reset",
-                                         defaultValue: "Reset App")) {
-                        ResetView()
-                    }
-                    .foregroundStyle(.red)
-                }
-            }
-            .navigationTitle(String(localized: "settings.mac.tab.advanced",
-                                    defaultValue: "Advanced"))
+        ResetView()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
     }
 }
 

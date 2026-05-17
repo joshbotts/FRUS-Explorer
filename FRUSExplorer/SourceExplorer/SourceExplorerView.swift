@@ -86,6 +86,9 @@ struct SourceExplorerView: View {
                 await load()
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 480, minHeight: 400)
+        #endif
     }
 
     // MARK: - Raw Note Section

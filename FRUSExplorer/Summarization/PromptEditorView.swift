@@ -79,6 +79,9 @@ struct PromptEditorView: View {
                 TemplatePickerSheet(onSelect: applyTemplate)
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 560, minHeight: 460)
+        #endif
         .onAppear {
             if let p = promptToEdit {
                 name = p.name
@@ -341,7 +344,11 @@ struct TemplatePickerSheet: View {
                 }
             }
         }
+        #if os(iOS)
         .presentationDetents([.medium, .large])
+        #else
+        .frame(minWidth: 420, minHeight: 340)
+        #endif
     }
 }
 

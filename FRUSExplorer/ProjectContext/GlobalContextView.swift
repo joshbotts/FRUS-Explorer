@@ -65,6 +65,9 @@ struct GlobalContextView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            #if os(macOS)
+            .frame(minWidth: 520, minHeight: 520)
+            #endif
             .toolbar {
                 #if !os(iOS)
                 ToolbarItem(placement: .confirmationAction) {

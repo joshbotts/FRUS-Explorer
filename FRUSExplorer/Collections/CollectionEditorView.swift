@@ -145,6 +145,9 @@ struct CollectionEditorView: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 460)
+        #endif
     }
 
     // MARK: - Name Section

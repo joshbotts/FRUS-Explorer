@@ -100,6 +100,9 @@ struct ProjectEditorView: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 300)
+        #endif
     }
 
     // MARK: - Save

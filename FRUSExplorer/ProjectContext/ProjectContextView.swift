@@ -60,6 +60,9 @@ struct ProjectContextView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            #if os(macOS)
+            .frame(minWidth: 420, minHeight: 480)
+            #endif
             .toolbar {
                 #if !os(iOS)
                 ToolbarItem(placement: .confirmationAction) {
