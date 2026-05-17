@@ -32,6 +32,9 @@ import SwiftData
 ///   1.0 — Session 12: initial implementation
 ///   1.1 — Session 20: add summarize toolbar button, prompt picker sheet, wasChunked indicator
 ///   1.2 — Session 23: add source explorer toolbar button and sheet
+///   1.3 — Session 56: collapse 6–7 toolbar icons into 2 direct buttons + 1 overflow Menu
+///          (HIG: ≤ 4 toolbar items on iPhone); Source Explorer, Cross-References,
+///          Summarize, and Citation sub-actions move inside the overflow "More" menu
 ///   1.3 — Session 27: Q5 curated badge icon; Q1 confidence-aware a11y label; tag hint
 ///   1.4 — Session 40: personMentionStore wired; PersonDetailSheet gains mention count + Find all mentions
 ///   1.5 — Session 44: handleCrossRefTap wired cross-platform via pendingBrowseDocument
@@ -51,7 +54,8 @@ struct DocumentView: View {
             if let vm {
                 loadedView(vm: vm)
             } else {
-                ProgressView()
+                ProgressView(String(localized: "document.initializing",
+                                    defaultValue: "Opening document…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
@@ -301,10 +305,20 @@ struct DocumentView: View {
 
     // MARK: - Toolbar
 
+    /// Document toolbar.
+    ///
+    /// ## Layout (HIG: ≤ 4 toolbar items on iPhone)
+    /// 1. **Add Note** — direct button; most frequently used secondary action
+    /// 2. **Tag Document** — direct button; fast single-tap action
+    /// 3. **More ···** — overflow `Menu` containing all remaining actions:
+    ///    Citation sub-menu, Cross-References, Source Explorer (conditional),
+    ///    and Summarize (conditional). This keeps the toolbar uncluttered on
+    ///    small screens while every action remains reachable in one extra tap.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            // Add research note
+
+            // 1. Add research note (direct — high frequency)
             Button {
                 vm.showNoteEditor = true
             } label: {
@@ -317,7 +331,7 @@ struct DocumentView: View {
                 String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
             )
 
-            // Add user tag
+            // 2. Tag document (direct — fast single-tap)
             Button {
                 // Wired in Session 14
             } label: {
@@ -330,7 +344,17 @@ struct DocumentView: View {
                 String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
             )
 
-            // Citation
+            // 3. More — overflow menu containing all secondary actions
+            moreMenu(vm: vm)
+        }
+    }
+
+    /// Overflow "More" menu: Citation, Cross-References, Source Explorer (conditional),
+    /// Summarize (conditional). Keeps the toolbar at ≤ 3 items on all screen sizes.
+    @ViewBuilder
+    private func moreMenu(vm: DocumentViewModel) -> some View {
+        Menu {
+            // Citation sub-menu
             Menu {
                 Button {
                     vm.showCitationSheet = true
@@ -341,6 +365,7 @@ struct DocumentView: View {
                     )
                 }
                 .disabled(vm.formattedCitation == nil)
+
                 Button {
                     if let citation = vm.formattedCitation {
                         copyToPasteboard(citation)
@@ -358,26 +383,6 @@ struct DocumentView: View {
                     systemImage: "quote.opening"
                 )
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.citation.a11y", defaultValue: "Citation options")
-            )
-
-            // Source Explorer — only shown when a source note is present
-            if vm.sourceNote != nil {
-                Button {
-                    vm.showSourceExplorer = true
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.sourceExplorer",
-                               defaultValue: "Source Explorer"),
-                        systemImage: "archivebox"
-                    )
-                }
-                .accessibilityLabel(
-                    String(localized: "document.toolbar.sourceExplorer.a11y",
-                           defaultValue: "Open NARA Source Explorer")
-                )
-            }
 
             // Cross-references
             Button {
@@ -388,33 +393,52 @@ struct DocumentView: View {
                     systemImage: "arrow.triangle.branch"
                 )
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.crossRef.a11y", defaultValue: "Explore cross-references")
-            )
 
-            // Summarize — only shown when Apple Intelligence is available
+            // Source Explorer — only when a source note is present
+            if vm.sourceNote != nil {
+                Button {
+                    vm.showSourceExplorer = true
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.sourceExplorer",
+                               defaultValue: "Source Explorer"),
+                        systemImage: "archivebox"
+                    )
+                }
+            }
+
+            // Summarize — only when Apple Intelligence is available
             if appState.summarizationService != nil
                 && AppleIntelligenceProvider.shared.isAvailable {
+                Divider()
                 Button {
                     vm.showSummarizeSheet = true
                 } label: {
                     if vm.isSummarizing {
-                        ProgressView()
+                        Label(
+                            String(localized: "document.toolbar.summarizing",
+                                   defaultValue: "Summarizing…"),
+                            systemImage: "sparkles"
+                        )
                     } else {
                         Label(
                             String(localized: "document.toolbar.summarize",
-                                   defaultValue: "Summarize"),
+                                   defaultValue: "Summarize with AI"),
                             systemImage: "sparkles"
                         )
                     }
                 }
                 .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
-                .accessibilityLabel(
-                    String(localized: "document.toolbar.summarize.a11y",
-                           defaultValue: "Generate AI summary")
-                )
             }
+        } label: {
+            Label(
+                String(localized: "document.toolbar.more", defaultValue: "More"),
+                systemImage: "ellipsis.circle"
+            )
         }
+        .accessibilityLabel(
+            String(localized: "document.toolbar.more.a11y", defaultValue: "More document actions")
+        )
     }
 
     // MARK: - Clipboard

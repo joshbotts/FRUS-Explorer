@@ -32,6 +32,10 @@ import SwiftData
 ///   1.0 — Session 43: initial iOS tab shell with Browse + 4 placeholder tabs
 ///   1.1 — Session 44: all four placeholder tabs wired with real content
 ///   1.2 — Session 45: activity + settings badges; lastActivityTabVisit stamping
+///   1.3 — Session 56: Settings badge changed from raw count to boolean "·" indicator
+///          (HIG: badges must represent actionable user-driven information, not status
+///          counts; a simple dot communicates "attention needed" without implying
+///          the number is an actionable queue)
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -88,7 +92,12 @@ struct MainTabView: View {
             ) {
                 SettingsView()
             }
-            .badge(appState.unindexedVolumeCount)
+            // Boolean dot badge: shows when any downloaded volumes are awaiting indexing.
+            // A raw count badge (the previous behaviour) is misleading — the number is a
+            // background status metric, not an actionable queue the user must clear item
+            // by item. A dot communicates "something needs attention" without implying
+            // a specific count.
+            .badge(appState.unindexedVolumeCount > 0 ? "·" : "")
         }
     }
 }

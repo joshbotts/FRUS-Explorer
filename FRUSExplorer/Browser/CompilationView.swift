@@ -30,6 +30,8 @@ import SwiftUI
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 34: front matter direct-read support for prose-only structural sections
 ///   1.2 — Session 38: `DocumentRowLabel` shows italic header and editorial note badge
+///   1.3 — Session 56: "Index Now" demoted to `.bordered` (HIG: only one `.borderedProminent`
+///          per view; "Read [Title]" is the true primary action)
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -246,7 +248,10 @@ struct CompilationView: View {
                             systemImage: "arrow.triangle.2.circlepath"
                         )
                     }
-                    .buttonStyle(.borderedProminent)
+                    // .bordered (not .borderedProminent) — HIG requires only one primary-
+                    // action button per view. "Read [Title]" is the true primary action;
+                    // "Index Now" is a prerequisite maintenance action.
+                    .buttonStyle(.bordered)
                     if let err = vm.indexingError {
                         Text(err.localizedDescription)
                             .font(.caption)

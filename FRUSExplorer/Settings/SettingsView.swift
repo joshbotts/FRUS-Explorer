@@ -111,8 +111,10 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle(String(localized: "settings.title", defaultValue: "Settings"))
+            // HIG: top-level destination screens use .large title to match system weight.
+            // Child panes (VolumeManagementView, StorageManagementView, etc.) keep .inline.
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             #endif
             .toolbar {
                 #if !os(iOS)

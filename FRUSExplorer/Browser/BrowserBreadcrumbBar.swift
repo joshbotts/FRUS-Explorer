@@ -27,6 +27,8 @@ import SwiftUI
 ///   1.0 — Session 32: initial implementation
 ///   1.1 — Session 50: replaced horizontal ScrollView with BreadcrumbFlowLayout so long
 ///          paths wrap to multiple lines instead of scrolling off-screen
+///   1.2 — Session 56: expand interactive crumb tap targets to 44 pt minimum vertical
+///          height (HIG requirement for touch targets on iOS)
 struct BrowserBreadcrumbBar: View {
 
     let path: [BrowserViewModel.BrowserLevel]
@@ -77,13 +79,21 @@ struct BrowserBreadcrumbBar: View {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.primary)
+                // Non-interactive current crumb: match the padding of interactive crumbs
+                // so the bar height stays consistent as the user navigates.
+                .padding(.vertical, 12)
         } else {
             Button(action: action) {
                 Text(label)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    // Vertical padding expands the rendered hit area to ≥ 44 pt
+                    // (caption text ≈ 12 pt + 12 pt top + 12 pt bottom = 36 pt visual,
+                    //  but .contentShape expands the tap zone to the full padded frame).
+                    .padding(.vertical, 12)
             }
             .buttonStyle(.plain)
+            .contentShape(Rectangle())
         }
     }
 }
