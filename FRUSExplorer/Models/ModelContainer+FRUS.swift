@@ -39,21 +39,26 @@ extension ModelContainer {
     /// All model types are synced. The container falls back to a local-only store
     /// if CloudKit is unavailable (e.g., user not signed in), logging a warning.
     ///
-    /// When running under the XCTest host (detected via `XCTestConfigurationFilePath`),
-    /// CloudKit is skipped entirely. Without a CloudKit entitlement the background sync
-    /// setup fires a SIGTRAP ~30 s after launch, crashing the test host before the
-    /// runner can establish its XPC connection.
+    /// When running under the XCTest host (detected via `XCTestConfigurationFilePath`)
+    /// or the UI test app process (detected via `FRUS_UI_TEST_MODE = "1"`), CloudKit
+    /// is skipped entirely. Without a CloudKit entitlement the background sync setup
+    /// fires a SIGTRAP ~30 s after launch, crashing the host before tests can run.
     ///
     /// ## Calling convention
     /// Call once at app startup from `FRUSExplorerApp`. The resulting container
     /// is injected into the SwiftUI environment via `.modelContainer(_:)`.
     static func makeFRUSContainer() -> ModelContainer {
-        // Skip CloudKit when running under the XCTest host to avoid the 30-second
-        // background-sync trap that fires when entitlements are absent.
+        // Skip CloudKit when running under the unit-test host (XCTestConfigurationFilePath)
+        // or the UI-test app process (FRUS_UI_TEST_MODE injected via launchEnvironment).
+        // Without this, CloudKit's background sync fires a SIGTRAP ~30 s after launch
+        // when the entitlement is absent, crashing the host before tests can run.
         let isTestHost = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
         guard !isTestHost else {
             #if DEBUG
-            print("[SwiftData] XCTest host detected — using local store (no CloudKit)")
+            let reason = ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
+                ? "UI test mode" : "XCTest host"
+            print("[SwiftData] \(reason) detected — using local store (no CloudKit)")
             #endif
             return makeLocalContainer()
         }

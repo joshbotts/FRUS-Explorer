@@ -14,6 +14,20 @@ import XCTest
 /// starting in Session 10 (Onboarding) and later sessions as views are built.
 /// This placeholder ensures the UI test target compiles and the scheme is
 /// configured correctly.
+///
+/// ## Launch configuration
+/// Every test injects two values before launch:
+///   - `FRUS_UI_TEST_MODE = "1"` — tells `ModelContainer.makeFRUSContainer()` to use
+///     a local SQLite store instead of CloudKit. Without this, CloudKit's background
+///     sync setup fires a SIGTRAP ~30 s after launch when the entitlement is absent,
+///     crashing the app under test before most tests can run.
+///   - `-hasCompletedOnboarding 1` — populates `NSArgumentDomain` so
+///     `UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")` returns `true`,
+///     bypassing `OnboardingView` and landing directly in `MainTabView`.
+///
+/// Version history:
+///   1.0 — Session 01: initial placeholder
+///   1.1 — Session 52: inject FRUS_UI_TEST_MODE + hasCompletedOnboarding bypass
 final class FRUSExplorerUITests: XCTestCase {
 
     var app: XCUIApplication!
@@ -21,6 +35,10 @@ final class FRUSExplorerUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        // Bypass CloudKit (avoids the 30-second SIGTRAP in unsigned UI test builds).
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        // Bypass OnboardingView so tests start in the main tab UI.
+        app.launchArguments = ["-hasCompletedOnboarding", "1"]
         app.launch()
     }
 
