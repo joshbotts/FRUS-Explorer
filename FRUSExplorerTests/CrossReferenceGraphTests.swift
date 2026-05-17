@@ -17,7 +17,7 @@ private func makeTestGraph(
     inboundCount: Int,
     outboundCount: Int,
     inboundVolumeIds: [String] = ["vol-src"],
-    targetVolumeId: String = "vol-tgt",
+    outboundVolumeIds: [String] = ["vol-tgt"],
     centralVolumeId: String = "vol1",
     centralDocumentId: String = "d0"
 ) -> CrossReferenceGraph {
@@ -47,16 +47,18 @@ private func makeTestGraph(
         )
     }
 
+    // Distribute outbound edges across the provided volume IDs
     for i in 0..<outboundCount {
+        let vol = outboundVolumeIds[i % outboundVolumeIds.count]
         let doc = "d-out-\(i)"
-        let key = "\(targetVolumeId)/\(doc)"
+        let key = "\(vol)/\(doc)"
         outboundEdges.append(CrossReferenceEdge(
             sourceDocumentId: centralDocumentId, sourceVolumeId: centralVolumeId,
-            targetDocumentId: doc, targetVolumeId: targetVolumeId,
+            targetDocumentId: doc, targetVolumeId: vol,
             context: nil, referenceType: .footnote
         ))
         meta[key] = CrossReferenceNodeMetadata(
-            documentId: doc, volumeId: targetVolumeId,
+            documentId: doc, volumeId: vol,
             documentNumber: "\(i + 1)", header: "Target Document \(i + 1)", dateline: nil
         )
     }
@@ -130,7 +132,15 @@ struct CrossReferenceGraphTests {
     @Test("FallbackLayoutTest: force-directed positions within bounds; no node overlap")
     @MainActor
     func forceDirectedLayoutPositionsWithinBounds() throws {
-        let graph = makeTestGraph(inboundCount: 25, outboundCount: 24)
+        // Pass one unique volume per edge so volume-based clustering produces a
+        // size-1 cluster per edge (50 display nodes total), which exercises the
+        // force-directed layout path without collapsing nodes into a few clusters.
+        let graph = makeTestGraph(
+            inboundCount: 25,
+            outboundCount: 24,
+            inboundVolumeIds:  (0..<25).map { "vol-in-\($0)" },
+            outboundVolumeIds: (0..<24).map { "vol-out-\($0)" }
+        )
         let vm = CrossReferenceGraphViewModel(
             centralDocumentId: "d0", centralVolumeId: "vol1"
         )

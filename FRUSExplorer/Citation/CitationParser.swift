@@ -108,7 +108,7 @@ public struct CitationParser: Sendable {
     /// - Single year: `"1861"` → `"1861"`
     public func extractSubseries(from text: String) -> String? {
         // Pattern: 4-digit year followed by optional (en dash or hyphen) + (2 or 4 digit year)
-        let pattern = #"(1[89]\d{2})(?:[–\-](\d{2}|\d{4}))?"#
+        let pattern = #"(1[89]\d{2})(?:[–\-](\d{4}|\d{2}))?"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else {
             return nil
