@@ -86,6 +86,9 @@ struct VolumeView: View {
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 }
+                // minHeight reserves space equal to a typical section list so the
+                // view doesn't visually jump when content loads (F-025).
+                .frame(minHeight: 120, alignment: .center)
                 .padding(.vertical, 4)
             }
         } else if let structure = vm.volumeStructures[volume.volumeId] {
@@ -197,7 +200,10 @@ private struct VolumeTagChipsView: View {
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Filter by \(chip.displayName)")
+                    .accessibilityLabel(
+                        String(localized: "browser.volume.filterChip.a11y",
+                               defaultValue: "Filter by \(chip.displayName)")
+                    )
                 }
             }
             .padding(.vertical, 2)

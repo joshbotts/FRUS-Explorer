@@ -251,6 +251,7 @@ public final class DocumentViewModel {
         let record = ReadingHistoryEntry(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
+            displayTitle: entry.header.isEmpty ? nil : entry.header,
             projectId: projectId
         )
         context.insert(record)

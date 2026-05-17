@@ -291,9 +291,10 @@ private struct VolumeManagementView: View {
         } else {
             ForEach(downloaded) { entry in
                 VStack(alignment: .leading, spacing: 2) {
+                    // No .lineLimit cap — long volume titles must be fully readable
+                    // at all Dynamic Type sizes (F-029).
                     Text(entry.title)
                         .font(.callout)
-                        .lineLimit(1)
                     Text(entry.volumeId)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -333,7 +334,6 @@ private struct VolumeManagementView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.title)
                             .font(.callout)
-                            .lineLimit(1)
                         Text(formattedBytes(entry.sizeBytes))
                             .font(.caption)
                             .foregroundStyle(.secondary)

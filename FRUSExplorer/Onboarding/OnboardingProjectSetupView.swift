@@ -33,6 +33,9 @@ struct OnboardingProjectSetupView: View {
     @Bindable var viewModel: OnboardingViewModel
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    /// Used to preserve the system color scheme on unselected tag chips so that
+    /// forcing `.dark` on selected chips does not affect surrounding content (F-012).
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showDateRangePicker = false
 
@@ -214,7 +217,11 @@ struct OnboardingProjectSetupView: View {
                                 selected ? Color.accentColor : Color.secondary.opacity(0.15),
                                 in: Capsule()
                             )
-                            .foregroundStyle(selected ? Color.white : Color.primary)
+                            // Use Color.primary with a forced .dark color scheme on selected
+                            // chips so the foreground adapts to white semantically rather
+                            // than being a hardcoded Color.white (F-012).
+                            .foregroundStyle(Color.primary)
+                            .environment(\.colorScheme, selected ? .dark : colorScheme)
                     }
                     .buttonStyle(.plain)
                 }

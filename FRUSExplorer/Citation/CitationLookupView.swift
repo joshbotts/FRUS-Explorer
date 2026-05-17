@@ -317,15 +317,21 @@ private struct CitationResultRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Confidence label badge
-            Text(match.confidenceLabel)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(confidenceLabelColor)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(confidenceLabelColor.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+            // Confidence label badge — icon + text so confidence level is not
+            // communicated by color alone (WCAG 1.4.1 / F-023).
+            Label {
+                Text(match.confidenceLabel)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            } icon: {
+                Image(systemName: confidenceLabelIcon)
+                    .font(.caption2)
+            }
+            .foregroundStyle(confidenceLabelColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(confidenceLabelColor.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
 
             if let entry = match.volumeManifestEntry {
                 // Manifest-only result
@@ -380,13 +386,29 @@ private struct CitationResultRow: View {
 
     private var confidenceLabelColor: Color {
         switch match.matchStrategy {
-        case .exactDocumentNumber:    return .green
-        case .pageRange:              return .blue
-        case .superimposedDocumentNumber: return .teal
-        case .fuzzyDocumentNumber:    return .orange
-        case .titleFragmentMatch:     return .purple
-        case .manifestOnly:           return .secondary
-        case .bestGuess:              return .orange
+        case .exactDocumentNumber:            return .green
+        case .pageRange:                      return .blue
+        case .superimposedDocumentNumber:     return .teal
+        case .fuzzyDocumentNumber:            return .orange
+        case .titleFragmentMatch:             return .purple
+        case .manifestOnly:                   return .secondary
+        case .bestGuess:                      return .orange
+        }
+    }
+
+    /// SF Symbol name that reinforces confidence level independently of color (F-023).
+    ///
+    /// Each strategy has a distinct icon so color-blind users can still distinguish
+    /// match quality at a glance.
+    private var confidenceLabelIcon: String {
+        switch match.matchStrategy {
+        case .exactDocumentNumber:            return "checkmark.seal.fill"
+        case .pageRange:                      return "number.circle"
+        case .superimposedDocumentNumber:     return "number.square"
+        case .fuzzyDocumentNumber:            return "questionmark.circle"
+        case .titleFragmentMatch:             return "text.magnifyingglass"
+        case .manifestOnly:                   return "doc.circle"
+        case .bestGuess:                      return "lightbulb"
         }
     }
 }

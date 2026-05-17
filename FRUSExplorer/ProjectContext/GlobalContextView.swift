@@ -199,7 +199,7 @@ struct GlobalContextView: View {
                         String(localized: "global.context.notes.tap.hint",
                                defaultValue: "Opens the research note editor")
                     )
-                    .accessibilityAddTraits(.isButton)
+                    // .isButton trait is implicit on Button; adding it explicitly is redundant (F-028).
                 }
             }
         }
@@ -236,7 +236,7 @@ struct GlobalContextView: View {
                         String(localized: "global.context.collections.tap.hint",
                                defaultValue: "Opens the collection editor")
                     )
-                    .accessibilityAddTraits(.isButton)
+                    // .isButton trait is implicit on Button; adding it explicitly is redundant (F-028).
                 }
             }
         }

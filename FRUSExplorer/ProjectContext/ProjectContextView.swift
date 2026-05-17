@@ -318,11 +318,19 @@ private struct ReadingHistoryListView: View {
         List {
             ForEach(entries) { entry in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.documentId)
+                    // Show the captured display title when available; fall back to a
+                    // combined "volumeId · documentId" for pre-1.1 entries (F-021).
+                    Text(entry.displayTitle ?? "\(entry.volumeId) · \(entry.documentId)")
                         .font(.headline)
+                        .lineLimit(2)
                     Text(entry.volumeId)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let date = entry.accessedAt {
+                        Text(date, style: .relative)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
                 .padding(.vertical, 2)
             }
@@ -404,7 +412,7 @@ private struct NotesListView: View {
                            defaultValue: "No Research Notes"),
                     systemImage: "note.text",
                     description: Text(String(localized: "project.notes.empty.detail",
-                                             defaultValue: "Notes you write will appear here."))
+                                             defaultValue: "Open a document and tap Add Note to start building your research record."))
                 )
             }
         }
@@ -417,6 +425,8 @@ private struct CollectionsListView: View {
     let projectId: UUID?
     @Query(sort: \Collection.lastModified, order: .reverse)
     private var allCollections: [Collection]
+    @State private var collectionToCreate: Collection? = nil
+    @Environment(\.modelContext) private var modelContext
 
     private var collections: [Collection] {
         guard let pid = projectId else { return allCollections }
@@ -451,16 +461,54 @@ private struct CollectionsListView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .overlay {
-            if collections.isEmpty {
-                ContentUnavailableView(
-                    String(localized: "project.collections.empty.title",
-                           defaultValue: "No Collections"),
-                    systemImage: "books.vertical",
-                    description: Text(String(localized: "project.collections.empty.detail",
-                                             defaultValue: "Collections you create will appear here."))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    createCollection()
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel(
+                    String(localized: "project.collections.new.a11y",
+                           defaultValue: "New collection")
                 )
             }
         }
+        .sheet(item: $collectionToCreate) { collection in
+            CollectionEditorView(collection: collection)
+        }
+        .overlay {
+            if collections.isEmpty {
+                // actions: gives users a direct path forward from the empty state (F-020).
+                ContentUnavailableView {
+                    Label(
+                        String(localized: "project.collections.empty.title",
+                               defaultValue: "No Collections"),
+                        systemImage: "books.vertical"
+                    )
+                } description: {
+                    Text(String(localized: "project.collections.empty.detail",
+                                defaultValue: "Group documents and notes together into named collections."))
+                } actions: {
+                    Button {
+                        createCollection()
+                    } label: {
+                        Text(String(localized: "project.collections.empty.cta",
+                                    defaultValue: "New Collection"))
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+    }
+
+    private func createCollection() {
+        let newCollection = Collection(name: String(localized: "project.collections.new.defaultName",
+                                                    defaultValue: "Untitled Collection"))
+        if let pid = projectId {
+            newCollection.projectIds = [pid]
+        }
+        modelContext.insert(newCollection)
+        collectionToCreate = newCollection
     }
 }

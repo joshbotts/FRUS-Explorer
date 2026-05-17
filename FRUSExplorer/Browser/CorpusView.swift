@@ -16,6 +16,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   1.1 — Session 58: wrap bare interpolation in accessibilityLabel with String(localized:) (F-022)
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -40,7 +41,10 @@ struct CorpusView: View {
                         SubseriesRowLabel(group: group)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Subseries \(group.subseries), \(group.totalVolumes) volumes")
+                    .accessibilityLabel(
+                        String(localized: "browser.corpus.subseries.a11y",
+                               defaultValue: "Subseries \(group.subseries), \(group.totalVolumes) volumes")
+                    )
                 }
             }
         }
@@ -100,7 +104,10 @@ private struct StatCell: View {
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(value) \(label)")
+        .accessibilityLabel(
+            String(localized: "browser.corpus.stat.a11y",
+                   defaultValue: "\(value) \(label)")
+        )
     }
 }
 

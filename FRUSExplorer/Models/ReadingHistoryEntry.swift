@@ -30,6 +30,9 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
+///   1.1 — Session 58: add `displayTitle` captured at read time so history list shows human-readable
+///          titles instead of raw document IDs (F-021). Optional for backward compat; old entries
+///          display `volumeId · documentId` as a fallback.
 @Model final class ReadingHistoryEntry {
 
     // MARK: - Identity
@@ -40,6 +43,13 @@ import SwiftData
 
     var documentId: String = ""
     var volumeId: String = ""
+
+    /// Human-readable document title captured when the entry is created.
+    ///
+    /// Sourced from `DocumentBrowserEntry.header` at read time. Optional for CloudKit
+    /// schema compatibility and backward compatibility with pre-1.1 entries, which fall
+    /// back to displaying `volumeId · documentId`.
+    var displayTitle: String?
 
     // MARK: - Project Context
 
@@ -56,11 +66,13 @@ import SwiftData
     init(
         documentId: String,
         volumeId: String,
+        displayTitle: String? = nil,
         projectId: UUID? = nil
     ) {
         self.id = UUID()
         self.documentId = documentId
         self.volumeId = volumeId
+        self.displayTitle = displayTitle
         self.projectId = projectId
         accessedAt = Date.now
 

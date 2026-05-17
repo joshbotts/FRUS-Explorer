@@ -105,6 +105,9 @@ struct AboutView: View {
             HStack(spacing: 16) {
                 Image(systemName: "doc.text.magnifyingglass")
                     .font(.system(size: 48))
+                    // Cap at accessibility3 to prevent oversized rendering at extreme
+                    // Dynamic Type settings (F-007). Icon is decorative (hidden from a11y).
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility3)
                     .foregroundStyle(.tint)
                     .accessibilityHidden(true)
 

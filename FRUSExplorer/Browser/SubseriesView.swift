@@ -153,7 +153,10 @@ struct SubseriesTagFilterBar: View {
                                 }
                                 .buttonStyle(.borderless)
                                 .padding(.trailing, 6)
-                                .accessibilityLabel("Remove \(name) filter")
+                                .accessibilityLabel(
+                                    String(localized: "browser.filter.remove.a11y",
+                                           defaultValue: "Remove \(name) filter")
+                                )
                             }
                             .padding(.vertical, 5)
                             .background(Color.accentColor.opacity(0.15))

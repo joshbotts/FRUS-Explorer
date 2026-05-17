@@ -33,7 +33,11 @@ struct OnboardingIntroView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Image(systemName: "doc.text.magnifyingglass")
                         .font(.system(size: 52))
+                        // Cap the hero icon at accessibility3 so extreme Dynamic Type sizes
+                        // don't push the icon into oversized territory (F-007).
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility3)
                         .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
                         .padding(.bottom, 4)
 
                     Text(String(localized: "onboarding.intro.title",
