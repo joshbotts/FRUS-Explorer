@@ -49,6 +49,7 @@ import Sparkle
 ///   1.9 — Session 33: wire onVolumeDownloaded → indexVolume for automatic post-download indexing
 ///   2.0 — Session 46: macOS Settings scene added; ⌘F / ⌘⇧F Search/CitationLookup commands added
 ///   2.1 — Session 48: background re-index wired for FTS5 schema rebuild and date reindex migrations
+///   2.2 — Session 49: deferred onboarding scope enqueue after DownloadManager boot
 @main
 struct FRUSExplorerApp: App {
 
@@ -228,6 +229,30 @@ struct FRUSExplorerApp: App {
 
         if appState.isOnline {
             await dm.resumeQueuedDownloads()
+        }
+
+        // If onboarding completed before DownloadManager booted, a scope was parked in
+        // AppState. Enqueue it now and clear the pending value.
+        if let scope = appState.pendingDownloadScope {
+            appState.pendingDownloadScope = nil
+            let manifestStore = appState.manifestStore
+            let allEntries = manifestStore.diffResult?.known ?? manifestStore.bundledEntries
+            let toEnqueue: [VolumeManifestEntry]
+            switch scope {
+            case .corpus:
+                toEnqueue = allEntries
+            case .subseries(let id):
+                toEnqueue = allEntries.filter { $0.subseries == id }
+            case .volume(let id):
+                toEnqueue = allEntries.filter { $0.volumeId == id }
+            }
+            for entry in toEnqueue {
+                let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
+            }
+            #if DEBUG
+            print("[FRUSExplorer] Deferred onboarding scope enqueued: \(toEnqueue.count) volumes.")
+            #endif
         }
     }
 

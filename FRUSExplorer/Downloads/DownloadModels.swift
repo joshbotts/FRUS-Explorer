@@ -8,6 +8,25 @@
 
 import Foundation
 
+// MARK: - Download Scope
+
+/// Describes the set of volumes the user chose to download during onboarding or from
+/// Settings → Download Manager. Used by `OnboardingViewModel` and `AppState` to pass
+/// a pending download intent to `DownloadManager.enqueueScope(_:manifestStore:)`.
+///
+/// Version history:
+///   1.0 — Session 49: initial implementation
+public enum DownloadScope: Sendable, Equatable {
+    /// Download the complete FRUS corpus (all known volumes).
+    case corpus
+
+    /// Download all volumes belonging to a specific subseries identifier (e.g. `"1969-76"`).
+    case subseries(String)
+
+    /// Download a single volume identified by its `volumeId` (e.g. `"frus1969-76v10"`).
+    case volume(String)
+}
+
 // MARK: - Download Manager State
 
 /// A point-in-time snapshot of DownloadManager's queue, delivered to the MainActor

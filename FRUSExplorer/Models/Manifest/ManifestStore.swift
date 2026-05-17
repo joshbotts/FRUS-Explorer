@@ -54,6 +54,7 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — Session 49: corpusDateRange computed property added
 @Observable
 @MainActor
 public final class ManifestStore {
@@ -71,6 +72,38 @@ public final class ManifestStore {
 
     /// Non-nil if the live manifest fetch failed.
     public private(set) var liveFetchError: Error? = nil
+
+    // MARK: - Corpus Date Range
+
+    /// The date range spanning the earliest to latest FRUS volume.
+    ///
+    /// Derived by scanning the leading 4-digit year prefix of every known subseries
+    /// identifier. Falls back to 1861-01-01…1992-12-31 when the manifest is empty.
+    /// Recomputed whenever `diffResult` or `bundledEntries` changes (no manual caching
+    /// needed because `@Observable` tracks property access automatically).
+    ///
+    /// Typical result for the full 552-volume corpus: `1861-01-01...1992-12-31`.
+    public var corpusDateRange: ClosedRange<Date> {
+        let source = diffResult?.known ?? bundledEntries
+        let years = source.compactMap { Int($0.subseries.prefix(4)) }
+        let minYear = years.min() ?? 1861
+        let maxYear = years.max() ?? 1992
+        return Self.corpusYearStart(minYear)...Self.corpusYearEnd(maxYear)
+    }
+
+    /// Returns `Jan 1` of the given year in the Gregorian calendar.
+    public static func corpusYearStart(_ year: Int) -> Date {
+        var c = DateComponents()
+        c.year = year; c.month = 1; c.day = 1
+        return Calendar(identifier: .gregorian).date(from: c) ?? .distantPast
+    }
+
+    /// Returns `Dec 31` of the given year in the Gregorian calendar.
+    public static func corpusYearEnd(_ year: Int) -> Date {
+        var c = DateComponents()
+        c.year = year; c.month = 12; c.day = 31
+        return Calendar(identifier: .gregorian).date(from: c) ?? .distantFuture
+    }
 
     // MARK: - Testing
 

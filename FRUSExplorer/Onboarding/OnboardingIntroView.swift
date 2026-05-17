@@ -21,6 +21,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 10: initial implementation
+///   2.0 — Session 49: CTA advances to .downloadScope (was .volumePicker)
 @MainActor
 struct OnboardingIntroView: View {
 
@@ -54,13 +55,13 @@ struct OnboardingIntroView: View {
                 Spacer(minLength: 32)
 
                 Button {
-                    viewModel.step = .volumePicker
+                    viewModel.step = .downloadScope
                     #if DEBUG
-                    print("[Onboarding] Step: intro → volumePicker")
+                    print("[Onboarding] Step: welcome → downloadScope")
                     #endif
                 } label: {
                     Text(String(localized: "onboarding.intro.cta",
-                                defaultValue: "Choose Volumes to Download"))
+                                defaultValue: "Get Started"))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4)
                 }

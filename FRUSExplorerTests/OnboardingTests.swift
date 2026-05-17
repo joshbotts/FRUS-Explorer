@@ -45,9 +45,18 @@ struct OnboardingTriggerTests {
     }
 }
 
-// MARK: - Volume Picker Tests
+// MARK: - Volume / Subseries Tests
 
-@Suite("Onboarding — volume picker")
+/// Tests for the Session 49 OnboardingViewModel.
+///
+/// The old volume-picker, tag-filter, and sortMode tests were removed in Session 49
+/// because those features moved to `DownloadManagerSettingsView`. The tests below
+/// cover the new `allSubseries`, `allVolumes`, and scope resolution APIs.
+///
+/// Version history:
+///   1.0 — Session 10: initial implementation
+///   2.0 — Session 49: updated for redesigned OnboardingViewModel API
+@Suite("Onboarding — volume listing")
 @MainActor
 struct VolumePickerTests {
 
@@ -76,20 +85,9 @@ struct VolumePickerTests {
         )
     }
 
-    private func makeTaxonomyEntry(slug: String, category: String = "topics") -> TagTaxonomyEntry {
-        TagTaxonomyEntry(
-            slug: slug,
-            displayName: slug.capitalized,
-            category: category,
-            subcategory: "general",
-            parentSlug: nil,
-            description: nil
-        )
-    }
-
     // MARK: - Tests
 
-    @Test("volumesBySubseries groups and sorts by start year")
+    @Test("allSubseries groups unique subseries sorted descending by start year")
     func subseriesGrouping() {
         let entries = [
             makeEntry(volumeId: "frus1977v01", subseries: "1977-80"),
@@ -101,78 +99,15 @@ struct VolumePickerTests {
         let tagStore = VolumeLevelTagStore(taxonomyEntries: [], manifestEntries: entries)
         let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
 
-        let groups = vm.volumesBySubseries
-        #expect(groups.count == 3)
-        #expect(groups[0].subseries == "1861")
-        #expect(groups[1].subseries == "1969-76")
-        #expect(groups[1].volumes.count == 2)
-        #expect(groups[2].subseries == "1977-80")
+        let subseries = vm.allSubseries
+        #expect(subseries.count == 3)
+        // Descending order: 1977, 1969, 1861
+        #expect(subseries[0] == "1977-80")
+        #expect(subseries[1] == "1969-76")
+        #expect(subseries[2] == "1861")
     }
 
-    @Test("tag filter returns only volumes with selected tag")
-    func singleTagFilter() {
-        let entries = [
-            makeEntry(volumeId: "frus1969v01", subseries: "1969-76", tags: ["iran"]),
-            makeEntry(volumeId: "frus1969v02", subseries: "1969-76", tags: ["vietnam"]),
-            makeEntry(volumeId: "frus1977v01", subseries: "1977-80", tags: ["iran"]),
-        ]
-        let taxonomyEntries = [
-            makeTaxonomyEntry(slug: "iran"),
-            makeTaxonomyEntry(slug: "vietnam"),
-        ]
-        let store = ManifestStore(bundledEntries: entries)
-        let tagStore = VolumeLevelTagStore(taxonomyEntries: taxonomyEntries, manifestEntries: entries)
-        let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
-
-        vm.sortMode = .byTag
-        vm.selectedTagSlugs = ["iran"]
-
-        let displayed = vm.displayVolumes
-        #expect(displayed.count == 2)
-        #expect(displayed.contains { $0.volumeId == "frus1969v01" })
-        #expect(displayed.contains { $0.volumeId == "frus1977v01" })
-        #expect(!displayed.contains { $0.volumeId == "frus1969v02" })
-    }
-
-    @Test("multi-tag filter uses AND logic")
-    func multiTagAndLogic() {
-        let entries = [
-            makeEntry(volumeId: "frus1969v01", subseries: "1969-76", tags: ["iran", "vietnam"]),
-            makeEntry(volumeId: "frus1969v02", subseries: "1969-76", tags: ["iran"]),
-            makeEntry(volumeId: "frus1977v01", subseries: "1977-80", tags: ["vietnam"]),
-        ]
-        let taxonomyEntries = [
-            makeTaxonomyEntry(slug: "iran"),
-            makeTaxonomyEntry(slug: "vietnam"),
-        ]
-        let store = ManifestStore(bundledEntries: entries)
-        let tagStore = VolumeLevelTagStore(taxonomyEntries: taxonomyEntries, manifestEntries: entries)
-        let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
-
-        vm.sortMode = .byTag
-        vm.selectedTagSlugs = ["iran", "vietnam"]
-
-        let displayed = vm.displayVolumes
-        #expect(displayed.count == 1)
-        #expect(displayed[0].volumeId == "frus1969v01")
-    }
-
-    @Test("activateTagFilter sets mode and adds slug")
-    func activateTagFilter() {
-        let store = ManifestStore(bundledEntries: [])
-        let tagStore = VolumeLevelTagStore(taxonomyEntries: [], manifestEntries: [])
-        let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
-
-        #expect(vm.sortMode == .bySubseries)
-        #expect(vm.selectedTagSlugs.isEmpty)
-
-        vm.activateTagFilter(slug: "iran")
-
-        #expect(vm.sortMode == .byTag)
-        #expect(vm.selectedTagSlugs.contains("iran"))
-    }
-
-    @Test("volumes under 20kb excluded from display")
+    @Test("volumes under 20 KB excluded from allVolumes")
     func smallVolumesExcluded() {
         let entries = [
             makeEntry(volumeId: "frus1969v01", subseries: "1969-76", sizeBytes: 50_000),
@@ -183,9 +118,9 @@ struct VolumePickerTests {
         let tagStore = VolumeLevelTagStore(taxonomyEntries: [], manifestEntries: entries)
         let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
 
-        let displayed = vm.displayVolumes
-        #expect(displayed.count == 2)
-        #expect(!displayed.contains { $0.volumeId == "frus1969v02" })
+        let volumes = vm.allVolumes
+        #expect(volumes.count == 2)
+        #expect(!volumes.contains { $0.volumeId == "frus1969v02" })
     }
 }
 

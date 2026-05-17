@@ -12,62 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import SwiftUI
-
-/// Fifth (final) step of onboarding: prompt setup stub.
-///
-/// Informs the user that custom summarization prompts can be configured in Settings.
-/// The app ships with a standard summary prompt. Tapping "Get Started" completes
-/// onboarding; the re-entry trigger (`hasDownloadedVolumes`) will take over on next launch.
-///
-/// Version history:
-///   1.0 — Session 10: initial implementation
-@MainActor
-struct OnboardingPromptSetupView: View {
-
-    @Bindable var viewModel: OnboardingViewModel
-    @Environment(AppState.self) private var appState
-
-    var body: some View {
-        VStack(spacing: 32) {
-            Spacer()
-
-            Image(systemName: "text.bubble.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.tint)
-
-            VStack(spacing: 12) {
-                Text(String(localized: "onboarding.prompt.title",
-                            defaultValue: "AI Summarization"))
-                    .font(.title.bold())
-                    .multilineTextAlignment(.center)
-
-                Text(String(localized: "onboarding.prompt.body",
-                            defaultValue: "You can create custom summarization prompts in Settings. For now, the app includes a standard summary prompt."))
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 32)
-            }
-
-            Button {
-                appState.hasCompletedOnboarding = true
-                #if DEBUG
-                print("[Onboarding] Step: promptSetup → complete (Get Started tapped)")
-                #endif
-            } label: {
-                Text(String(localized: "onboarding.prompt.cta", defaultValue: "Get Started"))
-                    .frame(minWidth: 200)
-                    .padding(.vertical, 4)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-
-            Spacer()
-        }
-        #if os(macOS)
-        .frame(maxWidth: 480)
-        .frame(maxWidth: .infinity)
-        #endif
-    }
-}
+// Session 49: Prompt-setup step removed from onboarding. Summarization prompt
+// configuration is available in Settings → Summarization Prompts.
+// File retained so the Xcode project continues to compile without a pbxproj edit.

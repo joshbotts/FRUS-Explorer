@@ -38,6 +38,7 @@ import UniformTypeIdentifiers
 ///   1.1 — Session 26: add About row
 ///   1.2 — Session 35: fix macOS blank NavigationLink destinations via frame expansion
 ///   1.3 — Session 44: Done button and dismiss guarded to non-iOS (Settings is a tab on iOS)
+///   1.4 — Session 49: Download Manager row added to Volumes section
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -49,6 +50,10 @@ struct SettingsView: View {
             Form {
                 Section(String(localized: "settings.section.volumes",
                                defaultValue: "Volumes")) {
+                    NavigationLink(String(localized: "settings.row.downloadManager",
+                                         defaultValue: "Download Manager")) {
+                        DownloadManagerSettingsView()
+                    }
                     NavigationLink(String(localized: "settings.row.volumeManagement",
                                          defaultValue: "Volume Management")) {
                         VolumeManagementView()
@@ -1467,12 +1472,16 @@ struct MacSettingsView: View {
     }
 }
 
-/// Volumes pane: Volume Management, Storage, Sideload, Reindex.
+/// Volumes pane: Download Manager, Volume Management, Storage, Sideload, Reindex.
 private struct VolumesSettingsPane: View {
     var body: some View {
         NavigationStack {
             Form {
                 Section {
+                    NavigationLink(String(localized: "settings.row.downloadManager",
+                                         defaultValue: "Download Manager")) {
+                        DownloadManagerSettingsView()
+                    }
                     NavigationLink(String(localized: "settings.row.volumeManagement",
                                          defaultValue: "Volume Management")) {
                         VolumeManagementView()

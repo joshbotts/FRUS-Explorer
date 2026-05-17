@@ -15,14 +15,20 @@
 import SwiftUI
 import SwiftData
 
-/// Root container for the multi-step onboarding flow.
+/// Root container for the three-step onboarding flow.
 ///
 /// Creates and owns `OnboardingViewModel`, dispatches to each step view, and handles
 /// the offline banner. The onboarding trigger (whether to show this vs. the main app)
 /// is determined by `OnboardingViewModel.hasDownloadedVolumes(in:)` in `ContentView`.
 ///
+/// ## Steps
+/// 1. `OnboardingIntroView` — welcome screen
+/// 2. `DownloadScopePickerView` — choose what to download
+/// 3. `OnboardingProjectSetupView` — create a project (with pre-filled defaults)
+///
 /// Version history:
 ///   1.0 — Session 10: initial implementation
+///   2.0 — Session 49: redesigned to three-step flow; old volume/download/prompt steps removed
 @MainActor
 struct OnboardingView: View {
 
@@ -61,16 +67,12 @@ struct OnboardingView: View {
     @ViewBuilder
     private func stepContent(vm: OnboardingViewModel) -> some View {
         switch vm.step {
-        case .intro:
+        case .welcome:
             OnboardingIntroView(viewModel: vm)
-        case .volumePicker:
-            OnboardingVolumePickerView(viewModel: vm)
-        case .downloadConfirm:
-            OnboardingDownloadView(viewModel: vm)
+        case .downloadScope:
+            DownloadScopePickerView(viewModel: vm)
         case .projectSetup:
             OnboardingProjectSetupView(viewModel: vm)
-        case .promptSetup:
-            OnboardingPromptSetupView(viewModel: vm)
         }
     }
 

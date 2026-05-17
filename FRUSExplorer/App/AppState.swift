@@ -52,6 +52,7 @@ import Observation
 ///   2.2 — Session 45: lastActivityTabVisit and unindexedVolumeCount (iOS)
 ///   2.3 — Session 46: showSettingsSheet and pendingOnboardingAfterReset removed;
 ///          Settings is now a Settings scene on macOS (no sheet needed)
+///   2.4 — Session 49: pendingDownloadScope added for onboarding → DownloadManager handoff
 
 // MARK: - AppTab
 
@@ -100,6 +101,14 @@ final class AppState {
             UserDefaults.standard.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding)
         }
     }
+
+    // MARK: - Pending Download Scope
+
+    /// Set by onboarding or `DownloadManagerSettingsView` when the user confirms a
+    /// download scope. `FRUSExplorerApp.bootDownloadManager` (or a `.onChange` watcher
+    /// on `ContentView`) enqueues the scope with `DownloadManager` and clears this
+    /// property immediately after enqueueing.
+    var pendingDownloadScope: DownloadScope? = nil
 
     // MARK: - Network State
 

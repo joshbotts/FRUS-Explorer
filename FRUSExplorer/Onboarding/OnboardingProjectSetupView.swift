@@ -23,6 +23,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 10: initial implementation
+///   2.0 — Session 49: back now returns to .downloadScope; "Create Project" enqueues
+///          downloads and completes onboarding in one step; pre-fill from corpus dates
 @MainActor
 struct OnboardingProjectSetupView: View {
 
@@ -223,7 +225,7 @@ struct OnboardingProjectSetupView: View {
     private var footerButtons: some View {
         HStack(spacing: 16) {
             Button {
-                viewModel.step = .downloadConfirm
+                viewModel.step = .downloadScope
             } label: {
                 Text(String(localized: "onboarding.project.back", defaultValue: "Back"))
             }
@@ -234,12 +236,23 @@ struct OnboardingProjectSetupView: View {
             Button {
                 let project = viewModel.createProject(context: modelContext)
                 appState.activeProjectId = project.id
-                viewModel.step = .promptSetup
+                // Enqueue the chosen downloads and complete onboarding in one step.
+                // Downloads run in the background; the user lands immediately in the browser.
+                let scope = viewModel.resolvedScope
+                if let dm = appState.downloadManager {
+                    Task {
+                        await viewModel.enqueueScope(downloadManager: dm)
+                    }
+                } else {
+                    // DownloadManager not yet booted — park scope for pickup after boot.
+                    appState.pendingDownloadScope = scope
+                }
+                appState.hasCompletedOnboarding = true
                 #if DEBUG
-                print("[Onboarding] Step: projectSetup → promptSetup. Project id=\(project.id)")
+                print("[Onboarding] Complete. Project id=\(project.id), scope=\(scope)")
                 #endif
             } label: {
-                Text(String(localized: "onboarding.project.create", defaultValue: "Create Project"))
+                Text(String(localized: "onboarding.project.create", defaultValue: "Get Started"))
                     .padding(.horizontal, 8)
             }
             .buttonStyle(.borderedProminent)

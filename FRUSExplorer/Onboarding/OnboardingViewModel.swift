@@ -16,27 +16,33 @@ import Foundation
 import Observation
 import SwiftData
 
-/// View model for the multi-step onboarding flow.
+/// View model for the three-step onboarding flow.
 ///
-/// Drives the intro → volume picker → download confirm → project setup → prompt setup
-/// wizard. All mutation is @MainActor; `hasDownloadedVolumes(in:)` is nonisolated static
-/// so ContentView can call it synchronously without actor hopping.
+/// Drives the welcome → download scope → project setup wizard.
 ///
-/// ## Intro Text
-/// The intro screen displays a static bundled description of FRUS. An earlier version
-/// fetched live text from history.state.gov; this was removed and the intro now uses
-/// only bundled copy to avoid a network dependency on first launch.
+/// ## Steps
+/// 1. **welcome** — static app intro, "Get Started" CTA.
+/// 2. **downloadScope** — three-choice scope picker (corpus / subseries / volume).
+///    The user selects a scope and taps "Next"; `selectedScope` carries the choice.
+/// 3. **projectSetup** — project creation with defaults pre-filled from the corpus.
+///
+/// ## Default Project Pre-fill
+/// On init, `projectName` is pre-filled with "Onboarding", `projectQuestion` with
+/// "Explore app", and the date range with the corpus min/max years from `ManifestStore`.
+/// All fields are editable.
+///
+/// ## Subseries Lookup
+/// The subseries picker in step 2 shows all known subseries sorted by start year
+/// descending (most recent first), matching the browser's sort order.
 ///
 /// ## Volume Filtering
-/// Volumes with `sizeBytes < 20_000` are excluded from all display lists.
-///
-/// ## Subseries Sort
-/// Groups by subseries string, then sorts by the first 4-character year prefix.
-/// "1969-76" → 1969, "1977-80" → 1977, "1861" → 1861.
+/// All volume lists exclude entries with `sizeBytes < 20_000`.
 ///
 /// Version history:
 ///   1.0 — Session 10: initial implementation
 ///   1.1 — Session 32: removed `fetchIntroText()` — intro text is now static (bundled only)
+///   2.0 — Session 49: redesigned to three-step flow; added DownloadScope; default project
+///          pre-fill; subseries/tag pickers moved to DownloadManagerSettingsView
 @Observable
 @MainActor
 final class OnboardingViewModel {
@@ -44,35 +50,35 @@ final class OnboardingViewModel {
     // MARK: - Step
 
     enum Step {
-        case intro, volumePicker, downloadConfirm, projectSetup, promptSetup
-    }
-
-    // MARK: - Sort Mode
-
-    enum SortMode {
-        case bySubseries, byTag
+        case welcome        // Step 1: app intro / welcome screen
+        case downloadScope  // Step 2: choose download scope
+        case projectSetup   // Step 3: create project
     }
 
     // MARK: - Navigation State
 
-    var step: Step = .intro
+    var step: Step = .welcome
 
-    // MARK: - Volume Picker State
+    // MARK: - Download Scope State (Step 2)
 
-    var sortMode: SortMode = .bySubseries
-    var selectedTagSlugs: Set<String> = []
-    var tagSearchText: String = ""
-    var selectedVolumeIds: Set<String> = []
+    /// The user's chosen download scope. Defaults to `.corpus`.
+    var selectedScope: DownloadScope = .corpus
 
-    // MARK: - Project Setup State
+    /// The subseries selected when `selectedScope == .subseries(…)`.
+    var selectedSubseries: String = ""
 
-    var projectName: String = ""
-    var projectQuestion: String = ""
-    var projectDateStart: Date? = nil
-    var projectDateEnd: Date? = nil
+    /// Search text for the single-volume picker when `selectedScope == .volume(…)`.
+    var singleVolumeSearchText: String = ""
+
+    // MARK: - Project Setup State (Step 3)
+
+    var projectName: String = "Onboarding"
+    var projectQuestion: String = "Explore app"
+    var projectDateStart: Date?
+    var projectDateEnd: Date?
     var projectSubjectTagIds: Set<String> = []
 
-    // MARK: - Intro
+    // MARK: - Intro Text
 
     var introText: String = OnboardingViewModel.bundledIntroText
 
@@ -88,95 +94,106 @@ final class OnboardingViewModel {
         self.manifestStore = manifestStore
         self.tagStore = tagStore
         self.volumesDirectory = volumesDirectory
+
+        // Pre-fill project dates from corpus range.
+        let range = manifestStore.corpusDateRange
+        self.projectDateStart = range.lowerBound
+        self.projectDateEnd   = range.upperBound
     }
 
     // MARK: - Derived: All Volumes
 
-    /// All known volumes with sizeBytes >= 20_000.
-    private var allVolumes: [VolumeManifestEntry] {
+    /// All known volumes with sizeBytes ≥ 20 000.
+    var allVolumes: [VolumeManifestEntry] {
         let source = manifestStore.diffResult?.known ?? manifestStore.bundledEntries
         return source.filter { $0.sizeBytes >= 20_000 }
     }
 
-    // MARK: - Derived: Display Volumes
+    // MARK: - Derived: Subseries Groups
 
-    /// Volumes to display, filtered by selected tags when in byTag mode.
-    var displayVolumes: [VolumeManifestEntry] {
-        guard sortMode == .byTag, !selectedTagSlugs.isEmpty else {
-            return allVolumes
+    /// All distinct subseries identifiers, sorted by start year descending (newest first).
+    var allSubseries: [String] {
+        let unique = Set(allVolumes.map(\.subseries))
+        return unique.sorted { lhs, rhs in
+            Self.startYear(from: lhs) > Self.startYear(from: rhs)
         }
-        let matchingIds = Set(tagStore.volumes(forTagSlugs: Array(selectedTagSlugs)))
-        return allVolumes.filter { matchingIds.contains($0.volumeId) }
     }
 
-    // MARK: - Derived: Volumes by Subseries
+    // MARK: - Derived: Single Volume Search
 
-    /// Volumes grouped by subseries and sorted by start year ascending.
-    var volumesBySubseries: [(subseries: String, volumes: [VolumeManifestEntry])] {
-        var grouped: [String: [VolumeManifestEntry]] = [:]
-        for volume in displayVolumes {
-            grouped[volume.subseries, default: []].append(volume)
+    /// Volumes matching `singleVolumeSearchText` (case-insensitive) for the single-volume picker.
+    var singleVolumeResults: [VolumeManifestEntry] {
+        let query = singleVolumeSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return [] }
+        let lower = query.lowercased()
+        return allVolumes.filter {
+            $0.title.lowercased().contains(lower) || $0.volumeId.lowercased().contains(lower)
         }
-        return grouped
-            .map { key, value in (subseries: key, volumes: value) }
-            .sorted { lhs, rhs in
-                let lhsYear = Self.startYear(from: lhs.subseries)
-                let rhsYear = Self.startYear(from: rhs.subseries)
-                return lhsYear < rhsYear
-            }
-    }
-
-    // MARK: - Derived: Newly Available
-
-    /// Newly available volumes (from live diff) with sizeBytes >= 20_000.
-    var newlyAvailableVolumes: [NewlyAvailableVolume] {
-        (manifestStore.diffResult?.newlyAvailable ?? [])
-            .filter { $0.sizeBytes >= 20_000 }
-    }
-
-    // MARK: - Derived: Selected Bytes
-
-    /// Sum of sizeBytes for all selected volumes.
-    var selectedBytes: Int {
-        let knownBytes = allVolumes
-            .filter { selectedVolumeIds.contains($0.volumeId) }
-            .reduce(0) { $0 + $1.sizeBytes }
-        let newlyBytes = newlyAvailableVolumes
-            .filter { selectedVolumeIds.contains($0.filename) }
-            .reduce(0) { $0 + $1.sizeBytes }
-        return knownBytes + newlyBytes
+        .prefix(20)
+        .map { $0 }
     }
 
     // MARK: - Validation
 
-    var canProceedFromVolumePicker: Bool { !selectedVolumeIds.isEmpty }
+    var canProceedFromDownloadScope: Bool {
+        switch selectedScope {
+        case .corpus:
+            return true
+        case .subseries:
+            return !selectedSubseries.isEmpty
+        case .volume(let id):
+            return !id.isEmpty
+        }
+    }
 
     var canProceedFromProjectSetup: Bool {
         !projectName.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
-    // MARK: - Actions
+    // MARK: - Resolved scope
 
-    /// Adds `slug` to `selectedTagSlugs` and sets `sortMode` to `.byTag`.
-    func activateTagFilter(slug: String) {
-        selectedTagSlugs.insert(slug)
-        sortMode = .byTag
+    /// The resolved `DownloadScope` incorporating the currently entered subseries / volume.
+    var resolvedScope: DownloadScope {
+        switch selectedScope {
+        case .corpus:
+            return .corpus
+        case .subseries:
+            return .subseries(selectedSubseries)
+        case .volume:
+            // Extract volumeId from the currently chosen single volume, or fall back to
+            // the raw search text if the user typed the ID directly.
+            let id = singleVolumeSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            return .volume(id)
+        }
     }
 
-    /// Enqueues all selected volumes for download via `DownloadManager`.
-    func enqueueSelectedDownloads(downloadManager: DownloadManager) async {
-        // Known volumes
-        for volume in allVolumes where selectedVolumeIds.contains(volume.volumeId) {
-            let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(volume.filename)"
-            await downloadManager.enqueueDownload(volumeId: volume.volumeId, downloadUrl: url)
-        }
-        // Newly available volumes
-        for volume in newlyAvailableVolumes where selectedVolumeIds.contains(volume.filename) {
-            await downloadManager.enqueueDownload(volumeId: volume.filename, downloadUrl: volume.downloadUrl)
+    // MARK: - Actions
+
+    /// Enqueues volumes corresponding to `resolvedScope` via `DownloadManager`.
+    func enqueueScope(downloadManager: DownloadManager) async {
+        let volumes = volumesForScope(resolvedScope)
+        for entry in volumes {
+            let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+            await downloadManager.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
         }
         #if DEBUG
-        print("[Onboarding] Enqueued \(selectedVolumeIds.count) volumes for download.")
+        print("[Onboarding] Enqueued \(volumes.count) volumes for scope \(resolvedScope).")
         #endif
+    }
+
+    /// Returns the manifest entries covered by a given scope.
+    func volumesForScope(_ scope: DownloadScope) -> [VolumeManifestEntry] {
+        switch scope {
+        case .corpus:
+            return allVolumes
+        case .subseries(let id):
+            return allVolumes.filter { $0.subseries == id }
+        case .volume(let id):
+            if let entry = allVolumes.first(where: { $0.volumeId == id }) {
+                return [entry]
+            }
+            return []
+        }
     }
 
     /// Creates and inserts a `Project` into the provided `ModelContext`.
@@ -184,7 +201,9 @@ final class OnboardingViewModel {
     func createProject(context: ModelContext) -> Project {
         let project = Project(
             name: projectName.trimmingCharacters(in: .whitespaces),
-            researchQuestion: projectQuestion.trimmingCharacters(in: .whitespaces).isEmpty ? nil : projectQuestion.trimmingCharacters(in: .whitespaces),
+            researchQuestion: projectQuestion.trimmingCharacters(in: .whitespaces).isEmpty
+                ? nil
+                : projectQuestion.trimmingCharacters(in: .whitespaces),
             defaultDateRangeStart: projectDateStart,
             defaultDateRangeEnd: projectDateEnd,
             defaultSubjectTagIds: Array(projectSubjectTagIds),
@@ -228,7 +247,6 @@ final class OnboardingViewModel {
     /// Parses the start year from a subseries string like "1969-76", "1977-80", or "1861".
     private static func startYear(from subseries: String) -> Int {
         guard subseries.count >= 4 else { return 0 }
-        let prefix = subseries.prefix(4)
-        return Int(prefix) ?? 0
+        return Int(subseries.prefix(4)) ?? 0
     }
 }
