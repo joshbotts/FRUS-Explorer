@@ -38,6 +38,7 @@ import Observation
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   1.1 — Session 50: filterDownloadedOnly — gates allSubseriesGroups and filteredVolumes
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -80,6 +81,15 @@ public final class BrowserViewModel {
 
     /// Current navigation stack. The last element is the displayed level.
     public var navigationPath: [BrowserLevel] = []
+
+    // MARK: - Download Filter
+
+    /// When `true`, `allSubseriesGroups` and `filteredVolumes` exclude volumes (and
+    /// subseries) that have not been downloaded to the device.
+    ///
+    /// Synced from `AppState.filterDownloadedOnly` via a `BrowserView.onChange` observer
+    /// so it stays in step with the persisted user preference.
+    public var filterDownloadedOnly: Bool = false
 
     // MARK: - Tag Filters (keyed by subseries string)
 
@@ -163,22 +173,38 @@ public final class BrowserViewModel {
     }
 
     /// All subseries groups, sorted chronologically by start year (most recent first).
+    ///
+    /// When `filterDownloadedOnly` is `true`, subseries where no volume has been
+    /// downloaded are omitted entirely.
     public var allSubseriesGroups: [SubseriesGroup] {
         var dict: [String: [VolumeManifestEntry]] = [:]
         for v in allVolumes { dict[v.subseries, default: []].append(v) }
-        return dict
+        var groups = dict
             .map { SubseriesGroup(subseries: $0.key, volumes: $0.value) }
             .sorted { $0.startYear > $1.startYear }
+        if filterDownloadedOnly {
+            groups = groups.filter { group in
+                group.volumes.contains { isDownloaded($0.volumeId) }
+            }
+        }
+        return groups
     }
 
-    /// Volumes within a subseries after applying the active tag filter.
+    /// Volumes within a subseries after applying the active tag filter and (optionally)
+    /// the downloaded-only filter.
     public func filteredVolumes(for subseries: String) -> [VolumeManifestEntry] {
         let group = allSubseriesGroups.first { $0.subseries == subseries }
         guard let volumes = group?.volumes else { return [] }
+        var result = volumes
         let filter = tagFilters[subseries] ?? []
-        guard !filter.isEmpty else { return volumes }
-        let allowed = Set(tagStore.volumes(forTagSlugs: Array(filter)))
-        return volumes.filter { allowed.contains($0.volumeId) }
+        if !filter.isEmpty {
+            let allowed = Set(tagStore.volumes(forTagSlugs: Array(filter)))
+            result = result.filter { allowed.contains($0.volumeId) }
+        }
+        if filterDownloadedOnly {
+            result = result.filter { isDownloaded($0.volumeId) }
+        }
+        return result
     }
 
     // MARK: - Tag Filter Actions

@@ -50,6 +50,7 @@ import Sparkle
 ///   2.0 — Session 46: macOS Settings scene added; ⌘F / ⌘⇧F Search/CitationLookup commands added
 ///   2.1 — Session 48: background re-index wired for FTS5 schema rebuild and date reindex migrations
 ///   2.2 — Session 49: deferred onboarding scope enqueue after DownloadManager boot
+///   2.3 — Session 50: CommandGroup(replacing: .appInfo) → About FRUS Explorer sheet
 @main
 struct FRUSExplorerApp: App {
 
@@ -91,6 +92,15 @@ struct FRUSExplorerApp: App {
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
         .commands {
+            // Replace the default "About AppName" item with one that opens
+            // the custom AboutView sheet (via AppState.showAbout).
+            CommandGroup(replacing: .appInfo) {
+                Button(String(localized: "menu.about",
+                              defaultValue: "About FRUS Explorer")) {
+                    appState.showAbout = true
+                }
+            }
+
             #if DIRECT_DISTRIBUTION
             CommandGroup(after: .appInfo) {
                 Button(String(localized: "menu.checkForUpdates",

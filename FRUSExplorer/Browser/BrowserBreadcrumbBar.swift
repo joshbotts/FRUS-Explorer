@@ -25,6 +25,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 32: initial implementation
+///   1.1 — Session 50: replaced horizontal ScrollView with BreadcrumbFlowLayout so long
+///          paths wrap to multiple lines instead of scrolling off-screen
 struct BrowserBreadcrumbBar: View {
 
     let path: [BrowserViewModel.BrowserLevel]
@@ -32,16 +34,18 @@ struct BrowserBreadcrumbBar: View {
     let onNavigate: (Int?) -> Void
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 2) {
-                // Root crumb — always present
-                crumbButton(label: String(localized: "browser.breadcrumb.root",
-                                         defaultValue: "FRUS"),
-                            isCurrent: path.isEmpty) {
-                    onNavigate(nil)
-                }
+        BreadcrumbFlowLayout(horizontalSpacing: 4, verticalSpacing: 4) {
+            // Root crumb — always present, no separator
+            crumbButton(label: String(localized: "browser.breadcrumb.root",
+                                     defaultValue: "FRUS"),
+                        isCurrent: path.isEmpty) {
+                onNavigate(nil)
+            }
 
-                ForEach(Array(path.enumerated()), id: \.offset) { index, level in
+            // Each subsequent crumb is a "separator + button" pair laid out as one unit
+            // so the separator and its crumb never split across rows.
+            ForEach(Array(path.enumerated()), id: \.offset) { index, level in
+                HStack(spacing: 2) {
                     separator
                     crumbButton(label: level.breadcrumbLabel,
                                 isCurrent: index == path.count - 1) {
@@ -49,9 +53,9 @@ struct BrowserBreadcrumbBar: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
         .background(.bar)
         .overlay(alignment: .bottom) {
             Divider()
@@ -73,17 +77,131 @@ struct BrowserBreadcrumbBar: View {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.primary)
-                .lineLimit(1)
-                .frame(maxWidth: 180, alignment: .leading)
         } else {
             Button(action: action) {
                 Text(label)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .frame(maxWidth: 180, alignment: .leading)
             }
             .buttonStyle(.plain)
+        }
+    }
+}
+
+// MARK: - BreadcrumbFlowLayout
+
+/// A custom SwiftUI `Layout` that wraps breadcrumb chips to new rows when they
+/// overflow the available width — analogous to CSS `flex-wrap: wrap`.
+///
+/// ## Testability
+/// `computeRowAssignments(itemWidths:containerWidth:horizontalSpacing:)` is a
+/// `static` method so unit tests can verify wrapping behaviour without a render pass.
+///
+/// Version history:
+///   1.0 — Session 50: initial implementation
+struct BreadcrumbFlowLayout: Layout {
+
+    /// Horizontal gap between items on the same row.
+    var horizontalSpacing: CGFloat = 4
+
+    /// Vertical gap between rows.
+    var verticalSpacing: CGFloat = 4
+
+    // MARK: - Row Assignment (static for testability)
+
+    /// Assigns each item to a row, greedily packing items left-to-right and wrapping
+    /// when the next item would exceed `containerWidth`.
+    ///
+    /// - Parameters:
+    ///   - itemWidths: Measured width of each item, in layout order.
+    ///   - containerWidth: Available width from the parent proposal.
+    ///   - horizontalSpacing: Gap inserted between consecutive items on the same row.
+    /// - Returns: An array whose element at index `i` is the 0-based row number
+    ///   assigned to item `i`.
+    static func computeRowAssignments(
+        itemWidths: [CGFloat],
+        containerWidth: CGFloat,
+        horizontalSpacing: CGFloat
+    ) -> [Int] {
+        var assignments: [Int] = []
+        var currentRow = 0
+        var rowWidth: CGFloat = 0
+
+        for (i, width) in itemWidths.enumerated() {
+            if i == 0 {
+                rowWidth = width
+                assignments.append(0)
+            } else {
+                let needed = rowWidth + horizontalSpacing + width
+                if needed <= containerWidth {
+                    rowWidth = needed
+                    assignments.append(currentRow)
+                } else {
+                    currentRow += 1
+                    rowWidth = width
+                    assignments.append(currentRow)
+                }
+            }
+        }
+        return assignments
+    }
+
+    // MARK: - Layout Protocol
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard !subviews.isEmpty else { return .zero }
+        let containerWidth = proposal.width ?? .infinity
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let assignments = Self.computeRowAssignments(
+            itemWidths: sizes.map(\.width),
+            containerWidth: containerWidth,
+            horizontalSpacing: horizontalSpacing
+        )
+        let rowCount = (assignments.max() ?? 0) + 1
+        var maxHeightPerRow = [CGFloat](repeating: 0, count: rowCount)
+        for (i, row) in assignments.enumerated() {
+            maxHeightPerRow[row] = max(maxHeightPerRow[row], sizes[i].height)
+        }
+        let totalHeight = maxHeightPerRow.reduce(0, +)
+            + CGFloat(rowCount - 1) * verticalSpacing
+        return CGSize(width: containerWidth, height: totalHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard !subviews.isEmpty else { return }
+        let containerWidth = bounds.width
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let assignments = Self.computeRowAssignments(
+            itemWidths: sizes.map(\.width),
+            containerWidth: containerWidth,
+            horizontalSpacing: horizontalSpacing
+        )
+        let rowCount = (assignments.max() ?? 0) + 1
+
+        // Row heights
+        var maxHeightPerRow = [CGFloat](repeating: 0, count: rowCount)
+        for (i, row) in assignments.enumerated() {
+            maxHeightPerRow[row] = max(maxHeightPerRow[row], sizes[i].height)
+        }
+
+        // Row top y-offsets
+        var rowY = [CGFloat](repeating: 0, count: rowCount)
+        var y = bounds.minY
+        for row in 0..<rowCount {
+            rowY[row] = y
+            y += maxHeightPerRow[row] + verticalSpacing
+        }
+
+        // Place subviews left-to-right within each row
+        var rowX = [CGFloat](repeating: bounds.minX, count: rowCount)
+        for (i, subview) in subviews.enumerated() {
+            let row = assignments[i]
+            subview.place(
+                at: CGPoint(x: rowX[row], y: rowY[row]),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(width: sizes[i].width, height: maxHeightPerRow[row])
+            )
+            rowX[row] += sizes[i].width + horizontalSpacing
         }
     }
 }

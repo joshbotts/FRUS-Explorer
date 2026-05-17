@@ -178,4 +178,101 @@ struct BrowserViewTests {
         let group = vm.allSubseriesGroups.first!
         #expect(group.startYear == 1969)
     }
+
+    // MARK: - BrowserFilterTests
+
+    @Test("BrowserFilterTest: filterDownloadedOnly=true hides non-downloaded volumes")
+    func filterToggleHidesNonDownloadedVolumes() {
+        // makeViewModel passes downloadManager: nil, so isDownloaded always returns false.
+        let entries = [
+            makeEntry(volumeId: "frus1969-76v01", subseries: "1969-76"),
+            makeEntry(volumeId: "frus1969-76v02", subseries: "1969-76"),
+        ]
+        let vm = makeViewModel(volumes: entries)
+        vm.filterDownloadedOnly = true
+        let result = vm.filteredVolumes(for: "1969-76")
+        #expect(result.isEmpty,
+                "With no downloads and filterDownloadedOnly=true, filteredVolumes must be empty")
+    }
+
+    @Test("BrowserFilterTest: filterDownloadedOnly=false shows all volumes")
+    func filterOffShowsAllVolumes() {
+        let entries = [
+            makeEntry(volumeId: "frus1969-76v01", subseries: "1969-76"),
+            makeEntry(volumeId: "frus1969-76v02", subseries: "1969-76"),
+        ]
+        let vm = makeViewModel(volumes: entries)
+        vm.filterDownloadedOnly = false
+        let result = vm.filteredVolumes(for: "1969-76")
+        #expect(result.count == 2,
+                "With filterDownloadedOnly=false, all volumes must be returned")
+    }
+
+    @Test("BrowserFilterTest: filterDownloadedOnly=true hides subseries with no downloads")
+    func filterToggleHidesSubseriesWithNoDownloads() {
+        let entries = [
+            makeEntry(volumeId: "frus1969-76v01", subseries: "1969-76"),
+            makeEntry(volumeId: "frus1977-80v01", subseries: "1977-80"),
+        ]
+        let vm = makeViewModel(volumes: entries)
+        vm.filterDownloadedOnly = true
+        // downloadManager is nil → no volumes downloaded → all subseries filtered out
+        #expect(vm.allSubseriesGroups.isEmpty,
+                "With no downloads, allSubseriesGroups must be empty when filterDownloadedOnly=true")
+    }
+
+    @Test("BrowserFilterTest: filterDownloadedOnly is persisted via AppState to UserDefaults")
+    func filterTogglePersistedToUserDefaults() {
+        let key = "frus.filterDownloadedOnly"
+        let appState = AppState()
+        appState.filterDownloadedOnly = true
+        #expect(UserDefaults.standard.bool(forKey: key) == true)
+        // Restore
+        appState.filterDownloadedOnly = false
+        #expect(UserDefaults.standard.bool(forKey: key) == false)
+    }
+
+    // MARK: - BreadcrumbLayoutTests
+
+    @Test("BreadcrumbLayoutTest: single item is assigned to row 0")
+    func singleCrumbFitsOnOneLine() {
+        let assignments = BreadcrumbFlowLayout.computeRowAssignments(
+            itemWidths: [80],
+            containerWidth: 300,
+            horizontalSpacing: 4
+        )
+        #expect(assignments == [0], "A single item must be on row 0")
+    }
+
+    @Test("BreadcrumbLayoutTest: items that overflow container width wrap to new rows")
+    func longPathWrapsToMultipleLines() {
+        // Five items each 120pt wide, 4pt spacing, 300pt container.
+        // Row 0: item 0 (120) + 4 + item 1 (120) = 244 ≤ 300 ✓
+        //         244 + 4 + 120 = 368 > 300 → item 2 wraps
+        // Row 1: item 2 (120) + 4 + item 3 (120) = 244 ≤ 300 ✓
+        //         244 + 4 + 120 = 368 > 300 → item 4 wraps
+        // Row 2: item 4 (120)
+        let assignments = BreadcrumbFlowLayout.computeRowAssignments(
+            itemWidths: [120, 120, 120, 120, 120],
+            containerWidth: 300,
+            horizontalSpacing: 4
+        )
+        #expect(assignments == [0, 0, 1, 1, 2],
+                "Expected row assignments [0,0,1,1,2], got \(assignments)")
+    }
+
+    // MARK: - MacAboutMenuTests
+
+    #if os(macOS)
+    @Test("MacAboutMenuTest: AppState.showAbout starts false and can be set to true")
+    func aboutCommandGroupPresentsAboutView() {
+        let appState = AppState()
+        #expect(!appState.showAbout,
+                "showAbout must start false so the About sheet is not shown on launch")
+        // Simulates what CommandGroup(replacing: .appInfo) does when the menu item is tapped
+        appState.showAbout = true
+        #expect(appState.showAbout,
+                "showAbout must be settable to true to trigger the About sheet")
+    }
+    #endif
 }

@@ -53,6 +53,7 @@ import Observation
 ///   2.3 — Session 46: showSettingsSheet and pendingOnboardingAfterReset removed;
 ///          Settings is now a Settings scene on macOS (no sheet needed)
 ///   2.4 — Session 49: pendingDownloadScope added for onboarding → DownloadManager handoff
+///   2.5 — Session 50: filterDownloadedOnly (UserDefaults-persisted); showAbout (macOS)
 
 // MARK: - AppTab
 
@@ -101,6 +102,29 @@ final class AppState {
             UserDefaults.standard.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding)
         }
     }
+
+    // MARK: - Browser Filter
+
+    /// When `true`, the Browser volume list shows only volumes that have been downloaded.
+    ///
+    /// Persisted across launches via `UserDefaults` so the user's preference survives
+    /// app restarts. `BrowserView.onChange` syncs this value into `BrowserViewModel`
+    /// whenever it changes.
+    var filterDownloadedOnly: Bool = UserDefaults.standard.bool(
+        forKey: Keys.filterDownloadedOnly
+    ) {
+        didSet {
+            UserDefaults.standard.set(filterDownloadedOnly, forKey: Keys.filterDownloadedOnly)
+        }
+    }
+
+    #if os(macOS)
+    /// Controls presentation of the About FRUS Explorer sheet.
+    ///
+    /// Set to `true` by the `CommandGroup(replacing: .appInfo)` menu command.
+    /// `BrowserView` observes this to present the `AboutView` sheet.
+    var showAbout: Bool = false
+    #endif
 
     // MARK: - Pending Download Scope
 
@@ -307,5 +331,6 @@ final class AppState {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let activeTab = "frus.activeTab"
         static let lastActivityTabVisit = "frus.lastActivityTabVisit"
+        static let filterDownloadedOnly = "frus.filterDownloadedOnly"
     }
 }

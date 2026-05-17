@@ -39,6 +39,8 @@ import SwiftUI
 ///          CitationLookup are tabs on iOS; pendingBrowseDocument observer added both platforms
 ///   1.6 — Session 46: macOS Settings sheet removed (now a Settings scene); gear button
 ///          removed; handleSettingsSheetDismiss removed; Collections toolbar button added
+///   1.7 — Session 50: downloaded-volumes filter toggle in both toolbars; AppState sync
+///          via onChange; macOS About sheet
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -103,6 +105,9 @@ struct BrowserView: View {
         .sheet(isPresented: $appState.showCitationLookup) {
             CitationLookupView()
         }
+        .sheet(isPresented: $appState.showAbout) {
+            AboutView()
+        }
         #endif
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
             guard let entry else { return }
@@ -111,6 +116,9 @@ struct BrowserView: View {
             #if DEBUG
             print("[BrowserView] pendingBrowseDocument consumed: \(entry.volumeId)/\(entry.documentId)")
             #endif
+        }
+        .onChange(of: appState.filterDownloadedOnly) { _, flag in
+            viewModel?.filterDownloadedOnly = flag
         }
         .onAppear { bootstrapViewModel() }
     }
@@ -167,6 +175,22 @@ struct BrowserView: View {
                         )
                     }
                     #endif
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            appState.filterDownloadedOnly.toggle()
+                        } label: {
+                            Image(systemName: appState.filterDownloadedOnly
+                                  ? "arrow.down.circle.fill"
+                                  : "arrow.down.circle")
+                        }
+                        .accessibilityLabel(
+                            appState.filterDownloadedOnly
+                                ? String(localized: "browser.filter.off.a11y",
+                                         defaultValue: "Show all volumes")
+                                : String(localized: "browser.filter.on.a11y",
+                                         defaultValue: "Show downloaded volumes only")
+                        )
+                    }
                 }
         } detail: {
             if let last = vm.navigationPath.last {
@@ -190,7 +214,7 @@ struct BrowserView: View {
                 }
                 .toolbar {
                     // On iOS, Search/CitationLookup/Settings are persistent tabs.
-                    // Only the ProjectPickerMenu remains in the Browse toolbar.
+                    // Only the ProjectPickerMenu and download filter remain in the Browse toolbar.
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu {
                             #if os(iOS)
@@ -199,6 +223,22 @@ struct BrowserView: View {
                             showProjectContext = true
                             #endif
                         }
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            appState.filterDownloadedOnly.toggle()
+                        } label: {
+                            Image(systemName: appState.filterDownloadedOnly
+                                  ? "arrow.down.circle.fill"
+                                  : "arrow.down.circle")
+                        }
+                        .accessibilityLabel(
+                            appState.filterDownloadedOnly
+                                ? String(localized: "browser.filter.off.a11y",
+                                         defaultValue: "Show all volumes")
+                                : String(localized: "browser.filter.on.a11y",
+                                         defaultValue: "Show downloaded volumes only")
+                        )
                     }
                 }
         }
@@ -242,12 +282,14 @@ struct BrowserView: View {
 
     private func bootstrapViewModel() {
         guard viewModel == nil else { return }
-        viewModel = BrowserViewModel(
+        let vm = BrowserViewModel(
             manifestStore: appState.manifestStore,
             tagStore: appState.volumeLevelTagStore,
             downloadManager: appState.downloadManager,
             indexingPipeline: appState.indexingPipeline
         )
+        vm.filterDownloadedOnly = appState.filterDownloadedOnly
+        viewModel = vm
         #if DEBUG
         print("[BrowserView] BrowserViewModel created.")
         #endif

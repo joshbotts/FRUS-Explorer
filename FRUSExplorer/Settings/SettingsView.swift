@@ -39,6 +39,7 @@ import UniformTypeIdentifiers
 ///   1.2 — Session 35: fix macOS blank NavigationLink destinations via frame expansion
 ///   1.3 — Session 44: Done button and dismiss guarded to non-iOS (Settings is a tab on iOS)
 ///   1.4 — Session 49: Download Manager row added to Volumes section
+///   1.5 — Session 50: About row removed from iOS SettingsView (now in macOS App menu)
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -100,12 +101,14 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
                 }
 
+                #if os(iOS)
                 Section {
                     NavigationLink(String(localized: "settings.row.about",
                                          defaultValue: "About FRUS Explorer")) {
                         AboutView()
                     }
                 }
+                #endif
             }
             .navigationTitle(String(localized: "settings.title", defaultValue: "Settings"))
             #if os(iOS)
@@ -1530,7 +1533,10 @@ private struct ResearchSettingsPane: View {
     }
 }
 
-/// Advanced pane: Reset App, About.
+/// Advanced pane: Reset App.
+///
+/// The "About FRUS Explorer" item was removed in Session 50; About is now
+/// accessible via the App menu (`CommandGroup(replacing: .appInfo)`).
 private struct AdvancedSettingsPane: View {
     var body: some View {
         NavigationStack {
@@ -1541,12 +1547,6 @@ private struct AdvancedSettingsPane: View {
                         ResetView()
                     }
                     .foregroundStyle(.red)
-                }
-                Section {
-                    NavigationLink(String(localized: "settings.row.about",
-                                         defaultValue: "About FRUS Explorer")) {
-                        AboutView()
-                    }
                 }
             }
             .navigationTitle(String(localized: "settings.mac.tab.advanced",
