@@ -1,7 +1,7 @@
 # FRUS Explorer — Development Plan
 
-**Version**: 1.2  
-**Date**: 2026-05-16
+**Version**: 1.3  
+**Date**: 2026-05-17
 
 Each task below corresponds to a single development session. Tasks are ordered so that each session's outputs are available as inputs for subsequent sessions. All sessions share the same Xcode workspace.
 
@@ -58,6 +58,12 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 45 | Tab Bar Polish & Two-Platform Audit | Badges; `lastActivityTabVisit`; `unindexedVolumeCount`; build audit | 44, 27 |
 | 46 | macOS Settings Scene & Toolbar | `Settings` scene; `MacSettingsView`; ⌘F / ⌘⇧F shortcuts; Collections button | 44 |
 | 47 | Documentation Update | Planning docs for sessions 32–46; spec and README updated | All prior |
+| 48 | Database & Infrastructure Bug Fixes | FTS5 `frus_documents` rebuild (schema v3); `UIBackgroundModes`; BGTaskScheduler cap | 38, 45 |
+| 49 | Onboarding Redesign & Download Manager | Three-choice onboarding; default project with corpus dates; subseries/subject picker in Settings | 10, 24 |
+| 50 | Browser & Navigation Polish | Downloaded-volumes filter; multi-line breadcrumbs; macOS About menu item | 11, 32, 46 |
+| 51 | iOS Indexing Performance & Visualization | Memory-aware batch throttle; `IndexingProgressUpdate` stream; progress UI | 09, 33, 45 |
+| 52 | UI Obstruction Audit & Fixes | Safe-area and composed-view obstruction mitigations across both platforms | All prior |
+| 53 | Pre-Index Feasibility Assessment | Architecture document for hosted Quick-Start index; no code changes | 09 |
 
 ---
 
@@ -98,6 +104,11 @@ Each task below corresponds to a single development session. Tasks are ordered s
 41 → 43 (Nav State Shell) → 44 (Full Wiring) → 45 (Polish) ──┐
                                                                ├── 47 (Docs)
                                                      46 (macOS) ─┘
+
+47 → 48 (DB/Infra Bugs) → 49 (Onboarding) → 50 (Browser Polish)
+                       └→ 51 (Indexing Perf) → 52 (UI Obstruction Audit)
+                                               ↑
+                                        53 (Pre-Index Feasibility) [parallel, no code]
 ```
 
 ---
@@ -120,6 +131,7 @@ Present these files to Claude Code in order. The leading number matches the sess
 | `32-35-Breadcrumbs-AutoIndex-FrontMatter-macOSCompat.md` | 32, 33, 34, 35 |
 | `36-42-Extended-Indexing.md` | 36, 37, 38, 39, 40, 41, 42 |
 | `43-46-Navigation-Redesign.md` | 43, 44, 45, 46 |
+| `48-53-Fixes-Onboarding-Polish-Performance.md` | 48, 49, 50, 51, 52, 53 |
 
 ---
 
@@ -175,3 +187,20 @@ The following items were added to earlier sessions by later feature requirements
 **Added by Session 40 (Person Mention UI)**:
 - `PersonDetailSheet` must accept a `PersonMentionStore` dependency for mention count display
 - "Find all mentions" button writes `appState.pendingSearch`; `BrowserView` must observe this property
+
+### Session 09 — Search Index Pipeline
+**Added by Session 48 (DB Bug Fix)**:
+- `frus_documents` FTS5 virtual table schema version promoted to 3 with `is_editorial_note UNINDEXED` column
+- `PRAGMA user_version` gating strategy documented in `48-53-Fixes-Onboarding-Polish-Performance.md`
+- `UserDefaults("frus.ftsSchemaVersion")` migration flag triggers background re-index on first post-upgrade launch
+
+### Session 10 — Onboarding View
+**Replaced by Session 49 (Onboarding Redesign)**:
+- Three-step onboarding (`DownloadScopePickerView`) replaces old subseries/subject picker flow
+- `ManifestStore.corpusDateRange` must be implemented before Session 49 (`minYear=1861`, `maxYear=1992`)
+- `DownloadScope` enum (`.corpus`, `.subseries(String)`, `.volume(String)`) added to `DownloadManager`
+
+### Session 32 — Breadcrumbs
+**Superseded by Session 50 (Browser Polish)**:
+- `BrowserBreadcrumbBar` `ScrollView(.horizontal)` wrapper replaced with `BreadcrumbFlowLayout`
+- Multi-line display; no truncation; height is dynamic (`.safeAreaInset` inset must track actual height)
