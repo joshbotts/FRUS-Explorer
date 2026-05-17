@@ -40,6 +40,8 @@ import UniformTypeIdentifiers
 ///   1.3 — Session 44: Done button and dismiss guarded to non-iOS (Settings is a tab on iOS)
 ///   1.4 — Session 49: Download Manager row added to Volumes section
 ///   1.5 — Session 50: About row removed from iOS SettingsView (now in macOS App menu)
+///   1.6 — Session 57: VolumeManagementView delete moved to swipe action + confirmation dialog
+///          (F-010); UserTagsView gains leading swipe-to-rename action (F-004)
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -144,6 +146,8 @@ private struct VolumeManagementView: View {
         let stored = UserDefaults.standard.integer(forKey: SettingsKeys.concurrentDownloadLimit)
         return stored > 0 ? stored : 4
     }()
+    /// Volume queued for deletion; drives the confirmation dialog.
+    @State private var volumePendingDelete: VolumeManifestEntry? = nil
 
     var body: some View {
         Form {
@@ -214,6 +218,34 @@ private struct VolumeManagementView: View {
         #if os(macOS)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
+        .confirmationDialog(
+            String(localized: "settings.volumes.delete.confirm.title",
+                   defaultValue: "Delete Volume?"),
+            isPresented: Binding(
+                get: { volumePendingDelete != nil },
+                set: { if !$0 { volumePendingDelete = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: volumePendingDelete
+        ) { entry in
+            Button(String(localized: "settings.volumes.delete.confirm.action",
+                          defaultValue: "Delete"),
+                   role: .destructive) {
+                Task { try? await appState.downloadManager?.deleteVolume(volumeId: entry.volumeId) }
+                volumePendingDelete = nil
+            }
+            Button(String(localized: "settings.volumes.delete.confirm.cancel",
+                          defaultValue: "Cancel"),
+                   role: .cancel) {
+                volumePendingDelete = nil
+            }
+        } message: { entry in
+            Text(String(
+                format: String(localized: "settings.volumes.delete.confirm.message",
+                               defaultValue: "\"%@\" will be removed from your device. You can re-download it later."),
+                entry.title
+            ))
+        }
     }
 
     @ViewBuilder
@@ -258,23 +290,26 @@ private struct VolumeManagementView: View {
                 .font(.callout)
         } else {
             ForEach(downloaded) { entry in
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.title)
-                            .font(.callout)
-                            .lineLimit(1)
-                        Text(entry.volumeId)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.title)
+                        .font(.callout)
+                        .lineLimit(1)
+                    Text(entry.volumeId)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                // Swipe-to-delete: system provides the red destructive visual automatically.
+                // A confirmation dialog prevents accidental deletion of large downloaded files.
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        volumePendingDelete = entry
+                    } label: {
+                        Label(
+                            String(localized: "settings.volumes.downloaded.delete",
+                                   defaultValue: "Delete"),
+                            systemImage: "trash"
+                        )
                     }
-                    Spacer()
-                    Button(String(localized: "settings.volumes.downloaded.delete",
-                                  defaultValue: "Delete")) {
-                        Task { try? await appState.downloadManager?.deleteVolume(volumeId: entry.volumeId) }
-                    }
-                    .font(.callout)
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.red)
                     .accessibilityLabel(
                         String(localized: "settings.volumes.downloaded.delete.a11y",
                                defaultValue: "Delete \(entry.title)")
@@ -844,6 +879,27 @@ private struct UserTagsView: View {
                             renamingTag = tag
                             renameText = tag.name
                         }
+                        // Leading swipe: Edit (rename). Makes the rename action discoverable
+                        // for users who may not know about tap-to-rename.
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            if !isRenaming {
+                                Button {
+                                    renamingTag = tag
+                                    renameText = tag.name
+                                } label: {
+                                    Label(
+                                        String(localized: "settings.tags.rename.swipe",
+                                               defaultValue: "Rename"),
+                                        systemImage: "pencil"
+                                    )
+                                }
+                                .tint(.accentColor)
+                                .accessibilityLabel(
+                                    String(localized: "settings.tags.rename.swipe.a11y",
+                                           defaultValue: "Rename tag \(tag.name)")
+                                )
+                            }
+                        }
                     }
                     .onDelete { offsets in
                         for index in offsets {
@@ -855,7 +911,7 @@ private struct UserTagsView: View {
                 Text(String(localized: "settings.tags.list.header", defaultValue: "Tags"))
             } footer: {
                 Text(String(localized: "settings.tags.list.footer",
-                            defaultValue: "Tap a tag to rename it. Swipe to delete."))
+                            defaultValue: "Tap or swipe right to rename. Swipe left to delete."))
                     .font(.caption)
             }
         }

@@ -25,6 +25,8 @@ import SwiftData
 ///   1.0 — Session 10: initial implementation
 ///   2.0 — Session 49: back now returns to .downloadScope; "Create Project" enqueues
 ///          downloads and completes onboarding in one step; pre-fill from corpus dates
+///   2.1 — Session 57: "Skip for now" button creates a default-named project; name-required
+///          error softened to a hint; proceed logic extracted to proceedWithProject() (F-009)
 @MainActor
 struct OnboardingProjectSetupView: View {
 
@@ -66,10 +68,10 @@ struct OnboardingProjectSetupView: View {
                     .textFieldStyle(.roundedBorder)
 
                     if viewModel.projectName.trimmingCharacters(in: .whitespaces).isEmpty {
-                        Text(String(localized: "onboarding.project.name.required",
-                                    defaultValue: "A project name is required."))
+                        Text(String(localized: "onboarding.project.name.hint",
+                                    defaultValue: "Enter a name, or tap Skip for now to use a default."))
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -233,24 +235,22 @@ struct OnboardingProjectSetupView: View {
 
             Spacer()
 
+            // "Skip for now" creates a default-named project so the user is not blocked
+            // by the name requirement during first launch. The project can be renamed in
+            // Settings at any time.
             Button {
-                let project = viewModel.createProject(context: modelContext)
-                appState.activeProjectId = project.id
-                // Enqueue the chosen downloads and complete onboarding in one step.
-                // Downloads run in the background; the user lands immediately in the browser.
-                let scope = viewModel.resolvedScope
-                if let dm = appState.downloadManager {
-                    Task {
-                        await viewModel.enqueueScope(downloadManager: dm)
-                    }
-                } else {
-                    // DownloadManager not yet booted — park scope for pickup after boot.
-                    appState.pendingDownloadScope = scope
+                if viewModel.projectName.trimmingCharacters(in: .whitespaces).isEmpty {
+                    viewModel.projectName = String(localized: "onboarding.defaultProject",
+                                                  defaultValue: "My Project")
                 }
-                appState.hasCompletedOnboarding = true
-                #if DEBUG
-                print("[Onboarding] Complete. Project id=\(project.id), scope=\(scope)")
-                #endif
+                proceedWithProject()
+            } label: {
+                Text(String(localized: "onboarding.project.skip", defaultValue: "Skip for now"))
+            }
+            .buttonStyle(.bordered)
+
+            Button {
+                proceedWithProject()
             } label: {
                 Text(String(localized: "onboarding.project.create", defaultValue: "Get Started"))
                     .padding(.horizontal, 8)
@@ -259,6 +259,27 @@ struct OnboardingProjectSetupView: View {
             .disabled(!viewModel.canProceedFromProjectSetup)
         }
         .padding()
+    }
+
+    /// Creates the project and completes onboarding, enqueuing any chosen downloads.
+    private func proceedWithProject() {
+        let project = viewModel.createProject(context: modelContext)
+        appState.activeProjectId = project.id
+        // Enqueue the chosen downloads and complete onboarding in one step.
+        // Downloads run in the background; the user lands immediately in the browser.
+        let scope = viewModel.resolvedScope
+        if let dm = appState.downloadManager {
+            Task {
+                await viewModel.enqueueScope(downloadManager: dm)
+            }
+        } else {
+            // DownloadManager not yet booted — park scope for pickup after boot.
+            appState.pendingDownloadScope = scope
+        }
+        appState.hasCompletedOnboarding = true
+        #if DEBUG
+        print("[Onboarding] Complete. Project id=\(project.id), scope=\(scope)")
+        #endif
     }
 }
 
