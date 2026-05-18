@@ -525,7 +525,11 @@ public actor IndexingPipeline {
 
     nonisolated private func parseAndExtract(volumeId: String, url: URL) async throws -> VolumeIndexData {
         let parser = FRUSDocumentParser()
-        let astDocs = try await parser.parse(volumeURL: url)
+        // Single-pass parse: documents, persons, and terms extracted in one XML read.
+        // Replaces three sequential XMLParser(contentsOf:) calls (passes 1-3) that
+        // previously each read the entire volume file from disk.
+        let fullResult = try await parser.parseVolumeFull(volumeURL: url)
+        let astDocs = fullResult.documents
 
         var fts5Docs: [FTS5Document] = []
         var crossRefs: [CrossReferenceRow] = []
@@ -582,14 +586,11 @@ public actor IndexingPipeline {
             }
         }
 
-        // Parse and persist persons and terms glossaries.
-        let parsedPersons = (try? await parser.parsePersons(volumeURL: url)) ?? []
-        let personRows = parsedPersons.map { p in
+        // Persons and terms were extracted in the same single-pass parse above.
+        let personRows = fullResult.persons.map { p in
             PersonRow(volumeId: volumeId, ref: p.ref, name: p.name, description: p.description)
         }
-
-        let parsedTerms = (try? await parser.parseTerms(volumeURL: url)) ?? []
-        let termRows = parsedTerms.map { t in
+        let termRows = fullResult.terms.map { t in
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
         }
 

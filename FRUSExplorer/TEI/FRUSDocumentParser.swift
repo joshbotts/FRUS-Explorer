@@ -53,6 +53,8 @@ import Foundation
 ///   1.4 — Session 38: `<div type="editorialNote">` promoted to full `FRUSDocumentAST` entries;
 ///          `VolumeStructureParserDelegate` records editorial note IDs in parent section's `documentIds`
 ///   1.5 — Session 42: `@n` attribute captured in `.footnote` as `printedNumber`
+///   1.6 — Session 64: `parseVolumeFull` added; `VolumeFullParseResult` and
+///          `FullVolumeParserDelegate` introduced to consolidate three passes into one
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -155,6 +157,49 @@ public actor FRUSDocumentParser {
         print("[TEIParser] Parsed \(delegate.entries.count) term entries from \(volumeURL.lastPathComponent).")
         #endif
         return delegate.entries
+    }
+
+    // MARK: - Combined Full Parse
+
+    /// Parses documents, persons, and terms in a single XML pass over the volume file.
+    ///
+    /// Replaces three sequential `XMLParser(contentsOf:)` calls with one, using a
+    /// composite `FullVolumeParserDelegate` that routes SAX events to the three
+    /// existing sub-delegates simultaneously.
+    ///
+    /// The three sub-delegates are section-guarded (`inPersonsSection`,
+    /// `inTermsSection`) so events outside their target `<div>` are no-ops.
+    /// `TEIParserDelegate` treats `<div type="persons">` and `<div type="terms">`
+    /// as transparent (not structural document divs), so no spurious `FRUSDocumentAST`
+    /// entries are produced from front-matter content.
+    ///
+    /// - Parameter volumeURL: The local file URL of the downloaded volume XML.
+    /// - Returns: A `VolumeFullParseResult` containing documents, persons, and terms.
+    /// - Throws: `FRUSParserError` if the file cannot be read or the XML is malformed.
+    public func parseVolumeFull(volumeURL: URL) async throws -> VolumeFullParseResult {
+        guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
+            throw FRUSParserError.fileUnreadable(volumeURL)
+        }
+        let composite = FullVolumeParserDelegate()
+        xmlParser.delegate = composite
+        xmlParser.parse()
+
+        if let error = composite.teiDelegate.fatalError {
+            throw FRUSParserError.xmlError(error)
+        }
+
+        #if DEBUG
+        let name = volumeURL.lastPathComponent
+        print("[TEIParser] parseVolumeFull: \(composite.teiDelegate.documents.count) docs, " +
+              "\(composite.personsDelegate.entries.count) persons, " +
+              "\(composite.termsDelegate.entries.count) terms from \(name).")
+        #endif
+
+        return VolumeFullParseResult(
+            documents: composite.teiDelegate.documents,
+            persons:   composite.personsDelegate.entries,
+            terms:     composite.termsDelegate.entries
+        )
     }
 
     // MARK: - Volume Structure
@@ -358,6 +403,22 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
         default:             return divType.capitalized
         }
     }
+}
+
+// MARK: - Combined Parse Result
+
+/// Return value of `FRUSDocumentParser.parseVolumeFull`.
+///
+/// Bundles the three artefacts produced by a single XML pass so callers
+/// (`IndexingPipeline.parseAndExtract`) can replace three separate awaits
+/// with one and eliminate two redundant disk reads.
+public struct VolumeFullParseResult: Sendable {
+    /// All `<div type="document">` and `<div type="editorialNote">` entries.
+    public let documents: [FRUSDocumentAST]
+    /// Person entries from `<div type="persons">` or `<listPerson>`.
+    public let persons:   [PersonEntry]
+    /// Term/abbreviation entries from `<div type="terms">`.
+    public let terms:     [GlossEntry]
 }
 
 // MARK: - Parser Error
@@ -912,6 +973,65 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             inTermsSection = false
             termsSectionDepth = -1
         }
+    }
+}
+
+// MARK: - Composite Full-Volume Delegate
+
+/// Composite `XMLParserDelegate` that forwards every SAX event to three
+/// sub-delegates simultaneously, enabling a single `XMLParser` pass to
+/// produce documents, persons, and terms.
+///
+/// ## Safety
+/// - `PersonsParserDelegate` and `TermsParserDelegate` both guard all
+///   mutations on `inPersonsSection` / `inTermsSection`; events outside
+///   those sections are no-ops, so forwarding unconditionally is safe.
+/// - `TEIParserDelegate(targetDocumentId: nil)` treats `<div type="persons">`
+///   and `<div type="terms">` as unrecognised div types (not "document" or
+///   "editorialNote") and skips their content — no spurious `FRUSDocumentAST`
+///   entries are produced from front-matter material.
+/// - `foundIgnorableWhitespace` is forwarded only to `teiDelegate` because
+///   the other two delegates don't implement it.
+private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
+
+    let teiDelegate:     TEIParserDelegate     = TEIParserDelegate(targetDocumentId: nil)
+    let personsDelegate: PersonsParserDelegate = PersonsParserDelegate()
+    let termsDelegate:   TermsParserDelegate   = TermsParserDelegate()
+
+    // MARK: - XMLParserDelegate Forwarding
+
+    func parser(_ parser: XMLParser,
+                didStartElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?,
+                attributes attributeDict: [String: String] = [:]) {
+        teiDelegate    .parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
+        personsDelegate.parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
+        termsDelegate  .parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        teiDelegate    .parser(parser, foundCharacters: string)
+        personsDelegate.parser(parser, foundCharacters: string)
+        termsDelegate  .parser(parser, foundCharacters: string)
+    }
+
+    func parser(_ parser: XMLParser, foundIgnorableWhitespace whitespaceString: String) {
+        // Only TEIParserDelegate implements foundIgnorableWhitespace.
+        teiDelegate.parser(parser, foundIgnorableWhitespace: whitespaceString)
+    }
+
+    func parser(_ parser: XMLParser,
+                didEndElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?) {
+        teiDelegate    .parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
+        personsDelegate.parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
+        termsDelegate  .parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
+    }
+
+    func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
+        teiDelegate.parser(parser, parseErrorOccurred: parseError)
     }
 }
 

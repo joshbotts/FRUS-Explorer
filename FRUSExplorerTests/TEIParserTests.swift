@@ -1160,3 +1160,115 @@ struct FootnoteNumberTests {
         #expect(foundLink, "No frusexplorer:// link found in AttributedString runs")
     }
 }
+
+// MARK: - Session 64: parseVolumeFull
+
+/// Verifies that `parseVolumeFull` produces the same documents, persons, and terms
+/// as three separate `parse` / `parsePersons` / `parseTerms` calls over the same file,
+/// confirming the composite-delegate consolidation is semantically equivalent.
+@Suite("parseVolumeFull")
+struct ParseVolumeFullTests {
+
+    /// Writes a minimal TEI volume fixture containing one document, one person entry,
+    /// and one term entry to a temporary file, then returns its URL.
+    private func makeFullVolumeFixture() throws -> URL {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test Volume</title></titleStmt></fileDesc></teiHeader>
+          <text>
+            <front>
+              <div type="persons">
+                <list>
+                  <item xml:id="p1">Kissinger, Henry A.: Secretary of State, 1973–1977</item>
+                </list>
+              </div>
+              <div type="terms">
+                <list>
+                  <item xml:id="t1"><term>NSSM</term>: National Security Study Memorandum</item>
+                </list>
+              </div>
+            </front>
+            <body>
+              <div type="compilation">
+                <div type="document" xml:id="d1">
+                  <head>Memorandum From the President</head>
+                  <dateline>Washington, January 1, 1973</dateline>
+                  <p>Body text mentioning <persName ref="p1">Kissinger</persName>.</p>
+                </div>
+              </div>
+            </body>
+          </text>
+        </TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-full-\(UUID().uuidString).xml")
+        try xml.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
+    @Test("parseVolumeFull returns the same documents as parse(volumeURL:)")
+    func documentsMatchSeparateParse() async throws {
+        let url = try makeFullVolumeFixture()
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        async let fullResult = parser.parseVolumeFull(volumeURL: url)
+        async let separateDocs = parser.parse(volumeURL: url)
+
+        let full = try await fullResult
+        let docs = try await separateDocs
+
+        #expect(full.documents.count == docs.count,
+                "parseVolumeFull returned \(full.documents.count) docs; parse returned \(docs.count)")
+        let fullIds = full.documents.map(\.documentId).sorted()
+        let sepIds  = docs.map(\.documentId).sorted()
+        #expect(fullIds == sepIds,
+                "Document IDs differ: full=\(fullIds) sep=\(sepIds)")
+    }
+
+    @Test("parseVolumeFull returns persons from <div type=\"persons\">")
+    func personsExtracted() async throws {
+        let url = try makeFullVolumeFixture()
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let result = try await FRUSDocumentParser().parseVolumeFull(volumeURL: url)
+
+        #expect(result.persons.count == 1,
+                "Expected 1 person entry, got \(result.persons.count)")
+        #expect(result.persons.first?.ref == "p1",
+                "Expected ref 'p1', got '\(result.persons.first?.ref ?? "nil")'")
+        #expect(result.persons.first?.name.contains("Kissinger") == true,
+                "Expected name containing 'Kissinger'")
+    }
+
+    @Test("parseVolumeFull returns terms from <div type=\"terms\">")
+    func termsExtracted() async throws {
+        let url = try makeFullVolumeFixture()
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let result = try await FRUSDocumentParser().parseVolumeFull(volumeURL: url)
+
+        #expect(result.terms.count == 1,
+                "Expected 1 term entry, got \(result.terms.count)")
+        #expect(result.terms.first?.ref == "t1",
+                "Expected ref 't1', got '\(result.terms.first?.ref ?? "nil")'")
+        #expect(result.terms.first?.term == "NSSM",
+                "Expected term 'NSSM', got '\(result.terms.first?.term ?? "nil")'")
+    }
+
+    @Test("parseVolumeFull does not produce document entries for persons or terms divs")
+    func noSpuriousDocumentsFromFrontMatter() async throws {
+        let url = try makeFullVolumeFixture()
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let result = try await FRUSDocumentParser().parseVolumeFull(volumeURL: url)
+
+        // Only the <div type="document" xml:id="d1"> should appear in documents.
+        #expect(result.documents.count == 1,
+                "Expected exactly 1 document, got \(result.documents.count): " +
+                "\(result.documents.map(\.documentId))")
+        #expect(result.documents.first?.documentId == "d1",
+                "Expected document ID 'd1'")
+    }
+}
