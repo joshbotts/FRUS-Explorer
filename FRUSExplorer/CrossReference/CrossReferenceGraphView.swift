@@ -37,6 +37,8 @@ import SwiftUI
 ///   1.0 — Session 18: initial implementation
 ///   1.1 — Session 27: Q3 structured-list a11y representation; Q4 Reduce Motion transition fix
 ///   1.2 — Session 37: context passage shown in node info panel when available
+///   1.3 — Session 61: node hit areas converted from Circle+onTapGesture to Button
+///          so Tab-key keyboard navigation can reach individual nodes (F-018)
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -234,26 +236,31 @@ struct CrossReferenceGraphView: View {
         let isHint = node.isCluster
             ? String(localized: "graph.node.cluster.hint", defaultValue: "Tap to expand")
             : String(localized: "graph.node.hint", defaultValue: "Tap to see details")
-        Circle()
-            .fill(Color.clear)
-            .frame(width: 48, height: 48)
-            .contentShape(Circle())
-            .position(pos)
+        // Using Button (not Circle+onTapGesture) so the hit area participates in the
+        // SwiftUI focus system. Tab-key and Full Keyboard Access users can now navigate
+        // between nodes without VoiceOver (F-018).
+        Button {
             #if os(macOS)
-            .onHover { hovering in
-                vm.selectNode(hovering ? node.id : nil)
-            }
-            .onTapGesture {
-                vm.navigateToNode(node.id)
-            }
+            vm.navigateToNode(node.id)
             #else
-            .onTapGesture {
-                vm.tapNode(node.id, reduceMotion: reduceMotion)
-            }
+            vm.tapNode(node.id, reduceMotion: reduceMotion)
             #endif
-            .accessibilityLabel(node.accessibilityLabel)
-            .accessibilityHint(isHint)
-            .accessibilityAddTraits(.isButton)
+        } label: {
+            Circle()
+                .fill(Color.clear)
+                .frame(width: 48, height: 48)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .position(pos)
+        #if os(macOS)
+        .onHover { hovering in
+            vm.selectNode(hovering ? node.id : nil)
+        }
+        #endif
+        .accessibilityLabel(node.accessibilityLabel)
+        .accessibilityHint(isHint)
+        // Button already carries .isButton implicitly — no addTraits needed.
     }
 
     // MARK: - Info Panel

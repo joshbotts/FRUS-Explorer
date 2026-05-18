@@ -52,10 +52,14 @@ import Sparkle
 ///   2.2 — Session 49: deferred onboarding scope enqueue after DownloadManager boot
 ///   2.3 — Session 50: CommandGroup(replacing: .appInfo) → About FRUS Explorer sheet
 ///   2.4 — Session 51: connectIndexingProgress wired on iOS; Task.yield() before auto-indexVolume
+///   2.5 — Session 61: About sheet replaced with Window scene; openWindow used in CommandGroup
 @main
 struct FRUSExplorerApp: App {
 
     @State private var appState = AppState()
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     private let modelContainer: ModelContainer = ModelContainer.makeFRUSContainer()
 
@@ -67,6 +71,15 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
         }
+        // About FRUS Explorer — presented as a proper macOS Window so the user
+        // interacts with it via the standard close button rather than a Done sheet.
+        // `.windowResizability(.contentSize)` lets the user enlarge but not shrink
+        // below the AboutView.frame minWidth/minHeight.
+        Window(String(localized: "about.title", defaultValue: "About FRUS Explorer"),
+               id: "about") {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
         #endif
     }
 
@@ -93,12 +106,12 @@ struct FRUSExplorerApp: App {
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
         .commands {
-            // Replace the default "About AppName" item with one that opens
-            // the custom AboutView sheet (via AppState.showAbout).
+            // Replace the default "About AppName" item with one that opens the
+            // dedicated About Window scene (declared in FRUSExplorerApp.body).
             CommandGroup(replacing: .appInfo) {
                 Button(String(localized: "menu.about",
                               defaultValue: "About FRUS Explorer")) {
-                    appState.showAbout = true
+                    openWindow(id: "about")
                 }
             }
 

@@ -55,6 +55,7 @@ import Observation
 ///   2.4 — Session 49: pendingDownloadScope added for onboarding → DownloadManager handoff
 ///   2.5 — Session 50: filterDownloadedOnly (UserDefaults-persisted); showAbout (macOS)
 ///   2.6 — Session 51: currentIndexingProgress (iOS); connectIndexingProgress(pipeline:)
+///   2.7 — Session 61: showAbout removed; About is now a Window scene (F-014)
 
 // MARK: - AppTab
 
@@ -118,14 +119,6 @@ final class AppState {
             UserDefaults.standard.set(filterDownloadedOnly, forKey: Keys.filterDownloadedOnly)
         }
     }
-
-    #if os(macOS)
-    /// Controls presentation of the About FRUS Explorer sheet.
-    ///
-    /// Set to `true` by the `CommandGroup(replacing: .appInfo)` menu command.
-    /// `BrowserView` observes this to present the `AboutView` sheet.
-    var showAbout: Bool = false
-    #endif
 
     // MARK: - Pending Download Scope
 

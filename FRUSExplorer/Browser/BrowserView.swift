@@ -45,6 +45,7 @@ import SwiftUI
 ///          (MacPanel enum); toolbar reorganized — ProjectPickerMenu to .navigation,
 ///          search tools grouped as .primaryAction, download filter as .secondaryAction
 ///          with Label; iPad splitLayout retains only picker + filter (tabs cover the rest)
+///   1.9 — Session 61: About sheet removed; About is now a Window scene (F-014)
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -141,9 +142,6 @@ struct BrowserView: View {
         // not a persistent research panel (per Session 60 planning decision).
         .sheet(isPresented: $appState.showCitationLookup) {
             CitationLookupView()
-        }
-        .sheet(isPresented: $appState.showAbout) {
-            AboutView()
         }
         #endif
         .onChange(of: appState.pendingBrowseDocument) { _, entry in

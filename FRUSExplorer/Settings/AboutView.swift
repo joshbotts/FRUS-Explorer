@@ -42,11 +42,9 @@ enum AboutLinks {
 ///   1.0 — Session 26: initial implementation
 ///   1.1 — Session 55: wrap in NavigationStack with Done button and minimum frame on macOS
 ///          (previously relied on Esc to dismiss with no explicit close control)
+///   1.2 — Session 61: macOS NavigationStack wrapper removed; About is now a Window scene
+///          (standard close button replaces the Done toolbar button)
 struct AboutView: View {
-
-    #if !os(iOS)
-    @Environment(\.dismiss) private var dismiss
-    #endif
 
     private var appVersion: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
@@ -55,22 +53,10 @@ struct AboutView: View {
     }
 
     var body: some View {
-        #if os(iOS)
         content
-        #else
-        // On macOS, AboutView is presented as a sheet from BrowserView. Wrap in a
-        // NavigationStack to get a toolbar for the Done button and a title bar.
-        NavigationStack {
-            content
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(String(localized: "about.done",
-                                      defaultValue: "Done")) {
-                            dismiss()
-                        }
-                    }
-                }
-        }
+        #if os(macOS)
+        // Fixed minimum size; the Window scene's .windowResizability(.contentSize)
+        // allows the user to enlarge but not shrink below this.
         .frame(minWidth: 500, minHeight: 460)
         #endif
     }

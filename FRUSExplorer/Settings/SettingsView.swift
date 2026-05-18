@@ -1493,20 +1493,22 @@ enum SettingsKeys {
 /// Presented by the system `Settings` scene declared in `FRUSExplorerApp`.
 /// The system opens this window via ⌘, and the App menu > Settings item.
 ///
-/// Four logical tabs each use a sidebar + detail layout (`NavigationSplitView`)
-/// rather than the iOS-style NavigationStack drill-down used before Session 55.
+/// Three logical tabs each use a sidebar + detail layout (`NavigationSplitView`)
+/// for a consistent presentation. The former standalone Integrations tab was merged
+/// into Advanced in Session 61 (F-015/F-016) so all tabs follow the same pattern.
 ///
 /// | Tab | Sidebar items |
 /// |---|---|
 /// | Volumes | Download Manager, Volume Management, Storage, Sideload, Reindex |
 /// | Research | User Tags, Summarization Prompts |
-/// | Integrations | (single view — no sidebar needed) |
-/// | Advanced | Reset App |
+/// | Advanced | Integrations (NARA Key), Reset App |
 ///
 /// Version history:
 ///   1.0 — Session 46: initial implementation
 ///   1.1 — Session 55: replace NavigationStack+NavigationLink with
 ///          NavigationSplitView sidebar+detail in each pane; make window resizable
+///   1.2 — Session 61: Integrations tab merged into Advanced pane (F-015/F-016);
+///          all three panes now use NavigationSplitView uniformly
 struct MacSettingsView: View {
 
     var body: some View {
@@ -1520,13 +1522,6 @@ struct MacSettingsView: View {
                        defaultValue: "Research"),
                 systemImage: "note.text") {
                 ResearchSettingsPane()
-            }
-            Tab(String(localized: "settings.mac.tab.integrations",
-                       defaultValue: "Integrations"),
-                systemImage: "network") {
-                NARAKeyView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding()
             }
             Tab(String(localized: "settings.mac.tab.advanced",
                        defaultValue: "Advanced"),
@@ -1646,14 +1641,52 @@ private struct ResearchSettingsPane: View {
 
 // MARK: - Advanced pane
 
-/// Advanced pane: shows `ResetView` directly — no sidebar needed for a single item.
+/// Advanced pane: sidebar lists Integrations and Reset App.
 ///
-/// "About FRUS Explorer" was removed in Session 50; About is now accessible via
-/// the App menu (`CommandGroup(replacing: .appInfo)`).
+/// Merges the former standalone Integrations tab (NARAKeyView) into the Advanced
+/// pane so all three Settings tabs follow the same NavigationSplitView pattern
+/// (F-015/F-016). The previous single-item Advanced pane (ResetView only) was
+/// inconsistent with the other two panes.
 private struct AdvancedSettingsPane: View {
+
+    enum Item: String, CaseIterable, Hashable {
+        case integrations, reset
+
+        var title: String {
+            switch self {
+            case .integrations: String(localized: "settings.row.integrations",
+                                       defaultValue: "Integrations")
+            case .reset:        String(localized: "settings.row.reset",
+                                       defaultValue: "Reset App")
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .integrations: "network"
+            case .reset:        "arrow.counterclockwise"
+            }
+        }
+    }
+
+    @State private var selection: Item? = .integrations
+
     var body: some View {
-        ResetView()
+        NavigationSplitView {
+            List(Item.allCases, id: \.self, selection: $selection) { item in
+                Label(item.title, systemImage: item.systemImage)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+        } detail: {
+            Group {
+                switch selection {
+                case .integrations, nil: NARAKeyView()
+                case .reset:             ResetView()
+                }
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }
 
