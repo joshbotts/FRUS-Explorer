@@ -206,44 +206,32 @@ public struct FRUSDocumentRenderer: View {
                 .applyInlineAttributes(attrs)
 
         case .footnoteMarker(let label):
-            Button {
-                onFootnoteTap(label)
-            } label: {
-                Text(label)
-                    .font(.system(size: 10))
-                    .baselineOffset(6)
-                    .foregroundStyle(Color.accentColor)
-            }
-            .buttonStyle(.plain)
+            // Use Text + onTapGesture rather than Button so that FlowLayout measures
+            // the view at the font line height. Button on macOS returns a minimum height
+            // (~22pt) that exceeds the normal text line height (~17pt), inflating every
+            // row that contains an interactive segment and creating visible vertical gaps.
+            Text(label)
+                .font(.system(size: 10))
+                .baselineOffset(6)
+                .foregroundStyle(Color.accentColor)
+                .onTapGesture { onFootnoteTap(label) }
 
         case .persName(let text, let person):
-            Button {
-                onPersonTap(person)
-            } label: {
-                Text(text)
-                    .underline(true, pattern: .dash)
-                    .foregroundStyle(.teal)
-            }
-            .buttonStyle(.plain)
+            Text(text)
+                .underline(true, pattern: .dash)
+                .foregroundStyle(.teal)
+                .onTapGesture { onPersonTap(person) }
 
         case .gloss(let text, let entry):
-            Button {
-                onGlossTap(entry)
-            } label: {
-                Text(text)
-                    .foregroundStyle(.secondary)
-                    .italic()
-            }
-            .buttonStyle(.plain)
+            Text(text)
+                .foregroundStyle(.secondary)
+                .italic()
+                .onTapGesture { onGlossTap(entry) }
 
         case .crossRef(let text, let target, let volumeId):
-            Button {
-                onCrossRefTap(target, volumeId)
-            } label: {
-                Text(text)
-                    .foregroundStyle(Color.accentColor)
-            }
-            .buttonStyle(.plain)
+            Text(text)
+                .foregroundStyle(Color.accentColor)
+                .onTapGesture { onCrossRefTap(target, volumeId) }
         }
     }
 
