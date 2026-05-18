@@ -1746,84 +1746,44 @@ enum SettingsKeys {
 ///
 /// Presented by the system `Settings` scene in `FRUSExplorerApp` (⌘,).
 ///
-/// ## Structure
-/// Three `TabView` tabs. Each tab body is a `VolumesSettingsPane` /
-/// `ResearchSettingsPane` / `AdvancedSettingsPane` struct that owns a
-/// `NavigationSplitView`: sidebar lists panels, detail column shows the selected
-/// panel. Clicking a sidebar row updates `@State selection`, which drives the
-/// detail switch. No `NavigationLink` push/pop is used; all navigation is
-/// selection-based, which is the correct pattern for macOS Settings scenes.
+/// ## Why NavigationSplitView at the top level — not TabView
 ///
-/// | Tab         | Icon                     | Sidebar items |
-/// |-------------|--------------------------|---------------|
-/// | Volumes     | arrow.down.circle        | Download Manager · Volume Management · Storage · Sideload · Reindex |
-/// | Research    | note.text                | User Tags · Summarization Prompts |
-/// | Advanced    | gearshape.2              | NARA Catalog API Key · Reset App |
+/// Previous iterations nested `NavigationSplitView` inside a `TabView`, which
+/// caused the sidebar to collapse to zero width in the Settings scene. macOS
+/// cannot measure the NavigationSplitView columns independently when they are
+/// inside a `TabView`'s content area, so it hides the sidebar entirely and the
+/// detail column fills the full window. Users had no visible way to switch panels.
+///
+/// The reliable pattern (used by System Settings and most first-party apps) is
+/// a single `NavigationSplitView` as the outermost view of the Settings scene,
+/// with all panels listed in a sectioned sidebar.
+///
+/// ## Structure
+/// ```
+/// NavigationSplitView
+/// ├── Sidebar  — sectioned List bound to @State selection
+/// │   ├── Volumes:  Download Manager · Volume Management · Storage · Sideload · Reindex
+/// │   ├── Research: User Tags · Summarization Prompts
+/// │   └── Advanced: NARA API Key · Reset App
+/// └── Detail   — switches on selection; always fills the available space
+/// ```
 ///
 /// Version history:
-///   1.0 — Replaces MacSettingsView; uses NavigationSplitView per pane struct
+///   1.0 — Replaces MacSettingsView
 ///   1.1 — Session 72: pane structs + alignment fix
+///   1.2 — Session 73: revert to top-level NavigationSplitView (no TabView);
+///          fixes sidebar collapse that made all panels unreachable
 struct FRUSSettingsView: View {
 
-    var body: some View {
-        TabView {
-            volumesTab
-                .tabItem {
-                    Label(
-                        String(localized: "settings.mac.tab.volumes",
-                               defaultValue: "Volumes"),
-                        systemImage: "arrow.down.circle"
-                    )
-                }
-
-            researchTab
-                .tabItem {
-                    Label(
-                        String(localized: "settings.mac.tab.research",
-                               defaultValue: "Research"),
-                        systemImage: "note.text"
-                    )
-                }
-
-            advancedTab
-                .tabItem {
-                    Label(
-                        String(localized: "settings.mac.tab.advanced",
-                               defaultValue: "Advanced"),
-                        systemImage: "gearshape.2"
-                    )
-                }
-        }
-        .frame(minWidth: 620, minHeight: 500)
-    }
-
-    // MARK: - Volumes tab
-    // Uses NavigationSplitView: sidebar lists panels, detail shows the selected one.
-    // This is the reliable macOS settings pattern: no NavigationStack push/pop needed.
-
-    private var volumesTab: some View {
-        VolumesSettingsPane()
-    }
-
-    // MARK: - Research tab
-
-    private var researchTab: some View {
-        ResearchSettingsPane()
-    }
-
-    // MARK: - Advanced tab
-
-    private var advancedTab: some View {
-        AdvancedSettingsPane()
-    }
-}
-
-// MARK: - Volumes pane
-
-private struct VolumesSettingsPane: View {
+    // MARK: - Sidebar items
 
     enum Item: String, CaseIterable, Hashable {
+        // Volumes section
         case downloadManager, volumeManagement, storage, sideload, reindex
+        // Research section
+        case userTags, summarization
+        // Advanced section
+        case naraKey, reset
 
         var title: String {
             switch self {
@@ -1837,6 +1797,14 @@ private struct VolumesSettingsPane: View {
                                            defaultValue: "Sideload Volume")
             case .reindex:          String(localized: "settings.row.reindex",
                                            defaultValue: "Reindex")
+            case .userTags:         String(localized: "settings.row.tags",
+                                           defaultValue: "User Tags")
+            case .summarization:    String(localized: "settings.row.summarization",
+                                           defaultValue: "Summarization Prompts")
+            case .naraKey:          String(localized: "settings.row.naraKey",
+                                           defaultValue: "NARA Catalog API Key")
+            case .reset:            String(localized: "settings.row.reset",
+                                           defaultValue: "Reset App")
             }
         }
 
@@ -1847,130 +1815,90 @@ private struct VolumesSettingsPane: View {
             case .storage:          "internaldrive"
             case .sideload:         "tray.and.arrow.down"
             case .reindex:          "arrow.triangle.2.circlepath"
+            case .userTags:         "tag"
+            case .summarization:    "sparkles"
+            case .naraKey:          "network"
+            case .reset:            "arrow.counterclockwise"
+            }
+        }
+
+        /// The sidebar section each item belongs to.
+        var section: SidebarSection { SidebarSection.for(self) }
+    }
+
+    enum SidebarSection: String {
+        case volumes, research, advanced
+
+        var title: String {
+            switch self {
+            case .volumes:  String(localized: "settings.mac.section.volumes",  defaultValue: "Volumes")
+            case .research: String(localized: "settings.mac.section.research", defaultValue: "Research")
+            case .advanced: String(localized: "settings.mac.section.advanced", defaultValue: "Advanced")
+            }
+        }
+
+        static func `for`(_ item: Item) -> SidebarSection {
+            switch item {
+            case .downloadManager, .volumeManagement, .storage, .sideload, .reindex:
+                return .volumes
+            case .userTags, .summarization:
+                return .research
+            case .naraKey, .reset:
+                return .advanced
             }
         }
     }
+
+    // MARK: - State
 
     @State private var selection: Item? = .downloadManager
 
-    var body: some View {
-        NavigationSplitView {
-            List(Item.allCases, id: \.self, selection: $selection) { item in
-                Label(item.title, systemImage: item.systemImage)
-            }
-            .listStyle(.sidebar)
-            .navigationTitle(String(localized: "settings.mac.tab.volumes",
-                                    defaultValue: "Volumes"))
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-        } detail: {
-            Group {
-                switch selection {
-                case .downloadManager, nil: DownloadManagerSettingsView()
-                case .volumeManagement:     VolumeManagementView()
-                case .storage:              StorageManagementView()
-                case .sideload:             SideloadView()
-                case .reindex:              ReindexView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }
-        .navigationSplitViewStyle(.balanced)
-    }
-}
-
-// MARK: - Research pane
-
-private struct ResearchSettingsPane: View {
-
-    enum Item: String, CaseIterable, Hashable {
-        case userTags, summarization
-
-        var title: String {
-            switch self {
-            case .userTags:      String(localized: "settings.row.tags",
-                                        defaultValue: "User Tags")
-            case .summarization: String(localized: "settings.row.summarization",
-                                        defaultValue: "Summarization Prompts")
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .userTags:      "tag"
-            case .summarization: "sparkles"
-            }
-        }
-    }
-
-    @State private var selection: Item? = .userTags
+    // MARK: - Body
 
     var body: some View {
         NavigationSplitView {
-            List(Item.allCases, id: \.self, selection: $selection) { item in
-                Label(item.title, systemImage: item.systemImage)
-            }
-            .listStyle(.sidebar)
-            .navigationTitle(String(localized: "settings.mac.tab.research",
-                                    defaultValue: "Research"))
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+            sidebar
         } detail: {
-            Group {
-                switch selection {
-                case .userTags, nil: UserTagsView()
-                case .summarization: SummarizationPromptsSettingsView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            detailView
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .navigationSplitViewStyle(.balanced)
-    }
-}
-
-// MARK: - Advanced pane
-
-private struct AdvancedSettingsPane: View {
-
-    enum Item: String, CaseIterable, Hashable {
-        case integrations, reset
-
-        var title: String {
-            switch self {
-            case .integrations: String(localized: "settings.row.integrations",
-                                       defaultValue: "Integrations")
-            case .reset:        String(localized: "settings.row.reset",
-                                       defaultValue: "Reset App")
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .integrations: "network"
-            case .reset:        "arrow.counterclockwise"
-            }
-        }
+        .frame(minWidth: 700, minHeight: 500)
     }
 
-    @State private var selection: Item? = .integrations
+    // MARK: - Sidebar
 
-    var body: some View {
-        NavigationSplitView {
-            List(Item.allCases, id: \.self, selection: $selection) { item in
-                Label(item.title, systemImage: item.systemImage)
-            }
-            .listStyle(.sidebar)
-            .navigationTitle(String(localized: "settings.mac.tab.advanced",
-                                    defaultValue: "Advanced"))
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-        } detail: {
-            Group {
-                switch selection {
-                case .integrations, nil: NARAKeyView()
-                case .reset:             ResetView()
+    private var sidebar: some View {
+        List(selection: $selection) {
+            ForEach([SidebarSection.volumes, .research, .advanced], id: \.self) { section in
+                Section(section.title) {
+                    ForEach(Item.allCases.filter { $0.section == section }, id: \.self) { item in
+                        Label(item.title, systemImage: item.systemImage)
+                            .tag(item)
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .navigationSplitViewStyle(.balanced)
+        .listStyle(.sidebar)
+        .navigationTitle(String(localized: "settings.mac.nav.title", defaultValue: "Settings"))
+        .navigationSplitViewColumnWidth(min: 200, ideal: 220)
+    }
+
+    // MARK: - Detail
+
+    @ViewBuilder
+    private var detailView: some View {
+        switch selection ?? .downloadManager {
+        case .downloadManager:  DownloadManagerSettingsView()
+        case .volumeManagement: VolumeManagementView()
+        case .storage:          StorageManagementView()
+        case .sideload:         SideloadView()
+        case .reindex:          ReindexView()
+        case .userTags:         UserTagsView()
+        case .summarization:    SummarizationPromptsSettingsView()
+        case .naraKey:          NARAKeyView()
+        case .reset:            ResetView()
+        }
     }
 }
 
