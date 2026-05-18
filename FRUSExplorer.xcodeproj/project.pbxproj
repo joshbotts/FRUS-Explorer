@@ -241,6 +241,10 @@
 		AA49BB01CC03DD04EE490012 /* DownloadScopePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490010 /* DownloadScopePickerView.swift */; };
 		AA49BB01CC03DD04EE490021 /* DownloadManagerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */; };
 		AA49BB01CC03DD04EE490022 /* DownloadManagerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */; };
+		AA50BB01CC03DD04EE5011 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */; };
+		AA50BB01CC03DD04EE5012 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */; };
+		AA51BB01CC03DD04EE5111 /* FRUSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */; };
+		AA51BB01CC03DD04EE5112 /* FRUSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */; };
 		AA49BB01CC03DD04EE490031 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490030 /* OnboardingFlowTests.swift */; };
 		AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29459906A446E922051D111D /* ManifestModels.swift */; };
 		AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F862248B58178F5619CFDC6 /* AppState.swift */; };
@@ -424,6 +428,8 @@
 		AA46BB01CC03DD04EE4600 /* MacSettingsViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacSettingsViewTests.swift; sourceTree = "<group>"; };
 		AA49BB01CC03DD04EE490010 /* DownloadScopePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadScopePickerView.swift; sourceTree = "<group>"; };
 		AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManagerSettingsView.swift; sourceTree = "<group>"; };
+		AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARAAPIKeyStore.swift; sourceTree = "<group>"; };
+		AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSSettingsView.swift; sourceTree = "<group>"; };
 		AA49BB01CC03DD04EE490030 /* OnboardingFlowTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowTests.swift; sourceTree = "<group>"; };
 		B9B3538710154855A5E7E7D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C0114AD73FF8B5C9D0446099 /* EntitlementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementsTests.swift; sourceTree = "<group>"; };
@@ -719,6 +725,7 @@
 			children = (
 				AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */,
 				AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */,
+				AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */,
 				AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */,
 			);
 			path = SourceExplorer;
@@ -728,6 +735,7 @@
 			isa = PBXGroup;
 			children = (
 				AA24BB01CC03DD04EE2400 /* SettingsView.swift */,
+				AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */,
 				AA26BB01CC03DD04EE2600 /* AboutView.swift */,
 				AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */,
 			);
@@ -1069,9 +1077,10 @@
 				AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */,
 				AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */,
 				AA23BB01CC03DD04EE2304 /* NARACatalogClient.swift in Sources */,
+				AA50BB01CC03DD04EE5011 /* NARAAPIKeyStore.swift in Sources */,
 				AA23BB01CC03DD04EE2307 /* SourceExplorerView.swift in Sources */,
 				AA24BB01CC03DD04EE2401 /* SettingsView.swift in Sources */,
-				AA49BB01CC03DD04EE490021 /* DownloadManagerSettingsView.swift in Sources */,
+				AA51BB01CC03DD04EE5111 /* FRUSSettingsView.swift in Sources */,
 				AA25BB01CC03DD04EE2501 /* GlobalContextViewModel.swift in Sources */,
 				AA25BB01CC03DD04EE2504 /* GlobalContextView.swift in Sources */,
 				AA26BB01CC03DD04EE2601 /* AboutView.swift in Sources */,
@@ -1181,9 +1190,10 @@
 				AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */,
 				AA23BB01CC03DD04EE2302 /* SourceNoteParser.swift in Sources */,
 				AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */,
+				AA50BB01CC03DD04EE5012 /* NARAAPIKeyStore.swift in Sources */,
 				AA23BB01CC03DD04EE2308 /* SourceExplorerView.swift in Sources */,
 				AA24BB01CC03DD04EE2402 /* SettingsView.swift in Sources */,
-				AA49BB01CC03DD04EE490022 /* DownloadManagerSettingsView.swift in Sources */,
+				AA51BB01CC03DD04EE5112 /* FRUSSettingsView.swift in Sources */,
 				AA25BB01CC03DD04EE2502 /* GlobalContextViewModel.swift in Sources */,
 				AA25BB01CC03DD04EE2505 /* GlobalContextView.swift in Sources */,
 				AA26BB01CC03DD04EE2602 /* AboutView.swift in Sources */,
