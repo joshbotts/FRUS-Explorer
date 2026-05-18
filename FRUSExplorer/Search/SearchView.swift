@@ -119,7 +119,11 @@ struct SearchView: View {
                         .modelContainer(modelContext.container)
                 }
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
+                    #if os(iOS)
                     DocumentView(entry: entry)
+                    #else
+                    MacDocumentView(entry: entry, navigationPath: .constant([]))
+                    #endif
                 }
         }
         #if os(macOS)

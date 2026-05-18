@@ -127,6 +127,28 @@ public final class ManifestStore {
         #endif
     }
 
+    // MARK: - Convenience Lookups
+
+    /// Returns the manifest entry for a given volume ID, or `nil` if not found.
+    ///
+    /// Searches `diffResult.known` when a live diff is available, otherwise falls
+    /// back to `bundledEntries`. Used by the new macOS UI to resolve volume metadata
+    /// from a `DocumentBrowserEntry` without requiring callers to search manually.
+    ///
+    /// Version history:
+    ///   1.0 — New UI scaffolding
+    public func entry(forVolumeId id: String) -> VolumeManifestEntry? {
+        (diffResult?.known ?? bundledEntries).first { $0.volumeId == id }
+    }
+
+    /// Convenience alias for `fetchLiveManifest()` used by the new app entry point.
+    ///
+    /// Version history:
+    ///   1.0 — New UI scaffolding
+    public func refresh(session: URLSession = .shared) async {
+        await fetchLiveManifest(session: session)
+    }
+
     // MARK: - Live Manifest Fetch
 
     /// Fetches the live GitHub listing and computes the diff against the bundled manifest.

@@ -36,6 +36,15 @@ import Sparkle
 ///    c. If online, `resumeQueuedDownloads()` is called to continue any persisted queue.
 /// 4. `onChange(of: appState.isOnline)` enables/suspends the download manager in real time.
 ///
+/// ## Window Architecture (macOS)
+/// | Scene ID                        | Type          | Purpose                                          |
+/// |---------------------------------|---------------|--------------------------------------------------|
+/// | (default `WindowGroup`)         | WindowGroup   | Main document window (onboarding → main UI)      |
+/// | `"frus.corpusBrowser"`          | Window        | Corpus browser — independent browsable window    |
+/// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
+/// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
+/// | `"about"`                       | Window        | About FRUS Explorer                              |
+///
 /// Version history:
 ///   1.0 — Session 01: initial implementation
 ///   1.1 — Session 04: inject SwiftData ModelContainer
@@ -53,6 +62,7 @@ import Sparkle
 ///   2.3 — Session 50: CommandGroup(replacing: .appInfo) → About FRUS Explorer sheet
 ///   2.4 — Session 51: connectIndexingProgress wired on iOS; Task.yield() before auto-indexVolume
 ///   2.5 — Session 61: About sheet replaced with Window scene; openWindow used in CommandGroup
+///   2.8 — New UI: Corpus Browser, Cross-Reference Graph, Source Explorer window scenes added
 @main
 struct FRUSExplorerApp: App {
 
@@ -66,15 +76,37 @@ struct FRUSExplorerApp: App {
     var body: some Scene {
         mainWindowScene
         #if os(macOS)
-        Settings {
-            MacSettingsView()
+        // MARK: - Corpus Browser Window
+        Window("Corpus Browser", id: "frus.corpusBrowser") {
+            CorpusBrowserWindowView()
                 .environment(appState)
                 .modelContainer(modelContainer)
         }
-        // About FRUS Explorer — presented as a proper macOS Window so the user
-        // interacts with it via the standard close button rather than a Done sheet.
-        // `.windowResizability(.contentSize)` lets the user enlarge but not shrink
-        // below the AboutView.frame minWidth/minHeight.
+        .defaultSize(width: 520, height: 700)
+        .keyboardShortcut("b", modifiers: [.command, .shift])
+
+        // MARK: - Cross-Reference Graph Window
+        Window("Cross-Reference Graph", id: "frus.crossReferenceGraph") {
+            CrossReferenceGraphWindowView()
+                .environment(appState)
+        }
+        .defaultSize(width: 480, height: 440)
+
+        // MARK: - Source Explorer Window
+        Window("Source Explorer", id: "frus.sourceExplorer") {
+            SourceExplorerWindowView()
+                .environment(appState)
+        }
+        .defaultSize(width: 380, height: 320)
+
+        // MARK: - Settings
+        Settings {
+            FRUSSettingsView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+
+        // MARK: - About Window
         Window(String(localized: "about.title", defaultValue: "About FRUS Explorer"),
                id: "about") {
             AboutView()
@@ -107,7 +139,7 @@ struct FRUSExplorerApp: App {
         .defaultSize(width: 1200, height: 800)
         .commands {
             // Replace the default "About AppName" item with one that opens the
-            // dedicated About Window scene (declared in FRUSExplorerApp.body).
+            // dedicated About Window scene.
             CommandGroup(replacing: .appInfo) {
                 Button(String(localized: "menu.about",
                               defaultValue: "About FRUS Explorer")) {
@@ -126,7 +158,7 @@ struct FRUSExplorerApp: App {
             #endif
 
             // Search and Citation Lookup keyboard shortcuts (⌘F and ⌘⇧F).
-            // These write to AppState properties observed by BrowserView's sheet modifiers.
+            // These write to AppState properties observed by ContentView's sheet modifiers.
             CommandGroup(after: .textEditing) {
                 Button(String(localized: "menu.search",
                               defaultValue: "Search\u{2026}")) {
@@ -167,9 +199,7 @@ struct FRUSExplorerApp: App {
                subjectTagStore: appState.subjectTagStore
            ) {
             appState.indexingPipeline = pipeline
-            #if os(iOS)
             appState.connectIndexingProgress(pipeline: pipeline)
-            #endif
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
             appState.personMentionStore = try? PersonMentionStore(databaseURL: dbURL)
             appState.searchService = SearchService(
@@ -196,9 +226,6 @@ struct FRUSExplorerApp: App {
             //     FTS5 table was rebuilt (is_editorial_note column was absent).
             //   • pipeline.needsDateReindex:
             //     Date extraction strategy was upgraded in Session 36.
-            //
-            // Both conditions are checked before launching the task so the captures
-            // are immutable and don't require actor isolation inside the Task closure.
             let ftsRebuildNeeded = store.didRebuildSchema && pipeline.needsFTSRebuildReindex
             let dateReindexNeeded = pipeline.needsDateReindex
             if ftsRebuildNeeded || dateReindexNeeded {
@@ -227,7 +254,6 @@ struct FRUSExplorerApp: App {
 
         // Capture the pipeline reference here on the MainActor (where appState is isolated)
         // so the onVolumeDownloaded closure can call indexVolume without a main-actor hop.
-        // If pipeline setup failed above, indexPipeline is nil and no callback is registered.
         let indexPipeline = appState.indexingPipeline
 
         let dm = DownloadManager(
@@ -277,8 +303,7 @@ struct FRUSExplorerApp: App {
                 toEnqueue = allEntries.filter { $0.volumeId == id }
             }
             for entry in toEnqueue {
-                let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
-                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
+                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
             }
             #if DEBUG
             print("[FRUSExplorer] Deferred onboarding scope enqueued: \(toEnqueue.count) volumes.")

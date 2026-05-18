@@ -8,6 +8,9 @@
 
 import SwiftUI
 
+// BrowserView is iOS-only. macOS uses MainWindowView with a NavigationStack.
+#if os(iOS)
+
 // MARK: - BrowserView
 
 /// Root view for the hierarchical FRUS corpus browser.
@@ -403,3 +406,5 @@ private struct SubseriesRowView: View {
         .padding(.vertical, 2)
     }
 }
+
+#endif // os(iOS)

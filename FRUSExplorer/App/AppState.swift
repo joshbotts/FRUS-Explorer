@@ -56,6 +56,8 @@ import Observation
 ///   2.5 — Session 50: filterDownloadedOnly (UserDefaults-persisted); showAbout (macOS)
 ///   2.6 — Session 51: currentIndexingProgress (iOS); connectIndexingProgress(pipeline:)
 ///   2.7 — Session 61: showAbout removed; About is now a Window scene (F-014)
+///   2.8 — New UI scaffolding: currentIndexingProgress and connectIndexingProgress promoted to
+///          cross-platform (removed #if os(iOS) guard) for macOS StatusBarView
 
 // MARK: - AppTab
 
@@ -203,6 +205,36 @@ final class AppState {
     /// Promoted from `BrowserView` local `@State` to `AppState`. Session 43.
     var showCitationLookup: Bool = false
 
+    /// The most recent per-document indexing progress update, or `nil` when no
+    /// indexing is in progress.
+    ///
+    /// Populated by `connectIndexingProgress(pipeline:)` which subscribes to
+    /// `IndexingPipeline.progressStream`. Views observe this to render live
+    /// indexing indicators (iOS: inline capsule in VolumeRowLabel; macOS: StatusBarView).
+    ///
+    /// Version history:
+    ///   1.0 — Session 51: initial implementation (iOS only)
+    ///   1.1 — New UI scaffolding: promoted to cross-platform for macOS StatusBarView
+    var currentIndexingProgress: IndexingProgressUpdate? = nil
+
+    /// Subscribes to `pipeline.progressStream` and forwards updates onto the main
+    /// actor as `currentIndexingProgress`.
+    ///
+    /// Safe to call multiple times — each call replaces the previous subscription
+    /// (the prior Task is abandoned; the stream is single-consumer by design).
+    func connectIndexingProgress(pipeline: IndexingPipeline) {
+        Task { @MainActor [weak self] in
+            for await update in await pipeline.progressStream {
+                guard let self else { return }
+                if update.stage == .complete {
+                    self.currentIndexingProgress = nil
+                } else {
+                    self.currentIndexingProgress = update
+                }
+            }
+        }
+    }
+
     #if os(iOS)
     /// The currently selected tab on iOS.
     ///
@@ -241,35 +273,6 @@ final class AppState {
             #if DEBUG
             print("[FRUSExplorer] lastActivityTabVisit updated to \(lastActivityTabVisit)")
             #endif
-        }
-    }
-
-    /// The most recent per-document indexing progress update, or `nil` when no
-    /// indexing is in progress.
-    ///
-    /// Populated by `connectIndexingProgress(pipeline:)` which subscribes to
-    /// `IndexingPipeline.progressStream`. Views observe this to render an inline
-    /// `IndexingCapsule` in `VolumeRowLabel`.
-    ///
-    /// Version history:
-    ///   1.0 — Session 51: initial implementation
-    var currentIndexingProgress: IndexingProgressUpdate? = nil
-
-    /// Subscribes to `pipeline.progressStream` and forwards updates onto the main
-    /// actor as `currentIndexingProgress`.
-    ///
-    /// Safe to call multiple times — each call replaces the previous subscription
-    /// (the prior Task is abandoned; the stream is single-consumer by design).
-    func connectIndexingProgress(pipeline: IndexingPipeline) {
-        Task { @MainActor [weak self] in
-            for await update in await pipeline.progressStream {
-                guard let self else { return }
-                if update.stage == .complete {
-                    self.currentIndexingProgress = nil
-                } else {
-                    self.currentIndexingProgress = update
-                }
-            }
         }
     }
 

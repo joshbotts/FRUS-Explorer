@@ -1696,39 +1696,35 @@ enum SettingsKeys {
     static let concurrentDownloadLimit = "frus.concurrentDownloadLimit"
 }
 
-// MARK: - MacSettingsView
+// MARK: - FRUSSettingsView
 
 #if os(macOS)
 
 /// macOS Settings window content.
 ///
-/// Replaces the sheet-based `SettingsView` used before Session 46.
-/// Presented by the system `Settings` scene declared in `FRUSExplorerApp`.
-/// The system opens this window via ⌘, and the App menu > Settings item.
+/// Presented by the system `Settings` scene in `FRUSExplorerApp` (⌘,).
 ///
-/// Three logical tabs each use a sidebar + detail layout (`NavigationSplitView`)
-/// for a consistent presentation. The former standalone Integrations tab was merged
-/// into Advanced in Session 61 (F-015/F-016) so all tabs follow the same pattern.
+/// ## Structure
+/// Three `TabView` tabs, each backed by a `NavigationStack` for forward
+/// navigation into detail sub-views. `NavigationSplitView` is intentionally
+/// avoided: it does not render reliably inside the macOS `Settings` scene
+/// (sidebar collapses at minimum width, swipe actions are inaccessible, detail
+/// columns don't size correctly). `NavigationStack` is the correct pattern here.
 ///
-/// | Tab | Sidebar items |
-/// |---|---|
-/// | Volumes | Download Manager, Volume Management, Storage, Sideload, Reindex |
-/// | Research | User Tags, Summarization Prompts |
-/// | Advanced | Integrations (NARA Key), Reset App |
+/// | Tab         | Icon                     | Content rows |
+/// |-------------|--------------------------|--------------|
+/// | Volumes     | arrow.down.circle        | Download Manager · Volume Management · Storage · Sideload · Reindex |
+/// | Research    | note.text                | User Tags · Summarization Prompts |
+/// | Advanced    | gearshape.2              | NARA Catalog API Key · Reset App |
 ///
 /// Version history:
-///   1.0 — Session 46: initial implementation
-///   1.1 — Session 55: replace NavigationStack+NavigationLink with
-///          NavigationSplitView sidebar+detail in each pane; make window resizable
-///   1.2 — Session 61: Integrations tab merged into Advanced pane (F-015/F-016);
-///          all three panes now use NavigationSplitView uniformly
-///   1.3 — Session 70: switch from newer Tab API to .tabItem API for reliable
-///          tab rendering in the Settings scene; increase minWidth 700 → 760
-struct MacSettingsView: View {
+///   1.0 — Replaces MacSettingsView; drops NavigationSplitView in favour of
+///          NavigationStack to resolve rendering failures in the Settings scene
+struct FRUSSettingsView: View {
 
     var body: some View {
         TabView {
-            VolumesSettingsPane()
+            volumesTab
                 .tabItem {
                     Label(
                         String(localized: "settings.mac.tab.volumes",
@@ -1736,7 +1732,8 @@ struct MacSettingsView: View {
                         systemImage: "arrow.down.circle"
                     )
                 }
-            ResearchSettingsPane()
+
+            researchTab
                 .tabItem {
                     Label(
                         String(localized: "settings.mac.tab.research",
@@ -1744,7 +1741,8 @@ struct MacSettingsView: View {
                         systemImage: "note.text"
                     )
                 }
-            AdvancedSettingsPane()
+
+            advancedTab
                 .tabItem {
                     Label(
                         String(localized: "settings.mac.tab.advanced",
@@ -1753,175 +1751,115 @@ struct MacSettingsView: View {
                     )
                 }
         }
-        // 760 gives each NavigationSplitView ~580 px for the detail column after the
-        // 180 px sidebar, preventing horizontal clipping at minimum window size.
-        .frame(minWidth: 760, minHeight: 480)
-    }
-}
-
-// MARK: - Volumes pane
-
-/// Volumes pane: sidebar lists the five sub-panels; detail shows the selected one.
-private struct VolumesSettingsPane: View {
-
-    enum Item: String, CaseIterable, Hashable {
-        case downloadManager, volumeManagement, storage, sideload, reindex
-
-        var title: String {
-            switch self {
-            case .downloadManager:  String(localized: "settings.row.downloadManager",
-                                           defaultValue: "Download Manager")
-            case .volumeManagement: String(localized: "settings.row.volumeManagement",
-                                           defaultValue: "Volume Management")
-            case .storage:          String(localized: "settings.row.storage",
-                                           defaultValue: "Storage")
-            case .sideload:         String(localized: "settings.row.sideload",
-                                           defaultValue: "Sideload Volume")
-            case .reindex:          String(localized: "settings.row.reindex",
-                                           defaultValue: "Reindex")
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .downloadManager:  "arrow.down.circle"
-            case .volumeManagement: "folder"
-            case .storage:          "internaldrive"
-            case .sideload:         "tray.and.arrow.down"
-            case .reindex:          "arrow.triangle.2.circlepath"
-            }
-        }
+        // 560 wide gives each NavigationStack ~560 px — enough for all forms.
+        // Resizable: users can expand for the long Available Volumes list.
+        .frame(minWidth: 560, minHeight: 440)
     }
 
-    @State private var selection: Item? = .downloadManager
+    // MARK: - Volumes tab
 
-    var body: some View {
-        NavigationSplitView {
-            List(Item.allCases, id: \.self, selection: $selection) { item in
-                Label(item.title, systemImage: item.systemImage)
-            }
-            .listStyle(.sidebar)
-            .navigationTitle(String(localized: "settings.mac.tab.volumes",
-                                    defaultValue: "Volumes"))
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-        } detail: {
-            Group {
-                switch selection {
-                case .downloadManager, nil: DownloadManagerSettingsView()
-                case .volumeManagement:     VolumeManagementView()
-                case .storage:              StorageManagementView()
-                case .sideload:             SideloadView()
-                case .reindex:              ReindexView()
+    private var volumesTab: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    NavigationLink(
+                        String(localized: "settings.row.downloadManager",
+                               defaultValue: "Download Manager")
+                    ) {
+                        DownloadManagerSettingsView()
+                    }
+                    NavigationLink(
+                        String(localized: "settings.row.volumeManagement",
+                               defaultValue: "Volume Management")
+                    ) {
+                        VolumeManagementView()
+                    }
+                    NavigationLink(
+                        String(localized: "settings.row.storage",
+                               defaultValue: "Storage")
+                    ) {
+                        StorageManagementView()
+                    }
+                    NavigationLink(
+                        String(localized: "settings.row.sideload",
+                               defaultValue: "Sideload Volume")
+                    ) {
+                        SideloadView()
+                    }
+                    NavigationLink(
+                        String(localized: "settings.row.reindex",
+                               defaultValue: "Reindex")
+                    ) {
+                        ReindexView()
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        // .balanced keeps the sidebar always visible; prevents it from auto-collapsing
-        // when the window is at minimum width, which would hide the navigation items.
-        .navigationSplitViewStyle(.balanced)
-    }
-}
-
-// MARK: - Research pane
-
-/// Research pane: sidebar lists User Tags and Summarization Prompts.
-private struct ResearchSettingsPane: View {
-
-    enum Item: String, CaseIterable, Hashable {
-        case userTags, summarization
-
-        var title: String {
-            switch self {
-            case .userTags:      String(localized: "settings.row.tags",
-                                        defaultValue: "User Tags")
-            case .summarization: String(localized: "settings.row.summarization",
-                                        defaultValue: "Summarization Prompts")
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .userTags:      "tag"
-            case .summarization: "sparkles"
-            }
+            .navigationTitle(
+                String(localized: "settings.mac.tab.volumes", defaultValue: "Volumes")
+            )
+            .frame(maxWidth: .infinity)
         }
     }
 
-    @State private var selection: Item? = .userTags
+    // MARK: - Research tab
 
-    var body: some View {
-        NavigationSplitView {
-            List(Item.allCases, id: \.self, selection: $selection) { item in
-                Label(item.title, systemImage: item.systemImage)
-            }
-            .listStyle(.sidebar)
-            .navigationTitle(String(localized: "settings.mac.tab.research",
-                                    defaultValue: "Research"))
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-        } detail: {
-            Group {
-                switch selection {
-                case .userTags, nil: UserTagsView()
-                case .summarization: SummarizationPromptsSettingsView()
+    private var researchTab: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    NavigationLink(
+                        String(localized: "settings.row.tags",
+                               defaultValue: "User Tags")
+                    ) {
+                        UserTagsView()
+                    }
+                    NavigationLink(
+                        String(localized: "settings.row.summarization",
+                               defaultValue: "Summarization Prompts")
+                    ) {
+                        SummarizationPromptsSettingsView()
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .navigationSplitViewStyle(.balanced)
-    }
-}
-
-// MARK: - Advanced pane
-
-/// Advanced pane: sidebar lists Integrations and Reset App.
-///
-/// Merges the former standalone Integrations tab (NARAKeyView) into the Advanced
-/// pane so all three Settings tabs follow the same NavigationSplitView pattern
-/// (F-015/F-016). The previous single-item Advanced pane (ResetView only) was
-/// inconsistent with the other two panes.
-private struct AdvancedSettingsPane: View {
-
-    enum Item: String, CaseIterable, Hashable {
-        case integrations, reset
-
-        var title: String {
-            switch self {
-            case .integrations: String(localized: "settings.row.integrations",
-                                       defaultValue: "Integrations")
-            case .reset:        String(localized: "settings.row.reset",
-                                       defaultValue: "Reset App")
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .integrations: "network"
-            case .reset:        "arrow.counterclockwise"
-            }
+            .navigationTitle(
+                String(localized: "settings.mac.tab.research", defaultValue: "Research")
+            )
+            .frame(maxWidth: .infinity)
         }
     }
 
-    @State private var selection: Item? = .integrations
+    // MARK: - Advanced tab
 
-    var body: some View {
-        NavigationSplitView {
-            List(Item.allCases, id: \.self, selection: $selection) { item in
-                Label(item.title, systemImage: item.systemImage)
-            }
-            .listStyle(.sidebar)
-            .navigationTitle(String(localized: "settings.mac.tab.advanced",
-                                    defaultValue: "Advanced"))
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-        } detail: {
-            Group {
-                switch selection {
-                case .integrations, nil: NARAKeyView()
-                case .reset:             ResetView()
+    private var advancedTab: some View {
+        NavigationStack {
+            Form {
+                Section(
+                    String(localized: "settings.section.integrations",
+                           defaultValue: "Integrations")
+                ) {
+                    NavigationLink(
+                        String(localized: "settings.row.naraKey",
+                               defaultValue: "NARA Catalog API Key")
+                    ) {
+                        NARAKeyView()
+                    }
+                }
+
+                Section {
+                    NavigationLink(
+                        String(localized: "settings.row.reset",
+                               defaultValue: "Reset App")
+                    ) {
+                        ResetView()
+                    }
+                    .foregroundStyle(.red)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .navigationTitle(
+                String(localized: "settings.mac.tab.advanced", defaultValue: "Advanced")
+            )
+            .frame(maxWidth: .infinity)
         }
-        .navigationSplitViewStyle(.balanced)
     }
 }
 

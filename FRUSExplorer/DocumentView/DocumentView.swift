@@ -9,6 +9,10 @@
 import SwiftUI
 import SwiftData
 
+// DocumentView and all its supporting types are iOS-only.
+// macOS uses MacDocumentView (App/MacDocumentView.swift) with the new window-based architecture.
+#if os(iOS)
+
 // MARK: - DocumentSheet
 
 /// Identifies which sheet is currently active in `DocumentView`.
@@ -1071,3 +1075,5 @@ private struct GlossDetailSheet: View {
         #endif
     }
 }
+
+#endif // os(iOS)

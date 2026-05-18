@@ -67,6 +67,19 @@ public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
     public let tags: [String]
 
     public var id: String { volumeId }
+
+    /// Constructs the GitHub raw download URL for this volume.
+    ///
+    /// Derived from `filename` at call time rather than stored in the manifest,
+    /// since the URL scheme is stable and this avoids regenerating the manifest
+    /// whenever GitHub changes the raw host (which it hasn't in a decade).
+    ///
+    /// Version history:
+    ///   1.0 — New UI scaffolding: added so new macOS UI can enqueue downloads
+    ///          without constructing the URL inline at every call site.
+    public var downloadUrl: String {
+        "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(filename)"
+    }
 }
 
 // Custom Decodable conformance in an extension so the synthesized memberwise

@@ -8,7 +8,455 @@
 
 import SwiftUI
 
-// MARK: - Document Renderer (Layer 3)
+// MARK: - FRUSDocumentRenderer
+//
+// Platform-conditional implementation:
+//
+//   macOS — new node-based renderer (no internal ScrollView; caller owns the scroll
+//            container). Used by MacDocumentView and FootnoteSectionView. Supports
+//            interactive elements (persName, gloss, crossRef, footnoteMarker) via
+//            Button overlays arranged by FlowLayout.
+//
+//   iOS   — original model-based renderer with optional internal ScrollView and
+//            AttributedString cross-ref / persName / gloss encoding via frusexplorer://
+//            deep-link URLs. Preserved unchanged from Session 66.
+//
+// Version history:
+//   1.0 — Session 06: initial implementation (functional, not final UI)
+//   1.x — Session 42: footnote bodies and markers use `displayLabel`
+//   1.1 — Session 54: `inlineAttributedString` path for paragraphs/footnotes that
+//          contain `crossRefLink` nodes; links encoded as `frusexplorer://doc/…` URLs
+//   1.2 — Session 63: crash fix — `.pageBreak` and `.figureBlock` added as explicit
+//          cases in `inlineTextNode`, `inlineAttributedStringNode`, and
+//          `extractInlineContent` to break the mutual-recursion stack overflow
+//   1.3 — Session 65: `embedInScrollView` parameter added (iOS); nested-scroll fix
+//   1.4 — Session 66: URL encoding fix for `#` in persName/gloss/crossRef refs
+//   1.5 — New UI scaffolding: macOS renderer replaced with new FlowLayout-based
+//          node-array interface; iOS renderer preserved unchanged
+
+#if os(macOS)
+
+// ============================================================
+// MARK: macOS Renderer
+// ============================================================
+
+/// Layer 3 of the TEI rendering pipeline (macOS).
+///
+/// Consumes `[FRUSRenderNode]` (Layer 2 output from `ASTToRenderNodeConverter`) and
+/// produces SwiftUI views. Block nodes become `VStack` children; inline nodes are
+/// accumulated into segments within a `FlowLayout`.
+///
+/// ## Footnote Handling
+/// `footnoteMarker` nodes trigger `onFootnoteTap(displayLabel)` which the parent
+/// (`MacDocumentView`) uses to highlight the corresponding footnote in
+/// `FootnoteSectionView`. Footnote bodies are rendered by `FootnoteSectionView`,
+/// not here — callers should pass only `model.bodyNodes`, not `model.footnotes`.
+///
+/// ## Interactive Elements
+/// - `persNameLink` → `onPersonTap(PersonEntry?)`
+/// - `glossLink`    → `onGlossTap(GlossEntry?)`
+/// - `crossRefLink` → `onCrossRefTap(target, volumeId)`
+///
+/// No internal `ScrollView` — the caller (`MacDocumentView`) owns the scroll container.
+public struct FRUSDocumentRenderer: View {
+    public let nodes: [FRUSRenderNode]
+    public let onFootnoteTap: (String) -> Void
+    public let onPersonTap: (PersonEntry?) -> Void
+    public let onGlossTap: (GlossEntry?) -> Void
+    public let onCrossRefTap: (String, String?) -> Void
+
+    public init(
+        nodes: [FRUSRenderNode],
+        onFootnoteTap: @escaping (String) -> Void,
+        onPersonTap: @escaping (PersonEntry?) -> Void,
+        onGlossTap: @escaping (GlossEntry?) -> Void,
+        onCrossRefTap: @escaping (String, String?) -> Void
+    ) {
+        self.nodes = nodes
+        self.onFootnoteTap = onFootnoteTap
+        self.onPersonTap = onPersonTap
+        self.onGlossTap = onGlossTap
+        self.onCrossRefTap = onCrossRefTap
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
+                AnyView(blockView(for: node))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Block Dispatch
+
+    @ViewBuilder
+    func blockView(for node: FRUSRenderNode) -> some View {
+        switch node {
+        case .heading(let children):
+            inlineText(children)
+                .font(.system(size: 18, weight: .medium))
+                .padding(.bottom, 2)
+
+        case .dateline(let children):
+            inlineText(children)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+
+        case .paragraph(let children):
+            inlineText(children)
+                .font(.body)
+
+        case .letterOpener(let children):
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(children.enumerated()), id: \.offset) { _, child in
+                    AnyView(blockView(for: child))
+                }
+            }
+
+        case .letterCloser(let children):
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(children.enumerated()), id: \.offset) { _, child in
+                    AnyView(blockView(for: child))
+                }
+            }
+            .padding(.top, 8)
+
+        case .salutation(let children):
+            inlineText(children)
+                .font(.body)
+
+        case .editorialNoteBlock(let children):
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(children.enumerated()), id: \.offset) { _, child in
+                    AnyView(blockView(for: child))
+                }
+            }
+            .padding(10)
+            .background(Color.secondary.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.secondary.opacity(0.15), lineWidth: 0.5)
+            )
+
+        case .tableBlock(let rows):
+            TableBlockView(rows: rows)
+
+        case .listBlock(let type, let items):
+            ListBlockView(type: type, items: items, renderer: self)
+
+        case .figureBlock(let altText):
+            HStack {
+                Image(systemName: "photo")
+                    .foregroundStyle(.tertiary)
+                if let alt = altText {
+                    Text(alt)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                        .italic()
+                }
+            }
+            .padding(8)
+            .background(Color.secondary.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+        case .lineBreak:
+            Divider().opacity(0)
+
+        // Footnote bodies collected by FootnoteSectionView; not rendered inline
+        case .footnoteBody:
+            EmptyView()
+
+        case .pageBreak:
+            EmptyView()
+
+        // Inline nodes at block level — wrap in a paragraph
+        default:
+            inlineText([node])
+                .font(.body)
+        }
+    }
+
+    // MARK: - Inline Text Accumulation
+
+    @ViewBuilder
+    func inlineText(_ children: [FRUSRenderNode]) -> some View {
+        FlowLayout(spacing: 0) {
+            ForEach(Array(inlineSegments(children).enumerated()), id: \.offset) { _, segment in
+                inlineSegmentView(segment)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func inlineSegmentView(_ segment: InlineSegment) -> some View {
+        switch segment {
+        case .text(let s, let attrs):
+            Text(s)
+                .applyInlineAttributes(attrs)
+
+        case .footnoteMarker(let label):
+            Button {
+                onFootnoteTap(label)
+            } label: {
+                Text(label)
+                    .font(.system(size: 10))
+                    .baselineOffset(6)
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+
+        case .persName(let text, let person):
+            Button {
+                onPersonTap(person)
+            } label: {
+                Text(text)
+                    .underline(true, pattern: .dash)
+                    .foregroundStyle(.teal)
+            }
+            .buttonStyle(.plain)
+
+        case .gloss(let text, let entry):
+            Button {
+                onGlossTap(entry)
+            } label: {
+                Text(text)
+                    .foregroundStyle(.secondary)
+                    .italic()
+            }
+            .buttonStyle(.plain)
+
+        case .crossRef(let text, let target, let volumeId):
+            Button {
+                onCrossRefTap(target, volumeId)
+            } label: {
+                Text(text)
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Inline Segment Extraction
+
+    enum InlineAttributes {
+        case bold, italic, smallCaps, underline, supplied, sic, corr, term
+    }
+
+    enum InlineSegment {
+        case text(String, Set<InlineAttributes>)
+        case footnoteMarker(String)
+        case persName(String, PersonEntry?)
+        case gloss(String, GlossEntry?)
+        case crossRef(String, String, String?)
+    }
+
+    func inlineSegments(_ nodes: [FRUSRenderNode], attrs: Set<InlineAttributes> = []) -> [InlineSegment] {
+        var result: [InlineSegment] = []
+        for node in nodes {
+            switch node {
+            case .plainText(let s):
+                result.append(.text(s, attrs))
+
+            case .boldText(let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs.union([.bold])))
+
+            case .italicText(let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs.union([.italic])))
+
+            case .smallCapsText(let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs.union([.smallCaps])))
+
+            case .underlineText(let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs.union([.underline])))
+
+            case .termText(let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs.union([.term])))
+
+            case .suppliedText(let c):
+                result.append(.text("[", attrs))
+                result.append(contentsOf: inlineSegments(c, attrs: attrs.union([.supplied])))
+                result.append(.text("]", attrs))
+
+            case .sicText(let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs.union([.sic])))
+
+            case .corrText(let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs))
+
+            case .formulaText(let s):
+                result.append(.text(s, attrs.union([.italic])))
+
+            case .lineBreak:
+                result.append(.text("\n", attrs))
+
+            case .footnoteMarker(_, let label):
+                result.append(.footnoteMarker(label))
+
+            case .persNameLink(_, let children, let person):
+                let text = children.compactMap {
+                    if case .plainText(let s) = $0 { return s } else { return nil }
+                }.joined(separator: "")
+                result.append(.persName(text, person))
+
+            case .glossLink(_, let children, let entry):
+                let text = children.compactMap {
+                    if case .plainText(let s) = $0 { return s } else { return nil }
+                }.joined(separator: "")
+                result.append(.gloss(text, entry))
+
+            case .crossRefLink(let target, let volumeId, let children):
+                let text = children.compactMap {
+                    if case .plainText(let s) = $0 { return s } else { return nil }
+                }.joined(separator: "")
+                result.append(.crossRef(text.isEmpty ? target : text, target, volumeId))
+
+            case .pageBreak:
+                break
+
+            case .unknown(_, let c):
+                result.append(contentsOf: inlineSegments(c, attrs: attrs))
+
+            // Block elements inside inline context — skip gracefully
+            default:
+                break
+            }
+        }
+        return result
+    }
+}
+
+// MARK: - Text Attribute Application (macOS)
+
+extension Text {
+    /// Applies inline formatting attributes and returns a new `Text`.
+    /// Uses only `Text`-returning modifiers so the return type stays `Text`,
+    /// avoiding `@ViewBuilder` incompatibility with imperative mutation.
+    func applyInlineAttributes(_ attrs: Set<FRUSDocumentRenderer.InlineAttributes>?) -> Text {
+        let a = attrs ?? []
+        var t = self
+        if a.contains(.bold)      { t = t.bold() }
+        if a.contains(.italic)    { t = t.italic() }
+        if a.contains(.underline) { t = t.underline() }
+        if a.contains(.sic)       { t = t.strikethrough() }
+        // Small-caps: use lowercaseSmallCaps font variant (returns Text).
+        if a.contains(.smallCaps) { t = t.font(Font.system(.body).lowercaseSmallCaps()) }
+        // Term: secondary foreground colour via foregroundColor (returns Text; foregroundStyle does not).
+        if a.contains(.term)      { t = t.foregroundColor(.secondary) }
+        return t
+    }
+}
+
+// MARK: - TableBlockView (macOS)
+
+private struct TableBlockView: View {
+    let rows: [[TableCell]]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { rIdx, row in
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { cIdx, cell in
+                        VStack(alignment: .leading) {
+                            Text(cell.children.map { plainText($0) }.joined())
+                                .font(.system(size: 12))
+                                .padding(6)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .overlay(alignment: .trailing) {
+                            if cIdx < row.count - 1 { Divider() }
+                        }
+                    }
+                }
+                .background(rIdx == 0 ? Color.secondary.opacity(0.06) : Color.clear)
+                Divider()
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 0.5)
+        )
+    }
+
+    private func plainText(_ node: FRUSRenderNode) -> String {
+        if case .plainText(let s) = node { return s } else { return "" }
+    }
+}
+
+// MARK: - ListBlockView (macOS)
+
+private struct ListBlockView: View {
+    let type: String?
+    let items: [[FRUSRenderNode]]
+    let renderer: FRUSDocumentRenderer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(items.enumerated()), id: \.offset) { idx, item in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(type == "ordered" ? "\(idx + 1)." : "•")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 18, alignment: .trailing)
+                    renderer.inlineText(item)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - FlowLayout (macOS)
+
+/// Left-to-right flow layout for inline text segments.
+/// Wraps to the next line when the available width is exhausted.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 0
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? 600
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if currentX + size.width > width, currentX > 0 {
+                currentX = 0
+                currentY += rowHeight + spacing
+                rowHeight = 0
+            }
+            currentX += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: width, height: currentY + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var currentX = bounds.minX
+        var currentY = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if currentX + size.width > bounds.maxX, currentX > bounds.minX {
+                currentX = bounds.minX
+                currentY += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: currentX, y: currentY), proposal: .unspecified)
+            currentX += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
+#else
+
+// ============================================================
+// MARK: iOS Renderer (preserved from Session 66)
+// ============================================================
 
 /// Layer 3 of the TEI rendering pipeline: consumes a `FRUSDocumentRenderModel`
 /// and produces a SwiftUI view hierarchy.
@@ -23,12 +471,6 @@ import SwiftUI
 /// ## Footnotes
 /// Inline `footnoteMarker` nodes render as superscript numbers. Footnote bodies from
 /// `model.footnotes` are rendered as a separate section below the document body.
-///
-/// ## Session 12 Note
-/// This Session 06 renderer provides functional output for testing and the Search index
-/// pipeline. The full Document view (typography, toolbar, citation, tags, persName popovers)
-/// is built in Session 12. Replace the ContentView usage of this with Session 12's view
-/// once available.
 ///
 /// Version history:
 ///   1.0 — Session 06: initial implementation (functional, not final UI)
@@ -181,7 +623,6 @@ public struct FRUSDocumentRenderer: View {
             )
 
         case .pageBreak:
-            // Not rendered visually; present for Session 30 citation lookup.
             AnyView(EmptyView())
 
         case .tableBlock(let rows):
@@ -255,15 +696,12 @@ public struct FRUSDocumentRenderer: View {
             )
 
         default:
-            // Inline nodes that appear at block level: render as a text run.
             AnyView(inlineText([node]))
         }
     }
 
     // MARK: - Inline Rendering
 
-    /// Builds a SwiftUI `Text` from an array of inline render nodes.
-    /// Uses `Text` string interpolation (the iOS 26+ replacement for `Text` concatenation via `+`).
     private func inlineText(_ nodes: [FRUSRenderNode]) -> Text {
         nodes.reduce(Text(verbatim: "")) { acc, node in
             Text("\(acc)\(inlineTextNode(node))")
@@ -274,77 +712,49 @@ public struct FRUSDocumentRenderer: View {
         switch node {
         case .plainText(let s):
             return Text(verbatim: s)
-
         case .boldText(let children):
             return inlineText(children).bold()
-
         case .italicText(let children):
             return inlineText(children).italic()
-
         case .smallCapsText(let children):
             return inlineText(children)
-
         case .underlineText(let children):
             return inlineText(children).underline()
-
         case .termText(let children):
             return inlineText(children).italic()
-
         case .footnoteMarker(_, let displayLabel):
             return Text(verbatim: displayLabel)
                 .font(.system(size: 9))
                 .baselineOffset(6)
-
         case .persNameLink(_, let children, _):
             return inlineText(children).foregroundColor(.accentColor)
-
         case .glossLink(_, let children, _):
             return inlineText(children).foregroundColor(.accentColor).underline()
-
         case .crossRefLink(_, _, let children):
             return inlineText(children).foregroundColor(.accentColor)
-
         case .suppliedText(let children):
             return Text("[\(inlineText(children))]")
-
         case .sicText(let children):
             return inlineText(children).strikethrough()
-
         case .corrText(let children):
             return inlineText(children)
-
         case .formulaText(let s):
             return Text(verbatim: s).italic()
-
         case .lineBreak:
             return Text(verbatim: "\n")
-
         case .unknown(_, let children):
             return inlineText(children)
-
         case .pageBreak:
-            // Page breaks carry no visible text; suppress silently in inline context.
             return Text(verbatim: "")
-
         case .figureBlock(let altText):
-            // Figures appear at block level; when encountered inline (e.g. inside a
-            // paragraph) render the alt text in brackets as a graceful fallback.
             return altText.map { Text(verbatim: "[\($0)]").italic() } ?? Text(verbatim: "")
-
         default:
-            // Block nodes within an inline context: extract text content.
-            // NOTE: every case that `extractInlineContent` does NOT handle explicitly
-            // (i.e. leaf-like nodes whose default returns [node]) MUST be handled above
-            // to avoid infinite mutual recursion:
-            //   inlineTextNode(X) → extractInlineContent(X) → [X] → inlineTextNode(X) → ∞
             return inlineText(extractInlineContent(node))
         }
     }
 
     // MARK: - Helpers
 
-    /// Separates a mixed children array: block nodes stay as blocks, pure inline
-    /// nodes are grouped into a single paragraph node for rendering.
     private func blockOrInlineNodes(_ nodes: [FRUSRenderNode]) -> [FRUSRenderNode] {
         var result: [FRUSRenderNode] = []
         var inlineBuffer: [FRUSRenderNode] = []
@@ -373,7 +783,6 @@ public struct FRUSDocumentRenderer: View {
         }
     }
 
-    /// Recursively extracts inline text content from a node (used for graceful degradation).
     private func extractInlineContent(_ node: FRUSRenderNode) -> [FRUSRenderNode] {
         switch node {
         case .paragraph(let c), .heading(let c), .dateline(let c),
@@ -391,15 +800,10 @@ public struct FRUSDocumentRenderer: View {
         case .tableBlock(let rows):
             return rows.flatMap { $0 }.flatMap { $0.children }.flatMap { extractInlineContent($0) }
         case .pageBreak:
-            // No text content; omit from inline extraction.
             return []
         case .figureBlock:
-            // Figure alt text is handled by inlineTextNode/inlineAttributedStringNode
-            // directly; returning [] here prevents the node from being re-entered.
             return []
         default:
-            // Leaf nodes (.plainText, .formulaText, .lineBreak, .footnoteMarker, etc.)
-            // are returned as-is; inlineTextNode handles them with explicit cases.
             return [node]
         }
     }
@@ -414,25 +818,12 @@ public struct FRUSDocumentRenderer: View {
 
     // MARK: - Test hooks
 
-    /// Exposes `inlineAttributedString` for unit testing via `@testable import`.
     func testInlineAttributedString(_ nodes: [FRUSRenderNode]) -> AttributedString {
         inlineAttributedString(nodes)
     }
 
     // MARK: - Interactive-inline AttributedString path
 
-    /// Returns `true` when a node array contains any element that needs the
-    /// `AttributedString` rendering path to be interactive.
-    ///
-    /// Triggers on:
-    /// - `crossRefLink` — always interactive (encoded as `frusexplorer://doc/…`).
-    /// - `persNameLink` with a non-nil ref or embedded entry — interactive
-    ///   (encoded as `frusexplorer://person/{ref}`).
-    /// - `glossLink` with a non-nil ref or embedded entry — interactive
-    ///   (encoded as `frusexplorer://gloss/{ref}`).
-    ///
-    /// Only paragraphs that contain such nodes incur the `AttributedString`
-    /// allocation; all other paragraphs use the faster `Text`-concat path.
     private func containsInteractiveInline(_ nodes: [FRUSRenderNode]) -> Bool {
         nodes.contains { node in
             switch node {
@@ -452,15 +843,6 @@ public struct FRUSDocumentRenderer: View {
         }
     }
 
-    /// Builds an `AttributedString` from inline render nodes.
-    ///
-    /// Cross-ref nodes embed a `frusexplorer://doc/{volumeId}/{documentId}` link
-    /// attribute so that `Text(attributedString)` makes them tappable via SwiftUI's
-    /// standard `openURL` environment action.
-    ///
-    /// All other styling (bold, italic, color) is applied through
-    /// `AttributedString` container attributes so the result can be concatenated
-    /// with `+` without losing attributes.
     private func inlineAttributedString(_ nodes: [FRUSRenderNode]) -> AttributedString {
         nodes.reduce(AttributedString()) { acc, node in
             acc + inlineAttributedStringNode(node)
@@ -471,38 +853,19 @@ public struct FRUSDocumentRenderer: View {
         switch node {
         case .plainText(let s):
             return AttributedString(s)
-
         case .boldText(let c):
-            var a = inlineAttributedString(c)
-            a.font = .body.bold()
-            return a
-
+            var a = inlineAttributedString(c); a.font = .body.bold(); return a
         case .italicText(let c):
-            var a = inlineAttributedString(c)
-            a.font = .body.italic()
-            return a
-
+            var a = inlineAttributedString(c); a.font = .body.italic(); return a
         case .smallCapsText(let c):
             return inlineAttributedString(c)
-
         case .underlineText(let c):
-            var a = inlineAttributedString(c)
-            a.underlineStyle = .single
-            return a
-
+            var a = inlineAttributedString(c); a.underlineStyle = .single; return a
         case .termText(let c):
-            var a = inlineAttributedString(c)
-            a.font = .body.italic()
-            return a
-
+            var a = inlineAttributedString(c); a.font = .body.italic(); return a
         case .persNameLink(let ref, let c, let person):
             var a = inlineAttributedString(c)
             a.foregroundColor = .accentColor
-            // FRUS persName@ref uses the XML ID-reference form "#p1".  Strip the
-            // leading "#" before embedding in the URL path — URL fragment syntax
-            // treats "#" as a fragment delimiter, not a path character, which
-            // would make url.pathComponents empty and break the openURL handler.
-            // personsByRef is keyed by xml:id without the "#" prefix.
             let rawPersonRef = ref ?? person?.ref
             let personRef = rawPersonRef.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
             if let personRef, !personRef.isEmpty,
@@ -510,13 +873,9 @@ public struct FRUSDocumentRenderer: View {
                 a.link = url
             }
             return a
-
         case .glossLink(let ref, let c, let entry):
             var a = inlineAttributedString(c)
-            a.foregroundColor = .accentColor
-            a.underlineStyle = .single
-            // Same "#" stripping as persNameLink — gloss@ref="#t1" → "t1".
-            // termsByRef is keyed by xml:id without the "#" prefix.
+            a.foregroundColor = .accentColor; a.underlineStyle = .single
             let rawGlossRef = ref ?? entry?.ref
             let glossRef = rawGlossRef.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
             if let glossRef, !glossRef.isEmpty,
@@ -524,17 +883,9 @@ public struct FRUSDocumentRenderer: View {
                 a.link = url
             }
             return a
-
         case .crossRefLink(let target, let volumeId, let c):
             var a = inlineAttributedString(c)
             a.foregroundColor = .accentColor
-            // Extract the bare document ID from three possible target forms:
-            //   "#d42"               → "d42"  (within-volume, FRUS standard)
-            //   "frus1969-76v01#d42" → "d42"  (cross-volume; volumeId already captured)
-            //   "d42"                → "d42"  (bare, no prefix)
-            // The "#" must be stripped before URL construction — leaving it in the
-            // path string makes URL treat it as the fragment delimiter, corrupting
-            // the path components the openURL handler reads.
             let docId: String
             if target.hasPrefix("#") {
                 docId = String(target.dropFirst())
@@ -544,56 +895,31 @@ public struct FRUSDocumentRenderer: View {
                 docId = target
             }
             let vol = volumeId ?? "_"
-            if let url = URL(string: "frusexplorer://doc/\(vol)/\(docId)") {
-                a.link = url
-            }
+            if let url = URL(string: "frusexplorer://doc/\(vol)/\(docId)") { a.link = url }
             return a
-
         case .suppliedText(let c):
             return AttributedString("[") + inlineAttributedString(c) + AttributedString("]")
-
         case .sicText(let c):
-            var a = inlineAttributedString(c)
-            a.strikethroughStyle = .single
-            return a
-
+            var a = inlineAttributedString(c); a.strikethroughStyle = .single; return a
         case .corrText(let c):
             return inlineAttributedString(c)
-
         case .footnoteMarker(_, let label):
-            var a = AttributedString(label)
-            a.font = .system(size: 9)
-            // Superscript is not directly expressible in AttributedString on SwiftUI;
-            // fall back to plain small text. The Text path handles baseline offset.
-            return a
-
+            var a = AttributedString(label); a.font = .system(size: 9); return a
         case .formulaText(let s):
-            var a = AttributedString(s)
-            a.font = .body.italic()
-            return a
-
+            var a = AttributedString(s); a.font = .body.italic(); return a
         case .pageBreak:
-            // No text content in inline context.
             return AttributedString()
-
         case .figureBlock(let altText):
-            // Graceful fallback: show bracketed alt text when a figure appears inside
-            // a paragraph that uses the AttributedString rendering path.
             var a = AttributedString(altText.map { "[\($0)]" } ?? "")
             a.font = .body.italic()
             return a
-
         default:
-            // Graceful degradation: extract plain text for any unhandled node type.
-            // Same recursion guard as inlineTextNode: every case whose
-            // extractInlineContent default returns [node] must be explicit here.
-            let children = extractInlineContent(node)
-            return inlineAttributedString(children)
+            return inlineAttributedString(extractInlineContent(node))
         }
     }
 }
 
-// MARK: - Preview Support
+// MARK: - Preview Support (iOS)
 
 #if DEBUG
 struct FRUSDocumentRenderer_Previews: PreviewProvider {
@@ -601,23 +927,23 @@ struct FRUSDocumentRenderer_Previews: PreviewProvider {
         FRUSDocumentRenderer(model: FRUSDocumentRenderModel(
             documentId: "preview",
             bodyNodes: [
-                .heading([.plainText("1. Memorandum From the President's Special Assistant for National Security Affairs")]),
+                .heading([.plainText("1. Memorandum From the President's Special Assistant")]),
                 .dateline([.plainText("Washington, January 20, 1969.")]),
                 .paragraph([
                     .plainText("The President met with "),
                     .persNameLink(ref: "Kissinger", children: [.plainText("Dr. Kissinger")], person: nil),
-                    .plainText(" to discuss "),
-                    .italicText([.plainText("détente")]),
-                    .plainText(" policy."),
+                    .plainText(" to discuss policy."),
                     .footnoteMarker(id: "fn1", displayLabel: "1")
                 ])
             ],
             footnotes: [
-                .footnoteBody(id: "fn1", type: .footnote, printedNumber: nil, sequentialNumber: 1, displayLabel: "1", children: [
-                    .plainText("Source: National Security Council Files, Box 1.")
-                ])
+                .footnoteBody(id: "fn1", type: .footnote, printedNumber: nil, sequentialNumber: 1,
+                              displayLabel: "1",
+                              children: [.plainText("Source: NSC Files, Box 1.")])
             ]
         ))
     }
 }
 #endif
+
+#endif // !os(macOS)
