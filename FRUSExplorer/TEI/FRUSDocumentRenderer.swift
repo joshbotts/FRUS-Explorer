@@ -35,6 +35,10 @@ import SwiftUI
 ///   1.x — Session 42: footnote bodies and markers use `displayLabel`
 ///   1.1 — Session 54: `inlineAttributedString` path for paragraphs/footnotes that
 ///          contain `crossRefLink` nodes; links encoded as `frusexplorer://doc/…` URLs
+///   1.2 — Session 63: crash fix — `.pageBreak` and `.figureBlock` added as explicit
+///          cases in `inlineTextNode`, `inlineAttributedStringNode`, and
+///          `extractInlineContent` to break the mutual-recursion stack overflow that
+///          occurred when either node appeared inside an inline context (EXC_BAD_ACCESS)
 public struct FRUSDocumentRenderer: View {
 
     public let model: FRUSDocumentRenderModel
@@ -288,8 +292,21 @@ public struct FRUSDocumentRenderer: View {
         case .unknown(_, let children):
             return inlineText(children)
 
+        case .pageBreak:
+            // Page breaks carry no visible text; suppress silently in inline context.
+            return Text(verbatim: "")
+
+        case .figureBlock(let altText):
+            // Figures appear at block level; when encountered inline (e.g. inside a
+            // paragraph) render the alt text in brackets as a graceful fallback.
+            return altText.map { Text(verbatim: "[\($0)]").italic() } ?? Text(verbatim: "")
+
         default:
             // Block nodes within an inline context: extract text content.
+            // NOTE: every case that `extractInlineContent` does NOT handle explicitly
+            // (i.e. leaf-like nodes whose default returns [node]) MUST be handled above
+            // to avoid infinite mutual recursion:
+            //   inlineTextNode(X) → extractInlineContent(X) → [X] → inlineTextNode(X) → ∞
             return inlineText(extractInlineContent(node))
         }
     }
@@ -343,7 +360,16 @@ public struct FRUSDocumentRenderer: View {
             return items.flatMap { $0 }.flatMap { extractInlineContent($0) }
         case .tableBlock(let rows):
             return rows.flatMap { $0 }.flatMap { $0.children }.flatMap { extractInlineContent($0) }
+        case .pageBreak:
+            // No text content; omit from inline extraction.
+            return []
+        case .figureBlock:
+            // Figure alt text is handled by inlineTextNode/inlineAttributedStringNode
+            // directly; returning [] here prevents the node from being re-entered.
+            return []
         default:
+            // Leaf nodes (.plainText, .formulaText, .lineBreak, .footnoteMarker, etc.)
+            // are returned as-is; inlineTextNode handles them with explicit cases.
             return [node]
         }
     }
@@ -474,8 +500,21 @@ public struct FRUSDocumentRenderer: View {
             a.font = .body.italic()
             return a
 
+        case .pageBreak:
+            // No text content in inline context.
+            return AttributedString()
+
+        case .figureBlock(let altText):
+            // Graceful fallback: show bracketed alt text when a figure appears inside
+            // a paragraph that uses the AttributedString rendering path.
+            var a = AttributedString(altText.map { "[\($0)]" } ?? "")
+            a.font = .body.italic()
+            return a
+
         default:
             // Graceful degradation: extract plain text for any unhandled node type.
+            // Same recursion guard as inlineTextNode: every case whose
+            // extractInlineContent default returns [node] must be explicit here.
             let children = extractInlineContent(node)
             return inlineAttributedString(children)
         }
