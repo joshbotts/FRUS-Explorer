@@ -31,6 +31,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 49: initial implementation (extracted/expanded from old onboarding)
+///   1.1 — Session 67: macOS scroll affordance — remove maxHeight: .infinity from Form
 struct DownloadManagerSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -196,7 +197,8 @@ struct DownloadManagerSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
     }
 

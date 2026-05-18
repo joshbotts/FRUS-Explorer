@@ -42,6 +42,10 @@ import UniformTypeIdentifiers
 ///   1.5 — Session 50: About row removed from iOS SettingsView (now in macOS App menu)
 ///   1.6 — Session 57: VolumeManagementView delete moved to swipe action + confirmation dialog
 ///          (F-010); UserTagsView gains leading swipe-to-rename action (F-004)
+///   1.7 — Session 67: macOS scroll affordances for all detail panes (remove maxHeight:
+///          .infinity from Form so NavigationSplitView detail column bounds it correctly;
+///          add .scrollIndicators(.visible)); StorageManagementView adds per-volume
+///          indexing-status badge and Reindex button via IndexingPipeline API
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -216,7 +220,10 @@ private struct VolumeManagementView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // maxWidth fills the detail column; omitting maxHeight lets the
+        // NavigationSplitView bound the Form so it scrolls instead of expanding.
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
         .confirmationDialog(
             String(localized: "settings.volumes.delete.confirm.title",
@@ -374,11 +381,29 @@ private struct VolumeManagementView: View {
 
 // MARK: - StorageManagementView
 
+/// Shows aggregate and per-volume storage usage.
+///
+/// ## Indexing Status (Session 67)
+/// Each per-volume row indicates whether the volume has been indexed for full-text
+/// search (using `IndexingPipeline.isVolumeIndexed`). Unindexed volumes display a
+/// "Reindex" button that calls `IndexingPipeline.indexVolume` inline.
+///
+/// ## Scroll Affordance (Session 67)
+/// The Form omits `maxHeight: .infinity` so the `NavigationSplitView` detail column
+/// bounds it correctly and it scrolls when the per-volume list is long.
 private struct StorageManagementView: View {
 
     @Environment(AppState.self) private var appState
+
     @State private var report: StorageReport? = nil
     @State private var loadError: String? = nil
+
+    /// Indexed status per volumeId. `nil` means not yet checked or pipeline unavailable.
+    @State private var indexedStatus: [String: Bool] = [:]
+    /// VolumeId currently being reindexed; drives inline ProgressView.
+    @State private var reindexingVolumeId: String? = nil
+    /// Per-volume reindex errors (rare, but surfaced inline).
+    @State private var reindexErrors: [String: String] = [:]
 
     var body: some View {
         Form {
@@ -419,24 +444,7 @@ private struct StorageManagementView: View {
                 Section(String(localized: "settings.storage.perVolume.header",
                                defaultValue: "Per-Volume Storage")) {
                     ForEach(report.perVolume, id: \.volumeId) { entry in
-                        let manifestEntry = appState.manifestStore.diffResult?.known
-                            .first { $0.volumeId == entry.volumeId }
-                            ?? appState.manifestStore.bundledEntries
-                            .first { $0.volumeId == entry.volumeId }
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(manifestEntry?.title ?? entry.volumeId)
-                                    .font(.callout)
-                                    .lineLimit(1)
-                                Text(entry.volumeId)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Text(formattedBytes(entry.volumeFileBytes))
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                        }
+                        perVolumeRow(entry: entry)
                     }
                 }
             }
@@ -454,7 +462,8 @@ private struct StorageManagementView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
         .task {
             do {
@@ -462,7 +471,121 @@ private struct StorageManagementView: View {
             } catch {
                 loadError = error.localizedDescription
             }
+            // Load indexed status for all downloaded volumes after report is available.
+            if let rep = report, let pipeline = appState.indexingPipeline {
+                for perVol in rep.perVolume {
+                    indexedStatus[perVol.volumeId] =
+                        (try? pipeline.isVolumeIndexed(perVol.volumeId)) ?? false
+                }
+            }
         }
+    }
+
+    // MARK: - Per-Volume Row
+
+    @ViewBuilder
+    private func perVolumeRow(entry: VolumeStorageEntry) -> some View {
+        let manifestEntry = appState.manifestStore.diffResult?.known
+            .first { $0.volumeId == entry.volumeId }
+            ?? appState.manifestStore.bundledEntries
+            .first { $0.volumeId == entry.volumeId }
+
+        HStack(alignment: .center, spacing: 8) {
+            // Title + volumeId
+            VStack(alignment: .leading, spacing: 2) {
+                Text(manifestEntry?.title ?? entry.volumeId)
+                    .font(.callout)
+                    .lineLimit(2)
+                Text(entry.volumeId)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            // File size
+            Text(formattedBytes(entry.volumeFileBytes))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+
+            // Indexed status / reindex control (only shown when pipeline available)
+            if appState.indexingPipeline != nil {
+                indexedStatusView(volumeId: entry.volumeId)
+            }
+        }
+
+        // Per-volume reindex error (rare)
+        if let errMsg = reindexErrors[entry.volumeId] {
+            Text(errMsg)
+                .font(.caption)
+                .foregroundStyle(.red)
+        }
+    }
+
+    @ViewBuilder
+    private func indexedStatusView(volumeId: String) -> some View {
+        if reindexingVolumeId == volumeId {
+            // In-progress spinner
+            HStack(spacing: 4) {
+                ProgressView()
+                    .controlSize(.mini)
+                Text(String(localized: "settings.storage.indexing",
+                            defaultValue: "Indexing…"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } else if let isIndexed = indexedStatus[volumeId] {
+            if isIndexed {
+                Label(String(localized: "settings.storage.indexed",
+                             defaultValue: "Indexed"),
+                      systemImage: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+                    .accessibilityLabel(
+                        String(localized: "settings.storage.indexed.a11y",
+                               defaultValue: "Volume is indexed for search"))
+            } else {
+                HStack(spacing: 6) {
+                    Label(String(localized: "settings.storage.notIndexed",
+                                 defaultValue: "Not Indexed"),
+                          systemImage: "xmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button(String(localized: "settings.storage.reindex.button",
+                                  defaultValue: "Reindex")) {
+                        Task { await reindexVolume(volumeId) }
+                    }
+                    .font(.caption)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(
+                        String(localized: "settings.storage.reindex.a11y",
+                               defaultValue: "Reindex \(volumeId) for search"))
+                }
+            }
+        }
+        // nil means status not yet loaded; show nothing to avoid layout jitter
+    }
+
+    // MARK: - Reindex
+
+    private func reindexVolume(_ volumeId: String) async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        reindexingVolumeId = volumeId
+        reindexErrors.removeValue(forKey: volumeId)
+        do {
+            try await pipeline.indexVolume(volumeId)
+            indexedStatus[volumeId] = true
+            #if DEBUG
+            print("[Settings] Reindexed volume: \(volumeId)")
+            #endif
+        } catch {
+            reindexErrors[volumeId] = error.localizedDescription
+            #if DEBUG
+            print("[Settings] Reindex failed for \(volumeId): \(error)")
+            #endif
+        }
+        if reindexingVolumeId == volumeId { reindexingVolumeId = nil }
     }
 }
 
@@ -663,7 +786,8 @@ private struct SideloadView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
         .fileImporter(
             isPresented: $isImporting,
@@ -773,7 +897,8 @@ private struct ReindexView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
     }
 
@@ -920,7 +1045,8 @@ private struct UserTagsView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
         .toolbar {
             if renamingTag != nil {
@@ -1071,7 +1197,8 @@ private struct SummarizationPromptsSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
     }
 
@@ -1272,7 +1399,8 @@ private struct NARAKeyView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
         .task {
             hasExistingKey = await keychainStore.hasAPIKey()
@@ -1385,7 +1513,8 @@ private struct ResetView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
         #endif
         .confirmationDialog(
             String(localized: "settings.reset.confirm1.title",
