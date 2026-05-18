@@ -112,7 +112,7 @@
     "publicationDate" : "1861 to 1863",
     "sizeBytes" : 6109311,
     "status" : "published",
-    "subseries" : "1863p1",
+    "subseries" : "1863",
     "tags" : [
       "lincoln-abraham",
       "united-kingdom",
@@ -138,7 +138,7 @@
     "publicationDate" : "1862 to 1863",
     "sizeBytes" : 4784553,
     "status" : "published",
-    "subseries" : "1863p2",
+    "subseries" : "1863",
     "tags" : [
       "lincoln-abraham",
       "france",
@@ -189,7 +189,7 @@
     "publicationDate" : "1861 to 1864",
     "sizeBytes" : 6556114,
     "status" : "published",
-    "subseries" : "1864p1",
+    "subseries" : "1864",
     "tags" : [
       "lincoln-abraham",
       "united-kingdom",
@@ -217,7 +217,7 @@
     "publicationDate" : "1861 to 1865",
     "sizeBytes" : 5967192,
     "status" : "published",
-    "subseries" : "1864p2",
+    "subseries" : "1864",
     "tags" : [
       "lincoln-abraham",
       "united-kingdom",
@@ -247,7 +247,7 @@
     "publicationDate" : "1863 to 1864",
     "sizeBytes" : 4361469,
     "status" : "published",
-    "subseries" : "1864p3",
+    "subseries" : "1864",
     "tags" : [
       "france",
       "russia",
@@ -279,7 +279,7 @@
     "publicationDate" : "1863 to 1864",
     "sizeBytes" : 3417223,
     "status" : "published",
-    "subseries" : "1864p4",
+    "subseries" : "1864",
     "tags" : [
       "austria",
       "chile",
@@ -320,7 +320,7 @@
     "publicationDate" : "1860 to 1865",
     "sizeBytes" : 6167919,
     "status" : "published",
-    "subseries" : "1865p1",
+    "subseries" : "1865",
     "tags" : [
       "seward-william-henry",
       "lincoln-abraham",
@@ -355,7 +355,7 @@
     "publicationDate" : "1863 to 1865",
     "sizeBytes" : 4922227,
     "status" : "published",
-    "subseries" : "1865p2",
+    "subseries" : "1865",
     "tags" : [
       "france",
       "russia",
@@ -390,7 +390,7 @@
     "publicationDate" : "1860 to 1866",
     "sizeBytes" : 7154191,
     "status" : "published",
-    "subseries" : "1865p3",
+    "subseries" : "1865",
     "tags" : [
       "mexico",
       "egypt",
@@ -429,7 +429,7 @@
     "publicationDate" : "1865 to 1866",
     "sizeBytes" : 5027424,
     "status" : "published",
-    "subseries" : "1865p4",
+    "subseries" : "1865",
     "tags" : [
       "austria",
       "argentina",
@@ -490,7 +490,7 @@
     "publicationDate" : "1860 to 1866",
     "sizeBytes" : 5986550,
     "status" : "published",
-    "subseries" : "1866p1",
+    "subseries" : "1866",
     "tags" : [
       "chile",
       "colombia",
@@ -528,7 +528,7 @@
     "publicationDate" : "1860 to 1866",
     "sizeBytes" : 5512587,
     "status" : "published",
-    "subseries" : "1866p2",
+    "subseries" : "1866",
     "tags" : [
       "agriculture",
       "austria",
@@ -589,7 +589,7 @@
     "publicationDate" : "1865 to 1866",
     "sizeBytes" : 5213107,
     "status" : "published",
-    "subseries" : "1866p3",
+    "subseries" : "1866",
     "tags" : [
       "alliances",
       "argentina",
@@ -666,7 +666,7 @@
     "publicationDate" : "1861 to 1868",
     "sizeBytes" : 6198447,
     "status" : "published",
-    "subseries" : "1867p1",
+    "subseries" : "1867",
     "tags" : [
       "belgium",
       "brazil",
@@ -720,7 +720,7 @@
     "publicationDate" : "1866 to 1867",
     "sizeBytes" : 7156738,
     "status" : "published",
-    "subseries" : "1867p2",
+    "subseries" : "1867",
     "tags" : [
       "agriculture",
       "argentina",
@@ -781,7 +781,7 @@
     "publicationDate" : "1867 to 1869",
     "sizeBytes" : 6748578,
     "status" : "published",
-    "subseries" : "1868p1",
+    "subseries" : "1868",
     "tags" : [
       "belgium",
       "canada",
@@ -833,7 +833,7 @@
     "publicationDate" : "1866 to 1868",
     "sizeBytes" : 8276017,
     "status" : "published",
-    "subseries" : "1868p2",
+    "subseries" : "1868",
     "tags" : [
       "argentina",
       "austria",
@@ -1031,7 +1031,7 @@
     "publicationDate" : "1870 to 1872",
     "sizeBytes" : 6056974,
     "status" : "published",
-    "subseries" : "1872p1",
+    "subseries" : "1872",
     "tags" : [
       "austria",
       "bolivia",
@@ -2496,7 +2496,7 @@
     "publicationDate" : "1884 to 1889",
     "sizeBytes" : 7901996,
     "status" : "published",
-    "subseries" : "1888p1",
+    "subseries" : "1888",
     "tags" : [
       "australia",
       "belgium",
@@ -2543,7 +2543,7 @@
     "publicationDate" : "1885 to 1889",
     "sizeBytes" : 7519660,
     "status" : "published",
-    "subseries" : "1888p2",
+    "subseries" : "1888",
     "tags" : [
       "bolivia",
       "brazil",
@@ -2910,7 +2910,7 @@
     "publicationDate" : "1894 to 1895",
     "sizeBytes" : 1273810,
     "status" : "published",
-    "subseries" : "1894Nicaragua",
+    "subseries" : "1894",
     "tags" : [
       "canada",
       "cleveland-grover-1893-1897",
@@ -2936,7 +2936,7 @@
     "publicationDate" : "1886 to 1895",
     "sizeBytes" : 5011083,
     "status" : "published",
-    "subseries" : "1894app1",
+    "subseries" : "1894ap",
     "tags" : [
       "agriculture",
       "asylum",
@@ -2987,7 +2987,7 @@
     "publicationDate" : "1826 to 1895",
     "sizeBytes" : 11297215,
     "status" : "published",
-    "subseries" : "1894app2",
+    "subseries" : "1894ap",
     "tags" : [
       "agriculture",
       "alliances",
@@ -3040,7 +3040,7 @@
     "publicationDate" : "1893 to 1896",
     "sizeBytes" : 6286638,
     "status" : "published",
-    "subseries" : "1895p1",
+    "subseries" : "1895",
     "tags" : [
       "argentina",
       "asylum",
@@ -3101,7 +3101,7 @@
     "publicationDate" : "1877 to 1896",
     "sizeBytes" : 5763680,
     "status" : "published",
-    "subseries" : "1895p2",
+    "subseries" : "1895",
     "tags" : [
       "asylum",
       "belgium",
@@ -3547,7 +3547,7 @@
     "publicationDate" : "1900 to 1901",
     "sizeBytes" : 2712251,
     "status" : "published",
-    "subseries" : "1901China",
+    "subseries" : "1901",
     "tags" : [
       "china",
       "france",
@@ -3633,7 +3633,7 @@
     "publicationDate" : "1820 to 1902",
     "sizeBytes" : 3916631,
     "status" : "published",
-    "subseries" : "1902app1",
+    "subseries" : "1902ap",
     "tags" : [
       "brazil",
       "costa-rica",
@@ -3661,7 +3661,7 @@
     "publicationDate" : "1697 to 1903",
     "sizeBytes" : 5364977,
     "status" : "published",
-    "subseries" : "1902app2",
+    "subseries" : "1902ap",
     "tags" : [
       "holy-see",
       "mexico",
@@ -3904,7 +3904,7 @@
     "publicationDate" : "1901 to 1908",
     "sizeBytes" : 6690753,
     "status" : "published",
-    "subseries" : "1906p1",
+    "subseries" : "1906",
     "tags" : [
       "argentina",
       "austria",
@@ -3953,7 +3953,7 @@
     "publicationDate" : "1900 to 1907",
     "sizeBytes" : 6083350,
     "status" : "published",
-    "subseries" : "1906p2",
+    "subseries" : "1906",
     "tags" : [
       "haiti",
       "italy",
@@ -4007,7 +4007,7 @@
     "publicationDate" : "1904 to 1908",
     "sizeBytes" : 4633212,
     "status" : "published",
-    "subseries" : "1907p1",
+    "subseries" : "1907",
     "tags" : [
       "argentina",
       "austria",
@@ -4049,7 +4049,7 @@
     "publicationDate" : "1899 to 1909",
     "sizeBytes" : 5171123,
     "status" : "published",
-    "subseries" : "1907p2",
+    "subseries" : "1907",
     "tags" : [
       "guatemala",
       "honduras",
@@ -4668,7 +4668,7 @@
     "publicationDate" : "1911 to 1915",
     "sizeBytes" : 8157489,
     "status" : "published",
-    "subseries" : "1914Supp",
+    "subseries" : "1914",
     "tags" : [
       "world-war-i",
       "argentina",
@@ -4803,7 +4803,7 @@
     "publicationDate" : "1914 to 1916",
     "sizeBytes" : 10685378,
     "status" : "published",
-    "subseries" : "1915Supp",
+    "subseries" : "1915",
     "tags" : [
       "world-war-i",
       "albania",
@@ -4915,7 +4915,7 @@
     "publicationDate" : "1914 to 1917",
     "sizeBytes" : 9678506,
     "status" : "published",
-    "subseries" : "1916Supp",
+    "subseries" : "1916",
     "tags" : [
       "world-war-i",
       "asylum",
@@ -5030,7 +5030,7 @@
     "publicationDate" : "1917 to 1919",
     "sizeBytes" : 530615,
     "status" : "published",
-    "subseries" : "1917-72PubDip",
+    "subseries" : "1917-72",
     "tags" : [
       "argentina",
       "china",
@@ -5587,7 +5587,7 @@
     "publicationDate" : "1917 to 1920",
     "sizeBytes" : 5906290,
     "status" : "published",
-    "subseries" : "1918Supp02",
+    "subseries" : "1918",
     "tags" : [
       "austria",
       "hungary",
@@ -6252,7 +6252,7 @@
     "publicationDate" : "1918 to 1920",
     "sizeBytes" : 5728500,
     "status" : "published",
-    "subseries" : "1919Russia",
+    "subseries" : "1919",
     "tags" : [
       "russia",
       "asylum",
@@ -10893,7 +10893,7 @@
     "publicationDate" : "1941 to 1943",
     "sizeBytes" : 4267010,
     "status" : "published",
-    "subseries" : "1942China",
+    "subseries" : "1942",
     "tags" : [
       "hull-cordell",
       "roosevelt-franklin-d",
@@ -11253,7 +11253,7 @@
     "publicationDate" : "1943 to 1948",
     "sizeBytes" : 7315607,
     "status" : "published",
-    "subseries" : "1943CairoTehran",
+    "subseries" : "1943",
     "tags" : [
       "hull-cordell",
       "roosevelt-franklin-d",
@@ -11294,7 +11294,7 @@
     "publicationDate" : "1942 to 1944",
     "sizeBytes" : 4768899,
     "status" : "published",
-    "subseries" : "1943China",
+    "subseries" : "1943",
     "tags" : [
       "china",
       "roosevelt-franklin-d",
@@ -11620,7 +11620,7 @@
     "publicationDate" : "1944",
     "sizeBytes" : 3845187,
     "status" : "published",
-    "subseries" : "1944Quebec",
+    "subseries" : "1944",
     "tags" : [
       "canada",
       "hull-cordell",
@@ -12078,7 +12078,7 @@
     "publicationDate" : "1945 to 1950",
     "sizeBytes" : 6296868,
     "status" : "published",
-    "subseries" : "1945-50Intel",
+    "subseries" : "1945-50",
     "tags" : [
       "protocol",
       "truman-harry-s",
@@ -12246,7 +12246,7 @@
     "publicationDate" : "1944 to 1945",
     "sizeBytes" : 8013960,
     "status" : "published",
-    "subseries" : "1945Malta",
+    "subseries" : "1945",
     "tags" : [
       "byrnes-james-francis",
       "truman-harry-s",
@@ -15164,7 +15164,7 @@
     "publicationDate" : "1950 to 1956",
     "sizeBytes" : 4981101,
     "status" : "published",
-    "subseries" : "1950-55Intel",
+    "subseries" : "1950-55",
     "tags" : [
       "acheson-dean-gooderham",
       "sub-saharan-africa",
@@ -15722,7 +15722,7 @@
     "publicationDate" : "1951 to 1954",
     "sizeBytes" : 5368042,
     "status" : "published",
-    "subseries" : "1951-54Iran",
+    "subseries" : "1951-54",
     "tags" : [
       "truman-harry-s",
       "eisenhower-dwight-d",
@@ -16509,7 +16509,7 @@
     "publicationDate" : "1952 to 1975",
     "sizeBytes" : 2580791,
     "status" : "published",
-    "subseries" : "1952-54Guat",
+    "subseries" : "1952-54",
     "tags" : [
       "acheson-dean-gooderham",
       "guatemala",
@@ -28412,7 +28412,7 @@
     "publicationDate" : "1968 to 1973",
     "sizeBytes" : 7024749,
     "status" : "published",
-    "subseries" : "1969-76ve01",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "rogers-william-pierce",
@@ -28475,7 +28475,7 @@
     "publicationDate" : "1969 to 1973",
     "sizeBytes" : 6639118,
     "status" : "published",
-    "subseries" : "1969-76ve02",
+    "subseries" : "1969-76",
     "tags" : [
       "arms-control-and-disarmament",
       "nuclear-nonproliferation",
@@ -28522,7 +28522,7 @@
     "publicationDate" : "1972 to 1977",
     "sizeBytes" : 6437313,
     "status" : "published",
-    "subseries" : "1969-76ve03",
+    "subseries" : "1969-76",
     "tags" : [
       "law-of-the-sea",
       "antarctica",
@@ -28588,7 +28588,7 @@
     "publicationDate" : "1969 to 1972",
     "sizeBytes" : 5200082,
     "status" : "published",
-    "subseries" : "1969-76ve04",
+    "subseries" : "1969-76",
     "tags" : [
       "iran",
       "iraq",
@@ -28629,7 +28629,7 @@
     "publicationDate" : "1969 to 1972",
     "sizeBytes" : 4727096,
     "status" : "published",
-    "subseries" : "1969-76ve05p1",
+    "subseries" : "1969-76",
     "tags" : [
       "nigeria",
       "burundi",
@@ -28690,7 +28690,7 @@
     "publicationDate" : "1969 to 1973",
     "sizeBytes" : 2907433,
     "status" : "published",
-    "subseries" : "1969-76ve05p2",
+    "subseries" : "1969-76",
     "tags" : [
       "libya",
       "algeria",
@@ -28736,7 +28736,7 @@
     "publicationDate" : "1973 to 1976",
     "sizeBytes" : 5399380,
     "status" : "published",
-    "subseries" : "1969-76ve06",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "rogers-william-pierce",
@@ -28809,7 +28809,7 @@
     "publicationDate" : "1969 to 1972",
     "sizeBytes" : 8143215,
     "status" : "published",
-    "subseries" : "1969-76ve07",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "rogers-william-pierce",
@@ -28850,7 +28850,7 @@
     "publicationDate" : "1973 to 1976",
     "sizeBytes" : 5385766,
     "status" : "published",
-    "subseries" : "1969-76ve08",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "ford-gerald",
@@ -28905,7 +28905,7 @@
     "publicationDate" : "1973 to 1977",
     "sizeBytes" : 1890303,
     "status" : "published",
-    "subseries" : "1969-76ve09p1",
+    "subseries" : "1969-76",
     "tags" : [
       "algeria",
       "arab-israeli-dispute",
@@ -28958,7 +28958,7 @@
     "publicationDate" : "1973 to 1977",
     "sizeBytes" : 4089267,
     "status" : "published",
-    "subseries" : "1969-76ve09p2",
+    "subseries" : "1969-76",
     "tags" : [
       "near-east",
       "bahrain",
@@ -29018,7 +29018,7 @@
     "publicationDate" : "1968 to 1973",
     "sizeBytes" : 8817153,
     "status" : "published",
-    "subseries" : "1969-76ve10",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "rogers-william-pierce",
@@ -29084,7 +29084,7 @@
     "publicationDate" : "1973 to 1977",
     "sizeBytes" : 6424292,
     "status" : "published",
-    "subseries" : "1969-76ve11p1",
+    "subseries" : "1969-76",
     "tags" : [
       "barbados",
       "belize",
@@ -29140,7 +29140,7 @@
     "publicationDate" : "1973 to 1976",
     "sizeBytes" : 6184826,
     "status" : "published",
-    "subseries" : "1969-76ve11p2",
+    "subseries" : "1969-76",
     "tags" : [
       "ford-gerald",
       "kissinger-henry-a",
@@ -29199,7 +29199,7 @@
     "publicationDate" : "1973 to 1976",
     "sizeBytes" : 7002610,
     "status" : "published",
-    "subseries" : "1969-76ve12",
+    "subseries" : "1969-76",
     "tags" : [
       "covert-actions",
       "ford-gerald",
@@ -29258,7 +29258,7 @@
     "publicationDate" : "1969 to 1972",
     "sizeBytes" : 5081046,
     "status" : "published",
-    "subseries" : "1969-76ve13",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "rogers-william-pierce",
@@ -29302,7 +29302,7 @@
     "publicationDate" : "1973 to 1977",
     "sizeBytes" : 3367356,
     "status" : "published",
-    "subseries" : "1969-76ve14p1",
+    "subseries" : "1969-76",
     "tags" : [
       "united-nations",
       "nixon-richard",
@@ -29370,7 +29370,7 @@
     "publicationDate" : "1973 to 1976",
     "sizeBytes" : 3925893,
     "status" : "published",
-    "subseries" : "1969-76ve14p2",
+    "subseries" : "1969-76",
     "tags" : [
       "arms-transfers",
       "chemical-and-bacteriological-warfare",
@@ -29403,7 +29403,7 @@
     "publicationDate" : "1973 to 1977",
     "sizeBytes" : 2434460,
     "status" : "published",
-    "subseries" : "1969-76ve15p1",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "rogers-william-pierce",
@@ -29447,7 +29447,7 @@
     "publicationDate" : "1973 to 1977",
     "sizeBytes" : 5873189,
     "status" : "published",
-    "subseries" : "1969-76ve15p2",
+    "subseries" : "1969-76",
     "tags" : [
       "canada",
       "covert-actions",
@@ -29491,7 +29491,7 @@
     "publicationDate" : "1973 to 1977",
     "sizeBytes" : 6356286,
     "status" : "published",
-    "subseries" : "1969-76ve15p2Ed2",
+    "subseries" : "1969-76",
     "tags" : [
       "agriculture",
       "alliances",
@@ -29546,7 +29546,7 @@
     "publicationDate" : "1969 to 1974",
     "sizeBytes" : 4407045,
     "status" : "published",
-    "subseries" : "1969-76ve16",
+    "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
       "rogers-william-pierce",

@@ -55,6 +55,9 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
 /// Version history:
 ///   1.0 — Session 02: initial implementation
 ///   1.1 — Session 49: corpusDateRange computed property added
+///   1.2 — Session 68: frusSubseries(from:) updated to match VolumeIDParser Session 54 logic
+///          (strips Vietnam-extras, bare part numbers, known suffixes, and conference/topic
+///          name suffixes) so newly-available volumes in the live diff get correct subseries
 @Observable
 @MainActor
 public final class ManifestStore {
@@ -235,25 +238,33 @@ public final class ManifestStore {
 
 /// Extracts the subseries identifier from a FRUS XML filename.
 ///
-/// Captures all leading digits and dashes from the portion of the filename that
-/// follows the `"frus"` prefix, stopping at the first alphabetic character.
-/// This correctly handles the full range of FRUS naming conventions:
+/// Mirrors the algorithm in `VolumeIDParser.subseries(from:)` (Session 54) so that
+/// newly-available volumes in the live GitHub diff receive the same correct subseries
+/// grouping as volumes in the bundled manifest.
 ///
-/// | Filename               | Suffix after "frus" | Result    |
-/// |---|---|---|
-/// | `frus1969-76v01.xml`   | `1969-76v01`        | `1969-76` |
-/// | `frus1977-80v12.xml`   | `1977-80v12`        | `1977-80` |
-/// | `frus1861.xml`         | `1861`              | `1861`    |
-/// | `frus1877app.xml`      | `1877app`           | `1877`    |
-/// | `frus1863p1.xml`       | `1863p1`            | `1863`    |
-/// | `frus1894Nicaragua.xml`| `1894Nicaragua`     | `1894`    |
+/// Four passes strip non-subseries suffixes from the right:
 ///
-/// The earlier implementation matched `v\d+` and returned everything before it,
-/// which silently failed for suffixes other than `v` + digits (e.g. `app`, `p1`,
-/// country names), falling back to the entire post-`frus` string.
+/// 1. **`v[a-z]?\d+` volume marker** — strips standard volume numbers (`v01`) and
+///    Vietnam-extras (`ve01`, `ve05p1`). E.g. `1969-76ve01` → `1969-76`.
+/// 2. **Trailing `p\d+`** — bare part numbers with no volume marker. E.g. `1863p2` → `1863`.
+/// 3. **Known string suffixes** (`sups`, `app`, `mf`). E.g. `1877app` → `1877`.
+/// 4. **Trailing `[A-Z][a-z]+` conference/topic names**, applied iteratively.
+///    E.g. `1943CairoTehran` → `1943Cairo` → `1943`.
+///    A single trailing uppercase letter (subseries letter, e.g. `G` in `1952-54G`)
+///    is NOT stripped because it does not match `[A-Z][a-z]+`.
 ///
-/// Returns `nil` for filenames that are not `frus*.xml`, or where the suffix
-/// after `"frus"` contains no leading digits.
+/// | Filename                    | Result    |
+/// |-----------------------------|-----------|
+/// | `frus1969-76v01.xml`        | `1969-76` |
+/// | `frus1969-76ve01.xml`       | `1969-76` |
+/// | `frus1969-76ve05p1.xml`     | `1969-76` |
+/// | `frus1863p2.xml`            | `1863`    |
+/// | `frus1877app.xml`           | `1877`    |
+/// | `frus1943CairoTehran.xml`   | `1943`    |
+/// | `frus1952-54Gv01.xml`       | `1952-54G`|
+/// | `frus1861.xml`              | `1861`    |
+///
+/// Returns `nil` for filenames that are not `frus*.xml`.
 ///
 /// Declared at module scope (not inside `ManifestStore`) so that `ManifestStoreTests`
 /// can exercise it directly via `@testable import` without access-level friction.
@@ -261,14 +272,37 @@ func frusSubseries(from filename: String) -> String? {
     guard filename.hasSuffix(".xml") else { return nil }
     let base = String(filename.dropLast(4))           // strip ".xml"
     guard base.hasPrefix("frus"), base.count > 4 else { return nil }
-    let afterFrus = String(base.dropFirst(4))         // strip "frus"
-    // Match one or more leading digits or dashes, stopping at the first letter.
-    guard let range = afterFrus.range(of: #"^[\d-]+"#, options: .regularExpression) else {
-        return nil
+    var s = String(base.dropFirst(4))                 // strip "frus"
+
+    // Pass 1: v[a-z]?\d+ covers standard volumes (v01) and Vietnam-extras (ve01, ve05p2…).
+    // Match from the marker to end-of-string and discard everything from there.
+    if let range = s.range(of: #"v[a-z]?\d+.*$"#, options: .regularExpression) {
+        let result = String(s[..<range.lowerBound])
+        return result.isEmpty ? nil : result
     }
-    let candidate = String(afterFrus[range])
-        .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-    return candidate.isEmpty ? nil : candidate
+
+    // Pass 2: trailing bare part number (no volume marker), e.g. "1863p2".
+    if let range = s.range(of: #"p\d+$"#, options: .regularExpression) {
+        s = String(s[..<range.lowerBound])
+    }
+
+    // Pass 3: known non-subseries string suffixes (longest first to avoid partial matches).
+    for suffix in ["sups", "app", "mf"] where s.hasSuffix(suffix) {
+        s = String(s.dropLast(suffix.count)); break
+    }
+
+    // Pass 4: trailing conference/topic names of the form [A-Z][a-z]+, iteratively stripped.
+    // Single trailing uppercase letters (e.g. "G" in "1952-54G") are preserved.
+    var changed = true
+    while changed {
+        changed = false
+        if let r = s.range(of: #"[A-Z][a-z]+$"#, options: .regularExpression) {
+            s = String(s[..<r.lowerBound])
+            changed = true
+        }
+    }
+
+    return s.isEmpty ? nil : s
 }
 
 // MARK: - Internal Live Entry Type

@@ -34,7 +34,9 @@ import SwiftUI
 ///          per view; "Read [Title]" is the true primary action)
 ///   1.4 — Session 68: rich indexing progress section (`indexingProgressSection`) using
 ///          `vm.indexingProgress`; `.onChange(of: vm.isIndexing)` auto-loads document
-///          list when indexing finishes — no navigate-away required
+///          list when indexing finishes — no navigate-away required;
+///          `DocumentRowLabel` drops the redundant leading document-number chip because
+///          the number is already part of the `header` text
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -367,23 +369,23 @@ struct CompilationView: View {
 
 // MARK: - DocumentRowLabel
 
+/// A single row in the document browser list.
+///
+/// The leading document-number chip was removed in Session 68 because
+/// `DocumentBrowserEntry.documentNumber` is extracted from the leading integer in
+/// the `<head>` text, which is also what `header` contains in full. Showing both
+/// produced repeated numbers (e.g. "1  1. Memorandum…"). The header is the
+/// canonical display text; the `documentNumber` field is retained on the model for
+/// search and sort purposes only.
 struct DocumentRowLabel: View {
     let doc: DocumentBrowserEntry
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let num = doc.documentNumber {
-                    Text(num)
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                        .frame(minWidth: 28, alignment: .trailing)
-                }
-                Text(doc.header)
-                    .font(.body)
-                    .italic(doc.isEditorialNote)
-                    .lineLimit(2)
-            }
+            Text(doc.header)
+                .font(.body)
+                .italic(doc.isEditorialNote)
+                .lineLimit(2)
             if let dateline = doc.dateline {
                 Text(dateline)
                     .font(.caption)
