@@ -164,6 +164,10 @@ private struct VolumeManagementView: View {
     @State private var volumePendingDelete: VolumeManifestEntry? = nil
     /// Live search text for filtering the (potentially 552-entry) Available Volumes list.
     @State private var availableSearch: String = ""
+    /// When true, show the full un-filtered list; when false, cap at `availablePageSize`.
+    @State private var showAllAvailable: Bool = false
+    /// Maximum rows shown before "Show all (N)" button appears.
+    private let availablePageSize: Int = 50
 
     var body: some View {
         Form {
@@ -363,7 +367,10 @@ private struct VolumeManagementView: View {
                 .textInputAutocapitalization(.never)
                 #endif
                 if !availableSearch.isEmpty {
-                    Button { availableSearch = "" } label: {
+                    Button {
+                        availableSearch = ""
+                        showAllAvailable = false   // collapse back to page view on clear
+                    } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
                     }
@@ -375,6 +382,14 @@ private struct VolumeManagementView: View {
                 }
             }
             .padding(.vertical, 2)
+            .onChange(of: availableSearch) { _, newValue in
+                // When the user starts typing a new search, collapse the "show all"
+                // state — search results are already filtered, so the cap is lifted
+                // automatically; when they clear it, we want the compact view back.
+                if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    showAllAvailable = false
+                }
+            }
 
             let filtered = availableFiltered(notDownloaded)
             if filtered.isEmpty {
@@ -386,7 +401,16 @@ private struct VolumeManagementView: View {
                 .foregroundStyle(.secondary)
                 .font(.callout)
             } else {
-                ForEach(filtered) { entry in
+                // When the search bar is empty the full list can reach 552 entries.
+                // Rendering all rows at once in a Form section is slow on first
+                // appearance; cap at availablePageSize and let the user opt in to
+                // seeing everything.
+                let isSearchActive = !availableSearch.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                let displayRows = isSearchActive || showAllAvailable
+                    ? filtered
+                    : Array(filtered.prefix(availablePageSize))
+
+                ForEach(displayRows) { entry in
                     HStack(alignment: .top, spacing: 8) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(entry.title)
@@ -416,6 +440,24 @@ private struct VolumeManagementView: View {
                                    defaultValue: "Download \(entry.title)")
                         )
                     }
+                }
+
+                // "Show all" disclosure row — only when the list is capped and
+                // the user hasn't already expanded it.
+                if !isSearchActive && !showAllAvailable && filtered.count > availablePageSize {
+                    Button {
+                        showAllAvailable = true
+                    } label: {
+                        Text(String(
+                            format: String(localized: "settings.volumes.available.showAll",
+                                           defaultValue: "Show all %lld volumes…"),
+                            filtered.count
+                        ))
+                        .font(.callout)
+                        .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.vertical, 2)
                 }
             }
         }
@@ -1705,21 +1747,22 @@ enum SettingsKeys {
 /// Presented by the system `Settings` scene in `FRUSExplorerApp` (⌘,).
 ///
 /// ## Structure
-/// Three `TabView` tabs, each backed by a `NavigationStack` for forward
-/// navigation into detail sub-views. `NavigationSplitView` is intentionally
-/// avoided: it does not render reliably inside the macOS `Settings` scene
-/// (sidebar collapses at minimum width, swipe actions are inaccessible, detail
-/// columns don't size correctly). `NavigationStack` is the correct pattern here.
+/// Three `TabView` tabs. Each tab body is a `VolumesSettingsPane` /
+/// `ResearchSettingsPane` / `AdvancedSettingsPane` struct that owns a
+/// `NavigationSplitView`: sidebar lists panels, detail column shows the selected
+/// panel. Clicking a sidebar row updates `@State selection`, which drives the
+/// detail switch. No `NavigationLink` push/pop is used; all navigation is
+/// selection-based, which is the correct pattern for macOS Settings scenes.
 ///
-/// | Tab         | Icon                     | Content rows |
-/// |-------------|--------------------------|--------------|
+/// | Tab         | Icon                     | Sidebar items |
+/// |-------------|--------------------------|---------------|
 /// | Volumes     | arrow.down.circle        | Download Manager · Volume Management · Storage · Sideload · Reindex |
 /// | Research    | note.text                | User Tags · Summarization Prompts |
 /// | Advanced    | gearshape.2              | NARA Catalog API Key · Reset App |
 ///
 /// Version history:
-///   1.0 — Replaces MacSettingsView; drops NavigationSplitView in favour of
-///          NavigationStack to resolve rendering failures in the Settings scene
+///   1.0 — Replaces MacSettingsView; uses NavigationSplitView per pane struct
+///   1.1 — Session 72: pane structs + alignment fix
 struct FRUSSettingsView: View {
 
     var body: some View {

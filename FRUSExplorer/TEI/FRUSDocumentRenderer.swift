@@ -298,27 +298,27 @@ public struct FRUSDocumentRenderer: View {
                 result.append(.text(s, attrs.union([.italic])))
 
             case .lineBreak:
-                result.append(.text("\n", attrs))
+                // Inline <lb/> — skip rather than emitting Text("\n").
+                //
+                // Text("\n") measured unconstrained returns ≈2× the normal line height
+                // (SwiftUI allocates a line before and after the newline character), which
+                // inflates the FlowLayout row containing the break to double height.
+                // Since FRUS documents reflow in a scrollable window, the printed line-break
+                // hint carries no semantic meaning here. Boundary spaces from the parser's
+                // normalizedText already provide word separation across the break point.
+                break
 
             case .footnoteMarker(_, let label):
                 result.append(.footnoteMarker(label))
 
             case .persNameLink(_, let children, let person):
-                let text = children.compactMap {
-                    if case .plainText(let s) = $0 { return s } else { return nil }
-                }.joined(separator: "")
-                result.append(.persName(text, person))
+                result.append(.persName(extractLinkText(children), person))
 
             case .glossLink(_, let children, let entry):
-                let text = children.compactMap {
-                    if case .plainText(let s) = $0 { return s } else { return nil }
-                }.joined(separator: "")
-                result.append(.gloss(text, entry))
+                result.append(.gloss(extractLinkText(children), entry))
 
             case .crossRefLink(let target, let volumeId, let children):
-                let text = children.compactMap {
-                    if case .plainText(let s) = $0 { return s } else { return nil }
-                }.joined(separator: "")
+                let text = extractLinkText(children)
                 result.append(.crossRef(text.isEmpty ? target : text, target, volumeId))
 
             case .pageBreak:
@@ -330,6 +330,63 @@ public struct FRUSDocumentRenderer: View {
             // Block elements inside inline context — skip gracefully
             default:
                 break
+            }
+        }
+        return result
+    }
+
+    // MARK: - Link Text Extraction
+
+    /// Extracts the visible display text from inline children of a persName, gloss,
+    /// or crossRef node.
+    ///
+    /// Previous implementation used `compactMap { if case .plainText = $0 }` which
+    /// silently dropped styled spans (`<hi rend="italic">`) and `.lineBreak` children.
+    /// Dropping styled spans is usually harmless (they just lose decoration), but
+    /// dropping `.lineBreak` causes a double-space: both the text node before the break
+    /// and the text node after it carry a boundary space from the XML parser's
+    /// `normalizedText` function, so joining them directly gives "word  word".
+    ///
+    /// This helper recurses into all inline children:
+    /// - Styled spans contribute their nested text (formatting is intentionally dropped;
+    ///   persName/gloss labels always render in a single uniform style).
+    /// - `.lineBreak` is replaced with a single space.
+    /// - After joining, internal runs of multiple spaces are collapsed to one, while
+    ///   a single leading or trailing space is preserved (word-boundary glue).
+    private func extractLinkText(_ nodes: [FRUSRenderNode]) -> String {
+        var parts: [String] = []
+        for node in nodes {
+            switch node {
+            case .plainText(let s):
+                parts.append(s)
+            case .boldText(let c), .italicText(let c), .smallCapsText(let c),
+                 .underlineText(let c), .termText(let c),
+                 .suppliedText(let c), .sicText(let c), .corrText(let c),
+                 .unknown(_, let c):
+                parts.append(extractLinkText(c))
+            case .formulaText(let s):
+                parts.append(s)
+            case .lineBreak:
+                // Substitute a single space. Boundary spaces from adjacent text nodes
+                // may produce a run of spaces; we collapse those below.
+                parts.append(" ")
+            default:
+                break
+            }
+        }
+        // Collapse internal space runs to a single space while preserving a single
+        // leading/trailing space (the parser's boundary-space convention means these
+        // carry meaningful word-separator information).
+        let joined = parts.joined()
+        var result = ""
+        var prevWasSpace = false
+        for ch in joined {
+            if ch == " " {
+                if !prevWasSpace { result.append(ch) }
+                prevWasSpace = true
+            } else {
+                result.append(ch)
+                prevWasSpace = false
             }
         }
         return result
