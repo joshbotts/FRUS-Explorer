@@ -1082,7 +1082,7 @@
     "publicationDate" : "1811 to 1872",
     "sizeBytes" : 6088444,
     "status" : "published",
-    "subseries" : "1872p2",
+    "subseries" : "1872",
     "tags" : [
       "belgium",
       "bermuda",
@@ -1121,7 +1121,7 @@
     "publicationDate" : "1803 to 1873",
     "sizeBytes" : 4227794,
     "status" : "published",
-    "subseries" : "1872p2",
+    "subseries" : "1872",
     "tags" : [
       "bermuda",
       "brazil",
@@ -1163,7 +1163,7 @@
     "publicationDate" : "1871 to 1872",
     "sizeBytes" : 4869507,
     "status" : "published",
-    "subseries" : "1872p2",
+    "subseries" : "1872",
     "tags" : [
       "belgium",
       "brazil",
@@ -1201,7 +1201,7 @@
     "publicationDate" : "1871 to 1872",
     "sizeBytes" : 4164891,
     "status" : "published",
-    "subseries" : "1872p2",
+    "subseries" : "1872",
     "tags" : [
       "belgium",
       "brazil",
@@ -1242,7 +1242,7 @@
     "publicationDate" : "1620 to 1872",
     "sizeBytes" : 1756696,
     "status" : "published",
-    "subseries" : "1872p2",
+    "subseries" : "1872",
     "tags" : [
       "fish-hamilton",
       "germany",
@@ -1265,7 +1265,7 @@
     "publicationDate" : "1872 to 1873",
     "sizeBytes" : 5644763,
     "status" : "published",
-    "subseries" : "1873p1",
+    "subseries" : "1873",
     "tags" : [
       "belgium",
       "brazil",
@@ -1304,7 +1304,7 @@
     "publicationDate" : "1802 to 1873",
     "sizeBytes" : 6191833,
     "status" : "published",
-    "subseries" : "1873p1",
+    "subseries" : "1873",
     "tags" : [
       "morocco",
       "netherlands",
@@ -1345,7 +1345,7 @@
     "publicationDate" : "1793 to 1874",
     "sizeBytes" : 3016497,
     "status" : "published",
-    "subseries" : "1873p2",
+    "subseries" : "1873",
     "tags" : [
       "canada",
       "fish-hamilton",
@@ -2936,7 +2936,7 @@
     "publicationDate" : "1886 to 1895",
     "sizeBytes" : 5011083,
     "status" : "published",
-    "subseries" : "1894ap",
+    "subseries" : "1894",
     "tags" : [
       "agriculture",
       "asylum",
@@ -2987,7 +2987,7 @@
     "publicationDate" : "1826 to 1895",
     "sizeBytes" : 11297215,
     "status" : "published",
-    "subseries" : "1894ap",
+    "subseries" : "1894",
     "tags" : [
       "agriculture",
       "alliances",
@@ -3633,7 +3633,7 @@
     "publicationDate" : "1820 to 1902",
     "sizeBytes" : 3916631,
     "status" : "published",
-    "subseries" : "1902ap",
+    "subseries" : "1902",
     "tags" : [
       "brazil",
       "costa-rica",
@@ -3661,7 +3661,7 @@
     "publicationDate" : "1697 to 1903",
     "sizeBytes" : 5364977,
     "status" : "published",
-    "subseries" : "1902ap",
+    "subseries" : "1902",
     "tags" : [
       "holy-see",
       "mexico",
@@ -5066,7 +5066,7 @@
     "publicationDate" : "1960 to 1963",
     "sizeBytes" : 2300938,
     "status" : "published",
-    "subseries" : "1917-72PubDip",
+    "subseries" : "1917-72",
     "tags" : [
       "kennedy-john-f",
       "johnson-lyndon-b",
@@ -5111,7 +5111,7 @@
     "publicationDate" : "1963 to 1968",
     "sizeBytes" : 3482626,
     "status" : "published",
-    "subseries" : "1917-72PubDip",
+    "subseries" : "1917-72",
     "tags" : [
       "gabon",
       "association-of-southeast-asian-nations",
@@ -5139,7 +5139,7 @@
     "publicationDate" : "1968 to 1972",
     "sizeBytes" : 2652271,
     "status" : "published",
-    "subseries" : "1917-72PubDip",
+    "subseries" : "1917-72",
     "tags" : [
       "monaco",
       "macau",
@@ -5168,7 +5168,7 @@
     "publicationDate" : "1916 to 1918",
     "sizeBytes" : 6121312,
     "status" : "published",
-    "subseries" : "1917Supp01",
+    "subseries" : "1917",
     "tags" : [
       "argentina",
       "austria",
@@ -5233,7 +5233,7 @@
     "publicationDate" : "1917 to 1918",
     "sizeBytes" : 5607658,
     "status" : "published",
-    "subseries" : "1917Supp02",
+    "subseries" : "1917",
     "tags" : [
       "afghanistan",
       "albania",
@@ -5276,7 +5276,7 @@
     "publicationDate" : "1917 to 1928",
     "sizeBytes" : 3949313,
     "status" : "published",
-    "subseries" : "1917Supp02",
+    "subseries" : "1917",
     "tags" : [
       "argentina",
       "belgium",
@@ -5368,7 +5368,7 @@
     "publicationDate" : "1917 to 1918",
     "sizeBytes" : 5759549,
     "status" : "published",
-    "subseries" : "1918Russia",
+    "subseries" : "1918",
     "tags" : [
       "russia",
       "non-governmental-organizations",
@@ -5415,7 +5415,7 @@
     "publicationDate" : "1917 to 1919",
     "sizeBytes" : 6675598,
     "status" : "published",
-    "subseries" : "1918Russia",
+    "subseries" : "1918",
     "tags" : [
       "russia",
       "non-governmental-organizations",
@@ -5477,7 +5477,7 @@
     "publicationDate" : "1917 to 1919",
     "sizeBytes" : 2631014,
     "status" : "published",
-    "subseries" : "1918Russia",
+    "subseries" : "1918",
     "tags" : [
       "china",
       "russia",
@@ -5509,7 +5509,7 @@
     "publicationDate" : "1917 to 1918",
     "sizeBytes" : 6730185,
     "status" : "published",
-    "subseries" : "1918Supp01",
+    "subseries" : "1918",
     "tags" : [
       "world-war-i",
       "armistices",
@@ -5548,7 +5548,7 @@
     "publicationDate" : "1917 to 1919",
     "sizeBytes" : 7325723,
     "status" : "published",
-    "subseries" : "1918Supp01",
+    "subseries" : "1918",
     "tags" : [
       "world-war-i",
       "chile",
@@ -5634,7 +5634,7 @@
     "publicationDate" : "1917 to 1919",
     "sizeBytes" : 3827013,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "peace",
       "afghanistan",
@@ -5697,7 +5697,7 @@
     "publicationDate" : "1918 to 1919",
     "sizeBytes" : 5096455,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "germany",
       "austria",
@@ -5740,7 +5740,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 5604977,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "peace",
       "albania",
@@ -5795,7 +5795,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 4712855,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "albania",
       "armenia",
@@ -5839,7 +5839,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 5083043,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "peace",
       "albania",
@@ -5892,7 +5892,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 5462557,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "peace",
       "germany",
@@ -5936,7 +5936,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 5302909,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "peace",
       "austria",
@@ -5981,7 +5981,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 5316737,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "armistices",
       "peace",
@@ -6025,7 +6025,7 @@
     "publicationDate" : "1919 to 1920",
     "sizeBytes" : 5757802,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "armistices",
       "peace",
@@ -6070,7 +6070,7 @@
     "publicationDate" : "1919 to 1920",
     "sizeBytes" : 5333497,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "peace",
       "austria",
@@ -6109,7 +6109,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 4249513,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "albania",
       "peace",
@@ -6154,7 +6154,7 @@
     "publicationDate" : "1919 to 1920",
     "sizeBytes" : 5223169,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "peace",
       "albania",
@@ -6195,7 +6195,7 @@
     "publicationDate" : "1919",
     "sizeBytes" : 5211153,
     "status" : "published",
-    "subseries" : "1919Paris",
+    "subseries" : "1919",
     "tags" : [
       "germany",
       "austria",
@@ -12117,7 +12117,7 @@
     "publicationDate" : "1945",
     "sizeBytes" : 8800100,
     "status" : "published",
-    "subseries" : "1945Berlin",
+    "subseries" : "1945",
     "tags" : [
       "byrnes-james-francis",
       "truman-harry-s",
@@ -12178,7 +12178,7 @@
     "publicationDate" : "1945 to 1960",
     "sizeBytes" : 12738357,
     "status" : "published",
-    "subseries" : "1945Berlin",
+    "subseries" : "1945",
     "tags" : [
       "byrnes-james-francis",
       "truman-harry-s",
@@ -15749,7 +15749,7 @@
     "publicationDate" : "1951 to 1954",
     "sizeBytes" : 5561476,
     "status" : "published",
-    "subseries" : "1951-54IranEd2",
+    "subseries" : "1951-54",
     "tags" : [
       "truman-harry-s",
       "eisenhower-dwight-d",

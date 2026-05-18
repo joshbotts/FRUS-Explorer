@@ -37,11 +37,11 @@ struct VolumeIDParserTests {
         #expect(result?.subseries == "1861")
     }
 
-    @Test("Sub-series letter suffix: frus1952-54Gv01.xml")
+    @Test("Sub-series letter suffix stripped: frus1952-54Gv01.xml → 1952-54")
     func subSeriesLetterSuffix() {
         let result = VolumeIDParser.parse(filename: "frus1952-54Gv01.xml")
         #expect(result?.volumeId == "frus1952-54Gv01")
-        #expect(result?.subseries == "1952-54G")
+        #expect(result?.subseries == "1952-54")
     }
 
     @Test("Part number: frus1952-54v06p2.xml")
@@ -123,11 +123,50 @@ struct VolumeIDParserTests {
         #expect(result?.subseries == "1943")
     }
 
-    @Test("Sub-series letter not stripped: frus1952-54Gv01.xml → 1952-54G (no regression)")
-    func subSeriesLetterNotStripped() {
-        let result = VolumeIDParser.parse(filename: "frus1952-54Gv01.xml")
-        #expect(result?.volumeId == "frus1952-54Gv01")
-        #expect(result?.subseries == "1952-54G")
+    @Test("Conference suffix on volume with volume marker: frus1945Berlinv01.xml → 1945")
+    func conferenceSuffixWithVolumeMarker() {
+        let result = VolumeIDParser.parse(filename: "frus1945Berlinv01.xml")
+        #expect(result?.volumeId == "frus1945Berlinv01")
+        #expect(result?.subseries == "1945")
+    }
+
+    @Test("Single-word conference: frus1919Paris.xml → 1919")
+    func conferenceParis() {
+        let result = VolumeIDParser.parse(filename: "frus1919Paris.xml")
+        #expect(result?.volumeId == "frus1919Paris")
+        #expect(result?.subseries == "1919")
+    }
+
+    @Test("Mixed alphanumeric edition suffix: frus1951-54IranEd2.xml → 1951-54")
+    func mixedAlphanumericEditionSuffix() {
+        let result = VolumeIDParser.parse(filename: "frus1951-54IranEd2.xml")
+        #expect(result?.volumeId == "frus1951-54IranEd2")
+        #expect(result?.subseries == "1951-54")
+    }
+
+    @Test("Appendix part number: frus1894app1.xml → 1894")
+    func appendixPartNumber() {
+        let result = VolumeIDParser.parse(filename: "frus1894app1.xml")
+        #expect(result?.volumeId == "frus1894app1")
+        #expect(result?.subseries == "1894")
+    }
+
+    @Test("Subseries never contains letters: spot-check several patterns")
+    func subseriesNeverContainsLetters() {
+        let filenames = [
+            "frus1952-54Gv01.xml",
+            "frus1945Berlin.xml",
+            "frus1943CairoTehran.xml",
+            "frus1951-54IranEd2.xml",
+            "frus1919Paris.xml",
+            "frus1917-72PubDipv01.xml",
+        ]
+        for filename in filenames {
+            let result = VolumeIDParser.parse(filename: filename)
+            let subseries = result?.subseries ?? ""
+            let hasLetter = subseries.contains(where: \.isLetter)
+            #expect(!hasLetter, "Expected no letters in subseries for \(filename), got '\(subseries)'")
+        }
     }
 
     @Test("Recent volume: frus2011-12v02.xml")
