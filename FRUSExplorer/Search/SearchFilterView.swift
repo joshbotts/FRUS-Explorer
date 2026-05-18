@@ -44,6 +44,70 @@ struct SearchFilterView: View {
     @State private var personSuggestions: [PersonEntry] = []
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS Body
+    // NavigationStack inside a macOS sheet can push Form content outside the visible
+    // bounds. Use a plain VStack with explicit button bar instead.
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "search.filters.title", defaultValue: "Filters"))
+                    .font(.headline)
+                Spacer()
+                if vm.hasActiveFilters {
+                    Button(String(localized: "search.filters.clear", defaultValue: "Clear"),
+                           role: .destructive) {
+                        vm.clearFilters()
+                        personSearchText  = ""
+                        personSuggestions = []
+                    }
+                    .foregroundStyle(.red)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            Form {
+                advancedTextSection
+                dateRangeSection
+                documentTypeSection
+                personSection
+                if !vm.availableSubjectTags.isEmpty { subjectTagsSection }
+                if !vm.availableUserTags.isEmpty    { userTagsSection }
+                scopeSection
+            }
+            .formStyle(.grouped)
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(String(localized: "search.filters.done", defaultValue: "Done")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 420, minHeight: 480)
+    }
+    #endif
+
+    // MARK: - iOS Body
+
+    private var iOSBody: some View {
         NavigationStack {
             Form {
                 advancedTextSection
@@ -81,11 +145,7 @@ struct SearchFilterView: View {
                 }
             }
         }
-        #if os(iOS)
         .presentationDetents([.medium, .large])
-        #else
-        .frame(minWidth: 420, minHeight: 480)
-        #endif
     }
 
     // MARK: - Advanced Text

@@ -334,7 +334,10 @@ struct FootnoteSectionView: View {
                             onFootnoteTap: { _ in },
                             onPersonTap: { _ in },
                             onGlossTap: { _ in },
-                            onCrossRefTap: onCrossRefTap
+                            onCrossRefTap: onCrossRefTap,
+                            // Tighter spacing: footnote paragraphs should
+                            // not appear double-spaced like body paragraphs.
+                            blockSpacing: 2
                         )
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
@@ -684,12 +687,77 @@ private enum CitationPopoverStyle: String, CaseIterable, Identifiable {
 
 // MARK: - MacTagPickerSheet
 
-/// macOS-only document tag picker (document-scoped, distinct from the browser-level TagPickerSheet
-/// in SubseriesView which takes a BrowserViewModel).
-/// Full implementation deferred to a future session once UserTag editing is wired up.
+/// macOS document-level user-tag picker.
+///
+/// Lists all `UserTag` records from SwiftData and lets the user toggle which tags
+/// apply to this document. Tags are stored as `userTagIds` on a dedicated
+/// `DocumentUserTag` record (note: the full document-level tag persistence model
+/// is scaffolded here; complete write-back requires a `DocumentUserTag` SwiftData
+/// model to be added in a future session).
 struct MacTagPickerSheet: View {
     let entry: DocumentBrowserEntry
-    var body: some View { Text("Tag picker — \(entry.documentId)").padding() }
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \UserTag.name) private var allTags: [UserTag]
+    @State private var selectedTagIds: Set<UUID> = []
+    @State private var newTagName: String = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if allTags.isEmpty {
+                    Section {
+                        Text("No user tags yet. Type a name below to create one.")
+                            .foregroundStyle(.secondary)
+                            .font(.callout)
+                    }
+                } else {
+                    Section("Your Tags") {
+                        ForEach(allTags) { tag in
+                            Toggle(isOn: Binding(
+                                get: { selectedTagIds.contains(tag.id) },
+                                set: { on in
+                                    if on { selectedTagIds.insert(tag.id) }
+                                    else  { selectedTagIds.remove(tag.id) }
+                                }
+                            )) {
+                                Text(tag.name)
+                            }
+                        }
+                    }
+                }
+
+                Section("New Tag") {
+                    HStack {
+                        TextField("Tag name…", text: $newTagName)
+                            .onSubmit { createTag() }
+                        Button("Add", action: createTag)
+                            .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+            }
+            .listStyle(.inset)
+            .navigationTitle("Tags — \(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .frame(minWidth: 340, minHeight: 300)
+    }
+
+    private func createTag() {
+        let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let tag = UserTag(name: name)
+        modelContext.insert(tag)
+        selectedTagIds.insert(tag.id)
+        newTagName = ""
+    }
 }
 
 struct SummaryPromptPickerView: View {
@@ -779,12 +847,180 @@ struct GlossDetailSheet: View {
     }
 }
 
+// MARK: - CorpusBrowserWindowView
+
+/// Standalone macOS window listing all FRUS subseries and their volumes.
+///
+/// Uses a `NavigationSplitView`: subseries in the sidebar, volumes in the detail
+/// column. Selecting a volume pushes a document list in the detail column.
+/// Selecting a document sets `AppState.pendingBrowseDocument`, which
+/// `MainWindowView.onChange` consumes and pushes onto the main window's navigation stack.
+///
+/// Corpus data comes entirely from `AppState.manifestStore` (bundled + live manifest);
+/// no download is required to browse the catalogue.
 struct CorpusBrowserWindowView: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedSubseries: String? = nil
+    @State private var selectedVolume: VolumeManifestEntry? = nil
+    @State private var searchText: String = ""
+
+    private var allEntries: [VolumeManifestEntry] {
+        appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+    }
+
+    private var subseries: [String] {
+        var seen = Set<String>()
+        return allEntries.compactMap { e in
+            seen.insert(e.subseries).inserted ? e.subseries : nil
+        }.sorted()
+    }
+
+    private func volumes(for sub: String) -> [VolumeManifestEntry] {
+        allEntries.filter { $0.subseries == sub }
+    }
+
     var body: some View {
-        Text("Corpus Browser")
-            .font(.title2)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        NavigationSplitView {
+            // Sidebar: subseries list
+            List(selection: $selectedSubseries) {
+                ForEach(subseries, id: \.self) { sub in
+                    let count = volumes(for: sub).count
+                    HStack {
+                        Text(sub)
+                        Spacer()
+                        Text("\(count)")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .tag(sub)
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationTitle("Corpus Browser")
+            .navigationSplitViewColumnWidth(min: 140, ideal: 160)
+        } detail: {
+            if let sub = selectedSubseries {
+                volumeList(for: sub)
+            } else {
+                ContentUnavailableView(
+                    "Select a Subseries",
+                    systemImage: "books.vertical",
+                    description: Text("Choose a subseries from the list to browse its volumes.")
+                )
+            }
+        }
+        .frame(minWidth: 520, minHeight: 440)
+    }
+
+    @ViewBuilder
+    private func volumeList(for subseries: String) -> some View {
+        let vols = volumes(for: subseries)
+        let filtered: [VolumeManifestEntry] = searchText.isEmpty ? vols : vols.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText) ||
+            $0.volumeId.localizedCaseInsensitiveContains(searchText)
+        }
+
+        List(filtered) { vol in
+            VStack(alignment: .leading, spacing: 2) {
+                Text(vol.title)
+                    .font(.system(size: 12))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Text(vol.volumeId)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                    if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
+                        Label("Downloaded", systemImage: "checkmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.green)
+                            .labelStyle(.iconOnly)
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                selectedVolume = vol
+            }
+        }
+        .listStyle(.inset)
+        .searchable(text: $searchText, prompt: "Search volumes…")
+        .navigationTitle(subseries)
+        .sheet(item: $selectedVolume) { vol in
+            CorpusVolumeDocumentListView(volume: vol)
+        }
+    }
+}
+
+// MARK: - CorpusVolumeDocumentListView
+
+/// Sheet presenting the document list for a volume selected in the corpus browser.
+/// Tapping a document posts it to `AppState.pendingBrowseDocument` so the main window
+/// navigates to it, then dismisses this sheet.
+private struct CorpusVolumeDocumentListView: View {
+    let volume: VolumeManifestEntry
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var documents: [DocumentBrowserEntry] = []
+    @State private var isLoading = true
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    ProgressView("Loading documents…")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if documents.isEmpty {
+                    ContentUnavailableView(
+                        "Volume Not Downloaded",
+                        systemImage: "arrow.down.circle",
+                        description: Text("Download this volume in Settings → Volume Management to browse its documents.")
+                    )
+                } else {
+                    List(documents, id: \.documentId) { doc in
+                        Button {
+                            appState.pendingBrowseDocument = doc
+                            dismiss()
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                if let num = doc.documentNumber {
+                                    Text("Document \(num)")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text(doc.header.isEmpty ? doc.documentId : doc.header)
+                                    .font(.system(size: 12))
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .listStyle(.inset)
+                }
+            }
+            .navigationTitle(volume.title)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+        .frame(minWidth: 460, minHeight: 400)
+        .task { await loadDocuments() }
+    }
+
+    private func loadDocuments() async {
+        guard let pipeline = appState.indexingPipeline else {
+            isLoading = false
+            return
+        }
+        documents = (try? await pipeline.documents(forVolume: volume.volumeId)) ?? []
+        isLoading = false
     }
 }
 

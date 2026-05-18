@@ -64,23 +64,29 @@ public struct FRUSDocumentRenderer: View {
     public let onPersonTap: (PersonEntry?) -> Void
     public let onGlossTap: (GlossEntry?) -> Void
     public let onCrossRefTap: (String, String?) -> Void
+    /// Vertical spacing between block-level nodes in the VStack.
+    /// Pass a smaller value (e.g. 2) when rendering inside footnotes so paragraphs
+    /// within a footnote don't appear double-spaced.
+    private let blockSpacing: CGFloat
 
     public init(
         nodes: [FRUSRenderNode],
         onFootnoteTap: @escaping (String) -> Void,
         onPersonTap: @escaping (PersonEntry?) -> Void,
         onGlossTap: @escaping (GlossEntry?) -> Void,
-        onCrossRefTap: @escaping (String, String?) -> Void
+        onCrossRefTap: @escaping (String, String?) -> Void,
+        blockSpacing: CGFloat = 8
     ) {
         self.nodes = nodes
         self.onFootnoteTap = onFootnoteTap
         self.onPersonTap = onPersonTap
         self.onGlossTap = onGlossTap
         self.onCrossRefTap = onCrossRefTap
+        self.blockSpacing = blockSpacing
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: blockSpacing) {
             ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
                 AnyView(blockView(for: node))
             }
@@ -161,8 +167,11 @@ public struct FRUSDocumentRenderer: View {
             .background(Color.secondary.opacity(0.05))
             .clipShape(RoundedRectangle(cornerRadius: 4))
 
+        // lineBreak at block level: intentionally zero height.
+        // Divider().opacity(0) has a 1-pt height that adds spurious whitespace;
+        // using EmptyView() ensures no vertical space is consumed.
         case .lineBreak:
-            Divider().opacity(0)
+            EmptyView()
 
         // Footnote bodies collected by FootnoteSectionView; not rendered inline
         case .footnoteBody:
@@ -415,14 +424,22 @@ private struct FlowLayout: Layout {
     var spacing: CGFloat = 0
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? 600
+        let maxWidth = proposal.width ?? 600
         var currentX: CGFloat = 0
         var currentY: CGFloat = 0
         var rowHeight: CGFloat = 0
 
         for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if currentX + size.width > width, currentX > 0 {
+            // Ask the subview for its ideal (unconstrained) size first.
+            let ideal = subview.sizeThatFits(.unspecified)
+            // If this subview is wider than the full available line, give it a
+            // constrained proposal so it can word-wrap internally (applies to Text
+            // views representing long prose segments).
+            let size: CGSize = ideal.width > maxWidth
+                ? subview.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil))
+                : ideal
+
+            if currentX + size.width > maxWidth, currentX > 0 {
                 currentX = 0
                 currentY += rowHeight + spacing
                 rowHeight = 0
@@ -430,22 +447,31 @@ private struct FlowLayout: Layout {
             currentX += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
-        return CGSize(width: width, height: currentY + rowHeight)
+        return CGSize(width: maxWidth, height: currentY + rowHeight)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var currentX = bounds.minX
         var currentY = bounds.minY
         var rowHeight: CGFloat = 0
+        let maxWidth = bounds.width
 
         for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
+            let ideal = subview.sizeThatFits(.unspecified)
+            let isOversized = ideal.width > maxWidth
+            let size: CGSize = isOversized
+                ? subview.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil))
+                : ideal
+            let placementProposal: ProposedViewSize = isOversized
+                ? ProposedViewSize(width: maxWidth, height: nil)
+                : .unspecified
+
             if currentX + size.width > bounds.maxX, currentX > bounds.minX {
                 currentX = bounds.minX
                 currentY += rowHeight + spacing
                 rowHeight = 0
             }
-            subview.place(at: CGPoint(x: currentX, y: currentY), proposal: .unspecified)
+            subview.place(at: CGPoint(x: currentX, y: currentY), proposal: placementProposal)
             currentX += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }

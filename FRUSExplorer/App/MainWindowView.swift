@@ -75,15 +75,14 @@ struct MainWindowView: View {
 
         VStack(spacing: 0) {
 
-            // Research strip — sits between toolbar and document body.
-            if !isResearchStripCollapsed {
-                ResearchStripView(
-                    entry: currentEntry,
-                    isCollapsed: $isResearchStripCollapsed,
-                    showCitationPopover: $showCitationPopover
-                )
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
+            // Research strip — always rendered; the strip itself handles its
+            // collapsed/expanded display state via isCollapsed binding.
+            // When collapsed, it shows only a "+" re-expand button at 32pt height.
+            ResearchStripView(
+                entry: currentEntry,
+                isCollapsed: $isResearchStripCollapsed,
+                showCitationPopover: $showCitationPopover
+            )
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {
@@ -99,6 +98,8 @@ struct MainWindowView: View {
         .toolbar { mainToolbar }
         .sheet(isPresented: $showSearchSheet) {
             SearchSheet(navigationPath: $navigationPath)
+                // Minimum frame makes the sheet resizable on macOS.
+                .frame(minWidth: 640, minHeight: 480)
         }
         // Consume pending navigation from cross-reference taps and person mention search.
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
@@ -113,18 +114,16 @@ struct MainWindowView: View {
         .onChange(of: showSearchSheet) { _, show in
             if !show { appState.showSearch = false }
         }
-        .animation(.easeInOut(duration: 0.18), value: isResearchStripCollapsed)
     }
 
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
     private var mainToolbar: some ToolbarContent {
-
-        // Leading: back/forward navigation
-        ToolbarItemGroup(placement: .navigation) {
-            navigationButtons
-        }
+        // Note: NO custom .navigation placement items here.
+        // NavigationStack already provides its own back button in the toolbar when
+        // a destination is pushed. Adding a second .navigation group creates a
+        // duplicate back button that appears alongside the stack's own control.
 
         // Centre: document title + series subtitle
         ToolbarItem(placement: .principal) {
@@ -134,48 +133,6 @@ struct MainWindowView: View {
         // Trailing: tool launchers
         ToolbarItemGroup(placement: .primaryAction) {
             trailingTools
-        }
-    }
-
-    // MARK: - Navigation Buttons
-
-    private var navigationButtons: some View {
-        HStack(spacing: 2) {
-            Button {
-                if navigationPath.count > 1 {
-                    navigationPath.removeLast()
-                }
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-            .disabled(navigationPath.count <= 1)
-            .contextMenu {
-                breadcrumbMenu
-            }
-
-            Button {
-                // Forward navigation placeholder for future history ring implementation.
-            } label: {
-                Image(systemName: "chevron.right")
-            }
-            .disabled(true)
-        }
-    }
-
-    // MARK: - Breadcrumb Menu (right-click on back button)
-
-    @ViewBuilder
-    private var breadcrumbMenu: some View {
-        if navigationPath.count > 1 {
-            ForEach(navigationPath.dropLast().indices.reversed(), id: \.self) { idx in
-                let entry = navigationPath[idx]
-                Button(entry.header.isEmpty ? entry.documentId : entry.header) {
-                    navigationPath = Array(navigationPath.prefix(idx + 1))
-                }
-            }
-        } else {
-            Text("No history")
-                .foregroundStyle(.secondary)
         }
     }
 

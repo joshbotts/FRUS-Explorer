@@ -81,6 +81,109 @@ struct CollectionEditorView: View {
     // MARK: - Body
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS Body
+    //
+    // NavigationStack inside a macOS sheet renders with sidebar chrome that pushes
+    // form content leftward past the window edge. Use a plain VStack with an explicit
+    // button bar instead.
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            // Title bar row
+            HStack {
+                Text(isNewCollection
+                     ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
+                     : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            // Form content
+            Form {
+                nameSection
+                noteSection
+                documentsSection
+                addByTagSection
+                if !sortedEntries.isEmpty {
+                    actionsSection
+                }
+            }
+            .formStyle(.grouped)
+
+            Divider()
+
+            // Button bar
+            HStack {
+                Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
+                    if isNewCollection {
+                        modelContext.delete(collection)
+                    }
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button(String(localized: "collection.editor.save", defaultValue: "Save")) {
+                    save()
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(collectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 520, minHeight: 460)
+        .sheet(isPresented: $showAddByTag) {
+            AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
+                appendEntries(newEntries)
+            }
+        }
+        .sheet(isPresented: $showExport) {
+            ExportSheetView(
+                collection: collection,
+                entries: sortedEntries,
+                allNotes: allNotes,
+                appState: appState
+            )
+        }
+        .alert(
+            String(localized: "collection.editor.export.error.title", defaultValue: "Export Failed"),
+            isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            ),
+            presenting: exportError
+        ) { _ in
+            Button(String(localized: "collection.editor.export.error.dismiss", defaultValue: "OK")) {}
+        } message: { msg in
+            Text(msg)
+        }
+        .onAppear {
+            if isNewCollection {
+                modelContext.insert(collection)
+            }
+        }
+    }
+    #endif
+
+    // MARK: - iOS Body
+
+    private var iOSBody: some View {
         NavigationStack {
             Form {
                 nameSection
@@ -147,9 +250,6 @@ struct CollectionEditorView: View {
         }
         #if os(iOS)
         .presentationDetents([.large])
-        #endif
-        #if os(macOS)
-        .frame(minWidth: 520, minHeight: 460)
         #endif
     }
 

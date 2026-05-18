@@ -52,6 +52,78 @@ struct ResearchNoteEditorView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS Body
+    // NavigationStack inside a macOS sheet can push Form content outside the visible
+    // bounds. Use a plain VStack with explicit button bar instead.
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(vm.noteToEdit == nil
+                     ? String(localized: "note.editor.title.new", defaultValue: "New Research Note")
+                     : String(localized: "note.editor.title.edit", defaultValue: "Edit Note"))
+                    .font(.headline)
+                Spacer()
+                if vm.noteToEdit != nil {
+                    Button(String(localized: "note.editor.toolbar.delete", defaultValue: "Delete"),
+                           role: .destructive) {
+                        vm.delete(context: modelContext)
+                        dismiss()
+                    }
+                    .foregroundStyle(.red)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            Form {
+                noteBodySection
+                userTagsSection
+                projectTagsSection
+                if !vm.availableSummaries.isEmpty {
+                    summariesSection
+                }
+            }
+            .formStyle(.grouped)
+
+            Divider()
+
+            HStack {
+                Button(String(localized: "note.editor.toolbar.discard", defaultValue: "Discard")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button(String(localized: "note.editor.toolbar.save", defaultValue: "Save")) {
+                    vm.save(context: modelContext)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 520, minHeight: 440)
+        .onAppear { vm.load(context: modelContext) }
+    }
+    #endif
+
+    // MARK: - iOS Body
+
+    private var iOSBody: some View {
         NavigationStack {
             Form {
                 noteBodySection
@@ -73,9 +145,6 @@ struct ResearchNoteEditorView: View {
             #endif
             .toolbar { editorToolbar }
         }
-        #if os(macOS)
-        .frame(minWidth: 520, minHeight: 440)
-        #endif
         .onAppear { vm.load(context: modelContext) }
     }
 

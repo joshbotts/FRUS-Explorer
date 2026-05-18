@@ -54,6 +54,89 @@ struct PromptEditorView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS Body
+    // NavigationStack inside a macOS sheet can push Form content outside the visible
+    // bounds. Use a plain VStack with explicit button bar instead.
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(promptToEdit == nil
+                     ? String(localized: "prompt.editor.title.new", defaultValue: "New Prompt")
+                     : String(localized: "prompt.editor.title.edit", defaultValue: "Edit Prompt"))
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            Form {
+                nameSection
+                templateSection
+                promptTextSection
+                outputFormatSection
+                if isStructured {
+                    SchemaBuilderSection(fields: $schemaFields)
+                }
+            }
+            .formStyle(.grouped)
+
+            Divider()
+
+            HStack {
+                Button(String(localized: "prompt.editor.toolbar.cancel", defaultValue: "Cancel")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button(String(localized: "prompt.editor.toolbar.save", defaultValue: "Save")) {
+                    save()
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                          || promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 560, minHeight: 460)
+        .sheet(isPresented: $showTemplatePicker) {
+            TemplatePickerSheet(onSelect: applyTemplate)
+        }
+        .onAppear {
+            if let p = promptToEdit {
+                name = p.name
+                promptText = p.promptText
+                if case .structured(let schema) = p.responseFormat {
+                    isStructured = true
+                    schemaFields = schema.fields.map {
+                        EditableField(name: $0.name, description: $0.description)
+                    }
+                }
+            } else {
+                showTemplatePicker = true
+            }
+        }
+    }
+    #endif
+
+    // MARK: - iOS Body
+
+    private var iOSBody: some View {
         NavigationStack {
             Form {
                 nameSection
@@ -79,9 +162,6 @@ struct PromptEditorView: View {
                 TemplatePickerSheet(onSelect: applyTemplate)
             }
         }
-        #if os(macOS)
-        .frame(minWidth: 560, minHeight: 460)
-        #endif
         .onAppear {
             if let p = promptToEdit {
                 name = p.name
