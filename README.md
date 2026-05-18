@@ -23,8 +23,11 @@ series more effectively.
 - Composable document collections with PDF and HTML export
 - CloudKit-synced user data (notes, tags, collections, projects)
 - Offline functionality with download queue; volumes indexed automatically after download
+- Live indexing progress (stage, document count, throughput) shown in the volume browser; document list loads automatically when indexing completes — no navigate-away required
+- Per-volume indexing status and one-tap Reindex control in Settings → Storage Management
 - Breadcrumb navigation trail in the volume browser
 - Front matter sections (preface, introduction, errata) browsable directly from the corpus
+- Accurate subseries grouping for Vietnam-era volumes (`ve`), conference-name volumes (e.g. `CairoTehran`), and part-number volumes (`p1`/`p2`) in the volume browser and manifest diff
 - **iOS/iPadOS (iPhone)**: five-tab navigation — Browse, Search, Activity, Collections, Settings
 - **macOS**: native Settings scene (⌘,) with tabbed preferences window; ⌘F / ⌘⇧F shortcuts
 
@@ -183,13 +186,17 @@ network access and must be verified manually before each release:
 | **DateRangeFilterTest** | Filter search by date range; confirm only documents with `<date @when>` in range returned |
 | **EditorialNoteFilterTest** | Switch Document Type filter; confirm editorial notes included/excluded correctly |
 | **FrontMatterTest** | Navigate to a volume preface; confirm "Read" button appears and opens document |
+| **IndexingProgressInBrowserTest** | Trigger "Index Now" from a CompilationView; confirm live progress bar appears (stage label + doc count + throughput), then doc list populates automatically on completion without navigating away |
+| **StorageReindexTest** | Open Settings → Storage Management; confirm per-volume indexed badge; tap Reindex on an indexed volume; confirm it re-indexes and badge updates |
+| **CrossRefNavigationTest** | Tap a cross-reference link in a document; confirm DocumentView loads the target document body (not just updates the nav title) |
+| **SearchResultNavigationTest** | Select a search result; confirm the full document body loads in DocumentView, not just the header |
 | **SearchPerformanceTest** | Search a large corpus; results appear in <1 second |
 | **GraphRenderPerformanceTest** | Open a document with 20+ cross-references; confirm smooth animation; hover an edge to see context |
 | **CloudKitSyncTest** | Create a research note on device A; confirm it appears on device B |
 | **OfflineResilienceTest** | Disable network mid-session; confirm no crash or data loss |
 | **CrossPlatformVerification** | Verify all major workflows on macOS, iPadOS, and iPhone |
 | **iOSTabNavigationTest** | Verify all five tabs (Browse, Search, Activity, Collections, Settings) on iPhone |
-| **macOSSettingsSceneTest** | Open macOS Settings via ⌘, and App menu; verify four pane tabs render correctly |
+| **macOSSettingsSceneTest** | Open macOS Settings via ⌘,; verify all panes scroll correctly with long volume lists (Download Manager, Volume Management, Storage Management); verify per-volume reindex control in Storage Management |
 
 ## Coding Standards
 
