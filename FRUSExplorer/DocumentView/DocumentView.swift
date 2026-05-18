@@ -81,6 +81,12 @@ enum DocumentSheet: Identifiable {
 ///          navigationTitle now uses vm.documentTitle (set after parse) falling back to
 ///          entry.header or entry.documentId; handleCrossRefTap uses docId as placeholder header
 ///          so the breadcrumb is non-empty while the document loads
+///   2.0 — Session 68: fix cross-reference and search-result document loading. Both paths
+///          reached DocumentView as a prop update on an existing view instance (NavigationSplitView
+///          detail column reuse), leaving vm stale for the old entry. Replaced .onAppear with
+///          .task(id: documentId/volumeId): the task auto-cancels and restarts when the entry
+///          identity changes, resetting vm and re-bootstrapping for the new document. Same-entry
+///          reappearance is a no-op because bootstrapViewModel guards on vm == nil.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -102,7 +108,26 @@ struct DocumentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .onAppear { bootstrapViewModel() }
+        // Use .task(id:) rather than .onAppear so that SwiftUI auto-cancels and
+        // restarts the task whenever the entry identity changes. This is necessary
+        // because NavigationSplitView reuses the same DocumentView instance when the
+        // detail column's last path element changes from one .document entry to another
+        // (cross-reference taps and search-result selections both hit this path).
+        // When reused, `entry` is updated as a prop but `@State var vm` retains the
+        // old DocumentViewModel — so the body shows the old document until we reset.
+        //
+        // The id string encodes both documentId and volumeId so cross-volume references
+        // (same docId, different volume) also trigger a reset.
+        .task(id: entry.documentId + "/" + entry.volumeId) {
+            // Reset vm if we detect view reuse for a different entry.
+            // bootstrapViewModel() alone is not enough because it guards on vm == nil.
+            if let existingVm = vm,
+               existingVm.entry.documentId != entry.documentId
+                   || existingVm.entry.volumeId != entry.volumeId {
+                vm = nil
+            }
+            bootstrapViewModel()
+        }
         // vm.documentTitle is set after the document loads; it provides a real
         // title for cross-reference targets, which are created with header: "".
         // Falls back to entry.header (known at browse time) or to entry.documentId
