@@ -80,7 +80,7 @@ struct FRUSSettingsView: View {
                     }
                 }
                 Section("Reset") {
-                    ForEach(SettingsPane.reset) { pane in
+                    ForEach(SettingsPane.resetSection) { pane in
                         Label(pane.label, systemImage: pane.icon)
                             .foregroundStyle(pane == .reset ? .red : .primary)
                             .tag(pane)
@@ -158,7 +158,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
     static let research: [SettingsPane] = [.projects, .tags, .notes]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
     static let advanced: [SettingsPane] = [.naraAPI, .summarization]
-    static let reset:    [SettingsPane] = [.reset]
+    static let resetSection: [SettingsPane] = [.reset]
 }
 
 // MARK: - Shared Pane Chrome
@@ -440,7 +440,7 @@ private struct SettingsProjectsPane: View {
                 }
                 .font(.system(size: 11))
                 .buttonStyle(.plain)
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
             }
         }
         .padding(10)
@@ -455,7 +455,7 @@ private struct SettingsProjectsPane: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: appState.activeProjectId == project.id ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(appState.activeProjectId == project.id ? .accentColor : .tertiary)
+                        .foregroundStyle(appState.activeProjectId == project.id ? Color.accentColor : Color.secondary)
                         .font(.system(size: 15))
                     VStack(alignment: .leading, spacing: 1) {
                         Text(project.name)
@@ -579,7 +579,7 @@ private struct SettingsTagsPane: View {
         HStack {
             Text("◆")
                 .font(.system(size: 11))
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
             Text(tag.name)
                 .font(.system(size: 13))
             Spacer()
@@ -802,7 +802,7 @@ private struct SettingsNotesPane: View {
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
                         .background(Color.accentColor.opacity(0.1))
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                         .clipShape(Capsule())
                 }
                 ForEach(tagNamesFor(note), id: \.self) { name in

@@ -33,7 +33,7 @@ public final class NARAAPIKeyStore {
 
     // MARK: - Singleton
 
-    public static let shared = NARAAPIKeyStore()
+    public static nonisolated(unsafe) let shared = NARAAPIKeyStore()
 
     // MARK: - Constants
 
