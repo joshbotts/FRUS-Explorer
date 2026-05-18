@@ -380,7 +380,7 @@ private struct VolumeManagementView: View {
             if filtered.isEmpty {
                 Text(String(
                     format: String(localized: "settings.volumes.available.noResults",
-                                   defaultValue: "No volumes match "%@"."),
+                                   defaultValue: "No volumes match \"%@\"."),
                     availableSearch
                 ))
                 .foregroundStyle(.secondary)
