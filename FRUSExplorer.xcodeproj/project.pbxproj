@@ -151,6 +151,8 @@
 		AA16BB01CC03DD04EE1605 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1604 /* SearchView.swift */; };
 		AA16BB01CC03DD04EE1606 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1604 /* SearchView.swift */; };
 		AA16BB01CC03DD04EE1608 /* SearchViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1607 /* SearchViewTests.swift */; };
+		AA16BB01CC03DD04EE1611 /* SearchFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1610 /* SearchFilterView.swift */; };
+		AA16BB01CC03DD04EE1612 /* SearchFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16BB01CC03DD04EE1610 /* SearchFilterView.swift */; };
 		AA17BB01CC03DD04EE1702 /* CrossReferenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA17BB01CC03DD04EE1701 /* CrossReferenceModels.swift */; };
 		AA17BB01CC03DD04EE1703 /* CrossReferenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA17BB01CC03DD04EE1701 /* CrossReferenceModels.swift */; };
 		AA17BB01CC03DD04EE1705 /* CrossReferenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA17BB01CC03DD04EE1704 /* CrossReferenceStore.swift */; };
@@ -360,6 +362,7 @@
 		AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
 		AA16BB01CC03DD04EE1604 /* SearchView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		AA16BB01CC03DD04EE1607 /* SearchViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchViewTests.swift; sourceTree = "<group>"; };
+		AA16BB01CC03DD04EE1610 /* SearchFilterView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchFilterView.swift; sourceTree = "<group>"; };
 		AA17BB01CC03DD04EE1701 /* CrossReferenceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CrossReferenceModels.swift; sourceTree = "<group>"; };
 		AA17BB01CC03DD04EE1704 /* CrossReferenceStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CrossReferenceStore.swift; sourceTree = "<group>"; };
 		AA17BB01CC03DD04EE1707 /* CrossReferenceStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CrossReferenceStoreTests.swift; sourceTree = "<group>"; };
@@ -565,6 +568,7 @@
 				AA09BB02CC03DD04EE090009 /* SearchService.swift */,
 				AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */,
 				AA16BB01CC03DD04EE1604 /* SearchView.swift */,
+				AA16BB01CC03DD04EE1610 /* SearchFilterView.swift */,
 			);
 			path = Search;
 			sourceTree = "<group>";
@@ -1031,6 +1035,7 @@
 				AA15BB01CC03DD04EE1511 /* ProjectContextView.swift in Sources */,
 				AA16BB01CC03DD04EE1602 /* SearchViewModel.swift in Sources */,
 				AA16BB01CC03DD04EE1605 /* SearchView.swift in Sources */,
+				AA16BB01CC03DD04EE1611 /* SearchFilterView.swift in Sources */,
 				AA17BB01CC03DD04EE1702 /* CrossReferenceModels.swift in Sources */,
 				AA17BB01CC03DD04EE1705 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1802 /* CrossReferenceGraphViewModel.swift in Sources */,
@@ -1135,6 +1140,7 @@
 				AA15BB01CC03DD04EE1512 /* ProjectContextView.swift in Sources */,
 				AA16BB01CC03DD04EE1603 /* SearchViewModel.swift in Sources */,
 				AA16BB01CC03DD04EE1606 /* SearchView.swift in Sources */,
+				AA16BB01CC03DD04EE1612 /* SearchFilterView.swift in Sources */,
 				AA17BB01CC03DD04EE1703 /* CrossReferenceModels.swift in Sources */,
 				AA17BB01CC03DD04EE1706 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1803 /* CrossReferenceGraphViewModel.swift in Sources */,

@@ -38,6 +38,7 @@ import Observation
 ///   1.0 — Session 16: initial implementation
 ///   1.1 — Session 38: `documentTypeFilter` property added
 ///   1.2 — Session 40: `personRefText` property and `applyParameters(_:)` added
+///   1.3 — Session 62: `showFilterPanel` semantics changed from inline panel to sheet flag
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -101,6 +102,8 @@ final class SearchViewModel {
 
     // MARK: - UI State
 
+    /// Controls presentation of the `SearchFilterView` sheet.
+    /// Set to `true` by the filter toolbar button; `false` when the sheet is dismissed.
     var showFilterPanel: Bool = false
     var navigationPath: [DocumentBrowserEntry] = []
 
