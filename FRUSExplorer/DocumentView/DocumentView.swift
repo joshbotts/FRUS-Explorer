@@ -73,6 +73,10 @@ enum DocumentSheet: Identifiable {
 ///   1.6 — Session 54: OpenURLAction handles frusexplorer://doc/… links from AttributedString cross-refs
 ///   1.7 — Session 59: consolidate 7 sheet modifiers into single .sheet(item: $activeSheet) via
 ///          DocumentSheet enum (F-024); add .presentationDetents on PersonDetail/Gloss/Citation (F-006)
+///   1.8 — Session 65: pass `embedInScrollView: false` to FRUSDocumentRenderer to eliminate
+///          nested ScrollViews (fixes scroll-stuck bug and unblocks link/tap hit-testing);
+///          extend \.openURL handler to route frusexplorer://person/ and frusexplorer://gloss/
+///          URLs to the person/gloss detail sheets via vm.personsByRef / vm.termsByRef
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -168,9 +172,13 @@ struct DocumentView: View {
                     Divider()
                 }
 
-                // Document body
+                // Document body — embedInScrollView: false because this LazyVStack
+                // is already inside DocumentView's own ScrollView.  Nested ScrollViews
+                // capture all scroll and click events on macOS, which breaks link taps
+                // and prevents scrolling back to the top of a long document.
                 FRUSDocumentRenderer(
                     model: model,
+                    embedInScrollView: false,
                     onPersNameTap: { person in
                         vm.selectedPerson = person   // retained so .task(id:) fires for mention loading
                         if let person { activeSheet = .personDetail(person) }
@@ -266,20 +274,51 @@ struct DocumentView: View {
         .onChange(of: activeSheet?.id) { _, newId in
             if newId == nil { vm.selectedPerson = nil }
         }
-        // Handle frusexplorer://doc/{volumeId}/{documentId} links emitted by
-        // FRUSDocumentRenderer for <ref> cross-reference nodes. The volumeId
-        // component is "_" when the renderer had no explicit target volume,
-        // meaning the target lives in the same volume as the current document.
+        // Handle frusexplorer:// deep-link URLs emitted by FRUSDocumentRenderer's
+        // AttributedString rendering path.  Three URL forms are supported:
+        //
+        //   frusexplorer://doc/{volumeId}/{documentId}
+        //     Cross-reference navigation.  volumeId is "_" when the renderer
+        //     had no explicit target volume (same volume as current document).
+        //
+        //   frusexplorer://person/{ref}
+        //     Opens the PersonDetailSheet for the persName entry whose xml:id
+        //     matches {ref}.  Resolved via vm.personsByRef.
+        //
+        //   frusexplorer://gloss/{ref}
+        //     Opens the GlossDetailSheet for the glossary entry whose xml:id
+        //     matches {ref}.  Resolved via vm.termsByRef.
+        //
+        // SwiftUI routes Text(AttributedString) link taps through this
+        // \.openURL environment action on iOS.  On macOS the same routing
+        // applies when the frusexplorer:// scheme is registered in Info.plist.
         .environment(\.openURL, OpenURLAction { url in
-            guard url.scheme == "frusexplorer",
-                  url.host == "doc" else { return .systemAction }
+            guard url.scheme == "frusexplorer" else { return .systemAction }
             let parts = url.pathComponents.filter { $0 != "/" }
-            guard parts.count == 2 else { return .systemAction }
-            let volComponent = parts[0]
-            let docId        = parts[1]
-            let targetVol    = volComponent == "_" ? nil : volComponent
-            handleCrossRefTap(target: docId, targetVolumeId: targetVol)
-            return .handled
+            switch url.host {
+            case "doc":
+                guard parts.count == 2 else { return .systemAction }
+                let volComponent = parts[0]
+                let docId        = parts[1]
+                let targetVol    = volComponent == "_" ? nil : volComponent
+                handleCrossRefTap(target: docId, targetVolumeId: targetVol)
+                return .handled
+            case "person":
+                guard let ref = parts.first, !ref.isEmpty else { return .systemAction }
+                if let person = vm.personsByRef[ref] {
+                    vm.selectedPerson = person
+                    activeSheet = .personDetail(person)
+                }
+                return .handled
+            case "gloss":
+                guard let ref = parts.first, !ref.isEmpty else { return .systemAction }
+                if let gloss = vm.termsByRef[ref] {
+                    activeSheet = .glossDetail(gloss)
+                }
+                return .handled
+            default:
+                return .systemAction
+            }
         })
     }
 

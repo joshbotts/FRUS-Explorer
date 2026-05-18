@@ -39,42 +39,67 @@ import SwiftUI
 ///          cases in `inlineTextNode`, `inlineAttributedStringNode`, and
 ///          `extractInlineContent` to break the mutual-recursion stack overflow that
 ///          occurred when either node appeared inside an inline context (EXC_BAD_ACCESS)
+///   1.3 — Session 65: `embedInScrollView` parameter added (default `true`) so the
+///          caller can suppress the internal `ScrollView` when it provides its own;
+///          `containsCrossRef` renamed to `containsInteractiveInline` and extended to
+///          also trigger the `AttributedString` path for `persNameLink`/`glossLink`
+///          nodes, with `frusexplorer://person/` and `frusexplorer://gloss/` link
+///          attributes so taps route through the caller's `\.openURL` environment
 public struct FRUSDocumentRenderer: View {
 
     public let model: FRUSDocumentRenderModel
 
-    // Callbacks for interactive elements — wired up in Session 12.
+    /// When `true` (the default), the renderer wraps its content in a `ScrollView`.
+    /// Pass `false` when the parent view already owns a scroll container — nested
+    /// `ScrollView`s on macOS capture both scroll and click events, breaking link
+    /// taps and preventing scrolling back to the document top.
+    private let embedInScrollView: Bool
+
+    // Callbacks for interactive elements — invoked via the `\.openURL` environment
+    // action (cross-ref, persName, gloss) rather than directly, so taps work in
+    // both the `Text`-concat and `AttributedString` rendering paths.
     public var onFootnoteTap: ((Int) -> Void)?
     public var onPersNameTap: ((PersonEntry?) -> Void)?
     public var onGlossTap: ((GlossEntry?) -> Void)?
     public var onCrossRefTap: ((String, String?) -> Void)?
 
     public init(model: FRUSDocumentRenderModel,
+                embedInScrollView: Bool = true,
                 onFootnoteTap: ((Int) -> Void)? = nil,
                 onPersNameTap: ((PersonEntry?) -> Void)? = nil,
                 onGlossTap: ((GlossEntry?) -> Void)? = nil,
                 onCrossRefTap: ((String, String?) -> Void)? = nil) {
         self.model = model
+        self.embedInScrollView = embedInScrollView
         self.onFootnoteTap = onFootnoteTap
         self.onPersNameTap = onPersNameTap
         self.onGlossTap = onGlossTap
         self.onCrossRefTap = onCrossRefTap
     }
 
-    public var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                ForEach(Array(model.bodyNodes.enumerated()), id: \.offset) { _, node in
-                    blockView(node)
-                }
-                if !model.footnotes.isEmpty {
-                    Divider().padding(.vertical, 8)
-                    ForEach(Array(model.footnotes.enumerated()), id: \.offset) { _, fn in
-                        blockView(fn)
-                    }
+    /// The document body and footnotes as a vertically stacked content view,
+    /// without a scroll container.  Factored out so `body` can conditionally
+    /// wrap it in a `ScrollView` depending on `embedInScrollView`.
+    private var contentStack: some View {
+        LazyVStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(model.bodyNodes.enumerated()), id: \.offset) { _, node in
+                blockView(node)
+            }
+            if !model.footnotes.isEmpty {
+                Divider().padding(.vertical, 8)
+                ForEach(Array(model.footnotes.enumerated()), id: \.offset) { _, fn in
+                    blockView(fn)
                 }
             }
-            .padding()
+        }
+        .padding()
+    }
+
+    public var body: some View {
+        if embedInScrollView {
+            ScrollView { contentStack }
+        } else {
+            contentStack
         }
     }
 
@@ -124,7 +149,7 @@ public struct FRUSDocumentRenderer: View {
         case .paragraph(let children):
             AnyView(
                 Group {
-                    if containsCrossRef(children) {
+                    if containsInteractiveInline(children) {
                         Text(inlineAttributedString(children))
                     } else {
                         inlineText(children)
@@ -140,7 +165,7 @@ public struct FRUSDocumentRenderer: View {
                         .font(.footnote)
                         .foregroundStyle(footnoteColor(type))
                     Group {
-                        if containsCrossRef(children) {
+                        if containsInteractiveInline(children) {
                             Text(inlineAttributedString(children))
                         } else {
                             inlineText(children)
@@ -389,23 +414,34 @@ public struct FRUSDocumentRenderer: View {
         inlineAttributedString(nodes)
     }
 
-    // MARK: - Cross-ref AttributedString path
+    // MARK: - Interactive-inline AttributedString path
 
-    /// Returns `true` when any node in the tree is a `crossRefLink`.
+    /// Returns `true` when a node array contains any element that needs the
+    /// `AttributedString` rendering path to be interactive.
     ///
-    /// Used to decide whether to take the `AttributedString` rendering path for a
-    /// paragraph. Only paragraphs that actually contain cross-refs incur the extra
-    /// allocation; all other paragraphs continue to use the fast `Text` path.
-    private func containsCrossRef(_ nodes: [FRUSRenderNode]) -> Bool {
+    /// Triggers on:
+    /// - `crossRefLink` — always interactive (encoded as `frusexplorer://doc/…`).
+    /// - `persNameLink` with a non-nil ref or embedded entry — interactive
+    ///   (encoded as `frusexplorer://person/{ref}`).
+    /// - `glossLink` with a non-nil ref or embedded entry — interactive
+    ///   (encoded as `frusexplorer://gloss/{ref}`).
+    ///
+    /// Only paragraphs that contain such nodes incur the `AttributedString`
+    /// allocation; all other paragraphs use the faster `Text`-concat path.
+    private func containsInteractiveInline(_ nodes: [FRUSRenderNode]) -> Bool {
         nodes.contains { node in
             switch node {
-            case .crossRefLink: return true
+            case .crossRefLink:
+                return true
+            case .persNameLink(let ref, _, let person):
+                return ref != nil || person != nil
+            case .glossLink(let ref, _, let entry):
+                return ref != nil || entry != nil
             case .boldText(let c), .italicText(let c), .smallCapsText(let c),
                  .underlineText(let c), .termText(let c),
-                 .persNameLink(_, let c, _), .glossLink(_, let c, _),
                  .suppliedText(let c), .sicText(let c), .corrText(let c),
                  .paragraph(let c), .unknown(_, let c):
-                return containsCrossRef(c)
+                return containsInteractiveInline(c)
             default: return false
             }
         }
@@ -454,15 +490,29 @@ public struct FRUSDocumentRenderer: View {
             a.font = .body.italic()
             return a
 
-        case .persNameLink(_, let c, _):
+        case .persNameLink(let ref, let c, let person):
             var a = inlineAttributedString(c)
             a.foregroundColor = .accentColor
+            // Encode as frusexplorer://person/{ref} so the parent's \.openURL
+            // handler can look up the PersonEntry and open the detail sheet.
+            let personRef = ref ?? person?.ref
+            if let personRef, !personRef.isEmpty,
+               let url = URL(string: "frusexplorer://person/\(personRef)") {
+                a.link = url
+            }
             return a
 
-        case .glossLink(_, let c, _):
+        case .glossLink(let ref, let c, let entry):
             var a = inlineAttributedString(c)
             a.foregroundColor = .accentColor
             a.underlineStyle = .single
+            // Encode as frusexplorer://gloss/{ref} so the parent's \.openURL
+            // handler can look up the GlossEntry and open the detail sheet.
+            let glossRef = ref ?? entry?.ref
+            if let glossRef, !glossRef.isEmpty,
+               let url = URL(string: "frusexplorer://gloss/\(glossRef)") {
+                a.link = url
+            }
             return a
 
         case .crossRefLink(let target, let volumeId, let c):
