@@ -32,6 +32,9 @@ import SwiftUI
 ///   1.2 — Session 38: `DocumentRowLabel` shows italic header and editorial note badge
 ///   1.3 — Session 56: "Index Now" demoted to `.bordered` (HIG: only one `.borderedProminent`
 ///          per view; "Read [Title]" is the true primary action)
+///   1.4 — Session 68: rich indexing progress section (`indexingProgressSection`) using
+///          `vm.indexingProgress`; `.onChange(of: vm.isIndexing)` auto-loads document
+///          list when indexing finishes — no navigate-away required
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -71,6 +74,14 @@ struct CompilationView: View {
             guard volume != nil else { return }
             if !vm.isIndexed(volumeId) { return }
             await vm.loadDocuments(for: section, volumeId: volumeId)
+        }
+        // When a user-triggered indexing operation finishes successfully, load the
+        // document list immediately. This replaces the previous behaviour where the
+        // user had to navigate away and back to see documents after indexing.
+        .onChange(of: vm.isIndexing) { wasIndexing, isIndexing in
+            if wasIndexing && !isIndexing && vm.indexingError == nil {
+                Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
+            }
         }
     }
 
@@ -163,9 +174,15 @@ struct CompilationView: View {
         if canReadSectionDirectly {
             // Prose-only front matter section — bypass indexing and open directly.
             readSectionDirectlySection
+        } else if vm.isIndexing {
+            // Indexing in progress — show live progress (takes priority over index check).
+            indexingProgressSection
         } else if !vm.isIndexed(volumeId) {
+            // Not indexed and not currently indexing — show prompt.
             indexRequiredSection
-        } else if vm.isLoadingDocuments {
+        } else if vm.isLoadingDocuments || vm.compilationDocuments[cacheKey] == nil {
+            // Indexed but documents not yet in cache — covers both normal first-load and
+            // the brief window immediately after indexing completes before loadDocuments runs.
             Section {
                 HStack {
                     ProgressView()
@@ -176,8 +193,8 @@ struct CompilationView: View {
                 }
                 .padding(.vertical, 4)
             }
-        } else if let docs = vm.compilationDocuments[cacheKey] {
-            documentRows(docs: docs)
+        } else {
+            documentRows(docs: vm.compilationDocuments[cacheKey] ?? [])
         }
     }
 
@@ -229,40 +246,124 @@ struct CompilationView: View {
                             defaultValue: "This volume must be indexed before its documents can be browsed."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                if vm.isIndexing {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                        Text(String(localized: "browser.compilation.indexing",
-                                    defaultValue: "Indexing…"))
-                            .font(.callout)
+                Button {
+                    guard let vol = volume else { return }
+                    Task { await vm.indexVolume(vol) }
+                } label: {
+                    Label(
+                        String(localized: "browser.compilation.indexNow",
+                               defaultValue: "Index Now"),
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                // .bordered (not .borderedProminent) — HIG requires only one primary-
+                // action button per view. "Read [Title]" is the true primary action;
+                // "Index Now" is a prerequisite maintenance action.
+                .buttonStyle(.bordered)
+                if let err = vm.indexingError {
+                    Text(err.localizedDescription)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+            .padding(.vertical, 6)
+        }
+    }
+
+    // MARK: - Indexing Progress Section
+
+    /// Shown while `vm.isIndexing` is true. Displays a labelled progress bar fed
+    /// by `vm.indexingProgress` (per-document updates from `IndexingPipeline.progressStream`).
+    /// Falls back to an indeterminate spinner before the first update arrives.
+    @ViewBuilder
+    private var indexingProgressSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(
+                    String(localized: "browser.compilation.indexing.title",
+                           defaultValue: "Indexing Volume"),
+                    systemImage: "arrow.triangle.2.circlepath"
+                )
+                .font(.headline)
+
+                if let prog = vm.indexingProgress, prog.totalDocuments > 0 {
+                    // Determinate progress once pipeline starts emitting updates
+                    VStack(alignment: .leading, spacing: 6) {
+                        ProgressView(
+                            value: Double(prog.completedDocuments),
+                            total: Double(prog.totalDocuments)
+                        )
+
+                        HStack {
+                            Text(indexingStageLabel(prog.stage))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(String(
+                                format: String(localized: "browser.compilation.indexing.progress",
+                                               defaultValue: "%@ / %@ documents"),
+                                formattedCount(prog.completedDocuments),
+                                formattedCount(prog.totalDocuments)
+                            ))
+                            .font(.callout.monospacedDigit())
                             .foregroundStyle(.secondary)
+                        }
+
+                        if prog.docsPerSecond > 0 {
+                            Text(String(
+                                format: String(localized: "browser.compilation.indexing.throughput",
+                                               defaultValue: "%@ docs/s"),
+                                formattedCount(Int(prog.docsPerSecond))
+                            ))
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                        }
                     }
                 } else {
-                    Button {
-                        guard let vol = volume else { return }
-                        Task { await vm.indexVolume(vol) }
-                    } label: {
-                        Label(
-                            String(localized: "browser.compilation.indexNow",
-                                   defaultValue: "Index Now"),
-                            systemImage: "arrow.triangle.2.circlepath"
-                        )
-                    }
-                    // .bordered (not .borderedProminent) — HIG requires only one primary-
-                    // action button per view. "Read [Title]" is the true primary action;
-                    // "Index Now" is a prerequisite maintenance action.
-                    .buttonStyle(.bordered)
-                    if let err = vm.indexingError {
-                        Text(err.localizedDescription)
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                    // Indeterminate spinner before first update arrives
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text(String(localized: "browser.compilation.indexing.preparing",
+                                    defaultValue: "Preparing…"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
             .padding(.vertical, 6)
         }
     }
+
+    // MARK: - Indexing Helpers
+
+    private func indexingStageLabel(_ stage: IndexingStage) -> String {
+        switch stage {
+        case .parsing:
+            return String(localized: "browser.compilation.indexing.stage.parsing",
+                          defaultValue: "Parsing documents…")
+        case .extractingDates:
+            return String(localized: "browser.compilation.indexing.stage.dates",
+                          defaultValue: "Extracting dates…")
+        case .indexingPersons:
+            return String(localized: "browser.compilation.indexing.stage.persons",
+                          defaultValue: "Indexing persons…")
+        case .buildingFTS5:
+            return String(localized: "browser.compilation.indexing.stage.fts",
+                          defaultValue: "Building search index…")
+        case .complete:
+            return String(localized: "browser.compilation.indexing.stage.complete",
+                          defaultValue: "Complete")
+        }
+    }
+
+    private func formattedCount(_ n: Int) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: n)) ?? "\(n)"
+    }
 }
+
 
 // MARK: - DocumentRowLabel
 

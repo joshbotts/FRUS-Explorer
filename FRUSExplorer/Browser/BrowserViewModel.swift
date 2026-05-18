@@ -39,6 +39,9 @@ import Observation
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 50: filterDownloadedOnly — gates allSubseriesGroups and filteredVolumes
+///   1.2 — Session 68: `indexingProgress` published during `indexVolume` via a concurrent
+///          `progressStream` observer; `isIndexing` false-transition signals CompilationView
+///          to auto-reload the document list without requiring navigation away
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -123,6 +126,11 @@ public final class BrowserViewModel {
     /// `true` while a triggered `indexVolume` call is running.
     public var isIndexing: Bool = false
     public var indexingError: Error? = nil
+
+    /// Live per-document progress for the volume currently being indexed.
+    /// `nil` when no indexing is in progress or before the first update arrives.
+    /// Populated by a concurrent `progressStream` observer inside `indexVolume(_:)`.
+    public var indexingProgress: IndexingProgressUpdate? = nil
 
     // MARK: - Dependencies
 
@@ -301,11 +309,33 @@ public final class BrowserViewModel {
         return (try? pipeline.isVolumeIndexed(volumeId)) ?? false
     }
 
-    /// Triggers indexing for a single volume, downloading it first if needed.
+    /// Triggers indexing for a single volume and streams live per-document progress
+    /// into `indexingProgress` while the pipeline runs.
+    ///
+    /// A concurrent `Task` iterates `pipeline.progressStream`, filtering to
+    /// `volume.volumeId` and breaking on `.complete`. The task is cancelled once
+    /// `pipeline.indexVolume` returns (success or error) so it never outlives the
+    /// indexing operation. `indexingProgress` is cleared and `isIndexing` is set to
+    /// `false` at the end — CompilationView's `.onChange(of: vm.isIndexing)` uses
+    /// this transition to load the document list without requiring navigation.
     public func indexVolume(_ volume: VolumeManifestEntry) async {
         guard let pipeline = indexingPipeline else { return }
         isIndexing = true
         indexingError = nil
+        indexingProgress = nil
+
+        // Stream per-document progress for this volume into indexingProgress.
+        // Runs on the main actor so @Observable property mutations are safe.
+        // Breaks on .complete or when cancelled (i.e. when indexVolume returns).
+        let progressTask = Task { @MainActor [weak self] in
+            for await update in pipeline.progressStream {
+                guard let self else { break }
+                guard update.volumeId == volume.volumeId else { continue }
+                self.indexingProgress = update
+                if update.stage == .complete { break }
+            }
+        }
+
         do {
             try await pipeline.indexVolume(volume.volumeId)
             #if DEBUG
@@ -317,6 +347,9 @@ public final class BrowserViewModel {
             print("[BrowserView] Indexing failed for \(volume.volumeId): \(error)")
             #endif
         }
+
+        progressTask.cancel()
+        indexingProgress = nil
         isIndexing = false
     }
 
