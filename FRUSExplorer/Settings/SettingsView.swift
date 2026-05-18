@@ -46,6 +46,16 @@ import UniformTypeIdentifiers
 ///          .infinity from Form so NavigationSplitView detail column bounds it correctly;
 ///          add .scrollIndicators(.visible)); StorageManagementView adds per-volume
 ///          indexing-status badge and Reindex button via IndexingPipeline API
+///   1.8 — Session 70: fix three macOS Settings issues: (a) VolumeManagementView
+///          Available Volumes section gains a live search filter so 552 entries don't
+///          fill the view — only matching results are shown; title text gets lineLimit(2)
+///          to prevent horizontal overflow; (b) StorageManagementView perVolumeRow
+///          redesigned from one wide HStack to a two-line VStack (title+size on row 1,
+///          volumeId+indexed-status on row 2) so it fits narrow detail columns; (c) macOS
+///          MacSettingsView switches from the newer Tab API to the stable .tabItem API
+///          (fixes Advanced tab not appearing); .navigationSplitViewStyle(.balanced) added
+///          to all three panes to prevent sidebar auto-collapse on minimum-width windows;
+///          minWidth increased from 700 → 760 to give detail columns more breathing room
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -152,6 +162,8 @@ private struct VolumeManagementView: View {
     }()
     /// Volume queued for deletion; drives the confirmation dialog.
     @State private var volumePendingDelete: VolumeManifestEntry? = nil
+    /// Live search text for filtering the (potentially 552-entry) Available Volumes list.
+    @State private var availableSearch: String = ""
 
     var body: some View {
         Form {
@@ -193,8 +205,7 @@ private struct VolumeManagementView: View {
                 downloadedVolumesSection
             }
 
-            Section(String(localized: "settings.volumes.available.header",
-                           defaultValue: "Available Volumes")) {
+            Section(header: Text(availableVolumesHeader)) {
                 availableVolumesSection
             }
 
@@ -298,10 +309,9 @@ private struct VolumeManagementView: View {
         } else {
             ForEach(downloaded) { entry in
                 VStack(alignment: .leading, spacing: 2) {
-                    // No .lineLimit cap — long volume titles must be fully readable
-                    // at all Dynamic Type sizes (F-029).
                     Text(entry.title)
                         .font(.callout)
+                        .lineLimit(2)
                     Text(entry.volumeId)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -336,33 +346,91 @@ private struct VolumeManagementView: View {
                 .foregroundStyle(.secondary)
                 .font(.callout)
         } else {
-            ForEach(notDownloaded) { entry in
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.title)
-                            .font(.callout)
-                        Text(formattedBytes(entry.sizeBytes))
-                            .font(.caption)
+            // Search field — keeps the row count manageable for a list of up to 552 volumes.
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+                TextField(
+                    String(localized: "settings.volumes.available.search.placeholder",
+                           defaultValue: "Search by title, ID, or subseries…"),
+                    text: $availableSearch
+                )
+                .textFieldStyle(.plain)
+                .font(.callout)
+                .autocorrectionDisabled()
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+                if !availableSearch.isEmpty {
+                    Button { availableSearch = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
                     }
-                    Spacer()
-                    Button(String(localized: "settings.volumes.available.download",
-                                  defaultValue: "Download")) {
-                        let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
-                        Task {
-                            await appState.downloadManager?.enqueueDownload(
-                                volumeId: entry.volumeId,
-                                downloadUrl: url)
-                        }
-                    }
-                    .font(.callout)
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.plain)
                     .accessibilityLabel(
-                        String(localized: "settings.volumes.available.download.a11y",
-                               defaultValue: "Download \(entry.title)")
+                        String(localized: "settings.volumes.available.search.clear.a11y",
+                               defaultValue: "Clear search")
                     )
                 }
             }
+            .padding(.vertical, 2)
+
+            let filtered = availableFiltered(notDownloaded)
+            if filtered.isEmpty {
+                Text(String(
+                    format: String(localized: "settings.volumes.available.noResults",
+                                   defaultValue: "No volumes match "%@"."),
+                    availableSearch
+                ))
+                .foregroundStyle(.secondary)
+                .font(.callout)
+            } else {
+                ForEach(filtered) { entry in
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.title)
+                                .font(.callout)
+                                .lineLimit(2)
+                            Text(entry.volumeId)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text(formattedBytes(entry.sizeBytes))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        Spacer(minLength: 8)
+                        Button(String(localized: "settings.volumes.available.download",
+                                      defaultValue: "Download")) {
+                            let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+                            Task {
+                                await appState.downloadManager?.enqueueDownload(
+                                    volumeId: entry.volumeId,
+                                    downloadUrl: url)
+                            }
+                        }
+                        .font(.callout)
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel(
+                            String(localized: "settings.volumes.available.download.a11y",
+                                   defaultValue: "Download \(entry.title)")
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /// Filters the not-downloaded list using `availableSearch` against title, volumeId, and subseries.
+    /// Returns the full list unchanged when search is empty.
+    private func availableFiltered(_ volumes: [VolumeManifestEntry]) -> [VolumeManifestEntry] {
+        let q = availableSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return volumes }
+        let lower = q.lowercased()
+        return volumes.filter {
+            $0.title.lowercased().contains(lower)
+            || $0.volumeId.lowercased().contains(lower)
+            || $0.subseries.lowercased().contains(lower)
         }
     }
 
@@ -376,6 +444,19 @@ private struct VolumeManagementView: View {
         guard let dm = appState.downloadManager else { return [] }
         let all = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
         return all.filter { !dm.isVolumeDownloaded($0.volumeId) }
+    }
+
+    private var availableVolumesHeader: String {
+        let all = notDownloadedVolumes
+        let q = availableSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        let base = String(localized: "settings.volumes.available.header",
+                          defaultValue: "Available Volumes")
+        if q.isEmpty {
+            return "\(base) (\(all.count))"
+        } else {
+            let filtered = availableFiltered(all)
+            return "\(base) (\(filtered.count) of \(all.count))"
+        }
     }
 }
 
@@ -490,37 +571,40 @@ private struct StorageManagementView: View {
             ?? appState.manifestStore.bundledEntries
             .first { $0.volumeId == entry.volumeId }
 
-        HStack(alignment: .center, spacing: 8) {
-            // Title + volumeId
-            VStack(alignment: .leading, spacing: 2) {
+        // Two-line layout keeps each row within a narrow detail column.
+        // Row 1: title (truncated) + file size right-aligned.
+        // Row 2: volumeId + indexed-status / reindex control right-aligned.
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(manifestEntry?.title ?? entry.volumeId)
                     .font(.callout)
                     .lineLimit(2)
-                Text(entry.volumeId)
+                    .truncationMode(.tail)
+                Spacer(minLength: 8)
+                Text(formattedBytes(entry.volumeFileBytes))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .fixedSize()    // prevent size label from wrapping
             }
 
-            Spacer()
-
-            // File size
-            Text(formattedBytes(entry.volumeFileBytes))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-
-            // Indexed status / reindex control (only shown when pipeline available)
-            if appState.indexingPipeline != nil {
-                indexedStatusView(volumeId: entry.volumeId)
+            HStack(alignment: .center, spacing: 6) {
+                Text(entry.volumeId)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                if let errMsg = reindexErrors[entry.volumeId] {
+                    Text("· \(errMsg)")
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                if appState.indexingPipeline != nil {
+                    indexedStatusView(volumeId: entry.volumeId)
+                }
             }
         }
-
-        // Per-volume reindex error (rare)
-        if let errMsg = reindexErrors[entry.volumeId] {
-            Text(errMsg)
-                .font(.caption)
-                .foregroundStyle(.red)
-        }
+        .padding(.vertical, 2)
     }
 
     @ViewBuilder
@@ -1638,29 +1722,40 @@ enum SettingsKeys {
 ///          NavigationSplitView sidebar+detail in each pane; make window resizable
 ///   1.2 — Session 61: Integrations tab merged into Advanced pane (F-015/F-016);
 ///          all three panes now use NavigationSplitView uniformly
+///   1.3 — Session 70: switch from newer Tab API to .tabItem API for reliable
+///          tab rendering in the Settings scene; increase minWidth 700 → 760
 struct MacSettingsView: View {
 
     var body: some View {
         TabView {
-            Tab(String(localized: "settings.mac.tab.volumes",
-                       defaultValue: "Volumes"),
-                systemImage: "arrow.down.circle") {
-                VolumesSettingsPane()
-            }
-            Tab(String(localized: "settings.mac.tab.research",
-                       defaultValue: "Research"),
-                systemImage: "note.text") {
-                ResearchSettingsPane()
-            }
-            Tab(String(localized: "settings.mac.tab.advanced",
-                       defaultValue: "Advanced"),
-                systemImage: "gearshape.2") {
-                AdvancedSettingsPane()
-            }
+            VolumesSettingsPane()
+                .tabItem {
+                    Label(
+                        String(localized: "settings.mac.tab.volumes",
+                               defaultValue: "Volumes"),
+                        systemImage: "arrow.down.circle"
+                    )
+                }
+            ResearchSettingsPane()
+                .tabItem {
+                    Label(
+                        String(localized: "settings.mac.tab.research",
+                               defaultValue: "Research"),
+                        systemImage: "note.text"
+                    )
+                }
+            AdvancedSettingsPane()
+                .tabItem {
+                    Label(
+                        String(localized: "settings.mac.tab.advanced",
+                               defaultValue: "Advanced"),
+                        systemImage: "gearshape.2"
+                    )
+                }
         }
-        // minWidth accommodates the widest sidebar+detail split; resizable so the
-        // user can widen panes like Download Manager that have substantial content.
-        .frame(minWidth: 700, minHeight: 480)
+        // 760 gives each NavigationSplitView ~580 px for the detail column after the
+        // 180 px sidebar, preventing horizontal clipping at minimum window size.
+        .frame(minWidth: 760, minHeight: 480)
     }
 }
 
@@ -1706,6 +1801,8 @@ private struct VolumesSettingsPane: View {
                 Label(item.title, systemImage: item.systemImage)
             }
             .listStyle(.sidebar)
+            .navigationTitle(String(localized: "settings.mac.tab.volumes",
+                                    defaultValue: "Volumes"))
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
             Group {
@@ -1719,6 +1816,9 @@ private struct VolumesSettingsPane: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        // .balanced keeps the sidebar always visible; prevents it from auto-collapsing
+        // when the window is at minimum width, which would hide the navigation items.
+        .navigationSplitViewStyle(.balanced)
     }
 }
 
@@ -1755,6 +1855,8 @@ private struct ResearchSettingsPane: View {
                 Label(item.title, systemImage: item.systemImage)
             }
             .listStyle(.sidebar)
+            .navigationTitle(String(localized: "settings.mac.tab.research",
+                                    defaultValue: "Research"))
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
             Group {
@@ -1765,6 +1867,7 @@ private struct ResearchSettingsPane: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .navigationSplitViewStyle(.balanced)
     }
 }
 
@@ -1806,6 +1909,8 @@ private struct AdvancedSettingsPane: View {
                 Label(item.title, systemImage: item.systemImage)
             }
             .listStyle(.sidebar)
+            .navigationTitle(String(localized: "settings.mac.tab.advanced",
+                                    defaultValue: "Advanced"))
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
             Group {
@@ -1816,6 +1921,7 @@ private struct AdvancedSettingsPane: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .navigationSplitViewStyle(.balanced)
     }
 }
 
