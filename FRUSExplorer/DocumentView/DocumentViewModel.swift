@@ -87,9 +87,6 @@ public final class DocumentViewModel {
     /// The actual notes counted above, stored for cross-project reveal UI.
     var crossProjectNotes: [ResearchNote] = []
 
-    /// Whether the research note editor sheet is currently presented.
-    public var showNoteEditor: Bool = false
-
     // MARK: - Summaries
 
     /// Summaries for this document, ordered newest-first.
@@ -111,21 +108,12 @@ public final class DocumentViewModel {
     /// `true` while a summarization request is in flight.
     public var isSummarizing: Bool = false
 
-    /// Whether the prompt picker sheet is currently presented.
-    public var showSummarizeSheet: Bool = false
-
     // MARK: - Source Explorer
 
     /// Raw plain-text source note extracted during `load()`. `nil` if the document has no source note.
     public var sourceNote: String? = nil
 
-    /// Whether the Source Explorer sheet is currently presented.
-    public var showSourceExplorer: Bool = false
-
     // MARK: - Citation
-
-    /// Whether the citation sheet is currently presented.
-    public var showCitationSheet: Bool = false
 
     /// The formatted citation string, available when a volume entry was supplied at init.
     public var formattedCitation: String? {

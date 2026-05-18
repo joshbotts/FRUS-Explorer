@@ -1040,6 +1040,9 @@ private struct MergeTagSheet: View {
                 }
             }
         }
+        #if os(iOS)
+        .presentationDetents([.medium, .large])
+        #endif
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 260)
         #endif

@@ -9,6 +9,38 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - DocumentSheet
+
+/// Identifies which sheet is currently active in `DocumentView`.
+///
+/// A single enum replaces 7 independent `@State` boolean/optional sheet triggers.
+/// SwiftUI can only present one sheet at a time; the enum makes that contract
+/// explicit and eliminates impossible states (e.g. two sheets open simultaneously).
+///
+/// Version history:
+///   1.0 — Session 59: initial implementation (F-024)
+enum DocumentSheet: Identifiable {
+    case personDetail(PersonEntry)
+    case glossDetail(GlossEntry)
+    case citation(String)
+    case noteEditor
+    case crossReferenceGraph
+    case summarizePromptPicker
+    case sourceExplorer(String)
+
+    var id: String {
+        switch self {
+        case .personDetail(let p):    return "person-\(p.ref)"
+        case .glossDetail(let g):     return "gloss-\(g.term)"
+        case .citation:               return "citation"
+        case .noteEditor:             return "noteEditor"
+        case .crossReferenceGraph:    return "crossReferenceGraph"
+        case .summarizePromptPicker:  return "summarizePromptPicker"
+        case .sourceExplorer:         return "sourceExplorer"
+        }
+    }
+}
+
 // MARK: - DocumentView
 
 /// Renders a single FRUS document using the TEI rendering pipeline.
@@ -39,6 +71,8 @@ import SwiftData
 ///   1.4 — Session 40: personMentionStore wired; PersonDetailSheet gains mention count + Find all mentions
 ///   1.5 — Session 44: handleCrossRefTap wired cross-platform via pendingBrowseDocument
 ///   1.6 — Session 54: OpenURLAction handles frusexplorer://doc/… links from AttributedString cross-refs
+///   1.7 — Session 59: consolidate 7 sheet modifiers into single .sheet(item: $activeSheet) via
+///          DocumentSheet enum (F-024); add .presentationDetents on PersonDetail/Gloss/Citation (F-006)
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -47,7 +81,8 @@ struct DocumentView: View {
     let entry: DocumentBrowserEntry
 
     @State private var vm: DocumentViewModel?
-    @State private var showGraph = false
+    /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
+    @State private var activeSheet: DocumentSheet?
 
     var body: some View {
         Group {
@@ -136,8 +171,13 @@ struct DocumentView: View {
                 // Document body
                 FRUSDocumentRenderer(
                     model: model,
-                    onPersNameTap: { person in vm.selectedPerson = person },
-                    onGlossTap:    { entry in vm.selectedGloss = entry },
+                    onPersNameTap: { person in
+                        vm.selectedPerson = person   // retained so .task(id:) fires for mention loading
+                        if let person { activeSheet = .personDetail(person) }
+                    },
+                    onGlossTap: { entry in
+                        if let entry { activeSheet = .glossDetail(entry) }
+                    },
                     onCrossRefTap: { target, targetVolumeId in
                         handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
                     }
@@ -170,55 +210,61 @@ struct DocumentView: View {
             }
         }
         .toolbar { documentToolbar(vm: vm) }
-        .sheet(item: $vm.selectedPerson) { person in
-            PersonDetailSheet(
-                person: person,
-                mentionCount: vm.selectedPersonMentionCount,
-                onFindAllMentions: {
-                    vm.selectedPerson = nil
-                    appState.pendingSearch = SearchParameters(personRef: person.ref)
+        // Single consolidated sheet driven by the DocumentSheet enum (F-024).
+        // One .sheet modifier is cheaper than 7 and makes the "only one sheet at a
+        // time" constraint explicit in the type system.
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .personDetail(let person):
+                PersonDetailSheet(
+                    person: person,
+                    mentionCount: vm.selectedPersonMentionCount,
+                    onFindAllMentions: {
+                        activeSheet = nil
+                        appState.pendingSearch = SearchParameters(personRef: person.ref)
+                    }
+                )
+            case .glossDetail(let gloss):
+                GlossDetailSheet(gloss: gloss)
+            case .citation(let text):
+                CitationSheetView(citation: text)
+            case .noteEditor:
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId
+                )
+            case .crossReferenceGraph:
+                if let store = appState.crossReferenceStore {
+                    CrossReferenceGraphView(
+                        entry: entry,
+                        crossReferenceStore: store,
+                        downloadedVolumeIds: downloadedVolumeIds
+                    )
                 }
-            )
+            case .summarizePromptPicker:
+                SummarizationPromptPickerSheet(
+                    vm: vm,
+                    service: appState.summarizationService,
+                    activeProjectId: appState.activeProjectId
+                )
+            case .sourceExplorer(let note):
+                SourceExplorerView(rawSourceNote: note)
+            }
         }
+        // Load the mention count for the selected person from the FTS index.
+        // vm.selectedPerson is set alongside activeSheet so the task id fires correctly.
         .task(id: vm.selectedPerson?.ref) {
             guard let person = vm.selectedPerson else { return }
             await vm.loadPersonMentionCount(for: person)
         }
-        .sheet(item: $vm.selectedGloss) { gloss in
-            GlossDetailSheet(gloss: gloss)
-        }
-        .sheet(isPresented: $vm.showCitationSheet) {
-            if let citation = vm.formattedCitation {
-                CitationSheetView(citation: citation)
-            }
-        }
-        .sheet(isPresented: $vm.showNoteEditor) {
-            ResearchNoteEditorView(
-                documentId: entry.documentId,
-                volumeId: entry.volumeId,
-                activeProjectId: appState.activeProjectId
-            )
-        }
-        .sheet(isPresented: $showGraph) {
-            if let store = appState.crossReferenceStore {
-                CrossReferenceGraphView(
-                    entry: entry,
-                    crossReferenceStore: store,
-                    downloadedVolumeIds: downloadedVolumeIds
-                )
-            }
-        }
-        .sheet(isPresented: $vm.showSummarizeSheet) {
-            SummarizationPromptPickerSheet(
-                vm: vm,
-                service: appState.summarizationService,
-                activeProjectId: appState.activeProjectId
-            )
-        }
-        .sheet(isPresented: $vm.showSourceExplorer) {
-            if let note = vm.sourceNote {
-                SourceExplorerView(rawSourceNote: note)
-            }
+        // Clear the persisted person selection when any sheet closes so the
+        // mention-count task does not re-fire with a stale ref after dismissal.
+        // Uses activeSheet?.id (String?) rather than activeSheet directly because
+        // DocumentSheet associated-value types (PersonEntry, GlossEntry) are not
+        // necessarily Equatable — String? always is.
+        .onChange(of: activeSheet?.id) { _, newId in
+            if newId == nil { vm.selectedPerson = nil }
         }
         // Handle frusexplorer://doc/{volumeId}/{documentId} links emitted by
         // FRUSDocumentRenderer for <ref> cross-reference nodes. The volumeId
@@ -278,7 +324,7 @@ struct DocumentView: View {
         let volId = targetVolumeId ?? entry.volumeId
 
         guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volId) else {
-            showGraph = true
+            activeSheet = .crossReferenceGraph
             #if DEBUG
             print("[DocumentView] Cross-ref: \(volId) not downloaded, opening graph")
             #endif
@@ -320,7 +366,7 @@ struct DocumentView: View {
 
             // 1. Add research note (direct — high frequency)
             Button {
-                vm.showNoteEditor = true
+                activeSheet = .noteEditor
             } label: {
                 Label(
                     String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
@@ -357,7 +403,9 @@ struct DocumentView: View {
             // Citation sub-menu
             Menu {
                 Button {
-                    vm.showCitationSheet = true
+                    if let citation = vm.formattedCitation {
+                        activeSheet = .citation(citation)
+                    }
                 } label: {
                     Label(
                         String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
@@ -386,7 +434,7 @@ struct DocumentView: View {
 
             // Cross-references
             Button {
-                showGraph = true
+                activeSheet = .crossReferenceGraph
             } label: {
                 Label(
                     String(localized: "document.toolbar.crossRef", defaultValue: "Cross-References"),
@@ -395,9 +443,9 @@ struct DocumentView: View {
             }
 
             // Source Explorer — only when a source note is present
-            if vm.sourceNote != nil {
+            if let sourceNote = vm.sourceNote {
                 Button {
-                    vm.showSourceExplorer = true
+                    activeSheet = .sourceExplorer(sourceNote)
                 } label: {
                     Label(
                         String(localized: "document.toolbar.sourceExplorer",
@@ -412,7 +460,7 @@ struct DocumentView: View {
                 && AppleIntelligenceProvider.shared.isAvailable {
                 Divider()
                 Button {
-                    vm.showSummarizeSheet = true
+                    activeSheet = .summarizePromptPicker
                 } label: {
                     if vm.isSummarizing {
                         Label(
@@ -482,6 +530,9 @@ private struct CitationSheetView: View {
                 }
             }
         }
+        #if os(iOS)
+        .presentationDetents([.medium, .large])
+        #endif
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 220)
         #endif
@@ -893,6 +944,9 @@ private struct PersonDetailSheet: View {
                 }
             }
         }
+        #if os(iOS)
+        .presentationDetents([.medium, .large])
+        #endif
         #if os(macOS)
         .frame(minWidth: 400, minHeight: 300)
         #endif
@@ -934,6 +988,9 @@ private struct GlossDetailSheet: View {
                 }
             }
         }
+        #if os(iOS)
+        .presentationDetents([.medium])
+        #endif
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 220)
         #endif

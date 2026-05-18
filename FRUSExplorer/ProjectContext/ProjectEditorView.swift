@@ -100,6 +100,9 @@ struct ProjectEditorView: View {
                 }
             }
         }
+        #if os(iOS)
+        .presentationDetents([.medium, .large])
+        #endif
         #if os(macOS)
         .frame(minWidth: 420, minHeight: 300)
         #endif
