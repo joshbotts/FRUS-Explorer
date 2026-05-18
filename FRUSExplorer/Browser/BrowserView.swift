@@ -41,6 +41,10 @@ import SwiftUI
 ///          removed; handleSettingsSheetDismiss removed; Collections toolbar button added
 ///   1.7 — Session 50: downloaded-volumes filter toggle in both toolbars; AppState sync
 ///          via onChange; macOS About sheet
+///   1.8 — Session 60: Search and Collections sheets replaced with `.inspector` panel
+///          (MacPanel enum); toolbar reorganized — ProjectPickerMenu to .navigation,
+///          search tools grouped as .primaryAction, download filter as .secondaryAction
+///          with Label; iPad splitLayout retains only picker + filter (tabs cover the rest)
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -50,7 +54,10 @@ struct BrowserView: View {
     // On iOS: tapping ProjectPickerMenu switches to the Activity tab instead.
     #if os(macOS)
     @State private var showProjectContext = false
-    @State private var showCollections = false
+    /// Identifies which inspector panel is currently open on macOS (F-013).
+    /// Only one panel can be active at a time; `nil` means the panel is closed.
+    private enum MacPanel: Equatable { case search, collections }
+    @State private var activePanel: MacPanel? = nil
     #endif
     // showSearch and showCitationLookup live in AppState (promoted in Session 43)
     // so that macOS menu commands and future iOS tab navigation can trigger them.
@@ -83,25 +90,55 @@ struct BrowserView: View {
         .sheet(isPresented: $showProjectContext) {
             ProjectContextView()
         }
-        .sheet(isPresented: $showCollections) {
-            CollectionListView()
-                .frame(minWidth: 480, minHeight: 560)
-        }
-        .sheet(isPresented: $appState.showSearch) {
-            if let service = appState.searchService {
-                SearchView(
-                    searchService: service,
-                    subjectTagStore: appState.subjectTagStore,
-                    initialParameters: pendingSearchParams
-                )
+        // Search and Collections use the macOS inspector panel (F-013).
+        // The inspector is a non-modal trailing panel that keeps the document
+        // surface accessible while searching or browsing collections — unlike
+        // the full-screen sheets they replace. A single inspector with enum-
+        // based content switching ensures only one panel is ever open at a time.
+        .inspector(isPresented: Binding(
+            get: { activePanel != nil },
+            set: { if !$0 { activePanel = nil } }
+        )) {
+            switch activePanel {
+            case .search:
+                if let service = appState.searchService {
+                    SearchView(
+                        searchService: service,
+                        subjectTagStore: appState.subjectTagStore,
+                        initialParameters: pendingSearchParams
+                    )
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "search.unavailable.title",
+                               defaultValue: "Search Unavailable"),
+                        systemImage: "magnifyingglass",
+                        description: Text(
+                            String(localized: "search.unavailable.detail",
+                                   defaultValue: "The search index is not available.")
+                        )
+                    )
+                }
+            case .collections:
+                CollectionListView()
+            case .none:
+                EmptyView()
             }
+        }
+        // Intercept the legacy showSearch boolean (set by menu commands and the
+        // cross-module pendingSearch flow) and redirect it to the inspector on macOS.
+        .onChange(of: appState.showSearch) { _, show in
+            guard show else { return }
+            appState.showSearch = false
+            activePanel = .search
         }
         .onChange(of: appState.pendingSearch) { _, params in
             guard let params else { return }
             pendingSearchParams = params
             appState.pendingSearch = nil
-            appState.showSearch = true
+            activePanel = .search
         }
+        // Citation Lookup stays as a sheet — it is a targeted lookup utility,
+        // not a persistent research panel (per Session 60 planning decision).
         .sheet(isPresented: $appState.showCitationLookup) {
             CitationLookupView()
         }
@@ -131,18 +168,19 @@ struct BrowserView: View {
             SubseriesListView(vm: vm)
                 .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
                 .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
+                    #if os(macOS)
+                    // macOS: Project picker in the navigation (left) slot keeps it
+                    // visually separate from the document-tool buttons on the right.
+                    ToolbarItem(placement: .navigation) {
                         ProjectPickerMenu {
-                            #if os(iOS)
-                            appState.activeTab = .activity
-                            #else
                             showProjectContext = true
-                            #endif
                         }
                     }
-                    ToolbarItem(placement: .primaryAction) {
+                    // Search, Citation Lookup, and Collections toggle grouped as
+                    // primary actions; each opens or closes the inspector panel.
+                    ToolbarItemGroup(placement: .primaryAction) {
                         Button {
-                            appState.showSearch = true
+                            activePanel = (activePanel == .search) ? nil : .search
                         } label: {
                             Image(systemName: "magnifyingglass")
                         }
@@ -150,8 +188,6 @@ struct BrowserView: View {
                             String(localized: "browser.search.a11y",
                                    defaultValue: "Search documents")
                         )
-                    }
-                    ToolbarItem(placement: .primaryAction) {
                         Button {
                             appState.showCitationLookup = true
                         } label: {
@@ -161,11 +197,8 @@ struct BrowserView: View {
                             String(localized: "browser.citationLookup.a11y",
                                    defaultValue: "Find by citation")
                         )
-                    }
-                    #if os(macOS)
-                    ToolbarItem(placement: .primaryAction) {
                         Button {
-                            showCollections = true
+                            activePanel = (activePanel == .collections) ? nil : .collections
                         } label: {
                             Image(systemName: "tray.2")
                         }
@@ -174,7 +207,39 @@ struct BrowserView: View {
                                    defaultValue: "Open Collections")
                         )
                     }
-                    #endif
+                    // Download filter is a secondary action — it modifies the list
+                    // view's contents rather than opening a panel or tool.
+                    ToolbarItem(placement: .secondaryAction) {
+                        Button {
+                            appState.filterDownloadedOnly.toggle()
+                        } label: {
+                            Label(
+                                appState.filterDownloadedOnly
+                                    ? String(localized: "browser.filter.off.label",
+                                             defaultValue: "Show All Volumes")
+                                    : String(localized: "browser.filter.on.label",
+                                             defaultValue: "Downloaded Only"),
+                                systemImage: appState.filterDownloadedOnly
+                                    ? "arrow.down.circle.fill"
+                                    : "arrow.down.circle"
+                            )
+                        }
+                        .accessibilityLabel(
+                            appState.filterDownloadedOnly
+                                ? String(localized: "browser.filter.off.a11y",
+                                         defaultValue: "Show all volumes")
+                                : String(localized: "browser.filter.on.a11y",
+                                         defaultValue: "Show downloaded volumes only")
+                        )
+                    }
+                    #else
+                    // iPad split layout: Search and Citation Lookup are persistent
+                    // tabs, so only the project picker and download filter appear here.
+                    ToolbarItem(placement: .primaryAction) {
+                        ProjectPickerMenu {
+                            appState.activeTab = .activity
+                        }
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
                             appState.filterDownloadedOnly.toggle()
@@ -191,6 +256,7 @@ struct BrowserView: View {
                                          defaultValue: "Show downloaded volumes only")
                         )
                     }
+                    #endif
                 }
         } detail: {
             if let last = vm.navigationPath.last {
