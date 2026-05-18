@@ -77,6 +77,10 @@ enum DocumentSheet: Identifiable {
 ///          nested ScrollViews (fixes scroll-stuck bug and unblocks link/tap hit-testing);
 ///          extend \.openURL handler to route frusexplorer://person/ and frusexplorer://gloss/
 ///          URLs to the person/gloss detail sheets via vm.personsByRef / vm.termsByRef
+///   1.9 — Session 66: fix empty navigation title and breadcrumb for cross-reference targets;
+///          navigationTitle now uses vm.documentTitle (set after parse) falling back to
+///          entry.header or entry.documentId; handleCrossRefTap uses docId as placeholder header
+///          so the breadcrumb is non-empty while the document loads
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -99,7 +103,11 @@ struct DocumentView: View {
             }
         }
         .onAppear { bootstrapViewModel() }
-        .navigationTitle(entry.header)
+        // vm.documentTitle is set after the document loads; it provides a real
+        // title for cross-reference targets, which are created with header: "".
+        // Falls back to entry.header (known at browse time) or to entry.documentId
+        // as a last resort so the navigation bar is never blank.
+        .navigationTitle(vm?.documentTitle ?? (entry.header.isEmpty ? entry.documentId : entry.header))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -374,7 +382,10 @@ struct DocumentView: View {
             documentId: docId,
             volumeId: volId,
             documentNumber: nil,
-            header: "",
+            // Use docId as a non-empty placeholder so the breadcrumb label is
+            // visible while the document loads. DocumentView replaces the navigation
+            // title with vm.documentTitle once the XML has been parsed.
+            header: docId,
             dateline: nil,
             sourceNote: nil
         )

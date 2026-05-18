@@ -38,6 +38,9 @@ import SwiftData
 ///   1.1 — Session 20: add documentPlainText, isSummarizing, showSummarizeSheet, generateSummary
 ///   1.2 — Session 40: personMentionStore dependency; selectedPersonMentionCount; loadPersonMentionCount
 ///   1.3 — Session 41: persons/terms resolved from SQLite first; XML parse kept as fallback
+///   1.4 — Session 66: `documentTitle` stored property added; set from first `<head>` element
+///          after load so cross-reference targets (created with `header: ""`) can supply
+///          a meaningful navigation title once the document has been parsed
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -46,6 +49,13 @@ public final class DocumentViewModel {
 
     /// The fully-rendered model, set after a successful load.
     public var renderModel: FRUSDocumentRenderModel?
+
+    /// Plain-text document title extracted from the first `<head>` element, set
+    /// after a successful load.  Used as the navigation title when the
+    /// `DocumentBrowserEntry` was created without a header (e.g. cross-reference
+    /// targets, which are constructed with `header: ""` because the title is not
+    /// known until the XML is parsed).
+    public var documentTitle: String?
 
     /// `true` while the document is being parsed/converted.
     public var isLoading: Bool = false
@@ -197,6 +207,18 @@ public final class DocumentViewModel {
             for t in terms { tByRef[t.ref] = t }
             personsByRef = pByRef
             termsByRef   = tByRef
+
+            // Extract document title from the first <head> element.
+            // Needed when this DocumentView was created via a cross-reference
+            // (entry.header == "") and must show a meaningful navigation title.
+            for node in ast.nodes {
+                if case .head(let c) = node {
+                    let t = c.map(\.plainText).joined(separator: " ")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !t.isEmpty { documentTitle = t }
+                    break
+                }
+            }
 
             // Store plain text for summarization before converting to render model
             documentPlainText = ast.nodes

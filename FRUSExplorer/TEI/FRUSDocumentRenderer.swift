@@ -45,6 +45,11 @@ import SwiftUI
 ///          also trigger the `AttributedString` path for `persNameLink`/`glossLink`
 ///          nodes, with `frusexplorer://person/` and `frusexplorer://gloss/` link
 ///          attributes so taps route through the caller's `\.openURL` environment
+///   1.4 — Session 66: fix URL encoding for FRUS XML ID-reference "#" prefix:
+///          `persName@ref="#p1"` and `gloss@ref="#t1"` had the `#` treated as a
+///          URL fragment delimiter, making pathComponents empty in the openURL
+///          handler; cross-volume `target="vol#docId"` had the same issue when the
+///          full string (including "#") was used as the URL path segment
 public struct FRUSDocumentRenderer: View {
 
     public let model: FRUSDocumentRenderModel
@@ -493,9 +498,13 @@ public struct FRUSDocumentRenderer: View {
         case .persNameLink(let ref, let c, let person):
             var a = inlineAttributedString(c)
             a.foregroundColor = .accentColor
-            // Encode as frusexplorer://person/{ref} so the parent's \.openURL
-            // handler can look up the PersonEntry and open the detail sheet.
-            let personRef = ref ?? person?.ref
+            // FRUS persName@ref uses the XML ID-reference form "#p1".  Strip the
+            // leading "#" before embedding in the URL path — URL fragment syntax
+            // treats "#" as a fragment delimiter, not a path character, which
+            // would make url.pathComponents empty and break the openURL handler.
+            // personsByRef is keyed by xml:id without the "#" prefix.
+            let rawPersonRef = ref ?? person?.ref
+            let personRef = rawPersonRef.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
             if let personRef, !personRef.isEmpty,
                let url = URL(string: "frusexplorer://person/\(personRef)") {
                 a.link = url
@@ -506,9 +515,10 @@ public struct FRUSDocumentRenderer: View {
             var a = inlineAttributedString(c)
             a.foregroundColor = .accentColor
             a.underlineStyle = .single
-            // Encode as frusexplorer://gloss/{ref} so the parent's \.openURL
-            // handler can look up the GlossEntry and open the detail sheet.
-            let glossRef = ref ?? entry?.ref
+            // Same "#" stripping as persNameLink — gloss@ref="#t1" → "t1".
+            // termsByRef is keyed by xml:id without the "#" prefix.
+            let rawGlossRef = ref ?? entry?.ref
+            let glossRef = rawGlossRef.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
             if let glossRef, !glossRef.isEmpty,
                let url = URL(string: "frusexplorer://gloss/\(glossRef)") {
                 a.link = url
@@ -518,10 +528,22 @@ public struct FRUSDocumentRenderer: View {
         case .crossRefLink(let target, let volumeId, let c):
             var a = inlineAttributedString(c)
             a.foregroundColor = .accentColor
-            // Encode as frusexplorer://doc/{volumeId}/{documentId}
-            // volumeId uses "_" as sentinel when absent (resolved at tap time).
-            let docId = target.hasPrefix("#") ? String(target.dropFirst()) : target
-            let vol   = volumeId ?? "_"
+            // Extract the bare document ID from three possible target forms:
+            //   "#d42"               → "d42"  (within-volume, FRUS standard)
+            //   "frus1969-76v01#d42" → "d42"  (cross-volume; volumeId already captured)
+            //   "d42"                → "d42"  (bare, no prefix)
+            // The "#" must be stripped before URL construction — leaving it in the
+            // path string makes URL treat it as the fragment delimiter, corrupting
+            // the path components the openURL handler reads.
+            let docId: String
+            if target.hasPrefix("#") {
+                docId = String(target.dropFirst())
+            } else if let hashIdx = target.firstIndex(of: "#") {
+                docId = String(target[target.index(after: hashIdx)...])
+            } else {
+                docId = target
+            }
+            let vol = volumeId ?? "_"
             if let url = URL(string: "frusexplorer://doc/\(vol)/\(docId)") {
                 a.link = url
             }
