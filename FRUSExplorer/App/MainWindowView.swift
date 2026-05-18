@@ -223,8 +223,7 @@ struct MainWindowView: View {
 
     /// Returns true if a NARA API key has been stored in the keychain.
     private var naraAPIKeyConfigured: Bool {
-        // Placeholder — deferred to NARAAPIKeyStore session.
-        return false
+        NARAAPIKeyStore.shared.hasKey
     }
 }
 
