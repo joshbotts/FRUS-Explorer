@@ -1600,10 +1600,15 @@ private struct SettingsSummarizationPane: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @AppStorage("frus.summarization.enabled") private var isEnabled: Bool = true
-    @Query(sort: \SummarizationPrompt.name) private var prompts: [SummarizationPrompt]
+    @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
+    @Query(sort: \GeneratedSummary.lastModified, order: .reverse) private var allSummaries: [GeneratedSummary]
 
-    @State private var showCreatePrompt = false
     @State private var promptToEdit: SummarizationPrompt? = nil
+    @State private var showNewPromptSheet: Bool = false
+    @State private var newPromptInitialTemplate: PromptTemplate? = nil
+
+    private var standardPrompts: [SummarizationPrompt] { allPrompts.filter { $0.isStandard } }
+    private var userPrompts: [SummarizationPrompt] { allPrompts.filter { !$0.isStandard } }
 
     var body: some View {
         ScrollView {
@@ -1629,17 +1634,27 @@ private struct SettingsSummarizationPane: View {
                         .padding(.bottom, 16)
                 }
 
-                // Prompts
-                PaneSectionHeader(title: "Prompts")
+                // Standard Prompts
+                if !standardPrompts.isEmpty {
+                    PaneSectionHeader(title: "Standard Prompts")
+                    promptBlock(standardPrompts) { prompt in
+                        standardPromptRow(prompt)
+                    }
+                    .padding(.bottom, 16)
+                }
+
+                // User Prompts
+                PaneSectionHeader(title: "Your Prompts")
                 HStack {
-                    Text("Manage the prompts available when summarizing documents.")
+                    Text("Custom prompts you create and can edit.")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button {
-                        showCreatePrompt = true
+                        newPromptInitialTemplate = nil
+                        showNewPromptSheet = true
                     } label: {
-                        Label("New prompt", systemImage: "plus")
+                        Label("New Prompt", systemImage: "plus")
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.bordered)
@@ -1647,56 +1662,89 @@ private struct SettingsSummarizationPane: View {
                 }
                 .padding(.bottom, 10)
 
-                if prompts.isEmpty {
-                    Text("No custom prompts. A default prompt is always available.")
+                if userPrompts.isEmpty {
+                    Text("No custom prompts yet. Click + to create one.")
                         .font(.system(size: 12))
                         .foregroundStyle(.tertiary)
                         .padding(.top, 4)
+                        .padding(.bottom, 16)
                 } else {
-                    VStack(spacing: 0) {
-                        ForEach(prompts) { prompt in
-                            promptRow(prompt)
-                            if prompt.id != prompts.last?.id {
-                                Divider().padding(.leading, 12)
-                            }
-                        }
+                    promptBlock(userPrompts) { prompt in
+                        userPromptRow(prompt)
                     }
-                    .background(Color.secondary.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 0.5)
-                    )
+                    .padding(.bottom, 16)
                 }
+
+                // Summary Counts
+                PaneSectionHeader(title: "Summaries")
+                HStack {
+                    Text("Total generated")
+                        .font(.system(size: 13))
+                    Spacer()
+                    Text("\(allSummaries.count)")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .padding(.bottom, 16)
+
+                // Background Summarization
+                PaneSectionHeader(title: "Background Summarization")
+                BackgroundSummarizationSettingsView()
+                    .padding(.bottom, 16)
             }
             .padding(24)
         }
-        .sheet(isPresented: $showCreatePrompt) {
-            SummarizationPromptEditorSheet(prompt: nil)
-        }
         .sheet(item: $promptToEdit) { prompt in
-            SummarizationPromptEditorSheet(prompt: prompt)
+            PromptEditorView(promptToEdit: prompt)
+        }
+        .sheet(isPresented: $showNewPromptSheet, onDismiss: { newPromptInitialTemplate = nil }) {
+            PromptEditorView(initialTemplate: newPromptInitialTemplate)
         }
     }
 
-    private func promptRow(_ prompt: SummarizationPrompt) -> some View {
+    // MARK: - Row builders
+
+    private func standardPromptRow(_ prompt: SummarizationPrompt) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(prompt.name)
-                    .font(.system(size: 13))
-                if !prompt.promptText.isEmpty {
-                    Text(prompt.promptText)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
+                Text(prompt.name).font(.system(size: 13))
+                Text(summaryCountLabel(for: prompt))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+            }
+            Spacer()
+            Button("Use as Template") {
+                newPromptInitialTemplate = templateFrom(prompt)
+                showNewPromptSheet = true
+            }
+            .buttonStyle(.borderless)
+            .font(.system(size: 11))
+            .foregroundStyle(Color.accentColor)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+    }
+
+    private func userPromptRow(_ prompt: SummarizationPrompt) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(prompt.name).font(.system(size: 13))
+                Text(summaryCountLabel(for: prompt))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
             }
             Spacer()
             Menu {
-                Button {
-                    promptToEdit = prompt
-                } label: {
+                Button { promptToEdit = prompt } label: {
                     Label("Edit", systemImage: "pencil")
+                }
+                Button {
+                    newPromptInitialTemplate = templateFrom(prompt)
+                    showNewPromptSheet = true
+                } label: {
+                    Label("Duplicate", systemImage: "doc.on.doc")
                 }
                 Divider()
                 Button(role: .destructive) {
@@ -1715,23 +1763,48 @@ private struct SettingsSummarizationPane: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
     }
-}
 
-// MARK: - SummarizationPromptEditorSheet (stub)
+    // MARK: - Helpers
 
-private struct SummarizationPromptEditorSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let prompt: SummarizationPrompt?
-    var body: some View {
-        VStack(spacing: 12) {
-            Text(prompt == nil ? "New Prompt" : "Edit Prompt")
-                .font(.headline)
-            Text("Prompt editor — full implementation in next session.")
-                .foregroundStyle(.secondary)
-            Button("Done") { dismiss() }
+    @ViewBuilder
+    private func promptBlock<Content: View>(
+        _ prompts: [SummarizationPrompt],
+        @ViewBuilder row: (SummarizationPrompt) -> Content
+    ) -> some View {
+        VStack(spacing: 0) {
+            ForEach(prompts) { prompt in
+                row(prompt)
+                if prompt.id != prompts.last?.id {
+                    Divider().padding(.leading, 12)
+                }
+            }
         }
-        .padding(24)
-        .frame(width: 480, height: 300)
+        .background(Color.secondary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 0.5)
+        )
+    }
+
+    private func templateFrom(_ prompt: SummarizationPrompt) -> PromptTemplate {
+        let fields: [StructuredSummarySchema.Field]
+        if case .structured(let schema) = prompt.responseFormat {
+            fields = schema.fields
+        } else {
+            fields = []
+        }
+        return PromptTemplate(
+            id: UUID(),
+            name: "Copy of \(prompt.name)",
+            promptText: prompt.promptText,
+            fields: fields
+        )
+    }
+
+    private func summaryCountLabel(for prompt: SummarizationPrompt) -> String {
+        let count = allSummaries.filter { $0.promptId == prompt.id }.count
+        return "\(count) \(count == 1 ? "summary" : "summaries") generated"
     }
 }
 
