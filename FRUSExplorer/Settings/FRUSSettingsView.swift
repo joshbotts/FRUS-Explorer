@@ -10,6 +10,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - FRUSSettingsView
 
@@ -50,7 +51,7 @@ struct FRUSSettingsView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
-    @State private var selection: SettingsPane = .about
+    @State private var selection: SettingsPane = .display
 
     var body: some View {
         NavigationSplitView {
@@ -99,7 +100,7 @@ struct FRUSSettingsView: View {
                 case .tags:           SettingsTagsPane()
                 case .notes:          SettingsNotesPane()
                 case .storage:        SettingsStoragePane()
-                case .downloads:      SettingsDownloadsPane()
+                case .downloads:      SettingsAddVolumesPane()
                 case .naraAPI:        SettingsNARAPane()
                 case .summarization:  SettingsSummarizationPane()
                 case .reset:          SettingsResetPane()
@@ -131,7 +132,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .tags:          return "Tags"
         case .notes:         return "Notes"
         case .storage:       return "Storage"
-        case .downloads:     return "Downloads"
+        case .downloads:     return "Add Volumes"
         case .naraAPI:       return "NARA API"
         case .summarization: return "Summarization"
         case .reset:         return "Reset"
@@ -147,14 +148,14 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .tags:          return "tag"
         case .notes:         return "note.text"
         case .storage:       return "internaldrive"
-        case .downloads:     return "arrow.down.circle"
+        case .downloads:     return "plus.circle"
         case .naraAPI:       return "key"
         case .summarization: return "sparkles"
         case .reset:         return "arrow.counterclockwise"
         }
     }
 
-    static let general:  [SettingsPane] = [.about, .display, .search]
+    static let general:  [SettingsPane] = [.display, .search]
     static let research: [SettingsPane] = [.projects, .tags, .notes]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
     static let advanced: [SettingsPane] = [.naraAPI, .summarization]
@@ -272,19 +273,6 @@ private struct SettingsDisplayPane: View {
                 )
             }
             .padding(24)
-        }
-    }
-}
-
-enum TextSizePreference: String, CaseIterable, Identifiable {
-    case small, medium, large, extraLarge
-    var id: String { rawValue }
-    var label: String {
-        switch self {
-        case .small:      return "Small"
-        case .medium:     return "Medium"
-        case .large:      return "Large"
-        case .extraLarge: return "Extra Large"
         }
     }
 }
@@ -893,7 +881,7 @@ private struct SettingsStoragePane: View {
 
     // MARK: Storage Limit Row
 
-    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 2
+    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
 
     private var storageLimitRow: some View {
         HStack {
@@ -1103,25 +1091,400 @@ private struct SettingsStoragePane: View {
     }
 }
 
-// MARK: - Downloads Pane
+// MARK: - Add Volumes Pane
 
-private struct SettingsDownloadsPane: View {
+private struct SettingsAddVolumesPane: View {
     @Environment(AppState.self) private var appState
+
+    // MARK: Sideload state
+    @State private var isImporting = false
+    @State private var importResult: ImportResult? = nil
+
+    // MARK: Download scope state
+    private enum ScopeChoice { case corpus, subseries, volume }
+    @State private var scopeChoice: ScopeChoice = .corpus
+    @State private var selectedSubseries: Set<String> = []
+    @State private var selectedVolumeIds: Set<String> = []
+    @State private var isEnqueuing = false
+
+    // MARK: - Body
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 PaneHeader(
-                    title: "Downloads",
-                    subtitle: "Download volumes, subseries, or the entire corpus."
+                    title: "Add Volumes",
+                    subtitle: "Sideload a local XML file or download volumes from GitHub."
                 )
 
-                Text("The download manager will appear here. Use the Corpus Browser (⇧⌘B) to browse and download individual volumes.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(4)
+                sideloadSection
+                    .padding(.bottom, 24)
+
+                Divider()
+                    .padding(.bottom, 20)
+
+                downloadSection
             }
             .padding(24)
+        }
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [.xml],
+            allowsMultipleSelection: true
+        ) { result in
+            Task { await handleImport(result) }
+        }
+        .task {
+            if appState.isOnline { await appState.manifestStore.refresh() }
+        }
+    }
+
+    // MARK: - Sideload Section
+
+    private var sideloadSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            PaneSectionHeader(title: "Sideload from file")
+            Text("Import a FRUS volume XML file that you already have on disk. The file will be copied to the app's storage directory and indexed automatically.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .padding(.bottom, 6)
+
+            HStack(spacing: 10) {
+                Button {
+                    isImporting = true
+                } label: {
+                    Label("Choose XML file…", systemImage: "doc.badge.plus")
+                        .font(.system(size: 13))
+                }
+                .buttonStyle(.bordered)
+
+                if let result = importResult {
+                    importResultBadge(result)
+                }
+            }
+        }
+    }
+
+    private enum ImportResult {
+        case success(count: Int)
+        case failure(message: String)
+    }
+
+    @ViewBuilder
+    private func importResultBadge(_ result: ImportResult) -> some View {
+        switch result {
+        case .success(let count):
+            Label("\(count) file\(count == 1 ? "" : "s") imported", systemImage: "checkmark.circle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(.green)
+        case .failure(let msg):
+            Label(msg, systemImage: "exclamationmark.circle")
+                .font(.system(size: 12))
+                .foregroundStyle(.red)
+        }
+    }
+
+    // MARK: - Download Section
+
+    private var downloadSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            PaneSectionHeader(title: "Download from GitHub")
+            Text("Choose what you'd like to download. Multiple items can be selected.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .padding(.bottom, 12)
+
+            // Scope cards
+            VStack(spacing: 6) {
+                compactScopeCard(
+                    isSelected: scopeChoice == .corpus,
+                    systemImage: "square.stack.3d.up",
+                    title: "Entire Corpus",
+                    detail: "552+ volumes · ≈ 3.3 GB"
+                ) { scopeChoice = .corpus; selectedSubseries = []; selectedVolumeIds = [] }
+
+                compactScopeCard(
+                    isSelected: scopeChoice == .subseries,
+                    systemImage: "calendar",
+                    title: "One or More Subseries",
+                    detail: "Choose one or more decades or diplomatic eras."
+                ) { scopeChoice = .subseries; selectedVolumeIds = [] }
+
+                compactScopeCard(
+                    isSelected: scopeChoice == .volume,
+                    systemImage: "doc.text",
+                    title: "Individual Volumes",
+                    detail: "Select specific volumes from any subseries."
+                ) { scopeChoice = .volume; selectedSubseries = [] }
+            }
+            .padding(.bottom, 12)
+
+            // Conditional picker
+            if scopeChoice == .subseries {
+                subseriesMultiPicker
+                    .padding(.bottom, 12)
+            } else if scopeChoice == .volume {
+                volumeGroupedMultiPicker
+                    .padding(.bottom, 12)
+            }
+
+            // Enqueue button
+            HStack(spacing: 10) {
+                Button {
+                    Task { await enqueueSelected() }
+                } label: {
+                    if isEnqueuing {
+                        Label("Enqueueing…", systemImage: "arrow.down.circle")
+                    } else {
+                        Label("Download", systemImage: "arrow.down.circle")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!canDownload || isEnqueuing)
+
+                if !appState.isOnline {
+                    Label("Offline — downloads will start when you reconnect.", systemImage: "wifi.slash")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func compactScopeCard(
+        isSelected: Bool,
+        systemImage: String,
+        title: String,
+        detail: String,
+        onTap: @escaping () -> Void
+    ) -> some View {
+        Button(action: onTap) {
+            HStack(spacing: 10) {
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 16))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.primary)
+                    Text(detail)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.3),
+                            lineWidth: isSelected ? 1.5 : 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Subseries multi-picker
+
+    private var subseriesMultiPicker: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Select subseries (\(selectedSubseries.count) selected)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .kerning(0.4)
+            List(allSubseries, id: \.self) { sub in
+                Button {
+                    if selectedSubseries.contains(sub) {
+                        selectedSubseries.remove(sub)
+                    } else {
+                        selectedSubseries.insert(sub)
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: selectedSubseries.contains(sub) ? "checkmark.square.fill" : "square")
+                            .foregroundStyle(selectedSubseries.contains(sub) ? Color.accentColor : Color.secondary)
+                            .font(.system(size: 14))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(sub)
+                                .font(.system(size: 12))
+                                .foregroundStyle(.primary)
+                            let count = allVolumes.filter { $0.subseries == sub }.count
+                            Text("\(count) vol\(count == 1 ? "" : "s")")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .listStyle(.plain)
+            .frame(height: 200)
+            .background(Color.secondary.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.secondary.opacity(0.15), lineWidth: 0.5)
+            )
+        }
+    }
+
+    // MARK: Volume grouped multi-picker
+
+    private var volumeGroupedMultiPicker: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Select volumes (\(selectedVolumeIds.count) selected)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .kerning(0.4)
+            List {
+                ForEach(volumesBySubseries, id: \.subseries) { group in
+                    DisclosureGroup {
+                        ForEach(group.volumes) { vol in
+                            Button {
+                                if selectedVolumeIds.contains(vol.volumeId) {
+                                    selectedVolumeIds.remove(vol.volumeId)
+                                } else {
+                                    selectedVolumeIds.insert(vol.volumeId)
+                                }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: selectedVolumeIds.contains(vol.volumeId) ? "checkmark.square.fill" : "square")
+                                        .foregroundStyle(selectedVolumeIds.contains(vol.volumeId) ? Color.accentColor : Color.secondary)
+                                        .font(.system(size: 13))
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(vol.title)
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(2)
+                                        Text(vol.volumeId)
+                                            .font(.system(size: 9))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    Spacer()
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.leading, 4)
+                        }
+                    } label: {
+                        HStack {
+                            let subsSelected = group.volumes.filter { selectedVolumeIds.contains($0.volumeId) }.count
+                            Text(group.subseries)
+                                .font(.system(size: 12, weight: .medium))
+                            Spacer()
+                            if subsSelected > 0 {
+                                Text("\(subsSelected)/\(group.volumes.count)")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(Color.accentColor)
+                            } else {
+                                Text("\(group.volumes.count) vol\(group.volumes.count == 1 ? "" : "s")")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .frame(height: 280)
+            .background(Color.secondary.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.secondary.opacity(0.15), lineWidth: 0.5)
+            )
+        }
+    }
+
+    // MARK: - Derived Data
+
+    private var allVolumes: [VolumeManifestEntry] {
+        let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        return source.filter { $0.sizeBytes >= 20_000 }
+    }
+
+    private var allSubseries: [String] {
+        let unique = Set(allVolumes.map(\.subseries))
+        return unique.sorted { startYear($0) > startYear($1) }
+    }
+
+    private var volumesBySubseries: [(subseries: String, volumes: [VolumeManifestEntry])] {
+        allSubseries.map { sub in (sub, allVolumes.filter { $0.subseries == sub }) }
+    }
+
+    private func startYear(_ subseries: String) -> Int {
+        Int(subseries.prefix(4)) ?? 0
+    }
+
+    // MARK: - Validation
+
+    private var canDownload: Bool {
+        switch scopeChoice {
+        case .corpus:    return true
+        case .subseries: return !selectedSubseries.isEmpty
+        case .volume:    return !selectedVolumeIds.isEmpty
+        }
+    }
+
+    // MARK: - Actions
+
+    private func handleImport(_ result: Result<[URL], Error>) async {
+        guard let dm = appState.downloadManager,
+              let pipeline = appState.indexingPipeline else { return }
+
+        switch result {
+        case .failure:
+            importResult = .failure(message: "Could not open file.")
+        case .success(let urls):
+            var count = 0
+            for url in urls {
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+
+                let volumeId = url.deletingPathExtension().lastPathComponent
+                let dest = dm.volumesDirectory.appendingPathComponent("\(volumeId).xml")
+                do {
+                    if FileManager.default.fileExists(atPath: dest.path) {
+                        try FileManager.default.removeItem(at: dest)
+                    }
+                    try FileManager.default.copyItem(at: url, to: dest)
+                    try? (dest as NSURL).setResourceValue(true, forKey: .isExcludedFromBackupKey)
+                    try await pipeline.indexVolume(volumeId)
+                    count += 1
+                } catch {
+                    importResult = .failure(message: "Import failed: \(error.localizedDescription)")
+                    return
+                }
+            }
+            importResult = .success(count: count)
+        }
+    }
+
+    private func enqueueSelected() async {
+        guard let dm = appState.downloadManager else { return }
+        isEnqueuing = true
+        defer { isEnqueuing = false }
+
+        let volumes: [VolumeManifestEntry]
+        switch scopeChoice {
+        case .corpus:
+            volumes = allVolumes
+        case .subseries:
+            volumes = allVolumes.filter { selectedSubseries.contains($0.subseries) }
+        case .volume:
+            volumes = allVolumes.filter { selectedVolumeIds.contains($0.volumeId) }
+        }
+        for entry in volumes {
+            await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
         }
     }
 }
