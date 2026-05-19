@@ -117,4 +117,3 @@ import SwiftData
     }
 }
 
-extension GeneratedSummary: @unchecked Sendable {}
