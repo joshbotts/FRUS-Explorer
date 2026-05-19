@@ -766,7 +766,7 @@ struct CitationPopoverView: View {
         }.value
     }
 
-    private static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
+    private nonisolated static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: text,
                                            range: NSRange(text.startIndex..., in: text)),
