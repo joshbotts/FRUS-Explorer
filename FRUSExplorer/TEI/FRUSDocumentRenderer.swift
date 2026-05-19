@@ -77,6 +77,8 @@ public struct FRUSDocumentRenderer: View {
     /// Pass a smaller value (e.g. 2) when rendering inside footnotes.
     private let blockSpacing: CGFloat
 
+    @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+
     public init(
         nodes: [FRUSRenderNode],
         onFootnoteTap: @escaping (String) -> Void,
@@ -145,7 +147,7 @@ public struct FRUSDocumentRenderer: View {
 
         case .paragraph(let children):
             inlineText(children)
-                .font(.body)
+                .font(.system(size: textSize.bodyFontSize))
 
         case .letterOpener(let children):
             VStack(alignment: .leading, spacing: 4) {
@@ -164,7 +166,7 @@ public struct FRUSDocumentRenderer: View {
 
         case .salutation(let children):
             inlineText(children)
-                .font(.body)
+                .font(.system(size: textSize.bodyFontSize))
 
         case .editorialNoteBlock(let children):
             VStack(alignment: .leading, spacing: 6) {
@@ -215,7 +217,7 @@ public struct FRUSDocumentRenderer: View {
         // Inline nodes at block level — wrap in a paragraph.
         default:
             inlineText([node])
-                .font(.body)
+                .font(.system(size: textSize.bodyFontSize))
         }
     }
 
@@ -245,12 +247,12 @@ public struct FRUSDocumentRenderer: View {
 
         case .boldText(let c):
             var a = macAttrString(c)
-            a.font = .body.bold()
+            a.font = .system(size: textSize.bodyFontSize).bold()
             return a
 
         case .italicText(let c):
             var a = macAttrString(c)
-            a.font = .body.italic()
+            a.font = .system(size: textSize.bodyFontSize).italic()
             return a
 
         case .smallCapsText(let c):
@@ -264,7 +266,7 @@ public struct FRUSDocumentRenderer: View {
 
         case .termText(let c):
             var a = macAttrString(c)
-            a.font = .body.italic()
+            a.font = .system(size: textSize.bodyFontSize).italic()
             a.foregroundColor = .secondary
             return a
 
@@ -281,7 +283,7 @@ public struct FRUSDocumentRenderer: View {
 
         case .formulaText(let s):
             var a = AttributedString(s)
-            a.font = .body.italic()
+            a.font = .system(size: textSize.bodyFontSize).italic()
             return a
 
         case .lineBreak:
@@ -312,7 +314,7 @@ public struct FRUSDocumentRenderer: View {
         case .glossLink(let ref, let c, let entry):
             var a = macAttrString(c)
             a.foregroundColor = Color.secondary
-            a.font = .body.italic()
+            a.font = .system(size: textSize.bodyFontSize).italic()
             let rawRef = ref ?? entry?.ref
             if let rawRef, !rawRef.isEmpty {
                 let key = rawRef.hasPrefix("#") ? String(rawRef.dropFirst()) : rawRef
@@ -625,7 +627,7 @@ public struct FRUSDocumentRenderer: View {
                         inlineText(children)
                     }
                 }
-                .font(.body)
+                .font(.system(size: textSize.bodyFontSize))
             )
 
         case .footnoteBody(_, let type, _, _, let displayLabel, let children):
@@ -674,14 +676,14 @@ public struct FRUSDocumentRenderer: View {
                         HStack(alignment: .top, spacing: 6) {
                             if type == "ordered" {
                                 Text(verbatim: "\(index + 1).")
-                                    .font(.body)
+                                    .font(.system(size: textSize.bodyFontSize))
                                     .frame(width: 24, alignment: .trailing)
                             } else {
                                 Text(verbatim: "•")
-                                    .font(.body)
+                                    .font(.system(size: textSize.bodyFontSize))
                                     .frame(width: 16, alignment: .trailing)
                             }
-                            inlineText(item).font(.body)
+                            inlineText(item).font(.system(size: textSize.bodyFontSize))
                         }
                     }
                 }
