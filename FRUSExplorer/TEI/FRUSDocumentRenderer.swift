@@ -99,8 +99,11 @@ public struct FRUSDocumentRenderer: View {
         // Build lookup tables once so the openURL handler can resolve refs back to
         // model objects. LookupTables scans the node tree in O(n).
         let lookup = LookupTables(from: nodes)
+        // Group consecutive inline nodes into paragraphs so block-level markers
+        // (e.g. a footnoteMarker directly inside a <div>) don't get their own row.
+        let normalizedNodes = blockOrInlineNodes(nodes)
         return VStack(alignment: .leading, spacing: blockSpacing) {
-            ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
+            ForEach(Array(normalizedNodes.enumerated()), id: \.offset) { _, node in
                 AnyView(blockView(for: node))
             }
         }
@@ -213,6 +216,18 @@ public struct FRUSDocumentRenderer: View {
 
         case .pageBreak:
             EmptyView()
+
+        // Unknown elements (e.g. <ab>, <div type="annex">) may contain block children.
+        // Render them by iterating children through blockView so block structure is
+        // preserved. Without this case, .unknown falls through to default and
+        // extractInlineChildren flattens all block content into a single inline Text.
+        case .unknown(_, let children):
+            let normalized = blockOrInlineNodes(children)
+            VStack(alignment: .leading, spacing: blockSpacing) {
+                ForEach(Array(normalized.enumerated()), id: \.offset) { _, child in
+                    AnyView(blockView(for: child))
+                }
+            }
 
         // Inline nodes at block level — wrap in a paragraph.
         default:
@@ -406,8 +421,9 @@ public struct FRUSDocumentRenderer: View {
              .sicText(let c), .corrText(let c), .editorialNoteBlock(let c),
              .unknown(_, let c):
             return c.flatMap { extractInlineChildren($0) }
-        case .footnoteBody(_, _, _, _, _, let c):
-            return c.flatMap { extractInlineChildren($0) }
+        case .footnoteBody:
+            // Never inline footnote body content; it belongs in FootnoteSectionView.
+            return []
         case .listBlock(_, let items):
             return items.flatMap { $0 }.flatMap { extractInlineChildren($0) }
         case .pageBreak, .figureBlock:
@@ -415,6 +431,37 @@ public struct FRUSDocumentRenderer: View {
         default:
             return [node]
         }
+    }
+
+    private func isBlockNode(_ node: FRUSRenderNode) -> Bool {
+        switch node {
+        case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph,
+             .footnoteBody, .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock,
+             .pageBreak, .unknown:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Groups consecutive inline nodes into `.paragraph` wrappers so they render as
+    /// a single `Text` run rather than each getting their own VStack row.
+    private func blockOrInlineNodes(_ nodes: [FRUSRenderNode]) -> [FRUSRenderNode] {
+        var result: [FRUSRenderNode] = []
+        var inlineBuffer: [FRUSRenderNode] = []
+        for node in nodes {
+            if isBlockNode(node) {
+                if !inlineBuffer.isEmpty {
+                    result.append(.paragraph(inlineBuffer))
+                    inlineBuffer = []
+                }
+                result.append(node)
+            } else {
+                inlineBuffer.append(node)
+            }
+        }
+        if !inlineBuffer.isEmpty { result.append(.paragraph(inlineBuffer)) }
+        return result
     }
 }
 
