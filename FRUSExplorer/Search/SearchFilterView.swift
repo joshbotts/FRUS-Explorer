@@ -232,7 +232,7 @@ struct SearchFilterView: View {
                     displayedComponents: .date
                 )
                 Text(String(localized: "search.daterange.help",
-                            defaultValue: "Documents without a parseable date are excluded when a date range is active."))
+                            defaultValue: "Documents without a parseable date are excluded. Documents with only a year or month in their dateline are treated as January 1 of that period and may appear as false positives near range boundaries."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

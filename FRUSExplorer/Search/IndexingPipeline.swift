@@ -163,7 +163,8 @@ public actor IndexingPipeline {
     ///
     /// - Version 1: plain-text heuristic only (`parseDateISO`)
     /// - Version 2: structured `<date @when/@from/@to>` extraction (Session 36)
-    public static let currentDateIndexVersion: Int = 2
+    /// - Version 3: all partial dates normalized to full yyyy-MM-dd precision
+    public static let currentDateIndexVersion: Int = 3
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -933,22 +934,22 @@ public actor IndexingPipeline {
         // Step 1: @when inside a dateline
         if let node = dateNodes.first(where: { $0.inDateline && $0.when != nil }),
            let value = node.when {
-            return value
+            return normalizeToFullDate(value)
         }
         // Step 2: @from inside a dateline
         if let node = dateNodes.first(where: { $0.inDateline && $0.from != nil }),
            let value = node.from {
-            return value
+            return normalizeToFullDate(value)
         }
         // Step 3: @notBefore inside a dateline
         if let node = dateNodes.first(where: { $0.inDateline && $0.notBefore != nil }),
            let value = node.notBefore {
-            return value
+            return normalizeToFullDate(value)
         }
         // Step 4: @when anywhere in the document
         if let node = dateNodes.first(where: { $0.when != nil }),
            let value = node.when {
-            return value
+            return normalizeToFullDate(value)
         }
 
         // Step 5: Plain-text heuristic on the dateline string (legacy fallback).
@@ -957,6 +958,26 @@ public actor IndexingPipeline {
             return parseDateISO(from: datelineText)
         }
         return nil
+    }
+
+    /// Pads a partial ISO 8601 date string to full `yyyy-MM-dd` precision.
+    ///
+    /// TEI `@when`/`@from`/`@to` attributes may contain year-only ("1982") or
+    /// year-month ("1982-04") values. Storing these as-is breaks the string-comparison
+    /// date filter because "1982" < "1982-01-01" lexicographically, causing year-only
+    /// documents to be excluded from ranges that include that year.
+    ///
+    /// Partial dates are treated as the earliest possible date in their period:
+    ///   "1982"    → "1982-01-01"
+    ///   "1982-04" → "1982-04-01"
+    ///   "1982-04-20" → "1982-04-20" (unchanged)
+    nonisolated static func normalizeToFullDate(_ iso: String) -> String {
+        let parts = iso.split(separator: "-", omittingEmptySubsequences: false)
+        switch parts.count {
+        case 1: return "\(iso)-01-01"
+        case 2: return "\(iso)-01"
+        default: return iso
+        }
     }
 
     /// Best-effort ISO 8601 date extraction from a dateline string.
@@ -983,6 +1004,7 @@ public actor IndexingPipeline {
         let formats: [(String, String)] = [
             ("MMMM d yyyy",  "yyyy-MM-dd"),
             ("MMMM dd yyyy", "yyyy-MM-dd"),
+            // Month-year: output as yyyy-MM, then normalizeToFullDate pads to yyyy-MM-01.
             ("MMMM yyyy",    "yyyy-MM"),
         ]
         for (inFmt, outFmt) in formats {
@@ -994,15 +1016,15 @@ public actor IndexingPipeline {
                         .replacingOccurrences(of: ",", with: "")
                     if let date = formatter.date(from: candidate) {
                         formatter.dateFormat = outFmt
-                        return formatter.string(from: date)
+                        return normalizeToFullDate(formatter.string(from: date))
                     }
                 }
             }
         }
 
-        // Last resort: 4-digit year
+        // Last resort: 4-digit year — normalize to yyyy-01-01 so string comparisons work.
         if let range = cleaned.range(of: #"\b(1[89]\d\d|20[012]\d)\b"#, options: .regularExpression) {
-            return String(cleaned[range])
+            return normalizeToFullDate(String(cleaned[range]))
         }
         return nil
     }
