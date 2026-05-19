@@ -1862,13 +1862,10 @@ private struct SettingsResetPane: View {
             }
         }
 
-        // 2. Remove the search index
+        // 2. Remove the search index — one bulk DELETE per table, not one call per manifest entry.
+        //    The per-entry loop iterated 500+ volumes sequentially and caused the UI to hang.
         if let pipeline = appState.indexingPipeline {
-            let entries = appState.manifestStore.diffResult?.known
-                ?? appState.manifestStore.bundledEntries
-            for entry in entries {
-                try? await pipeline.removeVolume(entry.volumeId)
-            }
+            try? await pipeline.removeAllVolumesFromIndex()
         }
 
         // 3. If full reset, delete all SwiftData records
