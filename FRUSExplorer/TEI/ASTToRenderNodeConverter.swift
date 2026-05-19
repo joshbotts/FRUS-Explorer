@@ -110,12 +110,19 @@ public struct ASTToRenderNodeConverter {
             // The counter is always incremented to keep bookkeeping consistent even when
             // some notes have @n and others do not within the same document.
             let displayLabel = printedNumber ?? "\(sequentialNumber)"
+            let convertedChildren = convertNodes(children)
+            // When a footnote contains only inline nodes (no <p> wrapper in the source TEI),
+            // wrap them in a single .paragraph so the renderer treats them as continuous prose
+            // rather than rendering each node as a separate VStack row.
+            let footnoteChildren: [FRUSRenderNode] = convertedChildren.contains(where: isBlockNode)
+                ? convertedChildren
+                : [.paragraph(convertedChildren)]
             let body = FRUSRenderNode.footnoteBody(
                 id: id, type: type,
                 printedNumber: printedNumber,
                 sequentialNumber: sequentialNumber,
                 displayLabel: displayLabel,
-                children: convertNodes(children)
+                children: footnoteChildren
             )
             collectedFootnotes.append(body)
             return [.footnoteMarker(id: id, displayLabel: displayLabel)]
@@ -223,6 +230,16 @@ public struct ASTToRenderNodeConverter {
 
         case .unknown(let name, _, let children):
             return [.unknown(name: name, children: convertNodes(children))]
+        }
+    }
+
+    private func isBlockNode(_ node: FRUSRenderNode) -> Bool {
+        switch node {
+        case .paragraph, .heading, .dateline, .letterOpener, .letterCloser,
+             .salutation, .editorialNoteBlock, .tableBlock, .listBlock, .figureBlock:
+            return true
+        default:
+            return false
         }
     }
 }
