@@ -100,11 +100,11 @@ struct FRUSExplorerApp: App {
 
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {
-            CollectionListView(showDoneButton: false)
+            MacCollectionManagerView()
                 .environment(appState)
                 .modelContainer(modelContainer)
         }
-        .defaultSize(width: 480, height: 600)
+        .defaultSize(width: 760, height: 600)
         .keyboardShortcut("k", modifiers: [.command, .shift])
 
         // MARK: - Settings

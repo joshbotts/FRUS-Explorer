@@ -62,22 +62,34 @@ final class HTMLCollectionExporter: CollectionExporter {
         }
         body += "</header>\n\n"
 
-        // Table of contents
+        // Table of contents — shows citations with internal anchor links
         body += "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
         for doc in documents {
             let anchor = anchorId(doc: doc)
-            body += "    <li><a href=\"#\(anchor)\">\(escaped(doc.title))</a></li>\n"
+            let label = doc.citation.isEmpty ? doc.title : doc.citation
+            body += "    <li><a href=\"#\(anchor)\">\(escaped(label))</a></li>\n"
         }
         body += "  </ol>\n</nav>\n\n"
 
         // Document sections
         for doc in documents {
             let anchor = anchorId(doc: doc)
+            let heading = doc.citation.isEmpty ? doc.title : doc.citation
             body += "<section id=\"\(anchor)\">\n"
-            body += "  <h2>\(escaped(doc.title))</h2>\n"
-            if let date = doc.date, !date.isEmpty {
-                body += "  <p class=\"doc-date\">\(escaped(date))</p>\n"
+
+            // Citation as heading with external link
+            if !doc.historyStateGovURL.isEmpty {
+                body += "  <h2><a href=\"\(escaped(doc.historyStateGovURL))\" "
+                body +=     "class=\"doc-ext-link\" target=\"_blank\" rel=\"noopener noreferrer\">"
+                body +=     "\(escaped(heading))</a></h2>\n"
+                body += "  <p class=\"doc-url\">"
+                body +=     "<a href=\"\(escaped(doc.historyStateGovURL))\" target=\"_blank\" rel=\"noopener noreferrer\">"
+                body +=     "\(escaped(doc.historyStateGovURL))</a></p>\n"
+            } else {
+                body += "  <h2>\(escaped(heading))</h2>\n"
             }
+
+            // Body text paragraphs
             if !doc.bodyText.isEmpty {
                 let paragraphs = doc.bodyText
                     .components(separatedBy: "\n\n")
@@ -86,12 +98,20 @@ final class HTMLCollectionExporter: CollectionExporter {
                     body += "  <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
                 }
             }
+
+            // Research note
             if let note = doc.noteText, !note.isEmpty {
                 body += "  <aside class=\"research-note\">\n"
                 body += "    <strong>Research Note</strong>\n"
-                body += "    <p>\(escaped(note))</p>\n"
+                let noteParagraphs = note
+                    .components(separatedBy: "\n\n")
+                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                for para in noteParagraphs {
+                    body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+                }
                 body += "  </aside>\n"
             }
+
             body += "</section>\n\n"
         }
 
@@ -167,9 +187,18 @@ final class HTMLCollectionExporter: CollectionExporter {
           margin-bottom: 3rem;
         }
         section h2 {
-          font-size: 1.4rem;
+          font-size: 1.25rem;
           font-weight: bold;
-          margin-bottom: 0.4rem;
+          margin-bottom: 0.3rem;
+          line-height: 1.4;
+        }
+        a.doc-ext-link { color: inherit; text-decoration: none; }
+        a.doc-ext-link:hover { text-decoration: underline; }
+        .doc-url {
+          font-size: 0.8rem;
+          color: #1a4c8f;
+          margin-bottom: 1rem;
+          word-break: break-all;
         }
         .doc-date {
           font-size: 0.9rem;

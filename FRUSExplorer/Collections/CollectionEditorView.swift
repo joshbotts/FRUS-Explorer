@@ -488,7 +488,7 @@ private struct EntryRow: View {
 // MARK: - AddByTagSheet
 
 /// Sheet that lets the user pick a `UserTag` then appends all tagged documents.
-private struct AddByTagSheet: View {
+struct AddByTagSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let allTags: [UserTag]
@@ -539,7 +539,7 @@ private struct AddByTagSheet: View {
 // MARK: - ExportSheetView
 
 /// Picker + progress view that runs the chosen exporter and presents a share sheet.
-private struct ExportSheetView: View {
+struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
 
     let collection: Collection
@@ -623,7 +623,7 @@ private struct ExportSheetView: View {
         isExporting = true
         exportError = nil
         do {
-            let docs = resolveDocuments()
+            let docs = await resolveDocuments()
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
             let exporter = selectedFormat.makeExporter()
             let url = try await exporter.export(metadata: metadata, documents: docs)
@@ -634,30 +634,76 @@ private struct ExportSheetView: View {
         isExporting = false
     }
 
-    private func resolveDocuments() -> [CollectionExportDocument] {
+    private func resolveDocuments() async -> [CollectionExportDocument] {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
-        let volumeTitleMap = Dictionary(uniqueKeysWithValues:
-            manifest.map { ($0.volumeId, $0.title) })
-        let volumeDateMap = Dictionary(uniqueKeysWithValues:
-            manifest.compactMap { e -> (String, String)? in
-                guard let d = e.dateRange.earliest else { return nil }
-                return (e.volumeId, d)
-            })
+        let manifestMap = Dictionary(uniqueKeysWithValues: manifest.map { ($0.volumeId, $0) })
+        let formatter = HistoryAtStateCitationFormatter()
+
+        // Pre-load body texts: SQLite cache (fast) then XML fallback (slow).
+        // Group by volume so each volume XML is opened at most once on the fallback path.
+        var bodyTexts: [String: String] = [:]
+
+        let volumeIds = Set(entries.map(\.volumeId))
+        for volumeId in volumeIds {
+            let docsInVolume = entries.filter { $0.volumeId == volumeId }
+
+            // SQLite cache path
+            if let pipeline = appState.indexingPipeline {
+                for entry in docsInVolume {
+                    let key = "\(entry.volumeId)/\(entry.documentId)"
+                    if let text = try? await pipeline.fetchDocumentBodyText(
+                        volumeId: entry.volumeId, documentId: entry.documentId) {
+                        bodyTexts[key] = text
+                    }
+                }
+            }
+
+            // XML fallback for anything still uncached
+            let uncached = docsInVolume.filter {
+                bodyTexts["\($0.volumeId)/\($0.documentId)"] == nil
+            }
+            if !uncached.isEmpty, let dm = appState.downloadManager {
+                let volumeURL = dm.volumeURL(for: volumeId)
+                if FileManager.default.fileExists(atPath: volumeURL.path) {
+                    let parser = FRUSDocumentParser()
+                    for entry in uncached {
+                        let key = "\(entry.volumeId)/\(entry.documentId)"
+                        if let ast = try? await parser.parseDocument(
+                            documentId: entry.documentId, volumeURL: volumeURL) {
+                            bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
+                        }
+                    }
+                }
+            }
+        }
 
         return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
-            let note = entry.researchNoteId.flatMap { nid in
-                allNotes.first { $0.id == nid }
-            }
-            let volumeTitle = volumeTitleMap[entry.volumeId] ?? entry.volumeId
+            let note = entry.researchNoteId.flatMap { nid in allNotes.first { $0.id == nid } }
+            let manifestEntry = manifestMap[entry.volumeId]
+            let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
+            let docNum: String? = entry.documentId.hasPrefix("d")
+                ? Int(entry.documentId.dropFirst()).map { String($0) }
+                : nil
+            let docMeta = FRUSDocumentMetadata(
+                documentId: entry.documentId, documentNumber: docNum,
+                header: "", dateline: nil)
+            let citation = volMeta.map { formatter.format(document: docMeta, volume: $0) }
+                ?? "\(entry.volumeId)/\(entry.documentId)"
+            let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
+            let volumeTitle = manifestEntry?.title ?? entry.volumeId
+            let bodyText = bodyTexts["\(entry.volumeId)/\(entry.documentId)"] ?? ""
+
             return CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 sortOrder: entry.sortOrder,
                 title: "\(volumeTitle) — \(entry.documentId)",
-                date: volumeDateMap[entry.volumeId],
-                bodyText: "",
-                noteText: note?.bodyText
+                date: manifestEntry?.dateRange.earliest,
+                bodyText: bodyText,
+                noteText: note?.bodyText,
+                citation: citation,
+                historyStateGovURL: urlString
             )
         }
     }
@@ -675,7 +721,7 @@ private struct ExportSheetView: View {
 ///
 /// The file lives in `FileManager.temporaryDirectory` and will be cleaned up by
 /// the OS; using the Save panel is the recommended path for keeping the output.
-private struct MacExportCompleteView: View {
+struct MacExportCompleteView: View {
     let url: URL
     @Environment(\.dismiss) private var dismiss
 

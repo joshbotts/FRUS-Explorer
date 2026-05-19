@@ -1330,6 +1330,11 @@ public actor IndexingPipeline {
         return ids
     }
 
+    /// Returns the indexed body text for a single document, or `nil` if not yet indexed.
+    public func fetchDocumentBodyText(volumeId: String, documentId: String) throws -> String? {
+        try fetchCache(volumeId: volumeId, documentId: documentId)?.bodyText
+    }
+
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {
         let sql = """
             SELECT document_number, header, dateline, source_note, body_text,

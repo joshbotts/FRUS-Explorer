@@ -57,14 +57,18 @@ struct CollectionExportDocument: Sendable {
     let volumeId: String
     /// Position within the collection (ascending).
     let sortOrder: Int
-    /// Human-readable document title.
+    /// Human-readable document title (volume title + document ID).
     let title: String
     /// ISO 8601 date string, if known.
     let date: String?
-    /// Plain-text body of the document (may be truncated for large volumes).
+    /// Plain-text body of the document.
     let bodyText: String
     /// Optional research note text linked to this entry.
     let noteText: String?
+    /// Formatted citation string (history.state.gov style).
+    let citation: String
+    /// `https://history.state.gov/historicaldocuments/{volumeId}/{documentId}`
+    let historyStateGovURL: String
 
     init(
         documentId: String,
@@ -73,7 +77,9 @@ struct CollectionExportDocument: Sendable {
         title: String,
         date: String? = nil,
         bodyText: String,
-        noteText: String? = nil
+        noteText: String? = nil,
+        citation: String = "",
+        historyStateGovURL: String = ""
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -82,6 +88,8 @@ struct CollectionExportDocument: Sendable {
         self.date = date
         self.bodyText = bodyText
         self.noteText = noteText
+        self.citation = citation
+        self.historyStateGovURL = historyStateGovURL
     }
 }
 
