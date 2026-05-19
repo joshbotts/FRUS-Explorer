@@ -54,7 +54,7 @@ struct CrossReferenceGraphWindowView: View {
                 "No Document Selected",
                 systemImage: "point.3.connected.trianglepath.dotted",
                 description: Text(
-                    "Open a document in the main window, then click the Graph toolbar button to explore its cross-references."
+                    "Open a document in the main FRUS Explorer window, then click the Graph button in the toolbar, or swipe a document row in the Corpus Browser to open its graph here."
                 )
             )
             .frame(minWidth: 480, minHeight: 440)

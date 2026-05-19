@@ -549,19 +549,28 @@ struct CitationPopoverView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            // Citation text
-            Text(formattedCitation)
-                .font(.custom("Georgia", size: 12))
-                .lineSpacing(4)
-                .textSelection(.enabled)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.secondary.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(Color.secondary.opacity(0.15), lineWidth: 0.5)
-                )
+            // Citation text — rendered as Markdown so _series title_ displays as italic.
+            Group {
+                if let attrStr = try? AttributedString(
+                    markdown: formattedCitation,
+                    options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                ) {
+                    Text(attrStr)
+                } else {
+                    Text(formattedCitation)
+                }
+            }
+            .font(.custom("Georgia", size: 12))
+            .lineSpacing(4)
+            .textSelection(.enabled)
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.secondary.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.secondary.opacity(0.15), lineWidth: 0.5)
+            )
 
             // Metadata
             if let vol = volumeEntry {
@@ -670,9 +679,12 @@ struct CitationPopoverView: View {
 
         switch selectedStyle {
         case .historyStateDotGov:
-            // _Series title_, rest of volume title, eds. Name (City: Publisher, Year), Document N.
+            // _Series title_, rest of volume title, ed./eds. Name (City: Publisher, Year), Document N.
             var result = italicizedSeriesTitle(volTitle)
-            if let eds = editorString { result += ", eds. \(eds)" }
+            if let eds = editorString {
+                let prefix = vol.editors.count == 1 ? "ed." : "eds."
+                result += ", \(prefix) \(eds)"
+            }
             result += " (\(city): \(publisher), \(year)), \(docNum)."
             return result
 
@@ -1456,6 +1468,7 @@ private struct CorpusSectionDocumentListView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openWindow) private var openWindow
 
     @State private var documents: [DocumentBrowserEntry] = []
     @State private var isLoading = true
@@ -1481,6 +1494,15 @@ private struct CorpusSectionDocumentListView: View {
                             DocumentRowLabel(doc: doc)
                         }
                         .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                appState.currentGraphEntry = doc
+                                openWindow(id: "frus.crossReferenceGraph")
+                            } label: {
+                                Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
+                            }
+                            .tint(.indigo)
+                        }
                     }
                     .listStyle(.inset)
                 }
