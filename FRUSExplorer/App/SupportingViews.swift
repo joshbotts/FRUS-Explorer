@@ -127,8 +127,9 @@ struct ResearchStripView: View {
         .background(.bar)
         .overlay(alignment: .bottom) { Divider() }
         .sheet(isPresented: $showAddToCollection) {
-            // CollectionEditorView(collection: nil) creates a new collection.
-            CollectionEditorView(collection: nil)
+            if let entry {
+                CollectionPickerSheet(entry: entry)
+            }
         }
         .sheet(isPresented: $showAddNote) {
             if let entry {
@@ -142,6 +143,115 @@ struct ResearchStripView: View {
         .sheet(isPresented: $showTagPicker) {
             if let entry { MacTagPickerSheet(entry: entry) }
         }
+    }
+}
+
+// MARK: - CollectionPickerSheet
+
+/// Sheet that lets the user add a document to an existing collection or create a new one.
+///
+/// Presents a searchable list of all collections. Tapping a row adds the document as
+/// a new `CollectionEntry` at the end of that collection and dismisses the sheet.
+/// The "New Collection" button opens `CollectionEditorView` to create a collection
+/// first; the document is not automatically added to the new collection (the user
+/// manages membership via the Collections window).
+private struct CollectionPickerSheet: View {
+
+    let entry: DocumentBrowserEntry
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Collection.lastModified, order: .reverse) private var collections: [Collection]
+
+    @State private var searchText: String = ""
+    @State private var showNewCollection = false
+    @State private var addedCollectionId: UUID? = nil
+
+    private var filtered: [Collection] {
+        guard !searchText.isEmpty else { return collections }
+        return collections.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if collections.isEmpty {
+                    ContentUnavailableView(
+                        "No Collections",
+                        systemImage: "folder",
+                        description: Text("Create a collection first using the button below.")
+                    )
+                } else {
+                    List(filtered) { collection in
+                        Button {
+                            addDocument(to: collection)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(collection.name)
+                                        .font(.body)
+                                        .foregroundStyle(.primary)
+                                    let count = collection.documentEntries?.count ?? 0
+                                    Text("\(count) document\(count == 1 ? "" : "s")")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if addedCollectionId == collection.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(.green)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .listStyle(.inset)
+                    .searchable(text: $searchText, prompt: "Search collections")
+                }
+            }
+            .navigationTitle("Add to Collection")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showNewCollection = true
+                    } label: {
+                        Label("New Collection", systemImage: "folder.badge.plus")
+                    }
+                }
+            }
+        }
+        .frame(minWidth: 380, minHeight: 340)
+        .sheet(isPresented: $showNewCollection) {
+            CollectionEditorView(collection: nil)
+        }
+    }
+
+    private func addDocument(to collection: Collection) {
+        // Guard against duplicates
+        let existing = collection.documentEntries ?? []
+        guard !existing.contains(where: {
+            $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
+        }) else {
+            addedCollectionId = collection.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { dismiss() }
+            return
+        }
+
+        let nextOrder = (existing.map(\.sortOrder).max() ?? -1) + 1
+        let collectionEntry = CollectionEntry(
+            collectionId: collection.id,
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            sortOrder: nextOrder
+        )
+        modelContext.insert(collectionEntry)
+        collection.documentEntries?.append(collectionEntry)
+
+        addedCollectionId = collection.id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
     }
 }
 
