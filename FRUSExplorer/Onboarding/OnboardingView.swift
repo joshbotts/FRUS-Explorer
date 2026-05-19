@@ -19,23 +19,23 @@ import SwiftData
 ///
 /// ## Steps
 /// 1. **Welcome** — brief introduction to the app and its corpus
-/// 2. **Add Volumes** — select and download FRUS volumes from the manifest
-/// 3. **Ready** — confirmation screen; tapping Finish completes onboarding
+/// 2. **Scope** — choose download scope (corpus / subseries / volume) with an
+///    appropriate picker for each choice
+/// 3. **Ready** — confirmation; tapping Finish completes onboarding and creates
+///    a default project if none exists
 ///
-/// ## Invisible Project Creation
-/// When onboarding completes, `ensureDefaultProjectExists()` silently creates a
-/// "My Research" project if none exists. The user never sees a project-setup step.
-/// `AppState.activeProjectId` is set to the new project's `id` before the main UI
-/// appears, so all activity from the first session is attributed to that project.
-///
-/// ## Offline Handling
-/// An inline banner appears at the top when the device is offline. The volume list
-/// falls back to the bundled manifest entries so the flow remains navigable.
+/// ## Download Scope Choices
+/// - **Entire Corpus** — enqueues all volumes on Continue; no further picker shown.
+/// - **A Subseries** — shows a scrollable list of subseries sorted newest-first;
+///   user must select one before Continue is enabled.
+/// - **A Single Volume** — shows a grouped list with volumes nested under
+///   collapsible subseries (sorted newest-first); user must select a volume.
 ///
 /// Version history:
 ///   1.0 — Session 10: initial implementation
 ///   2.0 — Session 49: redesigned to three-step flow
 ///   3.0 — New UI: self-contained flow; project setup removed (created silently)
+///   3.1 — Replaced flat volume list with scope picker (corpus/subseries/volume)
 @MainActor
 struct OnboardingView: View {
 
@@ -43,6 +43,13 @@ struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var step: OnboardingStep = .welcome
+
+    // MARK: - Step 2 State
+
+    private enum ScopeChoice { case corpus, subseries, volume }
+    @State private var scopeChoice: ScopeChoice = .corpus
+    @State private var selectedSubseries: String = ""
+    @State private var selectedVolumeId: String = ""
 
     // MARK: - Body
 
@@ -52,22 +59,19 @@ struct OnboardingView: View {
                 offlineBanner
             }
 
-            // Step dot indicator
             stepIndicator
                 .padding(.top, 24)
                 .padding(.bottom, 20)
 
-            // Step content
             Group {
                 switch step {
-                case .welcome:  welcomeView
-                case .addVolumes: addVolumesView
-                case .ready:    readyView
+                case .welcome:    welcomeView
+                case .addVolumes: scopePickerView
+                case .ready:      readyView
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Navigation buttons
             navigationRow
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -121,32 +125,56 @@ struct OnboardingView: View {
         .padding(.horizontal, 24)
     }
 
-    // MARK: - Add Volumes Step
+    // MARK: - Scope Picker Step
 
-    private var addVolumesView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Add Volumes")
-                .font(.title3.weight(.semibold))
-                .padding(.horizontal, 24)
+    private var scopePickerView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            VStack(alignment: .leading, spacing: 4) {
+                Text("What Would You Like to Download?")
+                    .font(.title3.weight(.semibold))
+                Text("You can download more volumes later from Settings.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
 
-            Text("Choose the volumes you want to download. You can add more later from the Corpus Browser.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 24)
+            // Scope option cards
+            VStack(spacing: 8) {
+                ScopeCard(
+                    isSelected: scopeChoice == .corpus,
+                    systemImage: "square.stack.3d.up",
+                    title: "Entire Corpus",
+                    detail: "552+ volumes · ≈ 3.3 GB. Download everything for full offline search."
+                ) { scopeChoice = .corpus }
 
-            let entries = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
-            if entries.isEmpty {
-                ProgressView("Loading catalog…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(entries.prefix(200)) { entry in
-                            VolumeDownloadRow(entry: entry)
-                            Divider().padding(.leading, 16)
-                        }
-                    }
-                }
+                ScopeCard(
+                    isSelected: scopeChoice == .subseries,
+                    systemImage: "calendar",
+                    title: "A Subseries",
+                    detail: "Choose a decade or diplomatic era."
+                ) { scopeChoice = .subseries; selectedSubseries = "" }
+
+                ScopeCard(
+                    isSelected: scopeChoice == .volume,
+                    systemImage: "doc.text",
+                    title: "A Single Volume",
+                    detail: "Find and download one volume to explore."
+                ) { scopeChoice = .volume; selectedVolumeId = "" }
+            }
+            .padding(.horizontal, 24)
+
+            // Conditional picker
+            switch scopeChoice {
+            case .corpus:
+                Spacer()
+            case .subseries:
+                Divider().padding(.top, 12)
+                subseriesPickerView
+            case .volume:
+                Divider().padding(.top, 12)
+                volumeGroupedPickerView
             }
         }
         .task {
@@ -154,6 +182,85 @@ struct OnboardingView: View {
                 await appState.manifestStore.refresh()
             }
         }
+    }
+
+    // MARK: - Subseries Picker
+
+    private var subseriesPickerView: some View {
+        List(allSubseries, id: \.self) { sub in
+            Button {
+                selectedSubseries = sub
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(sub)
+                            .font(.callout)
+                            .foregroundStyle(.primary)
+                        let count = allVolumes.filter { $0.subseries == sub }.count
+                        Text("\(count) volume\(count == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if selectedSubseries == sub {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(Color.accentColor)
+                            .fontWeight(.semibold)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        .listStyle(.plain)
+    }
+
+    // MARK: - Volume Grouped Picker
+
+    private var volumeGroupedPickerView: some View {
+        List {
+            ForEach(volumesBySubseries, id: \.subseries) { group in
+                DisclosureGroup {
+                    ForEach(group.volumes) { vol in
+                        Button {
+                            selectedVolumeId = vol.volumeId
+                        } label: {
+                            HStack(alignment: .top, spacing: 10) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(vol.title)
+                                        .font(.callout)
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(2)
+                                    Text(vol.volumeId)
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                Spacer()
+                                if selectedVolumeId == vol.volumeId {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(Color.accentColor)
+                                        .fontWeight(.semibold)
+                                        .padding(.top, 2)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.leading, 4)
+                    }
+                } label: {
+                    HStack {
+                        Text(group.subseries)
+                            .font(.callout.weight(.medium))
+                        Spacer()
+                        Text("\(group.volumes.count) vol\(group.volumes.count == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
     }
 
     // MARK: - Ready Step
@@ -195,12 +302,9 @@ struct OnboardingView: View {
 
     private var navigationRow: some View {
         HStack {
-            // Back button (hidden on first step)
             if step != .welcome {
                 Button("Back") {
-                    if let prev = step.previous {
-                        step = prev
-                    }
+                    if let prev = step.previous { step = prev }
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
@@ -208,19 +312,17 @@ struct OnboardingView: View {
 
             Spacer()
 
-            // Skip volumes button (only on addVolumes step)
             if step == .addVolumes {
-                Button("Skip") {
-                    step = .ready
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .padding(.trailing, 8)
+                Button("Skip") { step = .ready }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .padding(.trailing, 8)
             }
 
-            // Continue / Finish button
             Button(step.continueLabel) {
-                if let next = step.next {
+                if step == .addVolumes {
+                    Task { await enqueueAndAdvance() }
+                } else if let next = step.next {
                     step = next
                 } else {
                     Task { await completeOnboarding() }
@@ -228,6 +330,7 @@ struct OnboardingView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .disabled(step == .addVolumes && !canProceedFromScope)
         }
     }
 
@@ -246,15 +349,65 @@ struct OnboardingView: View {
         .foregroundStyle(.primary)
     }
 
-    // MARK: - Completion
+    // MARK: - Derived Data
+
+    private var allVolumes: [VolumeManifestEntry] {
+        let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        return source.filter { $0.sizeBytes >= 20_000 }
+    }
+
+    /// Subseries sorted newest-first by the leading four-digit year.
+    private var allSubseries: [String] {
+        let unique = Set(allVolumes.map(\.subseries))
+        return unique.sorted { startYear(from: $0) > startYear(from: $1) }
+    }
+
+    /// Volumes grouped by subseries, subseries sorted newest-first.
+    private var volumesBySubseries: [(subseries: String, volumes: [VolumeManifestEntry])] {
+        allSubseries.map { sub in
+            (sub, allVolumes.filter { $0.subseries == sub })
+        }
+    }
+
+    private func startYear(from subseries: String) -> Int {
+        Int(subseries.prefix(4)) ?? 0
+    }
+
+    // MARK: - Validation
+
+    private var canProceedFromScope: Bool {
+        switch scopeChoice {
+        case .corpus:    return true
+        case .subseries: return !selectedSubseries.isEmpty
+        case .volume:    return !selectedVolumeId.isEmpty
+        }
+    }
+
+    // MARK: - Actions
+
+    private func enqueueAndAdvance() async {
+        if let dm = appState.downloadManager {
+            let volumes: [VolumeManifestEntry]
+            switch scopeChoice {
+            case .corpus:
+                volumes = allVolumes
+            case .subseries:
+                volumes = allVolumes.filter { $0.subseries == selectedSubseries }
+            case .volume:
+                volumes = allVolumes.filter { $0.volumeId == selectedVolumeId }.prefix(1).map { $0 }
+            }
+            for entry in volumes {
+                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
+            }
+        }
+        step = .ready
+    }
 
     private func completeOnboarding() async {
         await ensureDefaultProjectExists()
         appState.hasCompletedOnboarding = true
     }
 
-    /// Creates a "My Research" project if no projects exist yet.
-    /// Sets `appState.activeProjectId` so the first session is attributed to it.
     private func ensureDefaultProjectExists() async {
         do {
             let descriptor = FetchDescriptor<Project>()
@@ -278,7 +431,6 @@ struct OnboardingView: View {
 
     // MARK: - Helpers
 
-    /// True if at least one volume is currently queued or downloading.
     private var hasIndexedVolume: Bool {
         !appState.downloadQueue.isEmpty
     }
@@ -302,7 +454,7 @@ private enum OnboardingStep: CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .welcome:    return "Welcome"
-        case .addVolumes: return "Volumes"
+        case .addVolumes: return "Scope"
         case .ready:      return "Ready"
         }
     }
@@ -318,7 +470,7 @@ private enum OnboardingStep: CaseIterable, Identifiable {
     var next: OnboardingStep? {
         switch self {
         case .welcome:    return .addVolumes
-        case .addVolumes: return .ready
+        case .addVolumes: return nil
         case .ready:      return nil
         }
     }
@@ -363,54 +515,47 @@ private struct StepDot: View {
     }
 }
 
-// MARK: - VolumeDownloadRow
+// MARK: - ScopeCard
 
-private struct VolumeDownloadRow: View {
-    let entry: VolumeManifestEntry
-
-    @Environment(AppState.self) private var appState
-
-    private var isQueued: Bool {
-        appState.downloadQueue.contains(entry.volumeId)
-    }
+private struct ScopeCard: View {
+    let isSelected: Bool
+    let systemImage: String
+    let title: String
+    let detail: String
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.title)
-                    .font(.system(size: 13))
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+        Button(action: onTap) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .frame(width: 28, alignment: .top)
+                    .padding(.top, 1)
 
-                Text(entry.volumeId)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if isQueued {
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(width: 36, height: 36)
-            } else {
-                Button {
-                    Task { await enqueue() }
-                } label: {
-                    Image(systemName: "arrow.down.circle")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(.plain)
-                .frame(width: 36, height: 36)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
-    }
 
-    private func enqueue() async {
-        guard let dm = appState.downloadManager else { return }
-        await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.3),
+                            lineWidth: isSelected ? 2 : 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityHint(detail)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
