@@ -116,6 +116,7 @@ protocol CollectionExporter {
     ///
     /// - Returns: A `file://` URL pointing to the written output.
     /// - Throws: `ExportError` on rendering or I/O failure.
+    @MainActor
     func export(
         metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument]

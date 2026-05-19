@@ -32,6 +32,7 @@ final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
 
+    @MainActor
     func export(
         metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument]

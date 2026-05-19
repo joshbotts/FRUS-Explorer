@@ -46,6 +46,7 @@ final class PDFCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
 
+    @MainActor
     func export(
         metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument]
