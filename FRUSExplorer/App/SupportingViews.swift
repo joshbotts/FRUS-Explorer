@@ -868,6 +868,9 @@ struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
+    enum ViewMode { case browse, connections }
+    @State private var viewMode: ViewMode = .browse
+
     @State private var selectedSubseries: String? = nil
     @State private var selectedVolume: VolumeManifestEntry? = nil
     @State private var searchText: String = ""
@@ -902,6 +905,19 @@ struct CorpusBrowserWindowView: View {
     }
 
     var body: some View {
+        Group {
+            if viewMode == .connections {
+                VolumeConnectionGraphView()
+                    .navigationTitle("Corpus Browser")
+                    .toolbar { modeToolbar }
+                    .frame(minWidth: 540, minHeight: 440)
+            } else {
+                browseView
+            }
+        }
+    }
+
+    private var browseView: some View {
         NavigationSplitView {
             List(selection: $selectedSubseries) {
                 ForEach(subseries, id: \.self) { sub in
@@ -912,6 +928,7 @@ struct CorpusBrowserWindowView: View {
             .navigationTitle("Corpus Browser")
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
+                modeToolbar
                 ToolbarItem(placement: .primaryAction) {
                     Button { sortDescending.toggle() } label: {
                         Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
@@ -938,6 +955,18 @@ struct CorpusBrowserWindowView: View {
             }
         }
         .frame(minWidth: 540, minHeight: 440)
+    }
+
+    @ToolbarContentBuilder
+    private var modeToolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Picker("", selection: $viewMode) {
+                Label("Browse", systemImage: "books.vertical").tag(ViewMode.browse)
+                Label("Connections", systemImage: "point.3.connected.trianglepath.dotted").tag(ViewMode.connections)
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 200)
+        }
     }
 
     private func subseriesRow(_ sub: String) -> some View {
@@ -1338,15 +1367,6 @@ private struct CorpusSectionDocumentListView: View {
         let sectionIds = Set(section.allDocumentIds)
         documents = all.filter { sectionIds.contains($0.documentId) }
         isLoading = false
-    }
-}
-
-struct CrossReferenceGraphWindowView: View {
-    var body: some View {
-        Text("Cross-Reference Graph")
-            .font(.title2)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

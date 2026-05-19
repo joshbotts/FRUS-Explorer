@@ -162,6 +162,34 @@ public actor CrossReferenceStore {
         return try collectEdges(stmt)
     }
 
+    /// Returns all cross-volume reference counts, aggregated by (sourceVolumeId, targetVolumeId).
+    ///
+    /// Only cross-volume edges are returned — same-volume references (stored with NULL
+    /// `target_volume_id`) are excluded. Results are sorted by count descending.
+    ///
+    /// Used by `VolumeConnectionGraphView` in the Corpus Browser to render a volume-level
+    /// overview of cross-reference relationships across the indexed corpus.
+    public func volumeLevelConnections() throws -> [VolumeConnectionEdge] {
+        let sql = """
+            SELECT source_volume_id, target_volume_id, COUNT(*) AS ref_count
+            FROM cross_references
+            WHERE target_volume_id IS NOT NULL
+              AND target_volume_id != source_volume_id
+            GROUP BY source_volume_id, target_volume_id
+            ORDER BY ref_count DESC
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var result: [VolumeConnectionEdge] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let src = columnString(stmt, 0) ?? ""
+            let tgt = columnString(stmt, 1) ?? ""
+            let cnt = Int(sqlite3_column_int64(stmt, 2))
+            result.append(VolumeConnectionEdge(sourceVolumeId: src, targetVolumeId: tgt, count: cnt))
+        }
+        return result
+    }
+
     /// Returns the total number of inbound + outbound edges for the given document.
     public func edgeCount(
         forDocumentId documentId: String,

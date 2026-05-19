@@ -175,6 +175,7 @@ struct MainWindowView: View {
 
             // Cross-reference graph — only when a document is loaded
             Button {
+                appState.currentGraphEntry = currentEntry
                 openWindow(id: "frus.crossReferenceGraph")
             } label: {
                 Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")

@@ -93,6 +93,18 @@ struct DisplayEdge: Sendable {
 
 // MARK: - CrossReferenceGraphViewModel
 
+// MARK: - NavigationHistoryEntry
+
+/// One step in the cross-reference graph's interactive navigation history.
+struct NavigationHistoryEntry: Sendable {
+    let documentId: String
+    let volumeId: String
+    /// Display header, if already loaded when this entry was pushed.
+    let header: String?
+}
+
+// MARK: - CrossReferenceGraphViewModel
+
 /// ViewModel for the cross-reference graph view.
 ///
 /// Loads the `CrossReferenceGraph` from `CrossReferenceStore`, computes display nodes
@@ -102,6 +114,12 @@ struct DisplayEdge: Sendable {
 ///   - **Force-directed layout** (21–100): iterative spring-repulsion simulation;
 ///     animated settling unless system Reduce Motion is active.
 ///
+/// ## Interactive Re-centering
+/// Clicking a non-cluster node on macOS (or second-tapping on iOS) calls `recenterOn`,
+/// which pushes the current central document onto `history`, updates the central identity,
+/// resets layout state, and re-loads the ego graph for the new centre. `navigateBack()`
+/// pops the previous entry and re-centres without pushing to history (going back).
+///
 /// All mutable state is `@MainActor`-isolated. The layout algorithms are `nonisolated static`
 /// so they can be called from off-actor contexts (animated task) and unit tests.
 ///
@@ -109,14 +127,18 @@ struct DisplayEdge: Sendable {
 ///   1.0 — Session 18: initial implementation
 ///   1.1 — Session 37: `DisplayEdge.context` added; `contextForSelectedNode()` helper
 ///          surfaces footnote text in the info panel
+///   1.2 — Interactive re-centering: mutable central identity, history stack,
+///          `recenterOn()`, `navigateBack()`; macOS navigateToNode re-centres instead
+///          of pushing to navigationPath
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
 
     // MARK: - Identity
 
-    let centralDocumentId: String
-    let centralVolumeId: String
+    /// Mutable so `recenterOn` can replace the central document without creating a new VM instance.
+    var centralDocumentId: String
+    var centralVolumeId: String
 
     // MARK: - Data
 
@@ -141,6 +163,12 @@ final class CrossReferenceGraphViewModel {
 
     var filterMode: GraphFilterMode = .unfiltered
     var expandedClusterKeys: Set<String> = []
+
+    // MARK: - Navigation History
+
+    /// Documents visited before the current central document, oldest-first.
+    /// Populated by `recenterOn`; drained by `navigateBack`.
+    var history: [NavigationHistoryEntry] = []
 
     // MARK: - Animation state (readable by tests)
 
@@ -220,7 +248,8 @@ final class CrossReferenceGraphViewModel {
         selectedNodeKey = key
     }
 
-    /// iOS: first tap selects node (shows info panel); second tap navigates.
+    /// iOS: first tap selects node (shows info panel); second tap re-centres on that document.
+    /// The info panel's "View Document" button remains the path for inline document navigation.
     func tapNode(_ key: String, reduceMotion: Bool) {
         guard let node = displayNodes.first(where: { $0.id == key }) else { return }
         if node.isCluster {
@@ -228,26 +257,56 @@ final class CrossReferenceGraphViewModel {
             return
         }
         if selectedNodeKey == key {
-            if let entry = makeEntry(for: key) {
-                navigationPath.append(entry)
-            }
-            selectedNodeKey = nil
+            // Second tap — re-centre on the tapped document.
+            guard let meta = graph?.nodeMetadata[key] else { return }
+            recenterOn(documentId: meta.documentId, volumeId: meta.volumeId, header: meta.header)
         } else {
             selectedNodeKey = key
         }
     }
 
-    /// macOS: click navigates immediately (hover already showed the info panel).
+    /// macOS: click re-centres the graph on the clicked document (hover already showed the info panel).
+    /// Cluster nodes still expand/collapse rather than re-centring.
     func navigateToNode(_ key: String) {
         guard let node = displayNodes.first(where: { $0.id == key }) else { return }
         if node.isCluster {
             toggleCluster(key)
             return
         }
-        if let entry = makeEntry(for: key) {
-            navigationPath.append(entry)
-        }
-        selectedNodeKey = nil
+        guard let meta = graph?.nodeMetadata[key] else { return }
+        recenterOn(documentId: meta.documentId, volumeId: meta.volumeId, header: meta.header)
+    }
+
+    /// Replaces the central document with `(documentId, volumeId)`, pushes the current
+    /// centre onto `history`, resets all layout state, and reloads the ego graph.
+    func recenterOn(documentId: String, volumeId: String, header: String?) {
+        history.append(NavigationHistoryEntry(
+            documentId: centralDocumentId,
+            volumeId:   centralVolumeId,
+            header:     graph?.nodeMetadata[centralKey]?.header
+        ))
+        resetGraphState(documentId: documentId, volumeId: volumeId)
+        Task { await loadGraph() }
+    }
+
+    /// Pops the most-recent history entry and re-centres on it without pushing to history.
+    func navigateBack() {
+        guard let prev = history.popLast() else { return }
+        resetGraphState(documentId: prev.documentId, volumeId: prev.volumeId)
+        Task { await loadGraph() }
+    }
+
+    private func resetGraphState(documentId: String, volumeId: String) {
+        centralDocumentId   = documentId
+        centralVolumeId     = volumeId
+        graph               = nil
+        displayNodes        = []
+        displayEdges        = []
+        nodePositions       = [:]
+        selectedNodeKey     = nil
+        expandedClusterKeys = []
+        layoutTask?.cancel()
+        isAnimatingLayout   = false
     }
 
     func toggleCluster(_ key: String) {

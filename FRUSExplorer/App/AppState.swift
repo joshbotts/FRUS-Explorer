@@ -193,6 +193,14 @@ final class AppState {
     /// and appends the entry to its path, then this property is cleared.
     var pendingBrowseDocument: DocumentBrowserEntry? = nil
 
+    /// The document currently targeted by the Cross-Reference Graph window.
+    ///
+    /// Set by `MainWindowView` immediately before `openWindow(id: "frus.crossReferenceGraph")`
+    /// is called. `CrossReferenceGraphWindowView` observes this property to load the correct
+    /// ego graph. On macOS the "View Document" button in the graph info panel sets
+    /// `pendingBrowseDocument` (to open in the main window) rather than navigating inline.
+    var currentGraphEntry: DocumentBrowserEntry? = nil
+
     /// Controls presentation of the full-text Search sheet.
     ///
     /// Promoted from `BrowserView` local `@State` to `AppState` so that macOS
