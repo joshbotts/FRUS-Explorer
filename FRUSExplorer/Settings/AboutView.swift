@@ -7,6 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - AboutLinks
 
@@ -45,6 +50,14 @@ enum AboutLinks {
 ///   1.2 — Session 61: macOS NavigationStack wrapper removed; About is now a Window scene
 ///          (standard close button replaces the Done toolbar button)
 struct AboutView: View {
+
+    private var appIconImage: Image {
+        #if os(macOS)
+        Image(nsImage: NSApp.applicationIconImage)
+        #else
+        Image(uiImage: UIImage(named: "AppIcon") ?? UIImage())
+        #endif
+    }
 
     private var appVersion: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
@@ -89,12 +102,13 @@ struct AboutView: View {
     private var appHeaderSection: some View {
         Section {
             HStack(spacing: 16) {
-                Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: 48))
-                    // Cap at accessibility3 to prevent oversized rendering at extreme
-                    // Dynamic Type settings (F-007). Icon is decorative (hidden from a11y).
-                    .dynamicTypeSize(...DynamicTypeSize.accessibility3)
-                    .foregroundStyle(.tint)
+                appIconImage
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 72, height: 72)
+                    #if os(iOS)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    #endif
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -122,9 +136,14 @@ struct AboutView: View {
     private var frusDescriptionSection: some View {
         Section(String(localized: "about.frus.header",
                        defaultValue: "About FRUS")) {
-            Text(String(localized: "about.frus.description",
-                        defaultValue: """
-*Foreign Relations of the United States* (FRUS) is the official documentary \
+            Text(frusDescription)
+                .font(.callout)
+        }
+    }
+
+    private var frusDescription: AttributedString {
+        let raw = String(localized: "about.frus.description", defaultValue: """
+Foreign Relations of the United States (FRUS) is the official documentary \
 record of U.S. foreign policy, published by the Department of State \
 continuously since 1861. Prepared by the Office of the Historian under a \
 federal statute, the series is required to be a thorough, accurate, and \
@@ -146,9 +165,12 @@ including national security policy, foreign economic policy, and foreign policy 
 organization. It is an essential resource for scholars, policymakers, and \
 citizens seeking to understand the origins of contemporary challenges and the \
 United States' role in the world.
-"""))
-            .font(.callout)
+""")
+        var result = AttributedString(raw)
+        if let range = result.range(of: "Foreign Relations of the United States") {
+            result[range].inlinePresentationIntent = .emphasized
         }
+        return result
     }
 
     // MARK: - Resources

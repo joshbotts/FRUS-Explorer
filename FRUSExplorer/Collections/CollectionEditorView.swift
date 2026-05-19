@@ -456,6 +456,16 @@ private struct EntryRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
+            if let id = entry.researchNoteId,
+               let note = availableNotes.first(where: { $0.id == id }),
+               !note.bodyText.isEmpty {
+                Text(note.bodyText)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             if !availableNotes.isEmpty {
                 Picker(
                     String(localized: "collection.entry.notePicker.label",
