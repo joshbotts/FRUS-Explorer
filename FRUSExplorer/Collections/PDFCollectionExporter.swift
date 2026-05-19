@@ -12,40 +12,34 @@ import CoreText
 
 // MARK: - PDFCollectionExporter
 
-/// Exports a collection's metadata and documents to a multi-page PDF using CoreGraphics + CoreText.
-///
-/// Receives a `CollectionExportMetadata` snapshot (name, optional note) together with
-/// pre-resolved `CollectionExportDocument` payloads so no SwiftData access is needed
-/// during rendering.
+/// Exports a collection to a multi-page PDF using CoreGraphics + CoreText.
 ///
 /// ## Output structure
-/// 1. Cover page — collection title, optional note, table of contents
-/// 2. One page per document — title, date, body preview, optional research note
+/// 1. **Cover page** — collection title, optional note, table of contents with citations
+/// 2. **Per document** — citation heading, history.state.gov URL, full body text (flows
+///    across as many pages as needed), then a research-note callout page (if any)
 ///
-/// Uses the PDF coordinate system (origin at lower-left, points at 72 DPI).
-/// CoreText is used throughout so the same code path runs on iOS and macOS.
-///
-/// ## File location
-/// Output is written to `FileManager.default.temporaryDirectory`. The caller
-/// must move or share the file before the OS clears the temp directory.
+/// Uses PDF coordinate system (origin at lower-left, 72 DPI).
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
-///   1.1 — Session 32: replaced `Collection` parameter with `CollectionExportMetadata`
+///   1.1 — Session 32: replaced Collection parameter with CollectionExportMetadata
+///   1.2 — Session 73: multi-page body text flow; citation + URL headers; @MainActor
 final class PDFCollectionExporter: CollectionExporter {
 
     // MARK: - Page geometry
 
-    private static let pageWidth: CGFloat  = 612
+    private static let pageWidth:  CGFloat = 612
     private static let pageHeight: CGFloat = 792
-    private static let margin: CGFloat     = 72
+    private static let margin:     CGFloat = 72
+    private static var contentWidth: CGFloat { pageWidth - margin * 2 }
     private static var pageRect: CGRect {
         CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
     }
-    private static var contentWidth: CGFloat { pageWidth - margin * 2 }
 
     // MARK: - CollectionExporter
 
+    @MainActor
     func export(
         metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument]
@@ -74,14 +68,18 @@ final class PDFCollectionExporter: CollectionExporter {
             throw ExportError.renderingFailed
         }
 
+        var pageNumber = 1
+
+        // Cover page
         ctx.beginPDFPage(nil)
         drawCoverPage(ctx: ctx, collection: collection, documents: documents)
+        drawPageNumber(ctx: ctx, number: pageNumber)
         ctx.endPDFPage()
+        pageNumber += 1
 
+        // Document pages
         for doc in documents {
-            ctx.beginPDFPage(nil)
-            drawDocumentPage(ctx: ctx, doc: doc)
-            ctx.endPDFPage()
+            drawDocumentSection(ctx: ctx, doc: doc, pageNumber: &pageNumber)
         }
 
         ctx.closePDF()
@@ -95,114 +93,169 @@ final class PDFCollectionExporter: CollectionExporter {
         collection: CollectionExportMetadata,
         documents: [CollectionExportDocument]
     ) {
-        let W = Self.pageWidth, H = Self.pageHeight, M = Self.margin
-        let cw = Self.contentWidth
+        let W = Self.pageWidth, H = Self.pageHeight
+        let M = Self.margin, cw = Self.contentWidth
+
+        var y = H - M - 40
 
         // Title
-        var y = H - M - 40
+        let titleHeight = measureHeight(collection.name, width: cw, fontSize: 22, bold: true)
         draw(collection.name, in: ctx,
-             rect: CGRect(x: M, y: y, width: cw, height: 36),
+             rect: CGRect(x: M, y: y - titleHeight, width: cw, height: titleHeight),
              fontSize: 22, bold: true)
-        y -= 44
+        y -= titleHeight + 16
 
         // Collection note
         if let note = collection.note, !note.isEmpty {
-            let noteLines = min(5, max(1, note.count / 80 + 1))
-            let noteHeight = CGFloat(noteLines) * 16 + 8
+            let noteH = measureHeight(note, width: cw, fontSize: 12, bold: false)
             draw(note, in: ctx,
-                 rect: CGRect(x: M, y: y - noteHeight, width: cw, height: noteHeight),
+                 rect: CGRect(x: M, y: y - noteH, width: cw, height: noteH),
                  fontSize: 12, bold: false)
-            y -= noteHeight + 20
-        }
-
-        // Separator line
-        ctx.setStrokeColor(CGColor(gray: 0.6, alpha: 1))
-        ctx.setLineWidth(0.5)
-        ctx.move(to: CGPoint(x: M, y: y))
-        ctx.addLine(to: CGPoint(x: W - M, y: y))
-        ctx.strokePath()
-        y -= 20
-
-        // ToC header
-        draw("Contents", in: ctx,
-             rect: CGRect(x: M, y: y - 18, width: cw, height: 16),
-             fontSize: 13, bold: true)
-        y -= 32
-
-        // ToC entries
-        for (i, doc) in documents.enumerated() {
-            guard y > M + 20 else { break }
-            let label = "\(i + 1).  \(doc.title)"
-            draw(label, in: ctx,
-                 rect: CGRect(x: M + 8, y: y - 14, width: cw - 8, height: 14),
-                 fontSize: 11, bold: false)
-            y -= 18
-        }
-
-        // Page number
-        drawPageNumber(ctx: ctx, number: 1)
-    }
-
-    // MARK: - Document Page
-
-    private func drawDocumentPage(ctx: CGContext, doc: CollectionExportDocument) {
-        let H = Self.pageHeight, M = Self.margin
-        let cw = Self.contentWidth
-
-        // Document title
-        var y = H - M - 28
-        draw(doc.title, in: ctx,
-             rect: CGRect(x: M, y: y, width: cw, height: 24),
-             fontSize: 16, bold: true)
-        y -= 30
-
-        // Date
-        if let date = doc.date, !date.isEmpty {
-            draw(date, in: ctx,
-                 rect: CGRect(x: M, y: y - 14, width: cw, height: 14),
-                 fontSize: 11, bold: false)
-            y -= 20
+            y -= noteH + 20
         }
 
         // Separator
-        ctx.setStrokeColor(CGColor(gray: 0.7, alpha: 1))
-        ctx.setLineWidth(0.3)
-        ctx.move(to: CGPoint(x: M, y: y))
-        ctx.addLine(to: CGPoint(x: M + cw, y: y))
-        ctx.strokePath()
-        y -= 14
+        drawHRule(ctx: ctx, y: y, gray: 0.4, thickness: 0.5)
+        y -= 20
 
-        // Body text (truncated to fit one page)
-        let availableBodyHeight: CGFloat
-        if let note = doc.noteText, !note.isEmpty {
-            availableBodyHeight = y - M - 72
-        } else {
-            availableBodyHeight = y - M - 20
-        }
+        // Contents header
+        draw("Contents", in: ctx,
+             rect: CGRect(x: M, y: y - 16, width: cw, height: 16),
+             fontSize: 13, bold: true)
+        y -= 30
 
-        if !doc.bodyText.isEmpty && availableBodyHeight > 0 {
-            draw(doc.bodyText, in: ctx,
-                 rect: CGRect(x: M, y: M + (doc.noteText != nil ? 68 : 16),
-                              width: cw, height: availableBodyHeight),
-                 fontSize: 11, bold: false)
-        }
-
-        // Research note at bottom
-        if let note = doc.noteText, !note.isEmpty {
-            let noteBoxY: CGFloat = M
-            let noteBoxH: CGFloat = 60
-            ctx.setFillColor(CGColor(gray: 0.95, alpha: 1))
-            ctx.fill(CGRect(x: M, y: noteBoxY, width: cw, height: noteBoxH))
-            draw("Research Note:", in: ctx,
-                 rect: CGRect(x: M + 6, y: noteBoxY + noteBoxH - 18, width: 120, height: 14),
-                 fontSize: 10, bold: true)
-            let notePreview = String(note.prefix(300))
-            draw(notePreview, in: ctx,
-                 rect: CGRect(x: M + 6, y: noteBoxY + 4, width: cw - 12, height: noteBoxH - 22),
+        // ToC entries — each shows the full citation, wrapped if needed
+        for (i, doc) in documents.enumerated() {
+            guard y > M + 20 else { break }
+            let label = "\(i + 1).  \(doc.citation.isEmpty ? doc.title : doc.citation)"
+            let lineH = measureHeight(label, width: cw - 16, fontSize: 10, bold: false)
+            let rowH = min(lineH, 40) // cap at ~3 lines in the ToC
+            draw(label, in: ctx,
+                 rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH),
                  fontSize: 10, bold: false)
+            y -= rowH + 6
         }
 
-        drawPageNumber(ctx: ctx, number: doc.sortOrder + 2)
+        _ = W // suppress warning
+    }
+
+    // MARK: - Document Section (multi-page)
+
+    private func drawDocumentSection(
+        ctx: CGContext,
+        doc: CollectionExportDocument,
+        pageNumber: inout Int
+    ) {
+        let H = Self.pageHeight, M = Self.margin, cw = Self.contentWidth
+
+        // ── First page of document ──────────────────────────────────────────
+        ctx.beginPDFPage(nil)
+        var y = H - M
+
+        // Citation heading
+        let cit = doc.citation.isEmpty ? doc.title : doc.citation
+        let citH = measureHeight(cit, width: cw, fontSize: 13, bold: true)
+        draw(cit, in: ctx,
+             rect: CGRect(x: M, y: y - citH, width: cw, height: citH),
+             fontSize: 13, bold: true)
+        y -= citH + 6
+
+        // history.state.gov URL
+        if !doc.historyStateGovURL.isEmpty {
+            draw(doc.historyStateGovURL, in: ctx,
+                 rect: CGRect(x: M, y: y - 11, width: cw, height: 11),
+                 fontSize: 8, bold: false, gray: 0.45)
+            y -= 17
+        }
+
+        drawHRule(ctx: ctx, y: y, gray: 0.6, thickness: 0.3)
+        y -= 12
+
+        // Body text — may flow across multiple pages
+        if !doc.bodyText.isEmpty {
+            let attrs = makeAttrs(fontSize: 10, bold: false)
+            let attrStr = NSAttributedString(string: doc.bodyText, attributes: attrs)
+            let framesetter = CTFramesetterCreateWithAttributedString(attrStr)
+            var charOffset = 0
+            let totalChars = doc.bodyText.utf16.count
+
+            while charOffset < totalChars {
+                let availH = y - (M + 20)
+                if availH < 20 {
+                    // No room on this page — start a new one
+                    drawPageNumber(ctx: ctx, number: pageNumber)
+                    ctx.endPDFPage()
+                    pageNumber += 1
+                    ctx.beginPDFPage(nil)
+                    y = H - M
+                    continue
+                }
+
+                let rect = CGRect(x: M, y: M + 20, width: cw, height: availH)
+                let path = CGPath(rect: rect, transform: nil)
+                let cfRange = CFRangeMake(charOffset, 0)
+                let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
+                CTFrameDraw(frame, ctx)
+
+                let visible = CTFrameGetVisibleStringRange(frame)
+                if visible.length == 0 { break }
+                charOffset += visible.length
+
+                if charOffset < totalChars {
+                    // Text overflowed — new page
+                    drawPageNumber(ctx: ctx, number: pageNumber)
+                    ctx.endPDFPage()
+                    pageNumber += 1
+                    ctx.beginPDFPage(nil)
+                    y = H - M
+                } else {
+                    // All text rendered; estimate remaining y space for note placement
+                    // Use a conservative estimate: assume text filled the rect
+                    y = M + 20 // set y to bottom; note goes on next page for cleanliness
+                }
+            }
+        }
+
+        drawPageNumber(ctx: ctx, number: pageNumber)
+        ctx.endPDFPage()
+        pageNumber += 1
+
+        // ── Research note page (if any) ─────────────────────────────────────
+        if let note = doc.noteText, !note.isEmpty {
+            ctx.beginPDFPage(nil)
+            var ny = H - M
+
+            // Note header banner
+            ctx.setFillColor(CGColor(gray: 0.93, alpha: 1))
+            ctx.fill(CGRect(x: M, y: ny - 28, width: cw, height: 28))
+            draw("Research Note", in: ctx,
+                 rect: CGRect(x: M + 8, y: ny - 22, width: cw - 16, height: 18),
+                 fontSize: 11, bold: true, gray: 0.2)
+            ny -= 36
+
+            // Citation reminder
+            let shortCit = cit.count > 100 ? String(cit.prefix(100)) + "…" : cit
+            draw(shortCit, in: ctx,
+                 rect: CGRect(x: M, y: ny - 12, width: cw, height: 12),
+                 fontSize: 8, bold: false, gray: 0.5)
+            ny -= 20
+
+            drawHRule(ctx: ctx, y: ny, gray: 0.7, thickness: 0.3)
+            ny -= 12
+
+            // Note body text
+            let attrs = makeAttrs(fontSize: 11, bold: false)
+            let attrStr = NSAttributedString(string: note, attributes: attrs)
+            let framesetter = CTFramesetterCreateWithAttributedString(attrStr)
+            let rect = CGRect(x: M, y: M + 20, width: cw, height: ny - M - 20)
+            let path = CGPath(rect: rect, transform: nil)
+            let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), path, nil)
+            CTFrameDraw(frame, ctx)
+
+            drawPageNumber(ctx: ctx, number: pageNumber)
+            ctx.endPDFPage()
+            pageNumber += 1
+        }
     }
 
     // MARK: - Text Drawing
@@ -212,24 +265,11 @@ final class PDFCollectionExporter: CollectionExporter {
         in ctx: CGContext,
         rect: CGRect,
         fontSize: CGFloat,
-        bold: Bool
+        bold: Bool,
+        gray: CGFloat = 0
     ) {
         guard !text.isEmpty, rect.height > 0, rect.width > 0 else { return }
-
-        let fontName = bold ? "Helvetica-Bold" : "Helvetica"
-        let font: CTFont
-        if let cgFont = CGFont(fontName as CFString) {
-            font = CTFontCreateWithGraphicsFont(cgFont, fontSize, nil, nil)
-        } else {
-            font = CTFontCreateWithName("Helvetica" as CFString, fontSize, nil)
-        }
-
-        let attrs: [NSAttributedString.Key: Any] = [
-            NSAttributedString.Key(kCTFontAttributeName as String): font,
-            NSAttributedString.Key(kCTForegroundColorAttributeName as String):
-                CGColor(gray: 0, alpha: 1)
-        ]
-
+        let attrs = makeAttrs(fontSize: fontSize, bold: bold, gray: gray)
         let attrStr = NSAttributedString(string: text, attributes: attrs)
         let framesetter = CTFramesetterCreateWithAttributedString(attrStr)
         let path = CGPath(rect: rect, transform: nil)
@@ -237,11 +277,45 @@ final class PDFCollectionExporter: CollectionExporter {
         CTFrameDraw(frame, ctx)
     }
 
-    private func drawPageNumber(ctx: CGContext, number: Int) {
+    private func measureHeight(_ text: String, width: CGFloat, fontSize: CGFloat, bold: Bool) -> CGFloat {
+        guard !text.isEmpty else { return 0 }
+        let attrs = makeAttrs(fontSize: fontSize, bold: bold)
+        let attrStr = NSAttributedString(string: text, attributes: attrs)
+        let framesetter = CTFramesetterCreateWithAttributedString(attrStr)
+        let constraint = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+        let size = CTFramesetterSuggestFrameSizeWithConstraints(
+            framesetter, CFRangeMake(0, 0), nil, constraint, nil)
+        return ceil(size.height) + 4
+    }
+
+    private func makeAttrs(fontSize: CGFloat, bold: Bool, gray: CGFloat = 0) -> [NSAttributedString.Key: Any] {
+        let fontName = bold ? "Helvetica-Bold" : "Helvetica"
+        let font: CTFont
+        if let cgFont = CGFont(fontName as CFString) {
+            font = CTFontCreateWithGraphicsFont(cgFont, fontSize, nil, nil)
+        } else {
+            font = CTFontCreateWithName("Helvetica" as CFString, fontSize, nil)
+        }
+        return [
+            NSAttributedString.Key(kCTFontAttributeName as String): font,
+            NSAttributedString.Key(kCTForegroundColorAttributeName as String): CGColor(gray: gray, alpha: 1)
+        ]
+    }
+
+    private func drawHRule(ctx: CGContext, y: CGFloat, gray: CGFloat, thickness: CGFloat) {
         let M = Self.margin, W = Self.pageWidth
+        ctx.setStrokeColor(CGColor(gray: gray, alpha: 1))
+        ctx.setLineWidth(thickness)
+        ctx.move(to: CGPoint(x: M, y: y))
+        ctx.addLine(to: CGPoint(x: W - M, y: y))
+        ctx.strokePath()
+    }
+
+    private func drawPageNumber(ctx: CGContext, number: Int) {
+        let W = Self.pageWidth, M = Self.margin
         draw("\(number)", in: ctx,
              rect: CGRect(x: W / 2 - 20, y: M / 2 - 8, width: 40, height: 14),
-             fontSize: 10, bold: false)
+             fontSize: 10, bold: false, gray: 0.5)
     }
 
     // MARK: - Helpers

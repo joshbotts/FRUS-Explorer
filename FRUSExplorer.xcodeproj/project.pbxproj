@@ -196,6 +196,8 @@
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
 		AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
+		AA22BB01CC03DD04EE2219 /* MacCollectionManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */; };
+		AA22BB01CC03DD04EE221A /* MacCollectionManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */; };
 		AA22BB01CC03DD04EE2216 /* CollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2215 /* CollectionTests.swift */; };
 		AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */; };
 		AA23BB01CC03DD04EE2302 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */; };
@@ -399,6 +401,7 @@
 		AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacCollectionManagerView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2215 /* CollectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionTests.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARACatalogClient.swift; sourceTree = "<group>"; };
@@ -719,6 +722,7 @@
 				AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */,
 				AA22BB01CC03DD04EE2209 /* CollectionListView.swift */,
 				AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */,
+				AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */,
 			);
 			path = Collections;
 			sourceTree = "<group>";
@@ -1064,6 +1068,7 @@
 				AA22BB01CC03DD04EE2207 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */,
+				AA22BB01CC03DD04EE2219 /* MacCollectionManagerView.swift in Sources */,
 				AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */,
 				AA23BB01CC03DD04EE2304 /* NARACatalogClient.swift in Sources */,
 				AA50BB01CC03DD04EE5011 /* NARAAPIKeyStore.swift in Sources */,
@@ -1178,6 +1183,7 @@
 				AA22BB01CC03DD04EE2208 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */,
+				AA22BB01CC03DD04EE221A /* MacCollectionManagerView.swift in Sources */,
 				AA23BB01CC03DD04EE2302 /* SourceNoteParser.swift in Sources */,
 				AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */,
 				AA50BB01CC03DD04EE5012 /* NARAAPIKeyStore.swift in Sources */,
