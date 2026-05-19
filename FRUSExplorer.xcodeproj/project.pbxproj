@@ -162,6 +162,10 @@
 		AA18BB01CC03DD04EE1805 /* CrossReferenceGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18BB01CC03DD04EE1804 /* CrossReferenceGraphView.swift */; };
 		AA18BB01CC03DD04EE1806 /* CrossReferenceGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18BB01CC03DD04EE1804 /* CrossReferenceGraphView.swift */; };
 		AA18BB01CC03DD04EE1808 /* CrossReferenceGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18BB01CC03DD04EE1807 /* CrossReferenceGraphTests.swift */; };
+		AA18BB01CC03DD04EE180A /* CrossReferenceGraphWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18BB01CC03DD04EE1809 /* CrossReferenceGraphWindowView.swift */; };
+		AA18BB01CC03DD04EE180B /* CrossReferenceGraphWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18BB01CC03DD04EE1809 /* CrossReferenceGraphWindowView.swift */; };
+		AA18BB01CC03DD04EE180D /* VolumeConnectionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18BB01CC03DD04EE180C /* VolumeConnectionGraphView.swift */; };
+		AA18BB01CC03DD04EE180E /* VolumeConnectionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18BB01CC03DD04EE180C /* VolumeConnectionGraphView.swift */; };
 		AA19BB01CC03DD04EE1902 /* SummarizationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA19BB01CC03DD04EE1901 /* SummarizationModels.swift */; };
 		AA19BB01CC03DD04EE1903 /* SummarizationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA19BB01CC03DD04EE1901 /* SummarizationModels.swift */; };
 		AA19BB01CC03DD04EE1905 /* SummarizationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA19BB01CC03DD04EE1904 /* SummarizationProvider.swift */; };
@@ -379,6 +383,8 @@
 		AA18BB01CC03DD04EE1801 /* CrossReferenceGraphViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CrossReferenceGraphViewModel.swift; sourceTree = "<group>"; };
 		AA18BB01CC03DD04EE1804 /* CrossReferenceGraphView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CrossReferenceGraphView.swift; sourceTree = "<group>"; };
 		AA18BB01CC03DD04EE1807 /* CrossReferenceGraphTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CrossReferenceGraphTests.swift; sourceTree = "<group>"; };
+		AA18BB01CC03DD04EE1809 /* CrossReferenceGraphWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CrossReferenceGraphWindowView.swift; sourceTree = "<group>"; };
+		AA18BB01CC03DD04EE180C /* VolumeConnectionGraphView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VolumeConnectionGraphView.swift; sourceTree = "<group>"; };
 		AA19BB01CC03DD04EE1901 /* SummarizationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationModels.swift; sourceTree = "<group>"; };
 		AA19BB01CC03DD04EE1904 /* SummarizationProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SummarizationProvider.swift; sourceTree = "<group>"; };
 		AA19BB01CC03DD04EE1907 /* AppleIntelligenceProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceProvider.swift; sourceTree = "<group>"; };
@@ -688,6 +694,8 @@
 				AA17BB01CC03DD04EE1704 /* CrossReferenceStore.swift */,
 				AA18BB01CC03DD04EE1801 /* CrossReferenceGraphViewModel.swift */,
 				AA18BB01CC03DD04EE1804 /* CrossReferenceGraphView.swift */,
+				AA18BB01CC03DD04EE1809 /* CrossReferenceGraphWindowView.swift */,
+				AA18BB01CC03DD04EE180C /* VolumeConnectionGraphView.swift */,
 			);
 			path = CrossReference;
 			sourceTree = "<group>";
@@ -1063,6 +1071,8 @@
 				AA17BB01CC03DD04EE1705 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1802 /* CrossReferenceGraphViewModel.swift in Sources */,
 				AA18BB01CC03DD04EE1805 /* CrossReferenceGraphView.swift in Sources */,
+				AA18BB01CC03DD04EE180A /* CrossReferenceGraphWindowView.swift in Sources */,
+				AA18BB01CC03DD04EE180D /* VolumeConnectionGraphView.swift in Sources */,
 				AA19BB01CC03DD04EE1902 /* SummarizationModels.swift in Sources */,
 				AA19BB01CC03DD04EE1905 /* SummarizationProvider.swift in Sources */,
 				AA19BB01CC03DD04EE1908 /* AppleIntelligenceProvider.swift in Sources */,
@@ -1174,6 +1184,8 @@
 				AA17BB01CC03DD04EE1706 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1803 /* CrossReferenceGraphViewModel.swift in Sources */,
 				AA18BB01CC03DD04EE1806 /* CrossReferenceGraphView.swift in Sources */,
+				AA18BB01CC03DD04EE180B /* CrossReferenceGraphWindowView.swift in Sources */,
+				AA18BB01CC03DD04EE180E /* VolumeConnectionGraphView.swift in Sources */,
 				AA19BB01CC03DD04EE1903 /* SummarizationModels.swift in Sources */,
 				AA19BB01CC03DD04EE1906 /* SummarizationProvider.swift in Sources */,
 				AA19BB01CC03DD04EE1909 /* AppleIntelligenceProvider.swift in Sources */,
