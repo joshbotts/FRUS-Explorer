@@ -98,8 +98,6 @@ struct MainWindowView: View {
         .toolbar { mainToolbar }
         .sheet(isPresented: $showSearchSheet) {
             SearchSheet(navigationPath: $navigationPath)
-                // Minimum frame makes the sheet resizable on macOS.
-                .frame(minWidth: 640, minHeight: 480)
         }
         // Consume pending navigation from cross-reference taps and person mention search.
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
