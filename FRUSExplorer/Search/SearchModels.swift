@@ -251,7 +251,7 @@ public enum IndexingStage: String, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 51: initial implementation
-public struct IndexingProgressUpdate: Sendable {
+public struct IndexingProgressUpdate: Sendable, Equatable {
     /// The volume currently being indexed.
     public let volumeId: String
     /// The current pipeline stage.
