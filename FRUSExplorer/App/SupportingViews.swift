@@ -27,6 +27,7 @@ struct ResearchStripView: View {
     @Binding var showCitationPopover: Bool
 
     @Environment(AppState.self) private var appState
+    @Environment(\.openWindow) private var openWindow
 
     @State private var showAddToCollection: Bool = false
     @State private var showAddNote: Bool = false
@@ -71,6 +72,17 @@ struct ResearchStripView: View {
                     systemImage: "tag",
                     isDisabled: isDisabled
                 ) { showTagPicker = true }
+
+                ResearchStripButton(
+                    title: "Graph",
+                    systemImage: "point.3.connected.trianglepath.dotted",
+                    isDisabled: isDisabled
+                ) {
+                    if let entry {
+                        appState.currentGraphEntry = entry
+                        openWindow(id: "frus.crossReferenceGraph")
+                    }
+                }
 
                 // Cite — opens citation popover
                 Button {
