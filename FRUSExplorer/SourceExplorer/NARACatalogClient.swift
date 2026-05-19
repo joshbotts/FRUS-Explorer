@@ -104,7 +104,7 @@ public actor NARACatalogClient {
     ///
     /// No API key is required. The URL opens to a pre-filtered search on the
     /// RG-59 Central Foreign Policy Files parent description.
-    public func resolveRG59CentralFiles(fileIdentifier: String) -> URL {
+    public nonisolated func resolveRG59CentralFiles(fileIdentifier: String) -> URL {
         var components = URLComponents(string: "\(Self.catalogBase)/search")!
         components.queryItems = [
             URLQueryItem(name: "q", value: fileIdentifier),

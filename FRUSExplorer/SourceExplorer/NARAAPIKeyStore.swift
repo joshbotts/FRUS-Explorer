@@ -24,16 +24,17 @@ import Security
 /// user reinstalls the app or clears `UserDefaults`.
 ///
 /// ## Thread safety
-/// All public methods are safe to call from the main thread. The Security framework
-/// calls are inherently serialised per-process for the same keychain item.
+/// Isolated to the `@MainActor`. The Security framework calls are inherently
+/// serialised per-process for the same keychain item.
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding (stub for `SettingsNARAPane`)
+@MainActor
 public final class NARAAPIKeyStore {
 
     // MARK: - Singleton
 
-    public static nonisolated(unsafe) let shared = NARAAPIKeyStore()
+    public static let shared = NARAAPIKeyStore()
 
     // MARK: - Constants
 

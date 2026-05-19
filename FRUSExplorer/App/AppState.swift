@@ -224,7 +224,7 @@ final class AppState {
     /// (the prior Task is abandoned; the stream is single-consumer by design).
     func connectIndexingProgress(pipeline: IndexingPipeline) {
         Task { @MainActor [weak self] in
-            for await update in await pipeline.progressStream {
+            for await update in pipeline.progressStream {
                 guard let self else { return }
                 if update.stage == .complete {
                     self.currentIndexingProgress = nil

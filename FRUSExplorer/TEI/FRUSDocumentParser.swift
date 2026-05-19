@@ -373,7 +373,7 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
     // MARK: - Helpers
 
     private func popFrame() {
-        guard var frame = stack.popLast() else { return }
+        guard let frame = stack.popLast() else { return }
         let rawTitle = frame.headParts.joined().trimmingCharacters(in: .whitespacesAndNewlines)
         let title = rawTitle.isEmpty ? humanTitle(for: frame.divType) : rawTitle
         let section = VolumeSection(

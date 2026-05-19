@@ -1222,7 +1222,7 @@ private struct SettingsNARAPane: View {
         let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         NARAAPIKeyStore.shared.storeKey(trimmed)
         withAnimation { isSaved = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { isSaved = false }
+        Task { try? await Task.sleep(for: .seconds(2)); isSaved = false }
     }
 
     private func removeKey() {

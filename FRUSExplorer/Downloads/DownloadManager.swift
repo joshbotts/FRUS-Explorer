@@ -302,9 +302,9 @@ public actor DownloadManager {
             activeDownloads[volumeId] = Task {
                 do {
                     try await self.performDownload(volumeId: volumeId, downloadUrl: url)
-                    await self.downloadDidSucceed(volumeId: volumeId)
+                    self.downloadDidSucceed(volumeId: volumeId)
                 } catch {
-                    await self.downloadDidFail(volumeId: volumeId, error: error)
+                    self.downloadDidFail(volumeId: volumeId, error: error)
                 }
             }
         }
