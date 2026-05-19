@@ -84,7 +84,7 @@ final class MacSearchViewModel {
     var scopeNotes: Bool = true {
         didSet {
             parameters.includeNotes = scopeNotes
-            filterVM.includeNotes = scopeNotes
+            filterVM?.includeNotes = scopeNotes
             parametersVersion += 1
         }
     }
@@ -92,7 +92,7 @@ final class MacSearchViewModel {
     var scopeSummaries: Bool = true {
         didSet {
             parameters.includeSummaries = scopeSummaries
-            filterVM.includeSummaries = scopeSummaries
+            filterVM?.includeSummaries = scopeSummaries
             parametersVersion += 1
         }
     }
@@ -112,9 +112,9 @@ final class MacSearchViewModel {
     // MARK: - Advanced Filter ViewModel
 
     /// Backing view model for `SearchFilterView` presented as a sheet.
-    /// Caller must invoke `syncToFilterVM()` before presenting the sheet and
-    /// `applyAdvancedFilters()` after it is dismissed.
-    var filterVM: SearchViewModel = SearchViewModel()
+    /// Created lazily on the first call to `syncToFilterVM(searchService:subjectTagStore:)`.
+    /// Nil until then (and nil if `searchService` is not yet available).
+    var filterVM: SearchViewModel? = nil
 
     // MARK: - Sort
 
@@ -201,13 +201,13 @@ final class MacSearchViewModel {
 
     func setDocumentTypeFilter(_ filter: DocumentTypeFilter) {
         parameters.documentTypeFilter = filter
-        filterVM.documentTypeFilter = filter
+        filterVM?.documentTypeFilter = filter
         parametersVersion += 1
     }
 
     func clearDateFilter() {
         parameters.dateRange = nil
-        filterVM.dateRangeEnabled = false
+        filterVM?.dateRangeEnabled = false
         parametersVersion += 1
     }
 
@@ -224,8 +224,14 @@ final class MacSearchViewModel {
     // MARK: - Advanced Filter Bridge
 
     /// Copies current `parameters` state into `filterVM` so the filter sheet
-    /// shows the currently active values when presented.
-    func syncToFilterVM() {
+    /// shows the currently active values when presented. Creates `filterVM` on
+    /// first call if `searchService` is available.
+    func syncToFilterVM(searchService: SearchService?, subjectTagStore: SubjectTagStore) {
+        if filterVM == nil, let svc = searchService {
+            filterVM = SearchViewModel(searchService: svc, subjectTagStore: subjectTagStore)
+        }
+        guard let filterVM else { return }
+
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
         fmt.locale = Locale(identifier: "en_US_POSIX")
@@ -255,6 +261,8 @@ final class MacSearchViewModel {
     /// Copies `filterVM` state back into `parameters` and triggers a re-search.
     /// Call this in the `onDismiss` handler of the `SearchFilterView` sheet.
     func applyAdvancedFilters() {
+        guard let filterVM else { return }
+
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
         fmt.locale = Locale(identifier: "en_US_POSIX")

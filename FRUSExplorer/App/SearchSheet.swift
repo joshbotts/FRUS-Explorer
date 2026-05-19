@@ -101,7 +101,9 @@ struct SearchSheet: View {
         }
         .sheet(isPresented: $showAdvancedFilters,
                onDismiss: { searchVM.applyAdvancedFilters() }) {
-            SearchFilterView(vm: searchVM.filterVM)
+            if let filterVM = searchVM.filterVM {
+                SearchFilterView(vm: filterVM)
+            }
         }
     }
 
@@ -193,7 +195,7 @@ struct SearchSheet: View {
             Divider().frame(height: 16)
 
             Button {
-                searchVM.syncToFilterVM()
+                searchVM.syncToFilterVM(searchService: appState.searchService, subjectTagStore: appState.subjectTagStore)
                 showAdvancedFilters = true
             } label: {
                 HStack(spacing: 3) {
