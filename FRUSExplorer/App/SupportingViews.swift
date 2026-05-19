@@ -852,12 +852,18 @@ struct GlossDetailSheet: View {
 /// Standalone macOS window listing all FRUS subseries and their volumes.
 ///
 /// Uses a `NavigationSplitView`: subseries in the sidebar, volumes in the detail
-/// column. Selecting a volume pushes a document list in the detail column.
-/// Selecting a document sets `AppState.pendingBrowseDocument`, which
-/// `MainWindowView.onChange` consumes and pushes onto the main window's navigation stack.
+/// column. Selecting a volume opens `CorpusVolumeDetailSheet` which shows the volume
+/// structure (chapters, compilations) and handles download/indexing when needed.
 ///
-/// Corpus data comes entirely from `AppState.manifestStore` (bundled + live manifest);
-/// no download is required to browse the catalogue.
+/// ## Sidebar controls
+/// - **Sort**: toggle between newest-first (descending) and oldest-first (ascending)
+/// - **Filter**: hide subseries that have no volumes downloaded to this device
+///
+/// Version history:
+///   1.0 — initial implementation
+///   1.1 — sort and filter sidebar controls; volume-structure sheet with in-app
+///          download/indexing; `CorpusVolumeDocumentListView` replaced by
+///          `CorpusVolumeDetailSheet` + `CorpusSectionDocumentListView`
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -865,6 +871,8 @@ struct CorpusBrowserWindowView: View {
     @State private var selectedSubseries: String? = nil
     @State private var selectedVolume: VolumeManifestEntry? = nil
     @State private var searchText: String = ""
+    @State private var sortDescending: Bool = true
+    @State private var filterDownloaded: Bool = false
 
     private var allEntries: [VolumeManifestEntry] {
         appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -872,9 +880,21 @@ struct CorpusBrowserWindowView: View {
 
     private var subseries: [String] {
         var seen = Set<String>()
-        return allEntries.compactMap { e in
+        var all = allEntries.compactMap { e in
             seen.insert(e.subseries).inserted ? e.subseries : nil
-        }.sorted()
+        }
+        if filterDownloaded {
+            let dm = appState.downloadManager
+            all = all.filter { sub in
+                allEntries.filter { $0.subseries == sub }
+                    .contains { dm?.isVolumeDownloaded($0.volumeId) ?? false }
+            }
+        }
+        return all.sorted {
+            let a = Int(String($0.prefix(4))) ?? 0
+            let b = Int(String($1.prefix(4))) ?? 0
+            return sortDescending ? a > b : a < b
+        }
     }
 
     private func volumes(for sub: String) -> [VolumeManifestEntry] {
@@ -883,23 +903,29 @@ struct CorpusBrowserWindowView: View {
 
     var body: some View {
         NavigationSplitView {
-            // Sidebar: subseries list
             List(selection: $selectedSubseries) {
                 ForEach(subseries, id: \.self) { sub in
-                    let count = volumes(for: sub).count
-                    HStack {
-                        Text(sub)
-                        Spacer()
-                        Text("\(count)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .tag(sub)
+                    subseriesRow(sub).tag(sub)
                 }
             }
             .listStyle(.sidebar)
             .navigationTitle("Corpus Browser")
-            .navigationSplitViewColumnWidth(min: 140, ideal: 160)
+            .navigationSplitViewColumnWidth(min: 150, ideal: 170)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { sortDescending.toggle() } label: {
+                        Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
+                    }
+                    .help(sortDescending ? "Sort oldest first" : "Sort newest first")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button { filterDownloaded.toggle() } label: {
+                        Image(systemName: filterDownloaded
+                              ? "arrow.down.circle.fill" : "arrow.down.circle")
+                    }
+                    .help(filterDownloaded ? "Show all subseries" : "Show downloaded only")
+                }
+            }
         } detail: {
             if let sub = selectedSubseries {
                 volumeList(for: sub)
@@ -911,7 +937,25 @@ struct CorpusBrowserWindowView: View {
                 )
             }
         }
-        .frame(minWidth: 520, minHeight: 440)
+        .frame(minWidth: 540, minHeight: 440)
+    }
+
+    private func subseriesRow(_ sub: String) -> some View {
+        let vols = volumes(for: sub)
+        let dlCount = vols.filter {
+            appState.downloadManager?.isVolumeDownloaded($0.volumeId) ?? false
+        }.count
+        return HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(sub).font(.system(size: 13))
+                Text(dlCount > 0
+                     ? "\(dlCount)/\(vols.count) downloaded"
+                     : "\(vols.count) volumes")
+                    .font(.system(size: 10))
+                    .foregroundStyle(dlCount > 0 ? Color.secondary : Color.secondary.opacity(0.5))
+            }
+            Spacer()
+        }
     }
 
     @ViewBuilder
@@ -937,31 +981,315 @@ struct CorpusBrowserWindowView: View {
                             .font(.system(size: 10))
                             .foregroundStyle(.green)
                             .labelStyle(.iconOnly)
+                    } else if appState.downloadQueue.contains(vol.volumeId) {
+                        Label("Downloading", systemImage: "arrow.down.circle")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.blue)
+                            .labelStyle(.iconOnly)
                     }
                 }
             }
             .padding(.vertical, 2)
             .contentShape(Rectangle())
-            .onTapGesture {
-                selectedVolume = vol
-            }
+            .onTapGesture { selectedVolume = vol }
         }
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
         .navigationTitle(subseries)
         .sheet(item: $selectedVolume) { vol in
-            CorpusVolumeDocumentListView(volume: vol)
+            CorpusVolumeDetailSheet(volume: vol)
         }
     }
 }
 
-// MARK: - CorpusVolumeDocumentListView
+// MARK: - CorpusVolumeDetailSheet
 
-/// Sheet presenting the document list for a volume selected in the corpus browser.
-/// Tapping a document posts it to `AppState.pendingBrowseDocument` so the main window
-/// navigates to it, then dismisses this sheet.
-private struct CorpusVolumeDocumentListView: View {
+/// Sheet showing a volume's structural overview (chapters, compilations) in the corpus browser.
+///
+/// ## Phase machine
+/// ```
+/// notDownloaded ──(Download)──► downloading
+/// downloading ──(complete)──► indexing   [app auto-indexes after download]
+/// notIndexed ──(Index Now)──► indexing
+/// indexing ──(pipeline done)──► loadingStructure ──► ready
+/// ready ──(tap section)──► CorpusSectionDocumentListView sheet
+/// ```
+///
+/// Download progress is inferred from `AppState.downloadQueue` transitions.
+/// Indexing progress is read from `AppState.currentIndexingProgress`.
+/// Both are `@Observable` properties so the view re-renders automatically.
+private struct CorpusVolumeDetailSheet: View {
     let volume: VolumeManifestEntry
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    enum Phase {
+        case notDownloaded, downloading, indexing, loadingStructure, notIndexed
+        case ready(VolumeStructure)
+        case error(String)
+    }
+
+    @State private var phase: Phase = .notDownloaded
+    @State private var liveProgress: IndexingProgressUpdate? = nil
+    @State private var selectedSection: VolumeSection? = nil
+    private let parser = FRUSDocumentParser()
+
+    var body: some View {
+        NavigationStack {
+            phaseContent
+                .navigationTitle(volume.title)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { dismiss() }
+                    }
+                }
+        }
+        .frame(minWidth: 500, minHeight: 440)
+        .task { await determinePhase() }
+        // Download completion: queue no longer contains volumeId AND file now exists → auto-index begins
+        .onChange(of: appState.downloadQueue) { _, queue in
+            if case .downloading = phase,
+               !queue.contains(volume.volumeId),
+               appState.downloadManager?.isVolumeDownloaded(volume.volumeId) == true {
+                phase = .indexing
+                liveProgress = nil
+            }
+        }
+        // Indexing progress: update display; when complete → load structure
+        .onChange(of: appState.currentIndexingProgress) { _, progress in
+            guard case .indexing = phase else { return }
+            if let progress, progress.volumeId == volume.volumeId {
+                liveProgress = progress
+                if progress.stage == .complete { Task { await loadStructure() } }
+            } else if progress == nil {
+                // Stream ended (another volume completed) — check if ours is now indexed
+                Task { await loadStructure() }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var phaseContent: some View {
+        switch phase {
+        case .notDownloaded:    notDownloadedView
+        case .downloading:      downloadingView
+        case .indexing:         indexingView
+        case .loadingStructure:
+            ProgressView("Loading contents…")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .notIndexed:       notIndexedView
+        case .ready(let s):     structureView(s)
+        case .error(let msg):
+            ContentUnavailableView(
+                "Error",
+                systemImage: "exclamationmark.triangle",
+                description: Text(msg)
+            )
+        }
+    }
+
+    // MARK: Phase logic
+
+    private func determinePhase() async {
+        if appState.downloadQueue.contains(volume.volumeId) { phase = .downloading; return }
+        if let p = appState.currentIndexingProgress, p.volumeId == volume.volumeId {
+            phase = .indexing; liveProgress = p; return
+        }
+        guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volume.volumeId) else {
+            phase = .notDownloaded; return
+        }
+        guard let pipeline = appState.indexingPipeline else { phase = .notIndexed; return }
+        if (try? pipeline.isVolumeIndexed(volume.volumeId)) == true {
+            await loadStructure()
+        } else {
+            phase = .notIndexed
+        }
+    }
+
+    private func loadStructure() async {
+        guard let dm = appState.downloadManager else { return }
+        phase = .loadingStructure
+        let url = dm.volumeURL(for: volume.volumeId)
+        do {
+            let structure = try await parser.parseVolumeStructure(volumeURL: url)
+            phase = .ready(structure)
+        } catch {
+            phase = .error(error.localizedDescription)
+        }
+    }
+
+    // MARK: Phase views
+
+    private var notDownloadedView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "arrow.down.circle")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("Volume Not Downloaded")
+                .font(.headline)
+            if volume.sizeBytes > 0 {
+                Text("Approx. \(formattedMB(volume.sizeBytes))")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Text("Download this volume to browse its chapters, compilations, and documents.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+            Button {
+                guard let dm = appState.downloadManager else { return }
+                phase = .downloading
+                Task { await dm.enqueueDownload(volumeId: volume.volumeId,
+                                                downloadUrl: volume.downloadUrl) }
+            } label: {
+                Label("Download Volume", systemImage: "arrow.down.circle")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(appState.downloadManager == nil)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    private var downloadingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Downloading…")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Text("Indexing will begin automatically when the download completes.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    private var indexingView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Indexing Volume", systemImage: "arrow.triangle.2.circlepath")
+                .font(.headline)
+            if let prog = liveProgress, prog.totalDocuments > 0 {
+                ProgressView(value: Double(prog.completedDocuments),
+                             total: Double(prog.totalDocuments))
+                HStack {
+                    Text(indexingStageLabel(prog.stage))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(prog.completedDocuments) / \(prog.totalDocuments)")
+                        .font(.callout.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Preparing…")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var notIndexedView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "magnifyingglass.circle")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("Index Required")
+                .font(.headline)
+            Text("This volume has been downloaded but must be indexed before you can browse its documents.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+            Button {
+                guard let pipeline = appState.indexingPipeline else { return }
+                phase = .indexing
+                liveProgress = nil
+                Task {
+                    do {
+                        try await pipeline.indexVolume(volume.volumeId)
+                        await loadStructure()
+                    } catch {
+                        phase = .error(error.localizedDescription)
+                    }
+                }
+            } label: {
+                Label("Index Now", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    @ViewBuilder
+    private func structureView(_ structure: VolumeStructure) -> some View {
+        if structure.isEmpty {
+            ContentUnavailableView(
+                "No Contents",
+                systemImage: "doc.text",
+                description: Text("No structural sections were found in this volume.")
+            )
+        } else {
+            List {
+                Section("Contents") {
+                    ForEach(structure.sections) { section in
+                        Button {
+                            selectedSection = section
+                        } label: {
+                            SectionRowLabel(section: section)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .listStyle(.inset)
+            .sheet(item: $selectedSection) { section in
+                CorpusSectionDocumentListView(volume: volume, section: section) { doc in
+                    appState.pendingBrowseDocument = doc
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    // MARK: Helpers
+
+    private func formattedMB(_ bytes: Int) -> String {
+        String(format: "%.0f MB", Double(bytes) / 1_000_000)
+    }
+
+    private func indexingStageLabel(_ stage: IndexingStage) -> String {
+        switch stage {
+        case .parsing:         return "Parsing documents…"
+        case .extractingDates: return "Extracting dates…"
+        case .indexingPersons: return "Indexing persons…"
+        case .buildingFTS5:    return "Building search index…"
+        case .complete:        return "Complete"
+        }
+    }
+}
+
+// MARK: - CorpusSectionDocumentListView
+
+/// Sheet presenting the document list for a single section (chapter / compilation)
+/// selected from `CorpusVolumeDetailSheet`.
+///
+/// Tapping a document calls `onDocumentSelected`, which posts the entry to
+/// `AppState.pendingBrowseDocument` and dismisses all corpus browser sheets so the
+/// main window can navigate to the document.
+private struct CorpusSectionDocumentListView: View {
+    let volume: VolumeManifestEntry
+    let section: VolumeSection
+    let onDocumentSelected: (DocumentBrowserEntry) -> Void
+
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
@@ -972,41 +1300,31 @@ private struct CorpusVolumeDocumentListView: View {
         NavigationStack {
             Group {
                 if isLoading {
-                    ProgressView("Loading documents…")
+                    ProgressView("Loading…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if documents.isEmpty {
                     ContentUnavailableView(
-                        "Volume Not Downloaded",
-                        systemImage: "arrow.down.circle",
-                        description: Text("Download this volume in Settings → Volume Management to browse its documents.")
+                        "No Documents",
+                        systemImage: "doc.text",
+                        description: Text("No indexed documents found in this section.")
                     )
                 } else {
                     List(documents, id: \.documentId) { doc in
                         Button {
-                            appState.pendingBrowseDocument = doc
                             dismiss()
+                            onDocumentSelected(doc)
                         } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                if let num = doc.documentNumber {
-                                    Text("Document \(num)")
-                                        .font(.system(size: 10))
-                                        .foregroundStyle(.secondary)
-                                }
-                                Text(doc.header.isEmpty ? doc.documentId : doc.header)
-                                    .font(.system(size: 12))
-                                    .lineLimit(2)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+                            DocumentRowLabel(doc: doc)
                         }
                         .buttonStyle(.plain)
                     }
                     .listStyle(.inset)
                 }
             }
-            .navigationTitle(volume.title)
+            .navigationTitle(section.title)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -1015,11 +1333,10 @@ private struct CorpusVolumeDocumentListView: View {
     }
 
     private func loadDocuments() async {
-        guard let pipeline = appState.indexingPipeline else {
-            isLoading = false
-            return
-        }
-        documents = (try? await pipeline.documents(forVolume: volume.volumeId)) ?? []
+        guard let pipeline = appState.indexingPipeline else { isLoading = false; return }
+        let all = (try? await pipeline.documents(forVolume: volume.volumeId)) ?? []
+        let sectionIds = Set(section.allDocumentIds)
+        documents = all.filter { sectionIds.contains($0.documentId) }
         isLoading = false
     }
 }
