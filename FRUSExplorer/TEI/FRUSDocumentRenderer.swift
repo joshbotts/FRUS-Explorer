@@ -172,8 +172,9 @@ public struct FRUSDocumentRenderer: View {
                 .font(.system(size: textSize.bodyFontSize))
 
         case .editorialNoteBlock(let children):
+            let normalizedEditorial = blockOrInlineNodes(children)
             VStack(alignment: .leading, spacing: 6) {
-                ForEach(Array(children.enumerated()), id: \.offset) { _, child in
+                ForEach(Array(normalizedEditorial.enumerated()), id: \.offset) { _, child in
                     AnyView(blockView(for: child))
                 }
             }
