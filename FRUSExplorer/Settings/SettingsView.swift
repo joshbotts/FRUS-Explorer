@@ -1306,10 +1306,17 @@ private struct MergeTagSheet: View {
 private struct SummarizationPromptsSettingsView: View {
 
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
     @Query(sort: \GeneratedSummary.lastModified, order: .reverse) private var allSummaries: [GeneratedSummary]
 
+    /// Non-nil when editing an existing user prompt.
     @State private var editingPrompt: SummarizationPrompt? = nil
+    /// Controls the new-prompt creation sheet.
+    @State private var showNewPromptSheet: Bool = false
+    /// When set, the new-prompt sheet opens pre-populated from this template
+    /// (used by "Use as Template" on standard prompts and "Duplicate" on user prompts).
+    @State private var newPromptInitialTemplate: PromptTemplate? = nil
 
     var body: some View {
         Form {
@@ -1326,6 +1333,30 @@ private struct SummarizationPromptsSettingsView: View {
         .frame(maxWidth: .infinity)
         .scrollIndicators(.visible)
         #endif
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    newPromptInitialTemplate = nil
+                    showNewPromptSheet = true
+                } label: {
+                    Label(String(localized: "settings.summarization.newPrompt.button",
+                                 defaultValue: "New Prompt"),
+                          systemImage: "plus")
+                }
+                .accessibilityLabel(
+                    String(localized: "settings.summarization.newPrompt.a11y",
+                           defaultValue: "Create a new summarization prompt")
+                )
+            }
+        }
+        // Sheet for editing an existing user prompt
+        .sheet(item: $editingPrompt) { prompt in
+            PromptEditorView(promptToEdit: prompt)
+        }
+        // Sheet for creating a new prompt (optionally pre-seeded from a template)
+        .sheet(isPresented: $showNewPromptSheet, onDismiss: { newPromptInitialTemplate = nil }) {
+            PromptEditorView(initialTemplate: newPromptInitialTemplate)
+        }
     }
 
     @ViewBuilder
@@ -1337,11 +1368,28 @@ private struct SummarizationPromptsSettingsView: View {
             Section(String(localized: "settings.summarization.standard.header",
                            defaultValue: "Standard Prompts")) {
                 ForEach(standard) { prompt in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(prompt.name).font(.callout)
-                        Text(summaryCountLabel(for: prompt))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(prompt.name).font(.callout)
+                            Text(summaryCountLabel(for: prompt))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button {
+                            newPromptInitialTemplate = templateFrom(prompt)
+                            showNewPromptSheet = true
+                        } label: {
+                            Text(String(localized: "settings.summarization.useAsTemplate",
+                                        defaultValue: "Use as Template"))
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(Color.accentColor)
+                        .accessibilityLabel(
+                            String(localized: "settings.summarization.useAsTemplate.a11y",
+                                   defaultValue: "Use \(prompt.name) as a template for a new prompt")
+                        )
                     }
                 }
             }
@@ -1351,7 +1399,7 @@ private struct SummarizationPromptsSettingsView: View {
                        defaultValue: "Your Prompts")) {
             if user.isEmpty {
                 Text(String(localized: "settings.summarization.user.empty",
-                            defaultValue: "No custom prompts yet."))
+                            defaultValue: "No custom prompts yet. Tap + to create one."))
                     .foregroundStyle(.secondary)
                     .font(.callout)
             } else {
@@ -1378,12 +1426,41 @@ private struct SummarizationPromptsSettingsView: View {
                         String(localized: "settings.summarization.prompt.a11y",
                                defaultValue: "Edit prompt \(prompt.name)")
                     )
+                    // Leading swipe: Duplicate (creates new prompt pre-seeded from this one)
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button {
+                            newPromptInitialTemplate = templateFrom(prompt)
+                            showNewPromptSheet = true
+                        } label: {
+                            Label(String(localized: "settings.summarization.duplicate",
+                                         defaultValue: "Duplicate"),
+                                  systemImage: "doc.on.doc")
+                        }
+                        .tint(.accentColor)
+                    }
                 }
                 .onDelete { offsets in
                     for i in offsets { modelContext.delete(user[i]) }
                 }
             }
         }
+    }
+
+    /// Builds a `PromptTemplate` value from any `SummarizationPrompt` for use-as-template flows.
+    private func templateFrom(_ prompt: SummarizationPrompt) -> PromptTemplate {
+        let fields: [StructuredSummarySchema.Field]
+        if case .structured(let schema) = prompt.responseFormat {
+            fields = schema.fields
+        } else {
+            fields = []
+        }
+        return PromptTemplate(
+            id: UUID(),
+            name: String(localized: "settings.summarization.copyOf",
+                         defaultValue: "Copy of \(prompt.name)"),
+            promptText: prompt.promptText,
+            fields: fields
+        )
     }
 
     @ViewBuilder
@@ -1404,8 +1481,6 @@ private struct SummarizationPromptsSettingsView: View {
             BackgroundSummarizationSettingsView()
         }
     }
-
-    @Environment(\.modelContext) private var modelContext
 
     private func summaryCountLabel(for prompt: SummarizationPrompt) -> String {
         let count = allSummaries.filter { $0.promptId == prompt.id }.count

@@ -462,6 +462,27 @@ struct StatusBarView: View {
             )
         }
 
+        if case .running(let processed, let total, let docId) =
+            appState.backgroundSummarizationProgress.state {
+            let progress: Double? = total > 0
+                ? Double(processed) / Double(total)
+                : nil
+            let label: String = {
+                if total == 0 {
+                    return "Summarizing…"
+                }
+                let base = "Summarizing \(processed)/\(total)"
+                if let id = docId { return "\(base) — \(id)" }
+                return base
+            }()
+            return ActiveTask(
+                label: label,
+                systemImage: "sparkles",
+                progress: progress,
+                eta: nil
+            )
+        }
+
         if !appState.downloadQueue.isEmpty {
             return ActiveTask(
                 label: "\(appState.downloadQueue.count) download\(appState.downloadQueue.count == 1 ? "" : "s") queued",

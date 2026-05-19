@@ -37,6 +37,9 @@ struct PromptEditorView: View {
     @Environment(\.dismiss) private var dismiss
 
     let promptToEdit: SummarizationPrompt?
+    /// When set and `promptToEdit == nil`, pre-populates the editor from this template
+    /// without showing the template picker sheet (used by "Use as Template" flows).
+    let initialTemplate: PromptTemplate?
 
     // MARK: - Editor State
 
@@ -49,8 +52,9 @@ struct PromptEditorView: View {
 
     // MARK: - Init
 
-    init(promptToEdit: SummarizationPrompt? = nil) {
+    init(promptToEdit: SummarizationPrompt? = nil, initialTemplate: PromptTemplate? = nil) {
         self.promptToEdit = promptToEdit
+        self.initialTemplate = initialTemplate
     }
 
     var body: some View {
@@ -127,6 +131,8 @@ struct PromptEditorView: View {
                         EditableField(name: $0.name, description: $0.description)
                     }
                 }
+            } else if let template = initialTemplate {
+                applyTemplate(template)
             } else {
                 showTemplatePicker = true
             }
@@ -172,6 +178,8 @@ struct PromptEditorView: View {
                         EditableField(name: $0.name, description: $0.description)
                     }
                 }
+            } else if let template = initialTemplate {
+                applyTemplate(template)
             } else {
                 showTemplatePicker = true
             }
