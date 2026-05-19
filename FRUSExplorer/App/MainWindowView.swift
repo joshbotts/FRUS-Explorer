@@ -98,8 +98,6 @@ struct MainWindowView: View {
         .toolbar { mainToolbar }
         .sheet(isPresented: $showSearchSheet) {
             SearchSheet(navigationPath: $navigationPath)
-                // Minimum frame makes the sheet resizable on macOS.
-                .frame(minWidth: 640, minHeight: 480)
         }
         // Consume pending navigation from cross-reference taps and person mention search.
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
@@ -177,6 +175,7 @@ struct MainWindowView: View {
 
             // Cross-reference graph — only when a document is loaded
             Button {
+                appState.currentGraphEntry = currentEntry
                 openWindow(id: "frus.crossReferenceGraph")
             } label: {
                 Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
@@ -207,6 +206,16 @@ struct MainWindowView: View {
                     CitationPopoverView(entry: entry)
                 }
             }
+
+            Divider().frame(height: 20)
+
+            // Collections window
+            Button {
+                openWindow(id: "frus.collections")
+            } label: {
+                Label("Collections", systemImage: "tray.2")
+            }
+            .keyboardShortcut("k", modifiers: [.command, .shift])
 
             Divider().frame(height: 20)
 

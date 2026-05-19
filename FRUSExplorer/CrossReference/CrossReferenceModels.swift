@@ -136,3 +136,29 @@ public struct CrossReferenceGraph: Sendable {
     /// Total number of edges (inbound + outbound).
     public var edgeCount: Int { inboundEdges.count + outboundEdges.count }
 }
+
+// MARK: - VolumeConnectionEdge
+
+/// A directed summary of cross-references between two FRUS volumes.
+///
+/// Produced by `CrossReferenceStore.volumeLevelConnections()`, which aggregates
+/// the document-level `cross_references` table by volume. Only cross-volume edges
+/// are included (same-volume references are stored with NULL `target_volume_id`
+/// and are excluded from the aggregation).
+///
+/// Version history:
+///   1.0 — Added for volume-level graph in CorpusBrowserWindowView
+public struct VolumeConnectionEdge: Sendable {
+    /// The volume containing the source documents.
+    public let sourceVolumeId: String
+    /// The volume containing the target documents.
+    public let targetVolumeId: String
+    /// Number of individual document-level cross-references from source to target.
+    public let count: Int
+
+    public init(sourceVolumeId: String, targetVolumeId: String, count: Int) {
+        self.sourceVolumeId = sourceVolumeId
+        self.targetVolumeId = targetVolumeId
+        self.count = count
+    }
+}

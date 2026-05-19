@@ -462,6 +462,27 @@ struct StatusBarView: View {
             )
         }
 
+        if case .running(let processed, let total, let docId) =
+            appState.backgroundSummarizationProgress.state {
+            let progress: Double? = total > 0
+                ? Double(processed) / Double(total)
+                : nil
+            let label: String = {
+                if total == 0 {
+                    return "Summarizing…"
+                }
+                let base = "Summarizing \(processed)/\(total)"
+                if let id = docId { return "\(base) — \(id)" }
+                return base
+            }()
+            return ActiveTask(
+                label: label,
+                systemImage: "sparkles",
+                progress: progress,
+                eta: nil
+            )
+        }
+
         if !appState.downloadQueue.isEmpty {
             return ActiveTask(
                 label: "\(appState.downloadQueue.count) download\(appState.downloadQueue.count == 1 ? "" : "s") queued",
@@ -490,6 +511,10 @@ struct CitationPopoverView: View {
 
     @Environment(AppState.self) private var appState
     @State private var selectedStyle: CitationPopoverStyle = .historyStateDotGov
+    /// Publication year extracted live from the volume's TEI `<publicationStmt><date>`.
+    /// Preferred over the manifest value, which may contain a coverage range rather
+    /// than the actual print year.
+    @State private var parsedPublicationYear: String? = nil
 
     private var volumeEntry: VolumeManifestEntry? {
         appState.manifestStore.entry(forVolumeId: entry.volumeId)
@@ -544,13 +569,8 @@ struct CitationPopoverView: View {
                     if !vol.editors.isEmpty {
                         metaRow("Volume editors", vol.editors.joined(separator: ", "))
                     }
-                    let pubYear: String = {
-                        guard let pd = vol.publicationDate else { return "n.d." }
-                        let t = pd.trimmingCharacters(in: .whitespaces)
-                        if t.count >= 4, Int(t.prefix(4)) != nil { return String(t.prefix(4)) }
-                        return "n.d."
-                    }()
-                    metaRow("Published", "Government Printing Office, \(pubYear)")
+                    let yr = effectiveYear(for: vol)
+                    metaRow("Published", "\(effectivePublisher(year: yr)), \(yr)")
                     if let docNum = entry.documentNumber {
                         metaRow("Document no.", docNum)
                     }
@@ -605,42 +625,157 @@ struct CitationPopoverView: View {
         }
         .padding(14)
         .frame(width: 440)
+        // Load the publication year from the volume's own TEI header when available.
+        // The bundled manifest may have a coverage range in publicationDate rather than
+        // the actual print year; the live XML is authoritative.
+        .task(id: entry.id) { await loadPublicationYear() }
     }
 
     // MARK: - Formatted Citation
 
+    /// Builds the formatted citation string.
+    ///
+    /// Fields used (in order): series title (italicised), subseries, volume number,
+    /// volume title, editors, city, publisher, year, document location.
+    /// The document heading is intentionally excluded — FRUS citations reference the
+    /// volume rather than quoting the document title.
     private var formattedCitation: String {
         guard let vol = volumeEntry else {
             return "Citation unavailable — volume metadata not loaded."
         }
-        let editors = vol.editors.isEmpty ? nil : "eds. \(vol.editors.joined(separator: " and "))"
-        // publicationDate is typically a bare 4-digit year ("2003") or an ISO date.
-        // If it looks like a year, use it directly; otherwise fall back to "n.d."
-        let year: String = {
-            guard let pd = vol.publicationDate else { return "n.d." }
-            // Accept bare 4-digit year or ISO date whose first 4 chars are digits.
-            let trimmed = pd.trimmingCharacters(in: .whitespaces)
-            if trimmed.count >= 4, Int(trimmed.prefix(4)) != nil { return String(trimmed.prefix(4)) }
-            return "n.d."
-        }()
-        let docNum = entry.documentNumber.map { "Document \($0)" } ?? entry.documentId
-        let urlPart = canonicalURL.map { "\n\($0) [accessed \(accessedDate)]" } ?? ""
-        // vol.title already contains the full series name, e.g.
-        // "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy"
-        // so we use it directly without prepending "Foreign Relations of the United States, [subseries], ".
+
+        // vol.title contains the full series/subseries/volume path, e.g.:
+        //   "Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972"
         let volTitle = vol.title
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
+        let year      = effectiveYear(for: vol)
+        let city      = "Washington, D.C."
+        let publisher = effectivePublisher(year: year)
+        let docNum    = entry.documentNumber.map { "Document \($0)" } ?? entry.documentId
+
+        // Editor list: "Name" / "Name and Name" / "Name, Name, and Name"
+        let editorString: String? = {
+            let eds = vol.editors
+            guard !eds.isEmpty else { return nil }
+            switch eds.count {
+            case 1: return eds[0]
+            case 2: return "\(eds[0]) and \(eds[1])"
+            default:
+                return eds.dropLast().joined(separator: ", ") + ", and \(eds.last!)"
+            }
+        }()
 
         switch selectedStyle {
         case .historyStateDotGov:
-            return "\"\(entry.header),\" in\u{202F}*\(volTitle)*\(editors.map { ",\n eds. \($0)" } ?? ""), (Washington: Government Printing Office, \(year)), \(docNum).\(urlPart)"
+            // _Series title_, rest of volume title, eds. Name (City: Publisher, Year), Document N.
+            var result = italicizedSeriesTitle(volTitle)
+            if let eds = editorString { result += ", eds. \(eds)" }
+            result += " (\(city): \(publisher), \(year)), \(docNum)."
+            return result
 
         case .chicago:
-            return "\"\(entry.header),\" in *\(volTitle)*\(editors.map { ", \($0)" } ?? ""), (Washington, DC: Government Printing Office, \(year)), \(docNum).\(urlPart)"
+            // *Full volume title*, edited by Name. (City: Publisher, Year), Document N.
+            var result = "*\(volTitle)*"
+            if let eds = editorString { result += ", edited by \(eds)" }
+            result += " (\(city): \(publisher), \(year)), \(docNum)."
+            return result
 
         case .turabian:
-            return "\"\(entry.header).\" In *\(volTitle)*\(editors.map { ". \($0)" } ?? ""). Washington, DC: Government Printing Office, \(year). \(docNum).\(urlPart)"
+            // *Full volume title*. Edited by Name. City: Publisher, Year. Document N.
+            var result = "*\(volTitle)*"
+            if let eds = editorString { result += ". Edited by \(eds)" }
+            result += ". \(city): \(publisher), \(year). \(docNum)."
+            return result
         }
     }
+
+    // MARK: - Publication Year
+
+    /// Returns the best available publication year for `vol`.
+    ///
+    /// Priority: (1) `parsedPublicationYear` extracted live from the volume XML's
+    /// `<publicationStmt><date>` element; (2) the first plausible 4-digit year
+    /// found in the manifest's `publicationDate` string; (3) "n.d."
+    private func effectiveYear(for vol: VolumeManifestEntry) -> String {
+        if let live = parsedPublicationYear, !live.isEmpty { return live }
+        guard let pd = vol.publicationDate else { return "n.d." }
+        // Extract the first 4-digit number that looks like a year (post-1750).
+        let segments = pd.components(separatedBy: .init(charactersIn: "0123456789").inverted)
+        if let yr = segments.first(where: { $0.count == 4 }),
+           let y = Int(yr), y > 1750 { return yr }
+        return "n.d."
+    }
+
+    private func effectivePublisher(year: String) -> String {
+        let y = Int(year) ?? 0
+        return y >= 2014
+            ? "United States Government Publishing Office"
+            : "Government Printing Office"
+    }
+
+    /// Wraps the series name portion of a FRUS volume title in underscores (Markdown italics).
+    private func italicizedSeriesTitle(_ fullTitle: String) -> String {
+        let knownSeries = [
+            "Foreign Relations of the United States",
+            "Papers Relating to the Foreign Relations of the United States",
+        ]
+        for prefix in knownSeries where fullTitle.hasPrefix(prefix) {
+            return "_\(prefix)_" + String(fullTitle.dropFirst(prefix.count))
+        }
+        return fullTitle
+    }
+
+    // MARK: - Live Publication Year Extraction
+
+    /// Reads the first portion of the downloaded volume XML and extracts the
+    /// publication year from `<publicationStmt><date @when>` or its text content.
+    private func loadPublicationYear() async {
+        guard let dm = appState.downloadManager,
+              dm.isVolumeDownloaded(entry.volumeId) else { return }
+        let url = dm.volumeURL(for: entry.volumeId)
+        parsedPublicationYear = await Self.extractPublicationYear(from: url)
+    }
+
+    private static func extractPublicationYear(from url: URL) async -> String? {
+        await Task.detached(priority: .utility) {
+            guard let stream = InputStream(url: url) else { return nil }
+            stream.open()
+            defer { stream.close() }
+            // 8 KB covers the teiHeader which always appears at the top of the file.
+            var buffer = [UInt8](repeating: 0, count: 8_192)
+            let n = stream.read(&buffer, maxLength: buffer.count)
+            guard n > 0,
+                  let text = String(bytes: Array(buffer[0..<n]), encoding: .utf8) else { return nil }
+
+            // Isolate the <publicationStmt> block.
+            guard let blockStart = text.range(of: "<publicationStmt"),
+                  let blockEnd   = text.range(of: "</publicationStmt>"),
+                  blockStart.lowerBound < blockEnd.lowerBound else { return nil }
+            let block = String(text[blockStart.lowerBound..<blockEnd.upperBound])
+
+            // Prefer @when="YYYY" — most authoritative, always the actual publication year.
+            if let yr = regexFirstCapture(#"when="(\d{4})""#, in: block),
+               let y = Int(yr), y > 1750, y < 2100 { return yr }
+            // Fall back to bare year as text content, e.g. <date>2010</date>.
+            if let yr = regexFirstCapture(#">(\d{4})\s*<"#, in: block),
+               let y = Int(yr), y > 1750, y < 2100 { return yr }
+            return nil
+        }.value
+    }
+
+    private static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: text,
+                                           range: NSRange(text.startIndex..., in: text)),
+              match.numberOfRanges >= 2,
+              let range = Range(match.range(at: 1), in: text) else { return nil }
+        return String(text[range])
+    }
+
+    // MARK: - Helpers
 
     private var canonicalURL: String? {
         "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
@@ -868,6 +1003,9 @@ struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
+    enum ViewMode { case browse, connections }
+    @State private var viewMode: ViewMode = .browse
+
     @State private var selectedSubseries: String? = nil
     @State private var selectedVolume: VolumeManifestEntry? = nil
     @State private var searchText: String = ""
@@ -902,6 +1040,19 @@ struct CorpusBrowserWindowView: View {
     }
 
     var body: some View {
+        Group {
+            if viewMode == .connections {
+                VolumeConnectionGraphView()
+                    .navigationTitle("Corpus Browser")
+                    .toolbar { modeToolbar }
+                    .frame(minWidth: 540, minHeight: 440)
+            } else {
+                browseView
+            }
+        }
+    }
+
+    private var browseView: some View {
         NavigationSplitView {
             List(selection: $selectedSubseries) {
                 ForEach(subseries, id: \.self) { sub in
@@ -912,6 +1063,7 @@ struct CorpusBrowserWindowView: View {
             .navigationTitle("Corpus Browser")
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
+                modeToolbar
                 ToolbarItem(placement: .primaryAction) {
                     Button { sortDescending.toggle() } label: {
                         Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
@@ -938,6 +1090,18 @@ struct CorpusBrowserWindowView: View {
             }
         }
         .frame(minWidth: 540, minHeight: 440)
+    }
+
+    @ToolbarContentBuilder
+    private var modeToolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Picker("", selection: $viewMode) {
+                Label("Browse", systemImage: "books.vertical").tag(ViewMode.browse)
+                Label("Connections", systemImage: "point.3.connected.trianglepath.dotted").tag(ViewMode.connections)
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 200)
+        }
     }
 
     private func subseriesRow(_ sub: String) -> some View {
@@ -1338,15 +1502,6 @@ private struct CorpusSectionDocumentListView: View {
         let sectionIds = Set(section.allDocumentIds)
         documents = all.filter { sectionIds.contains($0.documentId) }
         isLoading = false
-    }
-}
-
-struct CrossReferenceGraphWindowView: View {
-    var body: some View {
-        Text("Cross-Reference Graph")
-            .font(.title2)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

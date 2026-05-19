@@ -43,6 +43,7 @@ import Sparkle
 /// | `"frus.corpusBrowser"`          | Window        | Corpus browser — independent browsable window    |
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
+/// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
 ///
 /// Version history:
@@ -63,6 +64,7 @@ import Sparkle
 ///   2.4 — Session 51: connectIndexingProgress wired on iOS; Task.yield() before auto-indexVolume
 ///   2.5 — Session 61: About sheet replaced with Window scene; openWindow used in CommandGroup
 ///   2.8 — New UI: Corpus Browser, Cross-Reference Graph, Source Explorer window scenes added
+///   2.9 — Collections Window scene added (⌘⇧K); wired to toolbar and Window menu
 @main
 struct FRUSExplorerApp: App {
 
@@ -98,6 +100,15 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
         }
         .defaultSize(width: 380, height: 320)
+
+        // MARK: - Collections Window
+        Window("Collections", id: "frus.collections") {
+            CollectionListView(showDoneButton: false)
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 480, height: 600)
+        .keyboardShortcut("k", modifiers: [.command, .shift])
 
         // MARK: - Settings
         Settings {

@@ -17,22 +17,30 @@ import SwiftUI
 /// ## Layout (top to bottom)
 /// 1. Search input + Tips toggle + Cancel button
 /// 2. Scope toggles (Documents · Notes · Summaries · Collections)
-/// 3. Filter row (Date · Volume/subseries · Tagged) — active filters show value + ✕
+/// 3. Filter row (Date · Volume/subseries · Tagged · Advanced…)
 /// 4. Document type selector (Both / Primary only / Editorial notes only)
-/// 5. Sort bar (result count · active filter summary · Relevance / Date ↑ / Date ↓)
-/// 6. Results list (doc ID, header, snippet with highlighted terms, user tags)
-/// 7. Tips panel (collapsible)
+/// 5. Sort bar (result count with page range · page size picker · sort order)
+/// 6. Results list (current page of `pagedResults`)
+/// 7. Pagination bar (prev · page indicator · next)
+/// 8. Tips panel (collapsible)
+///
+/// ## Resizability
+/// The sheet uses `idealWidth`/`idealHeight` plus `.infinity` max so macOS lets
+/// the user drag it to any size.
+///
+/// ## Advanced Filters
+/// Tapping "Advanced…" in the filter row opens `SearchFilterView` as a sheet.
+/// On dismiss, `searchVM.applyAdvancedFilters()` copies filter state back into
+/// `parameters` and bumps `parametersVersion`, which triggers a new search via
+/// `.task(id: searchVM.searchTrigger)`.
 ///
 /// ## Interaction
 /// Selecting a result appends to `navigationPath` and dismisses the sheet.
 /// Right-clicking a result offers "Open in new window" (future session).
 ///
-/// ## Filter Placeholders
-/// Inactive filters display a muted italic "any" placeholder so all filter options
-/// are always visible. Active filters show their value and a clear ✕.
-///
 /// Version history:
 ///   1.0 — New UI scaffolding (macOS-only; uses MacSearchViewModel)
+///   1.1 — Add pagination, page size picker, Advanced Filters sheet, resizable frame
 struct SearchSheet: View {
     @Binding var navigationPath: [DocumentBrowserEntry]
 
@@ -40,6 +48,7 @@ struct SearchSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var searchVM = MacSearchViewModel()
+    @State private var showAdvancedFilters = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -69,6 +78,13 @@ struct SearchSheet: View {
 
             resultsList
 
+            if searchVM.totalPages > 1 {
+                Divider()
+                paginationBar
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+            }
+
             if searchVM.showTips {
                 Divider()
                 tipsPanel
@@ -77,10 +93,15 @@ struct SearchSheet: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(minWidth: 640, minHeight: 500)
+        .frame(minWidth: 640, idealWidth: 820, maxWidth: .infinity,
+               minHeight: 500, idealHeight: 680, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.15), value: searchVM.showTips)
-        .task(id: searchVM.debouncedQuery) {
+        .task(id: searchVM.searchTrigger) {
             await searchVM.performSearch(service: appState.searchService)
+        }
+        .sheet(isPresented: $showAdvancedFilters,
+               onDismiss: { searchVM.applyAdvancedFilters() }) {
+            SearchFilterView(vm: searchVM.filterVM)
         }
     }
 
@@ -151,7 +172,7 @@ struct SearchSheet: View {
                 label: "Date",
                 value: searchVM.dateRangeLabel,
                 isActive: searchVM.parameters.dateRange != nil
-            ) { searchVM.parameters.dateRange = nil }
+            ) { searchVM.clearDateFilter() }
 
             Divider().frame(height: 16)
 
@@ -159,7 +180,7 @@ struct SearchSheet: View {
                 label: "Volume / subseries",
                 value: searchVM.volumeFilterLabel,
                 isActive: searchVM.parameters.volumeIds != nil
-            ) { searchVM.parameters.volumeIds = nil }
+            ) { searchVM.clearVolumeFilter() }
 
             Divider().frame(height: 16)
 
@@ -167,7 +188,32 @@ struct SearchSheet: View {
                 label: "Tagged",
                 value: searchVM.tagFilterLabel,
                 isActive: !searchVM.parameters.userTagIds.isEmpty
-            ) { searchVM.parameters.userTagIds = [] }
+            ) { searchVM.clearTagFilter() }
+
+            Divider().frame(height: 16)
+
+            Button {
+                searchVM.syncToFilterVM()
+                showAdvancedFilters = true
+            } label: {
+                HStack(spacing: 3) {
+                    if searchVM.activeFilterSummary != nil {
+                        Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.accentColor)
+                    } else {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Advanced…")
+                        .font(.system(size: 11))
+                        .foregroundStyle(searchVM.activeFilterSummary != nil
+                            ? Color.accentColor : Color.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open advanced search filters")
         }
     }
 
@@ -181,7 +227,7 @@ struct SearchSheet: View {
 
             ForEach(DocumentTypeFilter.searchUIOptions, id: \.label) { option in
                 Button {
-                    searchVM.parameters.documentTypeFilter = option.filter
+                    searchVM.setDocumentTypeFilter(option.filter)
                 } label: {
                     Text(option.label)
                         .font(.system(size: 11))
@@ -220,16 +266,14 @@ struct SearchSheet: View {
                 ProgressView().controlSize(.small)
                 Text("Searching…").font(.system(size: 11)).foregroundStyle(.secondary)
             } else if !searchVM.queryText.isEmpty {
-                Text("\(searchVM.results.count) result\(searchVM.results.count == 1 ? "" : "s")")
-                    .font(.system(size: 11, weight: .medium))
-
-                if let summary = searchVM.activeFilterSummary {
-                    Text("·").foregroundStyle(.tertiary)
-                    Text("filters active: \(summary)").font(.system(size: 11)).foregroundStyle(.secondary)
-                }
+                resultCountLabel
             }
 
             Spacer()
+
+            pageSizePicker
+
+            Divider().frame(height: 14)
 
             HStack(spacing: 4) {
                 Text("Sort").font(.system(size: 11)).foregroundStyle(.tertiary)
@@ -267,10 +311,55 @@ struct SearchSheet: View {
         }
     }
 
+    @ViewBuilder
+    private var resultCountLabel: some View {
+        let total = searchVM.results.count
+        let start = searchVM.currentPage * searchVM.pageSize + 1
+        let end   = min(start + searchVM.pageSize - 1, total)
+
+        if total == 0 {
+            Text("No results")
+                .font(.system(size: 11, weight: .medium))
+        } else if total <= searchVM.pageSize {
+            Text("\(total) result\(total == 1 ? "" : "s")")
+                .font(.system(size: 11, weight: .medium))
+        } else {
+            Text("\(start)–\(end) of \(total) results")
+                .font(.system(size: 11, weight: .medium))
+        }
+    }
+
+    private var pageSizePicker: some View {
+        HStack(spacing: 4) {
+            Text("Show")
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+            Menu {
+                ForEach(MacSearchViewModel.pageSizeOptions, id: \.self) { size in
+                    Button("\(size)") { searchVM.pageSize = size }
+                }
+            } label: {
+                Text("\(searchVM.pageSize)")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 0.5)
+                    )
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
+    }
+
     // MARK: - Results List
 
     private var resultsList: some View {
-        List(searchVM.sortedResults, id: \.id) { result in
+        List(searchVM.pagedResults, id: \.id) { result in
             SearchResultRow(result: result)
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                 .listRowSeparator(.visible, edges: .bottom)
@@ -283,6 +372,38 @@ struct SearchSheet: View {
                 }
         }
         .listStyle(.plain)
+    }
+
+    // MARK: - Pagination Bar
+
+    private var paginationBar: some View {
+        HStack(spacing: 12) {
+            Button {
+                if searchVM.currentPage > 0 { searchVM.currentPage -= 1 }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.currentPage == 0)
+
+            Text("Page \(searchVM.currentPage + 1) of \(searchVM.totalPages)")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+
+            Button {
+                if searchVM.currentPage < searchVM.totalPages - 1 {
+                    searchVM.currentPage += 1
+                }
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.currentPage >= searchVM.totalPages - 1)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Tips Panel

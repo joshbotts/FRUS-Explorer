@@ -39,6 +39,9 @@ import SwiftUI
 ///   1.2 — Session 37: context passage shown in node info panel when available
 ///   1.3 — Session 61: node hit areas converted from Circle+onTapGesture to Button
 ///          so Tab-key keyboard navigation can reach individual nodes (F-018)
+///   1.4 — Interactive re-centering: breadcrumb history bar; macOS "View Document"
+///          sets `appState.pendingBrowseDocument` to open in the main window rather
+///          than pushing inline; macOS click re-centres instead of navigating
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -64,6 +67,7 @@ struct CrossReferenceGraphView: View {
         @Bindable var vm = vm
         NavigationStack(path: $vm.navigationPath) {
             VStack(spacing: 0) {
+                if !vm.history.isEmpty { breadcrumbBar }
                 if vm.hasUndownloadedSources { undownloadedBanner }
                 filterToolbar
 
@@ -321,7 +325,12 @@ struct CrossReferenceGraphView: View {
                     } else {
                         Button {
                             if let entry = vm.makeEntry(for: key) {
+                                #if os(macOS)
+                                // Open in the main window rather than pushing inline.
+                                appState.pendingBrowseDocument = entry
+                                #else
                                 vm.navigationPath.append(entry)
+                                #endif
                             }
                             vm.selectedNodeKey = nil
                         } label: {
@@ -357,6 +366,60 @@ struct CrossReferenceGraphView: View {
             return String(localized: "graph.context.context",
                           defaultValue: "Context")
         }
+    }
+
+    // MARK: - Breadcrumb Bar
+
+    /// Horizontal strip shown when the user has navigated away from the original document.
+    /// Tapping ← goes back one step; tapping a chip jumps directly to that position.
+    private var breadcrumbBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                Button {
+                    vm.navigateBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.accentColor.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Go back")
+
+                ForEach(Array(vm.history.enumerated()), id: \.offset) { index, entry in
+                    Button {
+                        // Pop history back to this entry (inclusive)
+                        let stepsBack = vm.history.count - index
+                        for _ in 0..<stepsBack { vm.navigateBack() }
+                    } label: {
+                        Text(entry.header ?? "\(entry.volumeId)/\(entry.documentId)")
+                            .font(.system(size: 11))
+                            .lineLimit(1)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                }
+
+                // Current document (non-interactive)
+                if let header = vm.graph?.nodeMetadata[vm.centralKey]?.header {
+                    Text(header)
+                        .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+        }
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
     }
 
     // MARK: - Filter Toolbar
