@@ -14,9 +14,6 @@
 
 import SwiftUI
 import SwiftData
-#if os(macOS) && DIRECT_DISTRIBUTION
-import Sparkle
-#endif
 
 /// Root entry point for FRUS Explorer.
 ///
@@ -158,15 +155,6 @@ struct FRUSExplorerApp: App {
                 }
             }
 
-            #if DIRECT_DISTRIBUTION
-            CommandGroup(after: .appInfo) {
-                Button(String(localized: "menu.checkForUpdates",
-                              defaultValue: "Check for Updates\u{2026}")) {
-                    SparkleUpdater.shared.checkForUpdates()
-                }
-                .disabled(!SparkleUpdater.shared.canCheckForUpdates)
-            }
-            #endif
 
             // Search and Citation Lookup keyboard shortcuts (⌘F and ⌘⇧F).
             // These write to AppState properties observed by ContentView's sheet modifiers.

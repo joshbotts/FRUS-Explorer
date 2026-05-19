@@ -23,7 +23,6 @@
 		3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F862248B58178F5619CFDC6 /* AppState.swift */; };
 		3DF4BCC23B937CD52E0723F3 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFD448362EA354DDBDF78A63 /* Collection.swift */; };
 		40D6C246CB8181B4C67AA895 /* volume-tag-taxonomy.json in Resources */ = {isa = PBXBuildFile; fileRef = F34208BE1028E5D565589526 /* volume-tag-taxonomy.json */; };
-		40FCDBF62C82994384DD19A1 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 68671750974A6214CB151B5C /* Sparkle */; };
 		43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */; };
 		53194C160535CA23B08EFF8E /* AppStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD1B9BB52B39A607932B080 /* AppStateTests.swift */; };
 		57383AB4A7720F91DCEE13A1 /* VolumeLevelTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 805A3A8F83E1102E00B2D12C /* VolumeLevelTagStore.swift */; };
@@ -218,7 +217,6 @@
 		AA26BB01CC03DD04EE2604 /* AboutViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */; };
 		AA27BB01CC03DD04EE2701 /* AccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */; };
 		AA28BB01CC03DD04EE2801 /* OpenAPIValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */; };
-		AA29BB01CC03DD04EE2901 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29BB01CC03DD04EE2900 /* SparkleUpdater.swift */; };
 		AA29BB01CC03DD04EE2903 /* DistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29BB01CC03DD04EE2902 /* DistributionTests.swift */; };
 		AA30BB01CC03DD04EE3001 /* CitationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3000 /* CitationModels.swift */; };
 		AA30BB01CC03DD04EE3002 /* CitationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA30BB01CC03DD04EE3000 /* CitationModels.swift */; };
@@ -311,7 +309,6 @@
 		76273407B28E5899CCDC0A1F /* MainWindowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
 		805A3A8F83E1102E00B2D12C /* VolumeLevelTagStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeLevelTagStore.swift; sourceTree = "<group>"; };
 		836BC9B536D70E5FAD237CA0 /* ReadingHistoryEntry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadingHistoryEntry.swift; sourceTree = "<group>"; };
-		8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-DirectDistribution.entitlements"; sourceTree = "<group>"; };
 		8EF83222D48BD23EB6123B3E /* SupportingTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupportingTypes.swift; sourceTree = "<group>"; };
 		966DE5E70455BCC0D63965D4 /* ResearchNote.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchNote.swift; sourceTree = "<group>"; };
 		9871A159779B05DF3DAD1E9E /* GeneratedSummary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GeneratedSummary.swift; sourceTree = "<group>"; };
@@ -416,7 +413,6 @@
 		AA26BB01CC03DD04EE2603 /* AboutViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AboutViewTests.swift; sourceTree = "<group>"; };
 		AA27BB01CC03DD04EE2700 /* AccessibilityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityTests.swift; sourceTree = "<group>"; };
 		AA28BB01CC03DD04EE2800 /* OpenAPIValidationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAPIValidationTests.swift; sourceTree = "<group>"; };
-		AA29BB01CC03DD04EE2900 /* SparkleUpdater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		AA29BB01CC03DD04EE2902 /* DistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DistributionTests.swift; sourceTree = "<group>"; };
 		AA30BB01CC03DD04EE3000 /* CitationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationModels.swift; sourceTree = "<group>"; };
 		AA30BB01CC03DD04EE3003 /* CitationParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CitationParser.swift; sourceTree = "<group>"; };
@@ -458,7 +454,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				40FCDBF62C82994384DD19A1 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -750,14 +745,6 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
-		AA29BB01CC03DD04EE29FF /* Distribution */ = {
-			isa = PBXGroup;
-			children = (
-				AA29BB01CC03DD04EE2900 /* SparkleUpdater.swift */,
-			);
-			path = Distribution;
-			sourceTree = "<group>";
-		};
 		AD1071649D3012380A19030B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -793,7 +780,6 @@
 				AA22BB01CC03DD04EE22FF /* Collections */,
 				AA23BB01CC03DD04EE23FF /* SourceExplorer */,
 				AA24BB01CC03DD04EE24FF /* Settings */,
-				AA29BB01CC03DD04EE29FF /* Distribution */,
 				AA19BB01CC03DD04EE190F /* Summarization */,
 				AA10BB01CC03DD04EE100000 /* Onboarding */,
 				AA11BB01CC03DD04EE1100 /* Browser */,
@@ -804,8 +790,7 @@
 				AA06BB02CC03DD04EE060009 /* TEI */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
-				8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */,
-				FF735149F415370F2B4A807F /* Localizable.strings */,
+					FF735149F415370F2B4A807F /* Localizable.strings */,
 			);
 			path = FRUSExplorer;
 			sourceTree = "<group>";
@@ -904,9 +889,6 @@
 			dependencies = (
 			);
 			name = FRUSExplorerMac;
-			packageProductDependencies = (
-				68671750974A6214CB151B5C /* Sparkle */,
-			);
 			productName = FRUSExplorerMac;
 			productReference = A64B4DAD6C89EFA87310EC25 /* FRUS Explorer.app */;
 			productType = "com.apple.product-type.application";
@@ -943,9 +925,6 @@
 			);
 			mainGroup = DB950DA0730BD2427F10A285;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				BC5C588DC4471AD682801956 /* XCRemoteSwiftPackageReference "Sparkle" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 76BF97412B6E3EE7EBFDAD0C /* Products */;
 			projectDirPath = "";
@@ -1094,8 +1073,7 @@
 				AA25BB01CC03DD04EE2501 /* GlobalContextViewModel.swift in Sources */,
 				AA25BB01CC03DD04EE2504 /* GlobalContextView.swift in Sources */,
 				AA26BB01CC03DD04EE2601 /* AboutView.swift in Sources */,
-				AA29BB01CC03DD04EE2901 /* SparkleUpdater.swift in Sources */,
-				AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */,
+					AA21BB01CC03DD04EE2101 /* BackgroundSummarizationService.swift in Sources */,
 				AA21BB01CC03DD04EE2104 /* BackgroundSummarizationSettingsView.swift in Sources */,
 				AA06BB02CC03DD04EE060022 /* FRUSASTNode.swift in Sources */,
 				AA06BB02CC03DD04EE060024 /* FRUSDocumentParser.swift in Sources */,
@@ -1413,83 +1391,6 @@
 			};
 			name = AppStore;
 		};
-		48B55C37FF3CEAC5668838D5 /* DirectDistribution */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer.uitests";
-				PRODUCT_NAME = FRUSExplorerUITests;
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = FRUSExplorer;
-			};
-			name = DirectDistribution;
-		};
-		523866EC1221CB013EE26EAC /* DirectDistribution */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
-			};
-			name = DirectDistribution;
-		};
 		61EAA6EBF96ECC18D2C85026 /* AppStore */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1535,37 +1436,6 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FRUS Explorer.app/FRUS Explorer";
 			};
 			name = Debug;
-		};
-		C683086AF46B213062F6D7B8 /* DirectDistribution */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-AppStore.entitlements";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 828S8SXVLC;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.2;
-				OTHER_LDFLAGS = "-lsqlite3";
-				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
-				PRODUCT_MODULE_NAME = FRUSExplorer;
-				PRODUCT_NAME = "FRUS Explorer";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = DirectDistribution;
 		};
 		DC4EF822DF6A786A529CC093 /* AppStore */ = {
 			isa = XCBuildConfiguration;
@@ -1648,52 +1518,6 @@
 			};
 			name = Debug;
 		};
-		F17E946C337C30BD47BB003E /* DirectDistribution */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer.tests";
-				PRODUCT_NAME = FRUSExplorerTests;
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FRUS Explorer.app/FRUS Explorer";
-			};
-			name = DirectDistribution;
-		};
-		F2F4ED7DDA2A0EBCBDD6B9B3 /* DirectDistribution */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-DirectDistribution.entitlements";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 828S8SXVLC;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.2;
-				OTHER_LDFLAGS = "-lsqlite3";
-				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
-				PRODUCT_NAME = "FRUS Explorer";
-				SDKROOT = macosx;
-			};
-			name = DirectDistribution;
-		};
 		F3A535F73919FA053F741EF8 /* AppStore */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1760,7 +1584,6 @@
 			buildConfigurations = (
 				47D99EB223ECED668C71C541 /* AppStore */,
 				E24242C3A81BC771621E991D /* Debug */,
-				48B55C37FF3CEAC5668838D5 /* DirectDistribution */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -1770,7 +1593,6 @@
 			buildConfigurations = (
 				61EAA6EBF96ECC18D2C85026 /* AppStore */,
 				14C32046D8E136DE07744EC3 /* Debug */,
-				F2F4ED7DDA2A0EBCBDD6B9B3 /* DirectDistribution */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -1780,7 +1602,6 @@
 			buildConfigurations = (
 				0A22FA44BCF37DE1FED41BEE /* AppStore */,
 				B1536D7193A9CF6CE9D9FE62 /* Debug */,
-				F17E946C337C30BD47BB003E /* DirectDistribution */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -1790,7 +1611,6 @@
 			buildConfigurations = (
 				DC4EF822DF6A786A529CC093 /* AppStore */,
 				EDDA59A49AF6CE8B59EC0D0C /* Debug */,
-				C683086AF46B213062F6D7B8 /* DirectDistribution */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -1800,31 +1620,12 @@
 			buildConfigurations = (
 				F3A535F73919FA053F741EF8 /* AppStore */,
 				29165A54ABAAC2BACF0BAB36 /* Debug */,
-				523866EC1221CB013EE26EAC /* DirectDistribution */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		BC5C588DC4471AD682801956 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		68671750974A6214CB151B5C /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BC5C588DC4471AD682801956 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE51A6E8E079D586CF706A88 /* Project object */;
 }
