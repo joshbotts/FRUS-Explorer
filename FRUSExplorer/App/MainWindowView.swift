@@ -208,6 +208,16 @@ struct MainWindowView: View {
 
             Divider().frame(height: 20)
 
+            // Collections window
+            Button {
+                openWindow(id: "frus.collections")
+            } label: {
+                Label("Collections", systemImage: "tray.2")
+            }
+            .keyboardShortcut("k", modifiers: [.command, .shift])
+
+            Divider().frame(height: 20)
+
             // Corpus browser window
             Button {
                 openWindow(id: "frus.corpusBrowser")

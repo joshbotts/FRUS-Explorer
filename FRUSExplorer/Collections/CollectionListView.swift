@@ -29,7 +29,12 @@ import SwiftData
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 35: macOS compatibility — guard `.insetGrouped` list style
 ///   1.2 — Session 55: add Done toolbar button on macOS (previously no close control)
+///   1.3 — Add `showDoneButton` parameter; set to `false` when hosted in a Window scene
 struct CollectionListView: View {
+
+    /// Pass `false` when this view is the root content of a `Window` scene; in that
+    /// context the OS window chrome (red button / ⌘W) already provides dismissal.
+    var showDoneButton: Bool = true
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -57,10 +62,12 @@ struct CollectionListView: View {
                                     defaultValue: "Collections"))
             .toolbar {
                 #if !os(iOS)
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "collections.toolbar.done",
-                                  defaultValue: "Done")) {
-                        dismiss()
+                if showDoneButton {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "collections.toolbar.done",
+                                      defaultValue: "Done")) {
+                            dismiss()
+                        }
                     }
                 }
                 #endif
