@@ -1769,7 +1769,7 @@ private struct SettingsSummarizationPane: View {
     @ViewBuilder
     private func promptBlock<Content: View>(
         _ prompts: [SummarizationPrompt],
-        @ViewBuilder row: (SummarizationPrompt) -> Content
+        row: @escaping (SummarizationPrompt) -> Content
     ) -> some View {
         VStack(spacing: 0) {
             ForEach(prompts) { prompt in
