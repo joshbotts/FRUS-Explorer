@@ -120,7 +120,7 @@ public struct FRUSVolumeMetadata: Sendable {
         editors = entry.editors
         generalEditor = entry.generalEditor
         publicationDate = entry.publicationDate ?? ""
-        publicationPlace = "Washington"
+        publicationPlace = "Washington, D.C."
         let year = Self.firstYear(in: entry.publicationDate) ?? 0
         publisher = year >= 2014
             ? "United States Government Publishing Office"

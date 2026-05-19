@@ -169,11 +169,13 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
             }
 
         case "date" where parent == "publicationStmt":
-            // Capture text content; fall back to @when attribute.
-            if !text.isEmpty {
-                result.publicationDate = text
-            } else if let when = attrs["when"], !when.isEmpty {
+            // Prefer @when attribute — it reliably encodes the publication year as ISO 8601
+            // and is unambiguous. Text content may contain prose descriptions or coverage
+            // year ranges (e.g. "1969–1976") that are not the print year.
+            if let when = attrs["when"], !when.isEmpty {
                 result.publicationDate = when
+            } else if !text.isEmpty {
+                result.publicationDate = text
             }
 
         case "term" where inTagsKeywords:
