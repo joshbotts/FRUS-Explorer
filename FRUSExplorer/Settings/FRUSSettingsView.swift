@@ -1851,19 +1851,28 @@ private struct SettingsResetPane: View {
 
     @MainActor
     private func performReset(includeCloudKit: Bool) async {
+        // Capture the Settings window NOW — before any `await` suspends this task.
+        // After an await the key window may have changed, making post-hoc title
+        // matching unreliable.
+        let settingsWindow = NSApplication.shared.keyWindow
+
         isResetting = true
 
-        // 1. Remove all downloaded volume files
+        // 1. Delete every .xml file in volumesDirectory directly via the filesystem.
+        //    Iterating manifest entries misses any file not in the manifest, which would
+        //    leave hasDownloadedVolumes() returning true and block OnboardingView.
         if let dm = appState.downloadManager {
-            let entries = appState.manifestStore.diffResult?.known
-                ?? appState.manifestStore.bundledEntries
-            for entry in entries where dm.isVolumeDownloaded(entry.volumeId) {
-                try? await dm.deleteVolume(volumeId: entry.volumeId)
+            let dir = dm.volumesDirectory
+            if let files = try? FileManager.default.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
+            ) {
+                for file in files where file.pathExtension.lowercased() == "xml" {
+                    try? FileManager.default.removeItem(at: file)
+                }
             }
         }
 
         // 2. Remove the search index — one bulk DELETE per table, not one call per manifest entry.
-        //    The per-entry loop iterated 500+ volumes sequentially and caused the UI to hang.
         if let pipeline = appState.indexingPipeline {
             try? await pipeline.removeAllVolumesFromIndex()
         }
@@ -1873,16 +1882,14 @@ private struct SettingsResetPane: View {
             deleteAllUserData()
         }
 
-        // 4. Clear onboarding flag — ContentRootView immediately shows OnboardingView
+        // 4. Clear onboarding flag — ContentView immediately re-evaluates and shows OnboardingView
         appState.hasCompletedOnboarding = false
         isResetting = false
 
-        // 5. Close the Settings window so the user lands on the OnboardingView that
-        //    ContentRootView just switched to. Without this the Settings window stays
-        //    open in front of the main window, obscuring the next step.
-        NSApplication.shared.windows
-            .filter { $0.title == NSLocalizedString("Settings", comment: "") }
-            .forEach { $0.close() }
+        // 5. Close the Settings window and bring the main window forward so the user
+        //    sees the OnboardingView that ContentView just switched to.
+        settingsWindow?.close()
+        NSApplication.shared.mainWindow?.makeKeyAndOrderFront(nil)
 
         #if DEBUG
         print("[Settings] Reset complete. includeCloudKit=\(includeCloudKit)")
