@@ -403,6 +403,24 @@ public actor IndexingPipeline {
         #endif
     }
 
+    /// Removes all indexed data for every volume in a single bulk operation.
+    ///
+    /// Issues one `DELETE` statement per table rather than iterating manifest entries,
+    /// making it suitable for the app-reset path where iterating 500+ entries would
+    /// cause the UI to hang for tens of seconds.
+    public func removeAllVolumesFromIndex() async throws {
+        try await fts5Store.deleteAll()
+        for table in ["cross_references", "page_ranges", "document_dates",
+                      "document_cache", "person_mentions", "persons", "terms"] {
+            let stmt = try auxPrepare("DELETE FROM \(table)")
+            defer { sqlite3_finalize(stmt) }
+            try auxStep(stmt)
+        }
+        #if DEBUG
+        print("[IndexingPipeline] removeAllVolumesFromIndex complete")
+        #endif
+    }
+
     /// Updates the summary text for a document that is already in the index.
     ///
     /// Reads original field text from `document_cache`, merges in `summary.responseText`,

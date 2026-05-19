@@ -262,6 +262,17 @@ public actor FTS5Store {
         #endif
     }
 
+    /// Deletes every document from the FTS5 index in a single SQL statement.
+    ///
+    /// Use this instead of calling `delete(documentId:)` in a loop when resetting
+    /// all data — one statement is orders of magnitude faster than per-document deletes.
+    public func deleteAll() throws {
+        try connection.exec("DELETE FROM \(schema.tableName)")
+        #if DEBUG
+        print("[FTS5Store] deleteAll complete")
+        #endif
+    }
+
     /// Rebuilds the entire FTS5 index from its content shadow tables.
     ///
     /// Equivalent to dropping and recreating the index. Use after detecting index

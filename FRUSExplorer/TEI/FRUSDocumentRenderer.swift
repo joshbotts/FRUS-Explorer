@@ -535,6 +535,8 @@ public struct FRUSDocumentRenderer: View {
     public var onGlossTap: ((GlossEntry?) -> Void)?
     public var onCrossRefTap: ((String, String?) -> Void)?
 
+    @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+
     public init(model: FRUSDocumentRenderModel,
                 embedInScrollView: Bool = true,
                 onFootnoteTap: ((Int) -> Void)? = nil,
