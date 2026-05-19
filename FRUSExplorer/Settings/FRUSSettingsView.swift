@@ -1880,6 +1880,13 @@ private struct SettingsResetPane: View {
         appState.hasCompletedOnboarding = false
         isResetting = false
 
+        // 5. Close the Settings window so the user lands on the OnboardingView that
+        //    ContentRootView just switched to. Without this the Settings window stays
+        //    open in front of the main window, obscuring the next step.
+        NSApplication.shared.windows
+            .filter { $0.title == NSLocalizedString("Settings", comment: "") }
+            .forEach { $0.close() }
+
         #if DEBUG
         print("[Settings] Reset complete. includeCloudKit=\(includeCloudKit)")
         #endif
