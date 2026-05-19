@@ -457,6 +457,15 @@ private struct MacEntryRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                if let id = entry.researchNoteId,
+                   let note = availableNotes.first(where: { $0.id == id }),
+                   !note.bodyText.isEmpty {
+                    Text(note.bodyText)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer()
