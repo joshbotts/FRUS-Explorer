@@ -66,6 +66,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          FTS5 batches; `progressStream: AsyncStream<IndexingProgressUpdate>` for inline capsule
 ///   1.8 — Session 54: `effectiveConcurrencyLimit` caps `indexAllVolumes` to 1 on iOS;
 ///          `storeIndexData` co-batches FTS5 and `document_cache` writes to reduce peak RSS
+///   1.9 — Session 73: `fetchDocumentBodyText(volumeId:documentId:)` made public; used by
+///          collection export's SQLite fast-path before falling back to XML parsing
 public actor IndexingPipeline {
 
     // MARK: - Configuration

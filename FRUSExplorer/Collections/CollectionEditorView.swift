@@ -34,6 +34,12 @@ import SwiftData
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 35: macOS compatibility — guard navigationBarTitleDisplayMode,
 ///          EditButton, and export sheet; add NSSavePanel / Reveal in Finder on macOS
+///   1.2 — Session 73: resolveDocuments() made async; body text loaded via SQLite cache
+///          (IndexingPipeline.fetchDocumentBodyText) with XML fallback for un-indexed volumes;
+///          citation built via HistoryAtStateCitationFormatter; AddByTagSheet, ExportSheetView,
+///          and MacExportCompleteView made internal (non-private) for use in MacCollectionManagerView
+///   1.3 — Session 74: two-line research note preview (caption2, tertiary) added to EntryRow
+///          beneath the volume ID; same preview added to MacEntryRow in MacCollectionManagerView
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState

@@ -50,6 +50,8 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
+///   1.1 — Session 73: added `citation` (formatted citation string) and `historyStateGovURL`
+///          fields with empty-string defaults; both included in PDF and HTML exports
 struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     let documentId: String
@@ -119,6 +121,8 @@ struct CollectionExportMetadata: Sendable {
 /// Version history:
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 32: replaced `Collection` parameter with `CollectionExportMetadata`
+///   1.2 — Session 73: `export()` marked `@MainActor` to satisfy CoreGraphics/CoreText
+///          thread-safety requirements; previously crashed when called off the main thread
 protocol CollectionExporter {
     /// Exports `metadata` and its `documents` to a temporary file.
     ///

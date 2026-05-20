@@ -62,6 +62,9 @@ import SwiftData
 ///   2.5 — Session 61: About sheet replaced with Window scene; openWindow used in CommandGroup
 ///   2.8 — New UI: Corpus Browser, Cross-Reference Graph, Source Explorer window scenes added
 ///   2.9 — Collections Window scene added (⌘⇧K); wired to toolbar and Window menu
+///   3.0 — Collections Window wired to MacCollectionManagerView (NavigationSplitView with
+///          inline editing); defaultSize widened to 760×600; FRUSExplorerMac added to scheme
+///          archive action; user-selected file entitlement added for NSSavePanel exports
 @main
 struct FRUSExplorerApp: App {
 
