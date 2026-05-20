@@ -20,6 +20,20 @@
                ReferencedContainer = "container:FRUSExplorer.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "NO"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D8DEAD52775A8E6176EF83CD"
+               BuildableName = "FRUS Explorer.app"
+               BlueprintName = "FRUSExplorerMac"
+               ReferencedContainer = "container:FRUSExplorer.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
