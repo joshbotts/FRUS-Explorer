@@ -19,7 +19,12 @@
     <key>com.apple.security.network.client</key>
     <true/>
 
-    <!-- Read/write files the user selects via NSSavePanel / NSOpenPanel (e.g. collection exports) -->
+    <!--
+        Read/write access to files selected via NSSavePanel / NSOpenPanel.
+        Required for collection exports: MacExportCompleteView's "Save To…" button copies
+        the exported PDF/HTML from temporaryDirectory to the user-chosen destination.
+        Without this, FileManager.copyItem crashes under the app sandbox. (Session 74.)
+    -->
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
 

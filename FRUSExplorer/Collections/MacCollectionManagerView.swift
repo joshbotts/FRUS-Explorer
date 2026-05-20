@@ -24,6 +24,8 @@ import SwiftData
 /// Version history:
 ///   1.0 — Session 73: initial implementation replacing CollectionListView in the
 ///          Collections window scene; NavigationSplitView with inline editing.
+///   1.1 — Session 74: two-line research note preview added to MacEntryRow beneath
+///          volume title; caption2/tertiary styling; fixedSize for correct wrapping
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState

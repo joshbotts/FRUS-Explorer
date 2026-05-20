@@ -49,6 +49,10 @@ enum AboutLinks {
 ///          (previously relied on Esc to dismiss with no explicit close control)
 ///   1.2 — Session 61: macOS NavigationStack wrapper removed; About is now a Window scene
 ///          (standard close button replaces the Done toolbar button)
+///   1.3 — Session 74: SF Symbol replaced with real app icon (NSApp.applicationIconImage on
+///          macOS, UIImage named AppIcon on iOS, with RoundedRectangle clip on iOS);
+///          asterisks removed from FRUS description; "Foreign Relations of the United States"
+///          italicised via AttributedString.inlinePresentationIntent = .emphasized
 struct AboutView: View {
 
     private var appIconImage: Image {

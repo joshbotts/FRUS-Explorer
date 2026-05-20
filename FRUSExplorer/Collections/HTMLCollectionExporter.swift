@@ -28,6 +28,9 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 32: replaced `Collection` parameter with `CollectionExportMetadata`
+///   1.2 — Session 73: citation headings link to history.state.gov (target=_blank);
+///          URL displayed as `.doc-url` paragraph; body text split on "\n\n" into `<p>` tags;
+///          research note split into paragraphs; new CSS for `.doc-ext-link` and `.doc-url`
 final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
