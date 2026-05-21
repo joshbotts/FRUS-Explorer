@@ -425,6 +425,11 @@ struct SearchFilterView: View {
     private var scopeSection: some View {
         Section {
             Toggle(
+                String(localized: "search.scope.documentText",
+                       defaultValue: "Include document text"),
+                isOn: $vm.includeDocumentText
+            )
+            Toggle(
                 String(localized: "search.scope.summaries",
                        defaultValue: "Include summaries"),
                 isOn: $vm.includeSummaries
@@ -434,6 +439,12 @@ struct SearchFilterView: View {
                        defaultValue: "Include research notes"),
                 isOn: $vm.includeNotes
             )
+            if !vm.includeDocumentText {
+                Text(String(localized: "search.scope.documentText.help",
+                            defaultValue: "Document text is excluded. Results will match only in summaries and/or research notes."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         } header: {
             Text(String(localized: "search.section.scope",
                         defaultValue: "Search Scope"))

@@ -68,6 +68,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `storeIndexData` co-batches FTS5 and `document_cache` writes to reduce peak RSS
 ///   1.9 — Session 73: `fetchDocumentBodyText(volumeId:documentId:)` made public; used by
 ///          collection export's SQLite fast-path before falling back to XML parsing
+///   2.0 — Session 75: `indexAllVolumes` switched from `withThrowingTaskGroup` to a
+///          non-throwing `withTaskGroup` with per-volume error handling; failed volumes
+///          emit `.failed` progress events and the remaining batch continues; duplicate
+///          rows in `cross_references`/`person_mentions` on re-index fixed by deleting
+///          existing volume rows before inserting; `extractStructuredDate.collectDateNodes`
+///          now skips `.footnote` descendants (fixes date corruption from footnote <date>
+///          references); `currentDateIndexVersion` bumped to 4
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -166,7 +173,9 @@ public actor IndexingPipeline {
     /// - Version 1: plain-text heuristic only (`parseDateISO`)
     /// - Version 2: structured `<date @when/@from/@to>` extraction (Session 36)
     /// - Version 3: all partial dates normalized to full yyyy-MM-dd precision
-    public static let currentDateIndexVersion: Int = 3
+    /// - Version 4: footnote nodes excluded from date search (Session 75); prevents
+    ///   cross-reference dates inside footnotes from corrupting documents' date index
+    public static let currentDateIndexVersion: Int = 4
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -340,6 +349,10 @@ public actor IndexingPipeline {
     ///
     /// Uses a sliding-window `TaskGroup` limited to `concurrencyLimit` concurrent
     /// XML parsers. Storage is serialised through the actor after each parse completes.
+    ///
+    /// Per-volume errors are caught and emitted as `.failed` progress events so that
+    /// a single corrupt or unreadable XML file does not abort the entire batch. All
+    /// remaining volumes continue to be indexed regardless of individual failures.
     public func indexAllVolumes() async throws {
         let files = Self.findDownloadedVolumes(in: volumesDirectory)
         guard !files.isEmpty else {
@@ -349,11 +362,15 @@ public actor IndexingPipeline {
 
         let total = files.count
         var completedVolumes = 0
+        var failedVolumes = 0
         var totalDocuments = 0
 
         emit(.indexing(volumeId: files[0].volumeId, current: 0, total: total))
 
-        try await withThrowingTaskGroup(of: VolumeIndexData.self) { group in
+        // Use a non-throwing task group so that a single volume failure does not
+        // cancel the entire batch. Each task wraps its result in a Result so that
+        // errors are surfaced as values rather than thrown.
+        await withTaskGroup(of: Result<VolumeIndexData, Error>.self) { group in
             var iterator = files.makeIterator()
 
             // Seed the initial window.
@@ -363,21 +380,52 @@ public actor IndexingPipeline {
             for _ in 0..<min(effectiveConcurrencyLimit, total) {
                 if let file = iterator.next() {
                     group.addTask { [self] in
-                        try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
+                        do {
+                            let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
+                            return .success(data)
+                        } catch {
+                            return .failure(error)
+                        }
                     }
                 }
             }
 
             // Process results and slide the window forward.
-            for try await data in group {
-                try await storeIndexData(data)
-                completedVolumes += 1
-                totalDocuments += data.documents.count
-                emit(.indexing(volumeId: data.volumeId, current: completedVolumes, total: total))
+            for await result in group {
+                switch result {
+                case .success(let data):
+                    do {
+                        try await storeIndexData(data)
+                        completedVolumes += 1
+                        totalDocuments += data.documents.count
+                        emit(.indexing(volumeId: data.volumeId, current: completedVolumes + failedVolumes, total: total))
+                    } catch {
+                        failedVolumes += 1
+                        emit(.failed(volumeId: data.volumeId, error: error.localizedDescription))
+                        #if DEBUG
+                        print("[IndexingPipeline] storeIndexData failed for \(data.volumeId): \(error)")
+                        #endif
+                    }
+                case .failure(let error):
+                    // Extract volumeId from the error for progress reporting.
+                    let volumeId: String
+                    if case IndexingError.volumeNotFound(let vid) = error { volumeId = vid }
+                    else { volumeId = "unknown" }
+                    failedVolumes += 1
+                    emit(.failed(volumeId: volumeId, error: error.localizedDescription))
+                    #if DEBUG
+                    print("[IndexingPipeline] parseAndExtract failed for \(volumeId): \(error)")
+                    #endif
+                }
 
                 if let file = iterator.next() {
                     group.addTask { [self] in
-                        try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
+                        do {
+                            let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
+                            return .success(data)
+                        } catch {
+                            return .failure(error)
+                        }
                     }
                 }
             }
@@ -386,7 +434,7 @@ public actor IndexingPipeline {
         emit(.completed(volumeCount: completedVolumes, documentCount: totalDocuments))
 
         #if DEBUG
-        print("[IndexingPipeline] indexAllVolumes complete: \(completedVolumes) volumes, \(totalDocuments) docs")
+        print("[IndexingPipeline] indexAllVolumes complete: \(completedVolumes) volumes, \(totalDocuments) docs, \(failedVolumes) failed")
         #endif
     }
 
@@ -659,7 +707,16 @@ public actor IndexingPipeline {
             await Task.yield()
         }
 
-        // --- Remaining auxiliary tables (small; no chunking needed) ---
+        // --- Remaining auxiliary tables ---
+        //
+        // `cross_references` and `person_mentions` use plain INSERT (no PRIMARY KEY
+        // constraint on individual rows). If this volume was previously indexed, those
+        // tables already contain its rows and re-inserting would create duplicates that
+        // corrupt cross-reference counts and the person-mention graph. Delete the
+        // existing rows for this volume before inserting the fresh batch.
+        try auxDeleteCrossReferences(forVolumeId: data.volumeId)
+        try auxDeletePersonMentions(forVolumeId: data.volumeId)
+
         try auxInsertCrossReferences(data.crossReferences)
         try auxInsertPageRanges(data.pageRanges)
         try auxInsertDocumentDates(data.documentDates)
@@ -924,6 +981,13 @@ public actor IndexingPipeline {
                 case .opener(let children):
                     // Datelines inside openers are still datelines
                     results.append(contentsOf: collectDateNodes(children, inDateline: inDateline))
+                case .footnote:
+                    // Do NOT descend into footnotes. Footnotes frequently contain
+                    // <date when="..."> elements referencing other documents (e.g.
+                    // "see the memorandum of <date when='1946-03-15'>March 15, 1946</date>").
+                    // Picking up those dates corrupts the document's own date index entry,
+                    // making documents from later decades appear to have 1940s dates.
+                    break
                 default:
                     results.append(contentsOf: collectDateNodes(node.children, inDateline: inDateline))
                 }
@@ -1302,6 +1366,25 @@ public actor IndexingPipeline {
         #if DEBUG
         print("[IndexingPipeline] Inserted \(rows.count) terms for \(rows.first?.volumeId ?? "?")")
         #endif
+    }
+
+    /// Deletes all `cross_references` rows where `source_volume_id` matches.
+    ///
+    /// Called by `storeIndexData` before re-inserting so that re-indexing a volume
+    /// does not accumulate duplicate edge rows.
+    private func auxDeleteCrossReferences(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM cross_references WHERE source_volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    /// Deletes all `person_mentions` rows for a volume before re-inserting.
+    private func auxDeletePersonMentions(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM person_mentions WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
     }
 
     private func auxDeleteVolume(_ volumeId: String) throws {

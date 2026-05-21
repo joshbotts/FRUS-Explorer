@@ -162,24 +162,45 @@ public actor CrossReferenceStore {
         return try collectEdges(stmt)
     }
 
-    /// Returns all cross-volume reference counts, aggregated by (sourceVolumeId, targetVolumeId).
+    /// Returns cross-volume reference counts, aggregated by (sourceVolumeId, targetVolumeId).
     ///
     /// Only cross-volume edges are returned — same-volume references (stored with NULL
     /// `target_volume_id`) are excluded. Results are sorted by count descending.
     ///
-    /// Used by `VolumeConnectionGraphView` in the Corpus Browser to render a volume-level
-    /// overview of cross-reference relationships across the indexed corpus.
-    public func volumeLevelConnections() throws -> [VolumeConnectionEdge] {
-        let sql = """
+    /// - Parameter limitToVolumeIds: When non-nil, only edges where BOTH the source and
+    ///   target volume are in this set are returned. Pass the volume IDs of a single
+    ///   subseries to scope the graph to that subseries rather than the entire corpus.
+    ///   `nil` returns all cross-volume connections (corpus-wide).
+    ///
+    /// Used by `VolumeConnectionGraphView` in the Corpus Browser.
+    public func volumeLevelConnections(limitToVolumeIds: [String]? = nil) throws -> [VolumeConnectionEdge] {
+        var sql = """
             SELECT source_volume_id, target_volume_id, COUNT(*) AS ref_count
             FROM cross_references
             WHERE target_volume_id IS NOT NULL
               AND target_volume_id != source_volume_id
-            GROUP BY source_volume_id, target_volume_id
-            ORDER BY ref_count DESC
             """
+        if let vids = limitToVolumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            sql += "\n  AND source_volume_id IN (\(placeholders))"
+            sql += "\n  AND target_volume_id IN (\(placeholders))"
+        }
+        sql += "\nGROUP BY source_volume_id, target_volume_id ORDER BY ref_count DESC"
+
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
+
+        if let vids = limitToVolumeIds, !vids.isEmpty {
+            // Bind the volume IDs twice — once for source_volume_id, once for target_volume_id.
+            for (i, vid) in vids.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), vid, -1, SQLITE_TRANSIENT_CR)
+            }
+            let offset = Int32(vids.count)
+            for (i, vid) in vids.enumerated() {
+                sqlite3_bind_text(stmt, offset + Int32(i + 1), vid, -1, SQLITE_TRANSIENT_CR)
+            }
+        }
+
         var result: [VolumeConnectionEdge] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             let src = columnString(stmt, 0) ?? ""

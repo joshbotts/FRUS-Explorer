@@ -1029,9 +1029,128 @@ struct MacTagPickerSheet: View {
     }
 }
 
+/// Popover that lists available summarization prompts for the document view.
+///
+/// Presented by `SummaryBlockView`'s "Change prompt" button. Tapping a prompt
+/// dismisses the popover and immediately generates a new summary using that prompt.
+/// A "New Prompt…" toolbar button opens `PromptEditorView` in a sheet so the user
+/// can create a prompt without leaving the document context.
+///
+/// Version history:
+///   1.0 — Session 75: initial implementation (replaces stub)
 struct SummaryPromptPickerView: View {
     @Bindable var vm: DocumentViewModel
-    var body: some View { Text("Prompt picker").padding() }
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
+    @State private var showNewPromptEditor = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(allPrompts) { prompt in
+                    Button {
+                        dismiss()
+                        guard let service = appState.summarizationService else { return }
+                        Task {
+                            await vm.generateSummary(
+                                prompt: prompt,
+                                provider: AppleIntelligenceProvider.shared,
+                                service: service,
+                                activeProjectId: appState.activeProjectId,
+                                context: modelContext
+                            )
+                        }
+                    } label: {
+                        PromptPickerRowMac(prompt: prompt)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .navigationTitle(
+                String(localized: "document.summarize.picker.title",
+                       defaultValue: "Choose a Prompt")
+            )
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showNewPromptEditor = true
+                    } label: {
+                        Label(
+                            String(localized: "document.summarize.picker.newPrompt",
+                                   defaultValue: "New Prompt…"),
+                            systemImage: "plus"
+                        )
+                    }
+                }
+            }
+            .overlay {
+                if allPrompts.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "document.summarize.picker.empty.title",
+                               defaultValue: "No Prompts"),
+                        systemImage: "sparkles",
+                        description: Text(
+                            String(localized: "document.summarize.picker.empty.detail",
+                                   defaultValue: "Add a prompt in Settings → Summarization Prompts.")
+                        )
+                    )
+                }
+            }
+        }
+        .frame(minWidth: 360, minHeight: 300)
+        .sheet(isPresented: $showNewPromptEditor) {
+            PromptEditorView(promptToEdit: nil)
+        }
+    }
+}
+
+// MARK: - PromptPickerRowMac
+
+/// Single row in `SummaryPromptPickerView`'s list.
+///
+/// Displays the prompt name, a "Standard" badge for seeded prompts, and a
+/// secondary line describing the response format.
+private struct PromptPickerRowMac: View {
+    let prompt: SummarizationPrompt
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Text(prompt.name).font(.body)
+                if prompt.isStandard {
+                    Text(String(localized: "prompt.picker.row.standard",
+                                defaultValue: "Standard"))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.12))
+                        .clipShape(Capsule())
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            Text(formatLabel)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var formatLabel: String {
+        switch prompt.responseFormat {
+        case .general:
+            return String(localized: "prompt.picker.row.format.general",
+                          defaultValue: "General prose")
+        case .structured(let schema):
+            let names = schema.fields.map(\.name).joined(separator: ", ")
+            return String(localized: "prompt.picker.row.format.structured",
+                          defaultValue: "Structured: \(names)")
+        }
+    }
 }
 
 // MARK: - PersonDetailSheet (macOS)
@@ -1137,11 +1256,7 @@ struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
-    enum ViewMode { case browse, connections }
-    @State private var viewMode: ViewMode = .browse
-
     @State private var selectedSubseries: String? = nil
-    @State private var selectedVolume: VolumeManifestEntry? = nil
     @State private var searchText: String = ""
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
@@ -1174,19 +1289,6 @@ struct CorpusBrowserWindowView: View {
     }
 
     var body: some View {
-        Group {
-            if viewMode == .connections {
-                VolumeConnectionGraphView()
-                    .navigationTitle("Corpus Browser")
-                    .toolbar { modeToolbar }
-                    .frame(minWidth: 540, minHeight: 440)
-            } else {
-                browseView
-            }
-        }
-    }
-
-    private var browseView: some View {
         NavigationSplitView {
             List(selection: $selectedSubseries) {
                 ForEach(subseries, id: \.self) { sub in
@@ -1197,7 +1299,6 @@ struct CorpusBrowserWindowView: View {
             .navigationTitle("Corpus Browser")
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
-                modeToolbar
                 ToolbarItem(placement: .primaryAction) {
                     Button { sortDescending.toggle() } label: {
                         Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
@@ -1226,18 +1327,6 @@ struct CorpusBrowserWindowView: View {
         .frame(minWidth: 540, minHeight: 440)
     }
 
-    @ToolbarContentBuilder
-    private var modeToolbar: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Picker("", selection: $viewMode) {
-                Label("Browse", systemImage: "books.vertical").tag(ViewMode.browse)
-                Label("Connections", systemImage: "point.3.connected.trianglepath.dotted").tag(ViewMode.connections)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
-        }
-    }
-
     private func subseriesRow(_ sub: String) -> some View {
         let vols = volumes(for: sub)
         let dlCount = vols.filter {
@@ -1263,8 +1352,94 @@ struct CorpusBrowserWindowView: View {
             $0.title.localizedCaseInsensitiveContains(searchText) ||
             $0.volumeId.localizedCaseInsensitiveContains(searchText)
         }
+        SubseriesVolumeListView(
+            subseries: subseries,
+            filteredVolumes: filtered,
+            searchText: $searchText
+        )
+    }
+}
 
-        List(filtered) { vol in
+// MARK: - SubseriesVolumeListView
+
+/// Volume list for a selected FRUS subseries with per-volume cross-reference graph access.
+///
+/// Each volume row has a small graph button (⌘-tap opens the graph sheet without
+/// navigating away from the list). The graph sheet shows `VolumeConnectionGraphView`
+/// pre-selected to that volume — corpus-wide edges, not restricted to the subseries —
+/// so the user can see every volume that cross-references the chosen volume regardless
+/// of which subseries it belongs to.
+///
+/// Version history:
+///   1.0 — extracted from `CorpusBrowserWindowView`
+///   1.1 — Session 75: added subseries-scoped `VolumeConnectionGraphView` toolbar toggle
+///   1.2 — Session 75: subseries filter removed; per-volume graph button replaces toolbar
+///          toggle; volume detail and graph sheets unified under a single `SheetContent` enum
+private struct SubseriesVolumeListView: View {
+    let subseries: String
+    let filteredVolumes: [VolumeManifestEntry]
+
+    @Binding var searchText: String
+
+    @Environment(AppState.self) private var appState
+
+    // MARK: - Sheet
+
+    private enum SheetContent: Identifiable {
+        case detail(VolumeManifestEntry)
+        case graph(VolumeManifestEntry)
+        var id: String {
+            switch self {
+            case .detail(let v): return "detail-\(v.volumeId)"
+            case .graph(let v):  return "graph-\(v.volumeId)"
+            }
+        }
+    }
+    @State private var sheetContent: SheetContent?
+
+    // MARK: - Body
+
+    var body: some View {
+        List {
+            ForEach(filteredVolumes) { vol in
+                volumeRow(vol)
+            }
+        }
+        .listStyle(.inset)
+        .searchable(text: $searchText, prompt: "Search volumes…")
+        .navigationTitle(subseries)
+        .sheet(item: $sheetContent) { content in
+            switch content {
+            case .detail(let vol):
+                CorpusVolumeDetailSheet(volume: vol)
+            case .graph(let vol):
+                NavigationStack {
+                    VolumeConnectionGraphView(initialSelectedVolumeId: vol.volumeId)
+                        .environment(appState)
+                        .navigationTitle(vol.title)
+                        #if os(iOS)
+                        .navigationBarTitleDisplayMode(.inline)
+                        #endif
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button(String(localized: "corpus.graph.done",
+                                              defaultValue: "Done")) {
+                                    sheetContent = nil
+                                }
+                            }
+                        }
+                }
+                #if os(macOS)
+                .frame(minWidth: 680, minHeight: 520)
+                #endif
+            }
+        }
+    }
+
+    // MARK: - Volume Row
+
+    private func volumeRow(_ vol: VolumeManifestEntry) -> some View {
+        HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(vol.title)
                     .font(.system(size: 12))
@@ -1287,16 +1462,23 @@ struct CorpusBrowserWindowView: View {
                     }
                 }
             }
-            .padding(.vertical, 2)
-            .contentShape(Rectangle())
-            .onTapGesture { selectedVolume = vol }
+            Spacer()
+            Button {
+                sheetContent = .graph(vol)
+            } label: {
+                Image(systemName: "point.3.connected.trianglepath.dotted")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+            .accessibilityLabel(
+                String(localized: "corpus.volume.graphButton.a11y",
+                       defaultValue: "Cross-reference graph for \(vol.volumeId)")
+            )
         }
-        .listStyle(.inset)
-        .searchable(text: $searchText, prompt: "Search volumes…")
-        .navigationTitle(subseries)
-        .sheet(item: $selectedVolume) { vol in
-            CorpusVolumeDetailSheet(volume: vol)
-        }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onTapGesture { sheetContent = .detail(vol) }
     }
 }
 

@@ -230,10 +230,10 @@ final class VolumeConnectionGraphViewModel {
 
 /// Canvas-based force-directed graph of volume-to-volume cross-reference relationships.
 ///
-/// Rendered as a floating view inside `CorpusBrowserWindowView` when the user selects
-/// the "Connections" mode. Each node represents a FRUS volume; each edge represents
-/// one or more document-level cross-references between those volumes. Edge line width
-/// is proportional to the reference count.
+/// Shows all cross-volume edges in the corpus. When `initialSelectedVolumeId` is set,
+/// that volume node is pre-selected so its connection panel opens immediately — useful
+/// when launching the graph from a specific volume in the Corpus Browser or from the
+/// `CrossReferenceGraphWindowView` picker.
 ///
 /// ## Layout
 /// Force-directed spring-repulsion (same physics as the document-level ego graph).
@@ -247,7 +247,15 @@ final class VolumeConnectionGraphViewModel {
 ///
 /// Version history:
 ///   1.0 — Initial implementation for CorpusBrowserWindowView Connections mode
+///   1.1 — Session 75: `limitToVolumeIds` parameter added; graph moved from corpus-level
+///          to subseries detail pane to prevent overwhelming node counts
+///   1.2 — Session 75: `limitToVolumeIds` replaced with `initialSelectedVolumeId`;
+///          graph is now always corpus-wide, scoped to a specific volume by pre-selection
 struct VolumeConnectionGraphView: View {
+
+    /// When set, this volume's node is pre-selected when the graph first loads, opening
+    /// the info panel that lists its connections. `nil` shows the graph with no selection.
+    var initialSelectedVolumeId: String?
 
     @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -280,6 +288,10 @@ struct VolumeConnectionGraphView: View {
         .task {
             if let store = appState.crossReferenceStore {
                 await vm.load(from: store)
+                // Pre-select the requested volume so its connections panel opens immediately.
+                if let vid = initialSelectedVolumeId {
+                    vm.selectedVolumeId = vid
+                }
             }
         }
     }

@@ -38,14 +38,25 @@ struct PromptTemplate: Identifiable, Sendable {
 /// Inserts the standard general-purpose prompt and the seven structured-schema
 /// templates approved for Session 20. All seeded records have `isStandard = true`.
 ///
-/// The `seed(in:)` method is idempotent: if any standard prompts already exist,
-/// it returns without inserting duplicates.
+/// ## Idempotency
+/// `seed(in:)` checks by prompt name before inserting each template so it is safe
+/// to call on multiple platforms sharing the same CloudKit container. Only templates
+/// whose names are not already present in the store are inserted. This prevents
+/// the duplicate-prompt symptom that arose when both Mac and iOS seeded before
+/// CloudKit could sync the first batch.
+///
+/// After inserting, `seed(in:)` runs a deduplication pass that removes any surplus
+/// standard prompts that share a name (keeping the oldest by `createdAt`). This
+/// repairs any duplicates that were created before this fix was deployed.
 ///
 /// ## Log prefix
 /// `[SummarizationPromptSeeder]`
 ///
 /// Version history:
 ///   1.0 — Session 20: initial implementation
+///   1.1 — Session 75: per-name idempotency check + deduplication pass to fix
+///          CloudKit sync race that produced duplicate standard prompts when both
+///          Mac and iOS seeded before the first batch had synced.
 enum SummarizationPromptSeeder {
 
     // MARK: - Standard Templates (public for prompt editor use)
@@ -64,7 +75,13 @@ enum SummarizationPromptSeeder {
 
     // MARK: - Seed
 
-    /// Inserts all standard prompts if none exist yet.
+    /// Inserts missing standard prompts and deduplicates any existing duplicates.
+    ///
+    /// - Each template is only inserted if no standard prompt with the same name
+    ///   already exists in the store.
+    /// - After insertion, duplicate standard prompts (same name) are resolved by
+    ///   keeping the oldest record and deleting the rest.
+    ///
     /// Creates its own `ModelContext` from the supplied container.
     @MainActor
     static func seed(in container: ModelContainer) {
@@ -72,14 +89,15 @@ enum SummarizationPromptSeeder {
         let descriptor = FetchDescriptor<SummarizationPrompt>(
             predicate: #Predicate { $0.isStandard == true }
         )
-        guard (try? context.fetch(descriptor))?.isEmpty != false else {
-            #if DEBUG
-            print("[SummarizationPromptSeeder] Standard prompts already present — skipping")
-            #endif
-            return
-        }
+        let existing = (try? context.fetch(descriptor)) ?? []
 
+        // Build the set of names already in the store.
+        let existingNames = Set(existing.map(\.name))
+
+        // Insert any template whose name is not already present.
+        var insertCount = 0
         for template in standardTemplates {
+            guard !existingNames.contains(template.name) else { continue }
             let prompt = SummarizationPrompt(
                 name: template.name,
                 promptText: template.promptText,
@@ -88,16 +106,48 @@ enum SummarizationPromptSeeder {
                 schema: template.schema
             )
             context.insert(prompt)
+            insertCount += 1
+        }
+
+        // Deduplication pass: group standard prompts by name; for each group with
+        // more than one entry, delete all but the oldest (smallest createdAt).
+        let allStandard = (try? context.fetch(descriptor)) ?? existing
+        var byName: [String: [SummarizationPrompt]] = [:]
+        for prompt in allStandard {
+            byName[prompt.name, default: []].append(prompt)
+        }
+        var deleteCount = 0
+        for (_, group) in byName where group.count > 1 {
+            // Sort ascending by createdAt (nil sorts last so oldest non-nil wins).
+            let sorted = group.sorted {
+                ($0.createdAt ?? .distantFuture) < ($1.createdAt ?? .distantFuture)
+            }
+            for duplicate in sorted.dropFirst() {
+                context.delete(duplicate)
+                deleteCount += 1
+            }
+        }
+
+        guard insertCount > 0 || deleteCount > 0 else {
+            #if DEBUG
+            print("[SummarizationPromptSeeder] All standard prompts present — nothing to do")
+            #endif
+            return
         }
 
         do {
             try context.save()
             #if DEBUG
-            print("[SummarizationPromptSeeder] Seeded \(standardTemplates.count) standard prompts")
+            if insertCount > 0 {
+                print("[SummarizationPromptSeeder] Seeded \(insertCount) standard prompt(s)")
+            }
+            if deleteCount > 0 {
+                print("[SummarizationPromptSeeder] Removed \(deleteCount) duplicate standard prompt(s)")
+            }
             #endif
         } catch {
             #if DEBUG
-            print("[SummarizationPromptSeeder] Seed failed: \(error)")
+            print("[SummarizationPromptSeeder] Save failed: \(error)")
             #endif
         }
     }

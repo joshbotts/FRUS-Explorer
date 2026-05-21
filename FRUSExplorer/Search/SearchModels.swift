@@ -39,6 +39,8 @@ public enum DocumentTypeFilter: Sendable, Equatable {
 ///   1.0 — Session 09: initial implementation
 ///   1.1 — Session 38: `documentTypeFilter` added
 ///   1.2 — Session 39: `personRef` filter added
+///   1.3 — Session 75: `includeDocumentText` added so document body columns can be excluded
+///          to enable "summaries only" or "notes only" search scope
 public struct SearchParameters: Sendable, Equatable {
 
     // MARK: - Full-text fields
@@ -79,6 +81,15 @@ public struct SearchParameters: Sendable, Equatable {
     public var volumeIds: [String]?
 
     // MARK: - Content scope
+
+    /// Whether document body text (header, dateline, source note, body) should be searched.
+    ///
+    /// Default `true`. When `false`, document content columns are excluded from the FTS5
+    /// column set, allowing searches scoped exclusively to summaries and/or notes.
+    /// At least one of `includeDocumentText`, `includeSummaries`, or `includeNotes` must
+    /// be `true`; `SearchService` will throw `FTS5Error.emptyQuery` if the active column
+    /// set is empty.
+    public var includeDocumentText: Bool
 
     /// Whether summary text should be searched. Default `true`.
     public var includeSummaries: Bool
@@ -122,6 +133,7 @@ public struct SearchParameters: Sendable, Equatable {
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
         volumeIds: [String]? = nil,
+        includeDocumentText: Bool = true,
         includeSummaries: Bool = true,
         includeNotes: Bool = true,
         projectId: UUID? = nil,
@@ -137,6 +149,7 @@ public struct SearchParameters: Sendable, Equatable {
         self.subjectTagIds = subjectTagIds
         self.userTagIds = userTagIds
         self.volumeIds = volumeIds
+        self.includeDocumentText = includeDocumentText
         self.includeSummaries = includeSummaries
         self.includeNotes = includeNotes
         self.projectId = projectId

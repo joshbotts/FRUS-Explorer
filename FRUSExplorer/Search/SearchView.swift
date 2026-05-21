@@ -265,12 +265,9 @@ private struct SearchResultRow: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
-            // Snippet (strip <b> markers)
-            let cleanSnippet = result.snippet
-                .replacingOccurrences(of: "<b>", with: "")
-                .replacingOccurrences(of: "</b>", with: "")
-            if !cleanSnippet.isEmpty {
-                Text(cleanSnippet)
+            // Snippet — render <b>…</b> markers as highlighted text
+            if !result.snippet.isEmpty {
+                SearchSnippetView(snippet: result.snippet)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
@@ -296,6 +293,51 @@ private struct SearchResultRow: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - SearchSnippetView
+
+/// Renders an FTS5 snippet where `<b>` / `</b>` delimiters mark matched terms.
+///
+/// Matched terms are shown in the accent colour with medium weight; the surrounding
+/// context text uses the inherited foreground style. Mirrors `SnippetView` in
+/// `SearchSheet.swift` (used by the macOS search sheet and iOS search view).
+private struct SearchSnippetView: View {
+    let snippet: String
+
+    var body: some View {
+        (try? AttributedString(styledSnippet(snippet), including: \.swiftUI))
+            .map { Text($0) } ?? Text(plainSnippet)
+    }
+
+    private var plainSnippet: String {
+        snippet
+            .replacingOccurrences(of: "<b>", with: "")
+            .replacingOccurrences(of: "</b>", with: "")
+    }
+
+    private func styledSnippet(_ raw: String) throws -> AttributedString {
+        var result = AttributedString()
+        var remainder = raw
+        while !remainder.isEmpty {
+            if let openRange = remainder.range(of: "<b>"),
+               let closeRange = remainder.range(of: "</b>",
+                   range: openRange.upperBound..<remainder.endIndex) {
+                let before = String(remainder[..<openRange.lowerBound])
+                if !before.isEmpty { result += AttributedString(before) }
+                let highlighted = String(remainder[openRange.upperBound..<closeRange.lowerBound])
+                var span = AttributedString(highlighted)
+                span.swiftUI.foregroundColor = .accentColor
+                span.swiftUI.font = .caption.weight(.medium)
+                result += span
+                remainder = String(remainder[closeRange.upperBound...])
+            } else {
+                result += AttributedString(remainder)
+                break
+            }
+        }
+        return result
     }
 }
 

@@ -169,21 +169,31 @@ public actor SearchService {
 
     /// Translates `SearchParameters` into an `FTS5Query`.
     ///
-    /// Column scoping: when summaries or notes are excluded, searches only the
-    /// content columns the user has opted into.
+    /// Column scoping: when any scope flag is `false`, only the opted-in columns
+    /// are searched. When all flags are `true`, `columns` is `nil` and FTS5
+    /// searches all columns (the default, fastest path).
     public func makeFTS5Query(from parameters: SearchParameters) throws -> FTS5Query {
         let keywords = parameters.keywords?
             .split(whereSeparator: \.isWhitespace)
             .map(String.init)
             .filter { !$0.isEmpty } ?? []
 
-        // Build active column set
+        // Build active column set.
+        // Document text columns (header, dateline, sourceNote, bodyText) are included
+        // only when `includeDocumentText` is true. Summary and note columns are additive.
+        // When all flags are true the full FTS5 default search (columns: nil) is used.
         var columns: [FTS5Column]? = nil
-        if !parameters.includeSummaries || !parameters.includeNotes {
-            var cols: [FTS5Column] = [.header, .dateline, .sourceNote, .bodyText]
+        let needsColumnFilter = !parameters.includeDocumentText
+                             || !parameters.includeSummaries
+                             || !parameters.includeNotes
+        if needsColumnFilter {
+            var cols: [FTS5Column] = []
+            if parameters.includeDocumentText {
+                cols.append(contentsOf: [.header, .dateline, .sourceNote, .bodyText])
+            }
             if parameters.includeSummaries { cols.append(.summaryText) }
             if parameters.includeNotes     { cols.append(.noteText) }
-            columns = cols
+            columns = cols.isEmpty ? nil : cols
         }
 
         // Single subject/user tag IDs passed to FTS5 for pre-filtering;

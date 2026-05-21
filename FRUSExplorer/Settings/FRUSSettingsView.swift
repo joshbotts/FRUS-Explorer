@@ -856,15 +856,25 @@ private struct SettingsStoragePane: View {
                 volumeTable
                     .padding(.bottom, 12)
 
-                // Reindex all
-                HStack(spacing: 10) {
+                // Indexing actions
+                HStack(spacing: 8) {
                     Button {
-                        Task { await reindexAll() }
+                        Task { await indexRemaining() }
                     } label: {
-                        Label("Reindex all volumes", systemImage: "arrow.clockwise")
+                        Label("Index Remaining", systemImage: "plus.circle")
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.bordered)
+                    .help("Index only volumes that have not been indexed yet.")
+
+                    Button {
+                        Task { await reindexAll() }
+                    } label: {
+                        Label("Reindex All", systemImage: "arrow.clockwise")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Re-index all downloaded volumes from scratch.")
 
                     if let report = storageReport {
                         let indexed = indexedCount
@@ -1073,6 +1083,18 @@ private struct SettingsStoragePane: View {
         reindexingVolumeId = volumeId
         try? await pipeline.indexVolume(volumeId)
         reindexingVolumeId = nil
+        await loadReport()
+    }
+
+    private func indexRemaining() async {
+        guard let pipeline = appState.indexingPipeline,
+              let report = storageReport else { return }
+        let unindexed = report.perVolume.filter {
+            (try? pipeline.isVolumeIndexed($0.volumeId)) != true
+        }
+        for entry in unindexed {
+            try? await pipeline.indexVolume(entry.volumeId)
+        }
         await loadReport()
     }
 
