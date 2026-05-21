@@ -1029,9 +1029,128 @@ struct MacTagPickerSheet: View {
     }
 }
 
+/// Popover that lists available summarization prompts for the document view.
+///
+/// Presented by `SummaryBlockView`'s "Change prompt" button. Tapping a prompt
+/// dismisses the popover and immediately generates a new summary using that prompt.
+/// A "New Prompt…" toolbar button opens `PromptEditorView` in a sheet so the user
+/// can create a prompt without leaving the document context.
+///
+/// Version history:
+///   1.0 — Session 75: initial implementation (replaces stub)
 struct SummaryPromptPickerView: View {
     @Bindable var vm: DocumentViewModel
-    var body: some View { Text("Prompt picker").padding() }
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
+    @State private var showNewPromptEditor = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(allPrompts) { prompt in
+                    Button {
+                        dismiss()
+                        guard let service = appState.summarizationService else { return }
+                        Task {
+                            await vm.generateSummary(
+                                prompt: prompt,
+                                provider: AppleIntelligenceProvider.shared,
+                                service: service,
+                                activeProjectId: appState.activeProjectId,
+                                context: modelContext
+                            )
+                        }
+                    } label: {
+                        PromptPickerRowMac(prompt: prompt)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .navigationTitle(
+                String(localized: "document.summarize.picker.title",
+                       defaultValue: "Choose a Prompt")
+            )
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showNewPromptEditor = true
+                    } label: {
+                        Label(
+                            String(localized: "document.summarize.picker.newPrompt",
+                                   defaultValue: "New Prompt…"),
+                            systemImage: "plus"
+                        )
+                    }
+                }
+            }
+            .overlay {
+                if allPrompts.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "document.summarize.picker.empty.title",
+                               defaultValue: "No Prompts"),
+                        systemImage: "sparkles",
+                        description: Text(
+                            String(localized: "document.summarize.picker.empty.detail",
+                                   defaultValue: "Add a prompt in Settings → Summarization Prompts.")
+                        )
+                    )
+                }
+            }
+        }
+        .frame(minWidth: 360, minHeight: 300)
+        .sheet(isPresented: $showNewPromptEditor) {
+            PromptEditorView(promptToEdit: nil)
+        }
+    }
+}
+
+// MARK: - PromptPickerRowMac
+
+/// Single row in `SummaryPromptPickerView`'s list.
+///
+/// Displays the prompt name, a "Standard" badge for seeded prompts, and a
+/// secondary line describing the response format.
+private struct PromptPickerRowMac: View {
+    let prompt: SummarizationPrompt
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Text(prompt.name).font(.body)
+                if prompt.isStandard {
+                    Text(String(localized: "prompt.picker.row.standard",
+                                defaultValue: "Standard"))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.12))
+                        .clipShape(Capsule())
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            Text(formatLabel)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var formatLabel: String {
+        switch prompt.responseFormat {
+        case .general:
+            return String(localized: "prompt.picker.row.format.general",
+                          defaultValue: "General prose")
+        case .structured(let schema):
+            let names = schema.fields.map(\.name).joined(separator: ", ")
+            return String(localized: "prompt.picker.row.format.structured",
+                          defaultValue: "Structured: \(names)")
+        }
+    }
 }
 
 // MARK: - PersonDetailSheet (macOS)
