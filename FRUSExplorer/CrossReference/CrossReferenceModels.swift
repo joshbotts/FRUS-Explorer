@@ -162,3 +162,48 @@ public struct VolumeConnectionEdge: Sendable {
         self.count = count
     }
 }
+
+// MARK: - VolumeEgoGraph
+
+/// The ego graph centred on a single FRUS volume.
+///
+/// Contains all inbound edges (references from other volumes TO the central volume)
+/// and outbound edges (references FROM the central volume TO other volumes).
+/// Produced by `CrossReferenceStore.volumeEgoGraph(forVolumeId:)`.
+///
+/// Version history:
+///   1.0 — Added when the volume-level graph was redesigned as a per-volume ego graph
+public struct VolumeEgoGraph: Sendable {
+    /// The volume this graph is centred on.
+    public let centralVolumeId: String
+    /// Other volumes that contain references to documents in the central volume.
+    /// Each edge's `sourceVolumeId` is the referencing volume; `targetVolumeId` is `centralVolumeId`.
+    public let inboundEdges: [VolumeConnectionEdge]
+    /// Volumes that the central volume's documents reference.
+    /// Each edge's `sourceVolumeId` is `centralVolumeId`; `targetVolumeId` is the referenced volume.
+    public let outboundEdges: [VolumeConnectionEdge]
+
+    public init(
+        centralVolumeId: String,
+        inboundEdges: [VolumeConnectionEdge],
+        outboundEdges: [VolumeConnectionEdge]
+    ) {
+        self.centralVolumeId = centralVolumeId
+        self.inboundEdges = inboundEdges
+        self.outboundEdges = outboundEdges
+    }
+
+    /// All unique partner volume IDs (sources of inbound + targets of outbound), sorted.
+    public var partnerVolumeIds: [String] {
+        var seen = Set<String>()
+        var ids: [String] = []
+        for edge in inboundEdges  { if seen.insert(edge.sourceVolumeId).inserted { ids.append(edge.sourceVolumeId) } }
+        for edge in outboundEdges { if seen.insert(edge.targetVolumeId).inserted { ids.append(edge.targetVolumeId) } }
+        return ids.sorted()
+    }
+
+    /// Volume IDs that appear in both inbound and outbound edges.
+    public var bidirectionalVolumeIds: Set<String> {
+        Set(inboundEdges.map(\.sourceVolumeId)).intersection(Set(outboundEdges.map(\.targetVolumeId)))
+    }
+}

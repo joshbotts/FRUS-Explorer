@@ -211,6 +211,63 @@ public actor CrossReferenceStore {
         return result
     }
 
+    /// Returns the ego graph for a single volume: all cross-volume inbound and outbound edges,
+    /// aggregated by partner volume.
+    ///
+    /// - Inbound edges: other volumes whose documents contain `<ref target="volumeId#...">`.
+    /// - Outbound edges: volumes that documents in `volumeId` reference.
+    ///
+    /// Same-volume references (NULL `target_volume_id`) and self-loop references are excluded.
+    public func volumeEgoGraph(forVolumeId volumeId: String) throws -> VolumeEgoGraph {
+        let inbound  = try volumeInboundConnectionEdges(forVolumeId: volumeId)
+        let outbound = try volumeOutboundConnectionEdges(forVolumeId: volumeId)
+        return VolumeEgoGraph(centralVolumeId: volumeId, inboundEdges: inbound, outboundEdges: outbound)
+    }
+
+    private func volumeInboundConnectionEdges(forVolumeId volumeId: String) throws -> [VolumeConnectionEdge] {
+        let sql = """
+            SELECT source_volume_id, target_volume_id, COUNT(*) AS ref_count
+            FROM cross_references
+            WHERE target_volume_id = ?
+              AND source_volume_id != ?
+            GROUP BY source_volume_id
+            ORDER BY ref_count DESC
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_CR)
+        sqlite3_bind_text(stmt, 2, volumeId, -1, SQLITE_TRANSIENT_CR)
+        return try collectVolumeEdges(stmt)
+    }
+
+    private func volumeOutboundConnectionEdges(forVolumeId volumeId: String) throws -> [VolumeConnectionEdge] {
+        let sql = """
+            SELECT source_volume_id, target_volume_id, COUNT(*) AS ref_count
+            FROM cross_references
+            WHERE source_volume_id = ?
+              AND target_volume_id IS NOT NULL
+              AND target_volume_id != ?
+            GROUP BY target_volume_id
+            ORDER BY ref_count DESC
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_CR)
+        sqlite3_bind_text(stmt, 2, volumeId, -1, SQLITE_TRANSIENT_CR)
+        return try collectVolumeEdges(stmt)
+    }
+
+    private func collectVolumeEdges(_ stmt: OpaquePointer) throws -> [VolumeConnectionEdge] {
+        var edges: [VolumeConnectionEdge] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let src = columnString(stmt, 0) ?? ""
+            let tgt = columnString(stmt, 1) ?? ""
+            let cnt = Int(sqlite3_column_int64(stmt, 2))
+            edges.append(VolumeConnectionEdge(sourceVolumeId: src, targetVolumeId: tgt, count: cnt))
+        }
+        return edges
+    }
+
     /// Returns the total number of inbound + outbound edges for the given document.
     public func edgeCount(
         forDocumentId documentId: String,
