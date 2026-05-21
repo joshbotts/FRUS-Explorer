@@ -75,6 +75,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          existing volume rows before inserting; `extractStructuredDate.collectDateNodes`
 ///          now skips `.footnote` descendants (fixes date corruption from footnote <date>
 ///          references); `currentDateIndexVersion` bumped to 4
+///   2.1 — Session 76: `document_dates` gains `date_iso_max` column; date filtering uses
+///          interval overlap (`date_iso <= rangeEnd AND COALESCE(date_iso_max, date_iso)
+///          >= rangeStart`) instead of point comparison; `extractDateRange` replaces
+///          single-value extraction, using `frus:doc-dateTime-min`/`max` from the AST
+///          when present and falling back to per-attribute priority logic; `collectDateNodes`
+///          extracted to a shared private helper; `currentDateIndexVersion` bumped to 5
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -175,7 +181,10 @@ public actor IndexingPipeline {
     /// - Version 3: all partial dates normalized to full yyyy-MM-dd precision
     /// - Version 4: footnote nodes excluded from date search (Session 75); prevents
     ///   cross-reference dates inside footnotes from corrupting documents' date index
-    public static let currentDateIndexVersion: Int = 4
+    /// - Version 5: `date_iso_max` column added; interval overlap filtering; `@to` and
+    ///   `@notAfter` now captured as range end; `frus:doc-dateTime-min`/`max` used when
+    ///   present as authoritative editorial date bounds (Session 76)
+    public static let currentDateIndexVersion: Int = 5
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -560,13 +569,35 @@ public actor IndexingPipeline {
     // MARK: - Date Range Query (used by SearchService)
 
     /// Returns a set of `"volumeId/documentId"` composite keys for documents whose
-    /// best-effort date falls within `range`. Used by `SearchService` for date filtering.
+    /// date range overlaps `range`. Used by `SearchService` for date filtering.
+    ///
+    /// Uses interval overlap semantics rather than point containment:
+    ///   - `date_iso` (range start) must be ≤ the query's latest bound
+    ///   - `COALESCE(date_iso_max, date_iso)` (range end, falling back to start for
+    ///     legacy rows) must be ≥ the query's earliest bound
+    ///
+    /// This correctly handles multi-day documents (`@from`/`@to`), imprecise year-only
+    /// documents ("1969-01-01" to "1969-12-31"), and undated documents with
+    /// `@notBefore`/`@notAfter` bounds — all of which would be excluded by a
+    /// point-comparison query outside their encoded range.
+    ///
+    /// Documents without any parseable date (`date_iso IS NULL`) are always excluded
+    /// when a range filter is active.
     func documentKeysInDateRange(_ range: DateRange, limitToVolumeIds volumeIds: [String]?) throws -> Set<String> {
         var parts: [String] = ["date_iso IS NOT NULL"]
         var args: [String] = []
 
-        if let e = range.earliest { parts.append("date_iso >= ?"); args.append(e) }
-        if let l = range.latest   { parts.append("date_iso <= ?"); args.append(l) }
+        // Interval overlap: document_min <= queryEnd AND document_max >= queryStart.
+        // COALESCE handles pre-version-5 rows where date_iso_max is NULL by treating
+        // the single point date as both the min and max of the document's range.
+        if let e = range.earliest {
+            parts.append("COALESCE(date_iso_max, date_iso) >= ?")
+            args.append(e)
+        }
+        if let l = range.latest {
+            parts.append("date_iso <= ?")
+            args.append(l)
+        }
 
         if let vids = volumeIds, !vids.isEmpty {
             let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
@@ -635,9 +666,14 @@ public actor IndexingPipeline {
                 from: astDoc.nodes, sourceVolumeId: volumeId, sourceDocumentId: did))
             pageRangeRows.append(contentsOf: Self.extractPageRanges(
                 from: astDoc.nodes, volumeId: volumeId, documentId: did))
+            let (dateMin, dateMax) = Self.extractDateRange(
+                from: astDoc.nodes,
+                dateTimeMin: astDoc.dateTimeMin,
+                dateTimeMax: astDoc.dateTimeMax
+            )
             dateRows.append(DocumentDateRow(
                 volumeId: volumeId, documentId: did,
-                dateISO: Self.extractStructuredDate(from: astDoc.nodes)
+                dateISOMin: dateMin, dateISOMax: dateMax
             ))
             cacheRows.append(DocumentCacheRow(
                 volumeId: volumeId, documentId: did, documentNumber: docNumber,
@@ -939,6 +975,47 @@ public actor IndexingPipeline {
         return result
     }
 
+    // MARK: - Date Extraction
+
+    /// Holds the date attributes from a single `<date>` AST node plus its context.
+    private struct DateNodeInfo {
+        let when: String?
+        let from: String?
+        let to: String?
+        let notBefore: String?
+        let notAfter: String?
+        let inDateline: Bool
+    }
+
+    /// Recursively collects all `.date` AST nodes, tagging each with whether it appears
+    /// inside a `.dateline`. Descends into `.opener` (datelines often live there) but
+    /// does **not** descend into `.footnote` — footnote dates reference other documents
+    /// and must not corrupt the enclosing document's own date index.
+    nonisolated private static func collectDateNodes(
+        _ nodes: [FRUSASTNode],
+        inDateline: Bool
+    ) -> [DateNodeInfo] {
+        var results: [DateNodeInfo] = []
+        for node in nodes {
+            switch node {
+            case .date(let when, let from, let to, let notBefore, let notAfter, let children):
+                results.append(DateNodeInfo(when: when, from: from, to: to,
+                                            notBefore: notBefore, notAfter: notAfter,
+                                            inDateline: inDateline))
+                results.append(contentsOf: collectDateNodes(children, inDateline: inDateline))
+            case .dateline(let children):
+                results.append(contentsOf: collectDateNodes(children, inDateline: true))
+            case .opener(let children):
+                results.append(contentsOf: collectDateNodes(children, inDateline: inDateline))
+            case .footnote:
+                break
+            default:
+                results.append(contentsOf: collectDateNodes(node.children, inDateline: inDateline))
+            }
+        }
+        return results
+    }
+
     /// Extracts the best available ISO 8601 date string from the document's AST nodes.
     ///
     /// Priority order:
@@ -949,81 +1026,81 @@ public actor IndexingPipeline {
     ///   5. Plain-text heuristic (`parseDateISO`) applied to the dateline string — legacy fallback.
     ///
     /// Returns `nil` only when no date information of any kind can be extracted.
-    ///
-    /// The heuristic `parseDateISO` is called only as the step-5 last resort, clearly
-    /// separated so it can be removed once all corpora have been re-indexed on the
-    /// structured path.
     nonisolated static func extractStructuredDate(from nodes: [FRUSASTNode]) -> String? {
-
-        // Collect all `.date` nodes in document order, tagged with whether they
-        // are inside a `.dateline` (primary) or elsewhere (secondary).
-        struct DateNode {
-            let when: String?
-            let from: String?
-            let to: String?
-            let notBefore: String?
-            let notAfter: String?
-            let inDateline: Bool
-        }
-
-        func collectDateNodes(_ nodes: [FRUSASTNode], inDateline: Bool) -> [DateNode] {
-            var results: [DateNode] = []
-            for node in nodes {
-                switch node {
-                case .date(let when, let from, let to, let notBefore, let notAfter, let children):
-                    results.append(DateNode(when: when, from: from, to: to,
-                                            notBefore: notBefore, notAfter: notAfter,
-                                            inDateline: inDateline))
-                    // Recurse into children in case dates are nested (uncommon but valid TEI)
-                    results.append(contentsOf: collectDateNodes(children, inDateline: inDateline))
-                case .dateline(let children):
-                    results.append(contentsOf: collectDateNodes(children, inDateline: true))
-                case .opener(let children):
-                    // Datelines inside openers are still datelines
-                    results.append(contentsOf: collectDateNodes(children, inDateline: inDateline))
-                case .footnote:
-                    // Do NOT descend into footnotes. Footnotes frequently contain
-                    // <date when="..."> elements referencing other documents (e.g.
-                    // "see the memorandum of <date when='1946-03-15'>March 15, 1946</date>").
-                    // Picking up those dates corrupts the document's own date index entry,
-                    // making documents from later decades appear to have 1940s dates.
-                    break
-                default:
-                    results.append(contentsOf: collectDateNodes(node.children, inDateline: inDateline))
-                }
-            }
-            return results
-        }
-
         let dateNodes = collectDateNodes(nodes, inDateline: false)
 
-        // Step 1: @when inside a dateline
         if let node = dateNodes.first(where: { $0.inDateline && $0.when != nil }),
-           let value = node.when {
-            return normalizeToFullDate(value)
-        }
-        // Step 2: @from inside a dateline
+           let value = node.when { return normalizeToFullDate(value) }
         if let node = dateNodes.first(where: { $0.inDateline && $0.from != nil }),
-           let value = node.from {
-            return normalizeToFullDate(value)
-        }
-        // Step 3: @notBefore inside a dateline
+           let value = node.from { return normalizeToFullDate(value) }
         if let node = dateNodes.first(where: { $0.inDateline && $0.notBefore != nil }),
-           let value = node.notBefore {
-            return normalizeToFullDate(value)
-        }
-        // Step 4: @when anywhere in the document
+           let value = node.notBefore { return normalizeToFullDate(value) }
         if let node = dateNodes.first(where: { $0.when != nil }),
-           let value = node.when {
-            return normalizeToFullDate(value)
-        }
+           let value = node.when { return normalizeToFullDate(value) }
 
         // Step 5: Plain-text heuristic on the dateline string (legacy fallback).
-        // Retained for documents pre-dating structured <date> markup in the corpus.
         if let datelineText = extractDateline(from: nodes) {
             return parseDateISO(from: datelineText)
         }
         return nil
+    }
+
+    /// Extracts the latest ISO 8601 date string representing the end of the document's
+    /// date range. Used as `date_iso_max` when `frus:doc-dateTime-max` is absent.
+    ///
+    /// Priority:
+    ///   1. `@to` on a `.date` inside a `.dateline` — explicit range end.
+    ///   2. `@notAfter` on a `.date` inside a `.dateline` — uncertainty upper bound.
+    ///   3. `@when` on a `.date` inside a `.dateline`, expanded to end-of-period.
+    ///   4. `@when` on a `.date` anywhere in the document, expanded to end-of-period.
+    nonisolated private static func extractStructuredDateMax(from nodes: [FRUSASTNode]) -> String? {
+        let dateNodes = collectDateNodes(nodes, inDateline: false)
+
+        if let node = dateNodes.first(where: { $0.inDateline && $0.to != nil }),
+           let value = node.to { return normalizeToEndDate(value) }
+        if let node = dateNodes.first(where: { $0.inDateline && $0.notAfter != nil }),
+           let value = node.notAfter { return normalizeToEndDate(value) }
+        if let node = dateNodes.first(where: { $0.inDateline && $0.when != nil }),
+           let value = node.when { return normalizeToEndDate(value) }
+        if let node = dateNodes.first(where: { $0.when != nil }),
+           let value = node.when { return normalizeToEndDate(value) }
+        return nil
+    }
+
+    /// Extracts the full date range (min, max) for a document.
+    ///
+    /// Uses the authoritative `frus:doc-dateTime-min`/`max` attributes from the document
+    /// div when present — these are set by the HistoryAtState `update-frus-doc-dates.xsl`
+    /// pipeline and represent the editors' curated date assessment. Falls back to
+    /// deriving min from `extractStructuredDate` and max from `extractStructuredDateMax`
+    /// for volumes not yet processed by that pipeline.
+    ///
+    /// The min date is normalized via `normalizeToFullDate` (earliest point in period);
+    /// the max via `normalizeToEndDate` (latest point). For exact single-day documents,
+    /// min and max are equal. For imprecise year-only documents, min = Jan 1 and
+    /// max = Dec 31. This enables interval overlap filtering rather than point comparison.
+    nonisolated static func extractDateRange(
+        from nodes: [FRUSASTNode],
+        dateTimeMin: String? = nil,
+        dateTimeMax: String? = nil
+    ) -> (min: String?, max: String?) {
+        let min: String?
+        if let dtMin = dateTimeMin {
+            min = normalizeToFullDate(dtMin)
+        } else {
+            min = extractStructuredDate(from: nodes)
+        }
+
+        let max: String?
+        if let dtMax = dateTimeMax {
+            max = normalizeToEndDate(dtMax)
+        } else {
+            // Derive max from the date nodes, then fall back to expanding min to end-of-period
+            // so that a year-only min of "1969-01-01" also produces a max of "1969-12-31".
+            max = extractStructuredDateMax(from: nodes) ?? min.map { normalizeToEndDate($0) }
+        }
+
+        return (min: min, max: max)
     }
 
     /// Pads a partial ISO 8601 date string to full `yyyy-MM-dd` precision.
@@ -1033,17 +1110,60 @@ public actor IndexingPipeline {
     /// date filter because "1982" < "1982-01-01" lexicographically, causing year-only
     /// documents to be excluded from ranges that include that year.
     ///
+    /// Also handles xs:dateTime strings (containing "T") as produced by the
+    /// `frus:doc-dateTime-min` attribute — the time portion is stripped before padding.
+    ///
     /// Partial dates are treated as the earliest possible date in their period:
-    ///   "1982"    → "1982-01-01"
-    ///   "1982-04" → "1982-04-01"
-    ///   "1982-04-20" → "1982-04-20" (unchanged)
+    ///   "1982"                         → "1982-01-01"
+    ///   "1982-04"                      → "1982-04-01"
+    ///   "1982-04-20"                   → "1982-04-20" (unchanged)
+    ///   "1982-04-20T00:00:00-05:00"    → "1982-04-20" (time stripped, date unchanged)
     nonisolated static func normalizeToFullDate(_ iso: String) -> String {
-        let parts = iso.split(separator: "-", omittingEmptySubsequences: false)
+        // xs:dateTime strings contain 'T'; extract the date-only portion.
+        let dateOnly = iso.contains("T") ? String(iso.prefix(10)) : iso
+        let parts = dateOnly.split(separator: "-", omittingEmptySubsequences: false)
         switch parts.count {
-        case 1: return "\(iso)-01-01"
-        case 2: return "\(iso)-01"
-        default: return iso
+        case 1: return "\(dateOnly)-01-01"
+        case 2: return "\(dateOnly)-01"
+        default: return dateOnly
         }
+    }
+
+    /// Pads a partial ISO 8601 date string to its latest possible full `yyyy-MM-dd`.
+    ///
+    /// Counterpart to `normalizeToFullDate`. Used to compute the `date_iso_max` bound
+    /// so that interval overlap filtering includes documents whose stated date range
+    /// (e.g. a year-only `@when`) overlaps the query even when the query is mid-year.
+    ///
+    ///   "1982"                         → "1982-12-31"
+    ///   "1982-04"                      → "1982-04-30"
+    ///   "1982-04-20"                   → "1982-04-20" (unchanged)
+    ///   "1982-04-20T23:59:59-05:00"    → "1982-04-20" (time stripped, date unchanged)
+    nonisolated static func normalizeToEndDate(_ iso: String) -> String {
+        let dateOnly = iso.contains("T") ? String(iso.prefix(10)) : iso
+        let parts = dateOnly.split(separator: "-", omittingEmptySubsequences: false)
+        switch parts.count {
+        case 1:
+            return "\(dateOnly)-12-31"
+        case 2:
+            let year  = Int(parts[0]) ?? 2000
+            let month = Int(parts[1]) ?? 12
+            let last  = Self.lastDayOfMonth(year: year, month: month)
+            return String(format: "%@-%02d", dateOnly, last)
+        default:
+            return dateOnly
+        }
+    }
+
+    /// Returns the last calendar day of `month` in `year` (Gregorian).
+    nonisolated private static func lastDayOfMonth(year: Int, month: Int) -> Int {
+        var comps = DateComponents()
+        comps.year  = year
+        comps.month = month + 1
+        comps.day   = 0  // Day 0 of the following month = last day of this month.
+        let cal = Calendar(identifier: .gregorian)
+        guard let date = cal.date(from: comps) else { return 30 }
+        return cal.component(.day, from: date)
     }
 
     /// Best-effort ISO 8601 date extraction from a dateline string.
@@ -1157,10 +1277,14 @@ public actor IndexingPipeline {
                 volume_id TEXT NOT NULL,
                 document_id TEXT NOT NULL,
                 date_iso TEXT,
+                date_iso_max TEXT,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
+        // Idempotent migration for databases that predate Session 76.
+        try? exec("ALTER TABLE document_dates ADD COLUMN date_iso_max TEXT")
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_dates ON document_dates(date_iso)")
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_dates_max ON document_dates(date_iso_max)")
         try exec("""
             CREATE TABLE IF NOT EXISTS document_cache (
                 volume_id TEXT NOT NULL,
@@ -1260,14 +1384,19 @@ public actor IndexingPipeline {
 
     private func auxInsertDocumentDates(_ rows: [DocumentDateRow]) throws {
         guard !rows.isEmpty else { return }
-        let sql = "INSERT OR REPLACE INTO document_dates (volume_id, document_id, date_iso) VALUES (?, ?, ?)"
+        let sql = """
+            INSERT OR REPLACE INTO document_dates
+            (volume_id, document_id, date_iso, date_iso_max)
+            VALUES (?, ?, ?, ?)
+            """
         try inTransaction {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
-                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 1, row.volumeId,   -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
-                auxBindOptional(stmt, 3, row.dateISO)
+                auxBindOptional(stmt, 3, row.dateISOMin)
+                auxBindOptional(stmt, 4, row.dateISOMax)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -1565,7 +1694,12 @@ struct PageRangeRow: Sendable {
 private struct DocumentDateRow: Sendable {
     let volumeId: String
     let documentId: String
-    let dateISO: String?
+    /// Earliest bound of the document date range, normalized to `yyyy-MM-dd`.
+    /// Stored in the `date_iso` column (name preserved for schema compatibility).
+    let dateISOMin: String?
+    /// Latest bound of the document date range, normalized to `yyyy-MM-dd`.
+    /// Stored in the `date_iso_max` column added in version 5.
+    let dateISOMax: String?
 }
 
 struct DocumentCacheRow: Sendable {

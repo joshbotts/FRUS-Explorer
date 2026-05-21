@@ -1414,7 +1414,7 @@ private struct SubseriesVolumeListView: View {
                 CorpusVolumeDetailSheet(volume: vol)
             case .graph(let vol):
                 NavigationStack {
-                    VolumeConnectionGraphView(initialSelectedVolumeId: vol.volumeId)
+                    VolumeConnectionGraphView(volumeId: vol.volumeId)
                         .environment(appState)
                         .navigationTitle(vol.title)
                         #if os(iOS)

@@ -66,19 +66,29 @@ public final class NARAAPIKeyStore {
 
     /// Stores (or replaces) the NARA Catalog API key in the keychain.
     ///
+    /// New items are created with `kSecAttrSynchronizable = true` so they sync across the
+    /// user's devices via iCloud Keychain. Existing items (stored before this fix) are
+    /// updated in-place with the same synchronizable flag to migrate them on the next save.
+    ///
     /// Silently ignores the call if `key` cannot be encoded as UTF-8.
     public func storeKey(_ key: String) {
         guard let data = key.data(using: .utf8) else { return }
+        // kSecAttrSynchronizableAny in the query matches both sync and non-sync items so
+        // any previously stored key is found and updated regardless of its sync state.
         let query = baseQuery()
-        let attributes: [String: Any] = [kSecValueData as String: data]
-        let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        let updateAttributes: [String: Any] = [
+            kSecValueData as String:         data,
+            kSecAttrSynchronizable as String: kCFBooleanTrue as Any,
+        ]
+        let updateStatus = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
         if updateStatus == errSecItemNotFound {
             var addQuery = baseQuery()
+            addQuery[kSecAttrSynchronizable as String] = kCFBooleanTrue as Any
             addQuery[kSecValueData as String] = data
             _ = SecItemAdd(addQuery as CFDictionary, nil)
         }
         #if DEBUG
-        print("[NARAAPIKeyStore] Key stored.")
+        print("[NARAAPIKeyStore] Key stored (synchronizable).")
         #endif
     }
 
@@ -122,10 +132,13 @@ public final class NARAAPIKeyStore {
     // MARK: - Private Helpers
 
     private func baseQuery() -> [String: Any] {
+        // kSecAttrSynchronizableAny matches both synchronizable and non-synchronizable items
+        // in queries (lookup, update, delete). New items override this to kCFBooleanTrue.
         [
-            kSecClass as String:       kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
+            kSecClass as String:              kSecClassGenericPassword,
+            kSecAttrService as String:        service,
+            kSecAttrAccount as String:        account,
+            kSecAttrSynchronizable as String: kSecAttrSynchronizableAny,
         ]
     }
 

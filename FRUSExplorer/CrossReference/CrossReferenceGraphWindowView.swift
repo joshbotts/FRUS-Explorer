@@ -160,7 +160,7 @@ struct CrossReferenceGraphWindowView: View {
 
         case .volumeGraph(let vid):
             if let store = appState.crossReferenceStore {
-                VolumeConnectionGraphView(initialSelectedVolumeId: vid)
+                VolumeConnectionGraphView(volumeId: vid)
                     .environment(appState)
             } else {
                 noStoreView

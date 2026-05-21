@@ -100,19 +100,25 @@ public actor KeychainStore {
 
     /// Stores (or replaces) the NARA Catalog API key in the keychain.
     ///
-    /// If a key already exists it is updated in-place; otherwise a new item is created.
+    /// If a key already exists it is updated in-place (migrating it to synchronizable if
+    /// it was stored without that flag); otherwise a new item is created as synchronizable
+    /// so it syncs across the user's iCloud Keychain–enabled devices.
     public func setNARACatalogAPIKey(_ key: String) throws {
         guard let data = key.data(using: .utf8) else {
             throw KeychainError.decodingError
         }
-        // Try to update an existing item first.
+        // baseQuery uses kSecAttrSynchronizableAny so it matches existing items regardless
+        // of whether they were previously stored with or without synchronizable.
         let query = baseQuery(account: Keys.naraCatalogAPIKey)
-        let update: [CFString: Any] = [kSecValueData: data]
+        let update: [CFString: Any] = [
+            kSecValueData:          data,
+            kSecAttrSynchronizable: kCFBooleanTrue,   // migrate / keep sync enabled
+        ]
         let updateStatus = SecItemUpdate(query as CFDictionary, update as CFDictionary)
 
         if updateStatus == errSecItemNotFound {
-            // Item doesn't exist yet — add it.
             var addQuery = baseQuery(account: Keys.naraCatalogAPIKey)
+            addQuery[kSecAttrSynchronizable] = kCFBooleanTrue   // override Any → true for new items
             addQuery[kSecValueData] = data
             let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
             guard addStatus == errSecSuccess else {
@@ -123,7 +129,7 @@ public actor KeychainStore {
         }
 
         #if DEBUG
-        print("[KeychainStore] NARA API key stored")
+        print("[KeychainStore] NARA API key stored (synchronizable)")
         #endif
     }
 
@@ -175,10 +181,13 @@ public actor KeychainStore {
     // MARK: - Private Helpers
 
     private func baseQuery(account: String) -> [CFString: Any] {
+        // kSecAttrSynchronizableAny matches both synchronizable and non-synchronizable items
+        // in queries (lookup, update, delete). New items override this to kCFBooleanTrue.
         var query: [CFString: Any] = [
-            kSecClass:       kSecClassGenericPassword,
-            kSecAttrService: service,
-            kSecAttrAccount: account,
+            kSecClass:               kSecClassGenericPassword,
+            kSecAttrService:         service,
+            kSecAttrAccount:         account,
+            kSecAttrSynchronizable:  kSecAttrSynchronizableAny,
         ]
         if let group = accessGroup {
             query[kSecAttrAccessGroup] = group
@@ -194,18 +203,15 @@ public actor KeychainStore {
 
     // MARK: - Access Group Resolution
 
-    /// Derives the iCloud Keychain access group from the app's signed bundle.
+    /// Returns `nil` so keychain items stay in the app's own keychain partition.
     ///
-    /// The group identifier is `<TeamIDPrefix>bottsywattsy.FRUS-Explorer.shared`.
-    /// Returns `nil` in environments where the bundle prefix is unavailable
-    /// (unit tests, command-line tools), falling back to the app's own keychain partition.
+    /// An access group is only needed for cross-app sharing within a team, which this
+    /// app does not require. The `.shared` suffix previously used here was not listed in
+    /// the `keychain-access-groups` entitlement, causing `errSecMissingEntitlement` on
+    /// all signed builds and silently breaking API-key reads. Returning `nil` uses the
+    /// app's default partition, which works correctly on all platforms and still allows
+    /// iCloud Keychain sync when `kSecAttrSynchronizable = true` is set on items.
     private static func resolveAccessGroup() -> String? {
-        guard let prefix = Bundle.main.infoDictionary?["AppIdentifierPrefix"] as? String,
-              !prefix.isEmpty else {
-            return nil
-        }
-        // Strip trailing '.' if present (the value from Info.plist includes it).
-        let cleanPrefix = prefix.hasSuffix(".") ? String(prefix.dropLast()) : prefix
-        return "\(cleanPrefix).bottsywattsy.FRUS-Explorer.shared"
+        return nil
     }
 }

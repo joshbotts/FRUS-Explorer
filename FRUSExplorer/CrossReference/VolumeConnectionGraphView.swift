@@ -10,85 +10,107 @@ import SwiftUI
 
 // MARK: - VolumeConnectionGraphViewModel
 
-/// ViewModel for the volume-level cross-reference graph in the Corpus Browser.
+/// ViewModel for the per-volume cross-reference ego graph.
 ///
-/// Loads all cross-volume reference counts from `CrossReferenceStore.volumeLevelConnections()`,
-/// builds a node/edge representation, and runs a force-directed layout. Edge line width is
-/// scaled to the reference count relative to the maximum count in the dataset, giving a
-/// visual indication of connection strength.
+/// Loads inbound and outbound cross-volume reference counts for `centralVolumeId`
+/// from `CrossReferenceStore.volumeEgoGraph(forVolumeId:)`, then runs a pinned
+/// spring-repulsion layout — the central volume node is fixed at the canvas centre
+/// while partner volume nodes settle around it.
 ///
-/// ## Interaction
-/// Clicking/tapping a volume node selects it and shows a ranked list of its connections
-/// in the info panel. Clicking again deselects. Pinch-to-zoom and drag-to-pan work the
-/// same as in `CrossReferenceGraphView`.
+/// ## Navigation
+/// Tapping a partner node opens an info panel with a reference count breakdown and
+/// an "Explore connections" button that recenters the graph on that volume. A history
+/// stack supports back-navigation.
+///
+/// ## Node colour coding
+/// - Central volume: accent colour
+/// - Inbound-only: blue (other volume references this one)
+/// - Outbound-only: green (this volume references the other)
+/// - Bidirectional: indigo (mutual references in both directions)
 ///
 /// Version history:
-///   1.0 — Initial implementation for CorpusBrowserWindowView Connections mode
+///   1.0 — Corpus-wide free-layout graph
+///   2.0 — Redesigned as per-volume ego graph with pinned centre and navigation history
 @Observable
 @MainActor
 final class VolumeConnectionGraphViewModel {
 
     // MARK: - Data
 
-    var connections: [VolumeConnectionEdge] = []
+    private(set) var centralVolumeId: String
+    var inboundEdges:  [VolumeConnectionEdge] = []
+    var outboundEdges: [VolumeConnectionEdge] = []
     var isLoading = false
     var error: String? = nil
+
+    // MARK: - Navigation
+
+    private(set) var history: [String] = []
+
+    // MARK: - Interaction
+
+    var selectedPartnerId: String? = nil
+    var scale: CGFloat    = 1.0
+    var panOffset: CGSize = .zero
 
     // MARK: - Layout
 
     var nodePositions: [String: CGPoint] = [:]
-
-    // MARK: - Interaction
-
-    var selectedVolumeId: String? = nil
-    var scale: CGFloat = 1.0
-    var panOffset: CGSize = .zero
 
     // MARK: - Private
 
     private var canvasSize: CGSize = .zero
     private var layoutTask: Task<Void, Never>? = nil
 
+    // MARK: - Init
+
+    init(centralVolumeId: String) {
+        self.centralVolumeId = centralVolumeId
+    }
+
     // MARK: - Derived
 
-    var volumeIds: [String] {
+    var partnerVolumeIds: [String] {
         var seen = Set<String>()
-        var ids: [String] = []
-        for edge in connections {
-            if seen.insert(edge.sourceVolumeId).inserted { ids.append(edge.sourceVolumeId) }
-            if seen.insert(edge.targetVolumeId).inserted { ids.append(edge.targetVolumeId) }
-        }
+        var ids:  [String] = []
+        for edge in inboundEdges  { if seen.insert(edge.sourceVolumeId).inserted { ids.append(edge.sourceVolumeId) } }
+        for edge in outboundEdges { if seen.insert(edge.targetVolumeId).inserted { ids.append(edge.targetVolumeId) } }
         return ids.sorted()
     }
 
-    var maxCount: Int { connections.map(\.count).max() ?? 1 }
+    var allVolumeIds: [String] { [centralVolumeId] + partnerVolumeIds }
 
-    /// Ranked connections for the selected volume: (partnerVolumeId, count, isOutbound).
-    var selectedConnections: [(volumeId: String, count: Int, isOutbound: Bool)] {
-        guard let sel = selectedVolumeId else { return [] }
-        var result: [(String, Int, Bool)] = []
-        for edge in connections {
-            if edge.sourceVolumeId == sel {
-                result.append((edge.targetVolumeId, edge.count, true))
-            } else if edge.targetVolumeId == sel {
-                result.append((edge.sourceVolumeId, edge.count, false))
-            }
-        }
-        return result.sorted { $0.1 > $1.1 }
+    var bidirectionalVolumeIds: Set<String> {
+        Set(inboundEdges.map(\.sourceVolumeId)).intersection(Set(outboundEdges.map(\.targetVolumeId)))
     }
 
-    var totalEdgesForSelected: Int {
-        selectedConnections.reduce(0) { $0 + $1.count }
+    var maxCount: Int {
+        (inboundEdges.map(\.count) + outboundEdges.map(\.count)).max() ?? 1
     }
+
+    func inboundCount(for volumeId: String) -> Int {
+        inboundEdges.first(where: { $0.sourceVolumeId == volumeId })?.count ?? 0
+    }
+
+    func outboundCount(for volumeId: String) -> Int {
+        outboundEdges.first(where: { $0.targetVolumeId == volumeId })?.count ?? 0
+    }
+
+    var canNavigateBack: Bool { !history.isEmpty }
 
     // MARK: - Load
 
     func load(from store: CrossReferenceStore) async {
-        guard connections.isEmpty else { return }
         isLoading = true
         error = nil
+        inboundEdges  = []
+        outboundEdges = []
+        nodePositions = [:]
+        selectedPartnerId = nil
         do {
-            connections = try await store.volumeLevelConnections()
+            let ego = try await store.volumeEgoGraph(forVolumeId: centralVolumeId)
+            inboundEdges  = ego.inboundEdges
+            outboundEdges = ego.outboundEdges
         } catch {
             self.error = error.localizedDescription
         }
@@ -96,9 +118,17 @@ final class VolumeConnectionGraphViewModel {
         if canvasSize.width > 0 { rerunLayout(reduceMotion: false) }
     }
 
-    func reload(from store: CrossReferenceStore) async {
-        connections = []
-        nodePositions = [:]
+    // MARK: - Navigation
+
+    func recenterOn(volumeId: String, from store: CrossReferenceStore) async {
+        history.append(centralVolumeId)
+        centralVolumeId = volumeId
+        await load(from: store)
+    }
+
+    func navigateBack(from store: CrossReferenceStore) async {
+        guard let prev = history.popLast() else { return }
+        centralVolumeId = prev
         await load(from: store)
     }
 
@@ -106,31 +136,39 @@ final class VolumeConnectionGraphViewModel {
 
     func onCanvasSizeChanged(_ size: CGSize, reduceMotion: Bool) {
         canvasSize = size
-        if !connections.isEmpty && size.width > 0 && size.height > 0 {
-            rerunLayout(reduceMotion: reduceMotion)
-        }
+        guard size.width > 0, size.height > 0,
+              !inboundEdges.isEmpty || !outboundEdges.isEmpty else { return }
+        rerunLayout(reduceMotion: reduceMotion)
     }
 
     private func rerunLayout(reduceMotion: Bool) {
         layoutTask?.cancel()
-        let ids  = volumeIds
-        let edges = connections
-        let size = canvasSize
-        guard !ids.isEmpty else { return }
+        let central  = centralVolumeId
+        let ids      = allVolumeIds
+        let inbound  = inboundEdges
+        let outbound = outboundEdges
+        let size     = canvasSize
+        guard ids.count > 1 else {
+            nodePositions = [central: CGPoint(x: size.width / 2, y: size.height / 2)]
+            return
+        }
 
-        // Circular seed positions
         let cx = size.width / 2, cy = size.height / 2
         let r  = min(size.width, size.height) * 0.35
-        var initial: [String: CGPoint] = [:]
-        for (i, id) in ids.enumerated() {
-            let angle = 2 * Double.pi * Double(i) / Double(ids.count)
+        var initial: [String: CGPoint] = [central: CGPoint(x: cx, y: cy)]
+        let partners = ids.filter { $0 != central }
+        for (i, id) in partners.enumerated() {
+            let angle = 2 * Double.pi * Double(i) / Double(partners.count)
             initial[id] = CGPoint(x: cx + r * CGFloat(cos(angle)),
                                   y: cy + r * CGFloat(sin(angle)))
         }
 
-        if reduceMotion || ids.count <= 2 {
-            nodePositions = Self.runPhysics(ids: ids, edges: edges,
-                                            positions: initial, size: size, iterations: 300)
+        let allEdges = inbound + outbound
+
+        if reduceMotion || ids.count <= 3 {
+            nodePositions = Self.runPhysics(
+                ids: ids, centralId: central, edges: allEdges,
+                positions: initial, size: size, iterations: 300)
             return
         }
 
@@ -140,7 +178,8 @@ final class VolumeConnectionGraphViewModel {
             for _ in 0..<15 {
                 guard !Task.isCancelled else { break }
                 current = VolumeConnectionGraphViewModel.runPhysics(
-                    ids: ids, edges: edges, positions: current, size: size, iterations: 20)
+                    ids: ids, centralId: central, edges: allEdges,
+                    positions: current, size: size, iterations: 20)
                 guard !Task.isCancelled else { break }
                 await MainActor.run { [weak self] in
                     guard let self, !Task.isCancelled else { return }
@@ -153,21 +192,21 @@ final class VolumeConnectionGraphViewModel {
 
     // MARK: - Physics (static for testability)
 
-    /// Spring-repulsion force-directed layout.
-    /// Same physics model as `CrossReferenceGraphViewModel.forceDirectedLayout` but without
-    /// a pinned central node — all volume nodes are free to move.
+    /// Spring-repulsion layout with the central node pinned at the canvas centre.
     static func runPhysics(
         ids: [String],
+        centralId: String,
         edges: [VolumeConnectionEdge],
         positions: [String: CGPoint],
         size: CGSize,
         iterations: Int
     ) -> [String: CGPoint] {
-        let k_s:     CGFloat = 0.006
+        let k_s:     CGFloat = 0.008
         let L0:      CGFloat = 150
-        let k_r:     CGFloat = 7_000
+        let k_r:     CGFloat = 6_000
         let damping: CGFloat = 0.82
-        let pad:     CGFloat = 44
+        let pad:     CGFloat = 48
+        let center   = CGPoint(x: size.width / 2, y: size.height / 2)
 
         var pos = positions
         var vel: [String: CGVector] = ids.reduce(into: [:]) { $0[$1] = .zero }
@@ -175,7 +214,6 @@ final class VolumeConnectionGraphViewModel {
         for _ in 0..<iterations {
             var forces: [String: CGVector] = ids.reduce(into: [:]) { $0[$1] = .zero }
 
-            // Spring forces
             for edge in edges {
                 guard let ps = pos[edge.sourceVolumeId],
                       let pt = pos[edge.targetVolumeId] else { continue }
@@ -185,11 +223,10 @@ final class VolumeConnectionGraphViewModel {
                 let ux = dx / d, uy = dy / d
                 forces[edge.sourceVolumeId]?.dx += ux * f
                 forces[edge.sourceVolumeId]?.dy += uy * f
-                forces[edge.targetVolumeId]?.dx -= ux * f
-                forces[edge.targetVolumeId]?.dy -= uy * f
+                forces[edge.targetVolumeId]?.dx  -= ux * f
+                forces[edge.targetVolumeId]?.dy  -= uy * f
             }
 
-            // Repulsion between all pairs
             for i in 0..<ids.count {
                 for j in (i + 1)..<ids.count {
                     guard let pa = pos[ids[i]], let pb = pos[ids[j]] else { continue }
@@ -203,6 +240,11 @@ final class VolumeConnectionGraphViewModel {
             }
 
             for id in ids {
+                if id == centralId {
+                    pos[id] = center
+                    vel[id] = .zero
+                    continue
+                }
                 guard var v = vel[id], var p = pos[id], let f = forces[id] else { continue }
                 v.dx = (v.dx + f.dx) * damping
                 v.dy = (v.dy + f.dy) * damping
@@ -217,10 +259,10 @@ final class VolumeConnectionGraphViewModel {
     // MARK: - Hit testing
 
     func volumeAt(point: CGPoint) -> String? {
-        for id in volumeIds {
+        for id in allVolumeIds {
             guard let pos = nodePositions[id] else { continue }
-            let dx = pos.x - point.x, dy = pos.y - point.y
-            if sqrt(dx * dx + dy * dy) <= 22 { return id }
+            let r: CGFloat = (id == centralVolumeId) ? 28 : 20
+            if hypot(pos.x - point.x, pos.y - point.y) <= r { return id }
         }
         return nil
     }
@@ -228,39 +270,30 @@ final class VolumeConnectionGraphViewModel {
 
 // MARK: - VolumeConnectionGraphView
 
-/// Canvas-based force-directed graph of volume-to-volume cross-reference relationships.
+/// Canvas-based ego graph showing one volume's incoming and outgoing cross-references.
 ///
-/// Shows all cross-volume edges in the corpus. When `initialSelectedVolumeId` is set,
-/// that volume node is pre-selected so its connection panel opens immediately — useful
-/// when launching the graph from a specific volume in the Corpus Browser or from the
-/// `CrossReferenceGraphWindowView` picker.
+/// The central volume node is pinned at the canvas centre. Partner nodes orbit it in
+/// a force-directed spring-repulsion layout. Inbound partners (volumes that reference
+/// this one) are blue; outbound partners (volumes this one references) are green;
+/// bidirectional partners are indigo.
 ///
-/// ## Layout
-/// Force-directed spring-repulsion (same physics as the document-level ego graph).
-/// All nodes are free — no central node is pinned. Animated settling unless system
-/// Reduce Motion is active.
-///
-/// ## Interaction
-/// - **macOS**: hover selects; click-selects and shows info panel with ranked connections
-/// - **iOS/iPadOS**: tap selects; second tap deselects
-/// - Pinch-to-zoom and drag-to-pan on all platforms
+/// Tapping a partner node opens an info panel with reference counts and an "Explore
+/// connections" button that recenters the graph on that partner volume. A back button
+/// returns to the previous centre.
 ///
 /// Version history:
-///   1.0 — Initial implementation for CorpusBrowserWindowView Connections mode
-///   1.1 — Session 75: `limitToVolumeIds` parameter added; graph moved from corpus-level
-///          to subseries detail pane to prevent overwhelming node counts
-///   1.2 — Session 75: `limitToVolumeIds` replaced with `initialSelectedVolumeId`;
-///          graph is now always corpus-wide, scoped to a specific volume by pre-selection
+///   1.0 — Corpus-wide free-layout graph
+///   2.0 — Per-volume ego graph with pinned centre and navigation history
 struct VolumeConnectionGraphView: View {
 
-    /// When set, this volume's node is pre-selected when the graph first loads, opening
-    /// the info panel that lists its connections. `nil` shows the graph with no selection.
-    var initialSelectedVolumeId: String?
+    @State private var vm: VolumeConnectionGraphViewModel
 
     @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var vm = VolumeConnectionGraphViewModel()
+    init(volumeId: String) {
+        _vm = State(initialValue: VolumeConnectionGraphViewModel(centralVolumeId: volumeId))
+    }
 
     // MARK: - Body
 
@@ -275,11 +308,11 @@ struct VolumeConnectionGraphView: View {
                     systemImage: "exclamationmark.triangle",
                     description: Text(err)
                 )
-            } else if vm.volumeIds.isEmpty {
+            } else if vm.partnerVolumeIds.isEmpty {
                 ContentUnavailableView(
-                    "No Volume Connections",
+                    "No Cross-Volume References",
                     systemImage: "point.3.connected.trianglepath.dotted",
-                    description: Text("Cross-references between volumes appear here after indexing. Download and index at least two volumes to see connections.")
+                    description: Text("\(vm.centralVolumeId) has no cross-references to other indexed volumes.")
                 )
             } else {
                 graphContent
@@ -288,10 +321,6 @@ struct VolumeConnectionGraphView: View {
         .task {
             if let store = appState.crossReferenceStore {
                 await vm.load(from: store)
-                // Pre-select the requested volume so its connections panel opens immediately.
-                if let vid = initialSelectedVolumeId {
-                    vm.selectedVolumeId = vid
-                }
             }
         }
     }
@@ -313,7 +342,7 @@ struct VolumeConnectionGraphView: View {
                     vm.onCanvasSizeChanged(size, reduceMotion: reduceMotion)
                 }
             }
-            infoPanelOverlay
+            overlayControls
                 .padding()
         }
     }
@@ -322,73 +351,98 @@ struct VolumeConnectionGraphView: View {
 
     private var graphCanvas: some View {
         Canvas { context, _ in
-            let maxCount = CGFloat(vm.maxCount)
+            let maxCount  = CGFloat(vm.maxCount)
+            let centralId = vm.centralVolumeId
 
-            // Draw edges
-            for edge in vm.connections {
+            // Inbound edges — blue, pointing toward central
+            for edge in vm.inboundEdges {
                 guard let from = vm.nodePositions[edge.sourceVolumeId],
-                      let to   = vm.nodePositions[edge.targetVolumeId] else { continue }
-                let weight = CGFloat(edge.count) / maxCount
-                let lineWidth = 0.5 + weight * 3.5
-                let alpha     = 0.15 + weight * 0.45
-                let isSelectedEdge = vm.selectedVolumeId == edge.sourceVolumeId
-                    || vm.selectedVolumeId == edge.targetVolumeId
-                let color: Color = isSelectedEdge
-                    ? .accentColor.opacity(0.6 + weight * 0.3)
-                    : .secondary.opacity(alpha)
-
-                var path = Path()
-                path.move(to: from)
-                path.addLine(to: to)
-                context.stroke(path, with: .color(color), lineWidth: lineWidth)
+                      let to   = vm.nodePositions[centralId] else { continue }
+                drawEdge(&context, from: from, to: to,
+                         color: .blue, weight: CGFloat(edge.count) / maxCount)
             }
 
-            // Draw nodes
-            for id in vm.volumeIds {
+            // Outbound edges — green, pointing away from central
+            for edge in vm.outboundEdges {
+                guard let from = vm.nodePositions[centralId],
+                      let to   = vm.nodePositions[edge.targetVolumeId] else { continue }
+                drawEdge(&context, from: from, to: to,
+                         color: .green, weight: CGFloat(edge.count) / maxCount)
+            }
+
+            // Partner nodes (draw before central so central renders on top)
+            let bidir = vm.bidirectionalVolumeIds
+            for id in vm.partnerVolumeIds {
                 guard let pos = vm.nodePositions[id] else { continue }
-                let isSelected = vm.selectedVolumeId == id
-                let r: CGFloat = isSelected ? 22 : 16
+                let isSelected = vm.selectedPartnerId == id
+                let r: CGFloat = isSelected ? 22 : 18
                 let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
 
-                // Fill
-                context.fill(Path(ellipseIn: rect), with: .color(
-                    isSelected ? Color.accentColor : Color.accentColor.opacity(0.25)
-                ))
-
-                // Selection ring
-                if isSelected {
-                    context.stroke(
-                        Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)),
-                        with: .color(.white),
-                        lineWidth: 1.5
-                    )
+                let nodeColor: Color
+                if bidir.contains(id) {
+                    nodeColor = .indigo
+                } else if vm.inboundEdges.contains(where: { $0.sourceVolumeId == id }) {
+                    nodeColor = .blue
+                } else {
+                    nodeColor = .green
                 }
 
-                // Volume label — first 8 chars of volumeId to fit in node
-                let label = String(id.prefix(8))
-                let image = Image(systemName: "books.vertical")
-                context.draw(image, in: rect.insetBy(dx: r * 0.3, dy: r * 0.3))
+                context.fill(Path(ellipseIn: rect),
+                             with: .color(isSelected ? nodeColor : nodeColor.opacity(0.6)))
+                if isSelected {
+                    context.stroke(Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)),
+                                   with: .color(.white), lineWidth: 1.5)
+                }
 
-                // Text label below node
                 context.draw(
-                    Text(label).font(.system(size: 8)).foregroundStyle(Color.secondary),
+                    Text(String(id.prefix(10))).font(.system(size: 8)).foregroundStyle(Color.secondary),
                     at: CGPoint(x: pos.x, y: pos.y + r + 8),
                     anchor: .center
                 )
             }
+
+            // Central node — drawn last so it renders above partner nodes
+            guard let cp = vm.nodePositions[centralId] else { return }
+            let cr: CGFloat = 28
+            let centralRect = CGRect(x: cp.x - cr, y: cp.y - cr, width: cr * 2, height: cr * 2)
+            context.fill(Path(ellipseIn: centralRect), with: .color(Color.accentColor))
+            context.stroke(Path(ellipseIn: centralRect.insetBy(dx: -2, dy: -2)),
+                           with: .color(.white), lineWidth: 2)
+            context.draw(Image(systemName: "books.vertical.fill"),
+                         in: centralRect.insetBy(dx: cr * 0.35, dy: cr * 0.35))
+            context.draw(
+                Text(String(centralId.prefix(10)))
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Color.primary),
+                at: CGPoint(x: cp.x, y: cp.y + cr + 8),
+                anchor: .center
+            )
         }
         .accessibilityHidden(true)
         .allowsHitTesting(false)
+    }
+
+    private func drawEdge(
+        _ context: inout GraphicsContext,
+        from: CGPoint, to: CGPoint,
+        color: Color, weight: CGFloat
+    ) {
+        var path = Path()
+        path.move(to: from)
+        path.addLine(to: to)
+        context.stroke(path,
+                       with: .color(color.opacity(0.2 + weight * 0.5)),
+                       lineWidth: 0.5 + weight * 3.5)
     }
 
     // MARK: - Hit Areas
 
     @ViewBuilder
     private var nodeHitAreas: some View {
-        ForEach(vm.volumeIds, id: \.self) { id in
+        ForEach(vm.partnerVolumeIds, id: \.self) { id in
             if let pos = vm.nodePositions[id] {
                 Button {
-                    vm.selectedVolumeId = (vm.selectedVolumeId == id) ? nil : id
+                    vm.selectedPartnerId = (vm.selectedPartnerId == id) ? nil : id
                 } label: {
                     Circle().fill(Color.clear).frame(width: 48, height: 48).contentShape(Circle())
                 }
@@ -396,73 +450,90 @@ struct VolumeConnectionGraphView: View {
                 .position(pos)
                 #if os(macOS)
                 .onHover { hovering in
-                    if hovering { vm.selectedVolumeId = id }
+                    if hovering { vm.selectedPartnerId = id }
                 }
                 #endif
                 .accessibilityLabel(id)
-                .accessibilityHint("Tap to see connections")
+                .accessibilityHint("Tap to view connections")
             }
         }
     }
 
-    // MARK: - Info Panel
+    // MARK: - Overlay Controls
 
     @ViewBuilder
-    private var infoPanelOverlay: some View {
-        if let sel = vm.selectedVolumeId {
-            let manifest = appState.manifestStore.diffResult?.known
-                ?? appState.manifestStore.bundledEntries
-            let title = manifest.first(where: { $0.volumeId == sel })?.title ?? sel
-
-            GroupBox {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(sel)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-
-                    Text(title)
-                        .font(.headline)
-                        .lineLimit(3)
-
-                    if vm.totalEdgesForSelected > 0 {
-                        Text("\(vm.totalEdgesForSelected) total cross-references")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Divider()
-
-                        ForEach(vm.selectedConnections.prefix(8), id: \.volumeId) { conn in
-                            HStack(spacing: 4) {
-                                Image(systemName: conn.isOutbound
-                                      ? "arrow.right" : "arrow.left")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(conn.isOutbound ? .green : .blue)
-                                Text(conn.volumeId)
-                                    .font(.system(size: 11))
-                                    .lineLimit(1)
-                                Spacer()
-                                Text("\(conn.count)")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        if vm.selectedConnections.count > 8 {
-                            Text("+ \(vm.selectedConnections.count - 8) more")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                        }
-                    } else {
-                        Text("No cross-volume references recorded")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+    private var overlayControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if vm.canNavigateBack {
+                Button {
+                    if let store = appState.crossReferenceStore {
+                        Task { await vm.navigateBack(from: store) }
                     }
+                } label: {
+                    Label("Back", systemImage: "chevron.left")
+                        .font(.system(size: 13, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.regularMaterial, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .topLeading)))
+            }
+
+            if let sel = vm.selectedPartnerId {
+                infoPanel(for: sel)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+            }
+        }
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: vm.canNavigateBack)
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: vm.selectedPartnerId)
+    }
+
+    @ViewBuilder
+    private func infoPanel(for partnerId: String) -> some View {
+        let manifest = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        let title    = manifest.first(where: { $0.volumeId == partnerId })?.title ?? partnerId
+        let inCount  = vm.inboundCount(for: partnerId)
+        let outCount = vm.outboundCount(for: partnerId)
+
+        GroupBox {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(partnerId)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+
+                Text(title)
+                    .font(.headline)
+                    .lineLimit(3)
+
+                Divider()
+
+                if inCount > 0 {
+                    Label("\(inCount) reference\(inCount == 1 ? "" : "s") into \(vm.centralVolumeId)",
+                          systemImage: "arrow.left")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
+                if outCount > 0 {
+                    Label("\(outCount) reference\(outCount == 1 ? "" : "s") from \(vm.centralVolumeId)",
+                          systemImage: "arrow.right")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
+
+                if let store = appState.crossReferenceStore {
+                    Button("Explore connections") {
+                        Task { await vm.recenterOn(volumeId: partnerId, from: store) }
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption)
+                    .padding(.top, 2)
                 }
             }
-            .frame(maxWidth: 260)
-            .fixedSize()
-            .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
-            .animation(.spring(response: 0.25, dampingFraction: 0.85), value: sel)
         }
+        .frame(maxWidth: 260)
+        .fixedSize()
     }
 
     // MARK: - Gestures
