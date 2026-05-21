@@ -1257,7 +1257,6 @@ struct CorpusBrowserWindowView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedSubseries: String? = nil
-    @State private var selectedVolume: VolumeManifestEntry? = nil
     @State private var searchText: String = ""
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
@@ -1356,45 +1355,51 @@ struct CorpusBrowserWindowView: View {
         SubseriesVolumeListView(
             subseries: subseries,
             filteredVolumes: filtered,
-            allVolumeIds: vols.map(\.volumeId),
-            searchText: $searchText,
-            selectedVolume: $selectedVolume
+            searchText: $searchText
         )
     }
 }
 
 // MARK: - SubseriesVolumeListView
 
-/// Volume list and optional connections graph for a selected FRUS subseries.
+/// Volume list for a selected FRUS subseries with per-volume cross-reference graph access.
 ///
-/// Combines the volume list (existing behaviour) with a "Connections" toolbar button
-/// that shows `VolumeConnectionGraphView` filtered to this subseries's volumes.
-/// The graph is only accessible at this level — not at the corpus level — because the
-/// full-corpus graph contains hundreds of nodes and is not useful or performant.
+/// Each volume row has a small graph button (⌘-tap opens the graph sheet without
+/// navigating away from the list). The graph sheet shows `VolumeConnectionGraphView`
+/// pre-selected to that volume — corpus-wide edges, not restricted to the subseries —
+/// so the user can see every volume that cross-references the chosen volume regardless
+/// of which subseries it belongs to.
+///
+/// Version history:
+///   1.0 — extracted from `CorpusBrowserWindowView`
+///   1.1 — Session 75: added subseries-scoped `VolumeConnectionGraphView` toolbar toggle
+///   1.2 — Session 75: subseries filter removed; per-volume graph button replaces toolbar
+///          toggle; volume detail and graph sheets unified under a single `SheetContent` enum
 private struct SubseriesVolumeListView: View {
     let subseries: String
     let filteredVolumes: [VolumeManifestEntry]
-    let allVolumeIds: [String]
 
     @Binding var searchText: String
-    @Binding var selectedVolume: VolumeManifestEntry?
 
-    enum DetailMode { case volumes, connections }
-    @State private var mode: DetailMode = .volumes
+    @Environment(AppState.self) private var appState
 
-    var body: some View {
-        Group {
-            if mode == .connections {
-                VolumeConnectionGraphView(limitToVolumeIds: allVolumeIds)
-                    .navigationTitle(subseries)
-                    .toolbar { modeToolbar }
-            } else {
-                volumeContent
+    // MARK: - Sheet
+
+    private enum SheetContent: Identifiable {
+        case detail(VolumeManifestEntry)
+        case graph(VolumeManifestEntry)
+        var id: String {
+            switch self {
+            case .detail(let v): return "detail-\(v.volumeId)"
+            case .graph(let v):  return "graph-\(v.volumeId)"
             }
         }
     }
+    @State private var sheetContent: SheetContent?
 
-    private var volumeContent: some View {
+    // MARK: - Body
+
+    var body: some View {
         List {
             ForEach(filteredVolumes) { vol in
                 volumeRow(vol)
@@ -1403,58 +1408,77 @@ private struct SubseriesVolumeListView: View {
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
         .navigationTitle(subseries)
-        .toolbar { modeToolbar }
-        .sheet(item: $selectedVolume) { vol in
-            CorpusVolumeDetailSheet(volume: vol)
+        .sheet(item: $sheetContent) { content in
+            switch content {
+            case .detail(let vol):
+                CorpusVolumeDetailSheet(volume: vol)
+            case .graph(let vol):
+                NavigationStack {
+                    VolumeConnectionGraphView(initialSelectedVolumeId: vol.volumeId)
+                        .environment(appState)
+                        .navigationTitle(vol.title)
+                        #if os(iOS)
+                        .navigationBarTitleDisplayMode(.inline)
+                        #endif
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button(String(localized: "corpus.graph.done",
+                                              defaultValue: "Done")) {
+                                    sheetContent = nil
+                                }
+                            }
+                        }
+                }
+                #if os(macOS)
+                .frame(minWidth: 680, minHeight: 520)
+                #endif
+            }
         }
     }
 
+    // MARK: - Volume Row
+
     private func volumeRow(_ vol: VolumeManifestEntry) -> some View {
-        @Environment(AppState.self) var appState
-        return VStack(alignment: .leading, spacing: 2) {
-            Text(vol.title)
-                .font(.system(size: 12))
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 8) {
-                Text(vol.volumeId)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
-                    Label("Downloaded", systemImage: "checkmark.circle.fill")
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(vol.title)
+                    .font(.system(size: 12))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Text(vol.volumeId)
                         .font(.system(size: 10))
-                        .foregroundStyle(.green)
-                        .labelStyle(.iconOnly)
-                } else if appState.downloadQueue.contains(vol.volumeId) {
-                    Label("Downloading", systemImage: "arrow.down.circle")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.blue)
-                        .labelStyle(.iconOnly)
+                        .foregroundStyle(.secondary)
+                    if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
+                        Label("Downloaded", systemImage: "checkmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.green)
+                            .labelStyle(.iconOnly)
+                    } else if appState.downloadQueue.contains(vol.volumeId) {
+                        Label("Downloading", systemImage: "arrow.down.circle")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.blue)
+                            .labelStyle(.iconOnly)
+                    }
                 }
             }
+            Spacer()
+            Button {
+                sheetContent = .graph(vol)
+            } label: {
+                Image(systemName: "point.3.connected.trianglepath.dotted")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+            .accessibilityLabel(
+                String(localized: "corpus.volume.graphButton.a11y",
+                       defaultValue: "Cross-reference graph for \(vol.volumeId)")
+            )
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
-        .onTapGesture { selectedVolume = vol }
-    }
-
-    @ToolbarContentBuilder
-    private var modeToolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                mode = (mode == .connections) ? .volumes : .connections
-            } label: {
-                Label(
-                    mode == .connections ? "Browse Volumes" : "Volume Connections",
-                    systemImage: mode == .connections
-                        ? "books.vertical"
-                        : "point.3.connected.trianglepath.dotted"
-                )
-            }
-            .help(mode == .connections
-                  ? "Return to volume list"
-                  : "Show cross-reference connections between volumes in this subseries")
-        }
+        .onTapGesture { sheetContent = .detail(vol) }
     }
 }
 

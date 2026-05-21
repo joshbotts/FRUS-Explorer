@@ -83,12 +83,12 @@ final class VolumeConnectionGraphViewModel {
 
     // MARK: - Load
 
-    func load(from store: CrossReferenceStore, limitToVolumeIds: [String]? = nil) async {
+    func load(from store: CrossReferenceStore) async {
         guard connections.isEmpty else { return }
         isLoading = true
         error = nil
         do {
-            connections = try await store.volumeLevelConnections(limitToVolumeIds: limitToVolumeIds)
+            connections = try await store.volumeLevelConnections()
         } catch {
             self.error = error.localizedDescription
         }
@@ -96,10 +96,10 @@ final class VolumeConnectionGraphViewModel {
         if canvasSize.width > 0 { rerunLayout(reduceMotion: false) }
     }
 
-    func reload(from store: CrossReferenceStore, limitToVolumeIds: [String]? = nil) async {
+    func reload(from store: CrossReferenceStore) async {
         connections = []
         nodePositions = [:]
-        await load(from: store, limitToVolumeIds: limitToVolumeIds)
+        await load(from: store)
     }
 
     // MARK: - Canvas size / layout
@@ -230,13 +230,10 @@ final class VolumeConnectionGraphViewModel {
 
 /// Canvas-based force-directed graph of volume-to-volume cross-reference relationships.
 ///
-/// Displayed inside the Corpus Browser's subseries detail pane. Each node represents
-/// a FRUS volume; each edge represents one or more document-level cross-references
-/// between those volumes. Edge line width is proportional to the reference count.
-///
-/// When `limitToVolumeIds` is non-nil, only edges between volumes in that set are shown
-/// (subseries-scoped view). Pass `nil` for a corpus-wide view (not recommended — the
-/// full corpus produces hundreds of nodes that overwhelm both the layout and the user).
+/// Shows all cross-volume edges in the corpus. When `initialSelectedVolumeId` is set,
+/// that volume node is pre-selected so its connection panel opens immediately — useful
+/// when launching the graph from a specific volume in the Corpus Browser or from the
+/// `CrossReferenceGraphWindowView` picker.
 ///
 /// ## Layout
 /// Force-directed spring-repulsion (same physics as the document-level ego graph).
@@ -252,11 +249,13 @@ final class VolumeConnectionGraphViewModel {
 ///   1.0 — Initial implementation for CorpusBrowserWindowView Connections mode
 ///   1.1 — Session 75: `limitToVolumeIds` parameter added; graph moved from corpus-level
 ///          to subseries detail pane to prevent overwhelming node counts
+///   1.2 — Session 75: `limitToVolumeIds` replaced with `initialSelectedVolumeId`;
+///          graph is now always corpus-wide, scoped to a specific volume by pre-selection
 struct VolumeConnectionGraphView: View {
 
-    /// When non-nil, restricts edges to those where both endpoints are in this set.
-    /// Pass the volume IDs of the selected subseries to scope to that subseries.
-    var limitToVolumeIds: [String]?
+    /// When set, this volume's node is pre-selected when the graph first loads, opening
+    /// the info panel that lists its connections. `nil` shows the graph with no selection.
+    var initialSelectedVolumeId: String?
 
     @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -288,7 +287,11 @@ struct VolumeConnectionGraphView: View {
         }
         .task {
             if let store = appState.crossReferenceStore {
-                await vm.load(from: store, limitToVolumeIds: limitToVolumeIds)
+                await vm.load(from: store)
+                // Pre-select the requested volume so its connections panel opens immediately.
+                if let vid = initialSelectedVolumeId {
+                    vm.selectedVolumeId = vid
+                }
             }
         }
     }
