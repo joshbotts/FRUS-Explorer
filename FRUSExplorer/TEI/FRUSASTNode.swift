@@ -17,6 +17,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 06: initial implementation
+///   1.1 — Session 76: `dateTimeMin`/`dateTimeMax` added to carry `frus:doc-dateTime-min`
+///          and `frus:doc-dateTime-max` attribute values set by the HistoryAtState TEI
+///          pipeline. These are the authoritative editorial date bounds for each document.
 public struct FRUSDocumentAST: Sendable {
     /// The value of the `xml:id` attribute on the `<div type="document">` element.
     /// e.g. `"d1"`, `"d42"`. Stable identifier used to locate documents within a volume.
@@ -24,6 +27,35 @@ public struct FRUSDocumentAST: Sendable {
 
     /// Top-level child nodes of the document div.
     public let nodes: [FRUSASTNode]
+
+    /// Value of the `frus:doc-dateTime-min` attribute on the document div, if present.
+    ///
+    /// Set by the HistoryAtState `update-frus-doc-dates.xsl` pipeline. Represents the
+    /// earliest bound of the document date range as a full xs:dateTime string, normalized
+    /// to a consistent timezone offset. Derived from `@from`, `@notBefore`, or `@when`
+    /// on the first dateline `<date>` element. Absent on volumes not yet processed by
+    /// the pipeline.
+    public let dateTimeMin: String?
+
+    /// Value of the `frus:doc-dateTime-max` attribute on the document div, if present.
+    ///
+    /// The latest bound of the document date range. Derived from `@to`, `@notAfter`, or
+    /// `@when` (expanded to end-of-period). Stored alongside `dateTimeMin` so the
+    /// indexing pipeline can use interval overlap rather than point comparison for
+    /// date-range filtering.
+    public let dateTimeMax: String?
+
+    public init(
+        documentId: String,
+        nodes: [FRUSASTNode],
+        dateTimeMin: String? = nil,
+        dateTimeMax: String? = nil
+    ) {
+        self.documentId = documentId
+        self.nodes = nodes
+        self.dateTimeMin = dateTimeMin
+        self.dateTimeMax = dateTimeMax
+    }
 }
 
 // MARK: - AST Node

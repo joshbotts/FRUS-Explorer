@@ -55,6 +55,12 @@ import Foundation
 ///   1.5 — Session 42: `@n` attribute captured in `.footnote` as `printedNumber`
 ///   1.6 — Session 64: `parseVolumeFull` added; `VolumeFullParseResult` and
 ///          `FullVolumeParserDelegate` introduced to consolidate three passes into one
+///   1.7 — Session 76: `frus:doc-dateTime-min`/`max` attributes captured from
+///          `<div type="document">` and stored in `FRUSDocumentAST`; prose-only
+///          structural sections (preface, introduction, foreword, appendix, etc.)
+///          promoted to quasi-documents during full-volume parse so their content
+///          is indexed by `IndexingPipeline`; `"foreword"` added to structural
+///          type recognition in `VolumeStructureParserDelegate`
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -269,7 +275,7 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
     // Div types that form structural sections above the document level.
     private static let structuralTypes: Set<String> = [
         "compilation", "chapter", "subchapter", "appendix",
-        "preface", "intro", "introduction", "errata", "index",
+        "preface", "intro", "introduction", "errata", "index", "foreword",
     ]
 
     // MARK: - XMLParserDelegate
@@ -460,6 +466,14 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// Depth of the current `<div type="document">` on the stack, or -1 if not inside one.
     private var documentDivDepth: Int = -1
 
+    /// Structural `div/@type` values that can be promoted to quasi-documents when they
+    /// contain prose but no child `<div type="document">` or `<div type="editorialNote">`.
+    /// Used during full-volume parses to index front-matter and appendix content.
+    private static let structuralDivTypes: Set<String> = [
+        "compilation", "chapter", "subchapter", "appendix",
+        "preface", "intro", "introduction", "errata", "index", "foreword",
+    ]
+
     // MARK: Init
 
     init(targetDocumentId: String?) {
@@ -505,9 +519,22 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         if elementName == "div", frame.attributes["type"] == "document" {
             // Complete a FRUSDocumentAST from this document div.
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
-            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
+            // Capture pipeline-computed date range attributes when present.
+            // frus:doc-dateTime-min/max are set by update-frus-doc-dates.xsl and represent
+            // the authoritative editorial date bounds, normalized to xs:dateTime. Foundation's
+            // XMLParser in non-namespace mode exposes namespaced attributes under their
+            // qualified name (e.g. "frus:doc-dateTime-min").
+            let dateTimeMin = frame.attributes["frus:doc-dateTime-min"]
+            let dateTimeMax = frame.attributes["frus:doc-dateTime-max"]
+            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
+                                      dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax)
             documents.append(doc)
             documentDivDepth = -1
+            // Mark the enclosing frame so structural parent sections are not promoted
+            // to quasi-documents when they also contain numbered documents.
+            if !stack.isEmpty {
+                stack[stack.count - 1].hasChildDocuments = true
+            }
             foundTargetDocument = (targetDocumentId == nil || docId == targetDocumentId)
             if foundTargetDocument, targetDocumentId != nil {
                 // Found the target — abort parsing to avoid processing the rest of the file.
@@ -536,9 +563,34 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             let wrappedChildren: [FRUSASTNode] = [.editorialNote(frame.children)]
             let doc = FRUSDocumentAST(documentId: docId, nodes: wrappedChildren)
             documents.append(doc)
+            if !stack.isEmpty {
+                stack[stack.count - 1].hasChildDocuments = true
+            }
+        } else if elementName == "div",
+                  targetDocumentId == nil,
+                  let divType = frame.attributes["type"],
+                  Self.structuralDivTypes.contains(divType),
+                  !frame.hasChildDocuments,
+                  !(frame.attributes["xml:id"] ?? frame.attributes["id"] ?? "").isEmpty,
+                  !frame.children.isEmpty {
+            // Prose-only structural section (preface, introduction, foreword, appendix, etc.)
+            // with no child document divs. Promote to a quasi-document so the full-volume
+            // parse indexes its content and makes it searchable. This covers front-matter
+            // and appendix content that was previously viewable via DocumentView but invisible
+            // to the FTS5 index. The section becomes its own indexed entity; children are not
+            // bubbled to the parent.
+            let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
+            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
+            documents.append(doc)
         } else if isTransparent(elementName: elementName, attributes: frame.attributes) {
             // Transparent element: pass children up to the parent frame.
+            // Propagate hasChildDocuments so that ancestor structural sections know a
+            // descendant section contains documents — preventing the ancestor from being
+            // incorrectly promoted to a quasi-document.
             if !stack.isEmpty {
+                if frame.hasChildDocuments {
+                    stack[stack.count - 1].hasChildDocuments = true
+                }
                 stack[stack.count - 1].children.append(contentsOf: frame.children)
             }
         } else if let node = buildNode(elementName: elementName,
@@ -810,6 +862,12 @@ private struct ParseFrame {
     let attributes: [String: String]
     var children: [FRUSASTNode] = []
     var textBuffer: String = ""
+    /// Set to `true` when any `<div type="document">` or `<div type="editorialNote">`
+    /// closes while this frame is on the stack, or when a transparent child frame
+    /// with `hasChildDocuments = true` bubbles its children up. Used to prevent
+    /// prose-only structural sections from being mistakenly promoted to quasi-documents
+    /// when they also contain (direct or indirect) child document divs.
+    var hasChildDocuments: Bool = false
 }
 
 // MARK: - Persons Parser Delegate
