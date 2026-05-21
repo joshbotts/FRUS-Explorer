@@ -74,6 +74,9 @@ final class SearchViewModel {
 
     // MARK: - Content Scope Parameters
 
+    /// Whether document body content (header, dateline, source note, body text)
+    /// is included in the search scope. Default `true`.
+    var includeDocumentText: Bool = true
     var includeSummaries: Bool = true
     var includeNotes: Bool = true
 
@@ -182,6 +185,7 @@ final class SearchViewModel {
         dateRangeEnabled = false
         selectedSubjectTagIds = []
         selectedUserTagIds = []
+        includeDocumentText = true
         includeSummaries = true
         includeNotes = true
         documentTypeFilter = .all
@@ -221,6 +225,7 @@ final class SearchViewModel {
             dateRange: range,
             subjectTagIds: Array(selectedSubjectTagIds),
             userTagIds: selectedUserTagIds.map(\.uuidString),
+            includeDocumentText: includeDocumentText,
             includeSummaries: includeSummaries,
             includeNotes: includeNotes,
             documentTypeFilter: documentTypeFilter,
@@ -241,7 +246,7 @@ final class SearchViewModel {
         if !excludedTermsText.isEmpty { return true }
         if !phrase.isEmpty { return true }
         if !prefixWildcard.isEmpty { return true }
-        if !includeSummaries || !includeNotes { return true }
+        if !includeDocumentText || !includeSummaries || !includeNotes { return true }
         switch booleanMode {
         case .or: return true
         case .and: return false
@@ -283,6 +288,7 @@ final class SearchViewModel {
         }
         selectedSubjectTagIds = Set(params.subjectTagIds)
         selectedUserTagIds    = Set(params.userTagIds.compactMap { UUID(uuidString: $0) })
+        includeDocumentText   = params.includeDocumentText
         includeSummaries      = params.includeSummaries
         includeNotes          = params.includeNotes
         documentTypeFilter    = params.documentTypeFilter

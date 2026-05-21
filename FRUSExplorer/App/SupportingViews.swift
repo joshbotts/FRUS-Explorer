@@ -1256,9 +1256,6 @@ struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
-    enum ViewMode { case browse, connections }
-    @State private var viewMode: ViewMode = .browse
-
     @State private var selectedSubseries: String? = nil
     @State private var selectedVolume: VolumeManifestEntry? = nil
     @State private var searchText: String = ""
@@ -1293,19 +1290,6 @@ struct CorpusBrowserWindowView: View {
     }
 
     var body: some View {
-        Group {
-            if viewMode == .connections {
-                VolumeConnectionGraphView()
-                    .navigationTitle("Corpus Browser")
-                    .toolbar { modeToolbar }
-                    .frame(minWidth: 540, minHeight: 440)
-            } else {
-                browseView
-            }
-        }
-    }
-
-    private var browseView: some View {
         NavigationSplitView {
             List(selection: $selectedSubseries) {
                 ForEach(subseries, id: \.self) { sub in
@@ -1316,7 +1300,6 @@ struct CorpusBrowserWindowView: View {
             .navigationTitle("Corpus Browser")
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
-                modeToolbar
                 ToolbarItem(placement: .primaryAction) {
                     Button { sortDescending.toggle() } label: {
                         Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
@@ -1345,18 +1328,6 @@ struct CorpusBrowserWindowView: View {
         .frame(minWidth: 540, minHeight: 440)
     }
 
-    @ToolbarContentBuilder
-    private var modeToolbar: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Picker("", selection: $viewMode) {
-                Label("Browse", systemImage: "books.vertical").tag(ViewMode.browse)
-                Label("Connections", systemImage: "point.3.connected.trianglepath.dotted").tag(ViewMode.connections)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
-        }
-    }
-
     private func subseriesRow(_ sub: String) -> some View {
         let vols = volumes(for: sub)
         let dlCount = vols.filter {
@@ -1382,39 +1353,107 @@ struct CorpusBrowserWindowView: View {
             $0.title.localizedCaseInsensitiveContains(searchText) ||
             $0.volumeId.localizedCaseInsensitiveContains(searchText)
         }
+        SubseriesVolumeListView(
+            subseries: subseries,
+            filteredVolumes: filtered,
+            allVolumeIds: vols.map(\.volumeId),
+            searchText: $searchText,
+            selectedVolume: $selectedVolume
+        )
+    }
+}
 
-        List(filtered) { vol in
-            VStack(alignment: .leading, spacing: 2) {
-                Text(vol.title)
-                    .font(.system(size: 12))
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    Text(vol.volumeId)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                    if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
-                        Label("Downloaded", systemImage: "checkmark.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.green)
-                            .labelStyle(.iconOnly)
-                    } else if appState.downloadQueue.contains(vol.volumeId) {
-                        Label("Downloading", systemImage: "arrow.down.circle")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.blue)
-                            .labelStyle(.iconOnly)
-                    }
-                }
+// MARK: - SubseriesVolumeListView
+
+/// Volume list and optional connections graph for a selected FRUS subseries.
+///
+/// Combines the volume list (existing behaviour) with a "Connections" toolbar button
+/// that shows `VolumeConnectionGraphView` filtered to this subseries's volumes.
+/// The graph is only accessible at this level — not at the corpus level — because the
+/// full-corpus graph contains hundreds of nodes and is not useful or performant.
+private struct SubseriesVolumeListView: View {
+    let subseries: String
+    let filteredVolumes: [VolumeManifestEntry]
+    let allVolumeIds: [String]
+
+    @Binding var searchText: String
+    @Binding var selectedVolume: VolumeManifestEntry?
+
+    enum DetailMode { case volumes, connections }
+    @State private var mode: DetailMode = .volumes
+
+    var body: some View {
+        Group {
+            if mode == .connections {
+                VolumeConnectionGraphView(limitToVolumeIds: allVolumeIds)
+                    .navigationTitle(subseries)
+                    .toolbar { modeToolbar }
+            } else {
+                volumeContent
             }
-            .padding(.vertical, 2)
-            .contentShape(Rectangle())
-            .onTapGesture { selectedVolume = vol }
+        }
+    }
+
+    private var volumeContent: some View {
+        List {
+            ForEach(filteredVolumes) { vol in
+                volumeRow(vol)
+            }
         }
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
         .navigationTitle(subseries)
+        .toolbar { modeToolbar }
         .sheet(item: $selectedVolume) { vol in
             CorpusVolumeDetailSheet(volume: vol)
+        }
+    }
+
+    private func volumeRow(_ vol: VolumeManifestEntry) -> some View {
+        @Environment(AppState.self) var appState
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(vol.title)
+                .font(.system(size: 12))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                Text(vol.volumeId)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
+                    Label("Downloaded", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.green)
+                        .labelStyle(.iconOnly)
+                } else if appState.downloadQueue.contains(vol.volumeId) {
+                    Label("Downloading", systemImage: "arrow.down.circle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.blue)
+                        .labelStyle(.iconOnly)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onTapGesture { selectedVolume = vol }
+    }
+
+    @ToolbarContentBuilder
+    private var modeToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                mode = (mode == .connections) ? .volumes : .connections
+            } label: {
+                Label(
+                    mode == .connections ? "Browse Volumes" : "Volume Connections",
+                    systemImage: mode == .connections
+                        ? "books.vertical"
+                        : "point.3.connected.trianglepath.dotted"
+                )
+            }
+            .help(mode == .connections
+                  ? "Return to volume list"
+                  : "Show cross-reference connections between volumes in this subseries")
         }
     }
 }

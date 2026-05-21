@@ -83,12 +83,12 @@ final class VolumeConnectionGraphViewModel {
 
     // MARK: - Load
 
-    func load(from store: CrossReferenceStore) async {
+    func load(from store: CrossReferenceStore, limitToVolumeIds: [String]? = nil) async {
         guard connections.isEmpty else { return }
         isLoading = true
         error = nil
         do {
-            connections = try await store.volumeLevelConnections()
+            connections = try await store.volumeLevelConnections(limitToVolumeIds: limitToVolumeIds)
         } catch {
             self.error = error.localizedDescription
         }
@@ -96,10 +96,10 @@ final class VolumeConnectionGraphViewModel {
         if canvasSize.width > 0 { rerunLayout(reduceMotion: false) }
     }
 
-    func reload(from store: CrossReferenceStore) async {
+    func reload(from store: CrossReferenceStore, limitToVolumeIds: [String]? = nil) async {
         connections = []
         nodePositions = [:]
-        await load(from: store)
+        await load(from: store, limitToVolumeIds: limitToVolumeIds)
     }
 
     // MARK: - Canvas size / layout
@@ -230,10 +230,13 @@ final class VolumeConnectionGraphViewModel {
 
 /// Canvas-based force-directed graph of volume-to-volume cross-reference relationships.
 ///
-/// Rendered as a floating view inside `CorpusBrowserWindowView` when the user selects
-/// the "Connections" mode. Each node represents a FRUS volume; each edge represents
-/// one or more document-level cross-references between those volumes. Edge line width
-/// is proportional to the reference count.
+/// Displayed inside the Corpus Browser's subseries detail pane. Each node represents
+/// a FRUS volume; each edge represents one or more document-level cross-references
+/// between those volumes. Edge line width is proportional to the reference count.
+///
+/// When `limitToVolumeIds` is non-nil, only edges between volumes in that set are shown
+/// (subseries-scoped view). Pass `nil` for a corpus-wide view (not recommended — the
+/// full corpus produces hundreds of nodes that overwhelm both the layout and the user).
 ///
 /// ## Layout
 /// Force-directed spring-repulsion (same physics as the document-level ego graph).
@@ -247,7 +250,13 @@ final class VolumeConnectionGraphViewModel {
 ///
 /// Version history:
 ///   1.0 — Initial implementation for CorpusBrowserWindowView Connections mode
+///   1.1 — Session 75: `limitToVolumeIds` parameter added; graph moved from corpus-level
+///          to subseries detail pane to prevent overwhelming node counts
 struct VolumeConnectionGraphView: View {
+
+    /// When non-nil, restricts edges to those where both endpoints are in this set.
+    /// Pass the volume IDs of the selected subseries to scope to that subseries.
+    var limitToVolumeIds: [String]?
 
     @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -279,7 +288,7 @@ struct VolumeConnectionGraphView: View {
         }
         .task {
             if let store = appState.crossReferenceStore {
-                await vm.load(from: store)
+                await vm.load(from: store, limitToVolumeIds: limitToVolumeIds)
             }
         }
     }
