@@ -37,6 +37,7 @@ import SwiftData
 /// | Scene ID                        | Type          | Purpose                                          |
 /// |---------------------------------|---------------|--------------------------------------------------|
 /// | (default `WindowGroup`)         | WindowGroup   | Main document window (onboarding → main UI)      |
+/// | `"frus.search"`                 | Window        | Full-text search — persists while reading docs   |
 /// | `"frus.corpusBrowser"`          | Window        | Corpus browser — independent browsable window    |
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
@@ -78,6 +79,15 @@ struct FRUSExplorerApp: App {
     var body: some Scene {
         mainWindowScene
         #if os(macOS)
+        // MARK: - Search Window
+        Window("Search", id: "frus.search") {
+            MacSearchWindowView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 820, height: 680)
+        .keyboardShortcut("f", modifiers: .command)
+
         // MARK: - Corpus Browser Window
         Window("Corpus Browser", id: "frus.corpusBrowser") {
             CorpusBrowserWindowView()
@@ -160,11 +170,10 @@ struct FRUSExplorerApp: App {
 
 
             // Search and Citation Lookup keyboard shortcuts (⌘F and ⌘⇧F).
-            // These write to AppState properties observed by ContentView's sheet modifiers.
             CommandGroup(after: .textEditing) {
                 Button(String(localized: "menu.search",
                               defaultValue: "Search\u{2026}")) {
-                    appState.showSearch = true
+                    openWindow(id: "frus.search")
                 }
                 .keyboardShortcut("f", modifiers: .command)
                 .disabled(appState.searchService == nil)

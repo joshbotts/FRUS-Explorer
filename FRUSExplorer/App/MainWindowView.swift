@@ -35,8 +35,8 @@ import SwiftUI
 /// and appended to the path, then cleared.
 ///
 /// ## Search
-/// The search sheet is presented here (not inside `MacDocumentView`) because it needs
-/// access to the full navigation stack to push results onto it.
+/// Opening search calls `openWindow(id: "frus.search")`. The search window is a
+/// separate `Window` scene that persists independently of the document stack.
 ///
 /// ## Window toggling
 /// Graph, source explorer, and corpus browser windows are opened via `openWindow(id:)`.
@@ -58,9 +58,6 @@ struct MainWindowView: View {
 
     /// Whether the citation popover is showing.
     @State private var showCitationPopover: Bool = false
-
-    /// Whether the search sheet is presented.
-    @State private var showSearchSheet: Bool = false
 
     // MARK: - Computed
 
@@ -96,21 +93,18 @@ struct MainWindowView: View {
             StatusBarView()
         }
         .toolbar { mainToolbar }
-        .sheet(isPresented: $showSearchSheet) {
-            SearchSheet(navigationPath: $navigationPath)
-        }
-        // Consume pending navigation from cross-reference taps and person mention search.
+        // Consume pending navigation from cross-reference taps and search result selections.
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
             guard let entry else { return }
             navigationPath.append(entry)
             appState.pendingBrowseDocument = nil
         }
-        // Sync AppState.showSearch (set by ⌘F menu command) with local sheet state.
-        .onChange(of: appState.showSearch) { _, show in
-            if show { showSearchSheet = true; appState.showSearch = false }
-        }
-        .onChange(of: showSearchSheet) { _, show in
-            if !show { appState.showSearch = false }
+        // Open the search window when a cross-view pendingSearch arrives (e.g. "Find all
+        // mentions" from PersonDetailSheet). MacSearchWindowView clears pendingSearch after
+        // applying the parameters so both observers don't race.
+        .onChange(of: appState.pendingSearch) { _, params in
+            guard params != nil else { return }
+            openWindow(id: "frus.search")
         }
     }
 
@@ -165,7 +159,7 @@ struct MainWindowView: View {
 
             // Search
             Button {
-                showSearchSheet = true
+                openWindow(id: "frus.search")
             } label: {
                 Label("Search", systemImage: "magnifyingglass")
             }
