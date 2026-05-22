@@ -722,6 +722,11 @@ public actor IndexingPipeline {
         let totalDocs = data.documents.count
         var processed = 0
 
+        // Delete any existing FTS5 rows for this volume before inserting the fresh batch.
+        // Without this, re-indexing accumulates duplicate rows because document IDs like
+        // "d1" are not globally unique — only (document_id, volume_id) is unique.
+        try await fts5Store.deleteVolume(volumeId: data.volumeId)
+
         for chunkStart in stride(from: 0, to: totalDocs, by: batchSize) {
             let chunkEnd = min(chunkStart + batchSize, totalDocs)
             let fts5Chunk  = Array(data.documents[chunkStart..<chunkEnd])

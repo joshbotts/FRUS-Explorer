@@ -1756,13 +1756,22 @@ private struct ResetView: View {
         resetError = nil
         Task {
             do {
-                // Delete all downloaded volumes
+                // Delete all downloaded .xml files directly from the filesystem.
+                // Iterating manifest entries misses files not currently in the manifest,
+                // which would leave hasDownloadedVolumes() returning true and block OnboardingView.
                 if let dm = appState.downloadManager {
-                    let all = appState.manifestStore.diffResult?.known
-                        ?? appState.manifestStore.bundledEntries
-                    for entry in all where dm.isVolumeDownloaded(entry.volumeId) {
-                        try? await dm.deleteVolume(volumeId: entry.volumeId)
+                    let dir = dm.volumesDirectory
+                    if let files = try? FileManager.default.contentsOfDirectory(
+                        at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
+                    ) {
+                        for file in files where file.pathExtension.lowercased() == "xml" {
+                            try? FileManager.default.removeItem(at: file)
+                        }
                     }
+                }
+                // Clear the search index so re-indexing after onboarding starts from scratch.
+                if let pipeline = appState.indexingPipeline {
+                    try? await pipeline.removeAllVolumesFromIndex()
                 }
                 // Delete all SwiftData user-generated records
                 try modelContext.delete(model: ResearchNote.self)

@@ -136,6 +136,23 @@ public actor FTS5Store {
         #endif
     }
 
+    /// Removes all FTS5 rows belonging to a given volume.
+    ///
+    /// Called before re-indexing a volume so that a second pass does not produce
+    /// duplicate search results. Document IDs (e.g. "d1") are not globally unique
+    /// across volumes, so this delete must be scoped by `volume_id`.
+    public func deleteVolume(volumeId: String) throws {
+        let sql = "DELETE FROM \(schema.tableName) WHERE volume_id = ?"
+        let stmt = try connection.prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT)
+        try connection.step(stmt)
+
+        #if DEBUG
+        print("[FTS5Store] Deleted volume \(volumeId)")
+        #endif
+    }
+
     /// Inserts a batch of documents in a single transaction.
     ///
     /// Using a transaction around bulk inserts is significantly faster than
