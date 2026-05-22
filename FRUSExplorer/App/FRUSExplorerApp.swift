@@ -293,16 +293,30 @@ struct FRUSExplorerApp: App {
                 appState.downloadQueue = state.allQueuedVolumeIds
             },
             onVolumeDownloaded: indexPipeline.map { pipeline in
-                // Called on an unstructured Task after each successful download.
-                // Errors are suppressed with try? — a failed index attempt is recoverable
-                // via Settings > Reindex.
-                { @Sendable volumeId in
+                // Capture modelContainer so the closure can sync summaries after indexing.
+                let container = modelContainer
+                return { @Sendable volumeId in
                     // Yield before indexing so the download completion write can
                     // fully flush before we begin a potentially long CPU/DB task.
                     await Task.yield()
                     try? await pipeline.indexVolume(volumeId)
+                    // After document_cache is populated, push any existing summaries
+                    // for this volume into FTS5. This handles the re-download-after-reset
+                    // case where CloudKit-synced summaries arrived before the volume was
+                    // re-indexed, so the boot-time sync found an empty document_cache.
+                    let vid = volumeId
+                    let context = ModelContext(container)
+                    let descriptor = FetchDescriptor<GeneratedSummary>(
+                        predicate: #Predicate { $0.volumeId == vid }
+                    )
+                    let summaries = (try? context.fetch(descriptor)) ?? []
+                    for summary in summaries {
+                        let did = summary.documentId
+                        let text = summary.responseText
+                        try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
+                    }
                     #if DEBUG
-                    print("[FRUSExplorer] Auto-indexed \(volumeId) after download.")
+                    print("[FRUSExplorer] Auto-indexed \(volumeId) after download (\(summaries.count) summaries synced).")
                     #endif
                 }
             }
