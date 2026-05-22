@@ -567,6 +567,8 @@ struct ExportSheetView: View {
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
     @State private var exportError: String? = nil
+    /// Non-nil while volumes need to be downloaded/indexed before export can proceed.
+    @State private var preparingMessage: String? = nil
 
     var body: some View {
         NavigationStack {
@@ -584,7 +586,14 @@ struct ExportSheetView: View {
                 }
 
                 Section {
-                    if isExporting {
+                    if let msg = preparingMessage {
+                        HStack {
+                            ProgressView()
+                                .padding(.trailing, 8)
+                            Text(msg)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if isExporting {
                         HStack {
                             ProgressView()
                                 .padding(.trailing, 8)
@@ -636,8 +645,13 @@ struct ExportSheetView: View {
     }
 
     private func runExport() async {
-        isExporting = true
         exportError = nil
+
+        // Phase 1: ensure every volume referenced by the collection is downloaded and indexed.
+        await prepareVolumes()
+
+        // Phase 2: resolve document content (now that all volumes should be available).
+        isExporting = true
         do {
             let docs = await resolveDocuments()
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
@@ -648,6 +662,70 @@ struct ExportSheetView: View {
             exportError = error.localizedDescription
         }
         isExporting = false
+    }
+
+    /// Downloads and indexes any volumes referenced by the collection that are not yet
+    /// available locally. Updates `preparingMessage` to give the user live feedback.
+    private func prepareVolumes() async {
+        guard let dm = appState.downloadManager,
+              let pipeline = appState.indexingPipeline else { return }
+
+        let manifest = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        let neededVolumeIds = Set(entries.map(\.volumeId))
+
+        // Classify each needed volume.
+        var toDownload: [(volumeId: String, downloadUrl: String)] = []
+        var toIndex: [String] = []
+        for vid in neededVolumeIds {
+            if !dm.isVolumeDownloaded(vid) {
+                if let entry = manifest.first(where: { $0.volumeId == vid }) {
+                    toDownload.append((vid, entry.downloadUrl))
+                }
+            } else if (try? !pipeline.isVolumeIndexed(vid)) == true {
+                toIndex.append(vid)
+            }
+        }
+
+        guard !toDownload.isEmpty || !toIndex.isEmpty else { return }
+
+        let totalNeeded = toDownload.count + toIndex.count
+        preparingMessage = String(
+            localized: "export.preparing.volumes",
+            defaultValue: "Preparing \(totalNeeded) volume\(totalNeeded == 1 ? "" : "s")…"
+        )
+
+        // Kick off indexing for downloaded-but-unindexed volumes.
+        for vid in toIndex {
+            Task { try? await pipeline.indexVolume(vid) }
+        }
+        // Enqueue downloads; indexing follows automatically via onVolumeDownloaded.
+        for (vid, url) in toDownload {
+            await dm.enqueueDownload(volumeId: vid, downloadUrl: url)
+        }
+
+        // Poll until every needed volume is indexed (or we time out after ~5 min).
+        let waitSet = Set(toDownload.map(\.volumeId) + toIndex)
+        var remaining = waitSet
+        var elapsedMs = 0
+        let pollInterval = 1_000_000_000   // 1 second in nanoseconds
+        let timeoutMs   = 300_000          // 5 minutes
+
+        while !remaining.isEmpty && elapsedMs < timeoutMs {
+            try? await Task.sleep(nanoseconds: UInt64(pollInterval))
+            elapsedMs += 1_000
+            remaining = remaining.filter { vid in
+                (try? !pipeline.isVolumeIndexed(vid)) != false
+            }
+            let ready = waitSet.count - remaining.count
+            let total = waitSet.count
+            preparingMessage = String(
+                localized: "export.preparing.progress",
+                defaultValue: "Preparing volumes: \(ready) of \(total) ready…"
+            )
+        }
+
+        preparingMessage = nil
     }
 
     private func resolveDocuments() async -> [CollectionExportDocument] {

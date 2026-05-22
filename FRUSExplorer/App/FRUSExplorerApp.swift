@@ -66,6 +66,8 @@ import SwiftData
 ///   3.0 — Collections Window wired to MacCollectionManagerView (NavigationSplitView with
 ///          inline editing); defaultSize widened to 760×600; FRUSExplorerMac added to scheme
 ///          archive action; user-selected file entitlement added for NSSavePanel exports
+///   3.1 — Boot-time summary sync: pushes all GeneratedSummary records into FTS5 at launch
+///          so summary-only search finds both local and CloudKit-synced summaries
 @main
 struct FRUSExplorerApp: App {
 
@@ -246,9 +248,47 @@ struct FRUSExplorerApp: App {
                     #endif
                 }
             }
+
+            // Push all existing SwiftData user annotations into the FTS5 index.
+            // FTS5 summary_text, note_text, and user_tag_ids are always NULL after initial
+            // indexing because they are created after the fact and stored only in SwiftData.
+            // This scan handles prior-session data and CloudKit-synced records from other
+            // devices. Runs in a background Task so it doesn't block boot.
+            let container = modelContainer
+            Task {
+                let context = ModelContext(container)
+
+                let summaries = (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
+                for summary in summaries {
+                    let vid = summary.volumeId
+                    let did = summary.documentId
+                    let text = summary.responseText
+                    try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
+                }
+
+                let notes = (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? []
+                for note in notes {
+                    let vid = note.volumeId
+                    let did = note.documentId
+                    let text = note.bodyText
+                    let tagString = note.userTagIds.map(\.uuidString).joined(separator: " ")
+                    try? await pipeline.updateNoteText(
+                        volumeId: vid, documentId: did,
+                        bodyText: text,
+                        userTagIds: tagString.isEmpty ? nil : tagString
+                    )
+                }
+
+                #if DEBUG
+                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(notes.count) notes pushed to FTS5")
+                #endif
+            }
         }
 
-        let summarizationService = SummarizationService(modelContainer: modelContainer)
+        let summarizationService = SummarizationService(
+            modelContainer: modelContainer,
+            indexingPipeline: appState.indexingPipeline
+        )
         appState.summarizationService = summarizationService
         appState.backgroundSummarizationService = BackgroundSummarizationService(
             summarizationService: summarizationService,
@@ -268,16 +308,47 @@ struct FRUSExplorerApp: App {
                 appState.downloadQueue = state.allQueuedVolumeIds
             },
             onVolumeDownloaded: indexPipeline.map { pipeline in
-                // Called on an unstructured Task after each successful download.
-                // Errors are suppressed with try? — a failed index attempt is recoverable
-                // via Settings > Reindex.
-                { @Sendable volumeId in
+                // Capture modelContainer so the closure can sync summaries after indexing.
+                let container = modelContainer
+                return { @Sendable volumeId in
                     // Yield before indexing so the download completion write can
                     // fully flush before we begin a potentially long CPU/DB task.
                     await Task.yield()
                     try? await pipeline.indexVolume(volumeId)
+                    // After document_cache is populated, push any existing summaries
+                    // for this volume into FTS5. This handles the re-download-after-reset
+                    // case where CloudKit-synced summaries arrived before the volume was
+                    // re-indexed, so the boot-time sync found an empty document_cache.
+                    let vid = volumeId
+                    let context = ModelContext(container)
+
+                    let summaryDescriptor = FetchDescriptor<GeneratedSummary>(
+                        predicate: #Predicate { $0.volumeId == vid }
+                    )
+                    let summaries = (try? context.fetch(summaryDescriptor)) ?? []
+                    for summary in summaries {
+                        let did = summary.documentId
+                        let text = summary.responseText
+                        try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
+                    }
+
+                    let noteDescriptor = FetchDescriptor<ResearchNote>(
+                        predicate: #Predicate { $0.volumeId == vid }
+                    )
+                    let notes = (try? context.fetch(noteDescriptor)) ?? []
+                    for note in notes {
+                        let did = note.documentId
+                        let text = note.bodyText
+                        let tagString = note.userTagIds.map(\.uuidString).joined(separator: " ")
+                        try? await pipeline.updateNoteText(
+                            volumeId: vid, documentId: did,
+                            bodyText: text,
+                            userTagIds: tagString.isEmpty ? nil : tagString
+                        )
+                    }
+
                     #if DEBUG
-                    print("[FRUSExplorer] Auto-indexed \(volumeId) after download.")
+                    print("[FRUSExplorer] Auto-indexed \(volumeId): \(summaries.count) summaries, \(notes.count) notes synced.")
                     #endif
                 }
             }

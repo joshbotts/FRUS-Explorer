@@ -604,13 +604,23 @@ private struct InlineNoteCreateSheet: View {
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Save Note") {
+                    let trimmed = bodyText.trimmingCharacters(in: .whitespacesAndNewlines)
                     let note = ResearchNote(
                         documentId: documentId,
                         volumeId: volumeId,
-                        bodyText: bodyText.trimmingCharacters(in: .whitespacesAndNewlines),
+                        bodyText: trimmed,
                         projectIds: activeProjectId.map { [$0] } ?? []
                     )
                     modelContext.insert(note)
+                    // Push immediately so note text is searchable in this session.
+                    if let pipeline = appState.indexingPipeline {
+                        let vid = volumeId
+                        let did = documentId
+                        Task { try? await pipeline.updateNoteText(
+                            volumeId: vid, documentId: did,
+                            bodyText: trimmed, userTagIds: nil
+                        ) }
+                    }
                     onCreated(note)
                     dismiss()
                 }

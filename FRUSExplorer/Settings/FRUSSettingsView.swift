@@ -1988,10 +1988,20 @@ private struct SettingsResetPane: View {
         appState.hasCompletedOnboarding = false
         isResetting = false
 
-        // 5. Close the Settings window and bring the main window forward so the user
-        //    sees the OnboardingView that ContentView just switched to.
+        // 5. Close auxiliary windows (Search, Corpus Browser, etc.) — they'd be confusing
+        //    during onboarding and might obscure the ContentView window which has already
+        //    switched to OnboardingView. NSApplication.mainWindow is unreliable here: it
+        //    returns whichever window last had focus (often an auxiliary window), not the
+        //    ContentView/WindowGroup window.
+        let auxiliaryTitles: Set<String> = [
+            "Search", "Corpus Browser", "Cross-Reference Graph",
+            "Source Explorer", "Collections", "About FRUS Explorer"
+        ]
+        for window in NSApplication.shared.windows where auxiliaryTitles.contains(window.title) {
+            window.close()
+        }
+        // Close Settings last; macOS automatically makes the remaining ContentView window key.
         settingsWindow?.close()
-        NSApplication.shared.mainWindow?.makeKeyAndOrderFront(nil)
 
         #if DEBUG
         print("[Settings] Reset complete. includeCloudKit=\(includeCloudKit)")

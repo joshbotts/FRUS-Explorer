@@ -48,14 +48,18 @@ import SwiftData
 ///   1.0 — Session 19: initial implementation
 ///   1.1 — Session 32: added `summarizeDiscarding` helper used by `BackgroundSummarizationService`
 ///          to avoid returning a non-`Sendable` `GeneratedSummary` across actor boundaries
+///   1.2 — Optional `IndexingPipeline` injected at init; `summarize` pushes each new summary
+///          into FTS5 immediately after SwiftData save for in-session searchability
 actor SummarizationService {
 
     // MARK: - Init
 
     private let modelContainer: ModelContainer
+    private let indexingPipeline: IndexingPipeline?
 
-    init(modelContainer: ModelContainer) {
+    init(modelContainer: ModelContainer, indexingPipeline: IndexingPipeline? = nil) {
         self.modelContainer = modelContainer
+        self.indexingPipeline = indexingPipeline
     }
 
     // MARK: - Public
@@ -136,6 +140,12 @@ actor SummarizationService {
         let context = ModelContext(modelContainer)
         context.insert(summary)
         try context.save()
+
+        // Push the new summary into FTS5 immediately so it is searchable in this session.
+        let vid = summary.volumeId
+        let did = summary.documentId
+        let text = summary.responseText
+        try? await indexingPipeline?.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
 
         #if DEBUG
         print("[SummarizationService] Saved summary \(summary.id) wasChunked=\(wasChunked)")

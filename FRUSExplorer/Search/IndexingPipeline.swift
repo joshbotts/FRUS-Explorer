@@ -481,6 +481,51 @@ public actor IndexingPipeline {
         #endif
     }
 
+    /// Updates the FTS5 index and document cache with a plain-text summary.
+    ///
+    /// Use this overload when the `GeneratedSummary` SwiftData model cannot safely cross
+    /// actor boundaries (e.g. boot-time sync from a background `ModelContext`).
+    func updateSummaryText(volumeId: String, documentId: String, responseText: String) async throws {
+        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
+            #if DEBUG
+            print("[IndexingPipeline] updateSummaryText: \(volumeId)/\(documentId) not in cache")
+            #endif
+            return
+        }
+        let updated = cached.toFTS5Document(summaryText: responseText, noteText: cached.noteText)
+        try await fts5Store.update(document: updated)
+        try updateCacheFields(volumeId: volumeId, documentId: documentId,
+                              summaryText: responseText, noteText: cached.noteText)
+    }
+
+    /// Updates the FTS5 index and document cache with research note content and user tag IDs.
+    ///
+    /// Use this overload when the `ResearchNote` SwiftData model cannot safely cross
+    /// actor boundaries (e.g. boot-time sync or post-download sync from a background
+    /// `ModelContext`). Converts the note's `[UUID]` tag array to the space-separated
+    /// string format stored in FTS5 before calling this method.
+    func updateNoteText(
+        volumeId: String,
+        documentId: String,
+        bodyText: String,
+        userTagIds: String?
+    ) async throws {
+        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
+            #if DEBUG
+            print("[IndexingPipeline] updateNoteText: \(volumeId)/\(documentId) not in cache")
+            #endif
+            return
+        }
+        let updated = cached.toFTS5Document(
+            summaryText: cached.summaryText,
+            noteText: bodyText,
+            updatedUserTagIds: userTagIds
+        )
+        try await fts5Store.update(document: updated)
+        try updateCacheNoteFields(volumeId: volumeId, documentId: documentId,
+                                  userTagIds: userTagIds, noteText: bodyText)
+    }
+
     /// Updates the summary text for a document that is already in the index.
     ///
     /// Reads original field text from `document_cache`, merges in `summary.responseText`,
@@ -1591,6 +1636,17 @@ public actor IndexingPipeline {
         try auxStep(stmt)
     }
 
+    private func updateCacheNoteFields(volumeId: String, documentId: String, userTagIds: String?, noteText: String?) throws {
+        let sql = "UPDATE document_cache SET user_tag_ids = ?, note_text = ? WHERE volume_id = ? AND document_id = ?"
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        auxBindOptional(stmt, 1, userTagIds)
+        auxBindOptional(stmt, 2, noteText)
+        sqlite3_bind_text(stmt, 3, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 4, documentId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
     // MARK: - Raw SQLite Helpers
 
     private func inTransaction(_ body: () throws -> Void) throws {
@@ -1726,6 +1782,18 @@ struct DocumentCacheRow: Sendable {
             id: documentId, volumeId: volumeId, documentNumber: documentNumber,
             header: header, dateline: dateline, sourceNote: sourceNote,
             bodyText: bodyText, subjectTagIds: subjectTagIds, userTagIds: userTagIds,
+            summaryText: summaryText, noteText: noteText,
+            isEditorialNote: isEditorialNote
+        )
+    }
+
+    /// Overload that also replaces the stored `userTagIds` value.
+    /// Used by `updateNoteText` to sync user-tag assignments from SwiftData into FTS5.
+    func toFTS5Document(summaryText: String?, noteText: String?, updatedUserTagIds: String?) -> FTS5Document {
+        FTS5Document(
+            id: documentId, volumeId: volumeId, documentNumber: documentNumber,
+            header: header, dateline: dateline, sourceNote: sourceNote,
+            bodyText: bodyText, subjectTagIds: subjectTagIds, userTagIds: updatedUserTagIds,
             summaryText: summaryText, noteText: noteText,
             isEditorialNote: isEditorialNote
         )
