@@ -175,14 +175,14 @@ struct MainWindowView: View {
             }
             .disabled(currentEntry == nil)
 
-            // Source explorer — only shown when NARA API key is configured
-            if naraAPIKeyConfigured {
+            // Source explorer — shown when the current document has a source note
+            if let note = currentEntry?.sourceNote, !note.isEmpty {
                 Button {
+                    appState.currentSourceNote = note
                     openWindow(id: "frus.sourceExplorer")
                 } label: {
                     Label("Sources", systemImage: "archivebox")
                 }
-                .disabled(currentEntry == nil)
             }
 
             Divider().frame(height: 20)
@@ -221,12 +221,6 @@ struct MainWindowView: View {
         }
     }
 
-    // MARK: - Helpers
-
-    /// Returns true if a NARA API key has been stored in the keychain.
-    private var naraAPIKeyConfigured: Bool {
-        NARAAPIKeyStore.shared.hasKey
-    }
 }
 
 // MARK: - DocumentPlaceholderView

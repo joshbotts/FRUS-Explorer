@@ -201,6 +201,12 @@ final class AppState {
     /// `pendingBrowseDocument` (to open in the main window) rather than navigating inline.
     var currentGraphEntry: DocumentBrowserEntry? = nil
 
+    /// The raw source note of the document currently targeted by the Source Explorer window.
+    ///
+    /// Set by `MainWindowView` immediately before `openWindow(id: "frus.sourceExplorer")`
+    /// is called. `SourceExplorerWindowView` passes this to `MacSourceExplorerView`.
+    var currentSourceNote: String? = nil
+
     /// Controls presentation of the full-text Search sheet.
     ///
     /// Promoted from `BrowserView` local `@State` to `AppState` so that macOS

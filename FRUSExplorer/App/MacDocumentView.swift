@@ -48,7 +48,6 @@ struct MacDocumentView: View {
     @State private var activeFootnoteLabel: String? = nil
     @State private var prevEntry: DocumentBrowserEntry? = nil
     @State private var nextEntry: DocumentBrowserEntry? = nil
-    @State private var sourceExplorerItem: IdentifiableSourceNote? = nil
 
     // MARK: - Init
 
@@ -135,27 +134,6 @@ struct MacDocumentView: View {
             .padding(.top, 28)
         }
         .task { await loadDocument() }
-        .toolbar {
-            if let sourceNote = vm.sourceNote {
-                ToolbarItem {
-                    Button {
-                        sourceExplorerItem = IdentifiableSourceNote(note: sourceNote)
-                    } label: {
-                        Label(
-                            String(localized: "document.toolbar.sourceExplorer",
-                                   defaultValue: "Source Explorer"),
-                            systemImage: "archivebox"
-                        )
-                    }
-                    .help(String(localized: "document.toolbar.sourceExplorer",
-                                 defaultValue: "Source Explorer"))
-                }
-            }
-        }
-        // Source Explorer sheet
-        .sheet(item: $sourceExplorerItem) { item in
-            MacSourceExplorerView(rawSourceNote: item.note)
-        }
         // Person sheet
         .sheet(item: $vm.selectedPerson) { person in
             PersonDetailSheet(
@@ -402,14 +380,6 @@ private struct TrailingIconLabelStyle: LabelStyle {
             configuration.icon
         }
     }
-}
-
-// MARK: - IdentifiableSourceNote
-
-/// `Identifiable` wrapper around a raw source note string for use with `.sheet(item:)`.
-private struct IdentifiableSourceNote: Identifiable {
-    let id = UUID()
-    let note: String
 }
 
 #endif // os(macOS)
