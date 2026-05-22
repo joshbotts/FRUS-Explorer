@@ -248,6 +248,7 @@
 		AA49BB01CC03DD04EE490031 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490030 /* OnboardingFlowTests.swift */; };
 		AA50BB01CC03DD04EE5011 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */; };
 		AA50BB01CC03DD04EE5012 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */; };
+		AA60BB01CC03DD04EE6002 /* MacSourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA60BB01CC03DD04EE6001 /* MacSourceExplorerView.swift */; };
 		AA51BB01CC03DD04EE5111 /* FRUSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */; };
 		AA51BB01CC03DD04EE5112 /* FRUSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */; };
 		AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29459906A446E922051D111D /* ManifestModels.swift */; };
@@ -435,6 +436,7 @@
 		AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManagerSettingsView.swift; sourceTree = "<group>"; };
 		AA49BB01CC03DD04EE490030 /* OnboardingFlowTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowTests.swift; sourceTree = "<group>"; };
 		AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARAAPIKeyStore.swift; sourceTree = "<group>"; };
+		AA60BB01CC03DD04EE6001 /* MacSourceExplorerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacSourceExplorerView.swift; sourceTree = "<group>"; };
 		AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSSettingsView.swift; sourceTree = "<group>"; };
 		B9B3538710154855A5E7E7D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C0114AD73FF8B5C9D0446099 /* EntitlementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementsTests.swift; sourceTree = "<group>"; };
@@ -734,6 +736,7 @@
 				AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */,
 				AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */,
 				AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */,
+				AA60BB01CC03DD04EE6001 /* MacSourceExplorerView.swift */,
 			);
 			path = SourceExplorer;
 			sourceTree = "<group>";
@@ -1089,6 +1092,7 @@
 				AA39BB01CC03DD04EE3902 /* PersonMentionStore.swift in Sources */,
 				661144C718F8B46603056272 /* MainWindowView.swift in Sources */,
 				623128B598B5F7C4F62DDC12 /* MacDocumentView.swift in Sources */,
+				AA60BB01CC03DD04EE6002 /* MacSourceExplorerView.swift in Sources */,
 				89311F4C843EFBE0C952701C /* SupportingViews.swift in Sources */,
 				D6A96B97B02F339F85D5B651 /* SearchSheet.swift in Sources */,
 				7ADB6C509D4867C93A789162 /* MacSearchViewModel.swift in Sources */,
