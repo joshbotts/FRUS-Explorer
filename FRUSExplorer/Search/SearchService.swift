@@ -44,7 +44,6 @@ public actor SearchService {
     // MARK: - Pagination defaults
 
     public static let defaultPageSize = 20
-    public static let maxPageSize = 100
 
     // MARK: - Initialisation
 
@@ -71,7 +70,7 @@ public actor SearchService {
     ///
     /// - Parameters:
     ///   - parameters: Search criteria.
-    ///   - limit: Maximum results to return. Capped at `maxPageSize`.
+    ///   - limit: Maximum results to return.
     ///   - offset: Number of results to skip for pagination.
     /// - Returns: Matching documents ordered by BM25 relevance.
     /// - Throws: `FTS5Error.emptyQuery` if no searchable content can be constructed.
@@ -81,7 +80,7 @@ public actor SearchService {
         offset: Int = 0
     ) async throws -> [SearchResult] {
         let query = try makeFTS5Query(from: parameters)
-        let effectiveLimit = min(limit, Self.maxPageSize)
+        let effectiveLimit = limit
 
         // Build date-range whitelist if requested.
         let dateKeys: Set<String>? = try await {
