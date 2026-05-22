@@ -12,11 +12,15 @@ import SwiftUI
 ///
 /// Gates between `OnboardingView` and the platform-appropriate main UI.
 ///
-/// Routes to `OnboardingView` unless at least one of these conditions is true:
+/// Routes to `OnboardingView` unless BOTH of these conditions are true:
 /// - `appState.hasCompletedOnboarding == true` (UserDefaults flag set at wizard completion)
-/// - At least one `.xml` volume file exists on disk
+/// - At least one `.xml` volume file exists on disk, OR a download is actively queued
 ///
-/// Setting `hasCompletedOnboarding = false` (e.g. from the Settings reset action) and
+/// Using AND (not OR) means no volumes → always show onboarding, even if the user
+/// previously completed it. `downloadQueue` prevents a mid-download flicker: the flag
+/// is set true at "Get Started" but the first volume may not have landed yet.
+///
+/// Setting `hasCompletedOnboarding = false` (e.g. from the Settings reset action) OR
 /// deleting all downloaded volumes causes this view to re-route to `OnboardingView` on
 /// the next SwiftUI render pass, effectively re-triggering onboarding.
 ///
@@ -32,13 +36,16 @@ import SwiftUI
 ///   1.2 — Session 11: replaced placeholder with BrowserView
 ///   1.3 — Session 43: iOS routes to MainTabView; macOS stays on BrowserView
 ///   2.0 — New UI: macOS routes to MainWindowView (window-based navigation)
+///   2.1 — Routing changed from OR to AND: no volumes → always show onboarding even if
+///          flag is true; downloadQueue prevents flicker during active downloads
 struct ContentView: View {
 
     @Environment(AppState.self) private var appState
 
     var body: some View {
         let hasVolumes = OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory)
-        if appState.hasCompletedOnboarding || hasVolumes {
+        let hasActiveDownloads = !appState.downloadQueue.isEmpty
+        if appState.hasCompletedOnboarding && (hasVolumes || hasActiveDownloads) {
             #if os(iOS)
             MainTabView()
             #else

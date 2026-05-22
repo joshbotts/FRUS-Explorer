@@ -481,6 +481,23 @@ public actor IndexingPipeline {
         #endif
     }
 
+    /// Updates the FTS5 index and document cache with a plain-text summary.
+    ///
+    /// Use this overload when the `GeneratedSummary` SwiftData model cannot safely cross
+    /// actor boundaries (e.g. boot-time sync from a background `ModelContext`).
+    func updateSummaryText(volumeId: String, documentId: String, responseText: String) async throws {
+        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
+            #if DEBUG
+            print("[IndexingPipeline] updateSummaryText: \(volumeId)/\(documentId) not in cache")
+            #endif
+            return
+        }
+        let updated = cached.toFTS5Document(summaryText: responseText, noteText: cached.noteText)
+        try await fts5Store.update(document: updated)
+        try updateCacheFields(volumeId: volumeId, documentId: documentId,
+                              summaryText: responseText, noteText: cached.noteText)
+    }
+
     /// Updates the summary text for a document that is already in the index.
     ///
     /// Reads original field text from `document_cache`, merges in `summary.responseText`,

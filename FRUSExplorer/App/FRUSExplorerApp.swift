@@ -66,6 +66,8 @@ import SwiftData
 ///   3.0 — Collections Window wired to MacCollectionManagerView (NavigationSplitView with
 ///          inline editing); defaultSize widened to 760×600; FRUSExplorerMac added to scheme
 ///          archive action; user-selected file entitlement added for NSSavePanel exports
+///   3.1 — Boot-time summary sync: pushes all GeneratedSummary records into FTS5 at launch
+///          so summary-only search finds both local and CloudKit-synced summaries
 @main
 struct FRUSExplorerApp: App {
 
@@ -245,6 +247,29 @@ struct FRUSExplorerApp: App {
                     print("[FRUSExplorer] Background re-index complete.")
                     #endif
                 }
+            }
+
+            // Push all existing SwiftData summaries into the FTS5 index.
+            // FTS5 summary_text is always NULL after initial indexing because summaries
+            // are generated later and stored only in SwiftData. This scan handles
+            // locally-created summaries from prior sessions and CloudKit-synced summaries
+            // from other devices. Runs in a background Task so it doesn't block boot.
+            let container = modelContainer
+            Task {
+                let context = ModelContext(container)
+                let descriptor = FetchDescriptor<GeneratedSummary>()
+                let summaries = (try? context.fetch(descriptor)) ?? []
+                for summary in summaries {
+                    let vid = summary.volumeId
+                    let did = summary.documentId
+                    let text = summary.responseText
+                    try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
+                }
+                #if DEBUG
+                if !summaries.isEmpty {
+                    print("[FRUSExplorer] Boot summary sync: \(summaries.count) summaries pushed to FTS5")
+                }
+                #endif
             }
         }
 
