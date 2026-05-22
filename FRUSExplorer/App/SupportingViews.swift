@@ -1832,11 +1832,18 @@ private struct CorpusSectionDocumentListView: View {
 }
 
 struct SourceExplorerWindowView: View {
+    @Environment(AppState.self) private var appState
+
     var body: some View {
-        Text("Source Explorer")
-            .font(.title2)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if let note = appState.currentSourceNote {
+            MacSourceExplorerView(rawSourceNote: note)
+        } else {
+            ContentUnavailableView(
+                "No Document Selected",
+                systemImage: "archivebox",
+                description: Text("Open a document with a source note, then tap Sources in the toolbar.")
+            )
+        }
     }
 }
 
