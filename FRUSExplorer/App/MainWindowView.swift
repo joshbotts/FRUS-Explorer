@@ -157,13 +157,12 @@ struct MainWindowView: View {
     private var trailingTools: some View {
         HStack(spacing: 6) {
 
-            // Search
+            // Search — shortcut owned by the "frus.search" Window scene
             Button {
                 openWindow(id: "frus.search")
             } label: {
                 Label("Search", systemImage: "magnifyingglass")
             }
-            .keyboardShortcut("f", modifiers: .command)
 
             Divider().frame(height: 20)
 

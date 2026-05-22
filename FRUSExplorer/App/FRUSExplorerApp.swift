@@ -169,15 +169,9 @@ struct FRUSExplorerApp: App {
             }
 
 
-            // Search and Citation Lookup keyboard shortcuts (⌘F and ⌘⇧F).
+            // Citation Lookup keyboard shortcut (⌘⇧F).
+            // Search (⌘F) is handled by the "frus.search" Window scene shortcut.
             CommandGroup(after: .textEditing) {
-                Button(String(localized: "menu.search",
-                              defaultValue: "Search\u{2026}")) {
-                    openWindow(id: "frus.search")
-                }
-                .keyboardShortcut("f", modifiers: .command)
-                .disabled(appState.searchService == nil)
-
                 Button(String(localized: "menu.citationLookup",
                               defaultValue: "Find by Citation\u{2026}")) {
                     appState.showCitationLookup = true
