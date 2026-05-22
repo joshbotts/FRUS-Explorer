@@ -1969,7 +1969,14 @@ private struct SettingsResetPane: View {
 
         // 2. Remove the search index — one bulk DELETE per table, not one call per manifest entry.
         if let pipeline = appState.indexingPipeline {
-            try? await pipeline.removeAllVolumesFromIndex()
+            do {
+                try await pipeline.removeAllVolumesFromIndex()
+                appState.indexGeneration += 1
+            } catch {
+                #if DEBUG
+                print("[Settings] removeAllVolumesFromIndex failed: \(error)")
+                #endif
+            }
         }
 
         // 3. If full reset, delete all SwiftData records

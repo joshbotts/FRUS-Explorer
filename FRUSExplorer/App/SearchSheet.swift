@@ -110,6 +110,10 @@ struct MacSearchWindowView: View {
             searchVM.applyParameters(params)
             appState.pendingSearch = nil
         }
+        .onChange(of: appState.indexGeneration) { _, _ in
+            searchVM.results = []
+            searchVM.queryText = ""
+        }
         .sheet(isPresented: $showAdvancedFilters,
                onDismiss: { searchVM.applyAdvancedFilters() }) {
             if let filterVM = searchVM.filterVM {

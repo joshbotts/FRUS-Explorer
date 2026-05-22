@@ -1771,7 +1771,8 @@ private struct ResetView: View {
                 }
                 // Clear the search index so re-indexing after onboarding starts from scratch.
                 if let pipeline = appState.indexingPipeline {
-                    try? await pipeline.removeAllVolumesFromIndex()
+                    try await pipeline.removeAllVolumesFromIndex()
+                    await MainActor.run { appState.indexGeneration += 1 }
                 }
                 // Delete all SwiftData user-generated records
                 try modelContext.delete(model: ResearchNote.self)
