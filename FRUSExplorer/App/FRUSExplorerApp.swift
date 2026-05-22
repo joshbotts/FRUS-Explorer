@@ -285,7 +285,10 @@ struct FRUSExplorerApp: App {
             }
         }
 
-        let summarizationService = SummarizationService(modelContainer: modelContainer)
+        let summarizationService = SummarizationService(
+            modelContainer: modelContainer,
+            indexingPipeline: appState.indexingPipeline
+        )
         appState.summarizationService = summarizationService
         appState.backgroundSummarizationService = BackgroundSummarizationService(
             summarizationService: summarizationService,

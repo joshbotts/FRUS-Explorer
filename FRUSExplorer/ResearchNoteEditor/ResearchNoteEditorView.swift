@@ -34,6 +34,7 @@ struct ResearchNoteEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
 
     @State private var vm: ResearchNoteEditorViewModel
 
@@ -109,6 +110,7 @@ struct ResearchNoteEditorView: View {
 
                 Button(String(localized: "note.editor.toolbar.save", defaultValue: "Save")) {
                     vm.save(context: modelContext)
+                    pushNoteToFTS5()
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -240,6 +242,25 @@ struct ResearchNoteEditorView: View {
         }
     }
 
+    // MARK: - FTS5 Sync
+
+    /// Pushes the current note body and tags into the FTS5 index so changes are
+    /// searchable in the current session without waiting for a relaunch.
+    private func pushNoteToFTS5() {
+        guard let pipeline = appState.indexingPipeline else { return }
+        let vid = vm.volumeId
+        let did = vm.documentId
+        let text = vm.bodyText
+        let tagString = vm.userTagIds.map(\.uuidString).joined(separator: " ")
+        Task {
+            try? await pipeline.updateNoteText(
+                volumeId: vid, documentId: did,
+                bodyText: text,
+                userTagIds: tagString.isEmpty ? nil : tagString
+            )
+        }
+    }
+
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -254,6 +275,7 @@ struct ResearchNoteEditorView: View {
             Button(String(localized: "note.editor.toolbar.save",
                           defaultValue: "Save")) {
                 vm.save(context: modelContext)
+                pushNoteToFTS5()
                 dismiss()
             }
         }
