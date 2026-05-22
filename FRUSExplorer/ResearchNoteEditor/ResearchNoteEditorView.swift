@@ -34,15 +34,16 @@ struct ResearchNoteEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(AppState.self) private var appState
 
     @State private var vm: ResearchNoteEditorViewModel
+    private let indexingPipeline: IndexingPipeline?
 
     init(
         documentId: String,
         volumeId: String,
         activeProjectId: UUID?,
-        noteToEdit: ResearchNote? = nil
+        noteToEdit: ResearchNote? = nil,
+        indexingPipeline: IndexingPipeline? = nil
     ) {
         _vm = State(initialValue: ResearchNoteEditorViewModel(
             documentId: documentId,
@@ -50,6 +51,7 @@ struct ResearchNoteEditorView: View {
             activeProjectId: activeProjectId,
             noteToEdit: noteToEdit
         ))
+        self.indexingPipeline = indexingPipeline
     }
 
     var body: some View {
@@ -247,7 +249,7 @@ struct ResearchNoteEditorView: View {
     /// Pushes the current note body and tags into the FTS5 index so changes are
     /// searchable in the current session without waiting for a relaunch.
     private func pushNoteToFTS5() {
-        guard let pipeline = appState.indexingPipeline else { return }
+        guard let pipeline = indexingPipeline else { return }
         let vid = vm.volumeId
         let did = vm.documentId
         let text = vm.bodyText

@@ -84,7 +84,8 @@ struct GlobalContextView: View {
                     documentId: note.documentId,
                     volumeId: note.volumeId,
                     activeProjectId: appState.activeProjectId,
-                    noteToEdit: note
+                    noteToEdit: note,
+                    indexingPipeline: appState.indexingPipeline
                 )
             }
             .sheet(item: $collectionToEdit) { collection in

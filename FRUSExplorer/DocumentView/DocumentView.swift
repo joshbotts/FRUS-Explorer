@@ -277,7 +277,8 @@ struct DocumentView: View {
                 ResearchNoteEditorView(
                     documentId: entry.documentId,
                     volumeId: entry.volumeId,
-                    activeProjectId: appState.activeProjectId
+                    activeProjectId: appState.activeProjectId,
+                    indexingPipeline: appState.indexingPipeline
                 )
             case .crossReferenceGraph:
                 if let store = appState.crossReferenceStore {

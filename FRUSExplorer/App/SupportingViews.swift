@@ -136,7 +136,8 @@ struct ResearchStripView: View {
                 ResearchNoteEditorView(
                     documentId: entry.documentId,
                     volumeId: entry.volumeId,
-                    activeProjectId: appState.activeProjectId
+                    activeProjectId: appState.activeProjectId,
+                    indexingPipeline: appState.indexingPipeline
                 )
             }
         }
