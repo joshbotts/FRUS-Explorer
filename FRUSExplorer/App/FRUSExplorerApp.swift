@@ -249,26 +249,38 @@ struct FRUSExplorerApp: App {
                 }
             }
 
-            // Push all existing SwiftData summaries into the FTS5 index.
-            // FTS5 summary_text is always NULL after initial indexing because summaries
-            // are generated later and stored only in SwiftData. This scan handles
-            // locally-created summaries from prior sessions and CloudKit-synced summaries
-            // from other devices. Runs in a background Task so it doesn't block boot.
+            // Push all existing SwiftData user annotations into the FTS5 index.
+            // FTS5 summary_text, note_text, and user_tag_ids are always NULL after initial
+            // indexing because they are created after the fact and stored only in SwiftData.
+            // This scan handles prior-session data and CloudKit-synced records from other
+            // devices. Runs in a background Task so it doesn't block boot.
             let container = modelContainer
             Task {
                 let context = ModelContext(container)
-                let descriptor = FetchDescriptor<GeneratedSummary>()
-                let summaries = (try? context.fetch(descriptor)) ?? []
+
+                let summaries = (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
                 for summary in summaries {
                     let vid = summary.volumeId
                     let did = summary.documentId
                     let text = summary.responseText
                     try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
                 }
-                #if DEBUG
-                if !summaries.isEmpty {
-                    print("[FRUSExplorer] Boot summary sync: \(summaries.count) summaries pushed to FTS5")
+
+                let notes = (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? []
+                for note in notes {
+                    let vid = note.volumeId
+                    let did = note.documentId
+                    let text = note.bodyText
+                    let tagString = note.userTagIds.map(\.uuidString).joined(separator: " ")
+                    try? await pipeline.updateNoteText(
+                        volumeId: vid, documentId: did,
+                        bodyText: text,
+                        userTagIds: tagString.isEmpty ? nil : tagString
+                    )
                 }
+
+                #if DEBUG
+                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(notes.count) notes pushed to FTS5")
                 #endif
             }
         }
@@ -306,17 +318,34 @@ struct FRUSExplorerApp: App {
                     // re-indexed, so the boot-time sync found an empty document_cache.
                     let vid = volumeId
                     let context = ModelContext(container)
-                    let descriptor = FetchDescriptor<GeneratedSummary>(
+
+                    let summaryDescriptor = FetchDescriptor<GeneratedSummary>(
                         predicate: #Predicate { $0.volumeId == vid }
                     )
-                    let summaries = (try? context.fetch(descriptor)) ?? []
+                    let summaries = (try? context.fetch(summaryDescriptor)) ?? []
                     for summary in summaries {
                         let did = summary.documentId
                         let text = summary.responseText
                         try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
                     }
+
+                    let noteDescriptor = FetchDescriptor<ResearchNote>(
+                        predicate: #Predicate { $0.volumeId == vid }
+                    )
+                    let notes = (try? context.fetch(noteDescriptor)) ?? []
+                    for note in notes {
+                        let did = note.documentId
+                        let text = note.bodyText
+                        let tagString = note.userTagIds.map(\.uuidString).joined(separator: " ")
+                        try? await pipeline.updateNoteText(
+                            volumeId: vid, documentId: did,
+                            bodyText: text,
+                            userTagIds: tagString.isEmpty ? nil : tagString
+                        )
+                    }
+
                     #if DEBUG
-                    print("[FRUSExplorer] Auto-indexed \(volumeId) after download (\(summaries.count) summaries synced).")
+                    print("[FRUSExplorer] Auto-indexed \(volumeId): \(summaries.count) summaries, \(notes.count) notes synced.")
                     #endif
                 }
             }
