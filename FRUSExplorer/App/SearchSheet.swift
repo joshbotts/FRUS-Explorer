@@ -10,12 +10,12 @@
 
 import SwiftUI
 
-// MARK: - SearchSheet
+// MARK: - MacSearchWindowView
 
-/// Full-text search sheet presented over the main macOS window.
+/// Full-text search window content for the macOS Search window scene (`"frus.search"`).
 ///
 /// ## Layout (top to bottom)
-/// 1. Search input + Tips toggle + Cancel button
+/// 1. Search input + Tips toggle
 /// 2. Scope toggles (Documents · Notes · Summaries · Collections)
 /// 3. Filter row (Date · Volume/subseries · Tagged · Advanced…)
 /// 4. Document type selector (Both / Primary only / Editorial notes only)
@@ -24,9 +24,20 @@ import SwiftUI
 /// 7. Pagination bar (prev · page indicator · next)
 /// 8. Tips panel (collapsible)
 ///
-/// ## Resizability
-/// The sheet uses `idealWidth`/`idealHeight` plus `.infinity` max so macOS lets
-/// the user drag it to any size.
+/// ## Persistence
+/// Lives in a `Window` scene so state (query, filters, results, page) is retained
+/// while the user examines documents in the main window. The window can be resized
+/// freely and remains open across navigation.
+///
+/// ## Navigation
+/// Selecting a result sets `AppState.pendingBrowseDocument`, which `MainWindowView`
+/// consumes and pushes onto its `NavigationStack`. The search window stays open.
+///
+/// ## Pending Search
+/// `AppState.pendingSearch` (set by "Find all mentions" in `PersonDetailSheet`) is
+/// observed here. On change the parameters are applied and a new search fires.
+/// `MainWindowView` also observes `pendingSearch` and calls `openWindow(id:)` to
+/// ensure the window is open before the parameters arrive.
 ///
 /// ## Advanced Filters
 /// Tapping "Advanced…" in the filter row opens `SearchFilterView` as a sheet.
@@ -34,18 +45,13 @@ import SwiftUI
 /// `parameters` and bumps `parametersVersion`, which triggers a new search via
 /// `.task(id: searchVM.searchTrigger)`.
 ///
-/// ## Interaction
-/// Selecting a result appends to `navigationPath` and dismisses the sheet.
-/// Right-clicking a result offers "Open in new window" (future session).
-///
 /// Version history:
 ///   1.0 — New UI scaffolding (macOS-only; uses MacSearchViewModel)
 ///   1.1 — Add pagination, page size picker, Advanced Filters sheet, resizable frame
-struct SearchSheet: View {
-    @Binding var navigationPath: [DocumentBrowserEntry]
+///   1.2 — Converted from sheet to Window scene; removed navigationPath binding and Cancel
+struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
-    @Environment(\.dismiss) private var dismiss
 
     @State private var searchVM = MacSearchViewModel()
     @State private var showAdvancedFilters = false
@@ -99,6 +105,11 @@ struct SearchSheet: View {
         .task(id: searchVM.searchTrigger) {
             await searchVM.performSearch(service: appState.searchService)
         }
+        .onChange(of: appState.pendingSearch) { _, params in
+            guard let params else { return }
+            searchVM.applyParameters(params)
+            appState.pendingSearch = nil
+        }
         .sheet(isPresented: $showAdvancedFilters,
                onDismiss: { searchVM.applyAdvancedFilters() }) {
             if let filterVM = searchVM.filterVM {
@@ -145,9 +156,6 @@ struct SearchSheet: View {
                     .foregroundStyle(searchVM.showTips ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
-
-            Button("Cancel") { dismiss() }
-                .keyboardShortcut(.cancelAction)
         }
     }
 
@@ -432,7 +440,7 @@ struct SearchSheet: View {
     // MARK: - Actions
 
     private func navigateToResult(_ result: SearchResult) {
-        let entry = DocumentBrowserEntry(
+        appState.pendingBrowseDocument = DocumentBrowserEntry(
             documentId: result.documentId,
             volumeId: result.volumeId,
             documentNumber: result.documentNumber,
@@ -441,8 +449,6 @@ struct SearchSheet: View {
             sourceNote: result.sourceNote,
             isEditorialNote: result.isEditorialNote
         )
-        navigationPath.append(entry)
-        dismiss()
     }
 }
 

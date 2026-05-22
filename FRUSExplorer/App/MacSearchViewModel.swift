@@ -295,6 +295,26 @@ final class MacSearchViewModel {
         parametersVersion += 1
     }
 
+    // MARK: - Pending Search Application
+
+    /// Applies a `SearchParameters` snapshot received from `AppState.pendingSearch`.
+    ///
+    /// Sets both `parameters` and the reflected UI state (scope toggles, query text),
+    /// then bumps `parametersVersion` so `.task(id: searchTrigger)` fires a new search.
+    /// If no keywords are provided but a `personRef` filter is present, the person ref
+    /// is used as the query text so the search actually runs.
+    func applyParameters(_ params: SearchParameters) {
+        let kw = params.keywords ?? (params.personRef.map { "person:\($0)" } ?? "")
+        if !kw.isEmpty {
+            queryText = kw
+            debouncedQuery = kw
+        }
+        parameters = params
+        scopeNotes     = params.includeNotes
+        scopeSummaries = params.includeSummaries
+        parametersVersion += 1
+    }
+
     // MARK: - Search
 
     /// Executes a search against `SearchService` using the current `parameters` and `queryText`.
