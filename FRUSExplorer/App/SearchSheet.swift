@@ -514,15 +514,19 @@ private struct SearchResultRow: View {
 // MARK: - SnippetView
 
 /// Renders an FTS5 snippet string where `<b>` / `</b>` delimiters mark matched terms.
+///
+/// Uses `Text(AttributedString)` directly — avoids the throwing
+/// `AttributedString.init(_:including:)` scope-filter initializer, which silently
+/// fails on macOS when attribute scopes are mixed (AppKit vs SwiftUI), causing the
+/// raw `<b>word</b>` fallback to render.
 private struct SnippetView: View {
     let snippet: String
 
     var body: some View {
-        (try? AttributedString(styledSnippet(snippet), including: \.swiftUI))
-            .map { Text($0) } ?? Text(snippet)
+        Text(styledSnippet(snippet))
     }
 
-    private func styledSnippet(_ raw: String) throws -> AttributedString {
+    private func styledSnippet(_ raw: String) -> AttributedString {
         var result = AttributedString()
         var remainder = raw
 
@@ -535,8 +539,8 @@ private struct SnippetView: View {
 
                 let highlighted = String(remainder[openRange.upperBound..<closeRange.lowerBound])
                 var span = AttributedString(highlighted)
-                span.foregroundColor = .init(.systemYellow)
-                span.font = .system(size: 12, weight: .medium)
+                span.swiftUI.foregroundColor = Color.yellow
+                span.swiftUI.font = .system(size: 12, weight: .medium)
                 result += span
 
                 remainder = String(remainder[closeRange.upperBound...])
