@@ -207,6 +207,14 @@ final class AppState {
     /// is called. `SourceExplorerWindowView` passes this to `MacSourceExplorerView`.
     var currentSourceNote: String? = nil
 
+    /// Incremented each time the full-text index is completely cleared (app reset).
+    ///
+    /// Observed by `MacSearchWindowView` to discard cached result sets that were
+    /// fetched before the reset. Without this, the search window — a persistent
+    /// `Window` scene — continues displaying stale rows even though the FTS5 table
+    /// is empty, because its `searchTrigger` never changes and no re-query fires.
+    var indexGeneration: Int = 0
+
     /// Controls presentation of the full-text Search sheet.
     ///
     /// Promoted from `BrowserView` local `@State` to `AppState` so that macOS
