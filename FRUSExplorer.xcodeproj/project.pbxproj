@@ -218,6 +218,8 @@
 		AA22BB01CC03DD04EE2245 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2243 /* AnalyticsView.swift */; };
 		AA22BB01CC03DD04EE2247 /* ResearchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2246 /* ResearchSession.swift */; };
 		AA22BB01CC03DD04EE2248 /* ResearchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2246 /* ResearchSession.swift */; };
+		AA22BB01CC03DD04EE2250 /* SessionLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2249 /* SessionLogView.swift */; };
+		AA22BB01CC03DD04EE2251 /* SessionLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2249 /* SessionLogView.swift */; };
 		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
@@ -439,6 +441,7 @@
 		AA22BB01CC03DD04EE2240 /* CorpusAnalyticsService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CorpusAnalyticsService.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2243 /* AnalyticsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2246 /* ResearchSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchSession.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2249 /* SessionLogView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionLogView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacCollectionManagerView.swift; sourceTree = "<group>"; };
@@ -738,6 +741,7 @@
 				AA15BB01CC03DD04EE1510 /* ProjectContextView.swift */,
 				AA25BB01CC03DD04EE2500 /* GlobalContextViewModel.swift */,
 				AA25BB01CC03DD04EE2503 /* GlobalContextView.swift */,
+				AA22BB01CC03DD04EE2249 /* SessionLogView.swift */,
 			);
 			path = ProjectContext;
 			sourceTree = "<group>";
@@ -1066,6 +1070,7 @@
 				AA22BB01CC03DD04EE2241 /* CorpusAnalyticsService.swift in Sources */,
 				AA22BB01CC03DD04EE2244 /* AnalyticsView.swift in Sources */,
 				AA22BB01CC03DD04EE2247 /* ResearchSession.swift in Sources */,
+				AA22BB01CC03DD04EE2250 /* SessionLogView.swift in Sources */,
 				96D3EA2639884EDD9E2065AF /* MainTabView.swift in Sources */,
 				6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */,
 				79425B089B74B72978721CBB /* ManifestStore.swift in Sources */,
@@ -1193,6 +1198,7 @@
 				AA22BB01CC03DD04EE2242 /* CorpusAnalyticsService.swift in Sources */,
 				AA22BB01CC03DD04EE2245 /* AnalyticsView.swift in Sources */,
 				AA22BB01CC03DD04EE2248 /* ResearchSession.swift in Sources */,
+				AA22BB01CC03DD04EE2251 /* SessionLogView.swift in Sources */,
 				1D450CCEF5BF408FB3368C6E /* MainTabView.swift in Sources */,
 				AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */,
 				E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */,

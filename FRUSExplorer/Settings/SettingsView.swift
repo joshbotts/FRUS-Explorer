@@ -59,11 +59,14 @@ import UniformTypeIdentifiers
 ///   1.9 — Session 90: General section added to iOS with Display and Search Defaults panes
 ///          (close gap with macOS FRUSSettingsView); storage limit picker added to
 ///          StorageManagementView (matches macOS Storage pane)
+///   2.0 — Session 101: Log Research Sessions toggle added to Research section
 struct SettingsView: View {
 
     #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
     #endif
+
+    @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
 
     var body: some View {
         NavigationStack {
@@ -114,6 +117,11 @@ struct SettingsView: View {
                                          defaultValue: "Summarization Prompts")) {
                         SummarizationPromptsSettingsView()
                     }
+                    Toggle(
+                        String(localized: "settings.row.logSessions",
+                               defaultValue: "Log Research Sessions"),
+                        isOn: $loggingEnabled
+                    )
                 }
 
                 Section(String(localized: "settings.section.integrations",

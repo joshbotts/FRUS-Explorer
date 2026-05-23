@@ -46,6 +46,7 @@ import UniformTypeIdentifiers
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — Session 101: Log Research Sessions toggle added to SettingsNotesPane
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -664,6 +665,8 @@ private struct SettingsNotesPane: View {
     @Query private var projects: [Project]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
 
+    @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
+
     @State private var filterProjectId: UUID? = nil
     @State private var filterTagId: UUID? = nil
     @State private var noteToEdit: ResearchNote? = nil
@@ -692,6 +695,9 @@ private struct SettingsNotesPane: View {
                     title: "Notes",
                     subtitle: "Manage your research notes across all documents."
                 )
+
+                Toggle("Log Research Sessions", isOn: $loggingEnabled)
+                    .padding(.bottom, 8)
 
                 HStack(spacing: 12) {
                     // Project filter

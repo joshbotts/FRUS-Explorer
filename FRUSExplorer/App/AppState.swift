@@ -60,6 +60,7 @@ import SwiftData
 ///   2.8 — New UI scaffolding: currentIndexingProgress and connectIndexingProgress promoted to
 ///          cross-platform (removed #if os(iOS) guard) for macOS StatusBarView
 ///   2.9 — Session 100: logEvent(_:) + loggingContext + ResearchSession management
+///   3.0 — Session 101: logEvent(_:) gated on researchSessionLoggingEnabled UserDefaults key
 
 // MARK: - AppTab
 
@@ -209,6 +210,8 @@ final class AppState {
     /// - If the last event was more than `sessionExpiryInterval` ago, the previous
     ///   session is closed (`endedAt` stamped) and a fresh session is created.
     func logEvent(_ kind: ResearchEventKind) {
+        let enabled = UserDefaults.standard.object(forKey: "researchSessionLoggingEnabled") as? Bool ?? true
+        guard enabled else { return }
         guard let ctx = loggingContext else { return }
         let now = Date.now
 
