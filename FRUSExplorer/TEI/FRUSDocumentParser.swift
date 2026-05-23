@@ -66,6 +66,7 @@ import Foundation
 ///   1.9 — Session 78: `<note rend="inline">` made transparent in `isTransparent` so
 ///          its children flow inline; `<frus:attachment>` handled in `buildNode` as
 ///          `.attachment(n:children:)` AST node
+///   2.0 — Session 79: `<ab>` mapped to `.paragraph` in `buildNode`
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -830,7 +831,13 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         case "corr":
             return .corr(children)
 
-        // MARK: Attachments (Session 78)
+        // MARK: Anonymous blocks and attachments (Session 79 / 78)
+        case "ab":
+            // <ab> (anonymous block) is a paragraph-equivalent used for short prose
+            // blocks that don't fit <p>, <head>, or <label> — e.g. captions, rubrics,
+            // inscriptions. Map directly to .paragraph so it renders as body text.
+            return .paragraph(children: children)
+
         case "frus:attachment":
             // Foundation's XMLParser in non-namespace mode delivers the qualified
             // name ("frus:attachment") as the element name. No div/@type equivalent

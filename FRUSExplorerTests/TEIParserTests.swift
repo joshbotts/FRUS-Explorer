@@ -1427,6 +1427,90 @@ struct ParseVolumeFullTests {
         #expect(hasBold, "Expected bold .emphasis from <hi rend=\"bold\"> inside inline note")
     }
 
+    // MARK: - Session 79: <ab> and <titlePage>
+
+    @Test("Parser: <ab> produces .paragraph node (not .unknown)")
+    func abProducesParagraphNode() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <ab>Short prose block.</ab>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+        let hasParagraph = containsCase(in: docs[0].nodes) {
+            if case .paragraph = $0 { return true }; return false
+        }
+        #expect(hasParagraph, "<ab> must produce a .paragraph AST node")
+        let hasUnknownAb = containsCase(in: docs[0].nodes) {
+            if case .unknown(let name, _, _) = $0 { return name == "ab" }; return false
+        }
+        #expect(!hasUnknownAb, "<ab> must not fall through to .unknown(name: \"ab\")")
+    }
+
+    @Test("Parser: <ab> text content is accessible")
+    func abTextIsAccessible() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <ab>Anonymous block content.</ab>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let text = extractAllText(from: docs[0].nodes)
+        #expect(text.contains("Anonymous block content"), "Text inside <ab> must be reachable")
+    }
+
+    @Test("Parser: <titlePage> produces .titlePage AST node")
+    func titlePageProducesASTNode() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <titlePage>
+            <docTitle><titlePart>Foreign Relations of the United States</titlePart></docTitle>
+          </titlePage>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+        let hasTitlePage = containsCase(in: docs[0].nodes) {
+            if case .titlePage = $0 { return true }; return false
+        }
+        #expect(hasTitlePage, "<titlePage> must produce a .titlePage AST node")
+    }
+
+    @Test("Converter: .titlePage converts to .titlePageBlock render node")
+    func titlePageConvertsToTitlePageBlock() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <titlePage>
+            <docTitle><titlePart>FRUS Title</titlePart></docTitle>
+          </titlePage>
+        </div>
+        </body></text></TEI>
+        """
+        guard let model = try await parseFixture(xml) else {
+            Issue.record("parseFixture returned nil"); return
+        }
+        // Walk bodyNodes (may be one level deep if the .document wrapper is present)
+        func hasTitlePageBlock(_ nodes: [FRUSRenderNode]) -> Bool {
+            for node in nodes {
+                if case .titlePageBlock = node { return true }
+                // Recurse into unknown wrappers (document-level passthrough)
+                if case .unknown(_, let c) = node, hasTitlePageBlock(c) { return true }
+            }
+            return false
+        }
+        #expect(hasTitlePageBlock(model.bodyNodes),
+                ".titlePage must convert to .titlePageBlock in the render model")
+    }
+
     @Test("parseVolumeFull does not produce document entries for persons or terms divs")
     func noSpuriousDocumentsFromFrontMatter() async throws {
         let url = try makeFullVolumeFixture()

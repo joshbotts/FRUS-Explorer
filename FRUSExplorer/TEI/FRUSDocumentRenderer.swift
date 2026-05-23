@@ -68,6 +68,7 @@ import SwiftUI
 ///          every subsequent element (persName, gloss, etc.) onto a new row instead
 ///          of flowing inline. AttributedString lets SwiftUI handle wrapping natively.
 ///   1.6 — Session 77: small caps rendered via `.lowercaseSmallCaps()` on both platforms
+///   1.7 — Session 79: `.titlePageBlock` case added to both platform renderers
 public struct FRUSDocumentRenderer: View {
     public let nodes: [FRUSRenderNode]
     public let onFootnoteTap: (String) -> Void
@@ -218,6 +219,21 @@ public struct FRUSDocumentRenderer: View {
 
         case .pageBreak:
             EmptyView()
+
+        // MARK: Title page (Session 79)
+
+        case .titlePageBlock(let children):
+            // Centred layout matching the website's title-page presentation.
+            // Children are typically .unknown nodes for <docTitle>, <docAuthor>,
+            // <docImprint> etc.; each renders its own content through the .unknown path.
+            let normalized = blockOrInlineNodes(children)
+            VStack(alignment: .center, spacing: 12) {
+                ForEach(Array(normalized.enumerated()), id: \.offset) { _, child in
+                    AnyView(blockView(for: child))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
 
         // MARK: Attachment blocks (Session 78)
 
@@ -420,7 +436,8 @@ public struct FRUSDocumentRenderer: View {
                      .smallCapsText(let c), .underlineText(let c), .termText(let c),
                      .suppliedText(let c), .sicText(let c), .corrText(let c),
                      .unknown(_, let c), .crossRefLink(_, _, let c),
-                     .attachmentBlock(_, let c), .attachmentHeading(let c):
+                     .attachmentBlock(_, let c), .attachmentHeading(let c),
+                     .titlePageBlock(let c):
                     collect(c)
                 case .footnoteBody(_, _, _, _, _, let c):
                     collect(c)
@@ -444,7 +461,8 @@ public struct FRUSDocumentRenderer: View {
              .boldText(let c), .italicText(let c), .smallCapsText(let c),
              .underlineText(let c), .termText(let c), .suppliedText(let c),
              .sicText(let c), .corrText(let c), .editorialNoteBlock(let c),
-             .unknown(_, let c), .attachmentBlock(_, let c), .attachmentHeading(let c):
+             .unknown(_, let c), .attachmentBlock(_, let c), .attachmentHeading(let c),
+             .titlePageBlock(let c):
             return c.flatMap { extractInlineChildren($0) }
         case .footnoteBody:
             // Never inline footnote body content; it belongs in FootnoteSectionView.
@@ -462,7 +480,7 @@ public struct FRUSDocumentRenderer: View {
         switch node {
         case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph,
              .footnoteBody, .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock,
-             .pageBreak, .unknown, .attachmentBlock, .attachmentHeading:
+             .pageBreak, .unknown, .attachmentBlock, .attachmentHeading, .titlePageBlock:
             return true
         default:
             return false
@@ -584,6 +602,7 @@ private struct ListBlockView: View {
 ///          also trigger the `AttributedString` path for `persNameLink`/`glossLink`
 ///   1.4 — Session 77: small caps rendered via `.lowercaseSmallCaps()` in both
 ///          `inlineTextNode` and `inlineAttributedStringNode`
+///   1.5 — Session 79: `.titlePageBlock` case added
 ///          nodes, with `frusexplorer://person/` and `frusexplorer://gloss/` link
 ///          attributes so taps route through the caller's `\.openURL` environment
 ///   1.4 — Session 66: fix URL encoding for FRUS XML ID-reference "#" prefix:
@@ -796,6 +815,19 @@ public struct FRUSDocumentRenderer: View {
                 }
             )
 
+        // MARK: Title page (Session 79)
+
+        case .titlePageBlock(let children):
+            AnyView(
+                VStack(alignment: .center, spacing: 12) {
+                    ForEach(Array(blockOrInlineNodes(children).enumerated()), id: \.offset) { _, child in
+                        blockView(child)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            )
+
         // MARK: Attachment blocks (Session 78)
 
         case .attachmentBlock(_, let children):
@@ -899,7 +931,7 @@ public struct FRUSDocumentRenderer: View {
         switch node {
         case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph, .footnoteBody,
              .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock, .pageBreak,
-             .attachmentBlock, .attachmentHeading:
+             .attachmentBlock, .attachmentHeading, .titlePageBlock:
             return true
         default:
             return false
@@ -914,7 +946,8 @@ public struct FRUSDocumentRenderer: View {
              .underlineText(let c), .termText(let c),
              .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, let c),
              .editorialNoteBlock(let c), .suppliedText(let c), .sicText(let c), .corrText(let c),
-             .unknown(_, let c), .attachmentBlock(_, let c), .attachmentHeading(let c):
+             .unknown(_, let c), .attachmentBlock(_, let c), .attachmentHeading(let c),
+             .titlePageBlock(let c):
             return c.flatMap { extractInlineContent($0) }
         case .footnoteBody(_, _, _, _, _, let c):
             return c.flatMap { extractInlineContent($0) }

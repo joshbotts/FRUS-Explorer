@@ -34,6 +34,7 @@ import Foundation
 ///   1.0 — Session 06: initial implementation
 ///   1.x — Session 42: prefer `printedNumber` over sequential counter for display
 ///   1.1 — Session 78: `.attachment` case converts `.head` children to `.attachmentHeading`
+///   1.2 — Session 79: `.titlePage` produces `.titlePageBlock` instead of `.unknown`
 public struct ASTToRenderNodeConverter {
 
     // MARK: Dependencies
@@ -195,7 +196,7 @@ public struct ASTToRenderNodeConverter {
             return [.editorialNoteBlock(convertNodes(children))]
 
         case .titlePage(let children):
-            return [.unknown(name: "titlePage", children: convertNodes(children))]
+            return [.titlePageBlock(convertNodes(children))]
 
         // MARK: Figures and formulas (Session 07)
 
@@ -251,7 +252,7 @@ public struct ASTToRenderNodeConverter {
         switch node {
         case .paragraph, .heading, .dateline, .letterOpener, .letterCloser,
              .salutation, .editorialNoteBlock, .tableBlock, .listBlock, .figureBlock,
-             .attachmentBlock, .attachmentHeading:
+             .attachmentBlock, .attachmentHeading, .titlePageBlock:
             return true
         default:
             return false
