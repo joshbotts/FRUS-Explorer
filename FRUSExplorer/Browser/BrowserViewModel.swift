@@ -42,6 +42,7 @@ import Observation
 ///   1.2 — Session 68: `indexingProgress` published during `indexVolume` via a concurrent
 ///          `progressStream` observer; `isIndexing` false-transition signals CompilationView
 ///          to auto-reload the document list without requiring navigation away
+///   1.3 — Session 87: `BrowserLevel.people` case for person index navigation
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -55,6 +56,7 @@ public final class BrowserViewModel {
         case volume(VolumeManifestEntry)
         case compilation(volumeId: String, section: VolumeSection)
         case document(DocumentBrowserEntry)
+        case people
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -64,6 +66,7 @@ public final class BrowserViewModel {
             case .compilation(let vid, let s):
                 hasher.combine(3); hasher.combine(vid); hasher.combine(s.sectionId)
             case .document(let e):     hasher.combine(4); hasher.combine(e.documentId)
+            case .people:              hasher.combine(5)
             }
         }
 
@@ -75,6 +78,7 @@ public final class BrowserViewModel {
             case (.compilation(let v1, let s1), .compilation(let v2, let s2)):
                 return v1 == v2 && s1.sectionId == s2.sectionId
             case (.document(let a), .document(let b)): return a.documentId == b.documentId
+            case (.people, .people): return true
             default: return false
             }
         }

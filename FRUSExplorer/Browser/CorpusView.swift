@@ -17,6 +17,7 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 58: wrap bare interpolation in accessibilityLabel with String(localized:) (F-022)
+///   1.2 — Session 87: People cross-volume index entry
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -26,6 +27,24 @@ struct CorpusView: View {
             // Statistics header
             Section {
                 CorpusStatsView(stats: vm.corpusStats)
+            }
+
+            // Cross-volume indices
+            Section {
+                Button {
+                    vm.navigationPath.append(.people)
+                } label: {
+                    Label(
+                        String(localized: "browser.corpus.people", defaultValue: "People"),
+                        systemImage: "person.2"
+                    )
+                    .foregroundStyle(.primary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    String(localized: "browser.corpus.people.a11y",
+                           defaultValue: "Browse people mentioned across all indexed volumes")
+                )
             }
 
             // Subseries list

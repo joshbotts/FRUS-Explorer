@@ -1287,6 +1287,7 @@ struct GlossDetailSheet: View {
 ///   1.1 — sort and filter sidebar controls; volume-structure sheet with in-app
 ///          download/indexing; `CorpusVolumeDocumentListView` replaced by
 ///          `CorpusVolumeDetailSheet` + `CorpusSectionDocumentListView`
+///   1.2 — Session 87: People toolbar button opens `PersonIndexView` sheet
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -1295,6 +1296,7 @@ struct CorpusBrowserWindowView: View {
     @State private var searchText: String = ""
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
+    @State private var showPeopleSheet: Bool = false
 
     private var allEntries: [VolumeManifestEntry] {
         appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -1335,6 +1337,12 @@ struct CorpusBrowserWindowView: View {
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    Button { showPeopleSheet = true } label: {
+                        Image(systemName: "person.2")
+                    }
+                    .help("Browse people mentioned in indexed volumes")
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button { sortDescending.toggle() } label: {
                         Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
                     }
@@ -1360,6 +1368,19 @@ struct CorpusBrowserWindowView: View {
             }
         }
         .frame(minWidth: 540, minHeight: 440)
+        .sheet(isPresented: $showPeopleSheet) {
+            NavigationStack {
+                PersonIndexView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(String(localized: "common.done", defaultValue: "Done")) {
+                                showPeopleSheet = false
+                            }
+                        }
+                    }
+            }
+            .frame(minWidth: 480, minHeight: 520)
+        }
     }
 
     private func subseriesRow(_ sub: String) -> some View {

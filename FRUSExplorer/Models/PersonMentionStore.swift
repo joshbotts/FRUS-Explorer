@@ -9,6 +9,16 @@
 import Foundation
 import SQLite3
 
+// MARK: - PersonIndexEntry
+
+/// A person record bundled with a cross-volume mention count, used by `PersonIndexView`.
+public struct PersonIndexEntry: Sendable, Identifiable {
+    public let entry: PersonEntry
+    /// Count of distinct documents (across all indexed volumes) that mention this person.
+    public let mentionCount: Int
+    public var id: String { entry.id }
+}
+
 // MARK: - PersonMentionStore
 
 /// Queries the `person_mentions` table to support person-filtered search
@@ -22,6 +32,7 @@ import SQLite3
 /// Version history:
 ///   1.0 — Session 39: initial implementation
 ///   1.1 — Session 41: persons/terms table queries; name autocomplete support
+///   1.2 — Session 87: allPersonsSortedByName() with cross-volume mention counts
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -155,6 +166,41 @@ public actor PersonMentionStore {
             let name = columnString(stmt, 1) ?? ""
             let desc = columnString(stmt, 2)
             results.append(PersonEntry(ref: ref, name: name, description: desc))
+        }
+        return results
+    }
+
+    /// All distinct persons across all indexed volumes, sorted by name, with cross-volume mention counts.
+    ///
+    /// Groups rows by `person_ref` so each person appears once regardless of how many volumes
+    /// they appear in. The canonical name is the lexicographically first name for that ref.
+    /// Returns an empty array when no volumes have been indexed.
+    public func allPersonsSortedByName() throws -> [PersonIndexEntry] {
+        let sql = """
+            SELECT
+                p.ref,
+                p.name,
+                p.description,
+                (SELECT COUNT(DISTINCT volume_id || '||' || document_id)
+                 FROM person_mentions
+                 WHERE person_ref = p.ref) AS mention_count
+            FROM (
+                SELECT ref, MIN(name) AS name, MIN(description) AS description
+                FROM persons
+                GROUP BY ref
+            ) p
+            ORDER BY p.name ASC
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var results: [PersonIndexEntry] = []
+        while step(stmt) {
+            let ref   = columnString(stmt, 0) ?? ""
+            let name  = columnString(stmt, 1) ?? ref
+            let desc  = columnString(stmt, 2)
+            let count = Int(sqlite3_column_int64(stmt, 3))
+            let personEntry = PersonEntry(ref: ref, name: name, description: desc)
+            results.append(PersonIndexEntry(entry: personEntry, mentionCount: count))
         }
         return results
     }
