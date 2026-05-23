@@ -34,6 +34,8 @@ import Foundation
 ///   1.3 — Session 81: rich rendering via `FRUSDocumentRenderModel` when available;
 ///          `renderModelToHTML` walks render nodes emitting semantic HTML; flat-text
 ///          fallback preserved; new CSS for headings, datelines, footnotes, attachments
+///   1.4 — Session 83: `markdownItalics(_:)` applies `_text_` → `<em>text</em>`
+///          conversion to the collection note field
 final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -64,7 +66,7 @@ final class HTMLCollectionExporter: CollectionExporter {
         body += "<header>\n"
         body += "  <h1>\(title)</h1>\n"
         if let note = collection.note, !note.isEmpty {
-            body += "  <p class=\"collection-note\">\(escaped(note))</p>\n"
+            body += "  <p class=\"collection-note\">\(markdownItalics(escaped(note)))</p>\n"
         }
         body += "</header>\n\n"
 
@@ -417,6 +419,18 @@ final class HTMLCollectionExporter: CollectionExporter {
     }
 
     // MARK: - Helpers
+
+    /// Converts `_text_` spans (already HTML-escaped) to `<em>text</em>`.
+    /// Apply to `escaped(note)` so that `_` in the original text is still present
+    /// after escaping (no HTML entity conflicts) but `<em>` tags are safe.
+    private func markdownItalics(_ input: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: "_([^_\\n]+)_") else { return input }
+        return regex.stringByReplacingMatches(
+            in: input,
+            range: NSRange(input.startIndex..., in: input),
+            withTemplate: "<em>$1</em>"
+        )
+    }
 
     private func escaped(_ text: String) -> String {
         text

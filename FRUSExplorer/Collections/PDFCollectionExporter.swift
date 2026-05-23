@@ -29,6 +29,9 @@ import CoreText
 ///          `renderModelToAttributedString` converts render nodes to NSAttributedString
 ///          with paragraph styles, bold/italic/superscript attributes; flat-text
 ///          fallback preserved
+///   1.4 — Session 83: `noteAttributedString(_:fontSize:gray:)` parses `_text_` italic
+///          spans in the collection note using `NSRegularExpression`; overloaded
+///          `draw(_:in:rect:)` and `measureHeight(_:width:)` accept `NSAttributedString`
 final class PDFCollectionExporter: CollectionExporter {
 
     // MARK: - Page geometry
@@ -109,12 +112,12 @@ final class PDFCollectionExporter: CollectionExporter {
              fontSize: 22, bold: true)
         y -= titleHeight + 16
 
-        // Collection note
+        // Collection note — _text_ spans rendered as italic
         if let note = collection.note, !note.isEmpty {
-            let noteH = measureHeight(note, width: cw, fontSize: 12, bold: false)
-            draw(note, in: ctx,
-                 rect: CGRect(x: M, y: y - noteH, width: cw, height: noteH),
-                 fontSize: 12, bold: false)
+            let noteAttr = noteAttributedString(note, fontSize: 12, gray: 0.3)
+            let noteH = measureHeight(noteAttr, width: cw)
+            draw(noteAttr, in: ctx,
+                 rect: CGRect(x: M, y: y - noteH, width: cw, height: noteH))
             y -= noteH + 20
         }
 
@@ -486,6 +489,58 @@ final class PDFCollectionExporter: CollectionExporter {
         let path = CGPath(rect: rect, transform: nil)
         let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), path, nil)
         CTFrameDraw(frame, ctx)
+    }
+
+    private func draw(_ attrStr: NSAttributedString, in ctx: CGContext, rect: CGRect) {
+        guard attrStr.length > 0, rect.height > 0, rect.width > 0 else { return }
+        let framesetter = CTFramesetterCreateWithAttributedString(attrStr)
+        let path = CGPath(rect: rect, transform: nil)
+        CTFrameDraw(CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), path, nil), ctx)
+    }
+
+    private func measureHeight(_ attrStr: NSAttributedString, width: CGFloat) -> CGFloat {
+        guard attrStr.length > 0 else { return 0 }
+        let framesetter = CTFramesetterCreateWithAttributedString(attrStr)
+        let constraint = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+        let size = CTFramesetterSuggestFrameSizeWithConstraints(
+            framesetter, CFRangeMake(0, 0), nil, constraint, nil)
+        return ceil(size.height) + 4
+    }
+
+    /// Builds an `NSAttributedString` for a user-typed note string,
+    /// converting `_text_` patterns to italic runs. Non-italic spans use
+    /// the default (non-bold, gray) attribute set.
+    private func noteAttributedString(_ text: String, fontSize: CGFloat,
+                                       gray: CGFloat = 0.2) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        let ns = text as NSString
+        guard let regex = try? NSRegularExpression(pattern: "_([^_\\n]+)_") else {
+            return NSAttributedString(string: text,
+                                      attributes: makeAttrs(fontSize: fontSize, bold: false, gray: gray))
+        }
+        var lastEnd = 0
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            let beforeRange = NSRange(location: lastEnd, length: match.range.location - lastEnd)
+            if beforeRange.length > 0 {
+                result.append(NSAttributedString(
+                    string: ns.substring(with: beforeRange),
+                    attributes: makeAttrs(fontSize: fontSize, bold: false, gray: gray)))
+            }
+            let g1 = match.range(at: 1)
+            if g1.location != NSNotFound, g1.length > 0 {
+                result.append(NSAttributedString(
+                    string: ns.substring(with: g1),
+                    attributes: makeStyledAttrs(fontSize: fontSize, bold: false,
+                                                italic: true, gray: gray)))
+            }
+            lastEnd = match.range.upperBound
+        }
+        if lastEnd < ns.length {
+            result.append(NSAttributedString(
+                string: ns.substring(from: lastEnd),
+                attributes: makeAttrs(fontSize: fontSize, bold: false, gray: gray)))
+        }
+        return result
     }
 
     private func measureHeight(_ text: String, width: CGFloat, fontSize: CGFloat, bold: Bool) -> CGFloat {
