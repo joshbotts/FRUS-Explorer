@@ -78,6 +78,7 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          references); `currentDateIndexVersion` bumped to 4
 ///   2.1 — Session 76: `document_dates` gains `date_iso_max` column; date filtering uses
 ///          interval overlap (`date_iso <= rangeEnd AND COALESCE(date_iso_max, date_iso)
+///   2.2 — Session 88: `datesByDocumentKey(_:)` for timeline year grouping
 ///          >= rangeStart`) instead of point comparison; `extractDateRange` replaces
 ///          single-value extraction, using `frus:doc-dateTime-min`/`max` from the AST
 ///          when present and falling back to per-attribute priority logic; `collectDateNodes`
@@ -689,6 +690,43 @@ public actor IndexingPipeline {
             }
         }
         return keys
+    }
+
+    // MARK: - Date Lookup (used by DocumentTimelineView)
+
+    /// Returns ISO date strings keyed by `"volumeId/documentId"` for the given document pairs.
+    ///
+    /// Only pairs with a parseable `date_iso` value in `document_dates` are included.
+    /// Unindexed or genuinely undated documents are absent from the result dictionary.
+    ///
+    /// - Parameter docs: `(volumeId, documentId)` pairs to query. Capped at 500 to stay
+    ///   within SQLite's default variable limit; excess pairs are silently ignored.
+    /// - Returns: Dictionary mapping composite key → `date_iso` string (e.g. `"1969-02-15"`).
+    public func datesByDocumentKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        let capped = Array(docs.prefix(500))
+        guard !capped.isEmpty else { return [:] }
+        let keys = capped.map { "\($0.volumeId)/\($0.documentId)" }
+        let placeholders = keys.map { _ in "?" }.joined(separator: ", ")
+        let sql = """
+            SELECT volume_id || '/' || document_id, date_iso
+            FROM document_dates
+            WHERE volume_id || '/' || document_id IN (\(placeholders))
+            AND date_iso IS NOT NULL
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, key) in keys.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+        }
+        var result: [String: String] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                result[k] = d
+            }
+        }
+        return result
     }
 
     // MARK: - Parsing (nonisolated — runs off the actor's executor for concurrency)

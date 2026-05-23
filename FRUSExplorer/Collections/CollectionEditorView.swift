@@ -35,6 +35,7 @@ import SwiftData
 ///   1.1 — Session 35: macOS compatibility — guard navigationBarTitleDisplayMode,
 ///          EditButton, and export sheet; add NSSavePanel / Reveal in Finder on macOS
 ///   1.2 — Session 73: resolveDocuments() made async; body text loaded via SQLite cache
+///   1.3 — Session 88: timeline button in Documents section header opens `DocumentTimelineView`
 ///          (IndexingPipeline.fetchDocumentBodyText) with XML fallback for un-indexed volumes;
 ///          citation built via HistoryAtStateCitationFormatter; AddByTagSheet, ExportSheetView,
 ///          and MacExportCompleteView made internal (non-private) for use in MacCollectionManagerView
@@ -62,6 +63,7 @@ struct CollectionEditorView: View {
 
     @State private var showAddByTag  = false
     @State private var showExport    = false
+    @State private var showTimeline  = false
     @State private var exportError: String?
 
     // MARK: - Init
@@ -87,11 +89,42 @@ struct CollectionEditorView: View {
     // MARK: - Body
 
     var body: some View {
-        #if os(macOS)
-        macBody
-        #else
-        iOSBody
-        #endif
+        Group {
+            #if os(macOS)
+            macBody
+            #else
+            iOSBody
+            #endif
+        }
+        .sheet(isPresented: $showTimeline) {
+            NavigationStack {
+                DocumentTimelineView(
+                    items: sortedEntries.map {
+                        DocumentTimelineView.Item(
+                            volumeId: $0.volumeId,
+                            documentId: $0.documentId,
+                            header: $0.documentId
+                        )
+                    }
+                )
+                .navigationTitle(
+                    String(localized: "timeline.sheet.title", defaultValue: "Timeline")
+                )
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "common.done", defaultValue: "Done")) {
+                            showTimeline = false
+                        }
+                    }
+                }
+            }
+            #if os(macOS)
+            .frame(minWidth: 480, minHeight: 440)
+            #endif
+        }
     }
 
     // MARK: - macOS Body
@@ -321,6 +354,19 @@ struct CollectionEditorView: View {
             HStack {
                 Text(String(localized: "collection.editor.docs.header", defaultValue: "Documents"))
                 Spacer()
+                if !sortedEntries.isEmpty {
+                    Button {
+                        showTimeline = true
+                    } label: {
+                        Image(systemName: "chart.bar")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        String(localized: "collection.editor.docs.timeline.a11y",
+                               defaultValue: "Show document timeline")
+                    )
+                }
                 #if os(iOS)
                 // EditButton toggles edit mode so drag-handles and swipe-to-delete appear.
                 // On macOS, onMove and onDelete are accessible without explicit edit mode

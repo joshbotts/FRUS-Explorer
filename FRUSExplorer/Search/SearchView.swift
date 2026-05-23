@@ -35,6 +35,7 @@ import SwiftData
 ///   1.5 — Session 62: replaced custom `searchInputRow` with `.searchable` modifier;
 ///          filter panel extracted to `SearchFilterView` sheet (F-002); `personSearchText`
 ///          and `personSuggestions` moved to `SearchFilterView`
+///   1.6 — Session 88: timeline toggle button; `DocumentTimelineView` replaces results list when active
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -44,6 +45,7 @@ struct SearchView: View {
     #endif
 
     @State private var vm: SearchViewModel
+    @State private var showTimeline = false
     private let initialParameters: SearchParameters?
 
     init(
@@ -110,6 +112,21 @@ struct SearchView: View {
                                    defaultValue: "Toggle filters")
                         )
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showTimeline.toggle()
+                        } label: {
+                            Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
+                        }
+                        .accessibilityLabel(
+                            showTimeline
+                                ? String(localized: "search.timeline.hide.a11y",
+                                         defaultValue: "Hide timeline")
+                                : String(localized: "search.timeline.show.a11y",
+                                         defaultValue: "Show timeline")
+                        )
+                        .disabled(vm.results.isEmpty)
+                    }
                 }
                 // Advanced filter sheet — iOS uses detents; macOS uses a fixed frame
                 // declared inside SearchFilterView.
@@ -167,7 +184,26 @@ struct SearchView: View {
             )
         } else if !vm.results.isEmpty {
             resultCountHeader
-            resultsList
+            if showTimeline {
+                DocumentTimelineView(
+                    items: vm.results.map {
+                        DocumentTimelineView.Item(
+                            volumeId: $0.volumeId,
+                            documentId: $0.documentId,
+                            header: $0.header
+                        )
+                    },
+                    onSelect: { item in
+                        if let r = vm.results.first(where: {
+                            $0.volumeId == item.volumeId && $0.documentId == item.documentId
+                        }) {
+                            vm.navigationPath.append(vm.makeEntry(from: r))
+                        }
+                    }
+                )
+            } else {
+                resultsList
+            }
         } else {
             // Initial prompt — no search has been performed yet.
             VStack(spacing: 8) {

@@ -202,6 +202,8 @@
 		AA22BB01CC03DD04EE2226 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2224 /* RISExporter.swift */; };
 		AA22BB01CC03DD04EE2228 /* PersonIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2227 /* PersonIndexView.swift */; };
 		AA22BB01CC03DD04EE2229 /* PersonIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2227 /* PersonIndexView.swift */; };
+		AA22BB01CC03DD04EE222B /* DocumentTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */; };
+		AA22BB01CC03DD04EE222C /* DocumentTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */; };
 		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
@@ -415,6 +417,7 @@
 		AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibtexExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2224 /* RISExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RISExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2227 /* PersonIndexView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonIndexView.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentTimelineView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacCollectionManagerView.swift; sourceTree = "<group>"; };
@@ -612,6 +615,7 @@
 				AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */,
 				AA16BB01CC03DD04EE1604 /* SearchView.swift */,
 				AA16BB01CC03DD04EE1610 /* SearchFilterView.swift */,
+				AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */,
 			);
 			path = Search;
 			sourceTree = "<group>";
@@ -1074,6 +1078,7 @@
 				AA16BB01CC03DD04EE1602 /* SearchViewModel.swift in Sources */,
 				AA16BB01CC03DD04EE1605 /* SearchView.swift in Sources */,
 				AA16BB01CC03DD04EE1611 /* SearchFilterView.swift in Sources */,
+				AA22BB01CC03DD04EE222B /* DocumentTimelineView.swift in Sources */,
 				AA17BB01CC03DD04EE1702 /* CrossReferenceModels.swift in Sources */,
 				AA17BB01CC03DD04EE1705 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1802 /* CrossReferenceGraphViewModel.swift in Sources */,
@@ -1193,6 +1198,7 @@
 				AA16BB01CC03DD04EE1603 /* SearchViewModel.swift in Sources */,
 				AA16BB01CC03DD04EE1606 /* SearchView.swift in Sources */,
 				AA16BB01CC03DD04EE1612 /* SearchFilterView.swift in Sources */,
+				AA22BB01CC03DD04EE222C /* DocumentTimelineView.swift in Sources */,
 				AA17BB01CC03DD04EE1703 /* CrossReferenceModels.swift in Sources */,
 				AA17BB01CC03DD04EE1706 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1803 /* CrossReferenceGraphViewModel.swift in Sources */,
