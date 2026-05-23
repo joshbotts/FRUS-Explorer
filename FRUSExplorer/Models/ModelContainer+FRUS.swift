@@ -31,6 +31,8 @@ extension ModelContainer {
             ReadingHistoryEntry.self,
             SummarizationPrompt.self,
             SavedSearch.self,
+            ResearchSession.self,
+            SessionEvent.self,
         ]
     }
 

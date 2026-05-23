@@ -37,6 +37,7 @@ import SwiftData
 ///          and `personSuggestions` moved to `SearchFilterView`
 ///   1.6 — Session 88: timeline toggle button; `DocumentTimelineView` replaces results list when active
 ///   1.7 — Session 96: Save Search toolbar button + name sheet; Saved Searches toolbar button + list sheet
+///   1.8 — Session 100: vm.appState wired in .task for searchSubmit logging
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -188,6 +189,7 @@ struct SearchView: View {
             if let params = initialParameters {
                 vm.applyParameters(params)
             }
+            vm.appState = appState
             await vm.loadAvailableSubjectTags()
             vm.loadAvailableUserTags(context: modelContext)
             if let pid = appState.activeProjectId {

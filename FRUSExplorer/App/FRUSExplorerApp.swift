@@ -410,6 +410,11 @@ struct FRUSExplorerApp: App {
             print("[FRUSExplorer] Deferred onboarding scope enqueued: \(toEnqueue.count) volumes.")
             #endif
         }
+
+        // Wire the logging context last so the session log is ready before any
+        // user interaction fires (document opens, searches) but after the
+        // SwiftData container and schema are fully initialised.
+        appState.loggingContext = ModelContext(modelContainer)
     }
 
     // MARK: - Activity Continuation

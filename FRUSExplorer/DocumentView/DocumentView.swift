@@ -135,6 +135,11 @@ struct DocumentView: View {
                 vm = nil
             }
             bootstrapViewModel()
+            appState.logEvent(.documentOpen(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId,
+                title: entry.header.isEmpty ? entry.documentId : entry.header
+            ))
         }
         // vm.documentTitle is set after the document loads; it provides a real
         // title for cross-reference targets, which are created with header: "".

@@ -839,6 +839,10 @@ struct ExportSheetView: View {
                 let exporter = selectedFormat.makeExporter()
                 let url = try await exporter.export(metadata: metadata, documents: docs)
                 exportedURL = url
+                appState.logEvent(.export(
+                    format: selectedFormat.rawValue,
+                    documentCount: docs.count
+                ))
             } catch {
                 exportError = error.localizedDescription
             }
@@ -857,6 +861,10 @@ struct ExportSheetView: View {
             let exporter = selectedFormat.makeExporter()
             let url = try await exporter.export(metadata: metadata, documents: docs)
             exportedURL = url
+            appState.logEvent(.export(
+                format: selectedFormat.rawValue,
+                documentCount: docs.count
+            ))
         } catch {
             exportError = error.localizedDescription
         }

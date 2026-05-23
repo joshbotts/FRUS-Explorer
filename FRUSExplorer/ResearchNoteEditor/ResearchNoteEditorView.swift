@@ -34,6 +34,7 @@ struct ResearchNoteEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
 
     @State private var vm: ResearchNoteEditorViewModel
     private let indexingPipeline: IndexingPipeline?
@@ -111,7 +112,13 @@ struct ResearchNoteEditorView: View {
                 Spacer()
 
                 Button(String(localized: "note.editor.toolbar.save", defaultValue: "Save")) {
-                    vm.save(context: modelContext)
+                    if let noteId = vm.save(context: modelContext) {
+                        appState.logEvent(.noteSave(
+                            noteId: noteId,
+                            documentId: vm.documentId,
+                            volumeId: vm.volumeId
+                        ))
+                    }
                     pushNoteToFTS5()
                     dismiss()
                 }
@@ -276,7 +283,13 @@ struct ResearchNoteEditorView: View {
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "note.editor.toolbar.save",
                           defaultValue: "Save")) {
-                vm.save(context: modelContext)
+                if let noteId = vm.save(context: modelContext) {
+                    appState.logEvent(.noteSave(
+                        noteId: noteId,
+                        documentId: vm.documentId,
+                        volumeId: vm.volumeId
+                    ))
+                }
                 pushNoteToFTS5()
                 dismiss()
             }

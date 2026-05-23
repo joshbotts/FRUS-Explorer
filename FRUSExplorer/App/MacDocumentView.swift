@@ -37,6 +37,7 @@ import SwiftData
 ///   1.0 — New UI scaffolding (macOS-only; replaces BrowserView-centric architecture)
 ///   1.1 — Session 91: removed private EditorialNoteBadge and TagChip; now uses
 ///          shared FRUSTheme components (EditorialNoteBadge, FRUSTagChip)
+///   1.2 — Session 100: logEvent(.documentOpen) in .task
 @MainActor
 struct MacDocumentView: View {
 
@@ -135,7 +136,14 @@ struct MacDocumentView: View {
             .padding(.horizontal, 48)
             .padding(.top, 28)
         }
-        .task { await loadDocument() }
+        .task {
+            await loadDocument()
+            appState.logEvent(.documentOpen(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId,
+                title: entry.header.isEmpty ? entry.documentId : entry.header
+            ))
+        }
         .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
             activity.title = entry.header.isEmpty ? entry.documentId : entry.header
             activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
