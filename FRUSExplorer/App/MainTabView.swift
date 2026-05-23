@@ -39,6 +39,7 @@ import SwiftData
 ///   1.4 — Session 93: IndexingBannerView wired via .safeAreaInset(edge: .bottom) on
 ///          each tab's root view; ActivityKit / Live Activity deferred (see
 ///          IndexingBannerView.swift); banner visible across all tabs during indexing
+///   1.5 — Session 99: Analytics toolbar button in BrowserTabView; AnalyticsView sheet
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -124,7 +125,7 @@ struct MainTabView: View {
 
 // MARK: - BrowserTabView
 
-/// Wraps `BrowserView` for the Browse tab.
+/// Wraps `BrowserView` for the Browse tab with an Analytics toolbar button.
 ///
 /// Exists as a named struct so that SwiftUI maintains stable `@State` identity for
 /// `BrowserView`'s `viewModel` across tab switches. Without the wrapper, switching
@@ -133,9 +134,31 @@ struct MainTabView: View {
 ///
 /// Version history:
 ///   1.0 — Session 43: initial implementation
+///   1.1 — Session 99: Analytics toolbar button; presents AnalyticsView as a sheet
 struct BrowserTabView: View {
+
+    @Environment(AppState.self) private var appState
+    @State private var showAnalytics = false
+
     var body: some View {
         BrowserView()
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showAnalytics = true
+                    } label: {
+                        Image(systemName: "chart.bar.xaxis")
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browse.analytics.a11y",
+                               defaultValue: "Corpus Analytics")
+                    )
+                }
+            }
+            .sheet(isPresented: $showAnalytics) {
+                AnalyticsView()
+                    .environment(appState)
+            }
     }
 }
 

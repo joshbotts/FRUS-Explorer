@@ -43,6 +43,7 @@ import CoreSpotlight
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
+/// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
 ///
 /// Version history:
@@ -71,6 +72,7 @@ import CoreSpotlight
 ///          so summary-only search finds both local and CloudKit-synced summaries
 ///   3.2 — Session 94: Source Explorer window defaultSize corrected from 380×320 to 700×440
 ///          (the view enforces minWidth:640, so 380 caused an immediate jarring resize)
+///   3.3 — Session 99: Analytics Window scene added (frus.analytics); AnalyticsView wired
 @main
 struct FRUSExplorerApp: App {
 
@@ -115,6 +117,13 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
         }
         .defaultSize(width: 700, height: 440)
+
+        // MARK: - Analytics Window
+        Window("Corpus Analytics", id: "frus.analytics") {
+            AnalyticsView()
+                .environment(appState)
+        }
+        .defaultSize(width: 760, height: 560)
 
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {

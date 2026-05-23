@@ -43,6 +43,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — Session 99: Analytics toolbar button; opens frus.analytics Window
 @MainActor
 struct MainWindowView: View {
 
@@ -211,6 +212,13 @@ struct MainWindowView: View {
                 openWindow(id: "frus.corpusBrowser")
             } label: {
                 Label("Corpus", systemImage: "books.vertical")
+            }
+
+            // Analytics window
+            Button {
+                openWindow(id: "frus.analytics")
+            } label: {
+                Label("Analytics", systemImage: "chart.bar.xaxis")
             }
         }
     }
