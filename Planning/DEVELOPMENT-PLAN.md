@@ -1,7 +1,7 @@
 # FRUS Explorer — Development Plan
 
-**Version**: 1.3  
-**Date**: 2026-05-17
+**Version**: 1.4  
+**Date**: 2026-05-23
 
 Each task below corresponds to a single development session. Tasks are ordered so that each session's outputs are available as inputs for subsequent sessions. All sessions share the same Xcode workspace.
 
@@ -64,6 +64,11 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 51 | iOS Indexing Performance & Visualization | Memory-aware batch throttle; `IndexingProgressUpdate` stream; progress UI | 09, 33, 45 |
 | 52 | UI Obstruction Audit & Fixes | Safe-area and composed-view obstruction mitigations across both platforms | All prior |
 | 53 | Pre-Index Feasibility Assessment | Architecture document for hosted Quick-Start index; no code changes | 09 |
+| 54–76 | [Various features and fixes] | See individual session files and git log for Sessions 54–76 | — |
+| 77 | TEI Fidelity — Choice and Small Caps | `<choice>` suppresses `<sic>`; `<hi rend="smallcaps">` uses `lowercaseSmallCaps()` | 07 |
+| 78 | TEI Fidelity — Inline Notes and Attachments | `<note rend="inline">` transparent; `<frus:attachment>` full pipeline; `IndexingPipeline` updated | 77 |
+| 79 | TEI Fidelity — Title Page and Anonymous Block | `<titlePage>` → centred `.titlePageBlock`; `<ab>` → `.paragraph` | 78 |
+| 80 | TEI Fidelity — Documentation Update | Version history and plan docs updated; no code changes | 79 |
 
 ---
 
@@ -132,6 +137,7 @@ Present these files to Claude Code in order. The leading number matches the sess
 | `36-42-Extended-Indexing.md` | 36, 37, 38, 39, 40, 41, 42 |
 | `43-46-Navigation-Redesign.md` | 43, 44, 45, 46 |
 | `48-53-Fixes-Onboarding-Polish-Performance.md` | 48, 49, 50, 51, 52, 53 |
+| `77-80-TEI-Fidelity-Improvements.md` | 77, 78, 79, 80 |
 
 ---
 

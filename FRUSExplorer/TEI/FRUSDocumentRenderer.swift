@@ -34,6 +34,12 @@ import SwiftUI
 //   1.4 — Session 66: URL encoding fix for `#` in persName/gloss/crossRef refs
 //   1.5 — macOS: replaced FlowLayout with AttributedString inline rendering to fix
 //          interactive elements appearing on a new row after long prose segments
+//   1.6 — Session 77: small caps rendered via `.lowercaseSmallCaps()` on both platforms
+//   1.7 — Session 78: `.attachmentBlock` and `.attachmentHeading` render nodes added;
+//          both platform renderers updated with visual separator, top padding, and
+//          secondary heading style; `isBlockNode` and exclusion lists updated
+//   1.8 — Session 79: `.titlePageBlock` case added to both platform renderers;
+//          centred `VStack` with vertical padding matching the website title-page layout
 
 #if os(macOS)
 
@@ -68,7 +74,12 @@ import SwiftUI
 ///          every subsequent element (persName, gloss, etc.) onto a new row instead
 ///          of flowing inline. AttributedString lets SwiftUI handle wrapping natively.
 ///   1.6 — Session 77: small caps rendered via `.lowercaseSmallCaps()` on both platforms
-///   1.7 — Session 79: `.titlePageBlock` case added to both platform renderers
+///   1.7 — Session 78: `.attachmentBlock` and `.attachmentHeading` cases added; visual
+///          separator (`Divider` + `padding(.top, 28)`) and secondary heading style
+///          (14 pt semibold) match the website's `.attachment { margin-top: 4em }` and
+///          `tei-head6` CSS rules; `isBlockNode`, `extractInlineChildren`, and
+///          `LookupTables.collect` updated
+///   1.8 — Session 79: `.titlePageBlock` case added; centred `VStack` with `padding(.vertical, 24)`
 public struct FRUSDocumentRenderer: View {
     public let nodes: [FRUSRenderNode]
     public let onFootnoteTap: (String) -> Void
@@ -600,16 +611,17 @@ private struct ListBlockView: View {
 ///          caller can suppress the internal `ScrollView` when it provides its own;
 ///          `containsCrossRef` renamed to `containsInteractiveInline` and extended to
 ///          also trigger the `AttributedString` path for `persNameLink`/`glossLink`
-///   1.4 — Session 77: small caps rendered via `.lowercaseSmallCaps()` in both
-///          `inlineTextNode` and `inlineAttributedStringNode`
-///   1.5 — Session 79: `.titlePageBlock` case added
-///          nodes, with `frusexplorer://person/` and `frusexplorer://gloss/` link
-///          attributes so taps route through the caller's `\.openURL` environment
 ///   1.4 — Session 66: fix URL encoding for FRUS XML ID-reference "#" prefix:
 ///          `persName@ref="#p1"` and `gloss@ref="#t1"` had the `#` treated as a
 ///          URL fragment delimiter, making pathComponents empty in the openURL
 ///          handler; cross-volume `target="vol#docId"` had the same issue when the
 ///          full string (including "#") was used as the URL path segment
+///   1.5 — Session 77: small caps rendered via `.lowercaseSmallCaps()` in both
+///          `inlineTextNode` and `inlineAttributedStringNode`
+///   1.6 — Session 78: `.attachmentBlock` and `.attachmentHeading` cases added;
+///          `isBlockNode` and `extractInlineContent` updated; `AnyView`-wrapped
+///          block rendering with visual separator and secondary heading style
+///   1.7 — Session 79: `.titlePageBlock` case added; centred `VStack` with `padding(.vertical, 20)`
 public struct FRUSDocumentRenderer: View {
 
     public let model: FRUSDocumentRenderModel

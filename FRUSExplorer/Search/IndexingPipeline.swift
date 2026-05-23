@@ -81,6 +81,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          single-value extraction, using `frus:doc-dateTime-min`/`max` from the AST
 ///          when present and falling back to per-attribute priority logic; `collectDateNodes`
 ///          extracted to a shared private helper; `currentDateIndexVersion` bumped to 5
+///   2.2 — Session 78: `.attachment` added to the exhaustive `plainText` and `children`
+///          computed-property switch sites so attachment body text is included in the
+///          full-text search index
 public actor IndexingPipeline {
 
     // MARK: - Configuration
