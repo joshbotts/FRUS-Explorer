@@ -59,7 +59,7 @@ private func containsCase(in nodes: [FRUSASTNode],
              .crossReference(_, _, let c), .emphasis(_, let c), .term(let c),
              .supplied(let c), .sic(let c), .corr(let c),
              .editorialNote(let c), .titlePage(let c), .figure(_, let c),
-             .unknown(_, _, let c):
+             .unknown(_, _, let c), .attachment(_, let c):
             children = c
         case .date(_, _, _, _, _, let c):
             children = c

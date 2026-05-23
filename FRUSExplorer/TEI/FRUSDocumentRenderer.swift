@@ -219,6 +219,27 @@ public struct FRUSDocumentRenderer: View {
         case .pageBreak:
             EmptyView()
 
+        // MARK: Attachment blocks (Session 78)
+
+        case .attachmentBlock(_, let children):
+            // Visual separator equivalent to the website's .attachment { margin-top: 4em }.
+            // Divider provides a thin rule; top padding creates the whitespace gap.
+            let normalized = blockOrInlineNodes(children)
+            VStack(alignment: .leading, spacing: blockSpacing) {
+                Divider()
+                ForEach(Array(normalized.enumerated()), id: \.offset) { _, child in
+                    AnyView(blockView(for: child))
+                }
+            }
+            .padding(.top, 28)
+
+        case .attachmentHeading(let children):
+            // Secondary heading: smaller and lighter than the main document heading
+            // (18pt medium), matching the website's tei-head6 sans-serif secondary style.
+            inlineText(children)
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.bottom, 2)
+
         // Unknown elements (e.g. <ab>, <div type="annex">) may contain block children.
         // Render them by iterating children through blockView so block structure is
         // preserved. Without this case, .unknown falls through to default and
@@ -398,7 +419,8 @@ public struct FRUSDocumentRenderer: View {
                      .editorialNoteBlock(let c), .boldText(let c), .italicText(let c),
                      .smallCapsText(let c), .underlineText(let c), .termText(let c),
                      .suppliedText(let c), .sicText(let c), .corrText(let c),
-                     .unknown(_, let c), .crossRefLink(_, _, let c):
+                     .unknown(_, let c), .crossRefLink(_, _, let c),
+                     .attachmentBlock(_, let c), .attachmentHeading(let c):
                     collect(c)
                 case .footnoteBody(_, _, _, _, _, let c):
                     collect(c)
@@ -422,7 +444,7 @@ public struct FRUSDocumentRenderer: View {
              .boldText(let c), .italicText(let c), .smallCapsText(let c),
              .underlineText(let c), .termText(let c), .suppliedText(let c),
              .sicText(let c), .corrText(let c), .editorialNoteBlock(let c),
-             .unknown(_, let c):
+             .unknown(_, let c), .attachmentBlock(_, let c), .attachmentHeading(let c):
             return c.flatMap { extractInlineChildren($0) }
         case .footnoteBody:
             // Never inline footnote body content; it belongs in FootnoteSectionView.
@@ -440,7 +462,7 @@ public struct FRUSDocumentRenderer: View {
         switch node {
         case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph,
              .footnoteBody, .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock,
-             .pageBreak, .unknown:
+             .pageBreak, .unknown, .attachmentBlock, .attachmentHeading:
             return true
         default:
             return false
@@ -774,6 +796,26 @@ public struct FRUSDocumentRenderer: View {
                 }
             )
 
+        // MARK: Attachment blocks (Session 78)
+
+        case .attachmentBlock(_, let children):
+            AnyView(
+                VStack(alignment: .leading, spacing: 4) {
+                    Divider()
+                    ForEach(Array(blockOrInlineNodes(children).enumerated()), id: \.offset) { _, child in
+                        blockView(child)
+                    }
+                }
+                .padding(.top, 20)
+            )
+
+        case .attachmentHeading(let children):
+            AnyView(
+                inlineText(children)
+                    .font(.headline)
+                    .padding(.bottom, 2)
+            )
+
         default:
             AnyView(inlineText([node]))
         }
@@ -856,7 +898,8 @@ public struct FRUSDocumentRenderer: View {
     private func isBlockNode(_ node: FRUSRenderNode) -> Bool {
         switch node {
         case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph, .footnoteBody,
-             .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock, .pageBreak:
+             .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock, .pageBreak,
+             .attachmentBlock, .attachmentHeading:
             return true
         default:
             return false
@@ -871,7 +914,7 @@ public struct FRUSDocumentRenderer: View {
              .underlineText(let c), .termText(let c),
              .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, let c),
              .editorialNoteBlock(let c), .suppliedText(let c), .sicText(let c), .corrText(let c),
-             .unknown(_, let c):
+             .unknown(_, let c), .attachmentBlock(_, let c), .attachmentHeading(let c):
             return c.flatMap { extractInlineContent($0) }
         case .footnoteBody(_, _, _, _, _, let c):
             return c.flatMap { extractInlineContent($0) }

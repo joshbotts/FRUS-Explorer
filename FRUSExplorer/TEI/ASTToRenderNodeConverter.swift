@@ -33,6 +33,7 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 06: initial implementation
 ///   1.x — Session 42: prefer `printedNumber` over sequential counter for display
+///   1.1 — Session 78: `.attachment` case converts `.head` children to `.attachmentHeading`
 public struct ASTToRenderNodeConverter {
 
     // MARK: Dependencies
@@ -228,6 +229,19 @@ public struct ASTToRenderNodeConverter {
             // unchanged so the dateline reads identically to before this change.
             return convertNodes(children)
 
+        // MARK: Attachments (Session 78)
+
+        case .attachment(let n, let children):
+            // Convert each child, but promote <head> children to .attachmentHeading
+            // so the renderer can apply secondary heading style without extra context.
+            let convertedChildren: [FRUSRenderNode] = children.flatMap { child -> [FRUSRenderNode] in
+                if case .head(let headChildren) = child {
+                    return [.attachmentHeading(convertNodes(headChildren))]
+                }
+                return convertNode(child)
+            }
+            return [.attachmentBlock(n: n, children: convertedChildren)]
+
         case .unknown(let name, _, let children):
             return [.unknown(name: name, children: convertNodes(children))]
         }
@@ -236,7 +250,8 @@ public struct ASTToRenderNodeConverter {
     private func isBlockNode(_ node: FRUSRenderNode) -> Bool {
         switch node {
         case .paragraph, .heading, .dateline, .letterOpener, .letterCloser,
-             .salutation, .editorialNoteBlock, .tableBlock, .listBlock, .figureBlock:
+             .salutation, .editorialNoteBlock, .tableBlock, .listBlock, .figureBlock,
+             .attachmentBlock, .attachmentHeading:
             return true
         default:
             return false

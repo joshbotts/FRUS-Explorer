@@ -1815,6 +1815,7 @@ extension FRUSASTNode {
              .term(let c), .editorialNote(let c), .titlePage(let c),
              .supplied(let c), .sic(let c), .corr(let c):
             return c.map(\.plainText).joined(separator: " ")
+        case .attachment(_, let c): return c.map(\.plainText).joined(separator: " ")
         case .date(_, _, _, _, _, let c): return c.map(\.plainText).joined(separator: " ")
         case .emphasis(_, let c): return c.map(\.plainText).joined(separator: " ")
         case .persName(_, let c): return c.map(\.plainText).joined(separator: " ")
@@ -1841,6 +1842,7 @@ extension FRUSASTNode {
              .term(let c), .editorialNote(let c), .titlePage(let c),
              .supplied(let c), .sic(let c), .corr(let c):
             return c
+        case .attachment(_, let c): return c
         case .date(_, _, _, _, _, let c): return c
         case .emphasis(_, let c): return c
         case .persName(_, let c): return c
