@@ -222,6 +222,7 @@
 		AA22BB01CC03DD04EE2251 /* SessionLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2249 /* SessionLogView.swift */; };
 		AA22BB01CC03DD04EE2253 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */; };
 		AA22BB01CC03DD04EE2254 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */; };
+		AA22BB01CC03DD04EE2256 /* DocumentHighlightTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */; };
 		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
@@ -444,6 +445,7 @@
 		AA22BB01CC03DD04EE2243 /* AnalyticsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2246 /* ResearchSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchSession.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentHighlight.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentHighlightTextView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2249 /* SessionLogView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionLogView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
@@ -630,6 +632,7 @@
 				AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */,
 				AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */,
 				AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */,
+				AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */,
 			);
 			path = TEI;
 			sourceTree = "<group>";
@@ -1076,6 +1079,7 @@
 				AA22BB01CC03DD04EE2247 /* ResearchSession.swift in Sources */,
 				AA22BB01CC03DD04EE2250 /* SessionLogView.swift in Sources */,
 				AA22BB01CC03DD04EE2253 /* DocumentHighlight.swift in Sources */,
+				AA22BB01CC03DD04EE2256 /* DocumentHighlightTextView.swift in Sources */,
 				96D3EA2639884EDD9E2065AF /* MainTabView.swift in Sources */,
 				6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */,
 				79425B089B74B72978721CBB /* ManifestStore.swift in Sources */,

@@ -37,6 +37,11 @@ import Foundation
 ///   1.2 — Session 79: `.titlePage` produces `.titlePageBlock` instead of `.unknown`
 public struct ASTToRenderNodeConverter {
 
+    /// Converter algorithm version. Bump whenever the flat-text output changes
+    /// (new text-bearing node type, traversal order change, character normalisation).
+    /// Used as part of `DocumentHighlight.renderingVersion` in Session 103+.
+    public static let kVersion = "1.2"
+
     // MARK: Dependencies
 
     /// Returns a `PersonEntry` for a given `ref` attribute value.

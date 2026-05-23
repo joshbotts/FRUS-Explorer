@@ -38,6 +38,8 @@ import SwiftData
 ///   1.1 — Session 91: removed private EditorialNoteBadge and TagChip; now uses
 ///          shared FRUSTheme components (EditorialNoteBadge, FRUSTagChip)
 ///   1.2 — Session 100: logEvent(.documentOpen) in .task
+///   1.3 — Session 103: highlight mode toolbar toggle + DocumentHighlightTextView +
+///          color-picker popover + DocumentHighlight SwiftData insertion
 @MainActor
 struct MacDocumentView: View {
 
@@ -51,6 +53,11 @@ struct MacDocumentView: View {
     @State private var activeFootnoteLabel: String? = nil
     @State private var prevEntry: DocumentBrowserEntry? = nil
     @State private var nextEntry: DocumentBrowserEntry? = nil
+
+    // MARK: Highlight Mode
+    @State private var showHighlightMode = false
+    @State private var highlightTextSelection: NSRange? = nil
+    @State private var showHighlightColorPicker = false
 
     // MARK: - Init
 
@@ -70,16 +77,81 @@ struct MacDocumentView: View {
     // MARK: - Body
 
     var body: some View {
+        Group {
+            if showHighlightMode {
+                highlightModeContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                normalModeScrollView
+            }
+        }
+        .task {
+            await loadDocument()
+            appState.logEvent(.documentOpen(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId,
+                title: entry.header.isEmpty ? entry.documentId : entry.header
+            ))
+        }
+        .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
+            activity.title = entry.header.isEmpty ? entry.documentId : entry.header
+            activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
+            activity.isEligibleForHandoff = true
+        }
+        .sheet(item: $vm.selectedPerson) { person in
+            PersonDetailSheet(
+                person: person,
+                mentionCount: vm.selectedPersonMentionCount,
+                onFindAllMentions: {
+                    appState.pendingSearch = SearchParameters(personRef: person.ref)
+                }
+            )
+        }
+        .sheet(item: $vm.selectedGloss) { gloss in
+            GlossDetailSheet(gloss: gloss)
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: toggleHighlightMode) {
+                    Image(systemName: showHighlightMode
+                          ? "pencil.tip.crop.circle.fill"
+                          : "pencil.tip.crop.circle")
+                }
+                .help(showHighlightMode
+                      ? String(localized: "doc.highlightMode.exit",
+                               defaultValue: "Exit Highlight Mode")
+                      : String(localized: "doc.highlightMode.enter",
+                               defaultValue: "Highlight Mode"))
+                .disabled(vm.renderModel == nil)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showHighlightColorPicker = true
+                } label: {
+                    Image(systemName: "paintbrush.pointed")
+                }
+                .help(String(localized: "doc.createHighlight",
+                             defaultValue: "Create Highlight"))
+                .disabled(!showHighlightMode || (highlightTextSelection?.length ?? 0) == 0)
+                .opacity(showHighlightMode ? 1 : 0)
+                .popover(isPresented: $showHighlightColorPicker) {
+                    highlightColorPicker
+                }
+            }
+        }
+    }
+
+    // MARK: - Normal Mode
+
+    private var normalModeScrollView: some View {
         ScrollView {
             // VStack (not LazyVStack) so each child receives a concrete width
             // proposal, allowing FlowLayout to correctly reflow inline text.
             VStack(alignment: .leading, spacing: 0) {
 
-                // Identity line
                 documentIdentityView
                     .padding(.bottom, 6)
 
-                // Document body + footnotes + summary
                 if let renderModel = vm.renderModel {
                     FRUSDocumentRenderer(
                         nodes: renderModel.bodyNodes,
@@ -97,13 +169,11 @@ struct MacDocumentView: View {
                     )
                     .padding(.bottom, 20)
 
-                    // Inline summary block
                     if appState.summarizationService != nil {
                         SummaryBlockView(vm: vm)
                             .padding(.bottom, 24)
                     }
 
-                    // Footnote section
                     if !renderModel.footnotes.isEmpty {
                         FootnoteSectionView(
                             footnotes: renderModel.footnotes,
@@ -127,7 +197,6 @@ struct MacDocumentView: View {
                     .padding(.top, 40)
                 }
 
-                // Volume navigation
                 volumeNavigationView
                     .padding(.top, 20)
                     .padding(.bottom, 32)
@@ -136,33 +205,103 @@ struct MacDocumentView: View {
             .padding(.horizontal, 48)
             .padding(.top, 28)
         }
-        .task {
-            await loadDocument()
-            appState.logEvent(.documentOpen(
-                volumeId: entry.volumeId,
-                documentId: entry.documentId,
-                title: entry.header.isEmpty ? entry.documentId : entry.header
-            ))
-        }
-        .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
-            activity.title = entry.header.isEmpty ? entry.documentId : entry.header
-            activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
-            activity.isEligibleForHandoff = true
-        }
-        // Person sheet
-        .sheet(item: $vm.selectedPerson) { person in
-            PersonDetailSheet(
-                person: person,
-                mentionCount: vm.selectedPersonMentionCount,
-                onFindAllMentions: {
-                    appState.pendingSearch = SearchParameters(personRef: person.ref)
-                }
+    }
+
+    // MARK: - Highlight Mode
+
+    @ViewBuilder
+    private var highlightModeContent: some View {
+        if let renderModel = vm.renderModel {
+            VStack(spacing: 0) {
+                documentIdentityView
+                    .padding(.horizontal, 48)
+                    .padding(.top, 18)
+                    .padding(.bottom, 10)
+                Divider()
+                DocumentHighlightTextView(
+                    renderModel: renderModel,
+                    selectionRange: $highlightTextSelection
+                )
+                Divider()
+                volumeNavigationView
+                    .padding(.horizontal, 48)
+                    .padding(.vertical, 10)
+            }
+        } else if vm.isLoading {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let error = vm.loadError {
+            ContentUnavailableView(
+                "Could not load document",
+                systemImage: "exclamationmark.triangle",
+                description: Text(error.localizedDescription)
             )
         }
-        // Gloss sheet
-        .sheet(item: $vm.selectedGloss) { gloss in
-            GlossDetailSheet(gloss: gloss)
+    }
+
+    // MARK: - Highlight Color Picker
+
+    private var highlightColorPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "doc.highlight.pickColor",
+                        defaultValue: "Highlight Color"))
+                .font(.headline)
+            HStack(spacing: 10) {
+                ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
+                    Button {
+                        createHighlight(color: color)
+                        showHighlightColorPicker = false
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(swiftUIColor(for: color))
+                                .frame(width: 32, height: 32)
+                            Circle()
+                                .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                .frame(width: 32, height: 32)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help(color.rawValue.capitalized)
+                }
+            }
         }
+        .padding(16)
+    }
+
+    private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
+        switch color {
+        case .yellow: return .yellow
+        case .green: return .green
+        case .blue: return .blue
+        case .pink: return .pink
+        }
+    }
+
+    // MARK: - Highlight Actions
+
+    private func toggleHighlightMode() {
+        showHighlightMode.toggle()
+        if !showHighlightMode {
+            highlightTextSelection = nil
+            showHighlightColorPicker = false
+        }
+    }
+
+    @MainActor
+    private func createHighlight(color: DocumentHighlight.Color) {
+        guard let range = highlightTextSelection else { return }
+        let highlight = DocumentHighlight(
+            volumeId: entry.volumeId,
+            documentId: entry.documentId,
+            startOffset: range.location,
+            endOffset: range.location + range.length,
+            colorTag: color.rawValue,
+            // Session 103 placeholder — Session 105 replaces with SHA-256(rawXML ++ kVersion)
+            renderingVersion: ASTToRenderNodeConverter.kVersion
+        )
+        modelContext.insert(highlight)
+        highlightTextSelection = nil
     }
 
     // MARK: - Document Identity
