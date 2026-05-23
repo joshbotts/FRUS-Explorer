@@ -31,6 +31,8 @@ import SwiftData
 ///   1.0 — Session 04: initial implementation
 ///   1.1 — Session 89: deleteRule changed .cascade → .nullify for CloudKit compatibility;
 ///          callers now delete associated entries manually before deleting a Collection
+///   1.2 — Session 97: `savedSearchId` added; when non-nil the collection is a "smart collection"
+///          whose document list is resolved dynamically from the linked `SavedSearch` at export time
 @Model final class Collection {
 
     // MARK: - Identity
@@ -51,6 +53,15 @@ import SwiftData
 
     /// IDs of `Project` records this collection is visible in.
     var projectIds: [UUID] = [] {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Smart Collection
+
+    /// When non-nil, this collection is a "smart collection" — its documents are resolved
+    /// dynamically at export time by executing the `SavedSearch` with this ID.
+    /// Static `documentEntries` are ignored during export when this is set.
+    var savedSearchId: UUID? {
         didSet { lastModified = .now }
     }
 
