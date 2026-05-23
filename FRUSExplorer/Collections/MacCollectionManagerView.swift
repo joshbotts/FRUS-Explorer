@@ -380,7 +380,7 @@ private struct CollectionDetailPane: View {
             } label: {
                 Label("Export…", systemImage: "square.and.arrow.up")
             }
-            .help("Export collection as PDF or HTML")
+            .help("Export collection as PDF, HTML, or DOCX")
             .disabled(sortedEntries.isEmpty)
         }
     }

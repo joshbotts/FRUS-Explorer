@@ -12,13 +12,13 @@ import Foundation
 
 /// Supported output formats for collection export.
 ///
-/// `.docx` is reserved for a future implementation and intentionally absent.
-///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
+///   1.1 — Session 82: added `.docx` backed by `DocxCollectionExporter`
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
+    case docx
 
     var id: String { rawValue }
 
@@ -26,6 +26,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         switch self {
         case .pdf:  return "PDF"
         case .html: return "HTML"
+        case .docx: return "DOCX"
         }
     }
 
@@ -36,6 +37,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         switch self {
         case .pdf:  return PDFCollectionExporter()
         case .html: return HTMLCollectionExporter()
+        case .docx: return DocxCollectionExporter()
         }
     }
 }
