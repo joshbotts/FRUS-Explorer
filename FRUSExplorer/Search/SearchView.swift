@@ -36,6 +36,7 @@ import SwiftData
 ///          filter panel extracted to `SearchFilterView` sheet (F-002); `personSearchText`
 ///          and `personSuggestions` moved to `SearchFilterView`
 ///   1.6 — Session 88: timeline toggle button; `DocumentTimelineView` replaces results list when active
+///   1.7 — Session 96: Save Search toolbar button + name sheet; Saved Searches toolbar button + list sheet
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -46,6 +47,9 @@ struct SearchView: View {
 
     @State private var vm: SearchViewModel
     @State private var showTimeline = false
+    @State private var showSaveSearchSheet = false
+    @State private var showSavedSearches = false
+    @State private var saveSearchName = ""
     private let initialParameters: SearchParameters?
 
     init(
@@ -127,6 +131,30 @@ struct SearchView: View {
                         )
                         .disabled(vm.results.isEmpty)
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
+                            showSaveSearchSheet = true
+                        } label: {
+                            Image(systemName: "bookmark")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "search.saveSearch.a11y",
+                                   defaultValue: "Save this search")
+                        )
+                        .disabled(!vm.hasSearched)
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showSavedSearches = true
+                        } label: {
+                            Image(systemName: "bookmark.fill")
+                        }
+                        .accessibilityLabel(
+                            String(localized: "search.savedSearches.a11y",
+                                   defaultValue: "Saved searches")
+                        )
+                    }
                 }
                 // Advanced filter sheet — iOS uses detents; macOS uses a fixed frame
                 // declared inside SearchFilterView.
@@ -134,6 +162,16 @@ struct SearchView: View {
                     SearchFilterView(vm: vm)
                         .environment(appState)
                         .modelContainer(modelContext.container)
+                }
+                .sheet(isPresented: $showSaveSearchSheet) {
+                    saveSearchSheet
+                }
+                .sheet(isPresented: $showSavedSearches) {
+                    SavedSearchesView { saved in
+                        vm.applyParameters(saved.searchParameters)
+                        Task { await vm.search() }
+                    }
+                    .modelContainer(modelContext.container)
                 }
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)
@@ -234,6 +272,58 @@ struct SearchView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
+    }
+
+    // MARK: - Save Search Sheet
+
+    private var saveSearchSheet: some View {
+        NavigationStack {
+            Form {
+                Section(String(localized: "search.saveSearch.section",
+                               defaultValue: "Search Name")) {
+                    TextField(
+                        String(localized: "search.saveSearch.placeholder",
+                               defaultValue: "Name"),
+                        text: $saveSearchName
+                    )
+                }
+                if !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Section(String(localized: "search.saveSearch.query",
+                                   defaultValue: "Query")) {
+                        Text(vm.keywords)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "search.saveSearch.title",
+                                    defaultValue: "Save Search"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "search.saveSearch.save",
+                                  defaultValue: "Save")) {
+                        let record = SavedSearch(
+                            name: saveSearchName.trimmingCharacters(in: .whitespaces),
+                            parameters: vm.searchParameters
+                        )
+                        modelContext.insert(record)
+                        showSaveSearchSheet = false
+                    }
+                    .disabled(saveSearchName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "search.saveSearch.cancel",
+                                  defaultValue: "Cancel")) {
+                        showSaveSearchSheet = false
+                    }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 340, minHeight: 180)
+        #endif
     }
 
     private var resultsList: some View {

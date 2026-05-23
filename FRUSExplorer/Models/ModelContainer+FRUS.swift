@@ -30,6 +30,7 @@ extension ModelContainer {
             CollectionEntry.self,
             ReadingHistoryEntry.self,
             SummarizationPrompt.self,
+            SavedSearch.self,
         ]
     }
 
