@@ -320,4 +320,261 @@ struct DocumentHighlightTextView: NSViewRepresentable {
     }
 }
 
-#endif // os(macOS)
+#else // iOS
+
+import UIKit
+import SwiftUI
+
+// MARK: - DocumentHighlightTextView (iOS)
+
+/// iOS `UIViewRepresentable` counterpart to the macOS `NSViewRepresentable` above.
+///
+/// Wraps `UITextView` (which inherits from `UIScrollView`) and enables native
+/// tap-and-hold text selection with the system magnifier. The same DFS traversal
+/// rules apply: only `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes
+/// contribute characters, keeping `NSRange.location` aligned with
+/// `DocumentHighlight.startOffset` / `endOffset`.
+///
+/// See the macOS section above for full documentation on the offset model and
+/// the traversal algorithm.
+///
+/// Version history:
+///   1.0 — Session 104: initial implementation
+struct DocumentHighlightTextView: UIViewRepresentable {
+
+    let renderModel: FRUSDocumentRenderModel
+    @Binding var selectionRange: NSRange?
+
+    // MARK: - UIViewRepresentable
+
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.isScrollEnabled = true
+        textView.backgroundColor = .systemBackground
+        textView.textColor = .label
+        textView.textContainerInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        textView.font = UIFont.preferredFont(forTextStyle: .body)
+        textView.delegate = context.coordinator
+        return textView
+    }
+
+    func updateUIView(_ textView: UITextView, context: Context) {
+        let attrStr = Self.buildAttributedString(from: renderModel)
+        textView.attributedText = attrStr
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(selectionRange: $selectionRange) }
+
+    // MARK: - Coordinator
+
+    final class Coordinator: NSObject, UITextViewDelegate {
+        @Binding var selectionRange: NSRange?
+
+        init(selectionRange: Binding<NSRange?>) { _selectionRange = selectionRange }
+
+        func textViewDidChangeSelection(_ textView: UITextView) {
+            let range = textView.selectedRange
+            selectionRange = range.length > 0 ? range : nil
+        }
+    }
+
+    // MARK: - Attributed String Builder
+
+    /// Converts body nodes to an `NSAttributedString` following the flat-text offset spec.
+    static func buildAttributedString(from model: FRUSDocumentRenderModel) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        for node in model.bodyNodes {
+            appendNode(node, to: result)
+        }
+        return result
+    }
+
+    // MARK: - DFS Traversal
+
+    private static func appendNode(
+        _ node: FRUSRenderNode,
+        to result: NSMutableAttributedString,
+        size: CGFloat = 16,
+        bold: Bool = false,
+        italic: Bool = false,
+        color: UIColor = .label
+    ) {
+        switch node {
+
+        case .plainText(let str):
+            result.append(NSAttributedString(
+                string: str,
+                attributes: textAttrs(size: size, bold: bold, italic: italic, color: color)
+            ))
+
+        case .formulaText(let str):
+            result.append(NSAttributedString(
+                string: str,
+                attributes: textAttrs(size: size, bold: bold, italic: true, color: color)
+            ))
+
+        case .lineBreak:
+            result.append(NSAttributedString(
+                string: "\n",
+                attributes: textAttrs(size: size, bold: bold, italic: italic, color: color)
+            ))
+
+        case .pageBreak: break
+        case .footnoteMarker: break
+        case .figureBlock: break
+
+        case .heading(let children):
+            for c in children {
+                appendNode(c, to: result, size: 20, bold: true, italic: italic, color: .label)
+            }
+
+        case .dateline(let children):
+            for c in children {
+                appendNode(c, to: result, size: 13, bold: bold, italic: italic,
+                           color: .secondaryLabel)
+            }
+
+        case .attachmentHeading(let children):
+            for c in children {
+                appendNode(c, to: result, size: 17, bold: true, italic: italic, color: .label)
+            }
+
+        case .paragraph(let children),
+             .letterOpener(let children),
+             .letterCloser(let children),
+             .salutation(let children),
+             .editorialNoteBlock(let children),
+             .titlePageBlock(let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+
+        case .attachmentBlock(_, let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+
+        case .unknown(_, let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+
+        case .footnoteBody(_, _, _, _, _, let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+
+        case .tableBlock(let rows):
+            for row in rows {
+                for cell in row {
+                    for c in cell.children {
+                        appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+                    }
+                }
+            }
+
+        case .listBlock(_, let items):
+            for item in items {
+                for c in item {
+                    appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+                }
+            }
+
+        case .boldText(let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: true, italic: italic, color: color)
+            }
+
+        case .italicText(let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: true, color: color)
+            }
+
+        case .termText(let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: true, color: color)
+            }
+
+        case .smallCapsText(let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+
+        case .underlineText(let children):
+            let start = result.length
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+            let len = result.length - start
+            if len > 0 {
+                result.addAttribute(.underlineStyle,
+                                    value: NSUnderlineStyle.single.rawValue,
+                                    range: NSRange(location: start, length: len))
+            }
+
+        case .sicText(let children):
+            let start = result.length
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+            let len = result.length - start
+            if len > 0 {
+                result.addAttribute(.strikethroughStyle,
+                                    value: NSUnderlineStyle.single.rawValue,
+                                    range: NSRange(location: start, length: len))
+            }
+
+        case .suppliedText(let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+
+        case .corrText(let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: color)
+            }
+
+        case .persNameLink(_, let children, _):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: .link)
+            }
+
+        case .glossLink(_, let children, _):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: .link)
+            }
+
+        case .crossRefLink(_, _, let children):
+            for c in children {
+                appendNode(c, to: result, size: size, bold: bold, italic: italic, color: .link)
+            }
+        }
+    }
+
+    // MARK: - Attribute Helpers
+
+    private static func textAttrs(
+        size: CGFloat,
+        bold: Bool,
+        italic: Bool,
+        color: UIColor
+    ) -> [NSAttributedString.Key: Any] {
+        [.font: makeFont(size: size, bold: bold, italic: italic),
+         .foregroundColor: color]
+    }
+
+    private static func makeFont(size: CGFloat, bold: Bool, italic: Bool) -> UIFont {
+        var traits = UIFontDescriptor.SymbolicTraits()
+        if bold { traits.insert(.traitBold) }
+        if italic { traits.insert(.traitItalic) }
+        let base = UIFont.systemFont(ofSize: size)
+        guard !traits.isEmpty,
+              let desc = base.fontDescriptor.withSymbolicTraits(traits)
+        else { return base }
+        return UIFont(descriptor: desc, size: size)
+    }
+}
+
+#endif // os(macOS) / iOS

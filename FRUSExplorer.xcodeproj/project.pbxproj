@@ -223,6 +223,7 @@
 		AA22BB01CC03DD04EE2253 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */; };
 		AA22BB01CC03DD04EE2254 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */; };
 		AA22BB01CC03DD04EE2256 /* DocumentHighlightTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */; };
+		AA22BB01CC03DD04EE2257 /* DocumentHighlightTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */; };
 		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
@@ -1209,6 +1210,7 @@
 				AA22BB01CC03DD04EE2248 /* ResearchSession.swift in Sources */,
 				AA22BB01CC03DD04EE2251 /* SessionLogView.swift in Sources */,
 				AA22BB01CC03DD04EE2254 /* DocumentHighlight.swift in Sources */,
+				AA22BB01CC03DD04EE2257 /* DocumentHighlightTextView.swift in Sources */,
 				1D450CCEF5BF408FB3368C6E /* MainTabView.swift in Sources */,
 				AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */,
 				E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */,

@@ -95,6 +95,8 @@ enum DocumentSheet: Identifiable {
 ///          .padding(.horizontal) magic numbers; sectionLabelSize/Weight/Kerning on the
 ///          tag section header; tagChipSpacing on the chip row; EditorialNoteBadge added
 ///          at the top of the document body for editorial note entries (iOS parity with macOS)
+///   2.2 — Session 104: highlight mode toolbar toggle + DocumentHighlightTextView (UITextView
+///          UIViewRepresentable) + color-picker sheet + DocumentHighlight SwiftData insertion
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -105,6 +107,11 @@ struct DocumentView: View {
     @State private var vm: DocumentViewModel?
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
     @State private var activeSheet: DocumentSheet?
+
+    // MARK: Highlight Mode
+    @State private var showHighlightMode = false
+    @State private var highlightTextSelection: NSRange? = nil
+    @State private var showHighlightColorPicker = false
 
     var body: some View {
         Group {
@@ -209,7 +216,14 @@ struct DocumentView: View {
     @ViewBuilder
     private func documentContent(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
         @Bindable var vm = vm
-        ScrollView {
+        Group {
+            if showHighlightMode {
+                DocumentHighlightTextView(
+                    renderModel: model,
+                    selectionRange: $highlightTextSelection
+                )
+            } else {
+                ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 // Summary strip
                 if let summary = vm.activeSummary {
@@ -276,6 +290,8 @@ struct DocumentView: View {
                     .padding(.bottom, 12)
                 }
             }
+            } // end ScrollView
+            } // end Group
         }
         .toolbar { documentToolbar(vm: vm) }
         // Single consolidated sheet driven by the DocumentSheet enum (F-024).
@@ -320,6 +336,9 @@ struct DocumentView: View {
             case .sourceExplorer(let note):
                 SourceExplorerView(rawSourceNote: note)
             }
+        }
+        .sheet(isPresented: $showHighlightColorPicker) {
+            highlightColorPickerSheet
         }
         // Load the mention count for the selected person from the FTS index.
         // vm.selectedPerson is set alongside activeSheet so the task id fires correctly.
@@ -465,36 +484,68 @@ struct DocumentView: View {
     ///    small screens while every action remains reachable in one extra tap.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-
-            // 1. Add research note (direct — high frequency)
-            Button {
-                activeSheet = .noteEditor
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
-                    systemImage: "note.text.badge.plus"
-                )
+        if showHighlightMode {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(String(localized: "document.toolbar.highlightDone",
+                              defaultValue: "Done")) {
+                    toggleHighlightMode()
+                }
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
-            )
-
-            // 2. Tag document (direct — fast single-tap)
-            Button {
-                // Wired in Session 14
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
-                    systemImage: "tag"
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showHighlightColorPicker = true
+                } label: {
+                    Image(systemName: "paintbrush.pointed")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.createHighlight.a11y",
+                           defaultValue: "Create highlight")
                 )
+                .disabled((highlightTextSelection?.length ?? 0) == 0)
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
-            )
+        } else {
+            ToolbarItemGroup(placement: .primaryAction) {
 
-            // 3. More — overflow menu containing all secondary actions
-            moreMenu(vm: vm)
+                // 1. Add research note (direct — high frequency)
+                Button {
+                    activeSheet = .noteEditor
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
+                        systemImage: "note.text.badge.plus"
+                    )
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
+                )
+
+                // 2. Tag document (direct — fast single-tap)
+                Button {
+                    // Wired in Session 14
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
+                        systemImage: "tag"
+                    )
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
+                )
+
+                // 3. Highlight mode toggle
+                Button {
+                    toggleHighlightMode()
+                } label: {
+                    Image(systemName: "pencil.tip.crop.circle")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.highlightMode.a11y",
+                           defaultValue: "Highlight mode")
+                )
+
+                // 4. More — overflow menu containing all secondary actions
+                moreMenu(vm: vm)
+            }
         }
     }
 
@@ -590,6 +641,85 @@ struct DocumentView: View {
         .accessibilityLabel(
             String(localized: "document.toolbar.more.a11y", defaultValue: "More document actions")
         )
+    }
+
+    // MARK: - Highlight Actions
+
+    private func toggleHighlightMode() {
+        showHighlightMode.toggle()
+        if !showHighlightMode {
+            highlightTextSelection = nil
+            showHighlightColorPicker = false
+        }
+    }
+
+    @MainActor
+    private func createHighlight(color: DocumentHighlight.Color) {
+        guard let range = highlightTextSelection else { return }
+        let highlight = DocumentHighlight(
+            volumeId: entry.volumeId,
+            documentId: entry.documentId,
+            startOffset: range.location,
+            endOffset: range.location + range.length,
+            colorTag: color.rawValue,
+            // Session 103 placeholder — Session 105 replaces with SHA-256(rawXML ++ kVersion)
+            renderingVersion: ASTToRenderNodeConverter.kVersion
+        )
+        modelContext.insert(highlight)
+        highlightTextSelection = nil
+    }
+
+    private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
+        switch color {
+        case .yellow: return .yellow
+        case .green:  return .green
+        case .blue:   return .blue
+        case .pink:   return .pink
+        }
+    }
+
+    // MARK: - Highlight Color Picker Sheet
+
+    private var highlightColorPickerSheet: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Text(String(localized: "doc.highlight.pickColor",
+                            defaultValue: "Highlight Color"))
+                    .font(.headline)
+                HStack(spacing: 16) {
+                    ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
+                        Button {
+                            createHighlight(color: color)
+                            showHighlightColorPicker = false
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(swiftUIColor(for: color))
+                                    .frame(width: 44, height: 44)
+                                Circle()
+                                    .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                    .frame(width: 44, height: 44)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(color.rawValue.capitalized)
+                    }
+                }
+            }
+            .padding()
+            .navigationTitle(String(localized: "doc.highlight.sheet.title",
+                                    defaultValue: "Choose Color"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "doc.highlight.sheet.cancel",
+                                  defaultValue: "Cancel")) {
+                        showHighlightColorPicker = false
+                    }
+                }
+            }
+        }
+        .presentationDetents([.height(180)])
     }
 
     // MARK: - Clipboard
