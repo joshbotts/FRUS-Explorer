@@ -36,6 +36,9 @@ import SwiftData
 ///          (HIG: badges must represent actionable user-driven information, not status
 ///          counts; a simple dot communicates "attention needed" without implying
 ///          the number is an actionable queue)
+///   1.4 — Session 93: IndexingBannerView wired via .safeAreaInset(edge: .bottom) on
+///          each tab's root view; ActivityKit / Live Activity deferred (see
+///          IndexingBannerView.swift); banner visible across all tabs during indexing
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -62,6 +65,7 @@ struct MainTabView: View {
                 value: AppTab.browse
             ) {
                 BrowserTabView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             Tab(
                 String(localized: "tab.search", defaultValue: "Search"),
@@ -69,6 +73,7 @@ struct MainTabView: View {
                 value: AppTab.search
             ) {
                 SearchTabView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             Tab(
                 String(localized: "tab.activity", defaultValue: "Activity"),
@@ -76,6 +81,7 @@ struct MainTabView: View {
                 value: AppTab.activity
             ) {
                 ActivityTabView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             .badge(newNoteCount)
             Tab(
@@ -84,6 +90,7 @@ struct MainTabView: View {
                 value: AppTab.collections
             ) {
                 CollectionListView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             Tab(
                 String(localized: "tab.settings", defaultValue: "Settings"),
@@ -91,6 +98,7 @@ struct MainTabView: View {
                 value: AppTab.settings
             ) {
                 SettingsView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             // Boolean dot badge: shows when any downloaded volumes are awaiting indexing.
             // A raw count badge (the previous behaviour) is misleading — the number is a
@@ -98,6 +106,18 @@ struct MainTabView: View {
             // by item. A dot communicates "something needs attention" without implying
             // a specific count.
             .badge(appState.unindexedVolumeCount > 0 ? "·" : "")
+        }
+    }
+
+    /// Returns `IndexingBannerView` when indexing is active, or `EmptyView` otherwise.
+    ///
+    /// Passed to `.safeAreaInset(edge: .bottom, spacing: 0)` on each tab's root view.
+    /// An `EmptyView` result adds 0 height inset, so there is no visual or layout effect
+    /// when no indexing is in progress.
+    @ViewBuilder
+    private var indexingBanner: some View {
+        if let update = appState.currentIndexingProgress {
+            IndexingBannerView(update: update)
         }
     }
 }
