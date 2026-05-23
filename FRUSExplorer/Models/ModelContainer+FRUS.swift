@@ -33,6 +33,7 @@ extension ModelContainer {
             SavedSearch.self,
             ResearchSession.self,
             SessionEvent.self,
+            DocumentHighlight.self,
         ]
     }
 
