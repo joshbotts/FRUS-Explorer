@@ -9,6 +9,8 @@
 #if os(macOS)
 
 import SwiftUI
+import UniformTypeIdentifiers
+import AppKit
 
 // MARK: - MacSourceExplorerView
 
@@ -34,6 +36,9 @@ import SwiftUI
 ///   1.1 — Session 94: removed NavigationStack wrapper and Done toolbar button; the Window
 ///          scene provides its own titlebar and × close button — redundant navigation chrome
 ///          caused a spurious nav-bar-height gap at the top of the split view
+///   1.2 — Session 95: toolbar (Refresh / Copy / Export), manual NARA search field for
+///          lot file and Presidential Library provenance, NSSavePanel plain-text export,
+///          NSPasteboard copy; load() pre-fills manualQuery from parsed provenance
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -52,6 +57,7 @@ struct MacSourceExplorerView: View {
     @State private var isLoading = false
     @State private var loadError: String? = nil
     @State private var hasAPIKey: Bool = false
+    @State private var manualQuery: String = ""
 
     @Environment(\.openURL)  private var openURL
 
@@ -67,6 +73,49 @@ struct MacSourceExplorerView: View {
         }
         .task { await load() }
         .frame(minWidth: 640, minHeight: 380)
+        .toolbar { explorerToolbar }
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var explorerToolbar: some ToolbarContent {
+        ToolbarItem {
+            Button {
+                Task { await runManualSearch() }
+            } label: {
+                Label(String(localized: "source.explorer.toolbar.refresh",
+                             defaultValue: "Refresh"),
+                      systemImage: "arrow.clockwise")
+            }
+            .disabled(isLoading || !showsManualSearch)
+            .help(String(localized: "source.explorer.toolbar.refresh.tooltip",
+                         defaultValue: "Re-run the current NARA Catalog search"))
+        }
+        ToolbarItem {
+            Button {
+                copyResultToClipboard()
+            } label: {
+                Label(String(localized: "source.explorer.toolbar.copy",
+                             defaultValue: "Copy"),
+                      systemImage: "doc.on.clipboard")
+            }
+            .disabled(catalogResult == nil)
+            .help(String(localized: "source.explorer.toolbar.copy.tooltip",
+                         defaultValue: "Copy catalog result to clipboard"))
+        }
+        ToolbarItem {
+            Button {
+                exportCatalogResult()
+            } label: {
+                Label(String(localized: "source.explorer.toolbar.export",
+                             defaultValue: "Export"),
+                      systemImage: "square.and.arrow.up")
+            }
+            .disabled(catalogResult == nil)
+            .help(String(localized: "source.explorer.toolbar.export.tooltip",
+                         defaultValue: "Save catalog result as a text file"))
+        }
     }
 
     // MARK: - Left Column
@@ -98,16 +147,49 @@ struct MacSourceExplorerView: View {
     private var rightColumn: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 14) {
+                if showsManualSearch {
+                    manualSearchField
+                }
                 if let parsed {
                     naraBox(for: parsed)
                 } else {
-                    // Parsing in progress
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(40)
                 }
             }
             .padding(16)
+        }
+    }
+
+    // MARK: - Manual Search
+
+    private var showsManualSearch: Bool {
+        switch parsed {
+        case .lotFile, .presidentialLibrary: return true
+        default: return false
+        }
+    }
+
+    private var manualSearchField: some View {
+        GroupBox(String(localized: "source.explorer.manualSearch.header",
+                        defaultValue: "NARA Search Query")) {
+            VStack(alignment: .leading, spacing: 8) {
+                TextField(
+                    String(localized: "source.explorer.manualSearch.placeholder",
+                           defaultValue: "Search query"),
+                    text: $manualQuery
+                )
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { Task { await runManualSearch() } }
+
+                Button(String(localized: "source.explorer.manualSearch.button",
+                              defaultValue: "Search")) {
+                    Task { await runManualSearch() }
+                }
+                .disabled(manualQuery.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -352,10 +434,12 @@ struct MacSourceExplorerView: View {
 
         switch note {
         case .lotFile(let lotNumber, _):
+            manualQuery = "State Department Lot File \(lotNumber)"
             guard hasAPIKey else { return }
             await fetchResult { try await client.resolveLotFile(lotNumber: lotNumber) }
 
         case .presidentialLibrary(let library, let collection, _):
+            manualQuery = "\(library) \(collection)"
             guard hasAPIKey else { return }
             await fetchResult {
                 try await client.resolvePresidentialLibrary(library: library, collection: collection)
@@ -375,6 +459,52 @@ struct MacSourceExplorerView: View {
             loadError = error.localizedDescription
         }
         isLoading = false
+    }
+
+    // MARK: - Manual Search Action
+
+    private func runManualSearch() async {
+        let query = manualQuery.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return }
+        await fetchResult { try await client.searchCatalog(query: query) }
+    }
+
+    // MARK: - Copy
+
+    private func copyResultToClipboard() {
+        guard let result = catalogResult else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(naraExportText(result), forType: .string)
+    }
+
+    // MARK: - Export
+
+    private func exportCatalogResult() {
+        guard let result = catalogResult else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.nameFieldStringValue = "\(result.naId).txt"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            try? naraExportText(result).write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    private func naraExportText(_ result: NARACatalogResult) -> String {
+        var lines: [String] = [
+            "NARA Catalog Record",
+            "===================",
+            "NA ID: \(result.naId)",
+            "Title: \(result.title)",
+        ]
+        if let scope = result.scopeNote {
+            lines.append("")
+            lines.append("Scope / Content:")
+            lines.append(scope)
+        }
+        lines.append("")
+        lines.append("URL: \(result.catalogURL.absoluteString)")
+        return lines.joined(separator: "\n")
     }
 }
 
