@@ -1257,6 +1257,61 @@ struct ParseVolumeFullTests {
                 "Expected term 'NSSM', got '\(result.terms.first?.term ?? "nil")'")
     }
 
+    // MARK: - Session 77: <choice> and small caps
+
+    @Test("Parser: <choice> renders only <corr>, suppresses <sic>")
+    func choiceRendersCorr() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <p><choice><sic>colour</sic><corr>color</corr></choice></p>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+        let text = extractAllText(from: docs[0].nodes)
+        // Preferred form present exactly once
+        #expect(text.contains("color"))
+        // Struck-through form must be absent
+        #expect(!text.contains("colour"))
+        // No .sic node anywhere in the tree
+        let hasSic = containsCase(in: docs[0].nodes) { if case .sic = $0 { return true }; return false }
+        #expect(!hasSic)
+    }
+
+    @Test("Parser: <choice> with no <corr> renders first non-sic child")
+    func choiceFallsBackToFirstNonSic() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <p><choice><sic>colour</sic><reg>color</reg></choice></p>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let text = extractAllText(from: docs[0].nodes)
+        #expect(text.contains("color"))
+        #expect(!text.contains("colour"))
+    }
+
+    @Test("Parser: <hi rend=\"smallcaps\"> produces .emphasis(.smallCaps) node")
+    func smallCapsProducesCorrectASTNode() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <p><hi rend="smallcaps">NATO</hi></p>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let hasSmallCaps = containsCase(in: docs[0].nodes) {
+            if case .emphasis(let style, _) = $0 { return style == .smallCaps }
+            return false
+        }
+        #expect(hasSmallCaps, "Expected .emphasis(.smallCaps) node for <hi rend=\"smallcaps\">")
+    }
+
     @Test("parseVolumeFull does not produce document entries for persons or terms divs")
     func noSpuriousDocumentsFromFrontMatter() async throws {
         let url = try makeFullVolumeFixture()

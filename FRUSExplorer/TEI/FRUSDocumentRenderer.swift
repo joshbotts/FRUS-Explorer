@@ -67,6 +67,7 @@ import SwiftUI
 ///          inline elements: a multi-line prose text fills currentX=maxWidth, forcing
 ///          every subsequent element (persName, gloss, etc.) onto a new row instead
 ///          of flowing inline. AttributedString lets SwiftUI handle wrapping natively.
+///   1.6 — Session 77: small caps rendered via `.lowercaseSmallCaps()` on both platforms
 public struct FRUSDocumentRenderer: View {
     public let nodes: [FRUSRenderNode]
     public let onFootnoteTap: (String) -> Void
@@ -272,8 +273,9 @@ public struct FRUSDocumentRenderer: View {
             return a
 
         case .smallCapsText(let c):
-            // AttributedString has no direct small-caps variant; render as normal.
-            return macAttrString(c)
+            var a = macAttrString(c)
+            a.font = .system(size: textSize.bodyFontSize).lowercaseSmallCaps()
+            return a
 
         case .underlineText(let c):
             var a = macAttrString(c)
@@ -558,6 +560,8 @@ private struct ListBlockView: View {
 ///          caller can suppress the internal `ScrollView` when it provides its own;
 ///          `containsCrossRef` renamed to `containsInteractiveInline` and extended to
 ///          also trigger the `AttributedString` path for `persNameLink`/`glossLink`
+///   1.4 — Session 77: small caps rendered via `.lowercaseSmallCaps()` in both
+///          `inlineTextNode` and `inlineAttributedStringNode`
 ///          nodes, with `frusexplorer://person/` and `frusexplorer://gloss/` link
 ///          attributes so taps route through the caller's `\.openURL` environment
 ///   1.4 — Session 66: fix URL encoding for FRUS XML ID-reference "#" prefix:
@@ -793,6 +797,7 @@ public struct FRUSDocumentRenderer: View {
             return inlineText(children).italic()
         case .smallCapsText(let children):
             return inlineText(children)
+                .font(.system(size: textSize.bodyFontSize).lowercaseSmallCaps())
         case .underlineText(let children):
             return inlineText(children).underline()
         case .termText(let children):
@@ -933,7 +938,7 @@ public struct FRUSDocumentRenderer: View {
         case .italicText(let c):
             var a = inlineAttributedString(c); a.font = .body.italic(); return a
         case .smallCapsText(let c):
-            return inlineAttributedString(c)
+            var a = inlineAttributedString(c); a.font = .body.lowercaseSmallCaps(); return a
         case .underlineText(let c):
             var a = inlineAttributedString(c); a.underlineStyle = .single; return a
         case .termText(let c):

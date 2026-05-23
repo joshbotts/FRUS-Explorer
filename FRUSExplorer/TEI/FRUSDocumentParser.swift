@@ -61,6 +61,8 @@ import Foundation
 ///          promoted to quasi-documents during full-volume parse so their content
 ///          is indexed by `IndexingPipeline`; `"foreword"` added to structural
 ///          type recognition in `VolumeStructureParserDelegate`
+///   1.8 — Session 77: `<choice>` handled in `buildNode` — only the preferred form
+///          (`<corr>` > `<reg>` > first non-sic child) is returned; `<sic>` suppressed
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -816,6 +818,25 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
         case "corr":
             return .corr(children)
+
+        // MARK: Choice (Session 77)
+        case "choice":
+            // Render only the preferred form; suppress <sic> entirely.
+            // Priority: <corr> > <reg> > first child.
+            // Both <sic> and <corr> are already built as children by the time
+            // this case runs, so filtering here is sufficient — no AST or
+            // render-node changes required.
+            let preferred: FRUSASTNode? =
+                children.first { if case .corr = $0 { return true }; return false }
+                ?? children.first {
+                    if case .unknown(let n, _, _) = $0 { return n == "reg" }; return false
+                }
+                ?? children.first(where: { if case .sic = $0 { return false }; return true })
+            guard let preferred else { return nil }
+            if case .corr(let c) = preferred {
+                return c.count == 1 ? c[0] : .unknown(name: "choice", attributes: [:], children: c)
+            }
+            return preferred
 
         // MARK: Line breaks (Session 07)
         case "lb":
