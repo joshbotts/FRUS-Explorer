@@ -35,6 +35,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 23: initial implementation
+///   1.1 — Session 94: replaced broken NavigationLink { EmptyView() } in noAPIKeyPrompt with
+///          a localized instruction text pointing users to Settings → NARA Catalog API Key
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -355,14 +357,12 @@ struct SourceExplorerView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            NavigationLink(
-                String(localized: "source.explorer.noKey.settingsLink",
-                       defaultValue: "Open Settings")
-            ) {
-                // Settings navigation wired in Session 24
-                EmptyView()
-            }
+            Text(String(
+                localized: "source.explorer.noKey.instruction",
+                defaultValue: "Open the Settings tab, then NARA Catalog API Key."
+            ))
             .font(.callout)
+            .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
     }

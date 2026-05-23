@@ -69,6 +69,8 @@ import CoreSpotlight
 ///          archive action; user-selected file entitlement added for NSSavePanel exports
 ///   3.1 — Boot-time summary sync: pushes all GeneratedSummary records into FTS5 at launch
 ///          so summary-only search finds both local and CloudKit-synced summaries
+///   3.2 — Session 94: Source Explorer window defaultSize corrected from 380×320 to 700×440
+///          (the view enforces minWidth:640, so 380 caused an immediate jarring resize)
 @main
 struct FRUSExplorerApp: App {
 
@@ -112,7 +114,7 @@ struct FRUSExplorerApp: App {
             SourceExplorerWindowView()
                 .environment(appState)
         }
-        .defaultSize(width: 380, height: 320)
+        .defaultSize(width: 700, height: 440)
 
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {

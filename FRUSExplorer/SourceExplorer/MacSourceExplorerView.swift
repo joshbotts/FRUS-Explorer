@@ -31,6 +31,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — macOS Source Explorer implementation (adapted from iOS SourceExplorerView)
+///   1.1 — Session 94: removed NavigationStack wrapper and Done toolbar button; the Window
+///          scene provides its own titlebar and × close button — redundant navigation chrome
+///          caused a spurious nav-bar-height gap at the top of the split view
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -50,32 +53,19 @@ struct MacSourceExplorerView: View {
     @State private var loadError: String? = nil
     @State private var hasAPIKey: Bool = false
 
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL)  private var openURL
 
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
-            HSplitView {
-                leftColumn
-                    .frame(minWidth: 240, idealWidth: 260, maxWidth: 320)
+        HSplitView {
+            leftColumn
+                .frame(minWidth: 240, idealWidth: 260, maxWidth: 320)
 
-                rightColumn
-                    .frame(minWidth: 340)
-            }
-            .navigationTitle(String(localized: "source.explorer.title",
-                                    defaultValue: "Source Explorer"))
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "source.explorer.done",
-                                  defaultValue: "Done")) {
-                        dismiss()
-                    }
-                }
-            }
-            .task { await load() }
+            rightColumn
+                .frame(minWidth: 340)
         }
+        .task { await load() }
         .frame(minWidth: 640, minHeight: 380)
     }
 

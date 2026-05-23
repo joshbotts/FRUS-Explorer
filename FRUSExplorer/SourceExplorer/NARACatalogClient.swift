@@ -73,6 +73,8 @@ public enum NARACatalogError: Error, LocalizedError {
 ///
 /// Version history:
 ///   1.0 — Session 23: initial implementation
+///   1.1 — Session 94: recordAPICall() now called after each successful NARA API response
+///          so the 30-day usage counter in NARAAPIKeyStore is actually populated
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
@@ -175,6 +177,9 @@ public actor NARACatalogClient {
            !(200..<300).contains(httpResponse.statusCode) {
             throw NARACatalogError.unexpectedResponse(statusCode: httpResponse.statusCode)
         }
+
+        // Record successful API hit for 30-day usage tracking displayed in Settings.
+        await MainActor.run { NARAAPIKeyStore.shared.recordAPICall() }
 
         return try decodeResult(from: data)
     }
