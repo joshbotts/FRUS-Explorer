@@ -204,6 +204,8 @@
 		AA22BB01CC03DD04EE2229 /* PersonIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2227 /* PersonIndexView.swift */; };
 		AA22BB01CC03DD04EE222B /* DocumentTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */; };
 		AA22BB01CC03DD04EE222C /* DocumentTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */; };
+		AA22BB01CC03DD04EE222E /* FRUSTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE222D /* FRUSTheme.swift */; };
+		AA22BB01CC03DD04EE222F /* FRUSTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE222D /* FRUSTheme.swift */; };
 		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
@@ -418,6 +420,7 @@
 		AA22BB01CC03DD04EE2224 /* RISExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RISExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2227 /* PersonIndexView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonIndexView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentTimelineView.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE222D /* FRUSTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSTheme.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacCollectionManagerView.swift; sourceTree = "<group>"; };
@@ -819,11 +822,20 @@
 				AA14BB01CC03DD04EE1400 /* ResearchNoteEditor */,
 				AA15BB01CC03DD04EE1500 /* ProjectContext */,
 				AA06BB02CC03DD04EE060009 /* TEI */,
+				AA91BB01CC03DD04EE9100 /* Theme */,
 				AD1071649D3012380A19030B /* Resources */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
 					FF735149F415370F2B4A807F /* Localizable.strings */,
 			);
 			path = FRUSExplorer;
+			sourceTree = "<group>";
+		};
+		AA91BB01CC03DD04EE9100 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				AA22BB01CC03DD04EE222D /* FRUSTheme.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 		E5B6F78728D4945C82785AB6 /* Tags */ = {
@@ -1079,6 +1091,7 @@
 				AA16BB01CC03DD04EE1605 /* SearchView.swift in Sources */,
 				AA16BB01CC03DD04EE1611 /* SearchFilterView.swift in Sources */,
 				AA22BB01CC03DD04EE222B /* DocumentTimelineView.swift in Sources */,
+				AA22BB01CC03DD04EE222E /* FRUSTheme.swift in Sources */,
 				AA17BB01CC03DD04EE1702 /* CrossReferenceModels.swift in Sources */,
 				AA17BB01CC03DD04EE1705 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1802 /* CrossReferenceGraphViewModel.swift in Sources */,
@@ -1199,6 +1212,7 @@
 				AA16BB01CC03DD04EE1606 /* SearchView.swift in Sources */,
 				AA16BB01CC03DD04EE1612 /* SearchFilterView.swift in Sources */,
 				AA22BB01CC03DD04EE222C /* DocumentTimelineView.swift in Sources */,
+				AA22BB01CC03DD04EE222F /* FRUSTheme.swift in Sources */,
 				AA17BB01CC03DD04EE1703 /* CrossReferenceModels.swift in Sources */,
 				AA17BB01CC03DD04EE1706 /* CrossReferenceStore.swift in Sources */,
 				AA18BB01CC03DD04EE1803 /* CrossReferenceGraphViewModel.swift in Sources */,

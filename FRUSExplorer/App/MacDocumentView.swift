@@ -35,6 +35,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding (macOS-only; replaces BrowserView-centric architecture)
+///   1.1 — Session 91: removed private EditorialNoteBadge and TagChip; now uses
+///          shared FRUSTheme components (EditorialNoteBadge, FRUSTagChip)
 @MainActor
 struct MacDocumentView: View {
 
@@ -308,20 +310,6 @@ struct MacDocumentView: View {
 
 }
 
-// MARK: - EditorialNoteBadge
-
-private struct EditorialNoteBadge: View {
-    var body: some View {
-        Text("Editorial note")
-            .font(.system(size: 10, weight: .medium))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(.purple.opacity(0.12))
-            .foregroundStyle(.purple)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-    }
-}
-
 // MARK: - TagRowView
 
 /// Displays system subject tags and user-defined tags for a document.
@@ -336,43 +324,14 @@ struct TagRowView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(systemTags) { tag in
-                        TagChip(label: tag.displayName, style: .system)
+                        FRUSTagChip(label: tag.displayName, style: .system)
                     }
                     ForEach(userTags) { tag in
-                        TagChip(label: "◆ \(tag.name)", style: .user)
+                        FRUSTagChip(label: "◆ \(tag.name)", style: .user)
                     }
                 }
             }
         )
-    }
-}
-
-private struct TagChip: View {
-    enum Style { case system, user }
-    let label: String
-    let style: Style
-
-    var body: some View {
-        Text(label)
-            .font(.system(size: 11))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(
-                style == .user
-                    ? Color.accentColor.opacity(0.12)
-                    : Color.secondary.opacity(0.10)
-            )
-            .foregroundStyle(style == .user ? Color.accentColor : Color.secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(
-                        style == .user
-                            ? Color.accentColor.opacity(0.3)
-                            : Color.secondary.opacity(0.2),
-                        lineWidth: 0.5
-                    )
-            )
     }
 }
 
