@@ -196,6 +196,10 @@
 		AA22BB01CC03DD04EE221D /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */; };
 		AA22BB01CC03DD04EE221F /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */; };
 		AA22BB01CC03DD04EE2220 /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */; };
+		AA22BB01CC03DD04EE2222 /* BibtexExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */; };
+		AA22BB01CC03DD04EE2223 /* BibtexExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */; };
+		AA22BB01CC03DD04EE2225 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2224 /* RISExporter.swift */; };
+		AA22BB01CC03DD04EE2226 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2224 /* RISExporter.swift */; };
 		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
@@ -406,6 +410,8 @@
 		AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocxCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibtexExporter.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE2224 /* RISExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RISExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacCollectionManagerView.swift; sourceTree = "<group>"; };
@@ -663,6 +669,8 @@
 			isa = PBXGroup;
 			children = (
 				AA13BB01CC03DD04EE1301 /* CitationFormatter.swift */,
+				AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */,
+				AA22BB01CC03DD04EE2224 /* RISExporter.swift */,
 				AA30BB01CC03DD04EE3000 /* CitationModels.swift */,
 				AA30BB01CC03DD04EE3003 /* CitationParser.swift */,
 				AA30BB01CC03DD04EE3006 /* PageRangeStore.swift */,
@@ -1079,6 +1087,8 @@
 				AA22BB01CC03DD04EE2207 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE221C /* DocxCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE221F /* AppActivityTypes.swift in Sources */,
+				AA22BB01CC03DD04EE2222 /* BibtexExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2225 /* RISExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */,
 				AA22BB01CC03DD04EE2219 /* MacCollectionManagerView.swift in Sources */,
@@ -1197,6 +1207,8 @@
 				AA22BB01CC03DD04EE2208 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE221D /* DocxCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2220 /* AppActivityTypes.swift in Sources */,
+				AA22BB01CC03DD04EE2223 /* BibtexExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2226 /* RISExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */,
 				AA22BB01CC03DD04EE221A /* MacCollectionManagerView.swift in Sources */,

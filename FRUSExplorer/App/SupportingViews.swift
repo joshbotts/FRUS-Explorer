@@ -8,6 +8,7 @@
 
 #if os(macOS)
 
+import AppKit
 import SwiftUI
 import SwiftData
 
@@ -605,6 +606,7 @@ struct StatusBarView: View {
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — Session 86: Export menu (Copy BibTeX, Copy RIS, Save as .bib)
 struct CitationPopoverView: View {
     let entry: DocumentBrowserEntry
 
@@ -721,13 +723,30 @@ struct CitationPopoverView: View {
 
                 Spacer()
 
-                Button {
-                    // Zotero export — deferred to future session
+                Menu {
+                    Button {
+                        if let vol = volumeEntry { copyToClipboard(bibtexString(vol: vol)) }
+                    } label: {
+                        Label("Copy BibTeX", systemImage: "doc.plaintext")
+                    }
+                    Button {
+                        if let vol = volumeEntry { copyToClipboard(risString(vol: vol)) }
+                    } label: {
+                        Label("Copy RIS", systemImage: "doc.plaintext")
+                    }
+                    Divider()
+                    Button {
+                        if let vol = volumeEntry { saveBibFile(bibtexString(vol: vol)) }
+                    } label: {
+                        Label("Save as .bib\u{2026}", systemImage: "square.and.arrow.down")
+                    }
                 } label: {
-                    Label("Zotero", systemImage: "square.and.arrow.up").font(.system(size: 11))
+                    Label("Export", systemImage: "square.and.arrow.up").font(.system(size: 11))
                 }
+                .menuStyle(.button)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
+                .disabled(volumeEntry == nil)
             }
 
         }
@@ -884,6 +903,45 @@ struct CitationPopoverView: View {
               match.numberOfRanges >= 2,
               let range = Range(match.range(at: 1), in: text) else { return nil }
         return String(text[range])
+    }
+
+    // MARK: - BibTeX / RIS Export
+
+    private func bibtexString(vol: VolumeManifestEntry) -> String {
+        let year = effectiveYear(for: vol)
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = FRUSVolumeMetadata(vol)
+        return BibtexExporter().export(
+            volumeId: entry.volumeId,
+            document: docMeta,
+            volume: volMeta,
+            year: year,
+            url: canonicalURL
+        )
+    }
+
+    private func risString(vol: VolumeManifestEntry) -> String {
+        let year = effectiveYear(for: vol)
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = FRUSVolumeMetadata(vol)
+        return RISExporter().export(
+            document: docMeta,
+            volume: volMeta,
+            year: year,
+            url: canonicalURL
+        )
+    }
+
+    @MainActor
+    private func saveBibFile(_ content: String) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.init(filenameExtension: "bib") ?? .data]
+        panel.nameFieldStringValue = "\(entry.volumeId)-\(entry.documentId).bib"
+        panel.title = "Save BibTeX Citation"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            try? content.write(to: url, atomically: true, encoding: .utf8)
+        }
     }
 
     // MARK: - Helpers
