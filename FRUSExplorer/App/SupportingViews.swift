@@ -15,15 +15,14 @@ import SwiftData
 
 /// Persistent research action toolbar displayed between the titlebar and the document body.
 ///
-/// Contains: Add to collection · Add note · Tag · Cite (popover) · collapse chevron.
-/// Collapses to a "+" re-expand button when `isCollapsed` is true.
+/// Contains: Add to collection · Add note · Tag · Cite (popover).
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — Removed collapse behaviour
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
-    @Binding var isCollapsed: Bool
     @Binding var showCitationPopover: Bool
 
     @Environment(AppState.self) private var appState
@@ -37,91 +36,68 @@ struct ResearchStripView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            if isCollapsed {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) { isCollapsed = false }
-                } label: {
-                    Image(systemName: "plus.circle").font(.system(size: 14))
-                }
-                .buttonStyle(.plain)
+            Text("Research")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
+                .kerning(0.8)
                 .padding(.leading, 16)
-                .padding(.vertical, 5)
-                Spacer()
-            } else {
-                Text("Research")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.tertiary)
-                    .textCase(.uppercase)
-                    .kerning(0.8)
-                    .padding(.leading, 16)
 
-                ResearchStripButton(
-                    title: "Add to collection",
-                    systemImage: "folder.badge.plus",
-                    isDisabled: isDisabled
-                ) { showAddToCollection = true }
+            ResearchStripButton(
+                title: "Add to collection",
+                systemImage: "folder.badge.plus",
+                isDisabled: isDisabled
+            ) { showAddToCollection = true }
 
-                ResearchStripButton(
-                    title: "Add note",
-                    systemImage: "note.text.badge.plus",
-                    isDisabled: isDisabled
-                ) { showAddNote = true }
+            ResearchStripButton(
+                title: "Add note",
+                systemImage: "note.text.badge.plus",
+                isDisabled: isDisabled
+            ) { showAddNote = true }
 
-                ResearchStripButton(
-                    title: "Tag",
-                    systemImage: "tag",
-                    isDisabled: isDisabled
-                ) { showTagPicker = true }
+            ResearchStripButton(
+                title: "Tag",
+                systemImage: "tag",
+                isDisabled: isDisabled
+            ) { showTagPicker = true }
 
-                ResearchStripButton(
-                    title: "Graph",
-                    systemImage: "point.3.connected.trianglepath.dotted",
-                    isDisabled: isDisabled
-                ) {
-                    if let entry {
-                        appState.currentGraphEntry = entry
-                        openWindow(id: "frus.crossReferenceGraph")
-                    }
+            ResearchStripButton(
+                title: "Graph",
+                systemImage: "point.3.connected.trianglepath.dotted",
+                isDisabled: isDisabled
+            ) {
+                if let entry {
+                    appState.currentGraphEntry = entry
+                    openWindow(id: "frus.crossReferenceGraph")
                 }
-
-                // Cite — opens citation popover
-                Button {
-                    showCitationPopover = true
-                } label: {
-                    Label("Cite", systemImage: "quote.closing")
-                        .font(.system(size: 11))
-                        .foregroundStyle(isDisabled ? Color.secondary : Color.accentColor)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(isDisabled ? Color.clear : Color.accentColor.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .strokeBorder(
-                            isDisabled ? Color.clear : Color.accentColor.opacity(0.3),
-                            lineWidth: 0.5
-                        )
-                )
-                .disabled(isDisabled)
-                .popover(isPresented: $showCitationPopover, arrowEdge: .bottom) {
-                    if let entry { CitationPopoverView(entry: entry) }
-                }
-
-                Spacer()
-
-                // Collapse chevron
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) { isCollapsed = true }
-                } label: {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-                .padding(.trailing, 14)
             }
+
+            // Cite — opens citation popover
+            Button {
+                showCitationPopover = true
+            } label: {
+                Label("Cite", systemImage: "quote.closing")
+                    .font(.system(size: 11))
+                    .foregroundStyle(isDisabled ? Color.secondary : Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(isDisabled ? Color.clear : Color.accentColor.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(
+                        isDisabled ? Color.clear : Color.accentColor.opacity(0.3),
+                        lineWidth: 0.5
+                    )
+            )
+            .disabled(isDisabled)
+            .popover(isPresented: $showCitationPopover, arrowEdge: .bottom) {
+                if let entry { CitationPopoverView(entry: entry) }
+            }
+
+            Spacer()
         }
         .frame(height: 32)
         .background(.bar)

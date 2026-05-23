@@ -590,7 +590,7 @@ private struct StorageManagementView: View {
         #endif
         .task {
             do {
-                report = try await appState.downloadManager?.storageReport()
+                report = try await appState.downloadManager?.storageReport(indexDirectory: appState.indexDirectory)
             } catch {
                 loadError = error.localizedDescription
             }

@@ -194,6 +194,7 @@ struct FRUSExplorerApp: App {
 
         let volumesDir = Self.makeVolumesDirectory()
         let dbURL = Self.makeDatabaseURL()
+        appState.indexDirectory = dbURL.deletingLastPathComponent()
 
         // Create search infrastructure. Failures are non-fatal: the browser and search
         // views degrade gracefully when indexingPipeline is nil.

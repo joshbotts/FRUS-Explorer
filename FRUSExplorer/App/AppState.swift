@@ -184,6 +184,10 @@ final class AppState {
     /// `nil` if the database could not be opened.
     var personMentionStore: PersonMentionStore?
 
+    /// Directory containing the SQLite index databases (frus.db). Set at boot;
+    /// used by `StorageManagementView` to report index disk usage.
+    var indexDirectory: URL?
+
     /// Set by `PersonDetailSheet` "Find all mentions" to trigger search pre-filled
     /// with a `personRef` filter. `BrowserView` consumes this and clears it.
     var pendingSearch: SearchParameters? = nil

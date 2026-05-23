@@ -53,9 +53,6 @@ struct MainWindowView: View {
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
 
-    /// Controls collapsing of the research strip.
-    @State private var isResearchStripCollapsed: Bool = false
-
     /// Whether the citation popover is showing.
     @State private var showCitationPopover: Bool = false
 
@@ -72,12 +69,9 @@ struct MainWindowView: View {
 
         VStack(spacing: 0) {
 
-            // Research strip — always rendered; the strip itself handles its
-            // collapsed/expanded display state via isCollapsed binding.
-            // When collapsed, it shows only a "+" re-expand button at 32pt height.
+            // Research strip — always rendered at full height.
             ResearchStripView(
                 entry: currentEntry,
-                isCollapsed: $isResearchStripCollapsed,
                 showCitationPopover: $showCitationPopover
             )
 
