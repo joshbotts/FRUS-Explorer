@@ -97,6 +97,8 @@ enum DocumentSheet: Identifiable {
 ///          at the top of the document body for editorial note entries (iOS parity with macOS)
 ///   2.2 — Session 104: highlight mode toolbar toggle + DocumentHighlightTextView (UITextView
 ///          UIViewRepresentable) + color-picker sheet + DocumentHighlight SwiftData insertion
+///   2.3 — Session 105: renderingVersion uses SHA-256(flatText ++ kVersion) via
+///          ASTToRenderNodeConverter.renderingVersion(for:)
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -655,15 +657,15 @@ struct DocumentView: View {
 
     @MainActor
     private func createHighlight(color: DocumentHighlight.Color) {
-        guard let range = highlightTextSelection else { return }
+        guard let range = highlightTextSelection,
+              let model = vm?.renderModel else { return }
         let highlight = DocumentHighlight(
             volumeId: entry.volumeId,
             documentId: entry.documentId,
             startOffset: range.location,
             endOffset: range.location + range.length,
             colorTag: color.rawValue,
-            // Session 103 placeholder — Session 105 replaces with SHA-256(rawXML ++ kVersion)
-            renderingVersion: ASTToRenderNodeConverter.kVersion
+            renderingVersion: ASTToRenderNodeConverter.renderingVersion(for: model)
         )
         modelContext.insert(highlight)
         highlightTextSelection = nil
