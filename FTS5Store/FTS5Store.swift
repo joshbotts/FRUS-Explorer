@@ -51,6 +51,7 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
+///   1.1 — Session 98: added `matchedDocumentKeys(query:limit:)` for analytics
 public actor FTS5Store {
 
     private let connection: FTS5Connection
@@ -263,6 +264,39 @@ public actor FTS5Store {
         sqlite3_bind_text(stmt, 1, matchExpr, -1, SQLITE_TRANSIENT)
         guard try connection.step(stmt) else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    /// Returns (documentId, volumeId) pairs for all documents matching the query.
+    ///
+    /// Unlike `search(query:limit:offset:)`, this method omits `snippet()` and
+    /// `bm25()` calls, making it significantly cheaper for analytics workloads
+    /// that need document identifiers but not ranked snippets.
+    ///
+    /// - Parameters:
+    ///   - query: Structured search parameters.
+    ///   - limit: Hard cap on returned rows. Defaults to 20,000.
+    /// - Returns: Array of (documentId, volumeId) tuples in FTS5 scan order.
+    public func matchedDocumentKeys(query: FTS5Query, limit: Int = 20_000) throws -> [(documentId: String, volumeId: String)] {
+        guard let matchExpr = query.toFTS5MatchExpression() else {
+            throw FTS5Error.emptyQuery
+        }
+        let sql = """
+        SELECT document_id, volume_id
+        FROM \(schema.tableName)
+        WHERE \(schema.tableName) MATCH ?
+        LIMIT \(limit)
+        """
+        let stmt = try connection.prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, matchExpr, -1, SQLITE_TRANSIENT)
+        var results: [(documentId: String, volumeId: String)] = []
+        while try connection.step(stmt) {
+            let docId = columnString(stmt, 0) ?? ""
+            let volId = columnString(stmt, 1) ?? ""
+            guard !docId.isEmpty, !volId.isEmpty else { continue }
+            results.append((documentId: docId, volumeId: volId))
+        }
+        return results
     }
 
     // MARK: - Maintenance

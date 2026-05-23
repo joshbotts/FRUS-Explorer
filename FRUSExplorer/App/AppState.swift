@@ -176,6 +176,10 @@ final class AppState {
     /// `nil` if the FTS5 database could not be opened.
     var searchService: SearchService?
 
+    /// The shared corpus analytics service. Created at boot alongside `searchService`;
+    /// `nil` if the FTS5 database could not be opened.
+    var analyticsService: CorpusAnalyticsService?
+
     /// The shared cross-reference store. Created at boot alongside `indexingPipeline`;
     /// `nil` if the database could not be opened.
     var crossReferenceStore: CrossReferenceStore?

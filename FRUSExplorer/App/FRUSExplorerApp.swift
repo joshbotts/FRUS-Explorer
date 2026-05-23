@@ -229,6 +229,7 @@ struct FRUSExplorerApp: App {
                 pipeline: pipeline,
                 personMentionStore: appState.personMentionStore
             )
+            appState.analyticsService = CorpusAnalyticsService(fts5Store: store)
             let pageRangeStore = try? PageRangeStore(databaseURL: dbURL)
             let downloadedIds = Set(
                 (try? FileManager.default.contentsOfDirectory(
