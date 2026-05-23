@@ -8,6 +8,7 @@
 
 import Foundation
 import SQLite3
+import CoreSpotlight
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -342,6 +343,7 @@ public actor IndexingPipeline {
         ))
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
         try await storeIndexData(data)
+        submitSpotlightItems(for: data)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .complete,
@@ -460,6 +462,7 @@ public actor IndexingPipeline {
             try await fts5Store.delete(documentId: docId)
         }
         try auxDeleteVolume(volumeId)
+        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId]) { _ in }
 
         #if DEBUG
         print("[IndexingPipeline] Removed \(docIds.count) FTS5 documents for \(volumeId)")
@@ -561,6 +564,25 @@ public actor IndexingPipeline {
         try await fts5Store.update(document: updated)
         try updateCacheFields(volumeId: note.volumeId, documentId: note.documentId,
                               summaryText: cached.summaryText, noteText: note.bodyText)
+    }
+
+    // MARK: - Spotlight
+
+    /// Submits CSSearchableItem records for all documents in `data` to the default
+    /// Spotlight index. Errors are silently ignored — Spotlight is best-effort.
+    private func submitSpotlightItems(for data: VolumeIndexData) {
+        let items = data.documents.map { doc -> CSSearchableItem in
+            let attrs = CSSearchableItemAttributeSet(contentType: .text)
+            attrs.title = doc.header.isEmpty ? doc.id : doc.header
+            attrs.contentDescription = String(doc.bodyText.prefix(300))
+            attrs.keywords = [data.volumeId, doc.id]
+            return CSSearchableItem(
+                uniqueIdentifier: "\(data.volumeId)/\(doc.id)",
+                domainIdentifier: data.volumeId,
+                attributeSet: attrs
+            )
+        }
+        CSSearchableIndex.default().indexSearchableItems(items) { _ in }
     }
 
     // MARK: - Browser Query (used by BrowserViewModel)

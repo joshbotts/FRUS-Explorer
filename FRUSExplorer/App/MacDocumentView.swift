@@ -134,6 +134,11 @@ struct MacDocumentView: View {
             .padding(.top, 28)
         }
         .task { await loadDocument() }
+        .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
+            activity.title = entry.header.isEmpty ? entry.documentId : entry.header
+            activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
+            activity.isEligibleForHandoff = true
+        }
         // Person sheet
         .sheet(item: $vm.selectedPerson) { person in
             PersonDetailSheet(

@@ -194,6 +194,8 @@
 		AA22BB01CC03DD04EE2208 /* HTMLCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */; };
 		AA22BB01CC03DD04EE221C /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */; };
 		AA22BB01CC03DD04EE221D /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */; };
+		AA22BB01CC03DD04EE221F /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */; };
+		AA22BB01CC03DD04EE2220 /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */; };
 		AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2209 /* CollectionListView.swift */; };
 		AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */; };
@@ -403,6 +405,7 @@
 		AA22BB01CC03DD04EE2203 /* PDFCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PDFCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocxCollectionExporter.swift; sourceTree = "<group>"; };
+		AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2209 /* CollectionListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacCollectionManagerView.swift; sourceTree = "<group>"; };
@@ -479,6 +482,7 @@
 		63390DD720E0A093134DBA47 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */,
 				5F862248B58178F5619CFDC6 /* AppState.swift */,
 				B9B3538710154855A5E7E7D7 /* ContentView.swift */,
 				EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */,
@@ -1074,6 +1078,7 @@
 				AA22BB01CC03DD04EE2204 /* PDFCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2207 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE221C /* DocxCollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE221F /* AppActivityTypes.swift in Sources */,
 				AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */,
 				AA22BB01CC03DD04EE2219 /* MacCollectionManagerView.swift in Sources */,
@@ -1191,6 +1196,7 @@
 				AA22BB01CC03DD04EE2205 /* PDFCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE2208 /* HTMLCollectionExporter.swift in Sources */,
 				AA22BB01CC03DD04EE221D /* DocxCollectionExporter.swift in Sources */,
+				AA22BB01CC03DD04EE2220 /* AppActivityTypes.swift in Sources */,
 				AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */,
 				AA22BB01CC03DD04EE221A /* MacCollectionManagerView.swift in Sources */,
@@ -1310,6 +1316,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
+				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -1422,6 +1429,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
+				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -1466,6 +1474,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
+				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1516,6 +1525,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
+				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

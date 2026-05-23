@@ -69,6 +69,9 @@ targets:
         #  'remote-notification' background mode in your info plist."
         UIBackgroundModes:
           - remote-notification
+        # Required for Handoff to route NSUserActivity instances to this app.
+        NSUserActivityTypes:
+          - com.joshbotts.frus-explorer.document
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
@@ -103,6 +106,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: "FRUS Explorer"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.reference"
+        INFOPLIST_KEY_NSUserActivityTypes: "com.joshbotts.frus-explorer.document"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
       configs:

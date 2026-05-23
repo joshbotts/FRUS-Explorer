@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import CoreSpotlight
 
 /// Root entry point for FRUS Explorer.
 ///
@@ -156,6 +157,17 @@ struct FRUSExplorerApp: App {
                             await dm.suspend()
                         }
                     }
+                }
+                // Handoff: a FRUS document viewed on another device
+                .onContinueUserActivity(AppActivityTypes.document) { activity in
+                    continueDocumentActivity(activity)
+                }
+                // Spotlight: user tapped a search result for a FRUS document
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
+                    let parts = identifier.split(separator: "/", maxSplits: 1).map(String.init)
+                    guard parts.count == 2 else { return }
+                    navigateToDocument(volumeId: parts[0], documentId: parts[1], title: activity.title)
                 }
         }
         #if os(macOS)
@@ -386,6 +398,30 @@ struct FRUSExplorerApp: App {
             print("[FRUSExplorer] Deferred onboarding scope enqueued: \(toEnqueue.count) volumes.")
             #endif
         }
+    }
+
+    // MARK: - Activity Continuation
+
+    /// Handles a Handoff or deep-link continuation for a specific document.
+    @MainActor
+    private func continueDocumentActivity(_ activity: NSUserActivity) {
+        guard let volumeId = activity.userInfo?["volumeId"] as? String,
+              let documentId = activity.userInfo?["documentId"] as? String else { return }
+        navigateToDocument(volumeId: volumeId, documentId: documentId, title: activity.title)
+    }
+
+    /// Pushes navigation to the requested document on both platforms.
+    @MainActor
+    private func navigateToDocument(volumeId: String, documentId: String, title: String?) {
+        let entry = DocumentBrowserEntry(
+            documentId: documentId,
+            volumeId: volumeId,
+            header: title ?? documentId
+        )
+        appState.pendingBrowseDocument = entry
+        #if os(iOS)
+        appState.activeTab = .browse
+        #endif
     }
 
     /// Returns (and creates if necessary) the volumes storage directory.

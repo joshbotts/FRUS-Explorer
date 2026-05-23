@@ -140,6 +140,11 @@ struct DocumentView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
+            activity.title = entry.header.isEmpty ? entry.documentId : entry.header
+            activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
+            activity.isEligibleForHandoff = true
+        }
     }
 
     // MARK: - Bootstrap
