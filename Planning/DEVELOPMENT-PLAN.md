@@ -1,6 +1,6 @@
 # FRUS Explorer — Development Plan
 
-**Version**: 1.4  
+**Version**: 1.5  
 **Date**: 2026-05-23
 
 Each task below corresponds to a single development session. Tasks are ordered so that each session's outputs are available as inputs for subsequent sessions. All sessions share the same Xcode workspace.
@@ -69,6 +69,24 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 78 | TEI Fidelity — Inline Notes and Attachments | `<note rend="inline">` transparent; `<frus:attachment>` full pipeline; `IndexingPipeline` updated | 77 |
 | 79 | TEI Fidelity — Title Page and Anonymous Block | `<titlePage>` → centred `.titlePageBlock`; `<ab>` → `.paragraph` | 78 |
 | 80 | TEI Fidelity — Documentation Update | Version history and plan docs updated; no code changes | 79 |
+| 81 | Collection Export — Rich Document Rendering | `DocumentRenderService`; `CollectionExportDocument` carries `FRUSDocumentRenderModel?`; PDF + HTML emit structured output | 07 |
+| 82 | DOCX Export — Infrastructure | `DocxCollectionExporter`, ZipFoundation, Open XML helpers, cover page + plain-text bodies | 81 |
+| 83 | DOCX Export — Rich Content + Italic Fix | `<w:rPr>` run formatting, Word footnotes, TOC; italic-in-collection-notes fix | 82 |
+| 84 | Small UI Fixes | Remove macOS research-strip collapse; fix iOS storage index size | — |
+| 85 | Handoff + Spotlight | `NSUserActivity` cross-device continuity; CoreSpotlight indexing | 09 |
+| 86 | Citation Export (BibTeX / RIS) | `BibtexExporter`, `RISExporter`; export buttons in citation sheets | 13 |
+| 87 | Person Index View | `PersonIndexView` grouped alphabetical list tapping into `personRef` search | 39 |
+| 88 | Document Timeline View | `TimelineView` with Swift Charts `BarMark`; year grouping from `date_iso` | 36 |
+| 89 | Cloud Sync — Collections Investigation | SwiftData/CloudKit `Collection` model fix; iPad Collections tab sync | 04 |
+| 90 | Settings Parity — Assessment + Implementation | macOS ↔ iOS Settings feature comparison and gap closure | 46 |
+| 91–92 | iOS Visual Identity | Shared `FRUSTheme`; apply macOS design patterns to iOS views | 44 |
+| 93 | Dynamic Island / Live Activity | ActivityKit feasibility; slim progress banner fallback | 51 |
+| 94–95 | Source Explorer — macOS | Port iOS NARA/lot-file/archive browser to macOS split-view idioms | 23 |
+| 96–97 | Saved Searches + Smart Collections | `SavedSearch` model; smart Collection binding; dynamic export resolution | 16, 22 |
+| 98–99 | Corpus Frequency Analytics | `CorpusAnalyticsService`; Swift Charts frequency views by year/subseries | 36, 09 |
+| 100–101 | Research Session Log | `ResearchSession` + `SessionEvent` models; Activity tab timeline | 04 |
+| 102–106 | Inline Highlighting + Passage-Anchored Notes | `DocumentHighlight` model; macOS + iOS text selection layers; CloudKit sync | 81 |
+| 107–110 | iPadOS Split View + Stage Manager | `horizontalSizeClass` layout paths; multi-window scenes for iPad | 44 |
 
 ---
 
@@ -138,6 +156,8 @@ Present these files to Claude Code in order. The leading number matches the sess
 | `43-46-Navigation-Redesign.md` | 43, 44, 45, 46 |
 | `48-53-Fixes-Onboarding-Polish-Performance.md` | 48, 49, 50, 51, 52, 53 |
 | `77-80-TEI-Fidelity-Improvements.md` | 77, 78, 79, 80 |
+| `81-88-Exports-Quick-Wins.md` | 81, 82, 83, 84, 85, 86, 87, 88 |
+| `89-110-Medium-And-Long-Term.md` | 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110 |
 
 ---
 
