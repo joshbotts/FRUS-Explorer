@@ -29,6 +29,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
+///   1.1 — Session 89: deleteRule changed .cascade → .nullify for CloudKit compatibility;
+///          callers now delete associated entries manually before deleting a Collection
 @Model final class Collection {
 
     // MARK: - Identity
@@ -55,11 +57,14 @@ import SwiftData
     // MARK: - Entries
 
     /// Ordered document entries. Sorted by `CollectionEntry.sortOrder` at display time.
-    /// Cascade-deleted when this collection is deleted.
     ///
     /// Optional for CloudKit schema compatibility — always non-nil in practice.
     /// Use `documentEntries ?? []` when iterating.
-    @Relationship(deleteRule: .cascade, inverse: \CollectionEntry.collection)
+    ///
+    /// `deleteRule: .nullify` is required for CloudKit sync compatibility — cascade delete
+    /// rules are not supported by CloudKit. Callers must delete associated `CollectionEntry`
+    /// records explicitly before deleting the parent `Collection`.
+    @Relationship(deleteRule: .nullify, inverse: \CollectionEntry.collection)
     var documentEntries: [CollectionEntry]? {
         didSet { lastModified = .now }
     }

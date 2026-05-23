@@ -41,6 +41,8 @@ import SwiftData
 ///          and MacExportCompleteView made internal (non-private) for use in MacCollectionManagerView
 ///   1.3 — Session 74: two-line research note preview (caption2, tertiary) added to EntryRow
 ///          beneath the volume ID; same preview added to MacEntryRow in MacCollectionManagerView
+///   1.4 — Session 89: Cancel on new collection deletes entries explicitly before the collection
+///          (deleteRule .nullify replaces .cascade for CloudKit compatibility)
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -168,6 +170,7 @@ struct CollectionEditorView: View {
             HStack {
                 Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
                     if isNewCollection {
+                        for entry in sortedEntries { modelContext.delete(entry) }
                         modelContext.delete(collection)
                     }
                     dismiss()
@@ -243,6 +246,7 @@ struct CollectionEditorView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
                         if isNewCollection {
+                            for entry in sortedEntries { modelContext.delete(entry) }
                             modelContext.delete(collection)
                         }
                         dismiss()
