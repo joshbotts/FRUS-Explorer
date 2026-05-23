@@ -772,6 +772,25 @@ struct ExportSheetView: View {
             }
         }
 
+        // Render models: parse each volume XML to obtain structured render output.
+        // One parse per document — acceptable cost for a user-initiated export.
+        // Falls back gracefully (nil) when the volume file is unavailable.
+        var renderModels: [String: FRUSDocumentRenderModel] = [:]
+        for volumeId in volumeIds {
+            guard let dm = appState.downloadManager else { continue }
+            let volumeURL = dm.volumeURL(for: volumeId)
+            guard FileManager.default.fileExists(atPath: volumeURL.path) else { continue }
+            let docsInVolume = entries.filter { $0.volumeId == volumeId }
+            for entry in docsInVolume {
+                let key = "\(entry.volumeId)/\(entry.documentId)"
+                if let ast = try? await FRUSDocumentParser().parseDocument(
+                    documentId: entry.documentId, volumeURL: volumeURL) {
+                    var converter = ASTToRenderNodeConverter()
+                    renderModels[key] = converter.convert(ast)
+                }
+            }
+        }
+
         return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
             let note = entry.researchNoteId.flatMap { nid in allNotes.first { $0.id == nid } }
             let manifestEntry = manifestMap[entry.volumeId]
@@ -787,6 +806,7 @@ struct ExportSheetView: View {
             let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
             let volumeTitle = manifestEntry?.title ?? entry.volumeId
             let bodyText = bodyTexts["\(entry.volumeId)/\(entry.documentId)"] ?? ""
+            let renderModel = renderModels["\(entry.volumeId)/\(entry.documentId)"]
 
             return CollectionExportDocument(
                 documentId: entry.documentId,
@@ -797,7 +817,8 @@ struct ExportSheetView: View {
                 bodyText: bodyText,
                 noteText: note?.bodyText,
                 citation: citation,
-                historyStateGovURL: urlString
+                historyStateGovURL: urlString,
+                renderModel: renderModel
             )
         }
     }
