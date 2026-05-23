@@ -49,6 +49,7 @@ enum FRUSTheme {
     static let tagCornerRadius: CGFloat = 4
     static let tagPaddingH: CGFloat = 8
     static let tagPaddingV: CGFloat = 3
+    static let tagChipSpacing: CGFloat = 6
 
     static let systemTagBackground  = Color.secondary.opacity(0.10)
     static let systemTagForeground  = Color.secondary

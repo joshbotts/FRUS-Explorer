@@ -91,6 +91,10 @@ enum DocumentSheet: Identifiable {
 ///          .task(id: documentId/volumeId): the task auto-cancels and restarts when the entry
 ///          identity changes, resetting vm and re-bootstrapping for the new document. Same-entry
 ///          reappearance is a no-op because bootstrapViewModel guards on vm == nil.
+///   2.1 — Session 92: FRUSTheme tokens applied — documentHorizontalPadding replaces
+///          .padding(.horizontal) magic numbers; sectionLabelSize/Weight/Kerning on the
+///          tag section header; tagChipSpacing on the chip row; EditorialNoteBadge added
+///          at the top of the document body for editorial note entries (iOS parity with macOS)
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -209,9 +213,18 @@ struct DocumentView: View {
                         summary: summary,
                         totalCount: vm.summaries.count
                     )
-                    .padding(.horizontal)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.top, 12)
                     Divider()
+                }
+
+                // Editorial note badge — matches the identity line pattern on macOS.
+                // Shown once at the top of the document body so readers know immediately
+                // that this entry is an editorial note, not a primary source document.
+                if entry.isEditorialNote {
+                    EditorialNoteBadge()
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                        .padding(.top, 12)
                 }
 
                 // Document body — embedInScrollView: false because this LazyVStack
@@ -233,11 +246,11 @@ struct DocumentView: View {
                     }
                 )
 
-                Divider().padding(.horizontal)
+                Divider().padding(.horizontal, FRUSTheme.documentHorizontalPadding)
 
                 // Tag chips
                 DocumentTagSection(vm: vm)
-                    .padding(.horizontal)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.bottom, 8)
 
                 // Cross-project note indicator
@@ -254,7 +267,7 @@ struct DocumentView: View {
                             )
                         }
                     )
-                    .padding(.horizontal)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.bottom, 12)
                 }
             }
@@ -803,10 +816,12 @@ private struct DocumentTagSection: View {
     @ViewBuilder
     private var subjectTagChips: some View {
         Text(String(localized: "document.tags.subject.header", defaultValue: "Subject Tags"))
-            .font(.caption.bold())
+            .font(.system(size: FRUSTheme.sectionLabelSize, weight: FRUSTheme.sectionLabelWeight))
+            .kerning(FRUSTheme.sectionLabelKerning)
+            .textCase(.uppercase)
             .foregroundStyle(.secondary)
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
+            HStack(spacing: FRUSTheme.tagChipSpacing) {
                 ForEach(vm.subjectTags) { tag in
                     DocumentTagChip(tag: tag)
                 }
