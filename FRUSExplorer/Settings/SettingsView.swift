@@ -24,7 +24,6 @@ import UniformTypeIdentifiers
 /// | Downloads | `DownloadsSettingsView` |
 /// | Storage management | `StorageManagementView` |
 /// | Sideload | `SideloadView` |
-/// | Reindex | `ReindexView` |
 /// | User tags | `UserTagsView` |
 /// | Summarization prompts | `SummarizationPromptsSettingsView` |
 /// | NARA API key | `NARAKeyView` |
@@ -63,6 +62,8 @@ import UniformTypeIdentifiers
 ///   2.1 — Session 115: ReindexView gains "Needs Attention" section for interrupted volumes
 ///   2.2 — Session 117: Download Manager row removed; Volume Management renamed to Downloads
 ///          and replaced by DownloadsSettingsView (merged scope picker + browse list)
+///   2.3 — Session 118: Reindex row removed; Storage renamed to Storage & Index; Reindex All
+///          controls absorbed into StorageManagementView; Summarization Prompts → Summarization
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -93,16 +94,12 @@ struct SettingsView: View {
                         DownloadsSettingsView()
                     }
                     NavigationLink(String(localized: "settings.row.storage",
-                                         defaultValue: "Storage")) {
+                                         defaultValue: "Storage & Index")) {
                         StorageManagementView()
                     }
                     NavigationLink(String(localized: "settings.row.sideload",
                                          defaultValue: "Sideload Volume")) {
                         SideloadView()
-                    }
-                    NavigationLink(String(localized: "settings.row.reindex",
-                                         defaultValue: "Reindex")) {
-                        ReindexView()
                     }
                 }
 
@@ -113,7 +110,7 @@ struct SettingsView: View {
                         UserTagsView()
                     }
                     NavigationLink(String(localized: "settings.row.summarization",
-                                         defaultValue: "Summarization Prompts")) {
+                                         defaultValue: "Summarization")) {
                         SummarizationPromptsSettingsView()
                     }
                     Toggle(
@@ -692,12 +689,18 @@ private struct DownloadsSettingsView: View {
 
 // MARK: - StorageManagementView
 
-/// Shows aggregate and per-volume storage usage.
+/// Shows aggregate and per-volume storage usage, per-volume indexing status,
+/// and the Reindex All Volumes control.
 ///
 /// ## Indexing Status (Session 67)
 /// Each per-volume row indicates whether the volume has been indexed for full-text
 /// search (using `IndexingPipeline.isVolumeIndexed`). Unindexed volumes display a
 /// "Reindex" button that calls `IndexingPipeline.indexVolume` inline.
+///
+/// ## Reindex All (Session 118)
+/// Absorbed from the former standalone `ReindexView`. The "Reindex" section at the
+/// bottom of the form contains the explanatory text, optional "Needs Attention" list
+/// for interrupted volumes, and the Reindex All Volumes button with live progress.
 ///
 /// ## Scroll Affordance (Session 67)
 /// The Form omits `maxHeight: .infinity` so the `NavigationSplitView` detail column
@@ -711,10 +714,21 @@ private struct StorageManagementView: View {
 
     /// Indexed status per volumeId. `nil` means not yet checked or pipeline unavailable.
     @State private var indexedStatus: [String: Bool] = [:]
-    /// VolumeId currently being reindexed; drives inline ProgressView.
+    /// VolumeId currently being reindexed via per-volume button; drives inline ProgressView.
     @State private var reindexingVolumeId: String? = nil
     /// Per-volume reindex errors (rare, but surfaced inline).
     @State private var reindexErrors: [String: String] = [:]
+
+    // MARK: Reindex All state
+
+    /// `true` while `indexAllVolumes()` is running.
+    @State private var isReindexAll = false
+    /// Stream state from `pipeline.progress` during a Reindex All operation.
+    @State private var reindexAllProgressState: IndexingProgress.State = .idle
+    /// Error message from a failed Reindex All operation.
+    @State private var reindexAllError: String? = nil
+    /// Tracks an individual interrupted-volume re-index; `"all"` when doing the bulk sweep.
+    @State private var reindexingInterruptedId: String? = nil
 
     @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
 
@@ -786,9 +800,108 @@ private struct StorageManagementView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+
+            // Needs Attention: interrupted volumes (previously in standalone ReindexView).
+            let interrupted = Array(appState.interruptedVolumeIds).sorted()
+            if !interrupted.isEmpty {
+                Section(String(localized: "settings.reindex.interrupted.header",
+                               defaultValue: "Needs Attention")) {
+                    Text(String(localized: "settings.reindex.interrupted.body",
+                                defaultValue: "These volumes were being indexed when the app was last quit. Re-index them to restore full search coverage."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+
+                    ForEach(interrupted, id: \.self) { volumeId in
+                        let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(title).font(.callout).lineLimit(1)
+                                Text(volumeId).font(.caption2).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button(String(localized: "settings.reindex.interrupted.reindex",
+                                          defaultValue: "Re-index")) {
+                                reindexInterrupted(volumeId: volumeId)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(isReindexAll || reindexingInterruptedId != nil
+                                      || appState.indexingPipeline == nil)
+                        }
+                    }
+
+                    Button {
+                        startReindexAllInterrupted(interrupted)
+                    } label: {
+                        if reindexingInterruptedId == "all" {
+                            HStack {
+                                ProgressView().padding(.trailing, 4)
+                                Text(reindexAllProgressLabel).font(.callout)
+                            }
+                        } else {
+                            Label(
+                                String(localized: "settings.reindex.interrupted.all",
+                                       defaultValue: "Re-index All Interrupted"),
+                                systemImage: "exclamationmark.triangle"
+                            )
+                        }
+                    }
+                    .disabled(isReindexAll || reindexingInterruptedId != nil
+                              || appState.indexingPipeline == nil)
+                }
+            }
+
+            // Reindex All section: absorbed from former standalone ReindexView.
+            Section(String(localized: "settings.storage.reindex.header",
+                           defaultValue: "Reindex")) {
+                Text(String(localized: "settings.reindex.about.body",
+                            defaultValue: "Rebuilds the full-text search index from all downloaded volumes. Use this if search results are missing or incorrect."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    startReindexAll()
+                } label: {
+                    if isReindexAll {
+                        HStack {
+                            ProgressView().padding(.trailing, 4)
+                            Text(reindexAllProgressLabel).font(.callout)
+                        }
+                    } else {
+                        Label(
+                            String(localized: "settings.reindex.start.button",
+                                   defaultValue: "Reindex All Volumes"),
+                            systemImage: "magnifyingglass.circle"
+                        )
+                    }
+                }
+                .disabled(isReindexAll || reindexingInterruptedId != nil
+                          || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.reindex.start.a11y",
+                           defaultValue: "Reindex all downloaded FRUS volumes")
+                )
+
+                if case .completed(let volumes, let docs) = reindexAllProgressState {
+                    Label(
+                        String(localized: "settings.reindex.done",
+                               defaultValue: "Completed: \(volumes) volume\(volumes == 1 ? "" : "s"), \(docs) documents"),
+                        systemImage: "checkmark.circle"
+                    )
+                    .foregroundStyle(.green)
+                    .font(.callout)
+                }
+
+                if let error = reindexAllError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+            }
         }
-        .navigationTitle(String(localized: "settings.storage.title",
-                                defaultValue: "Storage"))
+        .navigationTitle(String(localized: "storage.navigationTitle",
+                                defaultValue: "Storage & Index"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -920,6 +1033,83 @@ private struct StorageManagementView: View {
             #endif
         }
         if reindexingVolumeId == volumeId { reindexingVolumeId = nil }
+    }
+
+    // MARK: - Reindex All helpers
+
+    private var reindexAllProgressLabel: String {
+        switch reindexAllProgressState {
+        case .idle:
+            return String(localized: "settings.reindex.progress.starting",
+                          defaultValue: "Starting…")
+        case .indexing(let volumeId, let current, let total):
+            return String(localized: "settings.reindex.progress.indexing",
+                          defaultValue: "\(current)/\(total) — \(volumeId)")
+        case .completed, .failed:
+            return ""
+        }
+    }
+
+    private func startReindexAll() {
+        guard let pipeline = appState.indexingPipeline else { return }
+        isReindexAll = true
+        reindexAllProgressState = .idle
+        reindexAllError = nil
+
+        Task {
+            async let progressTask: Void = {
+                for await event in pipeline.progress {
+                    await MainActor.run { reindexAllProgressState = event.state }
+                }
+            }()
+            do {
+                try await pipeline.indexAllVolumes()
+            } catch {
+                await MainActor.run {
+                    reindexAllError = error.localizedDescription
+                    #if DEBUG
+                    print("[Settings] Reindex All failed: \(error)")
+                    #endif
+                }
+            }
+            _ = await progressTask
+            await MainActor.run { isReindexAll = false }
+        }
+    }
+
+    private func reindexInterrupted(volumeId: String) {
+        guard let pipeline = appState.indexingPipeline else { return }
+        reindexingInterruptedId = volumeId
+        Task {
+            do {
+                try await pipeline.indexVolume(volumeId)
+            } catch {
+                await MainActor.run {
+                    reindexAllError = error.localizedDescription
+                }
+            }
+            await MainActor.run { reindexingInterruptedId = nil }
+        }
+    }
+
+    private func startReindexAllInterrupted(_ volumeIds: [String]) {
+        guard let pipeline = appState.indexingPipeline else { return }
+        reindexingInterruptedId = "all"
+        Task {
+            for volumeId in volumeIds {
+                do {
+                    try await pipeline.indexVolume(volumeId)
+                } catch {
+                    await MainActor.run {
+                        reindexAllError = error.localizedDescription
+                        #if DEBUG
+                        print("[Settings] Re-index interrupted volume \(volumeId) failed: \(error)")
+                        #endif
+                    }
+                }
+            }
+            await MainActor.run { reindexingInterruptedId = nil }
+        }
     }
 }
 
@@ -1160,214 +1350,6 @@ private struct SideloadView: View {
             } catch {
                 importResult = .failure(error.localizedDescription)
             }
-        }
-    }
-}
-
-// MARK: - ReindexView
-
-private struct ReindexView: View {
-
-    @Environment(AppState.self) private var appState
-
-    @State private var isReindexing = false
-    @State private var progressState: IndexingProgress.State = .idle
-    @State private var reindexError: String? = nil
-    @State private var reindexingInterruptedId: String? = nil
-
-    var body: some View {
-        Form {
-            // "Needs Attention" section: volumes whose prior indexing pass was interrupted.
-            let interrupted = Array(appState.interruptedVolumeIds).sorted()
-            if !interrupted.isEmpty {
-                Section(String(localized: "settings.reindex.interrupted.header",
-                               defaultValue: "Needs Attention")) {
-                    Text(String(localized: "settings.reindex.interrupted.body",
-                                defaultValue: "These volumes were being indexed when the app was last quit. Re-index them to restore full search coverage."))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-
-                    ForEach(interrupted, id: \.self) { volumeId in
-                        let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(title)
-                                    .font(.callout)
-                                    .lineLimit(1)
-                                Text(volumeId)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Button(String(localized: "settings.reindex.interrupted.reindex",
-                                          defaultValue: "Re-index")) {
-                                reindexInterrupted(volumeId: volumeId)
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(isReindexing || reindexingInterruptedId != nil
-                                      || appState.indexingPipeline == nil)
-                        }
-                    }
-
-                    Button {
-                        startReindexAllInterrupted(interrupted)
-                    } label: {
-                        if reindexingInterruptedId == "all" {
-                            HStack {
-                                ProgressView().padding(.trailing, 4)
-                                Text(progressLabel).font(.callout)
-                            }
-                        } else {
-                            Label(
-                                String(localized: "settings.reindex.interrupted.all",
-                                       defaultValue: "Re-index All Interrupted"),
-                                systemImage: "exclamationmark.triangle"
-                            )
-                        }
-                    }
-                    .disabled(isReindexing || reindexingInterruptedId != nil
-                              || appState.indexingPipeline == nil)
-                }
-            }
-
-            Section(String(localized: "settings.reindex.about.header",
-                           defaultValue: "About Reindexing")) {
-                Text(String(localized: "settings.reindex.about.body",
-                            defaultValue: "Rebuilds the full-text search index from all downloaded volumes. Use this if search results are missing or incorrect."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Button {
-                    startReindex()
-                } label: {
-                    if isReindexing {
-                        HStack {
-                            ProgressView()
-                                .padding(.trailing, 4)
-                            Text(progressLabel)
-                                .font(.callout)
-                        }
-                    } else {
-                        Label(
-                            String(localized: "settings.reindex.start.button",
-                                   defaultValue: "Reindex All Volumes"),
-                            systemImage: "magnifyingglass.circle"
-                        )
-                    }
-                }
-                .disabled(isReindexing || reindexingInterruptedId != nil
-                          || appState.indexingPipeline == nil)
-                .accessibilityLabel(
-                    String(localized: "settings.reindex.start.a11y",
-                           defaultValue: "Reindex all downloaded FRUS volumes")
-                )
-
-                if case .completed(let volumes, let docs) = progressState {
-                    Label(
-                        String(localized: "settings.reindex.done",
-                               defaultValue: "Completed: \(volumes) volume\(volumes == 1 ? "" : "s"), \(docs) documents"),
-                        systemImage: "checkmark.circle"
-                    )
-                    .foregroundStyle(.green)
-                    .font(.callout)
-                }
-
-                if let error = reindexError {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.red)
-                        .font(.callout)
-                }
-            }
-        }
-        .navigationTitle(String(localized: "settings.reindex.title", defaultValue: "Reindex"))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        .scrollIndicators(.visible)
-        #endif
-    }
-
-    private var progressLabel: String {
-        switch progressState {
-        case .idle:
-            return String(localized: "settings.reindex.progress.starting",
-                          defaultValue: "Starting…")
-        case .indexing(let volumeId, let current, let total):
-            return String(localized: "settings.reindex.progress.indexing",
-                          defaultValue: "\(current)/\(total) — \(volumeId)")
-        case .completed, .failed:
-            return ""
-        }
-    }
-
-    private func startReindex() {
-        guard let pipeline = appState.indexingPipeline else { return }
-        isReindexing = true
-        progressState = .idle
-        reindexError = nil
-
-        Task {
-            // Consume the progress stream while running reindex
-            async let progressTask: Void = {
-                for await event in pipeline.progress {
-                    await MainActor.run { progressState = event.state }
-                }
-            }()
-            do {
-                try await pipeline.indexAllVolumes()
-            } catch {
-                await MainActor.run {
-                    reindexError = error.localizedDescription
-                    #if DEBUG
-                    print("[Settings] Reindex failed: \(error)")
-                    #endif
-                }
-            }
-            _ = await progressTask
-            await MainActor.run { isReindexing = false }
-        }
-    }
-
-    private func reindexInterrupted(volumeId: String) {
-        guard let pipeline = appState.indexingPipeline else { return }
-        reindexingInterruptedId = volumeId
-        reindexError = nil
-        Task {
-            do {
-                try await pipeline.indexVolume(volumeId)
-            } catch {
-                await MainActor.run {
-                    reindexError = error.localizedDescription
-                }
-            }
-            await MainActor.run { reindexingInterruptedId = nil }
-        }
-    }
-
-    private func startReindexAllInterrupted(_ volumeIds: [String]) {
-        guard let pipeline = appState.indexingPipeline else { return }
-        reindexingInterruptedId = "all"
-        reindexError = nil
-        Task {
-            for volumeId in volumeIds {
-                do {
-                    try await pipeline.indexVolume(volumeId)
-                } catch {
-                    await MainActor.run {
-                        reindexError = error.localizedDescription
-                        #if DEBUG
-                        print("[Settings] Re-index interrupted volume \(volumeId) failed: \(error)")
-                        #endif
-                    }
-                }
-            }
-            await MainActor.run { reindexingInterruptedId = nil }
         }
     }
 }

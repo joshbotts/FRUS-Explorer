@@ -93,7 +93,7 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 115 | Interrupted Indexing State | `IndexingStateTracker`; UserDefaults sentinel; amber partial-index badge; resume action; ReindexView "Needs Attention" | 112 |
 | 116 | FRUS Context Card + Queue Banner | Era/series context card during indexing; multi-volume queue banner with ETA and pending list | 113, 115 | ✅ |
 | 117 | Consolidate Downloads | Merge `DownloadManagerSettingsView` + `VolumeManagementView` → `DownloadsSettingsView`; remove Download Manager row | 49, 51, 70 | ✅ |
-| 118 | Consolidate Storage & Index | Absorb Reindex All into `StorageManagementView`; remove standalone Reindex pane; rename Summarization Prompts row | 51, 67, 90 |
+| 118 | Consolidate Storage & Index | Absorb Reindex All into `StorageManagementView`; remove standalone Reindex pane; rename Summarization Prompts row | 51, 67, 90 | ✅ |
 
 ---
 
