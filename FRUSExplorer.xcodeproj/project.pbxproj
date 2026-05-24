@@ -78,6 +78,8 @@
 		AA09BB02CC03DD04EE090005 /* IndexingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */; };
 		AA09BB02CC03DD04EE090007 /* SearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090009 /* SearchService.swift */; };
 		AA09BB02CC03DD04EE090008 /* SearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090009 /* SearchService.swift */; };
+		AA09BB02CC03DD04EE090014 /* IndexingStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090013 /* IndexingStateTracker.swift */; };
+		AA09BB02CC03DD04EE090015 /* IndexingStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090013 /* IndexingStateTracker.swift */; };
 		AA09BB02CC03DD04EE090010 /* IndexingPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE090011 /* IndexingPipelineTests.swift */; };
 		AA09BB02CC03DD04EE09F001 /* FTS5Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F007 /* FTS5Store.swift */; };
 		AA09BB02CC03DD04EE09F002 /* FTS5Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA09BB02CC03DD04EE09F007 /* FTS5Store.swift */; };
@@ -216,6 +218,12 @@
 		AA22BB01CC03DD04EE222F /* FRUSTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE222D /* FRUSTheme.swift */; };
 		AA22BB01CC03DD04EE2231 /* IndexingBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2230 /* IndexingBannerView.swift */; };
 		AA22BB01CC03DD04EE2232 /* IndexingBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2230 /* IndexingBannerView.swift */; };
+		AA70BB01CC03DD04EE7002 /* IndexingContextCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA70BB01CC03DD04EE7001 /* IndexingContextCard.swift */; };
+		AA70BB01CC03DD04EE7003 /* IndexingContextCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA70BB01CC03DD04EE7001 /* IndexingContextCard.swift */; };
+		AA70BB01CC03DD04EE7004 /* IndexingQueueBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA70BB01CC03DD04EE7010 /* IndexingQueueBannerView.swift */; };
+		AA70BB01CC03DD04EE7005 /* IndexingQueueBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA70BB01CC03DD04EE7010 /* IndexingQueueBannerView.swift */; };
+		AA70BB01CC03DD04EE7006 /* IndexingSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA70BB01CC03DD04EE7011 /* IndexingSummaryCard.swift */; };
+		AA70BB01CC03DD04EE7007 /* IndexingSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA70BB01CC03DD04EE7011 /* IndexingSummaryCard.swift */; };
 		AA22BB01CC03DD04EE2234 /* SavedSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2233 /* SavedSearch.swift */; };
 		AA22BB01CC03DD04EE2235 /* SavedSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2233 /* SavedSearch.swift */; };
 		AA22BB01CC03DD04EE2237 /* SavedSearchesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2236 /* SavedSearchesView.swift */; };
@@ -276,8 +284,6 @@
 		AA46BB01CC03DD04EE4601 /* MacSettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA46BB01CC03DD04EE4600 /* MacSettingsViewTests.swift */; };
 		AA49BB01CC03DD04EE490011 /* DownloadScopePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490010 /* DownloadScopePickerView.swift */; };
 		AA49BB01CC03DD04EE490012 /* DownloadScopePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490010 /* DownloadScopePickerView.swift */; };
-		AA49BB01CC03DD04EE490021 /* DownloadManagerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */; };
-		AA49BB01CC03DD04EE490022 /* DownloadManagerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */; };
 		AA49BB01CC03DD04EE490031 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA49BB01CC03DD04EE490030 /* OnboardingFlowTests.swift */; };
 		AA50BB01CC03DD04EE5011 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */; };
 		AA50BB01CC03DD04EE5012 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */; };
@@ -369,6 +375,7 @@
 		AA08BB02CC03DD04EE080005 /* SubjectTagStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubjectTagStoreTests.swift; sourceTree = "<group>"; };
 		AA09BB02CC03DD04EE090003 /* SearchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
 		AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingPipeline.swift; sourceTree = "<group>"; };
+		AA09BB02CC03DD04EE090013 /* IndexingStateTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingStateTracker.swift; sourceTree = "<group>"; };
 		AA09BB02CC03DD04EE090009 /* SearchService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
 		AA09BB02CC03DD04EE090011 /* IndexingPipelineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingPipelineTests.swift; sourceTree = "<group>"; };
 		AA09BB02CC03DD04EE09F007 /* FTS5Store.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FTS5Store.swift; sourceTree = "<group>"; };
@@ -446,6 +453,9 @@
 		AA22BB01CC03DD04EE222A /* DocumentTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentTimelineView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE222D /* FRUSTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSTheme.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2230 /* IndexingBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingBannerView.swift; sourceTree = "<group>"; };
+		AA70BB01CC03DD04EE7001 /* IndexingContextCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingContextCard.swift; sourceTree = "<group>"; };
+		AA70BB01CC03DD04EE7010 /* IndexingQueueBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingQueueBannerView.swift; sourceTree = "<group>"; };
+		AA70BB01CC03DD04EE7011 /* IndexingSummaryCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingSummaryCard.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2233 /* SavedSearch.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SavedSearch.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2236 /* SavedSearchesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SavedSearchesView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2240 /* CorpusAnalyticsService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CorpusAnalyticsService.swift; sourceTree = "<group>"; };
@@ -483,7 +493,6 @@
 		AA39BB01CC03DD04EE3904 /* PersonMentionStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonMentionStoreTests.swift; sourceTree = "<group>"; };
 		AA46BB01CC03DD04EE4600 /* MacSettingsViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacSettingsViewTests.swift; sourceTree = "<group>"; };
 		AA49BB01CC03DD04EE490010 /* DownloadScopePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadScopePickerView.swift; sourceTree = "<group>"; };
-		AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DownloadManagerSettingsView.swift; sourceTree = "<group>"; };
 		AA49BB01CC03DD04EE490030 /* OnboardingFlowTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowTests.swift; sourceTree = "<group>"; };
 		AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARAAPIKeyStore.swift; sourceTree = "<group>"; };
 		AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSSettingsView.swift; sourceTree = "<group>"; };
@@ -532,6 +541,9 @@
 				B9B3538710154855A5E7E7D7 /* ContentView.swift */,
 				EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */,
 				AA22BB01CC03DD04EE2230 /* IndexingBannerView.swift */,
+				AA70BB01CC03DD04EE7001 /* IndexingContextCard.swift */,
+				AA70BB01CC03DD04EE7010 /* IndexingQueueBannerView.swift */,
+				AA70BB01CC03DD04EE7011 /* IndexingSummaryCard.swift */,
 				4EF07DB80C5D47BA8F6CEC99 /* MainTabView.swift */,
 				76273407B28E5899CCDC0A1F /* MainWindowView.swift */,
 				7549EDAC9CF43B63F5EA61C5 /* MacDocumentView.swift */,
@@ -646,6 +658,7 @@
 			children = (
 				AA09BB02CC03DD04EE090003 /* SearchModels.swift */,
 				AA09BB02CC03DD04EE090006 /* IndexingPipeline.swift */,
+				AA09BB02CC03DD04EE090013 /* IndexingStateTracker.swift */,
 				AA09BB02CC03DD04EE090009 /* SearchService.swift */,
 				AA16BB01CC03DD04EE1601 /* SearchViewModel.swift */,
 				AA16BB01CC03DD04EE1604 /* SearchView.swift */,
@@ -817,7 +830,6 @@
 				AA24BB01CC03DD04EE2400 /* SettingsView.swift */,
 				AA51BB01CC03DD04EE5101 /* FRUSSettingsView.swift */,
 				AA26BB01CC03DD04EE2600 /* AboutView.swift */,
-				AA49BB01CC03DD04EE490020 /* DownloadManagerSettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -1076,6 +1088,9 @@
 				D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */,
 				9D39AD7B0DDEAB44B7C81CAF /* FRUSExplorerApp.swift in Sources */,
 				AA22BB01CC03DD04EE2231 /* IndexingBannerView.swift in Sources */,
+				AA70BB01CC03DD04EE7002 /* IndexingContextCard.swift in Sources */,
+				AA70BB01CC03DD04EE7004 /* IndexingQueueBannerView.swift in Sources */,
+				AA70BB01CC03DD04EE7006 /* IndexingSummaryCard.swift in Sources */,
 				AA22BB01CC03DD04EE2234 /* SavedSearch.swift in Sources */,
 				AA22BB01CC03DD04EE2237 /* SavedSearchesView.swift in Sources */,
 				AA22BB01CC03DD04EE2241 /* CorpusAnalyticsService.swift in Sources */,
@@ -1098,6 +1113,7 @@
 				AA09BB02CC03DD04EE09F016 /* FTS5Connection.swift in Sources */,
 				AA09BB02CC03DD04EE090001 /* SearchModels.swift in Sources */,
 				AA09BB02CC03DD04EE090004 /* IndexingPipeline.swift in Sources */,
+				AA09BB02CC03DD04EE090014 /* IndexingStateTracker.swift in Sources */,
 				AA09BB02CC03DD04EE090007 /* SearchService.swift in Sources */,
 				E83FB53D20F4585C41AAAB73 /* SupportingTypes.swift in Sources */,
 				DCAADA810C1FCDA065DBE283 /* Project.swift in Sources */,
@@ -1119,7 +1135,6 @@
 				AA10BB01CC03DD04EE100017 /* OnboardingProjectSetupView.swift in Sources */,
 				AA10BB01CC03DD04EE100020 /* OnboardingPromptSetupView.swift in Sources */,
 				AA49BB01CC03DD04EE490011 /* DownloadScopePickerView.swift in Sources */,
-				AA49BB01CC03DD04EE490021 /* DownloadManagerSettingsView.swift in Sources */,
 				AA11BB01CC03DD04EE1102 /* VolumeStructure.swift in Sources */,
 				AA11BB01CC03DD04EE1105 /* BrowserViewModel.swift in Sources */,
 				AA11BB01CC03DD04EE1108 /* BrowserView.swift in Sources */,
@@ -1207,6 +1222,9 @@
 				36CDFA52541406F20DF89A33 /* FRUSExplorerApp.swift in Sources */,
 				5DD56DBAF391459EBB95381D /* DocumentWindowID.swift in Sources */,
 				AA22BB01CC03DD04EE2232 /* IndexingBannerView.swift in Sources */,
+				AA70BB01CC03DD04EE7003 /* IndexingContextCard.swift in Sources */,
+				AA70BB01CC03DD04EE7005 /* IndexingQueueBannerView.swift in Sources */,
+				AA70BB01CC03DD04EE7007 /* IndexingSummaryCard.swift in Sources */,
 				AA22BB01CC03DD04EE2235 /* SavedSearch.swift in Sources */,
 				AA22BB01CC03DD04EE2238 /* SavedSearchesView.swift in Sources */,
 				AA22BB01CC03DD04EE2242 /* CorpusAnalyticsService.swift in Sources */,
@@ -1229,6 +1247,7 @@
 				AA09BB02CC03DD04EE09F018 /* FTS5Connection.swift in Sources */,
 				AA09BB02CC03DD04EE090002 /* SearchModels.swift in Sources */,
 				AA09BB02CC03DD04EE090005 /* IndexingPipeline.swift in Sources */,
+				AA09BB02CC03DD04EE090015 /* IndexingStateTracker.swift in Sources */,
 				AA09BB02CC03DD04EE090008 /* SearchService.swift in Sources */,
 				A715CE19074448DDA44E1980 /* SupportingTypes.swift in Sources */,
 				727AA985E27DFD88FB9D2340 /* Project.swift in Sources */,
@@ -1250,7 +1269,6 @@
 				AA10BB01CC03DD04EE100018 /* OnboardingProjectSetupView.swift in Sources */,
 				AA10BB01CC03DD04EE100021 /* OnboardingPromptSetupView.swift in Sources */,
 				AA49BB01CC03DD04EE490012 /* DownloadScopePickerView.swift in Sources */,
-				AA49BB01CC03DD04EE490022 /* DownloadManagerSettingsView.swift in Sources */,
 				AA11BB01CC03DD04EE1103 /* VolumeStructure.swift in Sources */,
 				AA11BB01CC03DD04EE1106 /* BrowserViewModel.swift in Sources */,
 				AA11BB01CC03DD04EE1109 /* BrowserView.swift in Sources */,
