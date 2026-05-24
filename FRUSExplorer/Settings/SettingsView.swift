@@ -21,10 +21,9 @@ import UniformTypeIdentifiers
 /// ## Panels
 /// | Panel | Sub-view |
 /// |---|---|
-/// | Volume management | `VolumeManagementView` |
+/// | Downloads | `DownloadsSettingsView` |
 /// | Storage management | `StorageManagementView` |
 /// | Sideload | `SideloadView` |
-/// | Reindex | `ReindexView` |
 /// | User tags | `UserTagsView` |
 /// | Summarization prompts | `SummarizationPromptsSettingsView` |
 /// | NARA API key | `NARAKeyView` |
@@ -60,6 +59,11 @@ import UniformTypeIdentifiers
 ///          (close gap with macOS FRUSSettingsView); storage limit picker added to
 ///          StorageManagementView (matches macOS Storage pane)
 ///   2.0 — Session 101: Log Research Sessions toggle added to Research section
+///   2.1 — Session 115: ReindexView gains "Needs Attention" section for interrupted volumes
+///   2.2 — Session 117: Download Manager row removed; Volume Management renamed to Downloads
+///          and replaced by DownloadsSettingsView (merged scope picker + browse list)
+///   2.3 — Session 118: Reindex row removed; Storage renamed to Storage & Index; Reindex All
+///          controls absorbed into StorageManagementView; Summarization Prompts → Summarization
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -85,25 +89,17 @@ struct SettingsView: View {
 
                 Section(String(localized: "settings.section.volumes",
                                defaultValue: "Volumes")) {
-                    NavigationLink(String(localized: "settings.row.downloadManager",
-                                         defaultValue: "Download Manager")) {
-                        DownloadManagerSettingsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.volumeManagement",
-                                         defaultValue: "Volume Management")) {
-                        VolumeManagementView()
+                    NavigationLink(String(localized: "settings.row.downloads",
+                                         defaultValue: "Downloads")) {
+                        DownloadsSettingsView()
                     }
                     NavigationLink(String(localized: "settings.row.storage",
-                                         defaultValue: "Storage")) {
+                                         defaultValue: "Storage & Index")) {
                         StorageManagementView()
                     }
                     NavigationLink(String(localized: "settings.row.sideload",
                                          defaultValue: "Sideload Volume")) {
                         SideloadView()
-                    }
-                    NavigationLink(String(localized: "settings.row.reindex",
-                                         defaultValue: "Reindex")) {
-                        ReindexView()
                     }
                 }
 
@@ -114,7 +110,7 @@ struct SettingsView: View {
                         UserTagsView()
                     }
                     NavigationLink(String(localized: "settings.row.summarization",
-                                         defaultValue: "Summarization Prompts")) {
+                                         defaultValue: "Summarization")) {
                         SummarizationPromptsSettingsView()
                     }
                     Toggle(
@@ -173,29 +169,176 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - VolumeManagementView
+// MARK: - DownloadsSettingsView
 
-private struct VolumeManagementView: View {
+/// Combined Downloads settings pane.
+///
+/// Merges the former `DownloadManagerSettingsView` (bulk/scoped enqueue) and
+/// `VolumeManagementView` (browse-and-pick, queue state, delete) into one
+/// scrollable destination reachable from Settings → Volumes → Downloads.
+///
+/// ## Section order
+/// 1. **Active Downloads** — suppressed entirely when the queue is idle.
+/// 2. **Find Volumes** — scope picker + enqueue button, followed by the per-volume
+///    browse list. Footer explains the two interaction styles.
+/// 3. **Downloaded Volumes** — swipe-to-delete with confirmation dialog.
+/// 4. **Settings** — concurrent downloads picker.
+/// 5. **Check for New Volumes** — button that refreshes the live manifest.
+///
+/// Version history:
+///   1.0 — Session 117: merged from VolumeManagementView (Session 49, 51, 70) and
+///          DownloadManagerSettingsView (Session 49, 67)
+private struct DownloadsSettingsView: View {
 
     @Environment(AppState.self) private var appState
+
+    // MARK: Browse / delete state (from VolumeManagementView)
 
     @State private var concurrentDownloadLimit: Int = {
         let stored = UserDefaults.standard.integer(forKey: SettingsKeys.concurrentDownloadLimit)
         return stored > 0 ? stored : 4
     }()
-    /// Volume queued for deletion; drives the confirmation dialog.
     @State private var volumePendingDelete: VolumeManifestEntry? = nil
-    /// Live search text for filtering the (potentially 552-entry) Available Volumes list.
     @State private var availableSearch: String = ""
-    /// When true, show the full un-filtered list; when false, cap at `availablePageSize`.
     @State private var showAllAvailable: Bool = false
-    /// Maximum rows shown before "Show all (N)" button appears.
     private let availablePageSize: Int = 50
+
+    // MARK: Scope-enqueue state (from DownloadManagerSettingsView)
+
+    @State private var selectedScope: DownloadScope = .corpus
+    @State private var selectedSubseries: String = ""
+    @State private var singleVolumeSearch: String = ""
+    @State private var enqueuedMessage: String? = nil
 
     var body: some View {
         Form {
-            Section(String(localized: "settings.volumes.downloads.header",
-                           defaultValue: "Download Settings")) {
+            // 1. Active Downloads — hidden when queue is idle.
+            if !appState.downloadQueue.isEmpty {
+                Section(String(localized: "settings.volumes.active.header",
+                               defaultValue: "Active Downloads")) {
+                    activeDownloadsSection
+                }
+            }
+
+            // 2. Find Volumes — scope picker + enqueue + browse list.
+            Section(
+                header: Text(String(localized: "downloads.findVolumes.header",
+                                    defaultValue: "Find Volumes")),
+                footer: Text(String(localized: "downloads.findVolumes.footer",
+                                    defaultValue: "Use the scope selector to enqueue a group at once, or search and download volumes individually below."))
+            ) {
+                Picker(
+                    String(localized: "settings.downloadManager.scope.label",
+                           defaultValue: "Scope"),
+                    selection: Binding(
+                        get: { scopePickerTag },
+                        set: { tag in
+                            switch tag {
+                            case 0: selectedScope = .corpus
+                            case 1: selectedScope = .subseries(selectedSubseries)
+                            case 2: selectedScope = .volume(singleVolumeSearch.trimmingCharacters(in: .whitespacesAndNewlines))
+                            default: break
+                            }
+                        }
+                    )
+                ) {
+                    Text(String(localized: "settings.downloadManager.scope.corpus",
+                                defaultValue: "Entire Corpus")).tag(0)
+                    Text(String(localized: "settings.downloadManager.scope.subseries",
+                                defaultValue: "By Subseries")).tag(1)
+                    Text(String(localized: "settings.downloadManager.scope.volume",
+                                defaultValue: "Single Volume")).tag(2)
+                }
+
+                if case .subseries = selectedScope {
+                    Picker(
+                        String(localized: "settings.downloadManager.subseries.label",
+                               defaultValue: "Subseries"),
+                        selection: $selectedSubseries
+                    ) {
+                        Text(String(localized: "settings.downloadManager.subseries.placeholder",
+                                    defaultValue: "Select…")).tag("")
+                        ForEach(allSubseries, id: \.self) { s in
+                            Text(s).tag(s)
+                        }
+                    }
+                    .onChange(of: selectedSubseries) { _, newValue in
+                        selectedScope = .subseries(newValue)
+                    }
+                }
+
+                if case .volume = selectedScope {
+                    HStack {
+                        Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                        TextField(
+                            String(localized: "settings.downloadManager.volume.placeholder",
+                                   defaultValue: "Title or volume ID…"),
+                            text: $singleVolumeSearch
+                        )
+                        .textFieldStyle(.plain)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                        .onChange(of: singleVolumeSearch) { _, newValue in
+                            selectedScope = .volume(newValue.trimmingCharacters(in: .whitespacesAndNewlines))
+                        }
+                    }
+                    ForEach(singleVolumeResults) { entry in
+                        Button {
+                            singleVolumeSearch = entry.volumeId
+                            selectedScope = .volume(entry.volumeId)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(entry.title).font(.callout).foregroundStyle(.primary).lineLimit(1)
+                                    Text(entry.volumeId).font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if case .volume(let id) = selectedScope, id == entry.volumeId {
+                                    Image(systemName: "checkmark").foregroundStyle(.tint)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                Button {
+                    enqueue()
+                } label: {
+                    Label(
+                        String(localized: "settings.downloadManager.enqueue.button",
+                               defaultValue: "Download"),
+                        systemImage: "arrow.down.circle"
+                    )
+                }
+                .disabled(!canEnqueue)
+                .accessibilityLabel(
+                    String(localized: "settings.downloadManager.enqueue.a11y",
+                           defaultValue: "Start downloading selected volumes")
+                )
+
+                if let msg = enqueuedMessage {
+                    Label(msg, systemImage: "checkmark.circle")
+                        .foregroundStyle(.green)
+                        .font(.callout)
+                }
+
+                Divider()
+
+                availableVolumesSection
+            }
+
+            // 3. Downloaded Volumes.
+            Section(String(localized: "settings.volumes.downloaded.header",
+                           defaultValue: "Downloaded Volumes")) {
+                downloadedVolumesSection
+            }
+
+            // 4. Settings.
+            Section(String(localized: "downloads.settings.header",
+                           defaultValue: "Settings")) {
                 Picker(
                     String(localized: "settings.volumes.concurrentLimit.label",
                            defaultValue: "Concurrent Downloads"),
@@ -215,27 +358,13 @@ private struct VolumeManagementView: View {
                     String(localized: "settings.volumes.concurrentLimit.a11y",
                            defaultValue: "Concurrent download limit")
                 )
-
                 Text(String(localized: "settings.volumes.concurrentLimit.note",
                             defaultValue: "Takes effect on next launch."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section(String(localized: "settings.volumes.active.header",
-                           defaultValue: "Active Downloads")) {
-                activeDownloadsSection
-            }
-
-            Section(String(localized: "settings.volumes.downloaded.header",
-                           defaultValue: "Downloaded Volumes")) {
-                downloadedVolumesSection
-            }
-
-            Section(header: Text(availableVolumesHeader)) {
-                availableVolumesSection
-            }
-
+            // 5. Check for New Volumes.
             Section {
                 Button {
                     Task { await appState.manifestStore.fetchLiveManifest() }
@@ -252,14 +381,12 @@ private struct VolumeManagementView: View {
                 )
             }
         }
-        .navigationTitle(String(localized: "settings.volumes.title",
-                                defaultValue: "Volume Management"))
+        .navigationTitle(String(localized: "downloads.navigationTitle",
+                                defaultValue: "Downloads"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
-        // maxWidth fills the detail column; omitting maxHeight lets the
-        // NavigationSplitView bound the Form so it scrolls instead of expanding.
         .frame(maxWidth: .infinity)
         .scrollIndicators(.visible)
         #endif
@@ -293,34 +420,28 @@ private struct VolumeManagementView: View {
         }
     }
 
+    // MARK: - Section builders
+
     @ViewBuilder
     private var activeDownloadsSection: some View {
-        let queue = appState.downloadQueue
-        if queue.isEmpty {
-            Text(String(localized: "settings.volumes.active.empty",
-                        defaultValue: "No active downloads."))
-                .foregroundStyle(.secondary)
-                .font(.callout)
-        } else {
-            ForEach(queue, id: \.self) { volumeId in
-                HStack {
-                    Text(volumeId)
-                        .font(.callout)
-                    Spacer()
-                    Button(String(localized: "settings.volumes.active.cancel",
-                                  defaultValue: "Cancel")) {
-                        Task {
-                            await appState.downloadManager?.cancelDownload(volumeId: volumeId)
-                        }
-                    }
+        ForEach(appState.downloadQueue, id: \.self) { volumeId in
+            HStack {
+                Text(volumeId)
                     .font(.callout)
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.red)
-                    .accessibilityLabel(
-                        String(localized: "settings.volumes.active.cancel.a11y",
-                               defaultValue: "Cancel download for \(volumeId)")
-                    )
+                Spacer()
+                Button(String(localized: "settings.volumes.active.cancel",
+                              defaultValue: "Cancel")) {
+                    Task {
+                        await appState.downloadManager?.cancelDownload(volumeId: volumeId)
+                    }
                 }
+                .font(.callout)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.red)
+                .accessibilityLabel(
+                    String(localized: "settings.volumes.active.cancel.a11y",
+                           defaultValue: "Cancel download for \(volumeId)")
+                )
             }
         }
     }
@@ -343,8 +464,6 @@ private struct VolumeManagementView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                // Swipe-to-delete: system provides the red destructive visual automatically.
-                // A confirmation dialog prevents accidental deletion of large downloaded files.
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
                         volumePendingDelete = entry
@@ -373,7 +492,6 @@ private struct VolumeManagementView: View {
                 .foregroundStyle(.secondary)
                 .font(.callout)
         } else {
-            // Search field — keeps the row count manageable for a list of up to 552 volumes.
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
@@ -392,7 +510,7 @@ private struct VolumeManagementView: View {
                 if !availableSearch.isEmpty {
                     Button {
                         availableSearch = ""
-                        showAllAvailable = false   // collapse back to page view on clear
+                        showAllAvailable = false
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
@@ -406,9 +524,6 @@ private struct VolumeManagementView: View {
             }
             .padding(.vertical, 2)
             .onChange(of: availableSearch) { _, newValue in
-                // When the user starts typing a new search, collapse the "show all"
-                // state — search results are already filtered, so the cap is lifted
-                // automatically; when they clear it, we want the compact view back.
                 if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     showAllAvailable = false
                 }
@@ -424,10 +539,6 @@ private struct VolumeManagementView: View {
                 .foregroundStyle(.secondary)
                 .font(.callout)
             } else {
-                // When the search bar is empty the full list can reach 552 entries.
-                // Rendering all rows at once in a Form section is slow on first
-                // appearance; cap at availablePageSize and let the user opt in to
-                // seeing everything.
                 let isSearchActive = !availableSearch.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 let displayRows = isSearchActive || showAllAvailable
                     ? filtered
@@ -465,8 +576,6 @@ private struct VolumeManagementView: View {
                     }
                 }
 
-                // "Show all" disclosure row — only when the list is capped and
-                // the user hasn't already expanded it.
                 if !isSearchActive && !showAllAvailable && filtered.count > availablePageSize {
                     Button {
                         showAllAvailable = true
@@ -486,8 +595,74 @@ private struct VolumeManagementView: View {
         }
     }
 
-    /// Filters the not-downloaded list using `availableSearch` against title, volumeId, and subseries.
-    /// Returns the full list unchanged when search is empty.
+    // MARK: - Helpers
+
+    private var allSubseries: [String] {
+        let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        return Set(source.map(\.subseries)).sorted { lhsYear(from: $0) > lhsYear(from: $1) }
+    }
+
+    private func lhsYear(from subseries: String) -> Int {
+        Int(subseries.prefix(4)) ?? 0
+    }
+
+    private var singleVolumeResults: [VolumeManifestEntry] {
+        let query = singleVolumeSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return [] }
+        let lower = query.lowercased()
+        let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        return source.filter {
+            $0.title.lowercased().contains(lower) || $0.volumeId.lowercased().contains(lower)
+        }.prefix(20).map { $0 }
+    }
+
+    private var canEnqueue: Bool {
+        guard appState.downloadManager != nil else { return false }
+        switch selectedScope {
+        case .corpus:         return true
+        case .subseries:      return !selectedSubseries.isEmpty
+        case .volume(let id): return !id.isEmpty
+        }
+    }
+
+    private var scopePickerTag: Int {
+        switch selectedScope {
+        case .corpus:    return 0
+        case .subseries: return 1
+        case .volume:    return 2
+        }
+    }
+
+    private func enqueue() {
+        guard let dm = appState.downloadManager else { return }
+        enqueuedMessage = nil
+        let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        let toEnqueue: [VolumeManifestEntry]
+        switch selectedScope {
+        case .corpus:
+            toEnqueue = source
+        case .subseries(let id):
+            toEnqueue = source.filter { $0.subseries == id }
+        case .volume(let id):
+            toEnqueue = source.filter { $0.volumeId == id }
+        }
+        Task {
+            for entry in toEnqueue {
+                let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
+            }
+            await MainActor.run {
+                let count = toEnqueue.count
+                enqueuedMessage = String(
+                    localized: "settings.downloadManager.enqueued",
+                    defaultValue: "\(count) volume\(count == 1 ? "" : "s") queued for download.")
+            }
+            #if DEBUG
+            print("[Settings] Downloads enqueued \(toEnqueue.count) volumes.")
+            #endif
+        }
+    }
+
     private func availableFiltered(_ volumes: [VolumeManifestEntry]) -> [VolumeManifestEntry] {
         let q = availableSearch.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return volumes }
@@ -510,29 +685,22 @@ private struct VolumeManagementView: View {
         let all = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
         return all.filter { !dm.isVolumeDownloaded($0.volumeId) }
     }
-
-    private var availableVolumesHeader: String {
-        let all = notDownloadedVolumes
-        let q = availableSearch.trimmingCharacters(in: .whitespacesAndNewlines)
-        let base = String(localized: "settings.volumes.available.header",
-                          defaultValue: "Available Volumes")
-        if q.isEmpty {
-            return "\(base) (\(all.count))"
-        } else {
-            let filtered = availableFiltered(all)
-            return "\(base) (\(filtered.count) of \(all.count))"
-        }
-    }
 }
 
 // MARK: - StorageManagementView
 
-/// Shows aggregate and per-volume storage usage.
+/// Shows aggregate and per-volume storage usage, per-volume indexing status,
+/// and the Reindex All Volumes control.
 ///
 /// ## Indexing Status (Session 67)
 /// Each per-volume row indicates whether the volume has been indexed for full-text
 /// search (using `IndexingPipeline.isVolumeIndexed`). Unindexed volumes display a
 /// "Reindex" button that calls `IndexingPipeline.indexVolume` inline.
+///
+/// ## Reindex All (Session 118)
+/// Absorbed from the former standalone `ReindexView`. The "Reindex" section at the
+/// bottom of the form contains the explanatory text, optional "Needs Attention" list
+/// for interrupted volumes, and the Reindex All Volumes button with live progress.
 ///
 /// ## Scroll Affordance (Session 67)
 /// The Form omits `maxHeight: .infinity` so the `NavigationSplitView` detail column
@@ -546,10 +714,21 @@ private struct StorageManagementView: View {
 
     /// Indexed status per volumeId. `nil` means not yet checked or pipeline unavailable.
     @State private var indexedStatus: [String: Bool] = [:]
-    /// VolumeId currently being reindexed; drives inline ProgressView.
+    /// VolumeId currently being reindexed via per-volume button; drives inline ProgressView.
     @State private var reindexingVolumeId: String? = nil
     /// Per-volume reindex errors (rare, but surfaced inline).
     @State private var reindexErrors: [String: String] = [:]
+
+    // MARK: Reindex All state
+
+    /// `true` while `indexAllVolumes()` is running.
+    @State private var isReindexAll = false
+    /// Stream state from `pipeline.progress` during a Reindex All operation.
+    @State private var reindexAllProgressState: IndexingProgress.State = .idle
+    /// Error message from a failed Reindex All operation.
+    @State private var reindexAllError: String? = nil
+    /// Tracks an individual interrupted-volume re-index; `"all"` when doing the bulk sweep.
+    @State private var reindexingInterruptedId: String? = nil
 
     @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
 
@@ -621,9 +800,108 @@ private struct StorageManagementView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+
+            // Needs Attention: interrupted volumes (previously in standalone ReindexView).
+            let interrupted = Array(appState.interruptedVolumeIds).sorted()
+            if !interrupted.isEmpty {
+                Section(String(localized: "settings.reindex.interrupted.header",
+                               defaultValue: "Needs Attention")) {
+                    Text(String(localized: "settings.reindex.interrupted.body",
+                                defaultValue: "These volumes were being indexed when the app was last quit. Re-index them to restore full search coverage."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+
+                    ForEach(interrupted, id: \.self) { volumeId in
+                        let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(title).font(.callout).lineLimit(1)
+                                Text(volumeId).font(.caption2).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button(String(localized: "settings.reindex.interrupted.reindex",
+                                          defaultValue: "Re-index")) {
+                                reindexInterrupted(volumeId: volumeId)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(isReindexAll || reindexingInterruptedId != nil
+                                      || appState.indexingPipeline == nil)
+                        }
+                    }
+
+                    Button {
+                        startReindexAllInterrupted(interrupted)
+                    } label: {
+                        if reindexingInterruptedId == "all" {
+                            HStack {
+                                ProgressView().padding(.trailing, 4)
+                                Text(reindexAllProgressLabel).font(.callout)
+                            }
+                        } else {
+                            Label(
+                                String(localized: "settings.reindex.interrupted.all",
+                                       defaultValue: "Re-index All Interrupted"),
+                                systemImage: "exclamationmark.triangle"
+                            )
+                        }
+                    }
+                    .disabled(isReindexAll || reindexingInterruptedId != nil
+                              || appState.indexingPipeline == nil)
+                }
+            }
+
+            // Reindex All section: absorbed from former standalone ReindexView.
+            Section(String(localized: "settings.storage.reindex.header",
+                           defaultValue: "Reindex")) {
+                Text(String(localized: "settings.reindex.about.body",
+                            defaultValue: "Rebuilds the full-text search index from all downloaded volumes. Use this if search results are missing or incorrect."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    startReindexAll()
+                } label: {
+                    if isReindexAll {
+                        HStack {
+                            ProgressView().padding(.trailing, 4)
+                            Text(reindexAllProgressLabel).font(.callout)
+                        }
+                    } else {
+                        Label(
+                            String(localized: "settings.reindex.start.button",
+                                   defaultValue: "Reindex All Volumes"),
+                            systemImage: "magnifyingglass.circle"
+                        )
+                    }
+                }
+                .disabled(isReindexAll || reindexingInterruptedId != nil
+                          || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.reindex.start.a11y",
+                           defaultValue: "Reindex all downloaded FRUS volumes")
+                )
+
+                if case .completed(let volumes, let docs) = reindexAllProgressState {
+                    Label(
+                        String(localized: "settings.reindex.done",
+                               defaultValue: "Completed: \(volumes) volume\(volumes == 1 ? "" : "s"), \(docs) documents"),
+                        systemImage: "checkmark.circle"
+                    )
+                    .foregroundStyle(.green)
+                    .font(.callout)
+                }
+
+                if let error = reindexAllError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+            }
         }
-        .navigationTitle(String(localized: "settings.storage.title",
-                                defaultValue: "Storage"))
+        .navigationTitle(String(localized: "storage.navigationTitle",
+                                defaultValue: "Storage & Index"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -755,6 +1033,83 @@ private struct StorageManagementView: View {
             #endif
         }
         if reindexingVolumeId == volumeId { reindexingVolumeId = nil }
+    }
+
+    // MARK: - Reindex All helpers
+
+    private var reindexAllProgressLabel: String {
+        switch reindexAllProgressState {
+        case .idle:
+            return String(localized: "settings.reindex.progress.starting",
+                          defaultValue: "Starting…")
+        case .indexing(let volumeId, let current, let total):
+            return String(localized: "settings.reindex.progress.indexing",
+                          defaultValue: "\(current)/\(total) — \(volumeId)")
+        case .completed, .failed:
+            return ""
+        }
+    }
+
+    private func startReindexAll() {
+        guard let pipeline = appState.indexingPipeline else { return }
+        isReindexAll = true
+        reindexAllProgressState = .idle
+        reindexAllError = nil
+
+        Task {
+            async let progressTask: Void = {
+                for await event in pipeline.progress {
+                    await MainActor.run { reindexAllProgressState = event.state }
+                }
+            }()
+            do {
+                try await pipeline.indexAllVolumes()
+            } catch {
+                await MainActor.run {
+                    reindexAllError = error.localizedDescription
+                    #if DEBUG
+                    print("[Settings] Reindex All failed: \(error)")
+                    #endif
+                }
+            }
+            _ = await progressTask
+            await MainActor.run { isReindexAll = false }
+        }
+    }
+
+    private func reindexInterrupted(volumeId: String) {
+        guard let pipeline = appState.indexingPipeline else { return }
+        reindexingInterruptedId = volumeId
+        Task {
+            do {
+                try await pipeline.indexVolume(volumeId)
+            } catch {
+                await MainActor.run {
+                    reindexAllError = error.localizedDescription
+                }
+            }
+            await MainActor.run { reindexingInterruptedId = nil }
+        }
+    }
+
+    private func startReindexAllInterrupted(_ volumeIds: [String]) {
+        guard let pipeline = appState.indexingPipeline else { return }
+        reindexingInterruptedId = "all"
+        Task {
+            for volumeId in volumeIds {
+                do {
+                    try await pipeline.indexVolume(volumeId)
+                } catch {
+                    await MainActor.run {
+                        reindexAllError = error.localizedDescription
+                        #if DEBUG
+                        print("[Settings] Re-index interrupted volume \(volumeId) failed: \(error)")
+                        #endif
+                    }
+                }
+            }
+            await MainActor.run { reindexingInterruptedId = nil }
+        }
     }
 }
 
@@ -995,120 +1350,6 @@ private struct SideloadView: View {
             } catch {
                 importResult = .failure(error.localizedDescription)
             }
-        }
-    }
-}
-
-// MARK: - ReindexView
-
-private struct ReindexView: View {
-
-    @Environment(AppState.self) private var appState
-
-    @State private var isReindexing = false
-    @State private var progressState: IndexingProgress.State = .idle
-    @State private var reindexError: String? = nil
-
-    var body: some View {
-        Form {
-            Section(String(localized: "settings.reindex.about.header",
-                           defaultValue: "About Reindexing")) {
-                Text(String(localized: "settings.reindex.about.body",
-                            defaultValue: "Rebuilds the full-text search index from all downloaded volumes. Use this if search results are missing or incorrect."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Button {
-                    startReindex()
-                } label: {
-                    if isReindexing {
-                        HStack {
-                            ProgressView()
-                                .padding(.trailing, 4)
-                            Text(progressLabel)
-                                .font(.callout)
-                        }
-                    } else {
-                        Label(
-                            String(localized: "settings.reindex.start.button",
-                                   defaultValue: "Reindex All Volumes"),
-                            systemImage: "magnifyingglass.circle"
-                        )
-                    }
-                }
-                .disabled(isReindexing || appState.indexingPipeline == nil)
-                .accessibilityLabel(
-                    String(localized: "settings.reindex.start.a11y",
-                           defaultValue: "Reindex all downloaded FRUS volumes")
-                )
-
-                if case .completed(let volumes, let docs) = progressState {
-                    Label(
-                        String(localized: "settings.reindex.done",
-                               defaultValue: "Completed: \(volumes) volume\(volumes == 1 ? "" : "s"), \(docs) documents"),
-                        systemImage: "checkmark.circle"
-                    )
-                    .foregroundStyle(.green)
-                    .font(.callout)
-                }
-
-                if let error = reindexError {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.red)
-                        .font(.callout)
-                }
-            }
-        }
-        .navigationTitle(String(localized: "settings.reindex.title", defaultValue: "Reindex"))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        .scrollIndicators(.visible)
-        #endif
-    }
-
-    private var progressLabel: String {
-        switch progressState {
-        case .idle:
-            return String(localized: "settings.reindex.progress.starting",
-                          defaultValue: "Starting…")
-        case .indexing(let volumeId, let current, let total):
-            return String(localized: "settings.reindex.progress.indexing",
-                          defaultValue: "\(current)/\(total) — \(volumeId)")
-        case .completed, .failed:
-            return ""
-        }
-    }
-
-    private func startReindex() {
-        guard let pipeline = appState.indexingPipeline else { return }
-        isReindexing = true
-        progressState = .idle
-        reindexError = nil
-
-        Task {
-            // Consume the progress stream while running reindex
-            async let progressTask: Void = {
-                for await event in pipeline.progress {
-                    await MainActor.run { progressState = event.state }
-                }
-            }()
-            do {
-                try await pipeline.indexAllVolumes()
-            } catch {
-                await MainActor.run {
-                    reindexError = error.localizedDescription
-                    #if DEBUG
-                    print("[Settings] Reindex failed: \(error)")
-                    #endif
-                }
-            }
-            _ = await progressTask
-            await MainActor.run { isReindexing = false }
         }
     }
 }

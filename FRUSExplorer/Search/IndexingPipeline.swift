@@ -216,6 +216,7 @@ public actor IndexingPipeline {
     private let fts5Store: FTS5Store
     private let volumesDirectory: URL
     private let subjectTagStore: SubjectTagStore
+    private let stateTracker: IndexingStateTracker?
 
     // MARK: - Auxiliary SQLite connection
 
@@ -242,6 +243,18 @@ public actor IndexingPipeline {
     /// a slow consumer never causes memory growth.
     public nonisolated var progressStream: AsyncStream<IndexingProgressUpdate> { _progressStream }
 
+    // MARK: - Metadata discovery stream (one event per volume, after parse completes)
+
+    private let metadataContinuation: AsyncStream<VolumeMetadataDiscovered>.Continuation
+    private let _metadataStream: AsyncStream<VolumeMetadataDiscovered>
+
+    /// Yields one `VolumeMetadataDiscovered` event per indexed volume, emitted immediately
+    /// after the XML parse phase completes and before any storage batches begin.
+    ///
+    /// Consumers can use the aggregate counts (persons, dates, cross-references) to enrich
+    /// progress displays without waiting for the full write phase to finish.
+    public nonisolated var metadataStream: AsyncStream<VolumeMetadataDiscovered> { _metadataStream }
+
     // MARK: - Per-volume throughput tracking
 
     private var volumeIndexingStartTime: Date?
@@ -259,18 +272,21 @@ public actor IndexingPipeline {
     ///   - databaseURL: Path to the shared SQLite database file.
     ///   - volumesDirectory: Directory containing downloaded volume XML files.
     ///   - subjectTagStore: Provides subject tag IDs for indexed documents.
+    ///   - stateTracker: Optional tracker for interrupted-indexing sentinel persistence.
     ///   - concurrencyLimit: Maximum simultaneous XML parsers. Default 4.
     public init(
         fts5Store: FTS5Store,
         databaseURL: URL,
         volumesDirectory: URL,
         subjectTagStore: SubjectTagStore,
+        stateTracker: IndexingStateTracker? = nil,
         concurrencyLimit: Int = 4
     ) throws {
         self.fts5Store = fts5Store
         self.databaseURL = databaseURL
         self.volumesDirectory = volumesDirectory
         self.subjectTagStore = subjectTagStore
+        self.stateTracker = stateTracker
         self.concurrencyLimit = concurrencyLimit
 
         let (stream, continuation) = AsyncStream.makeStream(of: IndexingProgress.self)
@@ -283,6 +299,13 @@ public actor IndexingPipeline {
         )
         _progressStream = updateStream
         progressUpdateContinuation = updateContinuation
+
+        let (metaStream, metaContinuation) = AsyncStream.makeStream(
+            of: VolumeMetadataDiscovered.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        _metadataStream = metaStream
+        metadataContinuation = metaContinuation
 
         var handle: OpaquePointer?
         let rc = sqlite3_open_v2(
@@ -321,6 +344,7 @@ public actor IndexingPipeline {
     deinit {
         progressContinuation.finish()
         progressUpdateContinuation.finish()
+        metadataContinuation.finish()
         if let db = auxDb { sqlite3_close_v2(db) }
     }
 
@@ -335,16 +359,25 @@ public actor IndexingPipeline {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw IndexingError.volumeNotFound(volumeId: volumeId)
         }
+        await stateTracker?.markStarted(volumeId: volumeId)
         emit(.indexing(volumeId: volumeId, current: 0, total: 1))
         volumeIndexingStartTime = Date()
         volumeDocumentsProcessed = 0
         emitUpdate(IndexingProgressUpdate(
-            volumeId: volumeId, stage: .parsing,
+            volumeId: volumeId, stage: .reading,
             completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
         ))
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
+        // Emit a second .reading update now that the total document count is known.
+        // This lets progress bars render a determinate state before storage begins.
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: volumeId, stage: .reading,
+            completedDocuments: 0, totalDocuments: data.documents.count, docsPerSecond: 0
+        ))
+        emitMetadata(buildMetadata(from: data))
         try await storeIndexData(data)
         submitSpotlightItems(for: data)
+        await stateTracker?.markCompleted(volumeId: volumeId)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .complete,
@@ -394,6 +427,7 @@ public actor IndexingPipeline {
             // is used for throughput.
             for _ in 0..<min(effectiveConcurrencyLimit, total) {
                 if let file = iterator.next() {
+                    await stateTracker?.markStarted(volumeId: file.volumeId)
                     group.addTask { [self] in
                         do {
                             let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
@@ -411,6 +445,7 @@ public actor IndexingPipeline {
                 case .success(let data):
                     do {
                         try await storeIndexData(data)
+                        await stateTracker?.markCompleted(volumeId: data.volumeId)
                         completedVolumes += 1
                         totalDocuments += data.documents.count
                         emit(.indexing(volumeId: data.volumeId, current: completedVolumes + failedVolumes, total: total))
@@ -434,6 +469,7 @@ public actor IndexingPipeline {
                 }
 
                 if let file = iterator.next() {
+                    await stateTracker?.markStarted(volumeId: file.volumeId)
                     group.addTask { [self] in
                         do {
                             let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
@@ -828,7 +864,9 @@ public actor IndexingPipeline {
         // (or 20 under memory pressure); on macOS it is effectively unlimited.
         let batchSize = effectiveBatchSize
         let totalDocs = data.documents.count
+        let totalBatches = totalDocs == 0 ? 1 : (totalDocs + batchSize - 1) / batchSize
         var processed = 0
+        var batchNumber = 0
 
         // Delete any existing FTS5 rows for this volume before inserting the fresh batch.
         // Without this, re-indexing accumulates duplicate rows because document IDs like
@@ -836,22 +874,24 @@ public actor IndexingPipeline {
         try await fts5Store.deleteVolume(volumeId: data.volumeId)
 
         for chunkStart in stride(from: 0, to: totalDocs, by: batchSize) {
+            batchNumber += 1
             let chunkEnd = min(chunkStart + batchSize, totalDocs)
             let fts5Chunk  = Array(data.documents[chunkStart..<chunkEnd])
             let cacheChunk = Array(data.documentCache[chunkStart..<chunkEnd])
+
+            emitUpdate(IndexingProgressUpdate(
+                volumeId: data.volumeId,
+                stage: .storingBatch(current: batchNumber, total: totalBatches),
+                completedDocuments: processed,
+                totalDocuments: totalDocs,
+                docsPerSecond: currentDocsPerSecond(forTotal: max(processed, 1))
+            ))
 
             try await fts5Store.insertBatch(fts5Chunk)
             try auxInsertDocumentCache(cacheChunk)
 
             processed += fts5Chunk.count
             volumeDocumentsProcessed = processed
-            emitUpdate(IndexingProgressUpdate(
-                volumeId: data.volumeId,
-                stage: .buildingFTS5,
-                completedDocuments: processed,
-                totalDocuments: totalDocs,
-                docsPerSecond: currentDocsPerSecond(forTotal: processed)
-            ))
             // Yield between batches so the OS can reclaim per-batch allocations.
             await Task.yield()
         }
@@ -882,6 +922,29 @@ public actor IndexingPipeline {
 
     private func emitUpdate(_ update: IndexingProgressUpdate) {
         progressUpdateContinuation.yield(update)
+    }
+
+    private func emitMetadata(_ meta: VolumeMetadataDiscovered) {
+        metadataContinuation.yield(meta)
+    }
+
+    private func buildMetadata(from data: VolumeIndexData) -> VolumeMetadataDiscovered {
+        let isoDateStrings = data.documentDates.compactMap { $0.dateISOMin }
+        let isoDateMaxStrings = data.documentDates.compactMap { $0.dateISOMax ?? $0.dateISOMin }
+        let personNames = data.persons.sorted { $0.name < $1.name }.prefix(12).map { $0.name }
+        return VolumeMetadataDiscovered(
+            volumeId: data.volumeId,
+            totalDocuments: data.documents.count,
+            editorialNoteCount: data.documents.filter { $0.isEditorialNote }.count,
+            uniquePersonCount: Set(data.personMentions.map { $0.personRef }).count,
+            crossReferenceCount: data.crossReferences.count,
+            datedDocumentCount: isoDateStrings.count,
+            dateRangeMin: isoDateStrings.min(),
+            dateRangeMax: isoDateMaxStrings.max(),
+            glossaryPersonCount: data.persons.count,
+            glossaryTermCount: data.terms.count,
+            glossaryPersonNames: Array(personNames)
+        )
     }
 
     /// Rolling throughput estimate: documents processed ÷ elapsed seconds.

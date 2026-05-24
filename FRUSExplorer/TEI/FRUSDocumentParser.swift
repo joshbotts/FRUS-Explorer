@@ -682,12 +682,18 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // pass their children through to the parent — they are structural wrappers.
             return divType != "document" && divType != "editorialNote"
         case "note":
-            // Session 78: <note rend="inline"> renders its children inline in the text
-            // flow — not as a superscript footnote reference. Used in FRUS TEI for
-            // attachment label phrases such as <note rend="inline">Attachment</note>
-            // or <note rend="inline" type="source">Tab A</note> before a frus:attachment
-            // heading. Making the note transparent hoists its children (typically <hi>
-            // and plain text nodes) directly into the surrounding inline context.
+            // <note rend="inline"> renders its children inline in the text flow rather
+            // than as a superscript footnote reference. Used for attachment label phrases
+            // such as <note rend="inline">Attachment</note> before a frus:attachment heading.
+            //
+            // Exception: <note type="source" rend="inline"> must NOT be transparent.
+            // These are withheld-document provenance notes (e.g. "[Source: Johnson Library,
+            // National Security File... Not declassified.]"). Making them transparent
+            // hoists their text into the surrounding paragraph as plain characters,
+            // which prevents extractSourceNote from finding a .footnote(type: .source)
+            // node. The FRUS schema's type="source" attribute is the canonical marker
+            // for provenance notes; it takes precedence over the inline rendering hint.
+            if attributes["type"] == "source" { return false }
             return attributes["rend"] == "inline"
         default:
             return false

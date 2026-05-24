@@ -166,3 +166,168 @@ struct SourceExplorerTests {
         #expect(url.absoluteString.contains("parentDescriptionNaId"))
     }
 }
+
+// MARK: - SourceNoteExtractionTests
+
+/// Tests for `extractSourceNote(from:)` covering all three placement patterns found
+/// in actual FRUS TEI XML across different eras of the series.
+struct SourceNoteExtractionTests {
+
+    // MARK: - Standard placement
+
+    @Test("Standard: <note type='source'> as direct child of document div")
+    func standardDocumentLevelSourceNote() {
+        // Most common pattern: <note type="source" n="1"> is a top-level sibling of
+        // <head>, <dateline>, and <p> inside <div type="document">.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [.text("1. Memorandum From the Secretary of State to the President")]),
+            .dateline(children: [.text("Washington, January 20, 1969.")]),
+            .paragraph(children: [.text("Body text.")]),
+            .footnote(id: "d1fn1", type: .source, printedNumber: "1",
+                      children: [.text("Source: National Archives, RG 59, Central Foreign Policy File, D890001-0001.")])
+        ]
+        let result = extractSourceNote(from: nodes)
+        #expect(result == "Source: National Archives, RG 59, Central Foreign Policy File, D890001-0001.")
+    }
+
+    @Test("Standard: returns nil when no source note is present")
+    func noSourceNoteReturnsNil() {
+        let nodes: [FRUSASTNode] = [
+            .head(children: [.text("Editorial Note")]),
+            .paragraph(children: [.text("This is an editorial note with no source footnote.")])
+        ]
+        #expect(extractSourceNote(from: nodes) == nil)
+    }
+
+    @Test("Standard: ignores numbered footnotes that are not type=source")
+    func regularFootnoteNotExtracted() {
+        let nodes: [FRUSASTNode] = [
+            .head(children: [.text("1. Telegram")]),
+            .paragraph(children: [.text("Text.")]),
+            .footnote(id: "d1fn1", type: .footnote, printedNumber: "1",
+                      children: [.text("This is a regular editorial footnote, not a source note.")])
+        ]
+        #expect(extractSourceNote(from: nodes) == nil)
+    }
+
+    // MARK: - Nixon-Ford era: <seg type="source"> inside generic <note>
+
+    @Test("Nixon-Ford: <seg type='source'> inside untyped <note> — bare seg child")
+    func nixonFordSegSourceBare() {
+        // Nixon-Ford era electronic volumes use a single <note n="1"> containing both
+        // <seg type="summary"> and <seg type="source"> as direct children.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [.text("1. Memorandum of Conversation")]),
+            .footnote(
+                id: "d1fn1", type: .unclassified, printedNumber: "1",
+                children: [
+                    .unknown("seg", ["type": "summary"],
+                             [.text("Summary: Kissinger met with Dobrynin to discuss SALT.")]),
+                    .unknown("seg", ["type": "source"],
+                             [.text("Source: Library of Congress, Manuscript Division, Kissinger Papers, Box 374, Chronological File.")])
+                ]
+            )
+        ]
+        let result = extractSourceNote(from: nodes)
+        #expect(result == "Source: Library of Congress, Manuscript Division, Kissinger Papers, Box 374, Chronological File.")
+    }
+
+    @Test("Nixon-Ford: <seg type='source'> wrapped in <p> inside untyped <note>")
+    func nixonFordSegSourceInParagraph() {
+        // Some Nixon-Ford volumes wrap each seg in a <p> element.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [.text("1. Backchannel Message")]),
+            .footnote(
+                id: "d1fn1", type: .unclassified, printedNumber: "1",
+                children: [
+                    .paragraph(children: [
+                        .unknown("seg", ["type": "summary"], [.text("Summary: Discussed arms control.")])
+                    ]),
+                    .paragraph(children: [
+                        .unknown("seg", ["type": "source"], [.text("Source: National Security Archive, Kissinger Transcripts.")])
+                    ])
+                ]
+            )
+        ]
+        let result = extractSourceNote(from: nodes)
+        #expect(result == "Source: National Security Archive, Kissinger Transcripts.")
+    }
+
+    @Test("Nixon-Ford: untyped note without a source seg returns nil")
+    func nixonFordUntypedNoteWithoutSourceSegReturnsNil() {
+        let nodes: [FRUSASTNode] = [
+            .footnote(
+                id: "d1fn1", type: .unclassified, printedNumber: "1",
+                children: [
+                    .unknown("seg", ["type": "summary"], [.text("Summary: Only a summary, no source.")])
+                ]
+            )
+        ]
+        #expect(extractSourceNote(from: nodes) == nil)
+    }
+
+    // MARK: - Source note inside <head>
+
+    @Test("Head-placement: <note type='source'> nested inside <head> element")
+    func sourceNoteInsideHead() {
+        // Some volumes (particularly earlier eras) embed the source note inside the
+        // document heading rather than as a separate sibling of the heading.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [
+                .text("1. Telegram From the Embassy in Moscow to the Department of State"),
+                .footnote(id: "d1fn1", type: .source, printedNumber: "1",
+                          children: [.text("Source: Department of State, Central Files, 761.00/1-2069.")])
+            ]),
+            .paragraph(children: [.text("Body text.")])
+        ]
+        let result = extractSourceNote(from: nodes)
+        #expect(result == "Source: Department of State, Central Files, 761.00/1-2069.")
+    }
+
+    // MARK: - Withheld inline source note
+
+    @Test("Withheld inline: <note type='source' rend='inline'> produces extractable .footnote node")
+    func withheldInlineSourceNoteIsExtractable() {
+        // <note type="source" rend="inline"> is used for withheld documents.
+        // The parser must NOT make these transparent (isTransparent returns false when
+        // type="source"), so a .footnote(type: .source) node is created and is
+        // reachable by extractSourceNote.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [.text("2. Memorandum")]),
+            // This node is what the parser produces after the isTransparent fix:
+            // rend="inline" type="source" → NOT transparent → .footnote(type: .source)
+            .footnote(id: nil, type: .source, printedNumber: nil,
+                      children: [.text("[Source: Johnson Library, National Security File, Vietnam, Vol. I. No classification marking. 2 pages of source text not declassified.]")]),
+            .paragraph(children: [.text("[Not declassified.]")])
+        ]
+        let result = extractSourceNote(from: nodes)
+        #expect(result?.contains("Johnson Library") == true)
+        #expect(result?.contains("Not declassified") == true)
+    }
+
+    // MARK: - Priority and edge cases
+
+    @Test("Priority: top-level source note found before head-nested one")
+    func topLevelTakesPriorityOverHeadNested() {
+        // If both patterns are present, the top-level note (pass 1) is returned first.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [
+                .text("Document"),
+                .footnote(id: "head-fn", type: .source, printedNumber: nil,
+                          children: [.text("Source: Head-nested note.")])
+            ]),
+            .footnote(id: "div-fn", type: .source, printedNumber: "1",
+                      children: [.text("Source: Top-level note.")])
+        ]
+        #expect(extractSourceNote(from: nodes) == "Source: Top-level note.")
+    }
+
+    @Test("Edge: source note with whitespace-only children returns nil")
+    func whitespaceOnlyChildrenReturnsNil() {
+        let nodes: [FRUSASTNode] = [
+            .footnote(id: "d1fn1", type: .source, printedNumber: "1",
+                      children: [.text("   \n  ")])
+        ]
+        #expect(extractSourceNote(from: nodes) == nil)
+    }
+}

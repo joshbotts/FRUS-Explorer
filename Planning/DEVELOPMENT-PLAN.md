@@ -87,6 +87,13 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 100–101 | Research Session Log | `ResearchSession` + `SessionEvent` models; Activity tab timeline | 04 |
 | 102–106 | Inline Highlighting + Passage-Anchored Notes | `DocumentHighlight` model; macOS + iOS text selection layers; CloudKit sync | 81 |
 | 107–110 | iPadOS Split View + Stage Manager | `horizontalSizeClass` layout paths; multi-window scenes for iPad | 44 |
+| 112 | Indexing Stage Accuracy | `IndexingStage` renamed to two honest phases; batch-N-of-M counter in FTS5 write loop | 51 |
+| 113 | Live Discovery Feed | `VolumeMetadataDiscovered` event; person/date/xref/doctype counts in all progress views | 112 |
+| 114 | Post-Index Summary Card | Auto-dismissing summary card with "Search this volume" action | 113 |
+| 115 | Interrupted Indexing State | `IndexingStateTracker`; UserDefaults sentinel; amber partial-index badge; resume action; ReindexView "Needs Attention" | 112 |
+| 116 | FRUS Context Card + Queue Banner | Era/series context card during indexing; multi-volume queue banner with ETA and pending list | 113, 115 | ✅ |
+| 117 | Consolidate Downloads | Merge `DownloadManagerSettingsView` + `VolumeManagementView` → `DownloadsSettingsView`; remove Download Manager row | 49, 51, 70 | ✅ |
+| 118 | Consolidate Storage & Index | Absorb Reindex All into `StorageManagementView`; remove standalone Reindex pane; rename Summarization Prompts row | 51, 67, 90 | ✅ |
 
 ---
 
@@ -158,6 +165,8 @@ Present these files to Claude Code in order. The leading number matches the sess
 | `77-80-TEI-Fidelity-Improvements.md` | 77, 78, 79, 80 |
 | `81-88-Exports-Quick-Wins.md` | 81, 82, 83, 84, 85, 86, 87, 88 |
 | `89-110-Medium-And-Long-Term.md` | 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110 |
+| `112-116-Indexing-UX.md` | 112, 113, 114, 115, 116 |
+| `117-118-Settings-Consolidation.md` | 117, 118 |
 
 ---
 

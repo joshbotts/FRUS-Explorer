@@ -40,6 +40,8 @@ import SwiftData
 ///          each tab's root view; ActivityKit / Live Activity deferred (see
 ///          IndexingBannerView.swift); banner visible across all tabs during indexing
 ///   1.5 — Session 99: Analytics toolbar button in BrowserTabView; AnalyticsView sheet
+///   1.6 — Session 114: IndexingSummaryCard shown when completedIndexingMetadata non-nil;
+///          transitions between banner ↔ card via .move + .opacity
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -110,15 +112,55 @@ struct MainTabView: View {
         }
     }
 
-    /// Returns `IndexingBannerView` when indexing is active, or `EmptyView` otherwise.
+    /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.
     ///
-    /// Passed to `.safeAreaInset(edge: .bottom, spacing: 0)` on each tab's root view.
-    /// An `EmptyView` result adds 0 height inset, so there is no visual or layout effect
-    /// when no indexing is in progress.
+    /// Priority order:
+    /// 1. `completedIndexingMetadata` non-nil → `IndexingSummaryCard` (post-index success)
+    /// 2. `currentIndexingProgress` non-nil, queue position non-nil → `IndexingQueueBannerView`
+    /// 3. `currentIndexingProgress` non-nil, single volume → `IndexingBannerView`
+    /// 4. Both nil → `EmptyView` (no height inset)
+    ///
+    /// Transitions use `.move(edge: .bottom).combined(with: .opacity)` so the card
+    /// slides up from the tab bar edge when indexing completes.
     @ViewBuilder
     private var indexingBanner: some View {
-        if let update = appState.currentIndexingProgress {
-            IndexingBannerView(update: update)
+        if let meta = appState.completedIndexingMetadata {
+            let title = appState.manifestStore.entry(forVolumeId: meta.volumeId)?.title
+            IndexingSummaryCard(
+                metadata: meta,
+                volumeTitle: title,
+                onSearchVolume: { volumeId in
+                    appState.pendingSearch = SearchParameters(volumeIds: [volumeId])
+                    appState.activeTab = .search
+                    appState.completedIndexingMetadata = nil
+                },
+                onDismiss: {
+                    appState.completedIndexingMetadata = nil
+                }
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        } else if let update = appState.currentIndexingProgress,
+                  let queuePosition = appState.indexingQueuePosition {
+            IndexingQueueBannerView(
+                update: update,
+                queuePosition: queuePosition,
+                volumeTitles: appState.indexingQueueVolumeTitles,
+                metadata: appState.lastDiscoveredMetadata,
+                averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
+                averageDocumentCount: appState.indexingQueueAverageDocumentCount
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        } else if let update = appState.currentIndexingProgress {
+            IndexingBannerView(
+                update: update,
+                metadata: appState.lastDiscoveredMetadata,
+                volume: appState.manifestStore.entry(forVolumeId: update.volumeId),
+                onPersonSearch: { name in
+                    appState.pendingSearch = SearchParameters(keywords: name)
+                    appState.activeTab = .search
+                }
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 }

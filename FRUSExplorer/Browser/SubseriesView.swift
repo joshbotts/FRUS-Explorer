@@ -59,6 +59,11 @@ struct SubseriesView: View {
                             VolumeRowLabel(volume: volume, isDownloaded: vm.isDownloaded(volume.volumeId))
                         }
                         .buttonStyle(.plain)
+                        #if os(iOS)
+                        .contextMenu {
+                            VolumeRowContextMenu(volume: volume)
+                        }
+                        #endif
                     }
                 }
             }
@@ -247,9 +252,15 @@ private struct TagPickerSheet: View {
 /// volume is being indexed, so the user gets real-time throughput feedback
 /// without navigating away from the browser.
 ///
+/// An amber warning badge is shown on iOS when `AppState.interruptedVolumeIds` contains
+/// this volume's ID, indicating that a prior indexing pass was interrupted. The badge
+/// disappears while active indexing is in progress for this volume.
+///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 51: iOS IndexingCapsule wired via AppState.currentIndexingProgress
+///   1.2 — Session 113: metadata parameter forwarded to IndexingCapsule
+///   1.3 — Session 115: amber interrupted badge; "Re-index" contextual menu item
 struct VolumeRowLabel: View {
     let volume: VolumeManifestEntry
     let isDownloaded: Bool
@@ -265,6 +276,18 @@ struct VolumeRowLabel: View {
                     .font(.body)
                     .lineLimit(2)
                 Spacer()
+                #if os(iOS)
+                if appState.interruptedVolumeIds.contains(volume.volumeId),
+                   appState.currentIndexingProgress?.volumeId != volume.volumeId {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .font(.caption)
+                        .accessibilityLabel(
+                            String(localized: "browser.volume.interrupted.a11y",
+                                   defaultValue: "Indexing interrupted")
+                        )
+                }
+                #endif
                 if isDownloaded {
                     Image(systemName: "arrow.down.circle.fill")
                         .foregroundStyle(.secondary)
@@ -296,13 +319,44 @@ struct VolumeRowLabel: View {
             #if os(iOS)
             if let progress = appState.currentIndexingProgress,
                progress.volumeId == volume.volumeId {
-                IndexingCapsule(progress: progress)
+                IndexingCapsule(progress: progress, metadata: appState.lastDiscoveredMetadata)
             }
             #endif
         }
         .padding(.vertical, 3)
     }
 }
+
+// MARK: - VolumeRowContextMenu
+
+#if os(iOS)
+/// Context menu for a volume row in `SubseriesView`.
+///
+/// Shows a "Re-index" action when the volume is in `AppState.interruptedVolumeIds`,
+/// letting the user trigger a re-index directly from the browser list.
+///
+/// Version history:
+///   1.0 — Session 115: initial implementation
+private struct VolumeRowContextMenu: View {
+    let volume: VolumeManifestEntry
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        if appState.interruptedVolumeIds.contains(volume.volumeId),
+           let pipeline = appState.indexingPipeline {
+            Button {
+                Task { try? await pipeline.indexVolume(volume.volumeId) }
+            } label: {
+                Label(
+                    String(localized: "browser.volume.reindex.action",
+                           defaultValue: "Re-index"),
+                    systemImage: "arrow.triangle.2.circlepath"
+                )
+            }
+        }
+    }
+}
+#endif
 
 // MARK: - IndexingCapsule
 
@@ -313,24 +367,41 @@ struct VolumeRowLabel: View {
 /// references the matching volume. Disappears automatically when indexing
 /// completes (the parent condition becomes `false`).
 ///
+/// When `metadata` is non-nil and matches the volume, a single person-count
+/// line is shown below the throughput: "312 persons".
+///
 /// Version history:
 ///   1.0 — Session 51: initial implementation
+///   1.1 — Session 113: `metadata` parameter; person count line
 private struct IndexingCapsule: View {
     let progress: IndexingProgressUpdate
+    var metadata: VolumeMetadataDiscovered? = nil
 
     var body: some View {
-        HStack(spacing: 6) {
-            ProgressView(value: progressFraction)
-                .progressViewStyle(.linear)
-                .frame(maxWidth: 80)
-                .tint(.accentColor)
-            Text(stageLabel)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            if progress.docsPerSecond > 0 {
-                Text(String(format: "%.0f doc/s", progress.docsPerSecond))
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                ProgressView(value: progressFraction)
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 80)
+                    .tint(.accentColor)
+                Text(stageLabel)
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
+                if progress.docsPerSecond > 0 {
+                    Text(String(format: "%.0f doc/s", progress.docsPerSecond))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            if let meta = metadata,
+               meta.volumeId == progress.volumeId,
+               meta.uniquePersonCount > 0 {
+                Text(String(
+                    localized: "indexing.capsule.meta.persons",
+                    defaultValue: "\(meta.uniquePersonCount) persons"
+                ))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -347,16 +418,13 @@ private struct IndexingCapsule: View {
 
     private var stageLabel: String {
         switch progress.stage {
-        case .parsing:           return String(localized: "indexing.stage.parsing",
-                                               defaultValue: "Parsing…")
-        case .extractingDates:   return String(localized: "indexing.stage.dates",
-                                               defaultValue: "Extracting dates…")
-        case .indexingPersons:   return String(localized: "indexing.stage.persons",
-                                               defaultValue: "Indexing persons…")
-        case .buildingFTS5:      return String(localized: "indexing.stage.fts5",
-                                               defaultValue: "Building index…")
-        case .complete:          return String(localized: "indexing.stage.complete",
-                                               defaultValue: "Complete")
+        case .reading:
+            return String(localized: "indexing.stage.reading", defaultValue: "Reading…")
+        case .storingBatch(let current, let total):
+            return String(localized: "indexing.stage.storingBatch",
+                          defaultValue: "Storing batch \(current) of \(total)…")
+        case .complete:
+            return String(localized: "indexing.stage.complete", defaultValue: "Complete")
         }
     }
 }

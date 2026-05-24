@@ -239,17 +239,24 @@ public struct SearchResult: Sendable, Identifiable {
 ///
 /// Emitted as part of `IndexingProgressUpdate` on the `IndexingPipeline.progressStream`.
 ///
+/// ## Design note
+/// The previous four-case sequence (parsing / extractingDates / indexingPersons /
+/// buildingFTS5) implied four sequential passes. In practice the pipeline performs
+/// a single XML parse that extracts documents, dates, persons, and cross-references
+/// simultaneously, followed by batched SQLite writes. The two-phase model here
+/// reflects the actual work: one parse pass, then N storage batches.
+///
 /// Version history:
 ///   1.0 — Session 51: initial implementation
-public enum IndexingStage: String, Sendable {
-    /// XML is being parsed and document text extracted.
-    case parsing
-    /// Date fields are being extracted from document headers.
-    case extractingDates
-    /// Person mentions are being resolved and stored.
-    case indexingPersons
-    /// Documents are being written to the FTS5 full-text index.
-    case buildingFTS5
+///   2.0 — Session 112: replace four-stage sequence with .reading / .storingBatch / .complete
+public enum IndexingStage: Sendable, Equatable {
+    /// Single-pass XML parse: document text, dates, persons, and cross-references
+    /// are all extracted simultaneously. `totalDocuments` is 0 until the parse
+    /// completes and the count is known.
+    case reading
+    /// Batched SQLite writes: FTS5 rows, document cache, and auxiliary tables.
+    /// `current` is the 1-based batch number; `total` is the total batch count.
+    case storingBatch(current: Int, total: Int)
     /// All stages are complete for this volume.
     case complete
 }
@@ -288,6 +295,73 @@ public struct IndexingProgressUpdate: Sendable, Equatable {
         self.completedDocuments = completedDocuments
         self.totalDocuments = totalDocuments
         self.docsPerSecond = docsPerSecond
+    }
+}
+
+// MARK: - VolumeMetadataDiscovered
+
+/// Aggregate metrics emitted by `IndexingPipeline.metadataStream` once per volume,
+/// immediately after the XML parse phase completes and before storage begins.
+///
+/// All integer counts are zero-safe — callers can compare against 0 without
+/// optional handling. `dateRangeMin`/`dateRangeMax` are `nil` when no document
+/// in the volume carries a parseable date.
+///
+/// Version history:
+///   1.0 — Session 113: initial implementation
+///   1.1 — Session 116: glossaryPersonNames added for IndexingContextCard key-persons chips
+public struct VolumeMetadataDiscovered: Sendable {
+    /// The volume that was just parsed.
+    public let volumeId: String
+    /// Total number of documents in the volume.
+    public let totalDocuments: Int
+    /// Number of documents classified as editorial notes.
+    public let editorialNoteCount: Int
+    /// Number of unique person refs mentioned across all documents.
+    public let uniquePersonCount: Int
+    /// Number of cross-reference edges originating from this volume.
+    public let crossReferenceCount: Int
+    /// Number of documents that carry a parseable date.
+    public let datedDocumentCount: Int
+    /// ISO-8601 earliest document date found, or `nil` if no dates are present.
+    public let dateRangeMin: String?
+    /// ISO-8601 latest document date found, or `nil` if no dates are present.
+    public let dateRangeMax: String?
+    /// Number of persons listed in the volume's biographical glossary.
+    public let glossaryPersonCount: Int
+    /// Number of terms listed in the volume's subject glossary.
+    public let glossaryTermCount: Int
+    /// Up to 12 person names from the volume's biographical glossary, sorted alphabetically.
+    ///
+    /// Populated from the first 12 entries (by name) in the parsed glossary. Empty when the
+    /// volume carries no biographical glossary. Used by `IndexingContextCard` to render
+    /// key-person chips while the write phase is in progress.
+    public let glossaryPersonNames: [String]
+
+    public init(
+        volumeId: String,
+        totalDocuments: Int,
+        editorialNoteCount: Int,
+        uniquePersonCount: Int,
+        crossReferenceCount: Int,
+        datedDocumentCount: Int,
+        dateRangeMin: String?,
+        dateRangeMax: String?,
+        glossaryPersonCount: Int,
+        glossaryTermCount: Int,
+        glossaryPersonNames: [String] = []
+    ) {
+        self.volumeId = volumeId
+        self.totalDocuments = totalDocuments
+        self.editorialNoteCount = editorialNoteCount
+        self.uniquePersonCount = uniquePersonCount
+        self.crossReferenceCount = crossReferenceCount
+        self.datedDocumentCount = datedDocumentCount
+        self.dateRangeMin = dateRangeMin
+        self.dateRangeMax = dateRangeMax
+        self.glossaryPersonCount = glossaryPersonCount
+        self.glossaryTermCount = glossaryTermCount
+        self.glossaryPersonNames = glossaryPersonNames
     }
 }
 
