@@ -337,7 +337,7 @@ struct CollectionEditorView: View {
                 addByTagSection
             }
             .formStyle(.grouped)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
 
@@ -348,8 +348,9 @@ struct CollectionEditorView: View {
                 if !sortedEntries.isEmpty { actionsSection }
             }
             .formStyle(.grouped)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxHeight: .infinity)
     }
 
     // MARK: - Smart Collection Section

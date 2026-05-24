@@ -105,6 +105,12 @@ enum DocumentSheet: Identifiable {
 ///          ASTToRenderNodeConverter.renderingVersion(for:)
 ///   2.4 — Session 106: @Query for stored highlights; overlay rendering; stale warning banner;
 ///          DocumentSheet.noteEditorForHighlight; note anchoring to highlights
+///   2.5 — Session 107: iPad (.regular) side panel for research notes; DocumentSheet.editNote;
+///          @Query documentNotes; iPadDocumentLayout + notesPanel
+///   2.6 — Session 108: @Environment(\.openWindow); Source Explorer opens in new window on iPad;
+///          "Open in New Window" menu item routes to DocumentWindowID Stage Manager scene
+///   2.7 — Session 109: Notes panel hidden during highlight mode; notesPanel frame fill fix;
+///          note count badge; CollectionEditorView iPadCollectionLayout frame fix
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -862,8 +868,12 @@ struct DocumentView: View {
     private func iPadDocumentLayout(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
         HStack(spacing: 0) {
             documentContent(vm: vm, model: model)
-            Divider()
-            notesPanel
+            // Notes panel is hidden while highlight mode is active so the text view
+            // gets full width for precise selection. It re-appears when Done is tapped.
+            if !showHighlightMode {
+                Divider()
+                notesPanel
+            }
         }
     }
 
@@ -873,6 +883,15 @@ struct DocumentView: View {
                 Text(String(localized: "document.notesPanel.title",
                             defaultValue: "Research Notes"))
                     .font(.headline)
+                if !documentNotes.isEmpty {
+                    Text("\(documentNotes.count)")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.12))
+                        .foregroundStyle(Color.accentColor)
+                        .clipShape(Capsule())
+                }
                 Spacer()
                 Button {
                     activeSheet = .noteEditor
@@ -899,6 +918,7 @@ struct DocumentView: View {
                                defaultValue: "Tap + to add a research note for this document.")
                     )
                 )
+                .frame(maxHeight: .infinity)
             } else {
                 List(documentNotes) { note in
                     Button {
@@ -928,7 +948,8 @@ struct DocumentView: View {
                 .listStyle(.plain)
             }
         }
-        .frame(width: 280)
+        .frame(width: 280, alignment: .top)
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(Color(uiColor: .secondarySystemBackground))
     }
 }
