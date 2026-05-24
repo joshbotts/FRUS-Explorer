@@ -50,6 +50,9 @@ struct CollectionEditorView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
 
     // MARK: - SwiftData queries
 
@@ -238,16 +241,17 @@ struct CollectionEditorView: View {
 
     private var iOSBody: some View {
         NavigationStack {
-            Form {
-                nameSection
-                noteSection
-                smartCollectionSection
-                documentsSection
-                addByTagSection
-                if !sortedEntries.isEmpty {
-                    actionsSection
+            #if os(iOS)
+            Group {
+                if sizeClass == .regular {
+                    iPadCollectionLayout
+                } else {
+                    iPhoneCollectionForm
                 }
             }
+            #else
+            iPhoneCollectionForm
+            #endif
             .navigationTitle(isNewCollection
                 ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
                 : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
@@ -309,6 +313,43 @@ struct CollectionEditorView: View {
         #if os(iOS)
         .presentationDetents([.large])
         #endif
+    }
+
+    // MARK: - iOS Form Variants
+
+    private var iPhoneCollectionForm: some View {
+        Form {
+            nameSection
+            noteSection
+            smartCollectionSection
+            documentsSection
+            addByTagSection
+            if !sortedEntries.isEmpty { actionsSection }
+        }
+    }
+
+    /// Two-column layout for iPad (`horizontalSizeClass == .regular`).
+    /// Left column: document list + add-by-tag. Right column: name, note, smart collection, actions.
+    private var iPadCollectionLayout: some View {
+        HStack(alignment: .top, spacing: 0) {
+            Form {
+                documentsSection
+                addByTagSection
+            }
+            .formStyle(.grouped)
+            .frame(maxWidth: .infinity)
+
+            Divider()
+
+            Form {
+                nameSection
+                noteSection
+                smartCollectionSection
+                if !sortedEntries.isEmpty { actionsSection }
+            }
+            .formStyle(.grouped)
+            .frame(maxWidth: .infinity)
+        }
     }
 
     // MARK: - Smart Collection Section

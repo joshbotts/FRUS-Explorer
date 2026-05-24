@@ -32,6 +32,7 @@ enum DocumentSheet: Identifiable {
     case crossReferenceGraph
     case summarizePromptPicker
     case sourceExplorer(String)
+    case editNote(ResearchNote)
 
     var id: String {
         switch self {
@@ -43,6 +44,7 @@ enum DocumentSheet: Identifiable {
         case .crossReferenceGraph:             return "crossReferenceGraph"
         case .summarizePromptPicker:           return "summarizePromptPicker"
         case .sourceExplorer:                  return "sourceExplorer"
+        case .editNote(let note):              return "editNote-\(note.id)"
         }
     }
 }
@@ -122,7 +124,10 @@ struct DocumentView: View {
     /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
     @State private var pendingHighlightLink: UUID? = nil
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
     @Query private var highlights: [DocumentHighlight]
+    @Query private var documentNotes: [ResearchNote]
 
     // MARK: - Init
 
@@ -135,6 +140,13 @@ struct DocumentView: View {
                 h.volumeId == vId && h.documentId == dId
             },
             sort: \DocumentHighlight.createdAt
+        )
+        self._documentNotes = Query(
+            filter: #Predicate<ResearchNote> { n in
+                n.volumeId == vId && n.documentId == dId
+            },
+            sort: \ResearchNote.lastModified,
+            order: .reverse
         )
     }
 
@@ -232,7 +244,11 @@ struct DocumentView: View {
                 description: Text(err.localizedDescription)
             )
         } else if let model = vm.renderModel {
-            documentContent(vm: vm, model: model)
+            if sizeClass == .regular {
+                iPadDocumentLayout(vm: vm, model: model)
+            } else {
+                documentContent(vm: vm, model: model)
+            }
         }
     }
 
@@ -356,6 +372,14 @@ struct DocumentView: View {
                     volumeId: entry.volumeId,
                     activeProjectId: appState.activeProjectId,
                     linkedHighlightId: hlId,
+                    indexingPipeline: appState.indexingPipeline
+                )
+            case .editNote(let note):
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    noteToEdit: note,
                     indexingPipeline: appState.indexingPipeline
                 )
             case .crossReferenceGraph:
@@ -804,6 +828,82 @@ struct DocumentView: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
         #endif
+    }
+
+    // MARK: - iPad Layout (horizontalSizeClass == .regular)
+
+    @ViewBuilder
+    private func iPadDocumentLayout(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
+        HStack(spacing: 0) {
+            documentContent(vm: vm, model: model)
+            Divider()
+            notesPanel
+        }
+    }
+
+    private var notesPanel: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "document.notesPanel.title",
+                            defaultValue: "Research Notes"))
+                    .font(.headline)
+                Spacer()
+                Button {
+                    activeSheet = .noteEditor
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.notesPanel.add.a11y",
+                           defaultValue: "Add research note")
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            if documentNotes.isEmpty {
+                ContentUnavailableView(
+                    String(localized: "document.notesPanel.empty.title",
+                           defaultValue: "No Notes"),
+                    systemImage: "note.text",
+                    description: Text(
+                        String(localized: "document.notesPanel.empty.detail",
+                               defaultValue: "Tap + to add a research note for this document.")
+                    )
+                )
+            } else {
+                List(documentNotes) { note in
+                    Button {
+                        activeSheet = .editNote(note)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(note.bodyText.isEmpty
+                                 ? String(localized: "document.notesPanel.emptyNote",
+                                          defaultValue: "Empty note")
+                                 : note.bodyText)
+                                .font(.callout)
+                                .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
+                                .lineLimit(4)
+                            Text(note.lastModified, style: .relative)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        note.bodyText.isEmpty
+                            ? String(localized: "document.notesPanel.emptyNote.a11y",
+                                     defaultValue: "Empty note")
+                            : note.bodyText
+                    )
+                }
+                .listStyle(.plain)
+            }
+        }
+        .frame(width: 280)
+        .background(Color(uiColor: .secondarySystemBackground))
     }
 }
 
