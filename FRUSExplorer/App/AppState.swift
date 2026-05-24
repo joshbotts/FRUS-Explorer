@@ -61,6 +61,7 @@ import SwiftData
 ///          cross-platform (removed #if os(iOS) guard) for macOS StatusBarView
 ///   2.9 — Session 100: logEvent(_:) + loggingContext + ResearchSession management
 ///   3.0 — Session 101: logEvent(_:) gated on researchSessionLoggingEnabled UserDefaults key
+///   3.1 — Session 114: completedIndexingMetadata for post-index summary card
 
 // MARK: - AppTab
 
@@ -327,8 +328,20 @@ final class AppState {
     ///   1.0 — Session 113: initial implementation
     var lastDiscoveredMetadata: VolumeMetadataDiscovered? = nil
 
+    /// The metadata of the most recently completed indexing pass.
+    ///
+    /// Set to `lastDiscoveredMetadata` when the pipeline emits `.complete` for a volume.
+    /// Cleared to `nil` by `IndexingSummaryCard.onDismiss` (after the 6-second auto-dismiss
+    /// or when the user taps an action). Views observe this to render the post-index
+    /// summary card.
+    ///
+    /// Version history:
+    ///   1.0 — Session 114: initial implementation
+    var completedIndexingMetadata: VolumeMetadataDiscovered? = nil
+
     /// Subscribes to `pipeline.progressStream` and `pipeline.metadataStream`, forwarding
-    /// updates onto the main actor as `currentIndexingProgress` and `lastDiscoveredMetadata`.
+    /// updates onto the main actor as `currentIndexingProgress`, `lastDiscoveredMetadata`,
+    /// and `completedIndexingMetadata`.
     ///
     /// Safe to call multiple times — each call replaces the previous subscription
     /// (the prior Tasks are abandoned; streams are single-consumer by design).
@@ -337,6 +350,7 @@ final class AppState {
             for await update in pipeline.progressStream {
                 guard let self else { return }
                 if update.stage == .complete {
+                    self.completedIndexingMetadata = self.lastDiscoveredMetadata
                     self.currentIndexingProgress = nil
                 } else {
                     if self.currentIndexingProgress?.volumeId != update.volumeId {
