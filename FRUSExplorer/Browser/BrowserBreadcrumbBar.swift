@@ -237,6 +237,8 @@ extension BrowserViewModel.BrowserLevel {
                               defaultValue: "Doc. \(num)")
             }
             return String(entry.header.prefix(40))
+        case .people:
+            return String(localized: "browser.breadcrumb.people", defaultValue: "People")
         }
     }
 }

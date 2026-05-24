@@ -12,13 +12,13 @@ import Foundation
 
 /// Supported output formats for collection export.
 ///
-/// `.docx` is reserved for a future implementation and intentionally absent.
-///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
+///   1.1 — Session 82: added `.docx` backed by `DocxCollectionExporter`
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
+    case docx
 
     var id: String { rawValue }
 
@@ -26,6 +26,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         switch self {
         case .pdf:  return "PDF"
         case .html: return "HTML"
+        case .docx: return "DOCX"
         }
     }
 
@@ -36,6 +37,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         switch self {
         case .pdf:  return PDFCollectionExporter()
         case .html: return HTMLCollectionExporter()
+        case .docx: return DocxCollectionExporter()
         }
     }
 }
@@ -48,10 +50,17 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 /// text, and optional note text before handing off to an exporter. Exporters
 /// are pure data consumers and perform no I/O other than writing the output file.
 ///
+/// `renderModel` carries structured render-node output for rich formatting.
+/// When non-nil, HTML and PDF exporters emit structured output (headings,
+/// datelines, footnotes, emphasis); when nil they fall back to the flat
+/// `bodyText` string.
+///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 73: added `citation` (formatted citation string) and `historyStateGovURL`
 ///          fields with empty-string defaults; both included in PDF and HTML exports
+///   1.2 — Session 81: added `renderModel: FRUSDocumentRenderModel?` for rich export output;
+///          flat-text fallback preserved when render model is unavailable
 struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     let documentId: String
@@ -63,7 +72,7 @@ struct CollectionExportDocument: Sendable {
     let title: String
     /// ISO 8601 date string, if known.
     let date: String?
-    /// Plain-text body of the document.
+    /// Plain-text body of the document. Preserved as fallback when `renderModel` is nil.
     let bodyText: String
     /// Optional research note text linked to this entry.
     let noteText: String?
@@ -71,6 +80,9 @@ struct CollectionExportDocument: Sendable {
     let citation: String
     /// `https://history.state.gov/historicaldocuments/{volumeId}/{documentId}`
     let historyStateGovURL: String
+    /// Fully converted render model for structured export output.
+    /// Non-nil when the volume XML was successfully parsed during collection assembly.
+    let renderModel: FRUSDocumentRenderModel?
 
     init(
         documentId: String,
@@ -81,7 +93,8 @@ struct CollectionExportDocument: Sendable {
         bodyText: String,
         noteText: String? = nil,
         citation: String = "",
-        historyStateGovURL: String = ""
+        historyStateGovURL: String = "",
+        renderModel: FRUSDocumentRenderModel? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -92,6 +105,7 @@ struct CollectionExportDocument: Sendable {
         self.noteText = noteText
         self.citation = citation
         self.historyStateGovURL = historyStateGovURL
+        self.renderModel = renderModel
     }
 }
 

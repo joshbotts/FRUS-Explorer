@@ -35,6 +35,7 @@ import SwiftData
 ///   1.1 — Session 25: add Global Context View entry point
 ///   1.2 — Session 44: Done button and dismiss guarded to non-iOS; GlobalContextView
 ///          presented as NavigationLink on iOS, sheet on macOS
+///   1.3 — Session 101: Session Log NavigationLink added to activitySection
 struct ProjectContextView: View {
 
     @Environment(AppState.self) private var appState
@@ -199,6 +200,15 @@ struct ProjectContextView: View {
                     String(localized: "project.context.collections",
                            defaultValue: "Collections"),
                     systemImage: "books.vertical"
+                )
+            }
+            NavigationLink {
+                SessionLogView()
+            } label: {
+                Label(
+                    String(localized: "project.context.sessionLog",
+                           defaultValue: "Session Log"),
+                    systemImage: "clock.badge.checkmark"
                 )
             }
         }

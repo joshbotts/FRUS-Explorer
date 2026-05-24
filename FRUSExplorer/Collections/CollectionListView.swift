@@ -22,14 +22,16 @@ import SwiftData
 /// The "+" toolbar button creates a new collection and navigates to its editor.
 ///
 /// ## Deletion
-/// Swipe-to-delete removes the collection and all its entries (cascade rule
-/// is defined on the SwiftData model).
+/// Swipe-to-delete removes the collection and all its entries. Entries are deleted
+/// explicitly before the parent collection because `deleteRule: .nullify` is used for
+/// CloudKit compatibility (cascade rules are not supported by CloudKit).
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 35: macOS compatibility — guard `.insetGrouped` list style
 ///   1.2 — Session 55: add Done toolbar button on macOS (previously no close control)
 ///   1.3 — Add `showDoneButton` parameter; set to `false` when hosted in a Window scene
+///   1.4 — Session 89: manual entry deletion before collection delete (deleteRule .nullify)
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -144,6 +146,7 @@ struct CollectionListView: View {
     private func deleteCollections(at indexSet: IndexSet) {
         for index in indexSet {
             let c = filteredCollections[index]
+            for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
             modelContext.delete(c)
         }
         try? modelContext.save()

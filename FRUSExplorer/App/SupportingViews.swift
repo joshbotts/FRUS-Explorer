@@ -8,6 +8,7 @@
 
 #if os(macOS)
 
+import AppKit
 import SwiftUI
 import SwiftData
 
@@ -15,15 +16,14 @@ import SwiftData
 
 /// Persistent research action toolbar displayed between the titlebar and the document body.
 ///
-/// Contains: Add to collection · Add note · Tag · Cite (popover) · collapse chevron.
-/// Collapses to a "+" re-expand button when `isCollapsed` is true.
+/// Contains: Add to collection · Add note · Tag · Cite (popover).
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — Removed collapse behaviour
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
-    @Binding var isCollapsed: Bool
     @Binding var showCitationPopover: Bool
 
     @Environment(AppState.self) private var appState
@@ -37,91 +37,68 @@ struct ResearchStripView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            if isCollapsed {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) { isCollapsed = false }
-                } label: {
-                    Image(systemName: "plus.circle").font(.system(size: 14))
-                }
-                .buttonStyle(.plain)
+            Text("Research")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
+                .kerning(0.8)
                 .padding(.leading, 16)
-                .padding(.vertical, 5)
-                Spacer()
-            } else {
-                Text("Research")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.tertiary)
-                    .textCase(.uppercase)
-                    .kerning(0.8)
-                    .padding(.leading, 16)
 
-                ResearchStripButton(
-                    title: "Add to collection",
-                    systemImage: "folder.badge.plus",
-                    isDisabled: isDisabled
-                ) { showAddToCollection = true }
+            ResearchStripButton(
+                title: "Add to collection",
+                systemImage: "folder.badge.plus",
+                isDisabled: isDisabled
+            ) { showAddToCollection = true }
 
-                ResearchStripButton(
-                    title: "Add note",
-                    systemImage: "note.text.badge.plus",
-                    isDisabled: isDisabled
-                ) { showAddNote = true }
+            ResearchStripButton(
+                title: "Add note",
+                systemImage: "note.text.badge.plus",
+                isDisabled: isDisabled
+            ) { showAddNote = true }
 
-                ResearchStripButton(
-                    title: "Tag",
-                    systemImage: "tag",
-                    isDisabled: isDisabled
-                ) { showTagPicker = true }
+            ResearchStripButton(
+                title: "Tag",
+                systemImage: "tag",
+                isDisabled: isDisabled
+            ) { showTagPicker = true }
 
-                ResearchStripButton(
-                    title: "Graph",
-                    systemImage: "point.3.connected.trianglepath.dotted",
-                    isDisabled: isDisabled
-                ) {
-                    if let entry {
-                        appState.currentGraphEntry = entry
-                        openWindow(id: "frus.crossReferenceGraph")
-                    }
+            ResearchStripButton(
+                title: "Graph",
+                systemImage: "point.3.connected.trianglepath.dotted",
+                isDisabled: isDisabled
+            ) {
+                if let entry {
+                    appState.currentGraphEntry = entry
+                    openWindow(id: "frus.crossReferenceGraph")
                 }
-
-                // Cite — opens citation popover
-                Button {
-                    showCitationPopover = true
-                } label: {
-                    Label("Cite", systemImage: "quote.closing")
-                        .font(.system(size: 11))
-                        .foregroundStyle(isDisabled ? Color.secondary : Color.accentColor)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(isDisabled ? Color.clear : Color.accentColor.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .strokeBorder(
-                            isDisabled ? Color.clear : Color.accentColor.opacity(0.3),
-                            lineWidth: 0.5
-                        )
-                )
-                .disabled(isDisabled)
-                .popover(isPresented: $showCitationPopover, arrowEdge: .bottom) {
-                    if let entry { CitationPopoverView(entry: entry) }
-                }
-
-                Spacer()
-
-                // Collapse chevron
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) { isCollapsed = true }
-                } label: {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-                .padding(.trailing, 14)
             }
+
+            // Cite — opens citation popover
+            Button {
+                showCitationPopover = true
+            } label: {
+                Label("Cite", systemImage: "quote.closing")
+                    .font(.system(size: 11))
+                    .foregroundStyle(isDisabled ? Color.secondary : Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(isDisabled ? Color.clear : Color.accentColor.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(
+                        isDisabled ? Color.clear : Color.accentColor.opacity(0.3),
+                        lineWidth: 0.5
+                    )
+            )
+            .disabled(isDisabled)
+            .popover(isPresented: $showCitationPopover, arrowEdge: .bottom) {
+                if let entry { CitationPopoverView(entry: entry) }
+            }
+
+            Spacer()
         }
         .frame(height: 32)
         .background(.bar)
@@ -629,6 +606,7 @@ struct StatusBarView: View {
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — Session 86: Export menu (Copy BibTeX, Copy RIS, Save as .bib)
 struct CitationPopoverView: View {
     let entry: DocumentBrowserEntry
 
@@ -745,13 +723,30 @@ struct CitationPopoverView: View {
 
                 Spacer()
 
-                Button {
-                    // Zotero export — deferred to future session
+                Menu {
+                    Button {
+                        if let vol = volumeEntry { copyToClipboard(bibtexString(vol: vol)) }
+                    } label: {
+                        Label("Copy BibTeX", systemImage: "doc.plaintext")
+                    }
+                    Button {
+                        if let vol = volumeEntry { copyToClipboard(risString(vol: vol)) }
+                    } label: {
+                        Label("Copy RIS", systemImage: "doc.plaintext")
+                    }
+                    Divider()
+                    Button {
+                        if let vol = volumeEntry { saveBibFile(bibtexString(vol: vol)) }
+                    } label: {
+                        Label("Save as .bib\u{2026}", systemImage: "square.and.arrow.down")
+                    }
                 } label: {
-                    Label("Zotero", systemImage: "square.and.arrow.up").font(.system(size: 11))
+                    Label("Export", systemImage: "square.and.arrow.up").font(.system(size: 11))
                 }
+                .menuStyle(.button)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
+                .disabled(volumeEntry == nil)
             }
 
         }
@@ -908,6 +903,45 @@ struct CitationPopoverView: View {
               match.numberOfRanges >= 2,
               let range = Range(match.range(at: 1), in: text) else { return nil }
         return String(text[range])
+    }
+
+    // MARK: - BibTeX / RIS Export
+
+    private func bibtexString(vol: VolumeManifestEntry) -> String {
+        let year = effectiveYear(for: vol)
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = FRUSVolumeMetadata(vol)
+        return BibtexExporter().export(
+            volumeId: entry.volumeId,
+            document: docMeta,
+            volume: volMeta,
+            year: year,
+            url: canonicalURL
+        )
+    }
+
+    private func risString(vol: VolumeManifestEntry) -> String {
+        let year = effectiveYear(for: vol)
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = FRUSVolumeMetadata(vol)
+        return RISExporter().export(
+            document: docMeta,
+            volume: volMeta,
+            year: year,
+            url: canonicalURL
+        )
+    }
+
+    @MainActor
+    private func saveBibFile(_ content: String) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.init(filenameExtension: "bib") ?? .data]
+        panel.nameFieldStringValue = "\(entry.volumeId)-\(entry.documentId).bib"
+        panel.title = "Save BibTeX Citation"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            try? content.write(to: url, atomically: true, encoding: .utf8)
+        }
     }
 
     // MARK: - Helpers
@@ -1253,6 +1287,7 @@ struct GlossDetailSheet: View {
 ///   1.1 — sort and filter sidebar controls; volume-structure sheet with in-app
 ///          download/indexing; `CorpusVolumeDocumentListView` replaced by
 ///          `CorpusVolumeDetailSheet` + `CorpusSectionDocumentListView`
+///   1.2 — Session 87: People toolbar button opens `PersonIndexView` sheet
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -1261,6 +1296,7 @@ struct CorpusBrowserWindowView: View {
     @State private var searchText: String = ""
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
+    @State private var showPeopleSheet: Bool = false
 
     private var allEntries: [VolumeManifestEntry] {
         appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -1301,6 +1337,12 @@ struct CorpusBrowserWindowView: View {
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    Button { showPeopleSheet = true } label: {
+                        Image(systemName: "person.2")
+                    }
+                    .help("Browse people mentioned in indexed volumes")
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button { sortDescending.toggle() } label: {
                         Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
                     }
@@ -1326,6 +1368,19 @@ struct CorpusBrowserWindowView: View {
             }
         }
         .frame(minWidth: 540, minHeight: 440)
+        .sheet(isPresented: $showPeopleSheet) {
+            NavigationStack {
+                PersonIndexView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(String(localized: "common.done", defaultValue: "Done")) {
+                                showPeopleSheet = false
+                            }
+                        }
+                    }
+            }
+            .frame(minWidth: 480, minHeight: 520)
+        }
     }
 
     private func subseriesRow(_ sub: String) -> some View {

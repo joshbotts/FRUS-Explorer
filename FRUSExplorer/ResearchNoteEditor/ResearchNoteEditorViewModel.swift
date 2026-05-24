@@ -97,12 +97,19 @@ final class ResearchNoteEditorViewModel {
     // MARK: - Save / Delete
 
     /// Saves the editor state: updates the existing note or inserts a new one.
-    func save(context: ModelContext) {
+    ///
+    /// - Returns: The `id` of the saved note — used by callers to log a `noteSave` event.
+    @discardableResult
+    func save(context: ModelContext) -> UUID? {
         if let note = noteToEdit {
             note.bodyText = bodyText
             note.projectIds = projectIds
             note.userTagIds = userTagIds
             note.selectedSummaryIds = selectedSummaryIds
+            #if DEBUG
+            print("[ResearchNoteEditor] Saved note for \(volumeId)/\(documentId)")
+            #endif
+            return note.id
         } else {
             let note = ResearchNote(
                 documentId: documentId,
@@ -113,10 +120,11 @@ final class ResearchNoteEditorViewModel {
                 selectedSummaryIds: selectedSummaryIds
             )
             context.insert(note)
+            #if DEBUG
+            print("[ResearchNoteEditor] Saved note for \(volumeId)/\(documentId)")
+            #endif
+            return note.id
         }
-        #if DEBUG
-        print("[ResearchNoteEditor] Saved note for \(volumeId)/\(documentId)")
-        #endif
     }
 
     /// Deletes the note being edited from the SwiftData context. No-op for new notes.

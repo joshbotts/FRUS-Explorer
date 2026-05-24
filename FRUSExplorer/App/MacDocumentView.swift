@@ -35,6 +35,15 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding (macOS-only; replaces BrowserView-centric architecture)
+///   1.1 — Session 91: removed private EditorialNoteBadge and TagChip; now uses
+///          shared FRUSTheme components (EditorialNoteBadge, FRUSTagChip)
+///   1.2 — Session 100: logEvent(.documentOpen) in .task
+///   1.3 — Session 103: highlight mode toolbar toggle + DocumentHighlightTextView +
+///          color-picker popover + DocumentHighlight SwiftData insertion
+///   1.4 — Session 105: renderingVersion uses SHA-256(flatText ++ kVersion) via
+///          ASTToRenderNodeConverter.renderingVersion(for:)
+///   1.5 — Session 106: @Query for stored highlights; overlay rendering; stale warning banner;
+///          note anchoring ("Add Note to Highlight" toolbar item + ResearchNoteEditorView sheet)
 @MainActor
 struct MacDocumentView: View {
 
@@ -49,6 +58,17 @@ struct MacDocumentView: View {
     @State private var prevEntry: DocumentBrowserEntry? = nil
     @State private var nextEntry: DocumentBrowserEntry? = nil
 
+    // MARK: Highlight Mode
+    @State private var showHighlightMode = false
+    @State private var highlightTextSelection: NSRange? = nil
+    @State private var showHighlightColorPicker = false
+    /// The `DocumentHighlight.id` of the highlight most recently created in this session.
+    /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
+    @State private var pendingHighlightLink: UUID? = nil
+    @State private var showHighlightNoteEditor = false
+
+    @Query private var highlights: [DocumentHighlight]
+
     // MARK: - Init
 
     init(entry: DocumentBrowserEntry, navigationPath: Binding<[DocumentBrowserEntry]>) {
@@ -62,21 +82,116 @@ struct MacDocumentView: View {
             parser: FRUSDocumentParser(),
             subjectTagStore: SubjectTagStore()
         ))
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        self._highlights = Query(
+            filter: #Predicate<DocumentHighlight> { h in
+                h.volumeId == vId && h.documentId == dId
+            },
+            sort: \DocumentHighlight.createdAt
+        )
     }
 
     // MARK: - Body
 
     var body: some View {
+        Group {
+            if showHighlightMode {
+                highlightModeContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                normalModeScrollView
+            }
+        }
+        .task {
+            await loadDocument()
+            appState.logEvent(.documentOpen(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId,
+                title: entry.header.isEmpty ? entry.documentId : entry.header
+            ))
+        }
+        .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
+            activity.title = entry.header.isEmpty ? entry.documentId : entry.header
+            activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
+            activity.isEligibleForHandoff = true
+        }
+        .sheet(item: $vm.selectedPerson) { person in
+            PersonDetailSheet(
+                person: person,
+                mentionCount: vm.selectedPersonMentionCount,
+                onFindAllMentions: {
+                    appState.pendingSearch = SearchParameters(personRef: person.ref)
+                }
+            )
+        }
+        .sheet(item: $vm.selectedGloss) { gloss in
+            GlossDetailSheet(gloss: gloss)
+        }
+        .sheet(isPresented: $showHighlightNoteEditor, onDismiss: { pendingHighlightLink = nil }) {
+            if let hlId = pendingHighlightLink {
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    linkedHighlightId: hlId,
+                    indexingPipeline: appState.indexingPipeline
+                )
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: toggleHighlightMode) {
+                    Image(systemName: showHighlightMode
+                          ? "pencil.tip.crop.circle.fill"
+                          : "pencil.tip.crop.circle")
+                }
+                .help(showHighlightMode
+                      ? String(localized: "doc.highlightMode.exit",
+                               defaultValue: "Exit Highlight Mode")
+                      : String(localized: "doc.highlightMode.enter",
+                               defaultValue: "Highlight Mode"))
+                .disabled(vm.renderModel == nil)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showHighlightColorPicker = true
+                } label: {
+                    Image(systemName: "paintbrush.pointed")
+                }
+                .help(String(localized: "doc.createHighlight",
+                             defaultValue: "Create Highlight"))
+                .disabled(!showHighlightMode || (highlightTextSelection?.length ?? 0) == 0)
+                .opacity(showHighlightMode ? 1 : 0)
+                .popover(isPresented: $showHighlightColorPicker) {
+                    highlightColorPicker
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showHighlightNoteEditor = true
+                } label: {
+                    Image(systemName: "note.text.badge.plus")
+                }
+                .help(String(localized: "doc.addNoteToHighlight",
+                             defaultValue: "Add Note to Highlight"))
+                .disabled(pendingHighlightLink == nil)
+                .opacity(showHighlightMode ? 1 : 0)
+            }
+        }
+    }
+
+    // MARK: - Normal Mode
+
+    private var normalModeScrollView: some View {
         ScrollView {
             // VStack (not LazyVStack) so each child receives a concrete width
             // proposal, allowing FlowLayout to correctly reflow inline text.
             VStack(alignment: .leading, spacing: 0) {
 
-                // Identity line
                 documentIdentityView
                     .padding(.bottom, 6)
 
-                // Document body + footnotes + summary
                 if let renderModel = vm.renderModel {
                     FRUSDocumentRenderer(
                         nodes: renderModel.bodyNodes,
@@ -94,13 +209,11 @@ struct MacDocumentView: View {
                     )
                     .padding(.bottom, 20)
 
-                    // Inline summary block
                     if appState.summarizationService != nil {
                         SummaryBlockView(vm: vm)
                             .padding(.bottom, 24)
                     }
 
-                    // Footnote section
                     if !renderModel.footnotes.isEmpty {
                         FootnoteSectionView(
                             footnotes: renderModel.footnotes,
@@ -124,7 +237,6 @@ struct MacDocumentView: View {
                     .padding(.top, 40)
                 }
 
-                // Volume navigation
                 volumeNavigationView
                     .padding(.top, 20)
                     .padding(.bottom, 32)
@@ -133,21 +245,126 @@ struct MacDocumentView: View {
             .padding(.horizontal, 48)
             .padding(.top, 28)
         }
-        .task { await loadDocument() }
-        // Person sheet
-        .sheet(item: $vm.selectedPerson) { person in
-            PersonDetailSheet(
-                person: person,
-                mentionCount: vm.selectedPersonMentionCount,
-                onFindAllMentions: {
-                    appState.pendingSearch = SearchParameters(personRef: person.ref)
-                }
+    }
+
+    // MARK: - Highlight Mode
+
+    @ViewBuilder
+    private var highlightModeContent: some View {
+        if let renderModel = vm.renderModel {
+            let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: renderModel)
+            let hasStale = highlights.contains { $0.renderingVersion != currentVersion }
+            VStack(spacing: 0) {
+                if hasStale { staleHighlightBanner }
+                documentIdentityView
+                    .padding(.horizontal, 48)
+                    .padding(.top, 18)
+                    .padding(.bottom, 10)
+                Divider()
+                DocumentHighlightTextView(
+                    renderModel: renderModel,
+                    highlights: highlights,
+                    selectionRange: $highlightTextSelection
+                )
+                Divider()
+                volumeNavigationView
+                    .padding(.horizontal, 48)
+                    .padding(.vertical, 10)
+            }
+        } else if vm.isLoading {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let error = vm.loadError {
+            ContentUnavailableView(
+                "Could not load document",
+                systemImage: "exclamationmark.triangle",
+                description: Text(error.localizedDescription)
             )
         }
-        // Gloss sheet
-        .sheet(item: $vm.selectedGloss) { gloss in
-            GlossDetailSheet(gloss: gloss)
+    }
+
+    // MARK: - Highlight Color Picker
+
+    private var highlightColorPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "doc.highlight.pickColor",
+                        defaultValue: "Highlight Color"))
+                .font(.headline)
+            HStack(spacing: 10) {
+                ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
+                    Button {
+                        createHighlight(color: color)
+                        showHighlightColorPicker = false
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(swiftUIColor(for: color))
+                                .frame(width: 32, height: 32)
+                            Circle()
+                                .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                .frame(width: 32, height: 32)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help(color.rawValue.capitalized)
+                }
+            }
         }
+        .padding(16)
+    }
+
+    private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
+        switch color {
+        case .yellow: return .yellow
+        case .green: return .green
+        case .blue: return .blue
+        case .pink: return .pink
+        }
+    }
+
+    // MARK: - Stale Highlight Banner
+
+    private var staleHighlightBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(String(localized: "highlight.stale.warning",
+                        defaultValue: "Some highlights may be misaligned — the document has been updated since they were created."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.08))
+    }
+
+    // MARK: - Highlight Actions
+
+    private func toggleHighlightMode() {
+        showHighlightMode.toggle()
+        if !showHighlightMode {
+            highlightTextSelection = nil
+            showHighlightColorPicker = false
+            pendingHighlightLink = nil
+        }
+    }
+
+    @MainActor
+    private func createHighlight(color: DocumentHighlight.Color) {
+        guard let range = highlightTextSelection,
+              let model = vm.renderModel else { return }
+        let highlight = DocumentHighlight(
+            volumeId: entry.volumeId,
+            documentId: entry.documentId,
+            startOffset: range.location,
+            endOffset: range.location + range.length,
+            colorTag: color.rawValue,
+            renderingVersion: ASTToRenderNodeConverter.renderingVersion(for: model)
+        )
+        modelContext.insert(highlight)
+        highlightTextSelection = nil
+        pendingHighlightLink = highlight.id
     }
 
     // MARK: - Document Identity
@@ -303,20 +520,6 @@ struct MacDocumentView: View {
 
 }
 
-// MARK: - EditorialNoteBadge
-
-private struct EditorialNoteBadge: View {
-    var body: some View {
-        Text("Editorial note")
-            .font(.system(size: 10, weight: .medium))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(.purple.opacity(0.12))
-            .foregroundStyle(.purple)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-    }
-}
-
 // MARK: - TagRowView
 
 /// Displays system subject tags and user-defined tags for a document.
@@ -331,43 +534,14 @@ struct TagRowView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(systemTags) { tag in
-                        TagChip(label: tag.displayName, style: .system)
+                        FRUSTagChip(label: tag.displayName, style: .system)
                     }
                     ForEach(userTags) { tag in
-                        TagChip(label: "◆ \(tag.name)", style: .user)
+                        FRUSTagChip(label: "◆ \(tag.name)", style: .user)
                     }
                 }
             }
         )
-    }
-}
-
-private struct TagChip: View {
-    enum Style { case system, user }
-    let label: String
-    let style: Style
-
-    var body: some View {
-        Text(label)
-            .font(.system(size: 11))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(
-                style == .user
-                    ? Color.accentColor.opacity(0.12)
-                    : Color.secondary.opacity(0.10)
-            )
-            .foregroundStyle(style == .user ? Color.accentColor : Color.secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(
-                        style == .user
-                            ? Color.accentColor.opacity(0.3)
-                            : Color.secondary.opacity(0.2),
-                        lineWidth: 0.5
-                    )
-            )
     }
 }
 

@@ -35,21 +35,30 @@ import SwiftData
 ///   1.1 — Session 35: macOS compatibility — guard navigationBarTitleDisplayMode,
 ///          EditButton, and export sheet; add NSSavePanel / Reveal in Finder on macOS
 ///   1.2 — Session 73: resolveDocuments() made async; body text loaded via SQLite cache
+///   1.3 — Session 88: timeline button in Documents section header opens `DocumentTimelineView`
 ///          (IndexingPipeline.fetchDocumentBodyText) with XML fallback for un-indexed volumes;
 ///          citation built via HistoryAtStateCitationFormatter; AddByTagSheet, ExportSheetView,
 ///          and MacExportCompleteView made internal (non-private) for use in MacCollectionManagerView
 ///   1.3 — Session 74: two-line research note preview (caption2, tertiary) added to EntryRow
 ///          beneath the volume ID; same preview added to MacEntryRow in MacCollectionManagerView
+///   1.4 — Session 89: Cancel on new collection deletes entries explicitly before the collection
+///          (deleteRule .nullify replaces .cascade for CloudKit compatibility)
+///   1.5 — Session 97: smart collection — `savedSearchId` field on `Collection`; link/unlink UI
+///          in editor; smart export path in `ExportSheetView` resolves documents via `SearchService`
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
 
     // MARK: - SwiftData queries
 
     @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
 
     // MARK: - State
 
@@ -59,9 +68,12 @@ struct CollectionEditorView: View {
     @State private var collectionName: String
     @State private var collectionNote: String
     @State private var sortedEntries: [CollectionEntry]
+    @State private var linkedSavedSearchId: UUID?
 
-    @State private var showAddByTag  = false
-    @State private var showExport    = false
+    @State private var showAddByTag       = false
+    @State private var showExport         = false
+    @State private var showTimeline       = false
+    @State private var showLinkSavedSearch = false
     @State private var exportError: String?
 
     // MARK: - Init
@@ -73,6 +85,7 @@ struct CollectionEditorView: View {
             _collectionNote = State(initialValue: c.note ?? "")
             _sortedEntries = State(initialValue:
                 (c.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
+            _linkedSavedSearchId = State(initialValue: c.savedSearchId)
             isNewCollection = false
         } else {
             let c = Collection(name: "")
@@ -80,6 +93,7 @@ struct CollectionEditorView: View {
             _collectionName = State(initialValue: "")
             _collectionNote = State(initialValue: "")
             _sortedEntries = State(initialValue: [])
+            _linkedSavedSearchId = State(initialValue: nil)
             isNewCollection = true
         }
     }
@@ -87,11 +101,42 @@ struct CollectionEditorView: View {
     // MARK: - Body
 
     var body: some View {
-        #if os(macOS)
-        macBody
-        #else
-        iOSBody
-        #endif
+        Group {
+            #if os(macOS)
+            macBody
+            #else
+            iOSBody
+            #endif
+        }
+        .sheet(isPresented: $showTimeline) {
+            NavigationStack {
+                DocumentTimelineView(
+                    items: sortedEntries.map {
+                        DocumentTimelineView.Item(
+                            volumeId: $0.volumeId,
+                            documentId: $0.documentId,
+                            header: $0.documentId
+                        )
+                    }
+                )
+                .navigationTitle(
+                    String(localized: "timeline.sheet.title", defaultValue: "Timeline")
+                )
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "common.done", defaultValue: "Done")) {
+                            showTimeline = false
+                        }
+                    }
+                }
+            }
+            #if os(macOS)
+            .frame(minWidth: 480, minHeight: 440)
+            #endif
+        }
     }
 
     // MARK: - macOS Body
@@ -121,6 +166,7 @@ struct CollectionEditorView: View {
             Form {
                 nameSection
                 noteSection
+                smartCollectionSection
                 documentsSection
                 addByTagSection
                 if !sortedEntries.isEmpty {
@@ -135,6 +181,7 @@ struct CollectionEditorView: View {
             HStack {
                 Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
                     if isNewCollection {
+                        for entry in sortedEntries { modelContext.delete(entry) }
                         modelContext.delete(collection)
                     }
                     dismiss()
@@ -167,6 +214,9 @@ struct CollectionEditorView: View {
                 appState: appState
             )
         }
+        .sheet(isPresented: $showLinkSavedSearch) {
+            linkSavedSearchSheet
+        }
         .alert(
             String(localized: "collection.editor.export.error.title", defaultValue: "Export Failed"),
             isPresented: Binding(
@@ -191,14 +241,16 @@ struct CollectionEditorView: View {
 
     private var iOSBody: some View {
         NavigationStack {
-            Form {
-                nameSection
-                noteSection
-                documentsSection
-                addByTagSection
-                if !sortedEntries.isEmpty {
-                    actionsSection
+            Group {
+                #if os(iOS)
+                if sizeClass == .regular {
+                    iPadCollectionLayout
+                } else {
+                    iPhoneCollectionForm
                 }
+                #else
+                iPhoneCollectionForm
+                #endif
             }
             .navigationTitle(isNewCollection
                 ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
@@ -210,6 +262,7 @@ struct CollectionEditorView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
                         if isNewCollection {
+                            for entry in sortedEntries { modelContext.delete(entry) }
                             modelContext.delete(collection)
                         }
                         dismiss()
@@ -236,6 +289,9 @@ struct CollectionEditorView: View {
                     appState: appState
                 )
             }
+            .sheet(isPresented: $showLinkSavedSearch) {
+                linkSavedSearchSheet
+            }
             .alert(
                 String(localized: "collection.editor.export.error.title", defaultValue: "Export Failed"),
                 isPresented: Binding(
@@ -256,6 +312,130 @@ struct CollectionEditorView: View {
         }
         #if os(iOS)
         .presentationDetents([.large])
+        #endif
+    }
+
+    // MARK: - iOS Form Variants
+
+    private var iPhoneCollectionForm: some View {
+        Form {
+            nameSection
+            noteSection
+            smartCollectionSection
+            documentsSection
+            addByTagSection
+            if !sortedEntries.isEmpty { actionsSection }
+        }
+    }
+
+    /// Two-column layout for iPad (`horizontalSizeClass == .regular`).
+    /// Left column: document list + add-by-tag. Right column: name, note, smart collection, actions.
+    private var iPadCollectionLayout: some View {
+        HStack(alignment: .top, spacing: 0) {
+            Form {
+                documentsSection
+                addByTagSection
+            }
+            .formStyle(.grouped)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Divider()
+
+            Form {
+                nameSection
+                noteSection
+                smartCollectionSection
+                if !sortedEntries.isEmpty { actionsSection }
+            }
+            .formStyle(.grouped)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    // MARK: - Smart Collection Section
+
+    @ViewBuilder
+    private var smartCollectionSection: some View {
+        Section {
+            if let searchId = linkedSavedSearchId,
+               let savedSearch = allSavedSearches.first(where: { $0.id == searchId }) {
+                HStack {
+                    Label(savedSearch.name, systemImage: "bolt.fill")
+                        .foregroundStyle(Color.accentColor)
+                    Spacer()
+                    Button(String(localized: "collection.editor.smart.unlink",
+                                  defaultValue: "Unlink")) {
+                        linkedSavedSearchId = nil
+                    }
+                    .foregroundStyle(.red)
+                    .buttonStyle(.plain)
+                    .font(.callout)
+                }
+                Text(String(localized: "collection.editor.smart.explanation",
+                            defaultValue: "Documents are resolved from this saved search at export time. Static entries are ignored."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button {
+                    showLinkSavedSearch = true
+                } label: {
+                    Label(String(localized: "collection.editor.smart.link",
+                                 defaultValue: "Link to Saved Search\u{2026}"),
+                          systemImage: "bolt")
+                }
+                .disabled(allSavedSearches.isEmpty)
+                if allSavedSearches.isEmpty {
+                    Text(String(localized: "collection.editor.smart.noSearches",
+                                defaultValue: "Save a search from the Search tab to enable smart collections."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text(String(localized: "collection.editor.smart.header",
+                        defaultValue: "Smart Collection"))
+        }
+    }
+
+    // MARK: - Link Saved Search Sheet
+
+    private var linkSavedSearchSheet: some View {
+        NavigationStack {
+            List(allSavedSearches) { search in
+                Button {
+                    linkedSavedSearchId = search.id
+                    showLinkSavedSearch = false
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(search.name).font(.body)
+                        if !search.queryText.isEmpty {
+                            Text(search.queryText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .foregroundStyle(.primary)
+            }
+            .navigationTitle(String(localized: "collection.editor.smart.picker.title",
+                                    defaultValue: "Link to Saved Search"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "collection.editor.smart.picker.cancel",
+                                  defaultValue: "Cancel")) {
+                        showLinkSavedSearch = false
+                    }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 360, minHeight: 280)
         #endif
     }
 
@@ -321,6 +501,19 @@ struct CollectionEditorView: View {
             HStack {
                 Text(String(localized: "collection.editor.docs.header", defaultValue: "Documents"))
                 Spacer()
+                if !sortedEntries.isEmpty {
+                    Button {
+                        showTimeline = true
+                    } label: {
+                        Image(systemName: "chart.bar")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        String(localized: "collection.editor.docs.timeline.a11y",
+                               defaultValue: "Show document timeline")
+                    )
+                }
                 #if os(iOS)
                 // EditButton toggles edit mode so drag-handles and swipe-to-delete appear.
                 // On macOS, onMove and onDelete are accessible without explicit edit mode
@@ -435,6 +628,7 @@ struct CollectionEditorView: View {
         collection.name = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = collectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
         collection.note = trimmedNote.isEmpty ? nil : trimmedNote
+        collection.savedSearchId = linkedSavedSearchId
         if let projectId = appState.activeProjectId, !collection.projectIds.contains(projectId) {
             collection.projectIds.append(projectId)
         }
@@ -557,6 +751,7 @@ struct AddByTagSheet: View {
 /// Picker + progress view that runs the chosen exporter and presents a share sheet.
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     let collection: Collection
     let entries: [CollectionEntry]
@@ -569,6 +764,16 @@ struct ExportSheetView: View {
     @State private var exportError: String? = nil
     /// Non-nil while volumes need to be downloaded/indexed before export can proceed.
     @State private var preparingMessage: String? = nil
+
+    // MARK: - Ephemeral document reference (smart collection path)
+
+    /// Lightweight document reference used for smart-collection resolution.
+    /// Avoids creating SwiftData model instances outside a context.
+    private struct SmartEntry {
+        let documentId: String
+        let volumeId: String
+        let sortOrder: Int
+    }
 
     var body: some View {
         NavigationStack {
@@ -610,7 +815,8 @@ struct ExportSheetView: View {
                                 systemImage: "square.and.arrow.up"
                             )
                         }
-                        .disabled(entries.isEmpty)
+                        // Smart collections resolve docs at export time — allow even when entries is empty.
+                        .disabled(entries.isEmpty && collection.savedSearchId == nil)
                     }
                 }
 
@@ -647,6 +853,45 @@ struct ExportSheetView: View {
     private func runExport() async {
         exportError = nil
 
+        // Smart collection path: resolve documents via the linked SavedSearch.
+        if let searchId = collection.savedSearchId {
+            isExporting = true
+            defer { isExporting = false }
+
+            guard let searchService = appState.searchService else {
+                exportError = String(localized: "export.smart.noSearchService",
+                                     defaultValue: "Search service unavailable. Please try again.")
+                return
+            }
+            let descriptor = FetchDescriptor<SavedSearch>(
+                predicate: #Predicate { $0.id == searchId }
+            )
+            guard let savedSearch = try? modelContext.fetch(descriptor).first else {
+                exportError = String(localized: "export.smart.missingSearch",
+                                     defaultValue: "The linked saved search could not be found. It may have been deleted.")
+                return
+            }
+            do {
+                let results = try await searchService.search(parameters: savedSearch.searchParameters)
+                let smartEntries = results.enumerated().map { i, r in
+                    SmartEntry(documentId: r.documentId, volumeId: r.volumeId, sortOrder: i)
+                }
+                let docs = await resolveSmartDocuments(smartEntries)
+                let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
+                let exporter = selectedFormat.makeExporter()
+                let url = try await exporter.export(metadata: metadata, documents: docs)
+                exportedURL = url
+                appState.logEvent(.export(
+                    format: selectedFormat.rawValue,
+                    documentCount: docs.count
+                ))
+            } catch {
+                exportError = error.localizedDescription
+            }
+            return
+        }
+
+        // Static collection path.
         // Phase 1: ensure every volume referenced by the collection is downloaded and indexed.
         await prepareVolumes()
 
@@ -658,6 +903,10 @@ struct ExportSheetView: View {
             let exporter = selectedFormat.makeExporter()
             let url = try await exporter.export(metadata: metadata, documents: docs)
             exportedURL = url
+            appState.logEvent(.export(
+                format: selectedFormat.rawValue,
+                documentCount: docs.count
+            ))
         } catch {
             exportError = error.localizedDescription
         }
@@ -772,6 +1021,25 @@ struct ExportSheetView: View {
             }
         }
 
+        // Render models: parse each volume XML to obtain structured render output.
+        // One parse per document — acceptable cost for a user-initiated export.
+        // Falls back gracefully (nil) when the volume file is unavailable.
+        var renderModels: [String: FRUSDocumentRenderModel] = [:]
+        for volumeId in volumeIds {
+            guard let dm = appState.downloadManager else { continue }
+            let volumeURL = dm.volumeURL(for: volumeId)
+            guard FileManager.default.fileExists(atPath: volumeURL.path) else { continue }
+            let docsInVolume = entries.filter { $0.volumeId == volumeId }
+            for entry in docsInVolume {
+                let key = "\(entry.volumeId)/\(entry.documentId)"
+                if let ast = try? await FRUSDocumentParser().parseDocument(
+                    documentId: entry.documentId, volumeURL: volumeURL) {
+                    var converter = ASTToRenderNodeConverter()
+                    renderModels[key] = converter.convert(ast)
+                }
+            }
+        }
+
         return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
             let note = entry.researchNoteId.flatMap { nid in allNotes.first { $0.id == nid } }
             let manifestEntry = manifestMap[entry.volumeId]
@@ -787,6 +1055,7 @@ struct ExportSheetView: View {
             let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
             let volumeTitle = manifestEntry?.title ?? entry.volumeId
             let bodyText = bodyTexts["\(entry.volumeId)/\(entry.documentId)"] ?? ""
+            let renderModel = renderModels["\(entry.volumeId)/\(entry.documentId)"]
 
             return CollectionExportDocument(
                 documentId: entry.documentId,
@@ -797,7 +1066,97 @@ struct ExportSheetView: View {
                 bodyText: bodyText,
                 noteText: note?.bodyText,
                 citation: citation,
-                historyStateGovURL: urlString
+                historyStateGovURL: urlString,
+                renderModel: renderModel
+            )
+        }
+    }
+
+    // MARK: - Smart Document Resolution
+
+    /// Resolves documents from a smart collection using pre-fetched search result entries.
+    /// Unlike `resolveDocuments()`, this path has no `prepareVolumes` phase — search results
+    /// are already indexed — and produces no `noteText` since smart entries carry no research note links.
+    private func resolveSmartDocuments(_ smartEntries: [SmartEntry]) async -> [CollectionExportDocument] {
+        let manifest = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        let manifestMap = Dictionary(uniqueKeysWithValues: manifest.map { ($0.volumeId, $0) })
+        let formatter = HistoryAtStateCitationFormatter()
+
+        var bodyTexts: [String: String] = [:]
+        let volumeIds = Set(smartEntries.map(\.volumeId))
+
+        for volumeId in volumeIds {
+            let docsInVolume = smartEntries.filter { $0.volumeId == volumeId }
+
+            if let pipeline = appState.indexingPipeline {
+                for entry in docsInVolume {
+                    let key = "\(entry.volumeId)/\(entry.documentId)"
+                    if let text = try? await pipeline.fetchDocumentBodyText(
+                        volumeId: entry.volumeId, documentId: entry.documentId) {
+                        bodyTexts[key] = text
+                    }
+                }
+            }
+
+            let uncached = docsInVolume.filter { bodyTexts["\($0.volumeId)/\($0.documentId)"] == nil }
+            if !uncached.isEmpty, let dm = appState.downloadManager {
+                let volumeURL = dm.volumeURL(for: volumeId)
+                if FileManager.default.fileExists(atPath: volumeURL.path) {
+                    let parser = FRUSDocumentParser()
+                    for entry in uncached {
+                        let key = "\(entry.volumeId)/\(entry.documentId)"
+                        if let ast = try? await parser.parseDocument(
+                            documentId: entry.documentId, volumeURL: volumeURL) {
+                            bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
+                        }
+                    }
+                }
+            }
+        }
+
+        var renderModels: [String: FRUSDocumentRenderModel] = [:]
+        for volumeId in volumeIds {
+            guard let dm = appState.downloadManager else { continue }
+            let volumeURL = dm.volumeURL(for: volumeId)
+            guard FileManager.default.fileExists(atPath: volumeURL.path) else { continue }
+            let docsInVolume = smartEntries.filter { $0.volumeId == volumeId }
+            for entry in docsInVolume {
+                let key = "\(entry.volumeId)/\(entry.documentId)"
+                if let ast = try? await FRUSDocumentParser().parseDocument(
+                    documentId: entry.documentId, volumeURL: volumeURL) {
+                    var converter = ASTToRenderNodeConverter()
+                    renderModels[key] = converter.convert(ast)
+                }
+            }
+        }
+
+        return smartEntries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
+            let manifestEntry = manifestMap[entry.volumeId]
+            let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
+            let docNum: String? = entry.documentId.hasPrefix("d")
+                ? Int(entry.documentId.dropFirst()).map { String($0) }
+                : nil
+            let docMeta = FRUSDocumentMetadata(
+                documentId: entry.documentId, documentNumber: docNum,
+                header: "", dateline: nil)
+            let citation = volMeta.map { formatter.format(document: docMeta, volume: $0) }
+                ?? "\(entry.volumeId)/\(entry.documentId)"
+            let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
+            let volumeTitle = manifestEntry?.title ?? entry.volumeId
+            let bodyText = bodyTexts["\(entry.volumeId)/\(entry.documentId)"] ?? ""
+            let renderModel = renderModels["\(entry.volumeId)/\(entry.documentId)"]
+            return CollectionExportDocument(
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                sortOrder: entry.sortOrder,
+                title: "\(volumeTitle) — \(entry.documentId)",
+                date: manifestEntry?.dateRange.earliest,
+                bodyText: bodyText,
+                noteText: nil,
+                citation: citation,
+                historyStateGovURL: urlString,
+                renderModel: renderModel
             )
         }
     }

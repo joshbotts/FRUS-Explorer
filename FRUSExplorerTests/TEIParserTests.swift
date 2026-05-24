@@ -28,6 +28,23 @@ private func makeTEIFixture(body: String) throws -> URL {
     return url
 }
 
+/// Like `makeTEIFixture` but includes the FRUS namespace declaration so that
+/// `<frus:attachment>` elements are accepted by the XML parser without error.
+private func makeFRUSFixture(body: String) throws -> URL {
+    let xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0"
+         xmlns:frus="http://history.state.gov/frus/ns/1.0">
+      <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt></fileDesc></teiHeader>
+      <text><body>\(body)</body></text>
+    </TEI>
+    """
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("frus-frus-\(UUID().uuidString).xml")
+    try xml.write(to: url, atomically: true, encoding: .utf8)
+    return url
+}
+
 /// Returns `true` if an AST node array contains a node matching the given case.
 /// Uses a simple recursive visitor.
 private func containsCase(in nodes: [FRUSASTNode], where predicate: (FRUSASTNode) -> Bool) -> Bool {
@@ -42,7 +59,7 @@ private func containsCase(in nodes: [FRUSASTNode], where predicate: (FRUSASTNode
              .emphasis(_, let c), .term(let c),
              .supplied(let c), .sic(let c), .corr(let c),
              .editorialNote(let c), .titlePage(let c), .figure(_, let c),
-             .unknown(_, _, let c):
+             .unknown(_, _, let c), .attachment(_, let c):
             children = c
         case .date(_, _, _, _, _, let c):
             children = c
@@ -76,7 +93,7 @@ private func extractAllText(from nodes: [FRUSASTNode]) -> String {
              .emphasis(_, let c), .term(let c),
              .supplied(let c), .sic(let c), .corr(let c),
              .editorialNote(let c), .titlePage(let c), .figure(_, let c),
-             .unknown(_, _, let c):
+             .unknown(_, _, let c), .attachment(_, let c):
             result += extractAllText(from: c)
         case .date(_, _, _, _, _, let c):
             result += extractAllText(from: c)
@@ -385,7 +402,7 @@ struct TEIParserTests {
                      .emphasis(_, let c), .term(let c),
                      .supplied(let c), .sic(let c), .corr(let c),
                      .editorialNote(let c), .titlePage(let c), .figure(_, let c),
-                     .unknown(_, _, let c):
+                     .unknown(_, _, let c), .attachment(_, let c):
                     children = c
                 case .date(_, _, _, _, _, let c):
                     children = c
@@ -1255,6 +1272,243 @@ struct ParseVolumeFullTests {
                 "Expected ref 't1', got '\(result.terms.first?.ref ?? "nil")'")
         #expect(result.terms.first?.term == "NSSM",
                 "Expected term 'NSSM', got '\(result.terms.first?.term ?? "nil")'")
+    }
+
+    // MARK: - Session 77: <choice> and small caps
+
+    @Test("Parser: <choice> renders only <corr>, suppresses <sic>")
+    func choiceRendersCorr() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <p><choice><sic>colour</sic><corr>color</corr></choice></p>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+        let text = extractAllText(from: docs[0].nodes)
+        // Preferred form present exactly once
+        #expect(text.contains("color"))
+        // Struck-through form must be absent
+        #expect(!text.contains("colour"))
+        // No .sic node anywhere in the tree
+        let hasSic = containsCase(in: docs[0].nodes) { if case .sic = $0 { return true }; return false }
+        #expect(!hasSic)
+    }
+
+    @Test("Parser: <choice> with no <corr> renders first non-sic child")
+    func choiceFallsBackToFirstNonSic() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <p><choice><sic>colour</sic><reg>color</reg></choice></p>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let text = extractAllText(from: docs[0].nodes)
+        #expect(text.contains("color"))
+        #expect(!text.contains("colour"))
+    }
+
+    @Test("Parser: <hi rend=\"smallcaps\"> produces .emphasis(.smallCaps) node")
+    func smallCapsProducesCorrectASTNode() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <p><hi rend="smallcaps">NATO</hi></p>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let hasSmallCaps = containsCase(in: docs[0].nodes) {
+            if case .emphasis(let style, _) = $0 { return style == .smallCaps }
+            return false
+        }
+        #expect(hasSmallCaps, "Expected .emphasis(.smallCaps) node for <hi rend=\"smallcaps\">")
+    }
+
+    // MARK: - Session 78: frus:attachment and note[@rend="inline"]
+
+    @Test("Parser: <frus:attachment> produces .attachment AST node")
+    func attachmentProducesASTNode() async throws {
+        let url = try makeFRUSFixture(body: """
+        <div type="document" xml:id="d1">
+          <head>1. Telegram</head>
+          <p>Body text.</p>
+          <frus:attachment>
+            <head>Enclosure</head>
+            <p>Attachment body.</p>
+          </frus:attachment>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+        let hasAttachment = containsCase(in: docs[0].nodes) {
+            if case .attachment = $0 { return true }; return false
+        }
+        #expect(hasAttachment, "Expected .attachment node for <frus:attachment>")
+    }
+
+    @Test("Parser: <frus:attachment> body text is accessible")
+    func attachmentBodyTextAccessible() async throws {
+        let url = try makeFRUSFixture(body: """
+        <div type="document" xml:id="d1">
+          <p>Main body.</p>
+          <frus:attachment>
+            <head>Attachment</head>
+            <p>Enclosure content here.</p>
+          </frus:attachment>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let text = extractAllText(from: docs[0].nodes)
+        #expect(text.contains("Enclosure content here"))
+        #expect(text.contains("Main body"))
+    }
+
+    @Test("Parser: multiple <frus:attachment> siblings all parsed")
+    func multipleAttachmentsSiblings() async throws {
+        let url = try makeFRUSFixture(body: """
+        <div type="document" xml:id="d1">
+          <p>Main body.</p>
+          <frus:attachment>
+            <head>Tab A</head>
+            <p>First attachment.</p>
+          </frus:attachment>
+          <frus:attachment>
+            <head>Tab B</head>
+            <p>Second attachment.</p>
+          </frus:attachment>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        var attachmentCount = 0
+        func countAttachments(_ nodes: [FRUSASTNode]) {
+            for node in nodes {
+                if case .attachment(_, let c) = node {
+                    attachmentCount += 1
+                    countAttachments(c)
+                } else {
+                    countAttachments(node.children)
+                }
+            }
+        }
+        countAttachments(docs[0].nodes)
+        #expect(attachmentCount == 2, "Expected 2 .attachment nodes, got \(attachmentCount)")
+    }
+
+    @Test("Parser: <note rend=\"inline\"> is transparent — children hoisted inline")
+    func inlineNoteIsTransparent() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <head><note rend="inline"><hi rend="bold">Attachment</hi></note> Memo</head>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        // No .footnote node should be produced
+        let hasFootnote = containsCase(in: docs[0].nodes) {
+            if case .footnote = $0 { return true }; return false
+        }
+        #expect(!hasFootnote, "<note rend=\"inline\"> must not produce a .footnote node")
+        // Bold emphasis from the <hi> child must survive into the AST
+        let hasBold = containsCase(in: docs[0].nodes) {
+            if case .emphasis(.bold, _) = $0 { return true }; return false
+        }
+        #expect(hasBold, "Expected bold .emphasis from <hi rend=\"bold\"> inside inline note")
+    }
+
+    // MARK: - Session 79: <ab> and <titlePage>
+
+    @Test("Parser: <ab> produces .paragraph node (not .unknown)")
+    func abProducesParagraphNode() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <ab>Short prose block.</ab>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+        let hasParagraph = containsCase(in: docs[0].nodes) {
+            if case .paragraph = $0 { return true }; return false
+        }
+        #expect(hasParagraph, "<ab> must produce a .paragraph AST node")
+        let hasUnknownAb = containsCase(in: docs[0].nodes) {
+            if case .unknown(let name, _, _) = $0 { return name == "ab" }; return false
+        }
+        #expect(!hasUnknownAb, "<ab> must not fall through to .unknown(name: \"ab\")")
+    }
+
+    @Test("Parser: <ab> text content is accessible")
+    func abTextIsAccessible() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <ab>Anonymous block content.</ab>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let text = extractAllText(from: docs[0].nodes)
+        #expect(text.contains("Anonymous block content"), "Text inside <ab> must be reachable")
+    }
+
+    @Test("Parser: <titlePage> produces .titlePage AST node")
+    func titlePageProducesASTNode() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <titlePage>
+            <docTitle><titlePart>Foreign Relations of the United States</titlePart></docTitle>
+          </titlePage>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.count == 1)
+        let hasTitlePage = containsCase(in: docs[0].nodes) {
+            if case .titlePage = $0 { return true }; return false
+        }
+        #expect(hasTitlePage, "<titlePage> must produce a .titlePage AST node")
+    }
+
+    @Test("Converter: .titlePage converts to .titlePageBlock render node")
+    func titlePageConvertsToTitlePageBlock() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <titlePage>
+            <docTitle><titlePart>FRUS Title</titlePart></docTitle>
+          </titlePage>
+        </div>
+        </body></text></TEI>
+        """
+        guard let model = try await parseFixture(xml) else {
+            Issue.record("parseFixture returned nil"); return
+        }
+        // Walk bodyNodes (may be one level deep if the .document wrapper is present)
+        func hasTitlePageBlock(_ nodes: [FRUSRenderNode]) -> Bool {
+            for node in nodes {
+                if case .titlePageBlock = node { return true }
+                // Recurse into unknown wrappers (document-level passthrough)
+                if case .unknown(_, let c) = node, hasTitlePageBlock(c) { return true }
+            }
+            return false
+        }
+        #expect(hasTitlePageBlock(model.bodyNodes),
+                ".titlePage must convert to .titlePageBlock in the render model")
     }
 
     @Test("parseVolumeFull does not produce document entries for persons or terms divs")

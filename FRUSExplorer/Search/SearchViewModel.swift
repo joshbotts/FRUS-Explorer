@@ -39,6 +39,7 @@ import Observation
 ///   1.1 — Session 38: `documentTypeFilter` property added
 ///   1.2 — Session 40: `personRefText` property and `applyParameters(_:)` added
 ///   1.3 — Session 62: `showFilterPanel` semantics changed from inline panel to sheet flag
+///   1.4 — Session 100: `appState` property for logEvent(.searchSubmit) after search()
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -115,6 +116,10 @@ final class SearchViewModel {
     private let searchService: SearchService
     let subjectTagStore: SubjectTagStore
 
+    /// Injected by `SearchView` after init so `search()` can fire `logEvent`.
+    /// Optional: no-op if not set (e.g. in unit tests).
+    weak var appState: AppState?
+
     // MARK: - Initialisation
 
     init(searchService: SearchService, subjectTagStore: SubjectTagStore) {
@@ -175,6 +180,12 @@ final class SearchViewModel {
             #endif
         }
         isSearching = false
+        if hasSearched {
+            appState?.logEvent(.searchSubmit(
+                query: keywords.trimmingCharacters(in: .whitespaces),
+                resultCount: results.count
+            ))
+        }
     }
 
     func clearFilters() {

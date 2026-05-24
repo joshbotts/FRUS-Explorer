@@ -26,6 +26,7 @@ import SwiftData
 ///          Collections window scene; NavigationSplitView with inline editing.
 ///   1.1 — Session 74: two-line research note preview added to MacEntryRow beneath
 ///          volume title; caption2/tertiary styling; fixedSize for correct wrapping
+///   1.2 — Session 89: manual entry deletion before collection delete (deleteRule .nullify)
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -81,6 +82,7 @@ struct MacCollectionManagerView: View {
                     .contextMenu {
                         Button(role: .destructive) {
                             if selectedId == c.id { selectedId = nil }
+                            for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
                             modelContext.delete(c)
                         } label: {
                             Label("Delete Collection", systemImage: "trash")
@@ -380,7 +382,7 @@ private struct CollectionDetailPane: View {
             } label: {
                 Label("Export…", systemImage: "square.and.arrow.up")
             }
-            .help("Export collection as PDF or HTML")
+            .help("Export collection as PDF, HTML, or DOCX")
             .disabled(sortedEntries.isEmpty)
         }
     }

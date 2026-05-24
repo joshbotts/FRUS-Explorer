@@ -75,6 +75,7 @@ public struct FRUSDocumentAST: Sendable {
 ///   1.1 — Session 07: full element coverage (page breaks, tables, lists, editorial notes, etc.)
 ///   1.2 — Session 36: `.date` case added for structured date attribute extraction
 ///   1.2 — Session 42: `.footnote` gains `printedNumber: String?` for TEI `@n` attribute
+///   1.3 — Session 78: `.attachment` added for `<frus:attachment>` sub-document blocks
 public indirect enum FRUSASTNode: Sendable {
 
     // MARK: Document Structure
@@ -213,6 +214,16 @@ public indirect enum FRUSASTNode: Sendable {
 
     /// `<lb>` — a line break within flowing text.
     case lineBreak
+
+    // MARK: Attachments (Session 78)
+
+    /// `<frus:attachment>` — a sub-document attached to a FRUS document.
+    ///
+    /// Appears at the end of a `<div type="document">`, after all body content.
+    /// Multiple siblings may follow one another. `n` carries the `@n` attribute
+    /// if present (ordinal label). The element cannot contain child `<tei:div>`
+    /// elements; its content model mirrors a stripped document div.
+    case attachment(n: String?, children: [FRUSASTNode])
 
     // MARK: Unknown (Forward Compatibility)
 

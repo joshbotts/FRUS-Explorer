@@ -31,6 +31,11 @@ import Foundation
 ///   1.2 — Session 73: citation headings link to history.state.gov (target=_blank);
 ///          URL displayed as `.doc-url` paragraph; body text split on "\n\n" into `<p>` tags;
 ///          research note split into paragraphs; new CSS for `.doc-ext-link` and `.doc-url`
+///   1.3 — Session 81: rich rendering via `FRUSDocumentRenderModel` when available;
+///          `renderModelToHTML` walks render nodes emitting semantic HTML; flat-text
+///          fallback preserved; new CSS for headings, datelines, footnotes, attachments
+///   1.4 — Session 83: `markdownItalics(_:)` applies `_text_` → `<em>text</em>`
+///          conversion to the collection note field
 final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -61,7 +66,7 @@ final class HTMLCollectionExporter: CollectionExporter {
         body += "<header>\n"
         body += "  <h1>\(title)</h1>\n"
         if let note = collection.note, !note.isEmpty {
-            body += "  <p class=\"collection-note\">\(escaped(note))</p>\n"
+            body += "  <p class=\"collection-note\">\(markdownItalics(escaped(note)))</p>\n"
         }
         body += "</header>\n\n"
 
@@ -92,8 +97,10 @@ final class HTMLCollectionExporter: CollectionExporter {
                 body += "  <h2>\(escaped(heading))</h2>\n"
             }
 
-            // Body text paragraphs
-            if !doc.bodyText.isEmpty {
+            // Body — rich rendering if available, else flat-text fallback
+            if let model = doc.renderModel {
+                body += renderModelToHTML(model)
+            } else if !doc.bodyText.isEmpty {
                 let paragraphs = doc.bodyText
                     .components(separatedBy: "\n\n")
                     .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -229,6 +236,63 @@ final class HTMLCollectionExporter: CollectionExporter {
           color: #7a5c00;
         }
         aside.research-note p { color: #444; }
+        /* Rich document body elements (Session 81) */
+        h3.doc-heading {
+          font-size: 1.05rem;
+          font-weight: bold;
+          margin-top: 1rem;
+          margin-bottom: 0.25rem;
+          line-height: 1.4;
+        }
+        p.dateline {
+          font-style: italic;
+          color: #555;
+          margin-bottom: 0.5rem;
+        }
+        p.salutation { margin-bottom: 0.5rem; }
+        .letter-block { margin-bottom: 0.75rem; }
+        blockquote.editorial-note {
+          border-left: 3px solid #aaa;
+          padding: 0.5rem 1rem;
+          margin: 1rem 0;
+          color: #555;
+          font-style: italic;
+        }
+        section.attachment { margin-top: 2.5rem; }
+        h4.attachment-heading {
+          font-size: 0.95rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+        .title-page {
+          text-align: center;
+          padding: 1.5rem 0;
+        }
+        .small-caps { font-variant: small-caps; }
+        table {
+          border-collapse: collapse;
+          margin: 0.75rem 0;
+          width: 100%;
+          font-size: 0.9rem;
+        }
+        td, th {
+          border: 1px solid #ccc;
+          padding: 0.3rem 0.5rem;
+          vertical-align: top;
+        }
+        ol.footnotes {
+          margin-top: 1.5rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid #ccc;
+          font-size: 0.85rem;
+          color: #444;
+          padding-left: 1.5rem;
+        }
+        ol.footnotes li { margin-bottom: 0.4rem; }
+        sup.fn-label { font-size: 0.7em; margin-right: 0.2em; }
+        sup a { color: #1a4c8f; text-decoration: none; }
+        sup a:hover { text-decoration: underline; }
+        code.formula { font-style: italic; font-family: Georgia, serif; }
         @media print {
           body { max-width: 100%; padding: 0; }
           nav { break-after: page; }
@@ -237,7 +301,136 @@ final class HTMLCollectionExporter: CollectionExporter {
         """
     }
 
+    // MARK: - Rich Rendering (Session 81)
+
+    /// Renders a `FRUSDocumentRenderModel` to an HTML string.
+    /// Body nodes come first; footnote bodies are appended as a numbered list.
+    private func renderModelToHTML(_ model: FRUSDocumentRenderModel) -> String {
+        var html = ""
+        for node in model.bodyNodes {
+            html += blockNodeToHTML(node)
+        }
+        if !model.footnotes.isEmpty {
+            html += "<ol class=\"footnotes\">\n"
+            for note in model.footnotes {
+                if case .footnoteBody(let id, _, _, _, let label, let children) = note {
+                    let anchorAttr = id.map { "id=\"fn-\(escaped($0))\"" } ?? "id=\"fn-\(escaped(label))\""
+                    let bodyHTML = children.map { blockNodeToHTML($0) }.joined()
+                    html += "  <li \(anchorAttr)><sup class=\"fn-label\">\(escaped(label))</sup> \(bodyHTML)</li>\n"
+                }
+            }
+            html += "</ol>\n"
+        }
+        return html
+    }
+
+    private func blockNodeToHTML(_ node: FRUSRenderNode) -> String {
+        switch node {
+        case .heading(let c):
+            return "<h3 class=\"doc-heading\">\(inlineHTML(c))</h3>\n"
+        case .dateline(let c):
+            return "<p class=\"dateline\">\(inlineHTML(c))</p>\n"
+        case .salutation(let c):
+            return "<p class=\"salutation\">\(inlineHTML(c))</p>\n"
+        case .paragraph(let c):
+            return "<p>\(inlineHTML(c))</p>\n"
+        case .letterOpener(let c), .letterCloser(let c):
+            return "<div class=\"letter-block\">\(c.map { blockNodeToHTML($0) }.joined())</div>\n"
+        case .editorialNoteBlock(let c):
+            return "<blockquote class=\"editorial-note\">\(c.map { blockNodeToHTML($0) }.joined())</blockquote>\n"
+        case .attachmentBlock(_, let c):
+            return "<section class=\"attachment\"><hr>\n\(c.map { blockNodeToHTML($0) }.joined())</section>\n"
+        case .attachmentHeading(let c):
+            return "<h4 class=\"attachment-heading\">\(inlineHTML(c))</h4>\n"
+        case .titlePageBlock(let c):
+            return "<div class=\"title-page\">\(c.map { blockNodeToHTML($0) }.joined())</div>\n"
+        case .tableBlock(let rows):
+            var t = "<table>\n"
+            for row in rows {
+                t += "  <tr>"
+                for cell in row {
+                    var attrs = ""
+                    if cell.rowSpan > 1 { attrs += " rowspan=\"\(cell.rowSpan)\"" }
+                    if cell.colSpan > 1 { attrs += " colspan=\"\(cell.colSpan)\"" }
+                    t += "<td\(attrs)>\(inlineHTML(cell.children))</td>"
+                }
+                t += "</tr>\n"
+            }
+            t += "</table>\n"
+            return t
+        case .listBlock(let type, let items):
+            let tag = type == "ordered" ? "ol" : "ul"
+            let inner = items.map { "  <li>\(inlineHTML($0))</li>\n" }.joined()
+            return "<\(tag)>\n\(inner)</\(tag)>\n"
+        case .figureBlock(let alt):
+            guard let alt, !alt.isEmpty else { return "" }
+            return "<figure><figcaption>\(escaped(alt))</figcaption></figure>\n"
+        case .footnoteBody:
+            return "" // rendered separately via model.footnotes
+        case .pageBreak:
+            return ""
+        case .unknown(_, let c):
+            return c.map { blockNodeToHTML($0) }.joined()
+        default:
+            // Inline node at block level — wrap in a paragraph
+            return "<p>\(inlineNodeToHTML(node))</p>\n"
+        }
+    }
+
+    private func inlineHTML(_ nodes: [FRUSRenderNode]) -> String {
+        nodes.map { inlineNodeToHTML($0) }.joined()
+    }
+
+    private func inlineNodeToHTML(_ node: FRUSRenderNode) -> String {
+        switch node {
+        case .plainText(let s):
+            return escaped(s)
+        case .boldText(let c):
+            return "<strong>\(inlineHTML(c))</strong>"
+        case .italicText(let c):
+            return "<em>\(inlineHTML(c))</em>"
+        case .smallCapsText(let c):
+            return "<span class=\"small-caps\">\(inlineHTML(c))</span>"
+        case .underlineText(let c):
+            return "<u>\(inlineHTML(c))</u>"
+        case .termText(let c), .corrText(let c):
+            return inlineHTML(c)
+        case .suppliedText(let c):
+            return "[\(inlineHTML(c))]"
+        case .sicText(let c):
+            return "<del>\(inlineHTML(c))</del>"
+        case .formulaText(let s):
+            return "<code class=\"formula\">\(escaped(s))</code>"
+        case .lineBreak:
+            return "<br>"
+        case .footnoteMarker(let id, let label):
+            let anchor = id ?? label
+            return "<sup><a href=\"#fn-\(escaped(anchor))\" id=\"fnref-\(escaped(anchor))\">\(escaped(label))</a></sup>"
+        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, let c):
+            return inlineHTML(c)
+        case .pageBreak:
+            return ""
+        case .unknown(_, let c):
+            return inlineHTML(c)
+        default:
+            // Block node inside inline context — extract children as inline
+            return blockNodeToHTML(node)
+        }
+    }
+
     // MARK: - Helpers
+
+    /// Converts `_text_` spans (already HTML-escaped) to `<em>text</em>`.
+    /// Apply to `escaped(note)` so that `_` in the original text is still present
+    /// after escaping (no HTML entity conflicts) but `<em>` tags are safe.
+    private func markdownItalics(_ input: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: "_([^_\\n]+)_") else { return input }
+        return regex.stringByReplacingMatches(
+            in: input,
+            range: NSRange(input.startIndex..., in: input),
+            withTemplate: "<em>$1</em>"
+        )
+    }
 
     private func escaped(_ text: String) -> String {
         text

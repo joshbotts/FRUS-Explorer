@@ -29,6 +29,10 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
+///   1.1 — Session 89: deleteRule changed .cascade → .nullify for CloudKit compatibility;
+///          callers now delete associated entries manually before deleting a Collection
+///   1.2 — Session 97: `savedSearchId` added; when non-nil the collection is a "smart collection"
+///          whose document list is resolved dynamically from the linked `SavedSearch` at export time
 @Model final class Collection {
 
     // MARK: - Identity
@@ -52,14 +56,26 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    // MARK: - Smart Collection
+
+    /// When non-nil, this collection is a "smart collection" — its documents are resolved
+    /// dynamically at export time by executing the `SavedSearch` with this ID.
+    /// Static `documentEntries` are ignored during export when this is set.
+    var savedSearchId: UUID? {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Entries
 
     /// Ordered document entries. Sorted by `CollectionEntry.sortOrder` at display time.
-    /// Cascade-deleted when this collection is deleted.
     ///
     /// Optional for CloudKit schema compatibility — always non-nil in practice.
     /// Use `documentEntries ?? []` when iterating.
-    @Relationship(deleteRule: .cascade, inverse: \CollectionEntry.collection)
+    ///
+    /// `deleteRule: .nullify` is required for CloudKit sync compatibility — cascade delete
+    /// rules are not supported by CloudKit. Callers must delete associated `CollectionEntry`
+    /// records explicitly before deleting the parent `Collection`.
+    @Relationship(deleteRule: .nullify, inverse: \CollectionEntry.collection)
     var documentEntries: [CollectionEntry]? {
         didSet { lastModified = .now }
     }

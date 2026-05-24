@@ -8,6 +8,7 @@
 
 import Foundation
 import SQLite3
+import CoreSpotlight
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -77,10 +78,14 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          references); `currentDateIndexVersion` bumped to 4
 ///   2.1 — Session 76: `document_dates` gains `date_iso_max` column; date filtering uses
 ///          interval overlap (`date_iso <= rangeEnd AND COALESCE(date_iso_max, date_iso)
+///   2.2 — Session 88: `datesByDocumentKey(_:)` for timeline year grouping
 ///          >= rangeStart`) instead of point comparison; `extractDateRange` replaces
 ///          single-value extraction, using `frus:doc-dateTime-min`/`max` from the AST
 ///          when present and falling back to per-attribute priority logic; `collectDateNodes`
 ///          extracted to a shared private helper; `currentDateIndexVersion` bumped to 5
+///   2.2 — Session 78: `.attachment` added to the exhaustive `plainText` and `children`
+///          computed-property switch sites so attachment body text is included in the
+///          full-text search index
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -339,6 +344,7 @@ public actor IndexingPipeline {
         ))
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
         try await storeIndexData(data)
+        submitSpotlightItems(for: data)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .complete,
@@ -457,6 +463,7 @@ public actor IndexingPipeline {
             try await fts5Store.delete(documentId: docId)
         }
         try auxDeleteVolume(volumeId)
+        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId]) { _ in }
 
         #if DEBUG
         print("[IndexingPipeline] Removed \(docIds.count) FTS5 documents for \(volumeId)")
@@ -558,6 +565,25 @@ public actor IndexingPipeline {
         try await fts5Store.update(document: updated)
         try updateCacheFields(volumeId: note.volumeId, documentId: note.documentId,
                               summaryText: cached.summaryText, noteText: note.bodyText)
+    }
+
+    // MARK: - Spotlight
+
+    /// Submits CSSearchableItem records for all documents in `data` to the default
+    /// Spotlight index. Errors are silently ignored — Spotlight is best-effort.
+    private func submitSpotlightItems(for data: VolumeIndexData) {
+        let items = data.documents.map { doc -> CSSearchableItem in
+            let attrs = CSSearchableItemAttributeSet(contentType: .text)
+            attrs.title = doc.header.isEmpty ? doc.id : doc.header
+            attrs.contentDescription = String(doc.bodyText.prefix(300))
+            attrs.keywords = [data.volumeId, doc.id]
+            return CSSearchableItem(
+                uniqueIdentifier: "\(data.volumeId)/\(doc.id)",
+                domainIdentifier: data.volumeId,
+                attributeSet: attrs
+            )
+        }
+        CSSearchableIndex.default().indexSearchableItems(items) { _ in }
     }
 
     // MARK: - Browser Query (used by BrowserViewModel)
@@ -664,6 +690,43 @@ public actor IndexingPipeline {
             }
         }
         return keys
+    }
+
+    // MARK: - Date Lookup (used by DocumentTimelineView)
+
+    /// Returns ISO date strings keyed by `"volumeId/documentId"` for the given document pairs.
+    ///
+    /// Only pairs with a parseable `date_iso` value in `document_dates` are included.
+    /// Unindexed or genuinely undated documents are absent from the result dictionary.
+    ///
+    /// - Parameter docs: `(volumeId, documentId)` pairs to query. Capped at 500 to stay
+    ///   within SQLite's default variable limit; excess pairs are silently ignored.
+    /// - Returns: Dictionary mapping composite key → `date_iso` string (e.g. `"1969-02-15"`).
+    public func datesByDocumentKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        let capped = Array(docs.prefix(500))
+        guard !capped.isEmpty else { return [:] }
+        let keys = capped.map { "\($0.volumeId)/\($0.documentId)" }
+        let placeholders = keys.map { _ in "?" }.joined(separator: ", ")
+        let sql = """
+            SELECT volume_id || '/' || document_id, date_iso
+            FROM document_dates
+            WHERE volume_id || '/' || document_id IN (\(placeholders))
+            AND date_iso IS NOT NULL
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, key) in keys.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+        }
+        var result: [String: String] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                result[k] = d
+            }
+        }
+        return result
     }
 
     // MARK: - Parsing (nonisolated — runs off the actor's executor for concurrency)
@@ -1815,6 +1878,7 @@ extension FRUSASTNode {
              .term(let c), .editorialNote(let c), .titlePage(let c),
              .supplied(let c), .sic(let c), .corr(let c):
             return c.map(\.plainText).joined(separator: " ")
+        case .attachment(_, let c): return c.map(\.plainText).joined(separator: " ")
         case .date(_, _, _, _, _, let c): return c.map(\.plainText).joined(separator: " ")
         case .emphasis(_, let c): return c.map(\.plainText).joined(separator: " ")
         case .persName(_, let c): return c.map(\.plainText).joined(separator: " ")
@@ -1841,6 +1905,7 @@ extension FRUSASTNode {
              .term(let c), .editorialNote(let c), .titlePage(let c),
              .supplied(let c), .sic(let c), .corr(let c):
             return c
+        case .attachment(_, let c): return c
         case .date(_, _, _, _, _, let c): return c
         case .emphasis(_, let c): return c
         case .persName(_, let c): return c

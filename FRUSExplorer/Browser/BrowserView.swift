@@ -332,6 +332,7 @@ struct BrowserView: View {
             case .volume(let e):     VolumeView(vm: vm, volume: e)
             case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
             case .document(let e):   DocumentView(entry: e)
+            case .people:            PersonIndexView()
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {

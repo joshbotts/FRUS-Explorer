@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CryptoKit
 import Foundation
 
 // MARK: - Converter
@@ -33,7 +34,78 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 06: initial implementation
 ///   1.x — Session 42: prefer `printedNumber` over sequential counter for display
+///   1.1 — Session 78: `.attachment` case converts `.head` children to `.attachmentHeading`
+///   1.2 — Session 79: `.titlePage` produces `.titlePageBlock` instead of `.unknown`
+///   1.3 — Session 105: `renderingVersion(for:)` static API + `flatText(_:)` DFS helper
 public struct ASTToRenderNodeConverter {
+
+    /// Converter algorithm version. Bump whenever the flat-text output changes
+    /// (new text-bearing node type, traversal order change, character normalisation).
+    /// Used as part of `DocumentHighlight.renderingVersion`.
+    public static let kVersion = "1.2"
+
+    // MARK: - Rendering Version
+
+    /// Computes the 16-character hex `renderingVersion` for a render model.
+    ///
+    /// Hashes `SHA-256(flatText(bodyNodes).utf8 ++ kVersion.utf8)` and returns the
+    /// first 16 hex characters (64 bits of collision resistance).
+    ///
+    /// The hash changes whenever the document's parsed text changes (e.g. after a
+    /// volume re-download) or when `kVersion` is bumped after a converter algorithm change.
+    /// Highlights whose stored `renderingVersion` no longer matches are shown as stale.
+    public static func renderingVersion(for model: FRUSDocumentRenderModel) -> String {
+        var data = Data()
+        data.append(Data(flatText(model.bodyNodes).utf8))
+        data.append(Data(kVersion.utf8))
+        let digest = SHA256.hash(data: data)
+        let hex = digest.map { String(format: "%02x", $0) }.joined()
+        return String(hex.prefix(16))
+    }
+
+    /// DFS flat-text extraction per the Session 102 offset model spec.
+    ///
+    /// Rules:
+    /// - `.plainText` / `.formulaText` → contribute their string value.
+    /// - `.lineBreak` → contributes `"\n"`.
+    /// - `.pageBreak`, `.footnoteMarker`, `.figureBlock`, `.footnoteBody` → skip (no chars).
+    /// - `.suppliedText` children → recurse without adding brackets.
+    /// - `.tableBlock` → recurse each cell's children in row-major order.
+    /// - `.listBlock` → recurse each item in order.
+    /// - All other container nodes → recurse their children.
+    private static func flatText(_ nodes: [FRUSRenderNode]) -> String {
+        var result = ""
+        for node in nodes {
+            switch node {
+            case .plainText(let s):
+                result += s
+            case .formulaText(let s):
+                result += s
+            case .lineBreak:
+                result += "\n"
+            case .pageBreak, .footnoteMarker, .figureBlock, .footnoteBody:
+                break
+            case .tableBlock(let rows):
+                for row in rows {
+                    for cell in row { result += flatText(cell.children) }
+                }
+            case .listBlock(_, let items):
+                for item in items { result += flatText(item) }
+            case .heading(let c), .dateline(let c), .letterOpener(let c),
+                 .letterCloser(let c), .salutation(let c), .paragraph(let c),
+                 .boldText(let c), .italicText(let c), .smallCapsText(let c),
+                 .underlineText(let c), .termText(let c), .suppliedText(let c),
+                 .sicText(let c), .corrText(let c), .editorialNoteBlock(let c),
+                 .titlePageBlock(let c), .attachmentHeading(let c):
+                result += flatText(c)
+            case .persNameLink(_, let c, _), .glossLink(_, let c, _),
+                 .crossRefLink(_, _, let c), .attachmentBlock(_, let c),
+                 .unknown(_, let c):
+                result += flatText(c)
+            }
+        }
+        return result
+    }
 
     // MARK: Dependencies
 
@@ -194,7 +266,7 @@ public struct ASTToRenderNodeConverter {
             return [.editorialNoteBlock(convertNodes(children))]
 
         case .titlePage(let children):
-            return [.unknown(name: "titlePage", children: convertNodes(children))]
+            return [.titlePageBlock(convertNodes(children))]
 
         // MARK: Figures and formulas (Session 07)
 
@@ -228,6 +300,19 @@ public struct ASTToRenderNodeConverter {
             // unchanged so the dateline reads identically to before this change.
             return convertNodes(children)
 
+        // MARK: Attachments (Session 78)
+
+        case .attachment(let n, let children):
+            // Convert each child, but promote <head> children to .attachmentHeading
+            // so the renderer can apply secondary heading style without extra context.
+            let convertedChildren: [FRUSRenderNode] = children.flatMap { child -> [FRUSRenderNode] in
+                if case .head(let headChildren) = child {
+                    return [.attachmentHeading(convertNodes(headChildren))]
+                }
+                return convertNode(child)
+            }
+            return [.attachmentBlock(n: n, children: convertedChildren)]
+
         case .unknown(let name, _, let children):
             return [.unknown(name: name, children: convertNodes(children))]
         }
@@ -236,7 +321,8 @@ public struct ASTToRenderNodeConverter {
     private func isBlockNode(_ node: FRUSRenderNode) -> Bool {
         switch node {
         case .paragraph, .heading, .dateline, .letterOpener, .letterCloser,
-             .salutation, .editorialNoteBlock, .tableBlock, .listBlock, .figureBlock:
+             .salutation, .editorialNoteBlock, .tableBlock, .listBlock, .figureBlock,
+             .attachmentBlock, .attachmentHeading, .titlePageBlock:
             return true
         default:
             return false

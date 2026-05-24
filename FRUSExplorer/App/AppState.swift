@@ -9,6 +9,7 @@
 import Foundation
 import Network
 import Observation
+import SwiftData
 
 /// AppState is the root observable state object for FRUS Explorer.
 ///
@@ -58,6 +59,8 @@ import Observation
 ///   2.7 — Session 61: showAbout removed; About is now a Window scene (F-014)
 ///   2.8 — New UI scaffolding: currentIndexingProgress and connectIndexingProgress promoted to
 ///          cross-platform (removed #if os(iOS) guard) for macOS StatusBarView
+///   2.9 — Session 100: logEvent(_:) + loggingContext + ResearchSession management
+///   3.0 — Session 101: logEvent(_:) gated on researchSessionLoggingEnabled UserDefaults key
 
 // MARK: - AppTab
 
@@ -176,6 +179,75 @@ final class AppState {
     /// `nil` if the FTS5 database could not be opened.
     var searchService: SearchService?
 
+    /// The shared corpus analytics service. Created at boot alongside `searchService`;
+    /// `nil` if the FTS5 database could not be opened.
+    var analyticsService: CorpusAnalyticsService?
+
+    // MARK: - Research Session Logging
+
+    /// `ModelContext` used exclusively for writing `ResearchSession` and `SessionEvent`
+    /// records. Set at boot by `FRUSExplorerApp`; `nil` until boot completes.
+    /// Callers do not need to interact with this directly — use `logEvent(_:)`.
+    var loggingContext: ModelContext?
+
+    /// In-memory handle to the current open research session.
+    /// `nil` at launch; replaced when the previous session expires.
+    private var currentResearchSession: ResearchSession?
+
+    /// Timestamp of the last logged event; used to detect session expiry.
+    private var lastEventDate: Date?
+
+    /// After this many seconds of inactivity a new `ResearchSession` is started.
+    static let sessionExpiryInterval: TimeInterval = 30 * 60
+
+    /// Logs a research event, creating or reusing a `ResearchSession` automatically.
+    ///
+    /// Fire-and-forget: callers need not `await` or wrap in a `Task`. All writes
+    /// are synchronous on the main actor. No-op until `loggingContext` is wired at boot.
+    ///
+    /// Session lifecycle:
+    /// - If no session is open, a new `ResearchSession` is inserted and becomes current.
+    /// - If the last event was more than `sessionExpiryInterval` ago, the previous
+    ///   session is closed (`endedAt` stamped) and a fresh session is created.
+    func logEvent(_ kind: ResearchEventKind) {
+        let enabled = UserDefaults.standard.object(forKey: "researchSessionLoggingEnabled") as? Bool ?? true
+        guard enabled else { return }
+        guard let ctx = loggingContext else { return }
+        let now = Date.now
+
+        // Expire idle session.
+        if let session = currentResearchSession,
+           let last = lastEventDate,
+           now.timeIntervalSince(last) > Self.sessionExpiryInterval {
+            session.endedAt = last
+            currentResearchSession = nil
+        }
+
+        // Open a new session when needed.
+        if currentResearchSession == nil {
+            let session = ResearchSession(startedAt: now)
+            ctx.insert(session)
+            currentResearchSession = session
+        }
+
+        guard let session = currentResearchSession else { return }
+
+        let order = session.events?.count ?? 0
+        let event = SessionEvent(
+            sessionId: session.id,
+            timestamp: now,
+            kind: kind,
+            sortOrder: order
+        )
+        event.session = session
+        ctx.insert(event)
+        lastEventDate = now
+
+        #if DEBUG
+        print("[ResearchSession] Logged \(kind.typeString)")
+        #endif
+    }
+
     /// The shared cross-reference store. Created at boot alongside `indexingPipeline`;
     /// `nil` if the database could not be opened.
     var crossReferenceStore: CrossReferenceStore?
@@ -183,6 +255,10 @@ final class AppState {
     /// The shared person mention store. Created at boot alongside `crossReferenceStore`;
     /// `nil` if the database could not be opened.
     var personMentionStore: PersonMentionStore?
+
+    /// Directory containing the SQLite index databases (frus.db). Set at boot;
+    /// used by `StorageManagementView` to report index disk usage.
+    var indexDirectory: URL?
 
     /// Set by `PersonDetailSheet` "Find all mentions" to trigger search pre-filled
     /// with a `personRef` filter. `BrowserView` consumes this and clears it.

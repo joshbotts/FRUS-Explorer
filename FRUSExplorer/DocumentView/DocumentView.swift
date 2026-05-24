@@ -28,19 +28,23 @@ enum DocumentSheet: Identifiable {
     case glossDetail(GlossEntry)
     case citation(String)
     case noteEditor
+    case noteEditorForHighlight(UUID)
     case crossReferenceGraph
     case summarizePromptPicker
     case sourceExplorer(String)
+    case editNote(ResearchNote)
 
     var id: String {
         switch self {
-        case .personDetail(let p):    return "person-\(p.ref)"
-        case .glossDetail(let g):     return "gloss-\(g.term)"
-        case .citation:               return "citation"
-        case .noteEditor:             return "noteEditor"
-        case .crossReferenceGraph:    return "crossReferenceGraph"
-        case .summarizePromptPicker:  return "summarizePromptPicker"
-        case .sourceExplorer:         return "sourceExplorer"
+        case .personDetail(let p):             return "person-\(p.ref)"
+        case .glossDetail(let g):              return "gloss-\(g.term)"
+        case .citation:                        return "citation"
+        case .noteEditor:                      return "noteEditor"
+        case .noteEditorForHighlight(let hId): return "noteEditorForHighlight-\(hId)"
+        case .crossReferenceGraph:             return "crossReferenceGraph"
+        case .summarizePromptPicker:           return "summarizePromptPicker"
+        case .sourceExplorer:                  return "sourceExplorer"
+        case .editNote(let note):              return "editNote-\(note.id)"
         }
     }
 }
@@ -91,6 +95,25 @@ enum DocumentSheet: Identifiable {
 ///          .task(id: documentId/volumeId): the task auto-cancels and restarts when the entry
 ///          identity changes, resetting vm and re-bootstrapping for the new document. Same-entry
 ///          reappearance is a no-op because bootstrapViewModel guards on vm == nil.
+///   2.1 — Session 92: FRUSTheme tokens applied — documentHorizontalPadding replaces
+///          .padding(.horizontal) magic numbers; sectionLabelSize/Weight/Kerning on the
+///          tag section header; tagChipSpacing on the chip row; EditorialNoteBadge added
+///          at the top of the document body for editorial note entries (iOS parity with macOS)
+///   2.2 — Session 104: highlight mode toolbar toggle + DocumentHighlightTextView (UITextView
+///          UIViewRepresentable) + color-picker sheet + DocumentHighlight SwiftData insertion
+///   2.3 — Session 105: renderingVersion uses SHA-256(flatText ++ kVersion) via
+///          ASTToRenderNodeConverter.renderingVersion(for:)
+///   2.4 — Session 106: @Query for stored highlights; overlay rendering; stale warning banner;
+///          DocumentSheet.noteEditorForHighlight; note anchoring to highlights
+///   2.5 — Session 107: iPad (.regular) side panel for research notes; DocumentSheet.editNote;
+///          @Query documentNotes; iPadDocumentLayout + notesPanel
+///   2.6 — Session 108: @Environment(\.openWindow); Source Explorer opens in new window on iPad;
+///          "Open in New Window" menu item routes to DocumentWindowID Stage Manager scene
+///   2.7 — Session 109: Notes panel hidden during highlight mode; notesPanel frame fill fix;
+///          note count badge; CollectionEditorView iPadCollectionLayout frame fix
+///   2.8 — Session 110: Replace HStack notes panel with .inspector(isPresented:) — system-
+///          managed width, collapsible; Notes toggle button in .topBarLeading (iPad only);
+///          toggleHighlightMode() closes inspector; remove iPadDocumentLayout HStack
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -101,6 +124,44 @@ struct DocumentView: View {
     @State private var vm: DocumentViewModel?
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
     @State private var activeSheet: DocumentSheet?
+
+    // MARK: Highlight Mode
+    @State private var showHighlightMode = false
+    @State private var highlightTextSelection: NSRange? = nil
+    @State private var showHighlightColorPicker = false
+    /// The `DocumentHighlight.id` of the most recently created highlight.
+    /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
+    @State private var pendingHighlightLink: UUID? = nil
+    /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
+    /// that sets this is hidden, keeping the panel closed).
+    @State private var showNotesPanel = false
+
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.openWindow) private var openWindow
+
+    @Query private var highlights: [DocumentHighlight]
+    @Query private var documentNotes: [ResearchNote]
+
+    // MARK: - Init
+
+    init(entry: DocumentBrowserEntry) {
+        self.entry = entry
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        self._highlights = Query(
+            filter: #Predicate<DocumentHighlight> { h in
+                h.volumeId == vId && h.documentId == dId
+            },
+            sort: \DocumentHighlight.createdAt
+        )
+        self._documentNotes = Query(
+            filter: #Predicate<ResearchNote> { n in
+                n.volumeId == vId && n.documentId == dId
+            },
+            sort: \ResearchNote.lastModified,
+            order: .reverse
+        )
+    }
 
     var body: some View {
         Group {
@@ -131,6 +192,11 @@ struct DocumentView: View {
                 vm = nil
             }
             bootstrapViewModel()
+            appState.logEvent(.documentOpen(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId,
+                title: entry.header.isEmpty ? entry.documentId : entry.header
+            ))
         }
         // vm.documentTitle is set after the document loads; it provides a real
         // title for cross-reference targets, which are created with header: "".
@@ -140,6 +206,11 @@ struct DocumentView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
+            activity.title = entry.header.isEmpty ? entry.documentId : entry.header
+            activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
+            activity.isEligibleForHandoff = true
+        }
     }
 
     // MARK: - Bootstrap
@@ -195,7 +266,20 @@ struct DocumentView: View {
     @ViewBuilder
     private func documentContent(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
         @Bindable var vm = vm
-        ScrollView {
+        Group {
+            if showHighlightMode {
+                let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+                let hasStale = highlights.contains { $0.renderingVersion != currentVersion }
+                VStack(spacing: 0) {
+                    if hasStale { staleHighlightBanner }
+                    DocumentHighlightTextView(
+                        renderModel: model,
+                        highlights: highlights,
+                        selectionRange: $highlightTextSelection
+                    )
+                }
+            } else {
+                ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 // Summary strip
                 if let summary = vm.activeSummary {
@@ -204,9 +288,18 @@ struct DocumentView: View {
                         summary: summary,
                         totalCount: vm.summaries.count
                     )
-                    .padding(.horizontal)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.top, 12)
                     Divider()
+                }
+
+                // Editorial note badge — matches the identity line pattern on macOS.
+                // Shown once at the top of the document body so readers know immediately
+                // that this entry is an editorial note, not a primary source document.
+                if entry.isEditorialNote {
+                    EditorialNoteBadge()
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                        .padding(.top, 12)
                 }
 
                 // Document body — embedInScrollView: false because this LazyVStack
@@ -228,11 +321,11 @@ struct DocumentView: View {
                     }
                 )
 
-                Divider().padding(.horizontal)
+                Divider().padding(.horizontal, FRUSTheme.documentHorizontalPadding)
 
                 // Tag chips
                 DocumentTagSection(vm: vm)
-                    .padding(.horizontal)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.bottom, 8)
 
                 // Cross-project note indicator
@@ -249,10 +342,12 @@ struct DocumentView: View {
                             )
                         }
                     )
-                    .padding(.horizontal)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.bottom, 12)
                 }
             }
+            } // end ScrollView
+            } // end Group
         }
         .toolbar { documentToolbar(vm: vm) }
         // Single consolidated sheet driven by the DocumentSheet enum (F-024).
@@ -280,6 +375,22 @@ struct DocumentView: View {
                     activeProjectId: appState.activeProjectId,
                     indexingPipeline: appState.indexingPipeline
                 )
+            case .noteEditorForHighlight(let hlId):
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    linkedHighlightId: hlId,
+                    indexingPipeline: appState.indexingPipeline
+                )
+            case .editNote(let note):
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    noteToEdit: note,
+                    indexingPipeline: appState.indexingPipeline
+                )
             case .crossReferenceGraph:
                 if let store = appState.crossReferenceStore {
                     CrossReferenceGraphView(
@@ -297,6 +408,14 @@ struct DocumentView: View {
             case .sourceExplorer(let note):
                 SourceExplorerView(rawSourceNote: note)
             }
+        }
+        .sheet(isPresented: $showHighlightColorPicker) {
+            highlightColorPickerSheet
+        }
+        // Trailing inspector panel for research notes (iPad).
+        // On iPhone the toggle button is hidden, so showNotesPanel stays false.
+        .inspector(isPresented: $showNotesPanel) {
+            notesPanel
         }
         // Load the mention count for the selected person from the FTS index.
         // vm.selectedPerson is set alongside activeSheet so the task id fires correctly.
@@ -442,36 +561,101 @@ struct DocumentView: View {
     ///    small screens while every action remains reachable in one extra tap.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-
-            // 1. Add research note (direct — high frequency)
-            Button {
-                activeSheet = .noteEditor
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
-                    systemImage: "note.text.badge.plus"
-                )
+        if showHighlightMode {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(String(localized: "document.toolbar.highlightDone",
+                              defaultValue: "Done")) {
+                    toggleHighlightMode()
+                }
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
-            )
-
-            // 2. Tag document (direct — fast single-tap)
-            Button {
-                // Wired in Session 14
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
-                    systemImage: "tag"
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showHighlightColorPicker = true
+                } label: {
+                    Image(systemName: "paintbrush.pointed")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.createHighlight.a11y",
+                           defaultValue: "Create highlight")
                 )
+                .disabled((highlightTextSelection?.length ?? 0) == 0)
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
-            )
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    if let hlId = pendingHighlightLink {
+                        activeSheet = .noteEditorForHighlight(hlId)
+                        pendingHighlightLink = nil
+                    }
+                } label: {
+                    Image(systemName: "note.text.badge.plus")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.addNoteToHighlight.a11y",
+                           defaultValue: "Add note to highlight")
+                )
+                .disabled(pendingHighlightLink == nil)
+            }
+        } else {
+            ToolbarItemGroup(placement: .primaryAction) {
 
-            // 3. More — overflow menu containing all secondary actions
-            moreMenu(vm: vm)
+                // 1. Add research note (direct — high frequency)
+                Button {
+                    activeSheet = .noteEditor
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
+                        systemImage: "note.text.badge.plus"
+                    )
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
+                )
+
+                // 2. Tag document (direct — fast single-tap)
+                Button {
+                    // Wired in Session 14
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
+                        systemImage: "tag"
+                    )
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
+                )
+
+                // 3. Highlight mode toggle
+                Button {
+                    toggleHighlightMode()
+                } label: {
+                    Image(systemName: "pencil.tip.crop.circle")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.highlightMode.a11y",
+                           defaultValue: "Highlight mode")
+                )
+
+                // 4. More — overflow menu containing all secondary actions
+                moreMenu(vm: vm)
+            }
+            // Notes panel toggle — leading nav bar position on iPad, hidden on iPhone
+            if sizeClass == .regular {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showNotesPanel.toggle()
+                    } label: {
+                        Image(systemName: "note.text")
+                            .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
+                    }
+                    .accessibilityLabel(
+                        showNotesPanel
+                            ? String(localized: "document.toolbar.notesPanel.hide.a11y",
+                                     defaultValue: "Hide notes panel")
+                            : String(localized: "document.toolbar.notesPanel.show.a11y",
+                                     defaultValue: "Show notes panel")
+                    )
+                }
+            }
         }
     }
 
@@ -522,15 +706,40 @@ struct DocumentView: View {
                 )
             }
 
-            // Source Explorer — only when a source note is present
+            // Source Explorer — only when a source note is present.
+            // On iPad (regular width) opens in a new Stage Manager window;
+            // on iPhone falls back to a sheet.
             if let sourceNote = vm.sourceNote {
                 Button {
-                    activeSheet = .sourceExplorer(sourceNote)
+                    if sizeClass == .regular {
+                        appState.currentSourceNote = sourceNote
+                        openWindow(id: "frus.sourceExplorer.ios")
+                    } else {
+                        activeSheet = .sourceExplorer(sourceNote)
+                    }
                 } label: {
                     Label(
                         String(localized: "document.toolbar.sourceExplorer",
                                defaultValue: "Source Explorer"),
                         systemImage: "archivebox"
+                    )
+                }
+            }
+
+            // Open in New Window — iPad Stage Manager only
+            if sizeClass == .regular {
+                Divider()
+                Button {
+                    openWindow(value: DocumentWindowID(
+                        volumeId: entry.volumeId,
+                        documentId: entry.documentId,
+                        header: vm.documentTitle ?? entry.header
+                    ))
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.openInNewWindow",
+                               defaultValue: "Open in New Window"),
+                        systemImage: "square.on.square"
                     )
                 }
             }
@@ -569,6 +778,108 @@ struct DocumentView: View {
         )
     }
 
+    // MARK: - Stale Highlight Banner
+
+    private var staleHighlightBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(String(localized: "highlight.stale.warning",
+                        defaultValue: "Some highlights may be misaligned — the document has been updated since they were created."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.08))
+    }
+
+    // MARK: - Highlight Actions
+
+    private func toggleHighlightMode() {
+        showHighlightMode.toggle()
+        if showHighlightMode {
+            // Close the notes panel so the text view gets the full available width
+            // for precise character-level selection.
+            showNotesPanel = false
+        } else {
+            highlightTextSelection = nil
+            showHighlightColorPicker = false
+            pendingHighlightLink = nil
+        }
+    }
+
+    @MainActor
+    private func createHighlight(color: DocumentHighlight.Color) {
+        guard let range = highlightTextSelection,
+              let model = vm?.renderModel else { return }
+        let highlight = DocumentHighlight(
+            volumeId: entry.volumeId,
+            documentId: entry.documentId,
+            startOffset: range.location,
+            endOffset: range.location + range.length,
+            colorTag: color.rawValue,
+            renderingVersion: ASTToRenderNodeConverter.renderingVersion(for: model)
+        )
+        modelContext.insert(highlight)
+        highlightTextSelection = nil
+        pendingHighlightLink = highlight.id
+    }
+
+    private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
+        switch color {
+        case .yellow: return .yellow
+        case .green:  return .green
+        case .blue:   return .blue
+        case .pink:   return .pink
+        }
+    }
+
+    // MARK: - Highlight Color Picker Sheet
+
+    private var highlightColorPickerSheet: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Text(String(localized: "doc.highlight.pickColor",
+                            defaultValue: "Highlight Color"))
+                    .font(.headline)
+                HStack(spacing: 16) {
+                    ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
+                        Button {
+                            createHighlight(color: color)
+                            showHighlightColorPicker = false
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(swiftUIColor(for: color))
+                                    .frame(width: 44, height: 44)
+                                Circle()
+                                    .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                    .frame(width: 44, height: 44)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(color.rawValue.capitalized)
+                    }
+                }
+            }
+            .padding()
+            .navigationTitle(String(localized: "doc.highlight.sheet.title",
+                                    defaultValue: "Choose Color"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "doc.highlight.sheet.cancel",
+                                  defaultValue: "Cancel")) {
+                        showHighlightColorPicker = false
+                    }
+                }
+            }
+        }
+        .presentationDetents([.height(180)])
+    }
+
     // MARK: - Clipboard
 
     private func copyToPasteboard(_ text: String) {
@@ -578,6 +889,81 @@ struct DocumentView: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
         #endif
+    }
+
+    private var notesPanel: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "document.notesPanel.title",
+                            defaultValue: "Research Notes"))
+                    .font(.headline)
+                if !documentNotes.isEmpty {
+                    Text("\(documentNotes.count)")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.12))
+                        .foregroundStyle(Color.accentColor)
+                        .clipShape(Capsule())
+                }
+                Spacer()
+                Button {
+                    activeSheet = .noteEditor
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.notesPanel.add.a11y",
+                           defaultValue: "Add research note")
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            if documentNotes.isEmpty {
+                ContentUnavailableView(
+                    String(localized: "document.notesPanel.empty.title",
+                           defaultValue: "No Notes"),
+                    systemImage: "note.text",
+                    description: Text(
+                        String(localized: "document.notesPanel.empty.detail",
+                               defaultValue: "Tap + to add a research note for this document.")
+                    )
+                )
+                .frame(maxHeight: .infinity)
+            } else {
+                List(documentNotes) { note in
+                    Button {
+                        activeSheet = .editNote(note)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(note.bodyText.isEmpty
+                                 ? String(localized: "document.notesPanel.emptyNote",
+                                          defaultValue: "Empty note")
+                                 : note.bodyText)
+                                .font(.callout)
+                                .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
+                                .lineLimit(4)
+                            Text(note.lastModified ?? .now, style: .relative)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        note.bodyText.isEmpty
+                            ? String(localized: "document.notesPanel.emptyNote.a11y",
+                                     defaultValue: "Empty note")
+                            : note.bodyText
+                    )
+                }
+                .listStyle(.plain)
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color(uiColor: .secondarySystemBackground))
     }
 }
 
@@ -798,10 +1184,12 @@ private struct DocumentTagSection: View {
     @ViewBuilder
     private var subjectTagChips: some View {
         Text(String(localized: "document.tags.subject.header", defaultValue: "Subject Tags"))
-            .font(.caption.bold())
+            .font(.system(size: FRUSTheme.sectionLabelSize, weight: FRUSTheme.sectionLabelWeight))
+            .kerning(FRUSTheme.sectionLabelKerning)
+            .textCase(.uppercase)
             .foregroundStyle(.secondary)
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
+            HStack(spacing: FRUSTheme.tagChipSpacing) {
                 ForEach(vm.subjectTags) { tag in
                     DocumentTagChip(tag: tag)
                 }

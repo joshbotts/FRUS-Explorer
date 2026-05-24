@@ -56,15 +56,33 @@ import UniformTypeIdentifiers
 ///          (fixes Advanced tab not appearing); .navigationSplitViewStyle(.balanced) added
 ///          to all three panes to prevent sidebar auto-collapse on minimum-width windows;
 ///          minWidth increased from 700 → 760 to give detail columns more breathing room
+///   1.9 — Session 90: General section added to iOS with Display and Search Defaults panes
+///          (close gap with macOS FRUSSettingsView); storage limit picker added to
+///          StorageManagementView (matches macOS Storage pane)
+///   2.0 — Session 101: Log Research Sessions toggle added to Research section
 struct SettingsView: View {
 
     #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
     #endif
 
+    @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
+
     var body: some View {
         NavigationStack {
             Form {
+                Section(String(localized: "settings.section.general",
+                               defaultValue: "General")) {
+                    NavigationLink(String(localized: "settings.row.display",
+                                         defaultValue: "Display")) {
+                        DisplaySettingsView()
+                    }
+                    NavigationLink(String(localized: "settings.row.searchDefaults",
+                                         defaultValue: "Search Defaults")) {
+                        SearchDefaultsView()
+                    }
+                }
+
                 Section(String(localized: "settings.section.volumes",
                                defaultValue: "Volumes")) {
                     NavigationLink(String(localized: "settings.row.downloadManager",
@@ -99,6 +117,11 @@ struct SettingsView: View {
                                          defaultValue: "Summarization Prompts")) {
                         SummarizationPromptsSettingsView()
                     }
+                    Toggle(
+                        String(localized: "settings.row.logSessions",
+                               defaultValue: "Log Research Sessions"),
+                        isOn: $loggingEnabled
+                    )
                 }
 
                 Section(String(localized: "settings.section.integrations",
@@ -528,8 +551,28 @@ private struct StorageManagementView: View {
     /// Per-volume reindex errors (rare, but surfaced inline).
     @State private var reindexErrors: [String: String] = [:]
 
+    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
+
     var body: some View {
         Form {
+            Section(header: EmptyView(),
+                    footer: Text(String(localized: "settings.storage.limit.footer",
+                                        defaultValue: "The app will warn before downloads exceed this threshold. The full FRUS corpus is approximately 3.4 GB."))) {
+                Picker(String(localized: "settings.storage.limit.label",
+                              defaultValue: "On-Device Limit"),
+                       selection: $storageLimitGB) {
+                    Text("1 GB").tag(1)
+                    Text("2 GB").tag(2)
+                    Text("3 GB").tag(3)
+                    Text(String(localized: "settings.storage.limit.none",
+                                defaultValue: "No Limit")).tag(0)
+                }
+                .accessibilityLabel(
+                    String(localized: "settings.storage.limit.a11y",
+                           defaultValue: "On-device storage limit")
+                )
+            }
+
             Section(String(localized: "settings.storage.aggregate.header",
                            defaultValue: "Total Storage Used")) {
                 if let report {
@@ -590,7 +633,7 @@ private struct StorageManagementView: View {
         #endif
         .task {
             do {
-                report = try await appState.downloadManager?.storageReport()
+                report = try await appState.downloadManager?.storageReport(indexDirectory: appState.indexDirectory)
             } catch {
                 loadError = error.localizedDescription
             }
@@ -1804,6 +1847,131 @@ private struct ResetView: View {
             }
             await MainActor.run { isResetting = false }
         }
+    }
+}
+
+// MARK: - DisplaySettingsView
+
+private struct DisplaySettingsView: View {
+    @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+    @AppStorage("frus.display.showDocumentNumbers") private var showDocumentNumbers = true
+
+    var body: some View {
+        Form {
+            Section {
+                Picker(String(localized: "settings.display.textSize.label",
+                              defaultValue: "Document Text Size"),
+                       selection: $textSize) {
+                    ForEach(TextSizePreference.allCases) { size in
+                        Text(size.label).tag(size)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel(
+                    String(localized: "settings.display.textSize.a11y",
+                           defaultValue: "Document text size")
+                )
+            } header: {
+                Text(String(localized: "settings.display.textSize.header",
+                            defaultValue: "Text Size"))
+            } footer: {
+                Text(String(localized: "settings.display.textSize.footer",
+                            defaultValue: "Adjusts the body text size in the Document view."))
+            }
+
+            Section {
+                Toggle(String(localized: "settings.display.showNumbers.label",
+                              defaultValue: "Show Document Numbers"),
+                       isOn: $showDocumentNumbers)
+                .accessibilityLabel(
+                    String(localized: "settings.display.showNumbers.a11y",
+                           defaultValue: "Show document numbers in the document view")
+                )
+            } header: {
+                Text(String(localized: "settings.display.documentView.header",
+                            defaultValue: "Document View"))
+            } footer: {
+                Text(String(localized: "settings.display.showNumbers.footer",
+                            defaultValue: "Displays the printed document number (e.g. \"Document 28\") in the document identity line."))
+            }
+        }
+        .navigationTitle(String(localized: "settings.display.title", defaultValue: "Display"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
+        #endif
+    }
+}
+
+// MARK: - SearchDefaultsView
+
+private struct SearchDefaultsView: View {
+    @AppStorage("frus.search.scopeDocuments")    private var scopeDocuments    = true
+    @AppStorage("frus.search.scopeNotes")        private var scopeNotes        = true
+    @AppStorage("frus.search.scopeSummaries")    private var scopeSummaries    = true
+    @AppStorage("frus.search.defaultTypeFilter") private var defaultTypeFilter = "all"
+
+    var body: some View {
+        Form {
+            Section(header: Text(String(localized: "settings.search.scope.header",
+                                        defaultValue: "Default Search Scope")),
+                    footer: Text(String(localized: "settings.search.scope.footer",
+                                        defaultValue: "These defaults can be overridden per-session in the Search filter panel."))) {
+                Toggle(String(localized: "settings.search.scope.documents",
+                              defaultValue: "Documents"),
+                       isOn: $scopeDocuments)
+                .accessibilityLabel(
+                    String(localized: "settings.search.scope.documents.a11y",
+                           defaultValue: "Search FRUS document text by default")
+                )
+                Toggle(String(localized: "settings.search.scope.notes",
+                              defaultValue: "Research Notes"),
+                       isOn: $scopeNotes)
+                .accessibilityLabel(
+                    String(localized: "settings.search.scope.notes.a11y",
+                           defaultValue: "Include research notes in search results by default")
+                )
+                Toggle(String(localized: "settings.search.scope.summaries",
+                              defaultValue: "AI Summaries"),
+                       isOn: $scopeSummaries)
+                .accessibilityLabel(
+                    String(localized: "settings.search.scope.summaries.a11y",
+                           defaultValue: "Include AI summaries in search results by default")
+                )
+            }
+
+            Section(String(localized: "settings.search.typeFilter.header",
+                           defaultValue: "Default Document Type")) {
+                Picker(String(localized: "settings.search.typeFilter.label",
+                              defaultValue: "Default type filter"),
+                       selection: $defaultTypeFilter) {
+                    Text(String(localized: "settings.search.typeFilter.all",
+                                defaultValue: "Both")).tag("all")
+                    Text(String(localized: "settings.search.typeFilter.docs",
+                                defaultValue: "Primary Documents Only")).tag("documentsOnly")
+                    Text(String(localized: "settings.search.typeFilter.editorialNotes",
+                                defaultValue: "Editorial Notes Only")).tag("editorialNotesOnly")
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .accessibilityLabel(
+                    String(localized: "settings.search.typeFilter.a11y",
+                           defaultValue: "Default document type filter")
+                )
+            }
+        }
+        .navigationTitle(String(localized: "settings.search.title",
+                                defaultValue: "Search Defaults"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
+        #endif
     }
 }
 

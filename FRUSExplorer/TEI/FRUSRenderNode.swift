@@ -29,6 +29,8 @@ import Foundation
 ///   1.0 — Session 06: initial implementation (core elements)
 ///   1.1 — Session 07: full element coverage (page breaks, tables, lists, editorial notes, etc.)
 ///   1.x — Session 42: `.footnoteBody` and `.footnoteMarker` gain `displayLabel: String` and `printedNumber: String?`
+///   1.2 — Session 78: `.attachmentBlock` and `.attachmentHeading` added for `<frus:attachment>` rendering
+///   1.3 — Session 79: `.titlePageBlock` added for `<titlePage>` centred rendering
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -135,6 +137,32 @@ public indirect enum FRUSRenderNode: Sendable {
 
     /// Line break within flowing text.
     case lineBreak
+
+    // MARK: Title Page (Session 79)
+
+    /// A `<titlePage>` block from front-matter volumes.
+    ///
+    /// Rendered as a centred `VStack` with generous vertical padding, matching the
+    /// website's centred title-page layout. Children are typically `.unknown` nodes
+    /// for `<docTitle>`, `<docAuthor>`, `<docImprint>` etc.; each renders its own
+    /// inline text content through the standard `.unknown` path.
+    case titlePageBlock([FRUSRenderNode])
+
+    // MARK: Attachments (Session 78)
+
+    /// A `<frus:attachment>` sub-document block.
+    ///
+    /// Rendered with a prominent top separator (`Divider` + top padding matching
+    /// the website's `.attachment { margin-top: 4em }`) and with any `.attachmentHeading`
+    /// children styled at a secondary heading level (smaller, distinct from the main
+    /// document heading). `n` carries the `@n` attribute if present.
+    case attachmentBlock(n: String?, children: [FRUSRenderNode])
+
+    /// The `<head>` inside a `<frus:attachment>`, rendered at a secondary heading level.
+    ///
+    /// Distinct from `.heading` (main document heading). Matches the website's
+    /// `tei-head6` CSS class: smaller font, no size boost above body text.
+    case attachmentHeading([FRUSRenderNode])
 
     // MARK: Passthrough / Unknown
 

@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import CoreSpotlight
 
 /// Root entry point for FRUS Explorer.
 ///
@@ -42,6 +43,7 @@ import SwiftData
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
+/// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
 ///
 /// Version history:
@@ -68,6 +70,12 @@ import SwiftData
 ///          archive action; user-selected file entitlement added for NSSavePanel exports
 ///   3.1 — Boot-time summary sync: pushes all GeneratedSummary records into FTS5 at launch
 ///          so summary-only search finds both local and CloudKit-synced summaries
+///   3.2 — Session 94: Source Explorer window defaultSize corrected from 380×320 to 700×440
+///          (the view enforces minWidth:640, so 380 caused an immediate jarring resize)
+///   3.3 — Session 99: Analytics Window scene added (frus.analytics); AnalyticsView wired
+///   3.4 — Session 108: iPadOS Stage Manager — UIApplicationSupportsMultipleScenes YES;
+///          WindowGroup(for: DocumentWindowID.self) for document windows;
+///          WindowGroup id:"frus.sourceExplorer.ios" for source explorer windows
 @main
 struct FRUSExplorerApp: App {
 
@@ -80,6 +88,67 @@ struct FRUSExplorerApp: App {
 
     var body: some Scene {
         mainWindowScene
+        #if os(iOS)
+        // MARK: - Document Window (iPadOS Stage Manager)
+        //
+        // Opens individual FRUS documents in dedicated Stage Manager windows on
+        // M-chip iPads. WindowGroup(for:) lets SwiftUI restore windows across
+        // scene lifecycle events using the Codable DocumentWindowID value.
+        // On iPhone and non-Stage-Manager iPads, openWindow(value:) is a no-op.
+        WindowGroup(for: DocumentWindowID.self) { $windowID in
+            Group {
+                if let id = windowID {
+                    // NavigationStack is required so DocumentView's .navigationTitle
+                    // and toolbar items render in a proper nav bar for the scene window.
+                    NavigationStack {
+                        DocumentView(entry: DocumentBrowserEntry(
+                            documentId: id.documentId,
+                            volumeId: id.volumeId,
+                            header: id.header
+                        ))
+                    }
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "documentWindow.empty.title",
+                               defaultValue: "No Document"),
+                        systemImage: "doc.text",
+                        description: Text(
+                            String(localized: "documentWindow.empty.detail",
+                                   defaultValue: "Open a document from the Browse tab.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+
+        // MARK: - Source Explorer Window (iPadOS Stage Manager)
+        //
+        // Mirrors the macOS "frus.sourceExplorer" Window scene. Reads
+        // appState.currentSourceNote — set by the caller before openWindow(id:).
+        WindowGroup("Source Explorer", id: "frus.sourceExplorer.ios") {
+            Group {
+                if let sourceNote = appState.currentSourceNote {
+                    NavigationStack {
+                        SourceExplorerView(rawSourceNote: sourceNote)
+                    }
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "sourceExplorerWindow.empty.title",
+                               defaultValue: "No Document Selected"),
+                        systemImage: "archivebox",
+                        description: Text(
+                            String(localized: "sourceExplorerWindow.empty.detail",
+                                   defaultValue: "Open a document with a source note, then tap Sources in the toolbar.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+        #endif
         #if os(macOS)
         // MARK: - Search Window
         Window("Search", id: "frus.search") {
@@ -111,7 +180,14 @@ struct FRUSExplorerApp: App {
             SourceExplorerWindowView()
                 .environment(appState)
         }
-        .defaultSize(width: 380, height: 320)
+        .defaultSize(width: 700, height: 440)
+
+        // MARK: - Analytics Window
+        Window("Corpus Analytics", id: "frus.analytics") {
+            AnalyticsView()
+                .environment(appState)
+        }
+        .defaultSize(width: 760, height: 560)
 
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {
@@ -157,6 +233,17 @@ struct FRUSExplorerApp: App {
                         }
                     }
                 }
+                // Handoff: a FRUS document viewed on another device
+                .onContinueUserActivity(AppActivityTypes.document) { activity in
+                    continueDocumentActivity(activity)
+                }
+                // Spotlight: user tapped a search result for a FRUS document
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
+                    let parts = identifier.split(separator: "/", maxSplits: 1).map(String.init)
+                    guard parts.count == 2 else { return }
+                    navigateToDocument(volumeId: parts[0], documentId: parts[1], title: activity.title)
+                }
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
@@ -194,6 +281,7 @@ struct FRUSExplorerApp: App {
 
         let volumesDir = Self.makeVolumesDirectory()
         let dbURL = Self.makeDatabaseURL()
+        appState.indexDirectory = dbURL.deletingLastPathComponent()
 
         // Create search infrastructure. Failures are non-fatal: the browser and search
         // views degrade gracefully when indexingPipeline is nil.
@@ -214,6 +302,7 @@ struct FRUSExplorerApp: App {
                 pipeline: pipeline,
                 personMentionStore: appState.personMentionStore
             )
+            appState.analyticsService = CorpusAnalyticsService(fts5Store: store)
             let pageRangeStore = try? PageRangeStore(databaseURL: dbURL)
             let downloadedIds = Set(
                 (try? FileManager.default.contentsOfDirectory(
@@ -385,6 +474,35 @@ struct FRUSExplorerApp: App {
             print("[FRUSExplorer] Deferred onboarding scope enqueued: \(toEnqueue.count) volumes.")
             #endif
         }
+
+        // Wire the logging context last so the session log is ready before any
+        // user interaction fires (document opens, searches) but after the
+        // SwiftData container and schema are fully initialised.
+        appState.loggingContext = ModelContext(modelContainer)
+    }
+
+    // MARK: - Activity Continuation
+
+    /// Handles a Handoff or deep-link continuation for a specific document.
+    @MainActor
+    private func continueDocumentActivity(_ activity: NSUserActivity) {
+        guard let volumeId = activity.userInfo?["volumeId"] as? String,
+              let documentId = activity.userInfo?["documentId"] as? String else { return }
+        navigateToDocument(volumeId: volumeId, documentId: documentId, title: activity.title)
+    }
+
+    /// Pushes navigation to the requested document on both platforms.
+    @MainActor
+    private func navigateToDocument(volumeId: String, documentId: String, title: String?) {
+        let entry = DocumentBrowserEntry(
+            documentId: documentId,
+            volumeId: volumeId,
+            header: title ?? documentId
+        )
+        appState.pendingBrowseDocument = entry
+        #if os(iOS)
+        appState.activeTab = .browse
+        #endif
     }
 
     /// Returns (and creates if necessary) the volumes storage directory.

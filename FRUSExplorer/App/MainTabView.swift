@@ -36,6 +36,10 @@ import SwiftData
 ///          (HIG: badges must represent actionable user-driven information, not status
 ///          counts; a simple dot communicates "attention needed" without implying
 ///          the number is an actionable queue)
+///   1.4 — Session 93: IndexingBannerView wired via .safeAreaInset(edge: .bottom) on
+///          each tab's root view; ActivityKit / Live Activity deferred (see
+///          IndexingBannerView.swift); banner visible across all tabs during indexing
+///   1.5 — Session 99: Analytics toolbar button in BrowserTabView; AnalyticsView sheet
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -62,6 +66,7 @@ struct MainTabView: View {
                 value: AppTab.browse
             ) {
                 BrowserTabView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             Tab(
                 String(localized: "tab.search", defaultValue: "Search"),
@@ -69,6 +74,7 @@ struct MainTabView: View {
                 value: AppTab.search
             ) {
                 SearchTabView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             Tab(
                 String(localized: "tab.activity", defaultValue: "Activity"),
@@ -76,6 +82,7 @@ struct MainTabView: View {
                 value: AppTab.activity
             ) {
                 ActivityTabView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             .badge(newNoteCount)
             Tab(
@@ -84,6 +91,7 @@ struct MainTabView: View {
                 value: AppTab.collections
             ) {
                 CollectionListView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             Tab(
                 String(localized: "tab.settings", defaultValue: "Settings"),
@@ -91,6 +99,7 @@ struct MainTabView: View {
                 value: AppTab.settings
             ) {
                 SettingsView()
+                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             // Boolean dot badge: shows when any downloaded volumes are awaiting indexing.
             // A raw count badge (the previous behaviour) is misleading — the number is a
@@ -100,11 +109,23 @@ struct MainTabView: View {
             .badge(appState.unindexedVolumeCount > 0 ? "·" : "")
         }
     }
+
+    /// Returns `IndexingBannerView` when indexing is active, or `EmptyView` otherwise.
+    ///
+    /// Passed to `.safeAreaInset(edge: .bottom, spacing: 0)` on each tab's root view.
+    /// An `EmptyView` result adds 0 height inset, so there is no visual or layout effect
+    /// when no indexing is in progress.
+    @ViewBuilder
+    private var indexingBanner: some View {
+        if let update = appState.currentIndexingProgress {
+            IndexingBannerView(update: update)
+        }
+    }
 }
 
 // MARK: - BrowserTabView
 
-/// Wraps `BrowserView` for the Browse tab.
+/// Wraps `BrowserView` for the Browse tab with an Analytics toolbar button.
 ///
 /// Exists as a named struct so that SwiftUI maintains stable `@State` identity for
 /// `BrowserView`'s `viewModel` across tab switches. Without the wrapper, switching
@@ -113,9 +134,31 @@ struct MainTabView: View {
 ///
 /// Version history:
 ///   1.0 — Session 43: initial implementation
+///   1.1 — Session 99: Analytics toolbar button; presents AnalyticsView as a sheet
 struct BrowserTabView: View {
+
+    @Environment(AppState.self) private var appState
+    @State private var showAnalytics = false
+
     var body: some View {
         BrowserView()
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showAnalytics = true
+                    } label: {
+                        Image(systemName: "chart.bar.xaxis")
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browse.analytics.a11y",
+                               defaultValue: "Corpus Analytics")
+                    )
+                }
+            }
+            .sheet(isPresented: $showAnalytics) {
+                AnalyticsView()
+                    .environment(appState)
+            }
     }
 }
 

@@ -61,6 +61,12 @@ import Foundation
 ///          promoted to quasi-documents during full-volume parse so their content
 ///          is indexed by `IndexingPipeline`; `"foreword"` added to structural
 ///          type recognition in `VolumeStructureParserDelegate`
+///   1.8 — Session 77: `<choice>` handled in `buildNode` — only the preferred form
+///          (`<corr>` > `<reg>` > first non-sic child) is returned; `<sic>` suppressed
+///   1.9 — Session 78: `<note rend="inline">` made transparent in `isTransparent` so
+///          its children flow inline; `<frus:attachment>` handled in `buildNode` as
+///          `.attachment(n:children:)` AST node
+///   2.0 — Session 79: `<ab>` mapped to `.paragraph` in `buildNode`
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -675,6 +681,14 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // All other div types (compilation, chapter, subseries, volume, persons, terms, etc.)
             // pass their children through to the parent — they are structural wrappers.
             return divType != "document" && divType != "editorialNote"
+        case "note":
+            // Session 78: <note rend="inline"> renders its children inline in the text
+            // flow — not as a superscript footnote reference. Used in FRUS TEI for
+            // attachment label phrases such as <note rend="inline">Attachment</note>
+            // or <note rend="inline" type="source">Tab A</note> before a frus:attachment
+            // heading. Making the note transparent hoists its children (typically <hi>
+            // and plain text nodes) directly into the surrounding inline context.
+            return attributes["rend"] == "inline"
         default:
             return false
         }
@@ -816,6 +830,38 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
         case "corr":
             return .corr(children)
+
+        // MARK: Anonymous blocks and attachments (Session 79 / 78)
+        case "ab":
+            // <ab> (anonymous block) is a paragraph-equivalent used for short prose
+            // blocks that don't fit <p>, <head>, or <label> — e.g. captions, rubrics,
+            // inscriptions. Map directly to .paragraph so it renders as body text.
+            return .paragraph(children: children)
+
+        case "frus:attachment":
+            // Foundation's XMLParser in non-namespace mode delivers the qualified
+            // name ("frus:attachment") as the element name. No div/@type equivalent
+            // exists in the FRUS schema; this namespaced element is the sole mechanism.
+            return .attachment(n: attributes["n"], children: children)
+
+        // MARK: Choice (Session 77)
+        case "choice":
+            // Render only the preferred form; suppress <sic> entirely.
+            // Priority: <corr> > <reg> > first child.
+            // Both <sic> and <corr> are already built as children by the time
+            // this case runs, so filtering here is sufficient — no AST or
+            // render-node changes required.
+            let preferred: FRUSASTNode? =
+                children.first { if case .corr = $0 { return true }; return false }
+                ?? children.first {
+                    if case .unknown(let n, _, _) = $0 { return n == "reg" }; return false
+                }
+                ?? children.first(where: { if case .sic = $0 { return false }; return true })
+            guard let preferred else { return nil }
+            if case .corr(let c) = preferred {
+                return c.count == 1 ? c[0] : .unknown(name: "choice", attributes: [:], children: c)
+            }
+            return preferred
 
         // MARK: Line breaks (Session 07)
         case "lb":
