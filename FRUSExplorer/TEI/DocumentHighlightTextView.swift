@@ -66,7 +66,7 @@ struct DocumentHighlightTextView: NSViewRepresentable {
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(
             width: 0,
-            height: .greatestFiniteMagnitude
+            height: CGFloat.greatestFiniteMagnitude
         )
         textView.delegate = context.coordinator
         context.coordinator.textView = textView

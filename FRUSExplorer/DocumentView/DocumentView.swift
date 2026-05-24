@@ -946,7 +946,7 @@ struct DocumentView: View {
                                 .font(.callout)
                                 .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
                                 .lineLimit(4)
-                            Text(note.lastModified, style: .relative)
+                            Text(note.lastModified ?? .now, style: .relative)
                                 .font(.caption2)
                                 .foregroundStyle(.tertiary)
                         }

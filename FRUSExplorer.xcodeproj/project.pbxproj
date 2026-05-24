@@ -196,6 +196,8 @@
 		AA22BB01CC03DD04EE221D /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */; };
 		AA22BB01CC03DD04EE221F /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */; };
 		AA22BB01CC03DD04EE2220 /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */; };
+		5DD56DBAF391459EBB95381D /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC6E32C07F04830ADA268CC /* DocumentWindowID.swift */; };
+		74955A10BF244D8A9109B6C2 /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC6E32C07F04830ADA268CC /* DocumentWindowID.swift */; };
 		AA22BB01CC03DD04EE2222 /* BibtexExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */; };
 		AA22BB01CC03DD04EE2223 /* BibtexExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */; };
 		AA22BB01CC03DD04EE2225 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2224 /* RISExporter.swift */; };
@@ -434,6 +436,7 @@
 		AA22BB01CC03DD04EE2206 /* HTMLCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocxCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
+		7AC6E32C07F04830ADA268CC /* DocumentWindowID.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentWindowID.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibtexExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2224 /* RISExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RISExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2227 /* PersonIndexView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonIndexView.swift; sourceTree = "<group>"; };
@@ -526,6 +529,7 @@
 			children = (
 				AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */,
 				5F862248B58178F5619CFDC6 /* AppState.swift */,
+				7AC6E32C07F04830ADA268CC /* DocumentWindowID.swift */,
 				B9B3538710154855A5E7E7D7 /* ContentView.swift */,
 				EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */,
 				AA22BB01CC03DD04EE2230 /* IndexingBannerView.swift */,
@@ -1202,6 +1206,7 @@
 				3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */,
 				1E9C0A2CDFE9A3CA083C51D2 /* ContentView.swift in Sources */,
 				36CDFA52541406F20DF89A33 /* FRUSExplorerApp.swift in Sources */,
+				5DD56DBAF391459EBB95381D /* DocumentWindowID.swift in Sources */,
 				AA22BB01CC03DD04EE2232 /* IndexingBannerView.swift in Sources */,
 				AA22BB01CC03DD04EE2235 /* SavedSearch.swift in Sources */,
 				AA22BB01CC03DD04EE2238 /* SavedSearchesView.swift in Sources */,

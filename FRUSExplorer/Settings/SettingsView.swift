@@ -1858,8 +1858,7 @@ private struct DisplaySettingsView: View {
 
     var body: some View {
         Form {
-            Section(String(localized: "settings.display.textSize.header",
-                           defaultValue: "Text Size")) {
+            Section {
                 Picker(String(localized: "settings.display.textSize.label",
                               defaultValue: "Document Text Size"),
                        selection: $textSize) {
@@ -1872,13 +1871,15 @@ private struct DisplaySettingsView: View {
                     String(localized: "settings.display.textSize.a11y",
                            defaultValue: "Document text size")
                 )
+            } header: {
+                Text(String(localized: "settings.display.textSize.header",
+                            defaultValue: "Text Size"))
             } footer: {
                 Text(String(localized: "settings.display.textSize.footer",
                             defaultValue: "Adjusts the body text size in the Document view."))
             }
 
-            Section(String(localized: "settings.display.documentView.header",
-                           defaultValue: "Document View")) {
+            Section {
                 Toggle(String(localized: "settings.display.showNumbers.label",
                               defaultValue: "Show Document Numbers"),
                        isOn: $showDocumentNumbers)
@@ -1886,6 +1887,9 @@ private struct DisplaySettingsView: View {
                     String(localized: "settings.display.showNumbers.a11y",
                            defaultValue: "Show document numbers in the document view")
                 )
+            } header: {
+                Text(String(localized: "settings.display.documentView.header",
+                            defaultValue: "Document View"))
             } footer: {
                 Text(String(localized: "settings.display.showNumbers.footer",
                             defaultValue: "Displays the printed document number (e.g. \"Document 28\") in the document identity line."))

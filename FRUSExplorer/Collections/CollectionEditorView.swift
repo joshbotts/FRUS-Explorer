@@ -241,17 +241,17 @@ struct CollectionEditorView: View {
 
     private var iOSBody: some View {
         NavigationStack {
-            #if os(iOS)
             Group {
+                #if os(iOS)
                 if sizeClass == .regular {
                     iPadCollectionLayout
                 } else {
                     iPhoneCollectionForm
                 }
+                #else
+                iPhoneCollectionForm
+                #endif
             }
-            #else
-            iPhoneCollectionForm
-            #endif
             .navigationTitle(isNewCollection
                 ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
                 : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
@@ -362,7 +362,7 @@ struct CollectionEditorView: View {
                let savedSearch = allSavedSearches.first(where: { $0.id == searchId }) {
                 HStack {
                     Label(savedSearch.name, systemImage: "bolt.fill")
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(Color.accentColor)
                     Spacer()
                     Button(String(localized: "collection.editor.smart.unlink",
                                   defaultValue: "Unlink")) {

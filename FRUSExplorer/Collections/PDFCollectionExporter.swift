@@ -408,13 +408,15 @@ final class PDFCollectionExporter: CollectionExporter {
         case .italicText(let c):
             return inlineAttributedString(c, fontSize: fontSize, bold: bold, italic: true)
         case .smallCapsText(let c):
-            // CoreText: use lowercase-small-caps feature flag
+            // CoreText: use lowercase-small-caps feature via descriptor (CTFontCreateCopyWithFeatures removed in iOS 19 SDK)
             let fontName = bold ? "Helvetica-Bold" : "Helvetica"
             let baseFont = CTFontCreateWithName(fontName as CFString, fontSize, nil)
-            let scFont = CTFontCreateCopyWithFeatures(
-                baseFont, fontSize,
-                [[kCTFontFeatureTypeIdentifierKey: kLetterCaseType,
-                  kCTFontFeatureSelectorIdentifierKey: kLowerCaseSmallCapsSelector]] as CFArray)
+            let baseDescriptor = CTFontCopyFontDescriptor(baseFont)
+            let scDescriptor = CTFontDescriptorCreateCopyWithFeature(
+                baseDescriptor,
+                kLowerCaseType as CFNumber,
+                kLowerCaseSmallCapsSelector as CFNumber)
+            let scFont = CTFontCreateWithFontDescriptor(scDescriptor, fontSize, nil)
             let attrs: [NSAttributedString.Key: Any] = [
                 NSAttributedString.Key(kCTFontAttributeName as String): scFont,
                 NSAttributedString.Key(kCTForegroundColorAttributeName as String): CGColor(gray: 0, alpha: 1)
@@ -447,8 +449,8 @@ final class PDFCollectionExporter: CollectionExporter {
         case .sicText(let c):
             let inner = inlineAttributedString(c, fontSize: fontSize, bold: bold, italic: italic)
             let m = NSMutableAttributedString(attributedString: inner)
-            m.addAttribute(NSAttributedString.Key(kCTStrikethroughStyleAttributeName as String),
-                           value: CTUnderlineStyle.single.rawValue as CFNumber,
+            m.addAttribute(.strikethroughStyle,
+                           value: 1,
                            range: NSRange(location: 0, length: m.length))
             return m
         case .formulaText(let s):

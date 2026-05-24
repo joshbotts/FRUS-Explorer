@@ -144,7 +144,7 @@ struct AnalyticsView: View {
                 systemImage: "chart.bar",
                 description: Text(
                     String(localized: "analytics.empty.detail",
-                           defaultValue: "No indexed documents match "\(committedTerm)".")
+                           defaultValue: "No indexed documents match \"\(committedTerm)\".")
                 )
             )
         } else {
@@ -175,7 +175,7 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.year.heading",
-                       defaultValue: ""\(committedTerm)" — by Year")
+                       defaultValue: "\"\(committedTerm)\" \u{2014} by Year")
             )
             .font(.headline)
             .padding(.horizontal)
@@ -229,7 +229,7 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.subseries.heading",
-                       defaultValue: ""\(committedTerm)" — by Subseries")
+                       defaultValue: "\"\(committedTerm)\" \u{2014} by Subseries")
             )
             .font(.headline)
             .padding(.horizontal)
