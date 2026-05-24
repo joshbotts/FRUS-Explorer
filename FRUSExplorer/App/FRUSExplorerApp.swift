@@ -73,6 +73,9 @@ import CoreSpotlight
 ///   3.2 — Session 94: Source Explorer window defaultSize corrected from 380×320 to 700×440
 ///          (the view enforces minWidth:640, so 380 caused an immediate jarring resize)
 ///   3.3 — Session 99: Analytics Window scene added (frus.analytics); AnalyticsView wired
+///   3.4 — Session 108: iPadOS Stage Manager — UIApplicationSupportsMultipleScenes YES;
+///          WindowGroup(for: DocumentWindowID.self) for document windows;
+///          WindowGroup id:"frus.sourceExplorer.ios" for source explorer windows
 @main
 struct FRUSExplorerApp: App {
 
@@ -85,6 +88,67 @@ struct FRUSExplorerApp: App {
 
     var body: some Scene {
         mainWindowScene
+        #if os(iOS)
+        // MARK: - Document Window (iPadOS Stage Manager)
+        //
+        // Opens individual FRUS documents in dedicated Stage Manager windows on
+        // M-chip iPads. WindowGroup(for:) lets SwiftUI restore windows across
+        // scene lifecycle events using the Codable DocumentWindowID value.
+        // On iPhone and non-Stage-Manager iPads, openWindow(value:) is a no-op.
+        WindowGroup(for: DocumentWindowID.self) { $windowID in
+            Group {
+                if let id = windowID {
+                    // NavigationStack is required so DocumentView's .navigationTitle
+                    // and toolbar items render in a proper nav bar for the scene window.
+                    NavigationStack {
+                        DocumentView(entry: DocumentBrowserEntry(
+                            documentId: id.documentId,
+                            volumeId: id.volumeId,
+                            header: id.header
+                        ))
+                    }
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "documentWindow.empty.title",
+                               defaultValue: "No Document"),
+                        systemImage: "doc.text",
+                        description: Text(
+                            String(localized: "documentWindow.empty.detail",
+                                   defaultValue: "Open a document from the Browse tab.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+
+        // MARK: - Source Explorer Window (iPadOS Stage Manager)
+        //
+        // Mirrors the macOS "frus.sourceExplorer" Window scene. Reads
+        // appState.currentSourceNote — set by the caller before openWindow(id:).
+        WindowGroup("Source Explorer", id: "frus.sourceExplorer.ios") {
+            Group {
+                if let sourceNote = appState.currentSourceNote {
+                    NavigationStack {
+                        SourceExplorerView(rawSourceNote: sourceNote)
+                    }
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "sourceExplorerWindow.empty.title",
+                               defaultValue: "No Document Selected"),
+                        systemImage: "archivebox",
+                        description: Text(
+                            String(localized: "sourceExplorerWindow.empty.detail",
+                                   defaultValue: "Open a document with a source note, then tap Sources in the toolbar.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+        #endif
         #if os(macOS)
         // MARK: - Search Window
         Window("Search", id: "frus.search") {

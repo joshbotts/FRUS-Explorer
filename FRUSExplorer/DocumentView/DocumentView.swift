@@ -125,6 +125,7 @@ struct DocumentView: View {
     @State private var pendingHighlightLink: UUID? = nil
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.openWindow) private var openWindow
 
     @Query private var highlights: [DocumentHighlight]
     @Query private var documentNotes: [ResearchNote]
@@ -674,15 +675,40 @@ struct DocumentView: View {
                 )
             }
 
-            // Source Explorer — only when a source note is present
+            // Source Explorer — only when a source note is present.
+            // On iPad (regular width) opens in a new Stage Manager window;
+            // on iPhone falls back to a sheet.
             if let sourceNote = vm.sourceNote {
                 Button {
-                    activeSheet = .sourceExplorer(sourceNote)
+                    if sizeClass == .regular {
+                        appState.currentSourceNote = sourceNote
+                        openWindow(id: "frus.sourceExplorer.ios")
+                    } else {
+                        activeSheet = .sourceExplorer(sourceNote)
+                    }
                 } label: {
                     Label(
                         String(localized: "document.toolbar.sourceExplorer",
                                defaultValue: "Source Explorer"),
                         systemImage: "archivebox"
+                    )
+                }
+            }
+
+            // Open in New Window — iPad Stage Manager only
+            if sizeClass == .regular {
+                Divider()
+                Button {
+                    openWindow(value: DocumentWindowID(
+                        volumeId: entry.volumeId,
+                        documentId: entry.documentId,
+                        header: vm.documentTitle ?? entry.header
+                    ))
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.openInNewWindow",
+                               defaultValue: "Open in New Window"),
+                        systemImage: "square.on.square"
                     )
                 }
             }
