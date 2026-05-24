@@ -38,17 +38,20 @@ import SwiftData
 ///   1.1 — Session 91: removed private EditorialNoteBadge and TagChip; now uses
 ///          shared FRUSTheme components (EditorialNoteBadge, FRUSTagChip)
 ///   1.2 — Session 100: logEvent(.documentOpen) in .task
-///   1.3 — Session 103: highlight mode toolbar toggle + DocumentHighlightTextView +
+///   1.3 — Session 103: highlight mode toggle + DocumentHighlightTextView +
 ///          color-picker popover + DocumentHighlight SwiftData insertion
 ///   1.4 — Session 105: renderingVersion uses SHA-256(flatText ++ kVersion) via
 ///          ASTToRenderNodeConverter.renderingVersion(for:)
 ///   1.5 — Session 106: @Query for stored highlights; overlay rendering; stale warning banner;
-///          note anchoring ("Add Note to Highlight" toolbar item + ResearchNoteEditorView sheet)
+///          note anchoring
+///   1.6 — Highlight controls + Sources moved to ResearchStripView; state managed via
+///          HighlightCoordinator passed from MainWindowView
 @MainActor
 struct MacDocumentView: View {
 
     let entry: DocumentBrowserEntry
     @Binding var navigationPath: [DocumentBrowserEntry]
+    let highlightCoordinator: HighlightCoordinator
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -58,22 +61,16 @@ struct MacDocumentView: View {
     @State private var prevEntry: DocumentBrowserEntry? = nil
     @State private var nextEntry: DocumentBrowserEntry? = nil
 
-    // MARK: Highlight Mode
-    @State private var showHighlightMode = false
-    @State private var highlightTextSelection: NSRange? = nil
-    @State private var showHighlightColorPicker = false
-    /// The `DocumentHighlight.id` of the highlight most recently created in this session.
-    /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
-    @State private var pendingHighlightLink: UUID? = nil
-    @State private var showHighlightNoteEditor = false
-
     @Query private var highlights: [DocumentHighlight]
 
     // MARK: - Init
 
-    init(entry: DocumentBrowserEntry, navigationPath: Binding<[DocumentBrowserEntry]>) {
+    init(entry: DocumentBrowserEntry,
+         navigationPath: Binding<[DocumentBrowserEntry]>,
+         highlightCoordinator: HighlightCoordinator) {
         self.entry = entry
         self._navigationPath = navigationPath
+        self.highlightCoordinator = highlightCoordinator
         // DocumentViewModel constructed here; services injected in .task below
         // because @Environment is not accessible at init time.
         self._vm = State(initialValue: DocumentViewModel(
@@ -96,7 +93,7 @@ struct MacDocumentView: View {
 
     var body: some View {
         Group {
-            if showHighlightMode {
+            if highlightCoordinator.showHighlightMode {
                 highlightModeContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -105,6 +102,7 @@ struct MacDocumentView: View {
         }
         .task {
             await loadDocument()
+            highlightCoordinator.createHighlightAction = createHighlight(color:)
             appState.logEvent(.documentOpen(
                 volumeId: entry.volumeId,
                 documentId: entry.documentId,
@@ -127,57 +125,6 @@ struct MacDocumentView: View {
         }
         .sheet(item: $vm.selectedGloss) { gloss in
             GlossDetailSheet(gloss: gloss)
-        }
-        .sheet(isPresented: $showHighlightNoteEditor, onDismiss: { pendingHighlightLink = nil }) {
-            if let hlId = pendingHighlightLink {
-                ResearchNoteEditorView(
-                    documentId: entry.documentId,
-                    volumeId: entry.volumeId,
-                    activeProjectId: appState.activeProjectId,
-                    linkedHighlightId: hlId,
-                    indexingPipeline: appState.indexingPipeline
-                )
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button(action: toggleHighlightMode) {
-                    Image(systemName: showHighlightMode
-                          ? "pencil.tip.crop.circle.fill"
-                          : "pencil.tip.crop.circle")
-                }
-                .help(showHighlightMode
-                      ? String(localized: "doc.highlightMode.exit",
-                               defaultValue: "Exit Highlight Mode")
-                      : String(localized: "doc.highlightMode.enter",
-                               defaultValue: "Highlight Mode"))
-                .disabled(vm.renderModel == nil)
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showHighlightColorPicker = true
-                } label: {
-                    Image(systemName: "paintbrush.pointed")
-                }
-                .help(String(localized: "doc.createHighlight",
-                             defaultValue: "Create Highlight"))
-                .disabled(!showHighlightMode || (highlightTextSelection?.length ?? 0) == 0)
-                .opacity(showHighlightMode ? 1 : 0)
-                .popover(isPresented: $showHighlightColorPicker) {
-                    highlightColorPicker
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showHighlightNoteEditor = true
-                } label: {
-                    Image(systemName: "note.text.badge.plus")
-                }
-                .help(String(localized: "doc.addNoteToHighlight",
-                             defaultValue: "Add Note to Highlight"))
-                .disabled(pendingHighlightLink == nil)
-                .opacity(showHighlightMode ? 1 : 0)
-            }
         }
     }
 
@@ -251,6 +198,7 @@ struct MacDocumentView: View {
 
     @ViewBuilder
     private var highlightModeContent: some View {
+        @Bindable var coordinator = highlightCoordinator
         if let renderModel = vm.renderModel {
             let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: renderModel)
             let hasStale = highlights.contains { $0.renderingVersion != currentVersion }
@@ -264,7 +212,7 @@ struct MacDocumentView: View {
                 DocumentHighlightTextView(
                     renderModel: renderModel,
                     highlights: highlights,
-                    selectionRange: $highlightTextSelection
+                    selectionRange: $coordinator.highlightTextSelection
                 )
                 Divider()
                 volumeNavigationView
@@ -280,45 +228,6 @@ struct MacDocumentView: View {
                 systemImage: "exclamationmark.triangle",
                 description: Text(error.localizedDescription)
             )
-        }
-    }
-
-    // MARK: - Highlight Color Picker
-
-    private var highlightColorPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "doc.highlight.pickColor",
-                        defaultValue: "Highlight Color"))
-                .font(.headline)
-            HStack(spacing: 10) {
-                ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
-                    Button {
-                        createHighlight(color: color)
-                        showHighlightColorPicker = false
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(swiftUIColor(for: color))
-                                .frame(width: 32, height: 32)
-                            Circle()
-                                .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
-                                .frame(width: 32, height: 32)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .help(color.rawValue.capitalized)
-                }
-            }
-        }
-        .padding(16)
-    }
-
-    private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
-        switch color {
-        case .yellow: return .yellow
-        case .green: return .green
-        case .blue: return .blue
-        case .pink: return .pink
         }
     }
 
@@ -341,18 +250,9 @@ struct MacDocumentView: View {
 
     // MARK: - Highlight Actions
 
-    private func toggleHighlightMode() {
-        showHighlightMode.toggle()
-        if !showHighlightMode {
-            highlightTextSelection = nil
-            showHighlightColorPicker = false
-            pendingHighlightLink = nil
-        }
-    }
-
     @MainActor
     private func createHighlight(color: DocumentHighlight.Color) {
-        guard let range = highlightTextSelection,
+        guard let range = highlightCoordinator.highlightTextSelection,
               let model = vm.renderModel else { return }
         let highlight = DocumentHighlight(
             volumeId: entry.volumeId,
@@ -363,8 +263,8 @@ struct MacDocumentView: View {
             renderingVersion: ASTToRenderNodeConverter.renderingVersion(for: model)
         )
         modelContext.insert(highlight)
-        highlightTextSelection = nil
-        pendingHighlightLink = highlight.id
+        highlightCoordinator.highlightTextSelection = nil
+        highlightCoordinator.pendingHighlightLink = highlight.id
     }
 
     // MARK: - Document Identity
