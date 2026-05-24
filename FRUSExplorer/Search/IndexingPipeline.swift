@@ -862,9 +862,12 @@ public actor IndexingPipeline {
         // Both arrays are written in the same chunk so that each batch's allocations
         // can be freed by ARC before the next batch begins. On iOS, batchSize == 50
         // (or 20 under memory pressure); on macOS it is effectively unlimited.
-        let batchSize = effectiveBatchSize
+        // Clamp to totalDocs so ceiling-division and chunk-end arithmetic are
+        // overflow-safe even when effectiveBatchSize == Int.max (the macOS sentinel
+        // meaning "process everything in one pass").
         let totalDocs = data.documents.count
-        let totalBatches = totalDocs == 0 ? 1 : (totalDocs + batchSize - 1) / batchSize
+        let batchSize = min(effectiveBatchSize, max(totalDocs, 1))
+        let totalBatches = (totalDocs + batchSize - 1) / batchSize
         var processed = 0
         var batchNumber = 0
 
