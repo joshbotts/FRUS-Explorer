@@ -52,15 +52,16 @@ struct VolumeMetadataDiscoveredTests {
         return try await body(dir)
     }
 
-    private func makeTestPipeline(dir: URL) async throws -> (IndexingPipeline, FTS5Store) {
+    private func makeTestPipeline(dir: URL) throws -> (IndexingPipeline, FTS5Store) {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let dbURL = dir.appendingPathComponent("test.db")
         let store = try FTS5Store(databaseURL: dbURL)
-        let pipeline = try await IndexingPipeline(
+        let pipeline = try IndexingPipeline(
             fts5Store: store,
+            databaseURL: dbURL,
             volumesDirectory: volDir,
-            auxiliaryDatabaseURL: dir.appendingPathComponent("aux.db")
+            subjectTagStore: SubjectTagStore(entries: [], appearances: [])
         )
         return (pipeline, store)
     }
@@ -70,7 +71,7 @@ struct VolumeMetadataDiscoveredTests {
     @Test("metadataStream emits exactly one event per indexVolume() call")
     func emitsExactlyOnce() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(
@@ -101,7 +102,7 @@ struct VolumeMetadataDiscoveredTests {
     @Test("totalDocuments matches the parsed document count")
     func totalDocumentsMatchesParsedCount() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             let docs = (1...5).map { n in
@@ -133,7 +134,7 @@ struct VolumeMetadataDiscoveredTests {
     @Test("all integer counts are zero for an empty volume (no docs)")
     func zeroCountsForEmptyVolume() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(
@@ -172,7 +173,7 @@ struct VolumeMetadataDiscoveredTests {
     @Test("metadataStream event arrives before first storingBatch progress update")
     func metadataArrivesBeforeFirstBatch() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             let docs = (1...3).map { n in
@@ -229,7 +230,7 @@ struct VolumeMetadataDiscoveredTests {
     @Test("dateRangeMin <= dateRangeMax when both are non-nil")
     func dateRangeOrdering() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             // Documents with explicit dateline dates — parser extracts from <dateline>.

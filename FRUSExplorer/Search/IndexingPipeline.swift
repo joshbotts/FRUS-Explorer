@@ -216,6 +216,7 @@ public actor IndexingPipeline {
     private let fts5Store: FTS5Store
     private let volumesDirectory: URL
     private let subjectTagStore: SubjectTagStore
+    private let stateTracker: IndexingStateTracker?
 
     // MARK: - Auxiliary SQLite connection
 
@@ -271,18 +272,21 @@ public actor IndexingPipeline {
     ///   - databaseURL: Path to the shared SQLite database file.
     ///   - volumesDirectory: Directory containing downloaded volume XML files.
     ///   - subjectTagStore: Provides subject tag IDs for indexed documents.
+    ///   - stateTracker: Optional tracker for interrupted-indexing sentinel persistence.
     ///   - concurrencyLimit: Maximum simultaneous XML parsers. Default 4.
     public init(
         fts5Store: FTS5Store,
         databaseURL: URL,
         volumesDirectory: URL,
         subjectTagStore: SubjectTagStore,
+        stateTracker: IndexingStateTracker? = nil,
         concurrencyLimit: Int = 4
     ) throws {
         self.fts5Store = fts5Store
         self.databaseURL = databaseURL
         self.volumesDirectory = volumesDirectory
         self.subjectTagStore = subjectTagStore
+        self.stateTracker = stateTracker
         self.concurrencyLimit = concurrencyLimit
 
         let (stream, continuation) = AsyncStream.makeStream(of: IndexingProgress.self)
@@ -355,6 +359,7 @@ public actor IndexingPipeline {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw IndexingError.volumeNotFound(volumeId: volumeId)
         }
+        await stateTracker?.markStarted(volumeId: volumeId)
         emit(.indexing(volumeId: volumeId, current: 0, total: 1))
         volumeIndexingStartTime = Date()
         volumeDocumentsProcessed = 0
@@ -372,6 +377,7 @@ public actor IndexingPipeline {
         emitMetadata(buildMetadata(from: data))
         try await storeIndexData(data)
         submitSpotlightItems(for: data)
+        await stateTracker?.markCompleted(volumeId: volumeId)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .complete,
@@ -421,6 +427,7 @@ public actor IndexingPipeline {
             // is used for throughput.
             for _ in 0..<min(effectiveConcurrencyLimit, total) {
                 if let file = iterator.next() {
+                    await stateTracker?.markStarted(volumeId: file.volumeId)
                     group.addTask { [self] in
                         do {
                             let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
@@ -438,6 +445,7 @@ public actor IndexingPipeline {
                 case .success(let data):
                     do {
                         try await storeIndexData(data)
+                        await stateTracker?.markCompleted(volumeId: data.volumeId)
                         completedVolumes += 1
                         totalDocuments += data.documents.count
                         emit(.indexing(volumeId: data.volumeId, current: completedVolumes + failedVolumes, total: total))
@@ -461,6 +469,7 @@ public actor IndexingPipeline {
                 }
 
                 if let file = iterator.next() {
+                    await stateTracker?.markStarted(volumeId: file.volumeId)
                     group.addTask { [self] in
                         do {
                             let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)

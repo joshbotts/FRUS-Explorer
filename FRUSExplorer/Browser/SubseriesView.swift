@@ -59,6 +59,11 @@ struct SubseriesView: View {
                             VolumeRowLabel(volume: volume, isDownloaded: vm.isDownloaded(volume.volumeId))
                         }
                         .buttonStyle(.plain)
+                        #if os(iOS)
+                        .contextMenu {
+                            VolumeRowContextMenu(volume: volume)
+                        }
+                        #endif
                     }
                 }
             }
@@ -247,9 +252,15 @@ private struct TagPickerSheet: View {
 /// volume is being indexed, so the user gets real-time throughput feedback
 /// without navigating away from the browser.
 ///
+/// An amber warning badge is shown on iOS when `AppState.interruptedVolumeIds` contains
+/// this volume's ID, indicating that a prior indexing pass was interrupted. The badge
+/// disappears while active indexing is in progress for this volume.
+///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 51: iOS IndexingCapsule wired via AppState.currentIndexingProgress
+///   1.2 — Session 113: metadata parameter forwarded to IndexingCapsule
+///   1.3 — Session 115: amber interrupted badge; "Re-index" contextual menu item
 struct VolumeRowLabel: View {
     let volume: VolumeManifestEntry
     let isDownloaded: Bool
@@ -265,6 +276,18 @@ struct VolumeRowLabel: View {
                     .font(.body)
                     .lineLimit(2)
                 Spacer()
+                #if os(iOS)
+                if appState.interruptedVolumeIds.contains(volume.volumeId),
+                   appState.currentIndexingProgress?.volumeId != volume.volumeId {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .font(.caption)
+                        .accessibilityLabel(
+                            String(localized: "browser.volume.interrupted.a11y",
+                                   defaultValue: "Indexing interrupted")
+                        )
+                }
+                #endif
                 if isDownloaded {
                     Image(systemName: "arrow.down.circle.fill")
                         .foregroundStyle(.secondary)
@@ -303,6 +326,37 @@ struct VolumeRowLabel: View {
         .padding(.vertical, 3)
     }
 }
+
+// MARK: - VolumeRowContextMenu
+
+#if os(iOS)
+/// Context menu for a volume row in `SubseriesView`.
+///
+/// Shows a "Re-index" action when the volume is in `AppState.interruptedVolumeIds`,
+/// letting the user trigger a re-index directly from the browser list.
+///
+/// Version history:
+///   1.0 — Session 115: initial implementation
+private struct VolumeRowContextMenu: View {
+    let volume: VolumeManifestEntry
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        if appState.interruptedVolumeIds.contains(volume.volumeId),
+           let pipeline = appState.indexingPipeline {
+            Button {
+                Task { try? await pipeline.indexVolume(volume.volumeId) }
+            } label: {
+                Label(
+                    String(localized: "browser.volume.reindex.action",
+                           defaultValue: "Re-index"),
+                    systemImage: "arrow.triangle.2.circlepath"
+                )
+            }
+        }
+    }
+}
+#endif
 
 // MARK: - IndexingCapsule
 

@@ -54,15 +54,16 @@ struct IndexingStageTests {
         return try await body(dir)
     }
 
-    private func makeTestPipeline(dir: URL) async throws -> (IndexingPipeline, FTS5Store) {
+    private func makeTestPipeline(dir: URL) throws -> (IndexingPipeline, FTS5Store) {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let dbURL = dir.appendingPathComponent("test.db")
         let store = try FTS5Store(databaseURL: dbURL)
-        let pipeline = try await IndexingPipeline(
+        let pipeline = try IndexingPipeline(
             fts5Store: store,
+            databaseURL: dbURL,
             volumesDirectory: volDir,
-            auxiliaryDatabaseURL: dir.appendingPathComponent("aux.db")
+            subjectTagStore: SubjectTagStore(entries: [], appearances: [])
         )
         return (pipeline, store)
     }
@@ -72,7 +73,7 @@ struct IndexingStageTests {
     @Test(".reading emitted at start with totalDocuments == 0")
     func readingEmittedAtStartWithZeroTotal() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(
@@ -107,7 +108,7 @@ struct IndexingStageTests {
     @Test(".reading emitted second time with totalDocuments > 0 after parse completes")
     func readingEmittedSecondTimeWithKnownTotal() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             let docs = (1...3).map { n in
@@ -145,7 +146,7 @@ struct IndexingStageTests {
     @Test(".storingBatch increments current on each batch")
     func storingBatchCurrentIncrements() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             // Use enough documents to guarantee at least one batch; the test env
@@ -197,7 +198,7 @@ struct IndexingStageTests {
     @Test(".complete is the final emitted stage")
     func completeIsFinalStage() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(
@@ -227,7 +228,7 @@ struct IndexingStageTests {
     @Test("emission order: .reading → .storingBatch → .complete")
     func emissionOrderIsCorrect() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(

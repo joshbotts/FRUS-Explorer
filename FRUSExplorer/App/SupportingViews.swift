@@ -1742,13 +1742,14 @@ private struct SubseriesVolumeListView: View {
 /// Version history:
 ///   1.0 — Session 51: initial implementation
 ///   1.1 — Session 113: `DiscoveredMetadataRow` added to indexing phase view
+///   1.2 — Session 115: `.interrupted` phase added; amber warning view with Re-index Now button
 private struct CorpusVolumeDetailSheet: View {
     let volume: VolumeManifestEntry
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
     enum Phase {
-        case notDownloaded, downloading, indexing, loadingStructure, notIndexed
+        case notDownloaded, downloading, indexing, loadingStructure, notIndexed, interrupted
         case ready(VolumeStructure)
         case error(String)
     }
@@ -1801,6 +1802,7 @@ private struct CorpusVolumeDetailSheet: View {
         switch phase {
         case .notDownloaded:    notDownloadedView
         case .downloading:      downloadingView
+        case .interrupted:      interruptedView
         case .indexing:
             if showingSummaryCard, let meta = appState.completedIndexingMetadata {
                 summaryCardView(meta)
@@ -1830,6 +1832,10 @@ private struct CorpusVolumeDetailSheet: View {
         }
         guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volume.volumeId) else {
             phase = .notDownloaded; return
+        }
+        // Interrupted: sentinel present from a prior incomplete indexing pass.
+        if appState.interruptedVolumeIds.contains(volume.volumeId) {
+            phase = .interrupted; return
         }
         guard let pipeline = appState.indexingPipeline else { phase = .notIndexed; return }
         if (try? pipeline.isVolumeIndexed(volume.volumeId)) == true {
@@ -1981,6 +1987,41 @@ private struct CorpusVolumeDetailSheet: View {
                 Label("Index Now", systemImage: "arrow.triangle.2.circlepath")
             }
             .buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    private var interruptedView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.orange)
+            Text("Indexing Interrupted")
+                .font(.headline)
+            Text("The previous indexing pass did not complete. Re-index this volume to restore full search coverage.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+            Button {
+                guard let pipeline = appState.indexingPipeline else { return }
+                phase = .indexing
+                liveProgress = nil
+                Task {
+                    do {
+                        try await pipeline.indexVolume(volume.volumeId)
+                        await loadStructure()
+                    } catch {
+                        phase = .error(error.localizedDescription)
+                    }
+                }
+            } label: {
+                Label("Re-index Now", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+            .disabled(appState.indexingPipeline == nil)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()

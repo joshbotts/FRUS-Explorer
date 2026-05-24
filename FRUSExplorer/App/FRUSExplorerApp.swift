@@ -76,6 +76,8 @@ import CoreSpotlight
 ///   3.4 — Session 108: iPadOS Stage Manager — UIApplicationSupportsMultipleScenes YES;
 ///          WindowGroup(for: DocumentWindowID.self) for document windows;
 ///          WindowGroup id:"frus.sourceExplorer.ios" for source explorer windows
+///   3.5 — Session 115: IndexingStateTracker created at boot; interruptedVolumeIds seeded from
+///          sentinel store; tracker passed to IndexingPipeline for interrupted-state detection
 @main
 struct FRUSExplorerApp: App {
 
@@ -283,6 +285,12 @@ struct FRUSExplorerApp: App {
         let dbURL = Self.makeDatabaseURL()
         appState.indexDirectory = dbURL.deletingLastPathComponent()
 
+        // Seed interrupted volume IDs from the sentinel store before creating the pipeline
+        // so the UI can show amber badges immediately after the first render.
+        let stateTracker = IndexingStateTracker()
+        let interruptedIds = await stateTracker.interruptedVolumeIds()
+        appState.interruptedVolumeIds = Set(interruptedIds)
+
         // Create search infrastructure. Failures are non-fatal: the browser and search
         // views degrade gracefully when indexingPipeline is nil.
         let fts5Store = try? FTS5Store(databaseURL: dbURL)
@@ -291,7 +299,8 @@ struct FRUSExplorerApp: App {
                fts5Store: store,
                databaseURL: dbURL,
                volumesDirectory: volumesDir,
-               subjectTagStore: appState.subjectTagStore
+               subjectTagStore: appState.subjectTagStore,
+               stateTracker: stateTracker
            ) {
             appState.indexingPipeline = pipeline
             appState.connectIndexingProgress(pipeline: pipeline)

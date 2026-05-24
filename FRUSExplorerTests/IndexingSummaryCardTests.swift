@@ -78,15 +78,16 @@ struct IndexingSummaryCardTests {
         return try await body(dir)
     }
 
-    private func makeTestPipeline(dir: URL) async throws -> (IndexingPipeline, FTS5Store) {
+    private func makeTestPipeline(dir: URL) throws -> (IndexingPipeline, FTS5Store) {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let dbURL = dir.appendingPathComponent("test.db")
         let store = try FTS5Store(databaseURL: dbURL)
-        let pipeline = try await IndexingPipeline(
+        let pipeline = try IndexingPipeline(
             fts5Store: store,
+            databaseURL: dbURL,
             volumesDirectory: volDir,
-            auxiliaryDatabaseURL: dir.appendingPathComponent("aux.db")
+            subjectTagStore: SubjectTagStore(entries: [], appearances: [])
         )
         return (pipeline, store)
     }
@@ -96,7 +97,7 @@ struct IndexingSummaryCardTests {
     @Test("completedIndexingMetadata is set when pipeline emits .complete")
     func completedMetadataSetOnComplete() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(
@@ -120,7 +121,7 @@ struct IndexingSummaryCardTests {
     @Test("currentIndexingProgress is nil when completedIndexingMetadata is set")
     func currentProgressClearedOnComplete() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(
@@ -158,7 +159,7 @@ struct IndexingSummaryCardTests {
     @Test("completedIndexingMetadata totalDocuments matches indexed count")
     func completedMetadataTotalDocumentsMatchesParsed() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             let docs = (1...7).map { n in
@@ -185,7 +186,7 @@ struct IndexingSummaryCardTests {
     @Test("completedIndexingMetadata fields are zero-safe for a minimal volume")
     func completedMetadataIsZeroSafeForMinimalVolume() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
 
             try writeTEIVolume(

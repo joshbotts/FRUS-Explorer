@@ -62,6 +62,7 @@ import SwiftData
 ///   2.9 — Session 100: logEvent(_:) + loggingContext + ResearchSession management
 ///   3.0 — Session 101: logEvent(_:) gated on researchSessionLoggingEnabled UserDefaults key
 ///   3.1 — Session 114: completedIndexingMetadata for post-index summary card
+///   3.2 — Session 115: interruptedVolumeIds; cleared on .complete from connectIndexingProgress
 
 // MARK: - AppTab
 
@@ -339,6 +340,16 @@ final class AppState {
     ///   1.0 — Session 114: initial implementation
     var completedIndexingMetadata: VolumeMetadataDiscovered? = nil
 
+    /// Volume IDs whose indexing pass started but did not complete before the app was killed.
+    ///
+    /// Seeded at boot by reading `IndexingStateTracker.interruptedVolumeIds()`.
+    /// Cleared per-volume as `connectIndexingProgress` observes `.complete` events.
+    /// Views observe this to render amber "needs attention" indicators on affected rows.
+    ///
+    /// Version history:
+    ///   1.0 — Session 115: initial implementation
+    var interruptedVolumeIds: Set<String> = []
+
     /// Subscribes to `pipeline.progressStream` and `pipeline.metadataStream`, forwarding
     /// updates onto the main actor as `currentIndexingProgress`, `lastDiscoveredMetadata`,
     /// and `completedIndexingMetadata`.
@@ -352,6 +363,7 @@ final class AppState {
                 if update.stage == .complete {
                     self.completedIndexingMetadata = self.lastDiscoveredMetadata
                     self.currentIndexingProgress = nil
+                    self.interruptedVolumeIds.remove(update.volumeId)
                 } else {
                     if self.currentIndexingProgress?.volumeId != update.volumeId {
                         self.lastDiscoveredMetadata = nil
