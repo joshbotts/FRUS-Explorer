@@ -111,6 +111,9 @@ enum DocumentSheet: Identifiable {
 ///          "Open in New Window" menu item routes to DocumentWindowID Stage Manager scene
 ///   2.7 — Session 109: Notes panel hidden during highlight mode; notesPanel frame fill fix;
 ///          note count badge; CollectionEditorView iPadCollectionLayout frame fix
+///   2.8 — Session 110: Replace HStack notes panel with .inspector(isPresented:) — system-
+///          managed width, collapsible; Notes toggle button in .topBarLeading (iPad only);
+///          toggleHighlightMode() closes inspector; remove iPadDocumentLayout HStack
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -129,6 +132,9 @@ struct DocumentView: View {
     /// The `DocumentHighlight.id` of the most recently created highlight.
     /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
     @State private var pendingHighlightLink: UUID? = nil
+    /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
+    /// that sets this is hidden, keeping the panel closed).
+    @State private var showNotesPanel = false
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
@@ -251,11 +257,7 @@ struct DocumentView: View {
                 description: Text(err.localizedDescription)
             )
         } else if let model = vm.renderModel {
-            if sizeClass == .regular {
-                iPadDocumentLayout(vm: vm, model: model)
-            } else {
-                documentContent(vm: vm, model: model)
-            }
+            documentContent(vm: vm, model: model)
         }
     }
 
@@ -409,6 +411,11 @@ struct DocumentView: View {
         }
         .sheet(isPresented: $showHighlightColorPicker) {
             highlightColorPickerSheet
+        }
+        // Trailing inspector panel for research notes (iPad).
+        // On iPhone the toggle button is hidden, so showNotesPanel stays false.
+        .inspector(isPresented: $showNotesPanel) {
+            notesPanel
         }
         // Load the mention count for the selected person from the FTS index.
         // vm.selectedPerson is set alongside activeSheet so the task id fires correctly.
@@ -631,6 +638,24 @@ struct DocumentView: View {
                 // 4. More — overflow menu containing all secondary actions
                 moreMenu(vm: vm)
             }
+            // Notes panel toggle — leading nav bar position on iPad, hidden on iPhone
+            if sizeClass == .regular {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showNotesPanel.toggle()
+                    } label: {
+                        Image(systemName: "note.text")
+                            .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
+                    }
+                    .accessibilityLabel(
+                        showNotesPanel
+                            ? String(localized: "document.toolbar.notesPanel.hide.a11y",
+                                     defaultValue: "Hide notes panel")
+                            : String(localized: "document.toolbar.notesPanel.show.a11y",
+                                     defaultValue: "Show notes panel")
+                    )
+                }
+            }
         }
     }
 
@@ -774,7 +799,11 @@ struct DocumentView: View {
 
     private func toggleHighlightMode() {
         showHighlightMode.toggle()
-        if !showHighlightMode {
+        if showHighlightMode {
+            // Close the notes panel so the text view gets the full available width
+            // for precise character-level selection.
+            showNotesPanel = false
+        } else {
             highlightTextSelection = nil
             showHighlightColorPicker = false
             pendingHighlightLink = nil
@@ -862,21 +891,6 @@ struct DocumentView: View {
         #endif
     }
 
-    // MARK: - iPad Layout (horizontalSizeClass == .regular)
-
-    @ViewBuilder
-    private func iPadDocumentLayout(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
-        HStack(spacing: 0) {
-            documentContent(vm: vm, model: model)
-            // Notes panel is hidden while highlight mode is active so the text view
-            // gets full width for precise selection. It re-appears when Done is tapped.
-            if !showHighlightMode {
-                Divider()
-                notesPanel
-            }
-        }
-    }
-
     private var notesPanel: some View {
         VStack(spacing: 0) {
             HStack {
@@ -948,7 +962,6 @@ struct DocumentView: View {
                 .listStyle(.plain)
             }
         }
-        .frame(width: 280, alignment: .top)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color(uiColor: .secondarySystemBackground))
     }
