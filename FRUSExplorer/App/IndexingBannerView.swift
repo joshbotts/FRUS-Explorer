@@ -17,6 +17,11 @@ import SwiftUI
 /// Mirrors the centre-zone of the macOS `StatusBarView`: a system image, a volume ID
 /// label, a linear progress bar, and an ETA estimate derived from `docsPerSecond`.
 ///
+/// When `metadata` is non-nil and its `volumeId` matches `update.volumeId`, a secondary
+/// row is shown below the progress bar with aggregate discovery counts:
+/// "312 persons · 1,247 links · 841/847 dated · 804 docs + 43 notes"
+/// Segments with a zero count are omitted.
+///
 /// ## Placement
 /// Injected via `.safeAreaInset(edge: .bottom, spacing: 0)` on each tab's root view
 /// in `MainTabView`. This placement adds the banner height to the tab content's bottom
@@ -32,49 +37,62 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 93: initial implementation
+///   1.1 — Session 113: `metadata` parameter; secondary discovery-counts row
 struct IndexingBannerView: View {
 
     let update: IndexingProgressUpdate
+    var metadata: VolumeMetadataDiscovered? = nil
 
     var body: some View {
         VStack(spacing: 0) {
             Divider()
-            HStack(spacing: 8) {
-                Image(systemName: "square.and.arrow.down")
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: FRUSTheme.captionSize))
+                        .foregroundStyle(.secondary)
+
+                    Text(String(
+                        localized: "indexing.banner.label",
+                        defaultValue: "Indexing \(update.volumeId)…"
+                    ))
                     .font(.system(size: FRUSTheme.captionSize))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
 
-                Text(String(
-                    localized: "indexing.banner.label",
-                    defaultValue: "Indexing \(update.volumeId)…"
-                ))
-                .font(.system(size: FRUSTheme.captionSize))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
+                    Spacer()
 
-                Spacer()
-
-                if update.totalDocuments > 0 {
-                    ProgressView(
-                        value: Double(update.completedDocuments),
-                        total: Double(update.totalDocuments)
-                    )
-                    .progressViewStyle(.linear)
-                    .frame(width: 80)
-                    .tint(.accentColor)
-
-                    if let eta = etaString {
-                        Text(eta)
-                            .font(.system(size: FRUSTheme.captionSmallSize))
-                            .foregroundStyle(.tertiary)
-                            .monospacedDigit()
-                    }
-                } else {
-                    ProgressView()
+                    if update.totalDocuments > 0 {
+                        ProgressView(
+                            value: Double(update.completedDocuments),
+                            total: Double(update.totalDocuments)
+                        )
                         .progressViewStyle(.linear)
                         .frame(width: 80)
                         .tint(.accentColor)
+
+                        if let eta = etaString {
+                            Text(eta)
+                                .font(.system(size: FRUSTheme.captionSmallSize))
+                                .foregroundStyle(.tertiary)
+                                .monospacedDigit()
+                        }
+                    } else {
+                        ProgressView()
+                            .progressViewStyle(.linear)
+                            .frame(width: 80)
+                            .tint(.accentColor)
+                    }
+                }
+
+                if let meta = metadata, meta.volumeId == update.volumeId,
+                   let summary = discoverySummary(meta) {
+                    Text(summary)
+                        .font(.system(size: FRUSTheme.captionSmallSize))
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
             }
             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
@@ -89,6 +107,44 @@ struct IndexingBannerView: View {
         let remaining = update.totalDocuments - update.completedDocuments
         let seconds = Double(remaining) / update.docsPerSecond
         return "~\(Int(seconds.rounded()))s"
+    }
+
+    private func discoverySummary(_ meta: VolumeMetadataDiscovered) -> String? {
+        var segments: [String] = []
+        if meta.uniquePersonCount > 0 {
+            segments.append(String(
+                localized: "indexing.banner.meta.persons",
+                defaultValue: "\(meta.uniquePersonCount) persons"
+            ))
+        }
+        if meta.crossReferenceCount > 0 {
+            segments.append(String(
+                localized: "indexing.banner.meta.links",
+                defaultValue: "\(meta.crossReferenceCount) links"
+            ))
+        }
+        if meta.datedDocumentCount > 0 {
+            let fraction = "\(meta.datedDocumentCount)/\(meta.totalDocuments)"
+            segments.append(String(
+                localized: "indexing.banner.meta.dated",
+                defaultValue: "\(fraction) dated"
+            ))
+        }
+        if meta.totalDocuments > 0 {
+            let primaryDocs = meta.totalDocuments - meta.editorialNoteCount
+            if meta.editorialNoteCount > 0 {
+                segments.append(String(
+                    localized: "indexing.banner.meta.docsAndNotes",
+                    defaultValue: "\(primaryDocs) docs + \(meta.editorialNoteCount) notes"
+                ))
+            } else {
+                segments.append(String(
+                    localized: "indexing.banner.meta.docs",
+                    defaultValue: "\(primaryDocs) docs"
+                ))
+            }
+        }
+        return segments.isEmpty ? nil : segments.joined(separator: " · ")
     }
 }
 

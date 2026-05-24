@@ -693,7 +693,13 @@ struct StatusBarView: View {
                       update.totalDocuments > update.completedDocuments else { return nil }
                 let remaining = update.totalDocuments - update.completedDocuments
                 let seconds = Double(remaining) / update.docsPerSecond
-                return "~\(Int(seconds.rounded()))s"
+                var base = "~\(Int(seconds.rounded()))s"
+                if let meta = appState.lastDiscoveredMetadata,
+                   meta.volumeId == update.volumeId {
+                    let summary = statusBarMetaSummary(meta)
+                    if !summary.isEmpty { base += " · " + summary }
+                }
+                return base
             }()
             return ActiveTask(
                 label: "Indexing \(update.volumeId)…",
@@ -734,6 +740,16 @@ struct StatusBarView: View {
         }
 
         return nil
+    }
+
+    private func statusBarMetaSummary(_ meta: VolumeMetadataDiscovered) -> String {
+        var segments: [String] = []
+        if meta.uniquePersonCount > 0 { segments.append("\(meta.uniquePersonCount) persons") }
+        if meta.crossReferenceCount > 0 { segments.append("\(meta.crossReferenceCount) links") }
+        if meta.datedDocumentCount > 0 {
+            segments.append("\(meta.datedDocumentCount)/\(meta.totalDocuments) dated")
+        }
+        return segments.joined(separator: " · ")
     }
 }
 
@@ -1695,6 +1711,10 @@ private struct SubseriesVolumeListView: View {
 /// Download progress is inferred from `AppState.downloadQueue` transitions.
 /// Indexing progress is read from `AppState.currentIndexingProgress`.
 /// Both are `@Observable` properties so the view re-renders automatically.
+///
+/// Version history:
+///   1.0 — Session 51: initial implementation
+///   1.1 — Session 113: `DiscoveredMetadataRow` added to indexing phase view
 private struct CorpusVolumeDetailSheet: View {
     let volume: VolumeManifestEntry
     @Environment(AppState.self) private var appState
@@ -1868,6 +1888,10 @@ private struct CorpusVolumeDetailSheet: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            if let meta = appState.lastDiscoveredMetadata,
+               meta.volumeId == volume.volumeId {
+                DiscoveredMetadataRow(metadata: meta)
+            }
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -1955,6 +1979,90 @@ private struct CorpusVolumeDetailSheet: View {
             return String(localized: "corpus.detail.indexing.stage.complete",
                           defaultValue: "Complete")
         }
+    }
+}
+
+// MARK: - DiscoveredMetadataRow
+
+/// Two-column grid of aggregate discovery counts shown inside `CorpusVolumeDetailSheet`
+/// once `VolumeMetadataDiscovered` arrives from the pipeline's metadata stream.
+///
+/// Omits any row whose value is zero. Includes a date-range line when present.
+///
+/// Version history:
+///   1.0 — Session 113: initial implementation
+private struct DiscoveredMetadataRow: View {
+    let metadata: VolumeMetadataDiscovered
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Divider()
+            Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 4) {
+                if metadata.uniquePersonCount > 0 {
+                    GridRow {
+                        Text("Persons")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(metadata.uniquePersonCount)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.primary)
+                    }
+                }
+                if metadata.crossReferenceCount > 0 {
+                    GridRow {
+                        Text("Cross-references")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(metadata.crossReferenceCount)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.primary)
+                    }
+                }
+                if metadata.datedDocumentCount > 0 {
+                    GridRow {
+                        Text("Dated")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(metadata.datedDocumentCount) / \(metadata.totalDocuments)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.primary)
+                    }
+                }
+                if metadata.editorialNoteCount > 0 {
+                    GridRow {
+                        Text("Editorial notes")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(metadata.editorialNoteCount)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.primary)
+                    }
+                }
+            }
+            if let dateRange = formattedDateRange {
+                Text(dateRange)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var formattedDateRange: String? {
+        guard let minISO = metadata.dateRangeMin,
+              let maxISO = metadata.dateRangeMax else { return nil }
+        let minFormatted = formatISODate(minISO) ?? minISO
+        let maxFormatted = formatISODate(maxISO) ?? maxISO
+        return "\(minFormatted) – \(maxFormatted)"
+    }
+
+    private func formatISODate(_ iso: String) -> String? {
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.dateFormat = "yyyy-MM-dd"
+        guard let date = fmt.date(from: iso) else { return nil }
+        let out = DateFormatter()
+        out.dateFormat = "MMM yyyy"
+        return out.string(from: date)
     }
 }
 

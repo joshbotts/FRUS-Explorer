@@ -118,7 +118,7 @@ struct MainTabView: View {
     @ViewBuilder
     private var indexingBanner: some View {
         if let update = appState.currentIndexingProgress {
-            IndexingBannerView(update: update)
+            IndexingBannerView(update: update, metadata: appState.lastDiscoveredMetadata)
         }
     }
 }

@@ -242,6 +242,18 @@ public actor IndexingPipeline {
     /// a slow consumer never causes memory growth.
     public nonisolated var progressStream: AsyncStream<IndexingProgressUpdate> { _progressStream }
 
+    // MARK: - Metadata discovery stream (one event per volume, after parse completes)
+
+    private let metadataContinuation: AsyncStream<VolumeMetadataDiscovered>.Continuation
+    private let _metadataStream: AsyncStream<VolumeMetadataDiscovered>
+
+    /// Yields one `VolumeMetadataDiscovered` event per indexed volume, emitted immediately
+    /// after the XML parse phase completes and before any storage batches begin.
+    ///
+    /// Consumers can use the aggregate counts (persons, dates, cross-references) to enrich
+    /// progress displays without waiting for the full write phase to finish.
+    public nonisolated var metadataStream: AsyncStream<VolumeMetadataDiscovered> { _metadataStream }
+
     // MARK: - Per-volume throughput tracking
 
     private var volumeIndexingStartTime: Date?
@@ -284,6 +296,13 @@ public actor IndexingPipeline {
         _progressStream = updateStream
         progressUpdateContinuation = updateContinuation
 
+        let (metaStream, metaContinuation) = AsyncStream.makeStream(
+            of: VolumeMetadataDiscovered.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        _metadataStream = metaStream
+        metadataContinuation = metaContinuation
+
         var handle: OpaquePointer?
         let rc = sqlite3_open_v2(
             databaseURL.path,
@@ -321,6 +340,7 @@ public actor IndexingPipeline {
     deinit {
         progressContinuation.finish()
         progressUpdateContinuation.finish()
+        metadataContinuation.finish()
         if let db = auxDb { sqlite3_close_v2(db) }
     }
 
@@ -349,6 +369,7 @@ public actor IndexingPipeline {
             volumeId: volumeId, stage: .reading,
             completedDocuments: 0, totalDocuments: data.documents.count, docsPerSecond: 0
         ))
+        emitMetadata(buildMetadata(from: data))
         try await storeIndexData(data)
         submitSpotlightItems(for: data)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
@@ -892,6 +913,27 @@ public actor IndexingPipeline {
 
     private func emitUpdate(_ update: IndexingProgressUpdate) {
         progressUpdateContinuation.yield(update)
+    }
+
+    private func emitMetadata(_ meta: VolumeMetadataDiscovered) {
+        metadataContinuation.yield(meta)
+    }
+
+    private func buildMetadata(from data: VolumeIndexData) -> VolumeMetadataDiscovered {
+        let isoDateStrings = data.documentDates.compactMap { $0.dateISOMin }
+        let isoDateMaxStrings = data.documentDates.compactMap { $0.dateISOMax ?? $0.dateISOMin }
+        return VolumeMetadataDiscovered(
+            volumeId: data.volumeId,
+            totalDocuments: data.documents.count,
+            editorialNoteCount: data.documents.filter { $0.isEditorialNote }.count,
+            uniquePersonCount: Set(data.personMentions.map { $0.personRef }).count,
+            crossReferenceCount: data.crossReferences.count,
+            datedDocumentCount: isoDateStrings.count,
+            dateRangeMin: isoDateStrings.min(),
+            dateRangeMax: isoDateMaxStrings.max(),
+            glossaryPersonCount: data.persons.count,
+            glossaryTermCount: data.terms.count
+        )
     }
 
     /// Rolling throughput estimate: documents processed ÷ elapsed seconds.

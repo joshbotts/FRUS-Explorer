@@ -298,6 +298,64 @@ public struct IndexingProgressUpdate: Sendable, Equatable {
     }
 }
 
+// MARK: - VolumeMetadataDiscovered
+
+/// Aggregate metrics emitted by `IndexingPipeline.metadataStream` once per volume,
+/// immediately after the XML parse phase completes and before storage begins.
+///
+/// All integer counts are zero-safe — callers can compare against 0 without
+/// optional handling. `dateRangeMin`/`dateRangeMax` are `nil` when no document
+/// in the volume carries a parseable date.
+///
+/// Version history:
+///   1.0 — Session 113: initial implementation
+public struct VolumeMetadataDiscovered: Sendable {
+    /// The volume that was just parsed.
+    public let volumeId: String
+    /// Total number of documents in the volume.
+    public let totalDocuments: Int
+    /// Number of documents classified as editorial notes.
+    public let editorialNoteCount: Int
+    /// Number of unique person refs mentioned across all documents.
+    public let uniquePersonCount: Int
+    /// Number of cross-reference edges originating from this volume.
+    public let crossReferenceCount: Int
+    /// Number of documents that carry a parseable date.
+    public let datedDocumentCount: Int
+    /// ISO-8601 earliest document date found, or `nil` if no dates are present.
+    public let dateRangeMin: String?
+    /// ISO-8601 latest document date found, or `nil` if no dates are present.
+    public let dateRangeMax: String?
+    /// Number of persons listed in the volume's biographical glossary.
+    public let glossaryPersonCount: Int
+    /// Number of terms listed in the volume's subject glossary.
+    public let glossaryTermCount: Int
+
+    public init(
+        volumeId: String,
+        totalDocuments: Int,
+        editorialNoteCount: Int,
+        uniquePersonCount: Int,
+        crossReferenceCount: Int,
+        datedDocumentCount: Int,
+        dateRangeMin: String?,
+        dateRangeMax: String?,
+        glossaryPersonCount: Int,
+        glossaryTermCount: Int
+    ) {
+        self.volumeId = volumeId
+        self.totalDocuments = totalDocuments
+        self.editorialNoteCount = editorialNoteCount
+        self.uniquePersonCount = uniquePersonCount
+        self.crossReferenceCount = crossReferenceCount
+        self.datedDocumentCount = datedDocumentCount
+        self.dateRangeMin = dateRangeMin
+        self.dateRangeMax = dateRangeMax
+        self.glossaryPersonCount = glossaryPersonCount
+        self.glossaryTermCount = glossaryTermCount
+    }
+}
+
 // MARK: - IndexingProgress
 
 /// A progress event emitted by `IndexingPipeline.progress`.

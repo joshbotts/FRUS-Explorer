@@ -315,11 +315,23 @@ final class AppState {
     ///   1.1 — New UI scaffolding: promoted to cross-platform for macOS StatusBarView
     var currentIndexingProgress: IndexingProgressUpdate? = nil
 
-    /// Subscribes to `pipeline.progressStream` and forwards updates onto the main
-    /// actor as `currentIndexingProgress`.
+    /// The most recent volume metadata snapshot discovered during the parse phase of indexing.
+    ///
+    /// Populated by `connectIndexingProgress(pipeline:)` which subscribes to
+    /// `IndexingPipeline.metadataStream`. Cleared to `nil` when the next indexing
+    /// operation begins (i.e. when `currentIndexingProgress` is first set for a new volume).
+    /// Views use this to enrich live progress displays with person counts, date coverage,
+    /// and cross-reference totals as soon as the XML parse completes.
+    ///
+    /// Version history:
+    ///   1.0 — Session 113: initial implementation
+    var lastDiscoveredMetadata: VolumeMetadataDiscovered? = nil
+
+    /// Subscribes to `pipeline.progressStream` and `pipeline.metadataStream`, forwarding
+    /// updates onto the main actor as `currentIndexingProgress` and `lastDiscoveredMetadata`.
     ///
     /// Safe to call multiple times — each call replaces the previous subscription
-    /// (the prior Task is abandoned; the stream is single-consumer by design).
+    /// (the prior Tasks are abandoned; streams are single-consumer by design).
     func connectIndexingProgress(pipeline: IndexingPipeline) {
         Task { @MainActor [weak self] in
             for await update in pipeline.progressStream {
@@ -327,8 +339,17 @@ final class AppState {
                 if update.stage == .complete {
                     self.currentIndexingProgress = nil
                 } else {
+                    if self.currentIndexingProgress?.volumeId != update.volumeId {
+                        self.lastDiscoveredMetadata = nil
+                    }
                     self.currentIndexingProgress = update
                 }
+            }
+        }
+        Task { @MainActor [weak self] in
+            for await meta in pipeline.metadataStream {
+                guard let self else { return }
+                self.lastDiscoveredMetadata = meta
             }
         }
     }

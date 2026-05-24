@@ -296,7 +296,7 @@ struct VolumeRowLabel: View {
             #if os(iOS)
             if let progress = appState.currentIndexingProgress,
                progress.volumeId == volume.volumeId {
-                IndexingCapsule(progress: progress)
+                IndexingCapsule(progress: progress, metadata: appState.lastDiscoveredMetadata)
             }
             #endif
         }
@@ -313,24 +313,41 @@ struct VolumeRowLabel: View {
 /// references the matching volume. Disappears automatically when indexing
 /// completes (the parent condition becomes `false`).
 ///
+/// When `metadata` is non-nil and matches the volume, a single person-count
+/// line is shown below the throughput: "312 persons".
+///
 /// Version history:
 ///   1.0 — Session 51: initial implementation
+///   1.1 — Session 113: `metadata` parameter; person count line
 private struct IndexingCapsule: View {
     let progress: IndexingProgressUpdate
+    var metadata: VolumeMetadataDiscovered? = nil
 
     var body: some View {
-        HStack(spacing: 6) {
-            ProgressView(value: progressFraction)
-                .progressViewStyle(.linear)
-                .frame(maxWidth: 80)
-                .tint(.accentColor)
-            Text(stageLabel)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            if progress.docsPerSecond > 0 {
-                Text(String(format: "%.0f doc/s", progress.docsPerSecond))
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                ProgressView(value: progressFraction)
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 80)
+                    .tint(.accentColor)
+                Text(stageLabel)
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
+                if progress.docsPerSecond > 0 {
+                    Text(String(format: "%.0f doc/s", progress.docsPerSecond))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            if let meta = metadata,
+               meta.volumeId == progress.volumeId,
+               meta.uniquePersonCount > 0 {
+                Text(String(
+                    localized: "indexing.capsule.meta.persons",
+                    defaultValue: "\(meta.uniquePersonCount) persons"
+                ))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
             }
         }
         .accessibilityElement(children: .combine)
