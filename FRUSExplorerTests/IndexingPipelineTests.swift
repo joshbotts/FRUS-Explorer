@@ -1470,9 +1470,9 @@ struct IndexingProgressStreamTests {
             try await Task.sleep(for: .milliseconds(50))
             collectTask.cancel()
 
-            let hasFTS5 = box.updates.contains { $0.stage == .buildingFTS5 }
-            #expect(hasFTS5,
-                    "progressStream must emit at least one .buildingFTS5 update during indexVolume")
+            let hasBatch = box.updates.contains { if case .storingBatch = $0.stage { return true }; return false }
+            #expect(hasBatch,
+                    "progressStream must emit at least one .storingBatch update during indexVolume")
         }
     }
 
@@ -1535,15 +1535,15 @@ struct IndexingProgressStreamTests {
             try await Task.sleep(for: .milliseconds(50))
             collectTask.cancel()
 
-            if let u = box.updates.first(where: { $0.stage == .buildingFTS5 }) {
+            if let u = box.updates.first(where: { if case .storingBatch = $0.stage { return true }; return false }) {
                 let dps = u.docsPerSecond
                 let completed = u.completedDocuments
                 let total = u.totalDocuments
                 #expect(dps >= 0, "docsPerSecond must be non-negative")
-                #expect(completed > 0, "completedDocuments must be > 0 during buildingFTS5 stage")
                 #expect(total == 3, "totalDocuments must equal volume document count")
+                _ = completed // completedDocuments may be 0 at batch start (emitted before write)
             } else {
-                Issue.record("No .buildingFTS5 update was emitted")
+                Issue.record("No .storingBatch update was emitted")
             }
         }
     }

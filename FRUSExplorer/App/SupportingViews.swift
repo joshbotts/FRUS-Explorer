@@ -1945,11 +1945,15 @@ private struct CorpusVolumeDetailSheet: View {
 
     private func indexingStageLabel(_ stage: IndexingStage) -> String {
         switch stage {
-        case .parsing:         return "Parsing documents…"
-        case .extractingDates: return "Extracting dates…"
-        case .indexingPersons: return "Indexing persons…"
-        case .buildingFTS5:    return "Building search index…"
-        case .complete:        return "Complete"
+        case .reading:
+            return String(localized: "corpus.detail.indexing.stage.reading",
+                          defaultValue: "Reading…")
+        case .storingBatch(let current, let total):
+            return String(localized: "corpus.detail.indexing.stage.storingBatch",
+                          defaultValue: "Storing batch \(current) of \(total)…")
+        case .complete:
+            return String(localized: "corpus.detail.indexing.stage.complete",
+                          defaultValue: "Complete")
         }
     }
 }

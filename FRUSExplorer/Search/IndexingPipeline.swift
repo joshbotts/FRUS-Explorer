@@ -339,10 +339,16 @@ public actor IndexingPipeline {
         volumeIndexingStartTime = Date()
         volumeDocumentsProcessed = 0
         emitUpdate(IndexingProgressUpdate(
-            volumeId: volumeId, stage: .parsing,
+            volumeId: volumeId, stage: .reading,
             completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
         ))
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
+        // Emit a second .reading update now that the total document count is known.
+        // This lets progress bars render a determinate state before storage begins.
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: volumeId, stage: .reading,
+            completedDocuments: 0, totalDocuments: data.documents.count, docsPerSecond: 0
+        ))
         try await storeIndexData(data)
         submitSpotlightItems(for: data)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
@@ -828,7 +834,9 @@ public actor IndexingPipeline {
         // (or 20 under memory pressure); on macOS it is effectively unlimited.
         let batchSize = effectiveBatchSize
         let totalDocs = data.documents.count
+        let totalBatches = totalDocs == 0 ? 1 : (totalDocs + batchSize - 1) / batchSize
         var processed = 0
+        var batchNumber = 0
 
         // Delete any existing FTS5 rows for this volume before inserting the fresh batch.
         // Without this, re-indexing accumulates duplicate rows because document IDs like
@@ -836,22 +844,24 @@ public actor IndexingPipeline {
         try await fts5Store.deleteVolume(volumeId: data.volumeId)
 
         for chunkStart in stride(from: 0, to: totalDocs, by: batchSize) {
+            batchNumber += 1
             let chunkEnd = min(chunkStart + batchSize, totalDocs)
             let fts5Chunk  = Array(data.documents[chunkStart..<chunkEnd])
             let cacheChunk = Array(data.documentCache[chunkStart..<chunkEnd])
+
+            emitUpdate(IndexingProgressUpdate(
+                volumeId: data.volumeId,
+                stage: .storingBatch(current: batchNumber, total: totalBatches),
+                completedDocuments: processed,
+                totalDocuments: totalDocs,
+                docsPerSecond: currentDocsPerSecond(forTotal: max(processed, 1))
+            ))
 
             try await fts5Store.insertBatch(fts5Chunk)
             try auxInsertDocumentCache(cacheChunk)
 
             processed += fts5Chunk.count
             volumeDocumentsProcessed = processed
-            emitUpdate(IndexingProgressUpdate(
-                volumeId: data.volumeId,
-                stage: .buildingFTS5,
-                completedDocuments: processed,
-                totalDocuments: totalDocs,
-                docsPerSecond: currentDocsPerSecond(forTotal: processed)
-            ))
             // Yield between batches so the OS can reclaim per-batch allocations.
             await Task.yield()
         }

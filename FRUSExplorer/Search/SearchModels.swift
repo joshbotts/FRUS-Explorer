@@ -239,17 +239,24 @@ public struct SearchResult: Sendable, Identifiable {
 ///
 /// Emitted as part of `IndexingProgressUpdate` on the `IndexingPipeline.progressStream`.
 ///
+/// ## Design note
+/// The previous four-case sequence (parsing / extractingDates / indexingPersons /
+/// buildingFTS5) implied four sequential passes. In practice the pipeline performs
+/// a single XML parse that extracts documents, dates, persons, and cross-references
+/// simultaneously, followed by batched SQLite writes. The two-phase model here
+/// reflects the actual work: one parse pass, then N storage batches.
+///
 /// Version history:
 ///   1.0 — Session 51: initial implementation
-public enum IndexingStage: String, Sendable {
-    /// XML is being parsed and document text extracted.
-    case parsing
-    /// Date fields are being extracted from document headers.
-    case extractingDates
-    /// Person mentions are being resolved and stored.
-    case indexingPersons
-    /// Documents are being written to the FTS5 full-text index.
-    case buildingFTS5
+///   2.0 — Session 112: replace four-stage sequence with .reading / .storingBatch / .complete
+public enum IndexingStage: Sendable, Equatable {
+    /// Single-pass XML parse: document text, dates, persons, and cross-references
+    /// are all extracted simultaneously. `totalDocuments` is 0 until the parse
+    /// completes and the count is known.
+    case reading
+    /// Batched SQLite writes: FTS5 rows, document cache, and auxiliary tables.
+    /// `current` is the 1-based batch number; `total` is the total batch count.
+    case storingBatch(current: Int, total: Int)
     /// All stages are complete for this volume.
     case complete
 }

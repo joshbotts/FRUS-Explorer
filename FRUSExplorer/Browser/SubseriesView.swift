@@ -347,16 +347,13 @@ private struct IndexingCapsule: View {
 
     private var stageLabel: String {
         switch progress.stage {
-        case .parsing:           return String(localized: "indexing.stage.parsing",
-                                               defaultValue: "Parsing…")
-        case .extractingDates:   return String(localized: "indexing.stage.dates",
-                                               defaultValue: "Extracting dates…")
-        case .indexingPersons:   return String(localized: "indexing.stage.persons",
-                                               defaultValue: "Indexing persons…")
-        case .buildingFTS5:      return String(localized: "indexing.stage.fts5",
-                                               defaultValue: "Building index…")
-        case .complete:          return String(localized: "indexing.stage.complete",
-                                               defaultValue: "Complete")
+        case .reading:
+            return String(localized: "indexing.stage.reading", defaultValue: "Reading…")
+        case .storingBatch(let current, let total):
+            return String(localized: "indexing.stage.storingBatch",
+                          defaultValue: "Storing batch \(current) of \(total)…")
+        case .complete:
+            return String(localized: "indexing.stage.complete", defaultValue: "Complete")
         }
     }
 }

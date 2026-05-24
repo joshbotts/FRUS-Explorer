@@ -340,18 +340,12 @@ struct CompilationView: View {
 
     private func indexingStageLabel(_ stage: IndexingStage) -> String {
         switch stage {
-        case .parsing:
-            return String(localized: "browser.compilation.indexing.stage.parsing",
-                          defaultValue: "Parsing documents…")
-        case .extractingDates:
-            return String(localized: "browser.compilation.indexing.stage.dates",
-                          defaultValue: "Extracting dates…")
-        case .indexingPersons:
-            return String(localized: "browser.compilation.indexing.stage.persons",
-                          defaultValue: "Indexing persons…")
-        case .buildingFTS5:
-            return String(localized: "browser.compilation.indexing.stage.fts",
-                          defaultValue: "Building search index…")
+        case .reading:
+            return String(localized: "browser.compilation.indexing.stage.reading",
+                          defaultValue: "Reading…")
+        case .storingBatch(let current, let total):
+            return String(localized: "browser.compilation.indexing.stage.storingBatch",
+                          defaultValue: "Storing batch \(current) of \(total)…")
         case .complete:
             return String(localized: "browser.compilation.indexing.stage.complete",
                           defaultValue: "Complete")
