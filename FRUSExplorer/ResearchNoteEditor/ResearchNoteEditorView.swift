@@ -38,12 +38,16 @@ struct ResearchNoteEditorView: View {
 
     @State private var vm: ResearchNoteEditorViewModel
     private let indexingPipeline: IndexingPipeline?
+    /// When non-nil, the saved note's UUID is written back to `DocumentHighlight.noteId`
+    /// for the highlight with this ID. Set when the editor is opened from a selected passage.
+    private let linkedHighlightId: UUID?
 
     init(
         documentId: String,
         volumeId: String,
         activeProjectId: UUID?,
         noteToEdit: ResearchNote? = nil,
+        linkedHighlightId: UUID? = nil,
         indexingPipeline: IndexingPipeline? = nil
     ) {
         _vm = State(initialValue: ResearchNoteEditorViewModel(
@@ -52,6 +56,7 @@ struct ResearchNoteEditorView: View {
             activeProjectId: activeProjectId,
             noteToEdit: noteToEdit
         ))
+        self.linkedHighlightId = linkedHighlightId
         self.indexingPipeline = indexingPipeline
     }
 
@@ -118,6 +123,7 @@ struct ResearchNoteEditorView: View {
                             documentId: vm.documentId,
                             volumeId: vm.volumeId
                         ))
+                        linkNoteToHighlight(noteId: noteId)
                     }
                     pushNoteToFTS5()
                     dismiss()
@@ -255,6 +261,15 @@ struct ResearchNoteEditorView: View {
 
     /// Pushes the current note body and tags into the FTS5 index so changes are
     /// searchable in the current session without waiting for a relaunch.
+    private func linkNoteToHighlight(noteId: UUID) {
+        guard let hlId = linkedHighlightId else { return }
+        let descriptor = FetchDescriptor<DocumentHighlight>(
+            predicate: #Predicate { $0.id == hlId }
+        )
+        guard let highlight = try? modelContext.fetch(descriptor).first else { return }
+        highlight.noteId = noteId
+    }
+
     private func pushNoteToFTS5() {
         guard let pipeline = indexingPipeline else { return }
         let vid = vm.volumeId
@@ -289,6 +304,7 @@ struct ResearchNoteEditorView: View {
                         documentId: vm.documentId,
                         volumeId: vm.volumeId
                     ))
+                    linkNoteToHighlight(noteId: noteId)
                 }
                 pushNoteToFTS5()
                 dismiss()

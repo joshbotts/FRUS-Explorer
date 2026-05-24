@@ -41,9 +41,11 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 103: initial implementation
+///   1.1 — Session 106: highlights overlay rendering + stale detection
 struct DocumentHighlightTextView: NSViewRepresentable {
 
     let renderModel: FRUSDocumentRenderModel
+    let highlights: [DocumentHighlight]
     @Binding var selectionRange: NSRange?
 
     // MARK: - NSViewRepresentable
@@ -79,7 +81,7 @@ struct DocumentHighlightTextView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        let attrStr = Self.buildAttributedString(from: renderModel)
+        let attrStr = Self.buildAttributedString(from: renderModel, highlights: highlights)
         textView.textStorage?.setAttributedString(attrStr)
     }
 
@@ -104,10 +106,14 @@ struct DocumentHighlightTextView: NSViewRepresentable {
 
     /// Converts the render model body nodes to an `NSAttributedString` whose character
     /// positions correspond directly to the flat-text offset model.
-    static func buildAttributedString(from model: FRUSDocumentRenderModel) -> NSAttributedString {
+    static func buildAttributedString(from model: FRUSDocumentRenderModel, highlights: [DocumentHighlight] = []) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for node in model.bodyNodes {
             appendNode(node, to: result)
+        }
+        if !highlights.isEmpty {
+            let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+            applyHighlights(highlights, currentVersion: currentVersion, to: result)
         }
         return result
     }
@@ -318,6 +324,32 @@ struct DocumentHighlightTextView: NSViewRepresentable {
         let desc = base.fontDescriptor.withSymbolicTraits(traits)
         return NSFont(descriptor: desc, size: size) ?? base
     }
+
+    private static func applyHighlights(
+        _ highlights: [DocumentHighlight],
+        currentVersion: String,
+        to result: NSMutableAttributedString
+    ) {
+        let totalLength = result.length
+        for h in highlights {
+            let len = h.endOffset - h.startOffset
+            guard h.startOffset >= 0, len > 0, h.endOffset <= totalLength else { continue }
+            let range = NSRange(location: h.startOffset, length: len)
+            let isStale = h.renderingVersion != currentVersion
+            let bgColor = highlightNSColor(for: h.color, isStale: isStale)
+            result.addAttribute(.backgroundColor, value: bgColor, range: range)
+        }
+    }
+
+    private static func highlightNSColor(for color: DocumentHighlight.Color, isStale: Bool) -> NSColor {
+        if isStale { return NSColor.systemOrange.withAlphaComponent(0.3) }
+        switch color {
+        case .yellow: return NSColor.systemYellow.withAlphaComponent(0.4)
+        case .green:  return NSColor.systemGreen.withAlphaComponent(0.4)
+        case .blue:   return NSColor.systemBlue.withAlphaComponent(0.45)
+        case .pink:   return NSColor.systemPink.withAlphaComponent(0.4)
+        }
+    }
 }
 
 #else // iOS
@@ -340,9 +372,11 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 104: initial implementation
+///   1.1 — Session 106: highlights overlay rendering + stale detection
 struct DocumentHighlightTextView: UIViewRepresentable {
 
     let renderModel: FRUSDocumentRenderModel
+    let highlights: [DocumentHighlight]
     @Binding var selectionRange: NSRange?
 
     // MARK: - UIViewRepresentable
@@ -361,7 +395,7 @@ struct DocumentHighlightTextView: UIViewRepresentable {
     }
 
     func updateUIView(_ textView: UITextView, context: Context) {
-        let attrStr = Self.buildAttributedString(from: renderModel)
+        let attrStr = Self.buildAttributedString(from: renderModel, highlights: highlights)
         textView.attributedText = attrStr
     }
 
@@ -383,10 +417,16 @@ struct DocumentHighlightTextView: UIViewRepresentable {
     // MARK: - Attributed String Builder
 
     /// Converts body nodes to an `NSAttributedString` following the flat-text offset spec.
-    static func buildAttributedString(from model: FRUSDocumentRenderModel) -> NSAttributedString {
+    /// After the DFS traversal, stored highlight background colors are applied over their
+    /// character ranges. Stale highlights (version mismatch) are tinted amber.
+    static func buildAttributedString(from model: FRUSDocumentRenderModel, highlights: [DocumentHighlight] = []) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for node in model.bodyNodes {
             appendNode(node, to: result)
+        }
+        if !highlights.isEmpty {
+            let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+            applyHighlights(highlights, currentVersion: currentVersion, to: result)
         }
         return result
     }
@@ -574,6 +614,32 @@ struct DocumentHighlightTextView: UIViewRepresentable {
               let desc = base.fontDescriptor.withSymbolicTraits(traits)
         else { return base }
         return UIFont(descriptor: desc, size: size)
+    }
+
+    private static func applyHighlights(
+        _ highlights: [DocumentHighlight],
+        currentVersion: String,
+        to result: NSMutableAttributedString
+    ) {
+        let totalLength = result.length
+        for h in highlights {
+            let len = h.endOffset - h.startOffset
+            guard h.startOffset >= 0, len > 0, h.endOffset <= totalLength else { continue }
+            let range = NSRange(location: h.startOffset, length: len)
+            let isStale = h.renderingVersion != currentVersion
+            let bgColor = highlightUIColor(for: h.color, isStale: isStale)
+            result.addAttribute(.backgroundColor, value: bgColor, range: range)
+        }
+    }
+
+    private static func highlightUIColor(for color: DocumentHighlight.Color, isStale: Bool) -> UIColor {
+        if isStale { return UIColor.systemOrange.withAlphaComponent(0.3) }
+        switch color {
+        case .yellow: return UIColor.systemYellow.withAlphaComponent(0.4)
+        case .green:  return UIColor.systemGreen.withAlphaComponent(0.4)
+        case .blue:   return UIColor.systemBlue.withAlphaComponent(0.45)
+        case .pink:   return UIColor.systemPink.withAlphaComponent(0.4)
+        }
     }
 }
 

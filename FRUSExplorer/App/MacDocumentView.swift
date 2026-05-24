@@ -42,6 +42,8 @@ import SwiftData
 ///          color-picker popover + DocumentHighlight SwiftData insertion
 ///   1.4 — Session 105: renderingVersion uses SHA-256(flatText ++ kVersion) via
 ///          ASTToRenderNodeConverter.renderingVersion(for:)
+///   1.5 — Session 106: @Query for stored highlights; overlay rendering; stale warning banner;
+///          note anchoring ("Add Note to Highlight" toolbar item + ResearchNoteEditorView sheet)
 @MainActor
 struct MacDocumentView: View {
 
@@ -60,6 +62,12 @@ struct MacDocumentView: View {
     @State private var showHighlightMode = false
     @State private var highlightTextSelection: NSRange? = nil
     @State private var showHighlightColorPicker = false
+    /// The `DocumentHighlight.id` of the highlight most recently created in this session.
+    /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
+    @State private var pendingHighlightLink: UUID? = nil
+    @State private var showHighlightNoteEditor = false
+
+    @Query private var highlights: [DocumentHighlight]
 
     // MARK: - Init
 
@@ -74,6 +82,14 @@ struct MacDocumentView: View {
             parser: FRUSDocumentParser(),
             subjectTagStore: SubjectTagStore()
         ))
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        self._highlights = Query(
+            filter: #Predicate<DocumentHighlight> { h in
+                h.volumeId == vId && h.documentId == dId
+            },
+            sort: \DocumentHighlight.createdAt
+        )
     }
 
     // MARK: - Body
@@ -112,6 +128,17 @@ struct MacDocumentView: View {
         .sheet(item: $vm.selectedGloss) { gloss in
             GlossDetailSheet(gloss: gloss)
         }
+        .sheet(isPresented: $showHighlightNoteEditor, onDismiss: { pendingHighlightLink = nil }) {
+            if let hlId = pendingHighlightLink {
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    linkedHighlightId: hlId,
+                    indexingPipeline: appState.indexingPipeline
+                )
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: toggleHighlightMode) {
@@ -139,6 +166,17 @@ struct MacDocumentView: View {
                 .popover(isPresented: $showHighlightColorPicker) {
                     highlightColorPicker
                 }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showHighlightNoteEditor = true
+                } label: {
+                    Image(systemName: "note.text.badge.plus")
+                }
+                .help(String(localized: "doc.addNoteToHighlight",
+                             defaultValue: "Add Note to Highlight"))
+                .disabled(pendingHighlightLink == nil)
+                .opacity(showHighlightMode ? 1 : 0)
             }
         }
     }
@@ -214,7 +252,10 @@ struct MacDocumentView: View {
     @ViewBuilder
     private var highlightModeContent: some View {
         if let renderModel = vm.renderModel {
+            let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: renderModel)
+            let hasStale = highlights.contains { $0.renderingVersion != currentVersion }
             VStack(spacing: 0) {
+                if hasStale { staleHighlightBanner }
                 documentIdentityView
                     .padding(.horizontal, 48)
                     .padding(.top, 18)
@@ -222,6 +263,7 @@ struct MacDocumentView: View {
                 Divider()
                 DocumentHighlightTextView(
                     renderModel: renderModel,
+                    highlights: highlights,
                     selectionRange: $highlightTextSelection
                 )
                 Divider()
@@ -280,6 +322,23 @@ struct MacDocumentView: View {
         }
     }
 
+    // MARK: - Stale Highlight Banner
+
+    private var staleHighlightBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(String(localized: "highlight.stale.warning",
+                        defaultValue: "Some highlights may be misaligned — the document has been updated since they were created."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.08))
+    }
+
     // MARK: - Highlight Actions
 
     private func toggleHighlightMode() {
@@ -287,6 +346,7 @@ struct MacDocumentView: View {
         if !showHighlightMode {
             highlightTextSelection = nil
             showHighlightColorPicker = false
+            pendingHighlightLink = nil
         }
     }
 
@@ -304,6 +364,7 @@ struct MacDocumentView: View {
         )
         modelContext.insert(highlight)
         highlightTextSelection = nil
+        pendingHighlightLink = highlight.id
     }
 
     // MARK: - Document Identity

@@ -28,19 +28,21 @@ enum DocumentSheet: Identifiable {
     case glossDetail(GlossEntry)
     case citation(String)
     case noteEditor
+    case noteEditorForHighlight(UUID)
     case crossReferenceGraph
     case summarizePromptPicker
     case sourceExplorer(String)
 
     var id: String {
         switch self {
-        case .personDetail(let p):    return "person-\(p.ref)"
-        case .glossDetail(let g):     return "gloss-\(g.term)"
-        case .citation:               return "citation"
-        case .noteEditor:             return "noteEditor"
-        case .crossReferenceGraph:    return "crossReferenceGraph"
-        case .summarizePromptPicker:  return "summarizePromptPicker"
-        case .sourceExplorer:         return "sourceExplorer"
+        case .personDetail(let p):             return "person-\(p.ref)"
+        case .glossDetail(let g):              return "gloss-\(g.term)"
+        case .citation:                        return "citation"
+        case .noteEditor:                      return "noteEditor"
+        case .noteEditorForHighlight(let hId): return "noteEditorForHighlight-\(hId)"
+        case .crossReferenceGraph:             return "crossReferenceGraph"
+        case .summarizePromptPicker:           return "summarizePromptPicker"
+        case .sourceExplorer:                  return "sourceExplorer"
         }
     }
 }
@@ -99,6 +101,8 @@ enum DocumentSheet: Identifiable {
 ///          UIViewRepresentable) + color-picker sheet + DocumentHighlight SwiftData insertion
 ///   2.3 — Session 105: renderingVersion uses SHA-256(flatText ++ kVersion) via
 ///          ASTToRenderNodeConverter.renderingVersion(for:)
+///   2.4 — Session 106: @Query for stored highlights; overlay rendering; stale warning banner;
+///          DocumentSheet.noteEditorForHighlight; note anchoring to highlights
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -114,6 +118,25 @@ struct DocumentView: View {
     @State private var showHighlightMode = false
     @State private var highlightTextSelection: NSRange? = nil
     @State private var showHighlightColorPicker = false
+    /// The `DocumentHighlight.id` of the most recently created highlight.
+    /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
+    @State private var pendingHighlightLink: UUID? = nil
+
+    @Query private var highlights: [DocumentHighlight]
+
+    // MARK: - Init
+
+    init(entry: DocumentBrowserEntry) {
+        self.entry = entry
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        self._highlights = Query(
+            filter: #Predicate<DocumentHighlight> { h in
+                h.volumeId == vId && h.documentId == dId
+            },
+            sort: \DocumentHighlight.createdAt
+        )
+    }
 
     var body: some View {
         Group {
@@ -220,10 +243,16 @@ struct DocumentView: View {
         @Bindable var vm = vm
         Group {
             if showHighlightMode {
-                DocumentHighlightTextView(
-                    renderModel: model,
-                    selectionRange: $highlightTextSelection
-                )
+                let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+                let hasStale = highlights.contains { $0.renderingVersion != currentVersion }
+                VStack(spacing: 0) {
+                    if hasStale { staleHighlightBanner }
+                    DocumentHighlightTextView(
+                        renderModel: model,
+                        highlights: highlights,
+                        selectionRange: $highlightTextSelection
+                    )
+                }
             } else {
                 ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
@@ -319,6 +348,14 @@ struct DocumentView: View {
                     documentId: entry.documentId,
                     volumeId: entry.volumeId,
                     activeProjectId: appState.activeProjectId,
+                    indexingPipeline: appState.indexingPipeline
+                )
+            case .noteEditorForHighlight(let hlId):
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    linkedHighlightId: hlId,
                     indexingPipeline: appState.indexingPipeline
                 )
             case .crossReferenceGraph:
@@ -505,6 +542,21 @@ struct DocumentView: View {
                 )
                 .disabled((highlightTextSelection?.length ?? 0) == 0)
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    if let hlId = pendingHighlightLink {
+                        activeSheet = .noteEditorForHighlight(hlId)
+                        pendingHighlightLink = nil
+                    }
+                } label: {
+                    Image(systemName: "note.text.badge.plus")
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.addNoteToHighlight.a11y",
+                           defaultValue: "Add note to highlight")
+                )
+                .disabled(pendingHighlightLink == nil)
+            }
         } else {
             ToolbarItemGroup(placement: .primaryAction) {
 
@@ -645,6 +697,23 @@ struct DocumentView: View {
         )
     }
 
+    // MARK: - Stale Highlight Banner
+
+    private var staleHighlightBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(String(localized: "highlight.stale.warning",
+                        defaultValue: "Some highlights may be misaligned — the document has been updated since they were created."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.08))
+    }
+
     // MARK: - Highlight Actions
 
     private func toggleHighlightMode() {
@@ -652,6 +721,7 @@ struct DocumentView: View {
         if !showHighlightMode {
             highlightTextSelection = nil
             showHighlightColorPicker = false
+            pendingHighlightLink = nil
         }
     }
 
@@ -669,6 +739,7 @@ struct DocumentView: View {
         )
         modelContext.insert(highlight)
         highlightTextSelection = nil
+        pendingHighlightLink = highlight.id
     }
 
     private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
