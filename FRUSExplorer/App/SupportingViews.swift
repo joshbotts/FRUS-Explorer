@@ -12,19 +12,53 @@ import AppKit
 import SwiftUI
 import SwiftData
 
+// MARK: - HighlightCoordinator
+
+/// Shared observable state for the document highlight workflow on macOS.
+///
+/// Owned by `MainWindowView` and passed by reference to both `ResearchStripView`
+/// (which hosts the toolbar buttons) and `MacDocumentView` (which performs text
+/// selection and SwiftData insertion). Resetting on document navigation is handled
+/// by `MainWindowView.onChange(of: currentEntry)`.
+@Observable
+final class HighlightCoordinator {
+    var showHighlightMode = false
+    var highlightTextSelection: NSRange? = nil
+    var pendingHighlightLink: UUID? = nil
+    /// Registered by `MacDocumentView` in its `.task` once the document has loaded.
+    var createHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
+
+    func reset() {
+        showHighlightMode = false
+        highlightTextSelection = nil
+        pendingHighlightLink = nil
+        createHighlightAction = nil
+    }
+
+    func exitHighlightMode() {
+        showHighlightMode = false
+        highlightTextSelection = nil
+        pendingHighlightLink = nil
+    }
+}
+
 // MARK: - ResearchStripView
 
 /// Persistent research action toolbar displayed between the titlebar and the document body.
 ///
-/// Contains: Add to collection · Add note · Tag · Cite (popover).
+/// Contains: Add to collection · Add note · Tag · Graph · Sources · Highlight Mode ·
+/// Create Highlight · Add Note to Highlight · Cite (popover).
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
 ///   1.1 — Removed collapse behaviour
+///   1.2 — Sources, Highlight Mode, Create Highlight, Add Note to Highlight moved here
+///          from MacDocumentView toolbar and MainWindowView trailingTools
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
     @Binding var showCitationPopover: Bool
+    let highlightCoordinator: HighlightCoordinator
 
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
@@ -32,8 +66,14 @@ struct ResearchStripView: View {
     @State private var showAddToCollection: Bool = false
     @State private var showAddNote: Bool = false
     @State private var showTagPicker: Bool = false
+    @State private var showHighlightColorPicker: Bool = false
+    @State private var showHighlightNoteEditor: Bool = false
 
     private var isDisabled: Bool { entry == nil }
+    private var canCreateHighlight: Bool {
+        highlightCoordinator.showHighlightMode &&
+        (highlightCoordinator.highlightTextSelection?.length ?? 0) > 0
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -70,6 +110,56 @@ struct ResearchStripView: View {
                 if let entry {
                     appState.currentGraphEntry = entry
                     openWindow(id: "frus.crossReferenceGraph")
+                }
+            }
+
+            // Sources — only shown when the current document has a source note
+            if let note = entry?.sourceNote, !note.isEmpty {
+                ResearchStripButton(
+                    title: "Sources",
+                    systemImage: "archivebox",
+                    isDisabled: false
+                ) {
+                    appState.currentSourceNote = note
+                    openWindow(id: "frus.sourceExplorer")
+                }
+            }
+
+            // Highlight Mode toggle
+            ResearchStripButton(
+                title: highlightCoordinator.showHighlightMode ? "Exit Highlights" : "Highlight",
+                systemImage: highlightCoordinator.showHighlightMode
+                    ? "pencil.tip.crop.circle.fill"
+                    : "pencil.tip.crop.circle",
+                isDisabled: isDisabled
+            ) {
+                if highlightCoordinator.showHighlightMode {
+                    highlightCoordinator.exitHighlightMode()
+                } else {
+                    highlightCoordinator.showHighlightMode = true
+                }
+            }
+
+            // Create Highlight — visible only in highlight mode
+            if highlightCoordinator.showHighlightMode {
+                ResearchStripButton(
+                    title: "Create Highlight",
+                    systemImage: "paintbrush.pointed",
+                    isDisabled: !canCreateHighlight
+                ) {
+                    showHighlightColorPicker = true
+                }
+                .popover(isPresented: $showHighlightColorPicker) {
+                    highlightColorPicker
+                }
+
+                // Add Note to Highlight — enabled after a highlight is created
+                ResearchStripButton(
+                    title: "Add Note",
+                    systemImage: "note.text.badge.plus",
+                    isDisabled: highlightCoordinator.pendingHighlightLink == nil
+                ) {
+                    showHighlightNoteEditor = true
                 }
             }
 
@@ -120,6 +210,57 @@ struct ResearchStripView: View {
         }
         .sheet(isPresented: $showTagPicker) {
             if let entry { MacTagPickerSheet(entry: entry) }
+        }
+        .sheet(isPresented: $showHighlightNoteEditor, onDismiss: {
+            highlightCoordinator.pendingHighlightLink = nil
+        }) {
+            if let hlId = highlightCoordinator.pendingHighlightLink, let entry {
+                ResearchNoteEditorView(
+                    documentId: entry.documentId,
+                    volumeId: entry.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    linkedHighlightId: hlId,
+                    indexingPipeline: appState.indexingPipeline
+                )
+            }
+        }
+    }
+
+    // MARK: - Highlight Color Picker
+
+    private var highlightColorPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "doc.highlight.pickColor", defaultValue: "Highlight Color"))
+                .font(.headline)
+            HStack(spacing: 10) {
+                ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
+                    Button {
+                        highlightCoordinator.createHighlightAction?(color)
+                        showHighlightColorPicker = false
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(highlightSwiftUIColor(for: color))
+                                .frame(width: 32, height: 32)
+                            Circle()
+                                .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                .frame(width: 32, height: 32)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help(color.rawValue.capitalized)
+                }
+            }
+        }
+        .padding(16)
+    }
+
+    private func highlightSwiftUIColor(for color: DocumentHighlight.Color) -> Color {
+        switch color {
+        case .yellow: return .yellow
+        case .green:  return .green
+        case .blue:   return .blue
+        case .pink:   return .pink
         }
     }
 }

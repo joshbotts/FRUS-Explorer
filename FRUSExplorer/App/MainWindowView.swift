@@ -57,6 +57,9 @@ struct MainWindowView: View {
     /// Whether the citation popover is showing.
     @State private var showCitationPopover: Bool = false
 
+    /// Shared highlight state passed to ResearchStripView (buttons) and MacDocumentView (text selection / SwiftData insertion).
+    @State private var highlightCoordinator = HighlightCoordinator()
+
     // MARK: - Computed
 
     private var currentEntry: DocumentBrowserEntry? {
@@ -73,14 +76,19 @@ struct MainWindowView: View {
             // Research strip — always rendered at full height.
             ResearchStripView(
                 entry: currentEntry,
-                showCitationPopover: $showCitationPopover
+                showCitationPopover: $showCitationPopover,
+                highlightCoordinator: highlightCoordinator
             )
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {
                 DocumentPlaceholderView()
                     .navigationDestination(for: DocumentBrowserEntry.self) { entry in
-                        MacDocumentView(entry: entry, navigationPath: $navigationPath)
+                        MacDocumentView(
+                            entry: entry,
+                            navigationPath: $navigationPath,
+                            highlightCoordinator: highlightCoordinator
+                        )
                     }
             }
 
@@ -93,6 +101,10 @@ struct MainWindowView: View {
             guard let entry else { return }
             navigationPath.append(entry)
             appState.pendingBrowseDocument = nil
+        }
+        // Reset highlight state whenever the user navigates to a different document.
+        .onChange(of: currentEntry) { _, _ in
+            highlightCoordinator.reset()
         }
         // Open the search window when a cross-view pendingSearch arrives (e.g. "Find all
         // mentions" from PersonDetailSheet). MacSearchWindowView clears pendingSearch after
@@ -169,16 +181,6 @@ struct MainWindowView: View {
                 Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
             }
             .disabled(currentEntry == nil)
-
-            // Source explorer — shown when the current document has a source note
-            if let note = currentEntry?.sourceNote, !note.isEmpty {
-                Button {
-                    appState.currentSourceNote = note
-                    openWindow(id: "frus.sourceExplorer")
-                } label: {
-                    Label("Sources", systemImage: "archivebox")
-                }
-            }
 
             Divider().frame(height: 20)
 
