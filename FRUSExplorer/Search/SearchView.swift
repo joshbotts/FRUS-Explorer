@@ -178,7 +178,7 @@ struct SearchView: View {
                     #if os(iOS)
                     DocumentView(entry: entry)
                     #else
-                    MacDocumentView(entry: entry, navigationPath: .constant([]))
+                    MacDocumentView(entry: entry, navigationPath: .constant([]), highlightCoordinator: HighlightCoordinator())
                     #endif
                 }
         }
