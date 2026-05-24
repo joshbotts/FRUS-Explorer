@@ -931,6 +931,7 @@ public actor IndexingPipeline {
     private func buildMetadata(from data: VolumeIndexData) -> VolumeMetadataDiscovered {
         let isoDateStrings = data.documentDates.compactMap { $0.dateISOMin }
         let isoDateMaxStrings = data.documentDates.compactMap { $0.dateISOMax ?? $0.dateISOMin }
+        let personNames = data.persons.sorted { $0.name < $1.name }.prefix(12).map { $0.name }
         return VolumeMetadataDiscovered(
             volumeId: data.volumeId,
             totalDocuments: data.documents.count,
@@ -941,7 +942,8 @@ public actor IndexingPipeline {
             dateRangeMin: isoDateStrings.min(),
             dateRangeMax: isoDateMaxStrings.max(),
             glossaryPersonCount: data.persons.count,
-            glossaryTermCount: data.terms.count
+            glossaryTermCount: data.terms.count,
+            glossaryPersonNames: Array(personNames)
         )
     }
 

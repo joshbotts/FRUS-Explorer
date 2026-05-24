@@ -116,8 +116,9 @@ struct MainTabView: View {
     ///
     /// Priority order:
     /// 1. `completedIndexingMetadata` non-nil → `IndexingSummaryCard` (post-index success)
-    /// 2. `currentIndexingProgress` non-nil → `IndexingBannerView` (in-progress)
-    /// 3. Both nil → `EmptyView` (no height inset)
+    /// 2. `currentIndexingProgress` non-nil, queue position non-nil → `IndexingQueueBannerView`
+    /// 3. `currentIndexingProgress` non-nil, single volume → `IndexingBannerView`
+    /// 4. Both nil → `EmptyView` (no height inset)
     ///
     /// Transitions use `.move(edge: .bottom).combined(with: .opacity)` so the card
     /// slides up from the tab bar edge when indexing completes.
@@ -138,9 +139,28 @@ struct MainTabView: View {
                 }
             )
             .transition(.move(edge: .bottom).combined(with: .opacity))
+        } else if let update = appState.currentIndexingProgress,
+                  let queuePosition = appState.indexingQueuePosition {
+            IndexingQueueBannerView(
+                update: update,
+                queuePosition: queuePosition,
+                volumeTitles: appState.indexingQueueVolumeTitles,
+                metadata: appState.lastDiscoveredMetadata,
+                averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
+                averageDocumentCount: appState.indexingQueueAverageDocumentCount
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         } else if let update = appState.currentIndexingProgress {
-            IndexingBannerView(update: update, metadata: appState.lastDiscoveredMetadata)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+            IndexingBannerView(
+                update: update,
+                metadata: appState.lastDiscoveredMetadata,
+                volume: appState.manifestStore.entry(forVolumeId: update.volumeId),
+                onPersonSearch: { name in
+                    appState.pendingSearch = SearchParameters(keywords: name)
+                    appState.activeTab = .search
+                }
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 }

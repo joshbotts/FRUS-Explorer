@@ -63,6 +63,8 @@ import SwiftData
 ///   3.0 — Session 101: logEvent(_:) gated on researchSessionLoggingEnabled UserDefaults key
 ///   3.1 — Session 114: completedIndexingMetadata for post-index summary card
 ///   3.2 — Session 115: interruptedVolumeIds; cleared on .complete from connectIndexingProgress
+///   3.3 — Session 116: indexingQueuePosition + indexingQueueVolumeTitles for multi-volume queue banner;
+///          indexingQueueAverageDocsPerSecond + indexingQueueAverageDocumentCount for queue ETA
 
 // MARK: - AppTab
 
@@ -350,6 +352,60 @@ final class AppState {
     ///   1.0 — Session 115: initial implementation
     var interruptedVolumeIds: Set<String> = []
 
+    // MARK: - Queue tracking (Session 116)
+
+    /// Number of volumes that have completed indexing in the current batch session.
+    ///
+    /// Reset at the start of each new batch. Used to compute `indexingQueuePosition.current`.
+    private var indexingBatchCompletedCount: Int = 0
+
+    /// The total number of volumes estimated at the start of the current batch.
+    ///
+    /// Captured as `downloadQueue.count + 1` when the first volume of a new batch begins
+    /// indexing. Stays fixed for the duration of the batch (does not shrink as downloads
+    /// complete) so the denominator in "Volume 3 of 12" remains stable.
+    private var indexingBatchTotalAtStart: Int = 0
+
+    /// Timestamp of the most recent `.complete` event. Used to distinguish a batch
+    /// continuation (brief nil gap between volumes) from a fresh start (long idle period
+    /// or empty queue).
+    private var lastIndexingCompletionTime: Date? = nil
+
+    /// Rolling mean throughput across completed volumes in the current batch (docs/s).
+    ///
+    /// Updated on each `.complete` event. Used by `IndexingQueueBannerView` to estimate
+    /// ETA for remaining queued volumes.
+    var indexingQueueAverageDocsPerSecond: Double = 0
+
+    /// Rolling mean document count across completed volumes in the current batch.
+    ///
+    /// Falls back to 600 (approximate corpus mean) until at least one volume completes.
+    var indexingQueueAverageDocumentCount: Int = 600
+
+    /// The current volume's position within a multi-volume download-and-index batch.
+    ///
+    /// Returns `nil` when only one volume is in flight (single-volume mode) or when
+    /// the current batch was not triggered by a download queue (e.g. manual reindex).
+    /// `current` is 1-based. Used to drive `IndexingQueueBannerView`.
+    ///
+    /// Version history:
+    ///   1.0 — Session 116: initial implementation
+    var indexingQueuePosition: (current: Int, total: Int)? {
+        guard currentIndexingProgress != nil, indexingBatchTotalAtStart >= 2 else { return nil }
+        return (current: indexingBatchCompletedCount + 1, total: indexingBatchTotalAtStart)
+    }
+
+    /// Volume titles for the volumes currently waiting in the download queue, in order.
+    ///
+    /// Resolved from `manifestStore`; falls back to `volumeId` when the manifest has no entry.
+    /// Used by `IndexingQueueBannerView`'s expanded pending-list section.
+    ///
+    /// Version history:
+    ///   1.0 — Session 116: initial implementation
+    var indexingQueueVolumeTitles: [String] {
+        downloadQueue.map { manifestStore.entry(forVolumeId: $0)?.title ?? $0 }
+    }
+
     /// Subscribes to `pipeline.progressStream` and `pipeline.metadataStream`, forwarding
     /// updates onto the main actor as `currentIndexingProgress`, `lastDiscoveredMetadata`,
     /// and `completedIndexingMetadata`.
@@ -364,9 +420,38 @@ final class AppState {
                     self.completedIndexingMetadata = self.lastDiscoveredMetadata
                     self.currentIndexingProgress = nil
                     self.interruptedVolumeIds.remove(update.volumeId)
+                    self.lastIndexingCompletionTime = Date()
+                    self.indexingBatchCompletedCount += 1
+                    // Update rolling throughput average (Welford online mean).
+                    if update.docsPerSecond > 0 {
+                        let n = Double(self.indexingBatchCompletedCount)
+                        self.indexingQueueAverageDocsPerSecond +=
+                            (update.docsPerSecond - self.indexingQueueAverageDocsPerSecond) / n
+                    }
+                    // Update rolling document-count average.
+                    if let meta = self.completedIndexingMetadata, meta.totalDocuments > 0 {
+                        let n = Double(self.indexingBatchCompletedCount)
+                        self.indexingQueueAverageDocumentCount = Int(
+                            Double(self.indexingQueueAverageDocumentCount) +
+                            (Double(meta.totalDocuments) - Double(self.indexingQueueAverageDocumentCount)) / n
+                        )
+                    }
                 } else {
                     if self.currentIndexingProgress?.volumeId != update.volumeId {
                         self.lastDiscoveredMetadata = nil
+                    }
+                    if self.currentIndexingProgress == nil {
+                        // Transitioning from idle: decide whether this is a new batch or a
+                        // batch continuation (brief nil gap between sequential volumes).
+                        // A gap > 30 s or an empty download queue signals a fresh start.
+                        let gap = self.lastIndexingCompletionTime
+                            .map { Date().timeIntervalSince($0) } ?? Double.infinity
+                        if gap > 30 || self.downloadQueue.isEmpty {
+                            self.indexingBatchCompletedCount = 0
+                            self.indexingBatchTotalAtStart = self.downloadQueue.count + 1
+                            self.indexingQueueAverageDocsPerSecond = 0
+                            self.indexingQueueAverageDocumentCount = 600
+                        }
                     }
                     self.currentIndexingProgress = update
                 }

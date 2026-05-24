@@ -728,9 +728,17 @@ struct StatusBarView: View {
                 }
                 return base
             }()
+            let label: String = {
+                if let qp = appState.indexingQueuePosition {
+                    return "Indexing \(update.volumeId)… (\(qp.current)/\(qp.total))"
+                }
+                return "Indexing \(update.volumeId)…"
+            }()
             return ActiveTask(
-                label: "Indexing \(update.volumeId)…",
-                systemImage: "square.and.arrow.down",
+                label: label,
+                systemImage: appState.indexingQueuePosition != nil
+                    ? "square.and.arrow.down.on.square"
+                    : "square.and.arrow.down",
                 progress: progress,
                 eta: eta
             )
@@ -1934,6 +1942,12 @@ private struct CorpusVolumeDetailSheet: View {
                meta.volumeId == volume.volumeId {
                 DiscoveredMetadataRow(metadata: meta)
             }
+            IndexingContextCard(
+                volume: volume,
+                metadata: appState.lastDiscoveredMetadata.flatMap {
+                    $0.volumeId == volume.volumeId ? $0 : nil
+                }
+            )
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

@@ -38,10 +38,18 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 93: initial implementation
 ///   1.1 — Session 113: `metadata` parameter; secondary discovery-counts row
+///   1.2 — Session 116: `IndexingContextCard` added for iPad (regular horizontal size class);
+///          `onPersonSearch` callback for scoped person search from the card
 struct IndexingBannerView: View {
 
     let update: IndexingProgressUpdate
     var metadata: VolumeMetadataDiscovered? = nil
+    /// The manifest entry for the volume being indexed; required for the context card.
+    var volume: VolumeManifestEntry? = nil
+    /// Called when the user taps a person chip in the context card.
+    var onPersonSearch: ((String) -> Void)? = nil
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         VStack(spacing: 0) {
@@ -97,8 +105,19 @@ struct IndexingBannerView: View {
             }
             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
             .padding(.vertical, 5)
-            .background(.bar)
+
+            // Context card: shown only on iPad (regular width) where vertical space permits.
+            if horizontalSizeClass == .regular, let vol = volume {
+                IndexingContextCard(
+                    volume: vol,
+                    metadata: metadata.flatMap { $0.volumeId == update.volumeId ? $0 : nil },
+                    onPersonSearch: onPersonSearch
+                )
+                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                .padding(.bottom, 6)
+            }
         }
+        .background(.bar)
     }
 
     private var etaString: String? {

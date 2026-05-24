@@ -309,6 +309,7 @@ public struct IndexingProgressUpdate: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 113: initial implementation
+///   1.1 — Session 116: glossaryPersonNames added for IndexingContextCard key-persons chips
 public struct VolumeMetadataDiscovered: Sendable {
     /// The volume that was just parsed.
     public let volumeId: String
@@ -330,6 +331,12 @@ public struct VolumeMetadataDiscovered: Sendable {
     public let glossaryPersonCount: Int
     /// Number of terms listed in the volume's subject glossary.
     public let glossaryTermCount: Int
+    /// Up to 12 person names from the volume's biographical glossary, sorted alphabetically.
+    ///
+    /// Populated from the first 12 entries (by name) in the parsed glossary. Empty when the
+    /// volume carries no biographical glossary. Used by `IndexingContextCard` to render
+    /// key-person chips while the write phase is in progress.
+    public let glossaryPersonNames: [String]
 
     public init(
         volumeId: String,
@@ -341,7 +348,8 @@ public struct VolumeMetadataDiscovered: Sendable {
         dateRangeMin: String?,
         dateRangeMax: String?,
         glossaryPersonCount: Int,
-        glossaryTermCount: Int
+        glossaryTermCount: Int,
+        glossaryPersonNames: [String] = []
     ) {
         self.volumeId = volumeId
         self.totalDocuments = totalDocuments
@@ -353,6 +361,7 @@ public struct VolumeMetadataDiscovered: Sendable {
         self.dateRangeMax = dateRangeMax
         self.glossaryPersonCount = glossaryPersonCount
         self.glossaryTermCount = glossaryTermCount
+        self.glossaryPersonNames = glossaryPersonNames
     }
 }
 
