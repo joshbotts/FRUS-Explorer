@@ -610,8 +610,15 @@ struct FootnoteSectionView: View {
 /// Progress is driven by `AppState.currentIndexingProgress` (now cross-platform)
 /// and `AppState.downloadQueue`.
 ///
+/// When a multi-volume batch is in progress (`AppState.indexingQueuePosition` is
+/// non-nil) a `↑` chevron appears next to the centre zone label. Clicking the
+/// centre zone opens `MacIndexingQueuePopover` with the full queue detail.
+///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — Session 118: centre zone tappable during multi-volume batches; opens
+///          `MacIndexingQueuePopover` with position, progress, ETA, and pending list;
+///          auto-closes when indexing completes
 struct StatusBarView: View {
     @Environment(AppState.self) private var appState
     @State private var showQueuePopover = false
@@ -629,7 +636,9 @@ struct StatusBarView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Centre: active task
+            // Centre: active task.
+            // Tappable when a multi-volume batch is in progress — opens
+            // MacIndexingQueuePanel with full queue detail.
             if let task = activeTask {
                 activeTaskView(task)
             }
@@ -650,6 +659,10 @@ struct StatusBarView: View {
             guard appState.completedIndexingMetadata != nil else { return }
             try? await Task.sleep(for: .seconds(6))
             appState.completedIndexingMetadata = nil
+        }
+        // Close the queue popover when indexing finishes.
+        .onChange(of: appState.currentIndexingProgress) { _, progress in
+            if progress == nil { showQueuePopover = false }
         }
     }
 
