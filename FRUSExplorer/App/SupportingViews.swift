@@ -614,6 +614,7 @@ struct FootnoteSectionView: View {
 ///   1.0 — New UI scaffolding
 struct StatusBarView: View {
     @Environment(AppState.self) private var appState
+    @State private var showQueuePopover = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -630,25 +631,7 @@ struct StatusBarView: View {
 
             // Centre: active task
             if let task = activeTask {
-                HStack(spacing: 6) {
-                    Image(systemName: task.systemImage)
-                        .font(.system(size: 11))
-                        .foregroundStyle(task.isSuccess ? Color.green : .secondary)
-                    Text(task.label)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                    if let progress = task.progress {
-                        ProgressView(value: progress)
-                            .progressViewStyle(.linear)
-                            .frame(width: 60)
-                            .tint(.green)
-                        if let eta = task.eta {
-                            Text(eta)
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                }
+                activeTaskView(task)
             }
 
             Spacer()
@@ -785,6 +768,241 @@ struct StatusBarView: View {
             segments.append("\(meta.datedDocumentCount)/\(meta.totalDocuments) dated")
         }
         return segments.joined(separator: " · ")
+    }
+
+    @ViewBuilder
+    private func activeTaskView(_ task: ActiveTask) -> some View {
+        if appState.indexingQueuePosition != nil,
+           let update = appState.currentIndexingProgress {
+            Button {
+                showQueuePopover.toggle()
+            } label: {
+                taskLabel(task, showDisclosure: true)
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $showQueuePopover, arrowEdge: .top) {
+                MacIndexingQueuePanel(
+                    update: update,
+                    queuePosition: appState.indexingQueuePosition!,
+                    volumeTitles: appState.indexingQueueVolumeTitles,
+                    averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
+                    averageDocumentCount: appState.indexingQueueAverageDocumentCount
+                )
+            }
+        } else {
+            taskLabel(task, showDisclosure: false)
+        }
+    }
+
+    @ViewBuilder
+    private func taskLabel(_ task: ActiveTask, showDisclosure: Bool) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: task.systemImage)
+                .font(.system(size: 11))
+                .foregroundStyle(task.isSuccess ? Color.green : .secondary)
+            Text(task.label)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            if let progress = task.progress {
+                ProgressView(value: progress)
+                    .progressViewStyle(.linear)
+                    .frame(width: 60)
+                    .tint(.green)
+                if let eta = task.eta {
+                    Text(eta)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            if showDisclosure {
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+}
+
+// MARK: - MacIndexingQueuePanel
+
+/// Popover panel showing multi-volume batch indexing progress on macOS.
+///
+/// Triggered by clicking the active-task zone in `StatusBarView` when
+/// `AppState.indexingQueuePosition` is non-nil. Mirrors the information density
+/// of `IndexingQueueBannerView` (the iOS equivalent) in a macOS-native popover.
+///
+/// ## Layout
+/// ```
+/// [icon] Indexing Queue          Volume 3 of 12
+/// ─────────────────────────────────────────────
+/// frus1969-76v03
+/// ████████████░░░░░░░░  142 / 380 docs    ~4m
+/// ─────────────────────────────────────────────
+/// [clock] 9 volumes remaining         [chevron]
+///   [clock] Volume 4 title…
+///   [clock] Volume 5 title…
+/// ```
+///
+/// Version history:
+///   1.0 — initial implementation
+private struct MacIndexingQueuePanel: View {
+
+    /// Current volume's indexing progress.
+    let update: IndexingProgressUpdate
+    /// Position in the multi-volume batch (1-based current and fixed total).
+    let queuePosition: (current: Int, total: Int)
+    /// Titles of volumes still waiting in the queue (not including current).
+    let volumeTitles: [String]
+    /// Rolling average docs/s from completed volumes in this batch.
+    var averageDocsPerSecond: Double = 0
+    /// Rolling average document count from completed volumes; falls back to 600.
+    var averageDocumentCount: Int = 600
+
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+
+            // Header row
+            HStack(spacing: 6) {
+                Image(systemName: "square.and.arrow.down.on.square")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                Text(String(
+                    localized: "indexing.queue.mac.header",
+                    defaultValue: "Indexing Queue"
+                ))
+                .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text(String(
+                    localized: "indexing.queue.mac.position",
+                    defaultValue: "Volume \(queuePosition.current) of \(queuePosition.total)"
+                ))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+            }
+
+            Divider()
+
+            // Current volume progress
+            VStack(alignment: .leading, spacing: 5) {
+                Text(update.volumeId)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                if update.totalDocuments > 0 {
+                    ProgressView(
+                        value: Double(update.completedDocuments),
+                        total: Double(update.totalDocuments)
+                    )
+                    .progressViewStyle(.linear)
+                    .tint(.accentColor)
+
+                    HStack {
+                        Text(String(
+                            localized: "indexing.queue.mac.docs",
+                            defaultValue: "\(update.completedDocuments) / \(update.totalDocuments) docs"
+                        ))
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        Spacer()
+                        if let eta = totalETAString {
+                            Text(eta)
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                                .monospacedDigit()
+                        }
+                    }
+                } else {
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                        .controlSize(.small)
+                }
+            }
+
+            // Pending volumes
+            if !volumeTitles.isEmpty {
+                Divider()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                        Text(String(
+                            localized: "indexing.queue.mac.remaining",
+                            defaultValue: "\(volumeTitles.count) volume\(volumeTitles.count == 1 ? "" : "s") remaining"
+                        ))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        Spacer()
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(
+                    localized: "indexing.queue.mac.expand.a11y",
+                    defaultValue: isExpanded ? "Collapse queue list" : "Expand queue list"
+                ))
+
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(volumeTitles.prefix(6), id: \.self) { title in
+                            HStack(spacing: 5) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                                Text(title)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    .padding(.leading, 2)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+        }
+        .padding(14)
+        .frame(width: 300)
+    }
+
+    // MARK: - ETA
+
+    /// Combined ETA: remaining docs in current volume + remaining queued volumes.
+    private var totalETAString: String? {
+        var totalSeconds = 0.0
+
+        if update.docsPerSecond > 0, update.totalDocuments > update.completedDocuments {
+            let remaining = update.totalDocuments - update.completedDocuments
+            totalSeconds += Double(remaining) / update.docsPerSecond
+        }
+
+        let remainingVolumes = queuePosition.total - queuePosition.current
+        if remainingVolumes > 0 {
+            let dps = averageDocsPerSecond > 0 ? averageDocsPerSecond : update.docsPerSecond
+            if dps > 0 {
+                let estimatedDocs = averageDocumentCount > 0 ? averageDocumentCount : 600
+                totalSeconds += Double(remainingVolumes) * Double(estimatedDocs) / dps
+            }
+        }
+
+        guard totalSeconds > 0 else { return nil }
+
+        if totalSeconds < 60 {
+            return "~\(Int(totalSeconds.rounded()))s"
+        } else {
+            let minutes = Int((totalSeconds / 60).rounded())
+            return "~\(minutes)m"
+        }
     }
 }
 
