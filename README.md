@@ -27,7 +27,7 @@ series more effectively.
 - Per-volume indexing status and one-tap Reindex control in Settings → Storage Management
 - Breadcrumb navigation trail in the volume browser
 - Front matter sections (preface, introduction, errata) browsable directly from the corpus
-- Accurate subseries grouping for Vietnam-era volumes (`ve`), conference-name volumes (e.g. `CairoTehran`), and part-number volumes (`p1`/`p2`) in the volume browser and manifest diff
+- Accurate subseries grouping in the volume browser and manifest diff
 - **iOS/iPadOS (iPhone)**: five-tab navigation — Browse, Search, Activity, Collections, Settings
 - **macOS**: native Settings scene (⌘,) with tabbed preferences window; ⌘F / ⌘⇧F shortcuts
 
