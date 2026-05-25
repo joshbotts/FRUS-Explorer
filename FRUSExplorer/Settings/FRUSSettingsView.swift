@@ -845,28 +845,35 @@ private struct SettingsNotesPane: View {
 ///   1.1 — Session 118: `BatchKind` state + `indexingQueueCard` for "Index Remaining" and
 ///          "Reindex All" runs; `indexRemaining()` iterates with per-volume position tracking;
 ///          `reindexAll()` marks batch state for the duration of `indexAllVolumes()`
+///   1.2 — Session 118: "Delete Index & Rebuild" action — wipes all SQLite index tables via
+///          `removeAllVolumesFromIndex()` then rebuilds with `indexAllVolumes()`; shows
+///          confirmation alert; `.rebuildAll` BatchKind surfaces distinct header in queue card
 private struct SettingsStoragePane: View {
 
     // MARK: - Batch tracking
 
     /// Tracks the kind and progress of a Settings-triggered bulk indexing run.
-    /// Set at the start of `indexRemaining()` / `reindexAll()`; cleared on completion.
-    /// Drives `indexingQueueCard` visibility and the "Volume N of M" header label.
+    /// Set at the start of `indexRemaining()` / `reindexAll()` / `rebuildIndex()`;
+    /// cleared on completion. Drives `indexingQueueCard` visibility and header label.
     private enum BatchKind {
         /// Iterating through unindexed volumes one by one; `current` is 1-based.
         case indexRemaining(current: Int, total: Int)
         /// Running `indexAllVolumes()` as a single black-box call.
         case reindexAll(total: Int)
+        /// Running `removeAllVolumesFromIndex()` followed by `indexAllVolumes()`.
+        case rebuildAll(total: Int)
     }
 
     @Environment(AppState.self) private var appState
     @State private var storageReport: StorageReport? = nil
     @State private var reindexingVolumeId: String? = nil
-    /// Number of volumes that failed during the most recent "Index Remaining" or "Reindex All" run.
+    /// Number of volumes that failed during the most recent indexing run.
     /// Shown as an error notice after the batch completes. Reset to nil when the next batch starts.
     @State private var bulkIndexingFailureCount: Int? = nil
     /// Non-nil while a Settings-triggered bulk indexing batch is active.
     @State private var settingsBatch: BatchKind? = nil
+    /// Controls the "Delete Index & Rebuild" confirmation alert.
+    @State private var showRebuildConfirmation = false
 
     var body: some View {
         ScrollView {
@@ -897,7 +904,7 @@ private struct SettingsStoragePane: View {
                         .padding(.bottom, 8)
                 }
 
-                // Indexing actions
+                // Indexing actions — primary row
                 HStack(spacing: 8) {
                     Button {
                         bulkIndexingFailureCount = nil
@@ -917,7 +924,7 @@ private struct SettingsStoragePane: View {
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.bordered)
-                    .help("Re-index all downloaded volumes from scratch.")
+                    .help("Re-index all downloaded volumes, replacing existing index data per volume.")
 
                     if let report = storageReport {
                         let indexed = indexedCount
@@ -926,6 +933,25 @@ private struct SettingsStoragePane: View {
                             .foregroundStyle(.tertiary)
                     }
                 }
+
+                // Indexing actions — destructive row
+                HStack(spacing: 8) {
+                    Button(role: .destructive) {
+                        showRebuildConfirmation = true
+                    } label: {
+                        Label("Delete Index & Rebuild", systemImage: "trash.circle")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                    .disabled(settingsBatch != nil || appState.currentIndexingProgress != nil)
+                    .help("Wipe the entire search index, then rebuild it from all downloaded volumes. Use this to resolve index corruption or clean up orphaned data from deleted volumes.")
+
+                    Text("Deletes all index tables, then re-parses every downloaded volume.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.top, 2)
 
                 if let failures = bulkIndexingFailureCount, failures > 0 {
                     HStack(spacing: 6) {
@@ -942,6 +968,19 @@ private struct SettingsStoragePane: View {
             .padding(24)
         }
         .task { await loadReport() }
+        .alert(
+            "Delete Index and Rebuild?",
+            isPresented: $showRebuildConfirmation
+        ) {
+            Button("Delete & Rebuild", role: .destructive) {
+                bulkIndexingFailureCount = nil
+                Task { await rebuildIndex() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            let count = storageReport?.perVolume.count ?? 0
+            Text("This will permanently delete the entire search index — FTS5 full-text rows, cross-references, page ranges, document dates, person mentions, and the document cache — then rebuild it by re-parsing all \(count) downloaded volume\(count == 1 ? "" : "s").\n\nYour research notes, highlights, summaries, collections, and tags are stored separately and will not be affected.")
+        }
     }
 
     // MARK: Storage Limit Row
@@ -1142,6 +1181,10 @@ private struct SettingsStoragePane: View {
                     Text(String(localized: "settings.storage.reindexing.all",
                                 defaultValue: "Reindexing all \(total) volumes"))
                         .font(.system(size: 12, weight: .medium))
+                case .rebuildAll(let total):
+                    Text(String(localized: "settings.storage.rebuilding.all",
+                                defaultValue: "Rebuilding index for all \(total) volumes"))
+                        .font(.system(size: 12, weight: .medium))
                 case nil:
                     Text(String(localized: "settings.storage.indexing.generic",
                                 defaultValue: "Indexing…"))
@@ -1304,6 +1347,42 @@ private struct SettingsStoragePane: View {
         settingsBatch = nil
         // Compute the failure count post-hoc by comparing the indexed count against
         // the total downloaded count.
+        if let report = storageReport {
+            let downloaded = report.perVolume.count
+            let indexed = indexedCount
+            let failures = downloaded - indexed
+            bulkIndexingFailureCount = failures > 0 ? failures : nil
+        }
+        await loadReport()
+    }
+
+    /// Wipes the entire search index, then rebuilds it from all downloaded volumes.
+    ///
+    /// Unlike `reindexAll()` (which calls `indexAllVolumes()` directly, relying on
+    /// per-volume pre-deletes inside `storeIndexData`), this first calls
+    /// `removeAllVolumesFromIndex()` to issue a single `DELETE FROM` per table. This
+    /// guarantees a truly clean state — orphaned rows from deleted volumes, duplicate
+    /// page-range rows from earlier bugs, and any FTS5 b-tree fragmentation accumulated
+    /// across many incremental runs are all eliminated before the rebuild begins.
+    ///
+    /// User data (research notes, highlights, summaries, collections, tags) lives in
+    /// SwiftData and is completely unaffected.
+    private func rebuildIndex() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        let total = storageReport?.perVolume.count ?? 0
+        settingsBatch = .rebuildAll(total: total)
+        do {
+            try await pipeline.removeAllVolumesFromIndex()
+        } catch {
+            // Wipe failed; abort rather than re-indexing on top of a partially-deleted
+            // index. The error is visible in Console.app.
+            settingsBatch = nil
+            bulkIndexingFailureCount = total
+            await loadReport()
+            return
+        }
+        try? await pipeline.indexAllVolumes()
+        settingsBatch = nil
         if let report = storageReport {
             let downloaded = report.perVolume.count
             let indexed = indexedCount
