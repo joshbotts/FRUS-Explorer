@@ -37,6 +37,9 @@ import SwiftUI
 ///   1.0 — Session 23: initial implementation
 ///   1.1 — Session 94: replaced broken NavigationLink { EmptyView() } in noAPIKeyPrompt with
 ///          a localized instruction text pointing users to Settings → NARA Catalog API Key
+///   1.2 — Session 118: `centralFilesPanel` button label changes to "Browse RG-59 in NARA
+///          Catalog" when `fileIdentifier` is nil, avoiding the misleading "for This File"
+///          label that appeared for narrative central-file notes with no extractable identifier
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -158,11 +161,22 @@ struct SourceExplorerView: View {
                 let url = client.resolveRG59CentralFiles(fileIdentifier: fileIdentifier ?? "")
                 openURL(url)
             } label: {
-                Label(
-                    String(localized: "source.explorer.centralFiles.naraLink",
-                           defaultValue: "Search NARA Catalog for This File"),
-                    systemImage: "arrow.up.right.square"
-                )
+                // When a specific file identifier was parsed, label the action as a targeted
+                // search. When nil (narrative note with no extractable ID), use a general
+                // browse label so the user is not misled into thinking a file was found.
+                if fileIdentifier != nil {
+                    Label(
+                        String(localized: "source.explorer.centralFiles.naraLink",
+                               defaultValue: "Search NARA Catalog for This File"),
+                        systemImage: "arrow.up.right.square"
+                    )
+                } else {
+                    Label(
+                        String(localized: "source.explorer.centralFiles.naraLinkGeneral",
+                               defaultValue: "Browse RG-59 in NARA Catalog"),
+                        systemImage: "arrow.up.right.square"
+                    )
+                }
             }
             .accessibilityLabel(
                 String(localized: "source.explorer.centralFiles.naraLink.accessibility",

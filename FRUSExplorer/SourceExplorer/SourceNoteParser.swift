@@ -67,6 +67,9 @@ public enum ParsedSourceNote: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 23: initial implementation
+///   1.1 — Session 118: `tryDecimalFile()` now extracts only the regex-matched range as
+///          the file identifier instead of using the entire input string; fixes cases where
+///          the decimal file number is followed by additional prose
 public struct SourceNoteParser {
 
     public init() {}
@@ -135,10 +138,13 @@ public struct SourceNoteParser {
 
     private func tryDecimalFile(_ text: String) -> ParsedSourceNote? {
         guard let regex = Self.decimalFileRegex else { return nil }
-        let range = NSRange(text.startIndex..., in: text)
-        guard regex.firstMatch(in: text, range: range) != nil else { return nil }
-        // Trim trailing period
-        let identifier = text.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        let nsRange = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: nsRange),
+              let matchRange = Range(match.range, in: text) else { return nil }
+        // Extract only the regex-matched portion — the input may contain additional prose
+        // after the decimal file number (e.g. "862S.01/10-1646, enclosure 1").
+        let identifier = String(text[matchRange])
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
         return .centralFiles(recordGroup: "RG-59", fileIdentifier: identifier)
     }
 
