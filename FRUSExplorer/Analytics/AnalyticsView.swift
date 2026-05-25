@@ -181,7 +181,7 @@ struct AnalyticsView: View {
                         .font(.caption)
                 }
                 .buttonStyle(.borderless)
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
             }
 
             Spacer()
