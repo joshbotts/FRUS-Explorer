@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import OSLog
 import SQLite3
 import CoreSpotlight
 #if canImport(UIKit)
@@ -86,6 +87,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///   2.2 — Session 78: `.attachment` added to the exhaustive `plainText` and `children`
 ///          computed-property switch sites so attachment body text is included in the
 ///          full-text search index
+///   2.3 — Session 118: `optimize()` moved from `FTS5Store.insertBatch` to a single
+///          post-batch call in `indexAllVolumes` and `indexVolume`; eliminates O(n²)
+///          performance regression that caused 60+ min corpus indexing; `#if DEBUG`
+///          prints replaced with `os.Logger` (always-on, viewable in Console.app)
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -133,9 +138,7 @@ public actor IndexingPipeline {
     /// Called on the actor from the notification observer.
     private func reduceForMemoryPressure() {
         _dynamicBatchSize = 20
-        #if DEBUG
-        print("[IndexingPipeline] Memory warning — batch size reduced to 20.")
-        #endif
+        logger.warning("Memory warning received — batch size reduced to 20")
     }
 
     /// Test hook: overrides the effective batch size.
@@ -169,9 +172,7 @@ public actor IndexingPipeline {
     /// Call this after `indexAllVolumes()` completes following a schema rebuild.
     public func markFTSRebuildReindexComplete() {
         UserDefaults.standard.set(Self.currentFTSSchemaVersion, forKey: Self.ftsSchemaVersionKey)
-        #if DEBUG
-        print("[IndexingPipeline] FTS5 schema re-index marked at version \(Self.currentFTSSchemaVersion).")
-        #endif
+        logger.info("FTS5 schema re-index marked at version \(Self.currentFTSSchemaVersion, privacy: .public)")
     }
 
     // MARK: - Date Index Migration
@@ -206,10 +207,12 @@ public actor IndexingPipeline {
     /// Call this after a successful background re-index triggered by `needsDateReindex`.
     public func markDateReindexComplete() {
         UserDefaults.standard.set(Self.currentDateIndexVersion, forKey: Self.dateIndexVersionKey)
-        #if DEBUG
-        print("[IndexingPipeline] Date index marked at version \(Self.currentDateIndexVersion).")
-        #endif
+        logger.info("Date index marked at version \(Self.currentDateIndexVersion, privacy: .public)")
     }
+
+    // MARK: - Logger
+
+    private let logger = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "IndexingPipeline")
 
     // MARK: - Dependencies (let — accessible from nonisolated methods)
 
@@ -336,9 +339,7 @@ public actor IndexingPipeline {
         }
         #endif
 
-        #if DEBUG
-        print("[IndexingPipeline] Initialised. volumesDir=\(volumesDirectory.path)")
-        #endif
+        logger.info("Initialised. volumesDir=\(volumesDirectory.path, privacy: .public)")
     }
 
     deinit {
@@ -352,22 +353,32 @@ public actor IndexingPipeline {
 
     /// Indexes a single downloaded volume by ID.
     ///
-    /// Parses the volume XML, inserts FTS5 documents, and populates all auxiliary tables.
+    /// Parses the volume XML, inserts FTS5 documents, populates all auxiliary tables,
+    /// and runs `optimize()` once to merge FTS5 b-tree segments.
+    ///
     /// - Throws: `IndexingError.volumeNotFound` if the XML file is absent.
     public func indexVolume(_ volumeId: String) async throws {
         let url = volumesDirectory.appendingPathComponent("\(volumeId).xml")
         guard FileManager.default.fileExists(atPath: url.path) else {
+            logger.error("indexVolume: file not found for \(volumeId, privacy: .public)")
             throw IndexingError.volumeNotFound(volumeId: volumeId)
         }
         await stateTracker?.markStarted(volumeId: volumeId)
         emit(.indexing(volumeId: volumeId, current: 0, total: 1))
         volumeIndexingStartTime = Date()
         volumeDocumentsProcessed = 0
+
+        logger.info("indexVolume: starting \(volumeId, privacy: .public)")
+        let parseStart = Date()
+
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .reading,
             completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
         ))
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
+        let parseElapsed = Date().timeIntervalSince(parseStart)
+        logger.info("indexVolume: \(volumeId, privacy: .public) parsed \(data.documents.count, privacy: .public) docs in \(String(format: "%.1f", parseElapsed), privacy: .public)s")
+
         // Emit a second .reading update now that the total document count is known.
         // This lets progress bars render a determinate state before storage begins.
         emitUpdate(IndexingProgressUpdate(
@@ -375,7 +386,19 @@ public actor IndexingPipeline {
             completedDocuments: 0, totalDocuments: data.documents.count, docsPerSecond: 0
         ))
         emitMetadata(buildMetadata(from: data))
+
+        let storeStart = Date()
         try await storeIndexData(data)
+        let storeElapsed = Date().timeIntervalSince(storeStart)
+        logger.info("indexVolume: \(volumeId, privacy: .public) stored in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
+
+        // Run optimize() once after a single-volume index. This is acceptable here
+        // because single-volume indexing is always an interactive user action.
+        let optStart = Date()
+        try await fts5Store.optimize()
+        let optElapsed = Date().timeIntervalSince(optStart)
+        logger.info("indexVolume: \(volumeId, privacy: .public) optimize in \(String(format: "%.1f", optElapsed), privacy: .public)s")
+
         submitSpotlightItems(for: data)
         await stateTracker?.markCompleted(volumeId: volumeId)
         emit(.completed(volumeCount: 1, documentCount: data.documents.count))
@@ -385,12 +408,10 @@ public actor IndexingPipeline {
             totalDocuments: data.documents.count,
             docsPerSecond: currentDocsPerSecond(forTotal: data.documents.count)
         ))
+        let totalElapsed = Date().timeIntervalSince(volumeIndexingStartTime ?? Date())
+        logger.info("indexVolume: \(volumeId, privacy: .public) complete — \(data.documents.count, privacy: .public) docs, total \(String(format: "%.1f", totalElapsed), privacy: .public)s")
         volumeIndexingStartTime = nil
         volumeDocumentsProcessed = 0
-
-        #if DEBUG
-        print("[IndexingPipeline] Indexed \(volumeId): \(data.documents.count) documents")
-        #endif
     }
 
     /// Indexes all downloaded volumes concurrently.
@@ -401,6 +422,10 @@ public actor IndexingPipeline {
     /// Per-volume errors are caught and emitted as `.failed` progress events so that
     /// a single corrupt or unreadable XML file does not abort the entire batch. All
     /// remaining volumes continue to be indexed regardless of individual failures.
+    ///
+    /// `optimize()` is called exactly **once** after all volumes are stored, not after
+    /// each volume. This is essential for performance: calling optimize after every
+    /// volume is O(n²) on total index size and would take hours on the full corpus.
     public func indexAllVolumes() async throws {
         let files = Self.findDownloadedVolumes(in: volumesDirectory)
         guard !files.isEmpty else {
@@ -412,7 +437,9 @@ public actor IndexingPipeline {
         var completedVolumes = 0
         var failedVolumes = 0
         var totalDocuments = 0
+        let batchStart = Date()
 
+        logger.info("indexAllVolumes: starting \(total, privacy: .public) volumes (concurrency=\(self.effectiveConcurrencyLimit, privacy: .public))")
         emit(.indexing(volumeId: files[0].volumeId, current: 0, total: total))
 
         // Use a non-throwing task group so that a single volume failure does not
@@ -443,18 +470,24 @@ public actor IndexingPipeline {
             for await result in group {
                 switch result {
                 case .success(let data):
+                    let storeStart = Date()
                     do {
                         try await storeIndexData(data)
+                        let storeElapsed = Date().timeIntervalSince(storeStart)
                         await stateTracker?.markCompleted(volumeId: data.volumeId)
                         completedVolumes += 1
                         totalDocuments += data.documents.count
-                        emit(.indexing(volumeId: data.volumeId, current: completedVolumes + failedVolumes, total: total))
+                        // Snapshot mutable counters before use in emit/log to satisfy Swift 6
+                        // strict-concurrency: OSLog interpolation creates an autoclosure that
+                        // would otherwise capture the mutable vars across an actor hop.
+                        let progressNow = completedVolumes + failedVolumes
+                        emit(.indexing(volumeId: data.volumeId, current: progressNow, total: total))
+                        logger.info("indexAllVolumes: [\(progressNow, privacy: .public)/\(total, privacy: .public)] stored \(data.volumeId, privacy: .public) — \(data.documents.count, privacy: .public) docs in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
                     } catch {
                         failedVolumes += 1
-                        emit(.failed(volumeId: data.volumeId, error: error.localizedDescription))
-                        #if DEBUG
-                        print("[IndexingPipeline] storeIndexData failed for \(data.volumeId): \(error)")
-                        #endif
+                        let failMsg = error.localizedDescription
+                        emit(.failed(volumeId: data.volumeId, error: failMsg))
+                        logger.error("indexAllVolumes: storeIndexData failed for \(data.volumeId, privacy: .public) — \(failMsg, privacy: .public)")
                     }
                 case .failure(let error):
                     // Extract volumeId from the error for progress reporting.
@@ -463,9 +496,7 @@ public actor IndexingPipeline {
                     else { volumeId = "unknown" }
                     failedVolumes += 1
                     emit(.failed(volumeId: volumeId, error: error.localizedDescription))
-                    #if DEBUG
-                    print("[IndexingPipeline] parseAndExtract failed for \(volumeId): \(error)")
-                    #endif
+                    logger.error("indexAllVolumes: parseAndExtract failed for \(volumeId, privacy: .public) — \(error.localizedDescription, privacy: .public)")
                 }
 
                 if let file = iterator.next() {
@@ -482,11 +513,24 @@ public actor IndexingPipeline {
             }
         }
 
+        // Run FTS5 optimize() ONCE for the whole batch. This merges all b-tree segments
+        // written during the indexing run. With 552 volumes, this takes ~30–60s — but
+        // calling it after each volume (the old behaviour) scaled to O(n²) overall and
+        // was the root cause of 60+ minute indexing runs.
+        let optStart = Date()
+        logger.info("indexAllVolumes: running optimize() after \(completedVolumes, privacy: .public) volumes")
+        do {
+            try await fts5Store.optimize()
+            let optElapsed = Date().timeIntervalSince(optStart)
+            logger.info("indexAllVolumes: optimize() complete in \(String(format: "%.1f", optElapsed), privacy: .public)s")
+        } catch {
+            logger.error("indexAllVolumes: optimize() failed — \(error.localizedDescription, privacy: .public)")
+        }
+
         emit(.completed(volumeCount: completedVolumes, documentCount: totalDocuments))
 
-        #if DEBUG
-        print("[IndexingPipeline] indexAllVolumes complete: \(completedVolumes) volumes, \(totalDocuments) docs, \(failedVolumes) failed")
-        #endif
+        let totalElapsed = Date().timeIntervalSince(batchStart)
+        logger.info("indexAllVolumes: complete — \(completedVolumes, privacy: .public) indexed, \(failedVolumes, privacy: .public) failed, \(totalDocuments, privacy: .public) docs, \(String(format: "%.0f", totalElapsed), privacy: .public)s elapsed")
     }
 
     /// Removes all index data for a volume from FTS5 and all auxiliary tables.
@@ -501,9 +545,7 @@ public actor IndexingPipeline {
         try auxDeleteVolume(volumeId)
         CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId]) { _ in }
 
-        #if DEBUG
-        print("[IndexingPipeline] Removed \(docIds.count) FTS5 documents for \(volumeId)")
-        #endif
+        logger.info("removeVolume: removed \(docIds.count, privacy: .public) FTS5 documents for \(volumeId, privacy: .public)")
     }
 
     /// Removes all indexed data for every volume in a single bulk operation.
@@ -519,9 +561,7 @@ public actor IndexingPipeline {
             defer { sqlite3_finalize(stmt) }
             try auxStep(stmt)
         }
-        #if DEBUG
-        print("[IndexingPipeline] removeAllVolumesFromIndex complete")
-        #endif
+        logger.info("removeAllVolumesFromIndex: complete")
     }
 
     /// Updates the FTS5 index and document cache with a plain-text summary.
@@ -530,9 +570,7 @@ public actor IndexingPipeline {
     /// actor boundaries (e.g. boot-time sync from a background `ModelContext`).
     func updateSummaryText(volumeId: String, documentId: String, responseText: String) async throws {
         guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
-            #if DEBUG
-            print("[IndexingPipeline] updateSummaryText: \(volumeId)/\(documentId) not in cache")
-            #endif
+            logger.warning("updateSummaryText: \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
             return
         }
         let updated = cached.toFTS5Document(summaryText: responseText, noteText: cached.noteText)
@@ -554,9 +592,7 @@ public actor IndexingPipeline {
         userTagIds: String?
     ) async throws {
         guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
-            #if DEBUG
-            print("[IndexingPipeline] updateNoteText: \(volumeId)/\(documentId) not in cache")
-            #endif
+            logger.warning("updateNoteText: \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
             return
         }
         let updated = cached.toFTS5Document(
@@ -575,9 +611,7 @@ public actor IndexingPipeline {
     /// and calls `FTS5Store.update` so the new text is immediately searchable.
     func updateSummary(_ summary: GeneratedSummary) async throws {
         guard let cached = try fetchCache(volumeId: summary.volumeId, documentId: summary.documentId) else {
-            #if DEBUG
-            print("[IndexingPipeline] updateSummary: \(summary.volumeId)/\(summary.documentId) not in cache")
-            #endif
+            logger.warning("updateSummary: \(summary.volumeId, privacy: .public)/\(summary.documentId, privacy: .public) not in cache")
             return
         }
         let updated = cached.toFTS5Document(summaryText: summary.responseText, noteText: cached.noteText)
@@ -592,9 +626,7 @@ public actor IndexingPipeline {
     /// and calls `FTS5Store.update` so the new text is immediately searchable.
     func updateResearchNote(_ note: ResearchNote) async throws {
         guard let cached = try fetchCache(volumeId: note.volumeId, documentId: note.documentId) else {
-            #if DEBUG
-            print("[IndexingPipeline] updateResearchNote: \(note.volumeId)/\(note.documentId) not in cache")
-            #endif
+            logger.warning("updateResearchNote: \(note.volumeId, privacy: .public)/\(note.documentId, privacy: .public) not in cache")
             return
         }
         let updated = cached.toFTS5Document(summaryText: cached.summaryText, noteText: note.bodyText)
@@ -1647,9 +1679,7 @@ public actor IndexingPipeline {
             }
         }
 
-        #if DEBUG
-        print("[IndexingPipeline] Inserted \(rows.count) persons for \(rows.first?.volumeId ?? "?")")
-        #endif
+        logger.debug("Inserted \(rows.count, privacy: .public) persons for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
     private func auxInsertTerms(_ rows: [TermRow]) throws {
@@ -1671,9 +1701,7 @@ public actor IndexingPipeline {
             }
         }
 
-        #if DEBUG
-        print("[IndexingPipeline] Inserted \(rows.count) terms for \(rows.first?.volumeId ?? "?")")
-        #endif
+        logger.debug("Inserted \(rows.count, privacy: .public) terms for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
     /// Deletes all `cross_references` rows where `source_volume_id` matches.

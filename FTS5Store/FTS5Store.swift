@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import OSLog
 import SQLite3
 
 // SQLITE_TRANSIENT is a C macro ((sqlite3_destructor_type)-1) not exposed in Swift's
@@ -52,10 +53,14 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 /// Version history:
 ///   1.0 — Session 03: initial implementation
 ///   1.1 — Session 98: added `matchedDocumentKeys(query:limit:)` for analytics
+///   1.2 — Session 118: removed automatic `optimize()` from `insertBatch()`;
+///          callers are now responsible for calling `optimize()` once per batch;
+///          `#if DEBUG` prints replaced with `os.Logger`
 public actor FTS5Store {
 
     private let connection: FTS5Connection
     private let schema: FTS5Schema
+    private let logger = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "FTS5Store")
 
     /// `true` if the FTS5 virtual table was dropped and recreated on this launch
     /// because the `is_editorial_note` column was absent (schema migration from
@@ -84,9 +89,7 @@ public actor FTS5Store {
         self.didRebuildSchema = try connection.createSchema(schema: schema)
         FTS5Store.excludeFromBackup(url: databaseURL)
 
-        #if DEBUG
-        print("[FTS5Store] Opened database at \(databaseURL.path)")
-        #endif
+        logger.debug("Opened database at \(databaseURL.path, privacy: .public)")
     }
 
     // MARK: - Insertion
@@ -103,9 +106,7 @@ public actor FTS5Store {
         bind(document: document, to: stmt)
         try connection.step(stmt)
 
-        #if DEBUG
-        print("[FTS5Store] Inserted document \(document.id) in volume \(document.volumeId)")
-        #endif
+        logger.debug("Inserted document \(document.id, privacy: .public) in volume \(document.volumeId, privacy: .public)")
     }
 
     /// Replaces an existing document in the FTS5 index.
@@ -116,9 +117,7 @@ public actor FTS5Store {
         try delete(documentId: document.id)
         try insert(document: document)
 
-        #if DEBUG
-        print("[FTS5Store] Updated document \(document.id)")
-        #endif
+        logger.debug("Updated document \(document.id, privacy: .public)")
     }
 
     /// Removes a document from the FTS5 index by its identifier.
@@ -132,9 +131,7 @@ public actor FTS5Store {
         sqlite3_bind_text(stmt, 1, documentId, -1, SQLITE_TRANSIENT)
         try connection.step(stmt)
 
-        #if DEBUG
-        print("[FTS5Store] Deleted document \(documentId)")
-        #endif
+        logger.debug("Deleted document \(documentId, privacy: .public)")
     }
 
     /// Removes all FTS5 rows belonging to a given volume.
@@ -149,17 +146,17 @@ public actor FTS5Store {
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT)
         try connection.step(stmt)
 
-        #if DEBUG
-        print("[FTS5Store] Deleted volume \(volumeId)")
-        #endif
+        logger.debug("Deleted volume \(volumeId, privacy: .public)")
     }
 
     /// Inserts a batch of documents in a single transaction.
     ///
     /// Using a transaction around bulk inserts is significantly faster than
     /// individual inserts because SQLite flushes WAL pages only on `COMMIT`.
-    /// `optimize()` is called automatically after the batch to merge FTS5
-    /// b-tree segments, improving subsequent query performance.
+    ///
+    /// **Important**: `optimize()` is NOT called automatically. For bulk corpus
+    /// indexing, call `optimize()` exactly once after all volumes are inserted —
+    /// calling it after every volume is O(n²) on the total index size.
     ///
     /// - Parameter documents: One or more documents to insert. Must be non-empty.
     public func insertBatch(_ documents: [FTS5Document]) throws {
@@ -181,11 +178,7 @@ public actor FTS5Store {
             throw error
         }
 
-        try optimize()
-
-        #if DEBUG
-        print("[FTS5Store] Batch inserted \(documents.count) documents; optimize complete")
-        #endif
+        logger.debug("Batch inserted \(documents.count, privacy: .public) documents into \(self.schema.tableName, privacy: .public)")
     }
 
     // MARK: - Search
@@ -303,14 +296,18 @@ public actor FTS5Store {
 
     /// Runs the FTS5 `optimize` command to merge b-tree segments.
     ///
-    /// Should be called after any bulk insert. The operation can be slow on large
-    /// indexes; run it on a background task when the index is not actively queried.
-    /// `insertBatch` calls this automatically.
+    /// This operation is O(total index size) — it merges ALL b-tree segments into one.
+    /// For a full 552-volume corpus, this takes tens of seconds. Call it **once** after
+    /// all volumes have been inserted; never call it inside a per-volume loop.
+    ///
+    /// The operation is logged with elapsed time so you can observe it in Console.app
+    /// (`subsystem: bottsywattsy.FRUS-Explorer`, `category: FTS5Store`).
     public func optimize() throws {
+        let start = Date()
+        logger.info("optimize: starting on \(self.schema.tableName, privacy: .public)")
         try connection.exec("INSERT INTO \(schema.tableName)(\(schema.tableName)) VALUES('optimize')")
-        #if DEBUG
-        print("[FTS5Store] optimize complete")
-        #endif
+        let elapsed = Date().timeIntervalSince(start)
+        logger.info("optimize: complete in \(String(format: "%.1f", elapsed), privacy: .public)s on \(self.schema.tableName, privacy: .public)")
     }
 
     /// Deletes every document from the FTS5 index in a single SQL statement.
@@ -319,9 +316,7 @@ public actor FTS5Store {
     /// all data — one statement is orders of magnitude faster than per-document deletes.
     public func deleteAll() throws {
         try connection.exec("DELETE FROM \(schema.tableName)")
-        #if DEBUG
-        print("[FTS5Store] deleteAll complete")
-        #endif
+        logger.info("deleteAll complete on \(self.schema.tableName, privacy: .public)")
     }
 
     /// Rebuilds the entire FTS5 index from its content shadow tables.
@@ -330,10 +325,11 @@ public actor FTS5Store {
     /// corruption or after a schema migration. This is a slow, blocking operation
     /// and should be run on a background task.
     public func rebuild() throws {
+        let start = Date()
+        logger.info("rebuild: starting on \(self.schema.tableName, privacy: .public)")
         try connection.exec("INSERT INTO \(schema.tableName)(\(schema.tableName)) VALUES('rebuild')")
-        #if DEBUG
-        print("[FTS5Store] rebuild complete")
-        #endif
+        let elapsed = Date().timeIntervalSince(start)
+        logger.info("rebuild: complete in \(String(format: "%.1f", elapsed), privacy: .public)s on \(self.schema.tableName, privacy: .public)")
     }
 
     /// Returns the size of the database file in bytes.
@@ -417,9 +413,8 @@ public actor FTS5Store {
             // Non-fatal: log and continue. The database is still usable; the only
             // consequence is that it may be included in iCloud Backup until the
             // next successful open.
-            #if DEBUG
-            print("[FTS5Store] Warning: could not set isExcludedFromBackupKey on \(url.path): \(error)")
-            #endif
+            let logger = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "FTS5Store")
+            logger.warning("Could not set isExcludedFromBackupKey on \(url.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 }

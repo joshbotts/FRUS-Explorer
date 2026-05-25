@@ -1698,15 +1698,21 @@ private struct SubseriesVolumeListView: View {
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                     if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
-                        Label("Downloaded", systemImage: "checkmark.circle.fill")
+                        Label("Downloaded", systemImage: "arrow.down.circle.fill")
                             .font(.system(size: 10))
-                            .foregroundStyle(.green)
-                            .labelStyle(.iconOnly)
+                            .foregroundStyle(.secondary)
+                            .labelStyle(.titleAndIcon)
+                        if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
+                            Label("Indexed", systemImage: "checkmark.circle.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.green)
+                                .labelStyle(.titleAndIcon)
+                        }
                     } else if appState.downloadQueue.contains(vol.volumeId) {
                         Label("Downloading", systemImage: "arrow.down.circle")
                             .font(.system(size: 10))
                             .foregroundStyle(.blue)
-                            .labelStyle(.iconOnly)
+                            .labelStyle(.titleAndIcon)
                     }
                 }
             }
@@ -1789,9 +1795,20 @@ private struct CorpusVolumeDetailSheet: View {
                 liveProgress = nil
             }
         }
-        // Indexing progress: update display; when complete → show summary card
+        // Indexing progress: update display; when complete → show summary card.
+        // Also handle external indexing: when a batch operation running outside this
+        // sheet indexes our volume, progress transitions through our volumeId and
+        // eventually becomes nil. We re-evaluate the phase so the sheet doesn't remain
+        // stuck on `.notIndexed` after external indexing completes.
         .onChange(of: appState.currentIndexingProgress) { _, progress in
-            guard case .indexing = phase else { return }
+            guard case .indexing = phase else {
+                // External indexing finished — re-evaluate if our volume may now be indexed.
+                if progress == nil {
+                    if case .notIndexed = phase { Task { await determinePhase() } }
+                    else if case .interrupted = phase { Task { await determinePhase() } }
+                }
+                return
+            }
             if let progress, progress.volumeId == volume.volumeId {
                 liveProgress = progress
             } else if progress == nil {
