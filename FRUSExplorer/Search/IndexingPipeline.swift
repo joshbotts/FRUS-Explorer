@@ -91,6 +91,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          post-batch call in `indexAllVolumes` and `indexVolume`; eliminates O(n²)
 ///          performance regression that caused 60+ min corpus indexing; `#if DEBUG`
 ///          prints replaced with `os.Logger` (always-on, viewable in Console.app)
+///   2.4 — Session 118 (follow-up): fix `page_ranges` duplicate rows on re-index (plain
+///          INSERT with no pre-delete); fix `docsPerSecond` always 0 during `indexAllVolumes`
+///          (`volumeIndexingStartTime` never set); fix `metadataStream` dark during bulk
+///          indexing (`emitMetadata` never called); add per-volume `.reading` update in
+///          `indexAllVolumes`; carry `volumeId` through parse-failure events (was "unknown")
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -443,9 +448,11 @@ public actor IndexingPipeline {
         emit(.indexing(volumeId: files[0].volumeId, current: 0, total: total))
 
         // Use a non-throwing task group so that a single volume failure does not
-        // cancel the entire batch. Each task wraps its result in a Result so that
-        // errors are surfaced as values rather than thrown.
-        await withTaskGroup(of: Result<VolumeIndexData, Error>.self) { group in
+        // cancel the entire batch. Each task returns a (volumeId, Result) tuple so
+        // that the volumeId is available even when parseAndExtract throws (the prior
+        // approach tried to recover it from the error type, which was always "unknown"
+        // because parseAndExtract never throws IndexingError.volumeNotFound).
+        await withTaskGroup(of: (String, Result<VolumeIndexData, Error>).self) { group in
             var iterator = files.makeIterator()
 
             // Seed the initial window.
@@ -458,22 +465,42 @@ public actor IndexingPipeline {
                     group.addTask { [self] in
                         do {
                             let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
-                            return .success(data)
+                            return (file.volumeId, .success(data))
                         } catch {
-                            return .failure(error)
+                            return (file.volumeId, .failure(error))
                         }
                     }
                 }
             }
 
             // Process results and slide the window forward.
-            for await result in group {
+            for await (taskVolumeId, result) in group {
                 switch result {
                 case .success(let data):
+                    // Emit a .reading update now that the total document count is known.
+                    // This lets progress bars render a determinate state before storage
+                    // begins and matches the behaviour of indexVolume().
+                    emitUpdate(IndexingProgressUpdate(
+                        volumeId: data.volumeId, stage: .reading,
+                        completedDocuments: 0, totalDocuments: data.documents.count,
+                        docsPerSecond: 0
+                    ))
+                    // Emit metadata so AppState.lastDiscoveredMetadata is populated and
+                    // the status-bar completion summary shows real counts after indexing.
+                    emitMetadata(buildMetadata(from: data))
+                    // Reset per-volume throughput tracking. Without this, currentDocsPerSecond()
+                    // always returns 0 during bulk indexing (volumeIndexingStartTime was never
+                    // set), which meant docsPerSecond was always 0 in every progress update and
+                    // the ETA shown in the queue panel was permanently nil.
+                    volumeIndexingStartTime = Date()
+                    volumeDocumentsProcessed = 0
+
                     let storeStart = Date()
                     do {
                         try await storeIndexData(data)
                         let storeElapsed = Date().timeIntervalSince(storeStart)
+                        volumeIndexingStartTime = nil
+                        volumeDocumentsProcessed = 0
                         await stateTracker?.markCompleted(volumeId: data.volumeId)
                         completedVolumes += 1
                         totalDocuments += data.documents.count
@@ -484,19 +511,17 @@ public actor IndexingPipeline {
                         emit(.indexing(volumeId: data.volumeId, current: progressNow, total: total))
                         logger.info("indexAllVolumes: [\(progressNow, privacy: .public)/\(total, privacy: .public)] stored \(data.volumeId, privacy: .public) — \(data.documents.count, privacy: .public) docs in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
                     } catch {
+                        volumeIndexingStartTime = nil
+                        volumeDocumentsProcessed = 0
                         failedVolumes += 1
                         let failMsg = error.localizedDescription
                         emit(.failed(volumeId: data.volumeId, error: failMsg))
                         logger.error("indexAllVolumes: storeIndexData failed for \(data.volumeId, privacy: .public) — \(failMsg, privacy: .public)")
                     }
                 case .failure(let error):
-                    // Extract volumeId from the error for progress reporting.
-                    let volumeId: String
-                    if case IndexingError.volumeNotFound(let vid) = error { volumeId = vid }
-                    else { volumeId = "unknown" }
                     failedVolumes += 1
-                    emit(.failed(volumeId: volumeId, error: error.localizedDescription))
-                    logger.error("indexAllVolumes: parseAndExtract failed for \(volumeId, privacy: .public) — \(error.localizedDescription, privacy: .public)")
+                    emit(.failed(volumeId: taskVolumeId, error: error.localizedDescription))
+                    logger.error("indexAllVolumes: parseAndExtract failed for \(taskVolumeId, privacy: .public) — \(error.localizedDescription, privacy: .public)")
                 }
 
                 if let file = iterator.next() {
@@ -504,9 +529,9 @@ public actor IndexingPipeline {
                     group.addTask { [self] in
                         do {
                             let data = try await self.parseAndExtract(volumeId: file.volumeId, url: file.url)
-                            return .success(data)
+                            return (file.volumeId, .success(data))
                         } catch {
-                            return .failure(error)
+                            return (file.volumeId, .failure(error))
                         }
                     }
                 }
@@ -933,13 +958,15 @@ public actor IndexingPipeline {
 
         // --- Remaining auxiliary tables ---
         //
-        // `cross_references` and `person_mentions` use plain INSERT (no PRIMARY KEY
-        // constraint on individual rows). If this volume was previously indexed, those
-        // tables already contain its rows and re-inserting would create duplicates that
-        // corrupt cross-reference counts and the person-mention graph. Delete the
-        // existing rows for this volume before inserting the fresh batch.
+        // `cross_references`, `person_mentions`, and `page_ranges` all use plain INSERT
+        // (no UNIQUE constraint or ON CONFLICT clause). Without pre-deletion, re-indexing
+        // a volume accumulates duplicate rows — doubling page-range rows on every re-index
+        // corrupts citation lookup silently. Delete existing rows before inserting.
+        // `document_dates` uses INSERT OR REPLACE (safe), but is also pre-deleted so
+        // that stale rows for documents removed from the XML are cleaned up.
         try auxDeleteCrossReferences(forVolumeId: data.volumeId)
         try auxDeletePersonMentions(forVolumeId: data.volumeId)
+        try auxDeletePageRanges(forVolumeId: data.volumeId)
 
         try auxInsertCrossReferences(data.crossReferences)
         try auxInsertPageRanges(data.pageRanges)
@@ -1718,6 +1745,18 @@ public actor IndexingPipeline {
     /// Deletes all `person_mentions` rows for a volume before re-inserting.
     private func auxDeletePersonMentions(forVolumeId volumeId: String) throws {
         let stmt = try auxPrepare("DELETE FROM person_mentions WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    /// Deletes all `page_ranges` rows for a volume before re-inserting.
+    ///
+    /// `page_ranges` uses plain `INSERT` with no UNIQUE constraint, so without this
+    /// call every re-index of a volume doubles its page-range rows. The citation-lookup
+    /// query joins on page ranges and would return duplicate entries silently.
+    private func auxDeletePageRanges(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM page_ranges WHERE volume_id = ?")
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(stmt)
