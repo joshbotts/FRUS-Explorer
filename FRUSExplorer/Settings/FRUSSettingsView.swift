@@ -834,13 +834,39 @@ private struct SettingsNotesPane: View {
 
 // MARK: - Storage Pane
 
+/// Storage pane for the macOS Settings window.
+///
+/// Displays per-volume download/index status, storage usage bar, and bulk indexing actions.
+/// An inline queue-progress card (`indexingQueueCard`) appears between the volume table and
+/// the action buttons while a Settings-triggered batch is running.
+///
+/// Version history:
+///   1.0 — New UI scaffolding
+///   1.1 — Session 118: `BatchKind` state + `indexingQueueCard` for "Index Remaining" and
+///          "Reindex All" runs; `indexRemaining()` iterates with per-volume position tracking;
+///          `reindexAll()` marks batch state for the duration of `indexAllVolumes()`
 private struct SettingsStoragePane: View {
+
+    // MARK: - Batch tracking
+
+    /// Tracks the kind and progress of a Settings-triggered bulk indexing run.
+    /// Set at the start of `indexRemaining()` / `reindexAll()`; cleared on completion.
+    /// Drives `indexingQueueCard` visibility and the "Volume N of M" header label.
+    private enum BatchKind {
+        /// Iterating through unindexed volumes one by one; `current` is 1-based.
+        case indexRemaining(current: Int, total: Int)
+        /// Running `indexAllVolumes()` as a single black-box call.
+        case reindexAll(total: Int)
+    }
+
     @Environment(AppState.self) private var appState
     @State private var storageReport: StorageReport? = nil
     @State private var reindexingVolumeId: String? = nil
     /// Number of volumes that failed during the most recent "Index Remaining" or "Reindex All" run.
     /// Shown as an error notice after the batch completes. Reset to nil when the next batch starts.
     @State private var bulkIndexingFailureCount: Int? = nil
+    /// Non-nil while a Settings-triggered bulk indexing batch is active.
+    @State private var settingsBatch: BatchKind? = nil
 
     var body: some View {
         ScrollView {
@@ -864,6 +890,12 @@ private struct SettingsStoragePane: View {
                 PaneSectionHeader(title: "Volumes on device")
                 volumeTable
                     .padding(.bottom, 12)
+
+                // Live queue progress — shown while a Settings-triggered batch runs.
+                if settingsBatch != nil || appState.currentIndexingProgress != nil {
+                    indexingQueueCard
+                        .padding(.bottom, 8)
+                }
 
                 // Indexing actions
                 HStack(spacing: 8) {
@@ -1084,6 +1116,135 @@ private struct SettingsStoragePane: View {
         .labelStyle(.titleAndIcon)
     }
 
+    // MARK: - Inline Queue Progress Card
+
+    /// Inline queue-progress card shown between the volume table and the action buttons
+    /// while `settingsBatch` is non-nil or `AppState.currentIndexingProgress` is set.
+    ///
+    /// Shows:
+    /// - "Index Remaining" mode: "Volume N of M · ~Xm remaining"
+    /// - "Reindex All" mode:     "Reindexing all N volumes · ~Xm remaining"
+    /// - Fallback (download-triggered or race):  "Indexing volume…"
+    /// - Current volume title + progress bar + doc count + throughput
+    @ViewBuilder
+    private var indexingQueueCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+
+            // Header — batch position + ETA
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                switch settingsBatch {
+                case .indexRemaining(let current, let total):
+                    Text(String(localized: "settings.storage.indexing.remaining",
+                                defaultValue: "Volume \(current) of \(total)"))
+                        .font(.system(size: 12, weight: .medium))
+                case .reindexAll(let total):
+                    Text(String(localized: "settings.storage.reindexing.all",
+                                defaultValue: "Reindexing all \(total) volumes"))
+                        .font(.system(size: 12, weight: .medium))
+                case nil:
+                    Text(String(localized: "settings.storage.indexing.generic",
+                                defaultValue: "Indexing…"))
+                        .font(.system(size: 12, weight: .medium))
+                }
+                Spacer()
+                if let eta = queueETAString {
+                    Text(eta)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                        .monospacedDigit()
+                }
+            }
+
+            // Per-volume details sourced from the live indexing progress stream.
+            if let update = appState.currentIndexingProgress {
+                let resolvedTitle = appState.manifestStore
+                    .entry(forVolumeId: update.volumeId)?.title
+                Text(resolvedTitle ?? update.volumeId)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                if update.totalDocuments > 0 {
+                    ProgressView(
+                        value: Double(update.completedDocuments),
+                        total: Double(update.totalDocuments)
+                    )
+                    .progressViewStyle(.linear)
+                    .tint(.accentColor)
+
+                    HStack {
+                        Text(String(localized: "settings.storage.indexing.docCount",
+                                    defaultValue: "\(update.completedDocuments) / \(update.totalDocuments) documents"))
+                            .font(.system(size: 10).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if update.docsPerSecond > 0 {
+                            Text(String(format: String(localized: "settings.storage.indexing.throughput",
+                                                       defaultValue: "%.0f docs/s"),
+                                        update.docsPerSecond))
+                                .font(.system(size: 10).monospacedDigit())
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                } else {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.mini)
+                        Text(String(localized: "settings.storage.indexing.preparing",
+                                    defaultValue: "Preparing…"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.accentColor.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.accentColor.opacity(0.18), lineWidth: 0.5)
+        )
+    }
+
+    /// Combined ETA for the current batch: remaining docs in the active volume
+    /// plus remaining queued volumes (for "Index Remaining" batches).
+    private var queueETAString: String? {
+        guard let update = appState.currentIndexingProgress else { return nil }
+        var totalSeconds = 0.0
+
+        // Remaining docs in current volume.
+        if update.docsPerSecond > 0, update.totalDocuments > update.completedDocuments {
+            let remaining = update.totalDocuments - update.completedDocuments
+            totalSeconds += Double(remaining) / update.docsPerSecond
+        }
+
+        // For "Index Remaining" we know the per-volume position — estimate the rest.
+        if case .indexRemaining(let current, let total) = settingsBatch {
+            let remainingVolumes = total - current
+            if remainingVolumes > 0 {
+                let dps = appState.indexingQueueAverageDocsPerSecond > 0
+                    ? appState.indexingQueueAverageDocsPerSecond
+                    : update.docsPerSecond
+                if dps > 0 {
+                    let avgDocs = appState.indexingQueueAverageDocumentCount > 0
+                        ? appState.indexingQueueAverageDocumentCount : 600
+                    totalSeconds += Double(remainingVolumes) * Double(avgDocs) / dps
+                }
+            }
+        }
+
+        guard totalSeconds > 0 else { return nil }
+        if totalSeconds < 60 {
+            return String(localized: "settings.storage.indexing.eta.seconds",
+                          defaultValue: "~\(Int(totalSeconds.rounded()))s remaining")
+        }
+        let minutes = Int((totalSeconds / 60).rounded())
+        return String(localized: "settings.storage.indexing.eta.minutes",
+                      defaultValue: "~\(minutes)m remaining")
+    }
+
     // MARK: Computed
 
     private var indexedCount: Int {
@@ -1115,24 +1276,32 @@ private struct SettingsStoragePane: View {
         let unindexed = report.perVolume.filter {
             (try? pipeline.isVolumeIndexed($0.volumeId)) != true
         }
+        guard !unindexed.isEmpty else { return }
         var failures = 0
-        for entry in unindexed {
+        for (idx, entry) in unindexed.enumerated() {
+            // Update position so indexingQueueCard shows "Volume N of M".
+            settingsBatch = .indexRemaining(current: idx + 1, total: unindexed.count)
             do {
                 try await pipeline.indexVolume(entry.volumeId)
             } catch {
                 failures += 1
             }
         }
+        settingsBatch = nil
         bulkIndexingFailureCount = failures > 0 ? failures : nil
         await loadReport()
     }
 
     private func reindexAll() async {
         guard let pipeline = appState.indexingPipeline else { return }
+        let total = storageReport?.perVolume.count ?? 0
+        // Mark batch state so indexingQueueCard appears for the entire run.
+        settingsBatch = .reindexAll(total: total)
         // indexAllVolumes() is non-throwing: failures are emitted as .failed progress
         // events and do not propagate as thrown errors. Monitor the failure count via
         // the .failed events on AppState or check Console.app for error-level entries.
         try? await pipeline.indexAllVolumes()
+        settingsBatch = nil
         // Compute the failure count post-hoc by comparing the indexed count against
         // the total downloaded count.
         if let report = storageReport {
