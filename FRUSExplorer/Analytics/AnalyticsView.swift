@@ -38,9 +38,17 @@ enum AnalyticsChartAxis: String, CaseIterable {
 /// are fetched asynchronously from `CorpusAnalyticsService` via `AppState`.
 ///
 /// ## Layout
-/// A search field at the top drives the query. The body shows either a
-/// bar + line chart or a scrollable data table depending on `viewMode`.
-/// A toolbar picker switches between "By Year" and "By Subseries" axes.
+/// A search field at the top drives the query. When the "By Year" axis is
+/// active a compact year-range filter bar is shown below the search field,
+/// allowing users to restrict the chart to a custom date window. The body
+/// shows either a bar + line chart or a scrollable data table depending on
+/// `viewMode`. A toolbar picker switches between "By Year" and "By Subseries".
+///
+/// ## Year range filtering
+/// `yearRangeStart` and `yearRangeEnd` default to 1861 (first FRUS volume
+/// year) and the current calendar year. The chart x-axis is pinned to this
+/// range via `.chartXScale(domain:)`. Filtering is applied in `filteredYearData`
+/// at display time; no re-query is needed.
 ///
 /// ## Platform placement
 /// - **macOS**: standalone `frus.analytics` Window opened from `MainWindowView`.
@@ -52,6 +60,8 @@ enum AnalyticsChartAxis: String, CaseIterable {
 ///
 /// Version history:
 ///   1.0 — Session 99: initial implementation
+///   1.1 — Session 119: year-range filter controls; explicit x-axis domain
+///          (1861 default); removed 20,000 result limit (see FTS5Store 1.3)
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -68,6 +78,35 @@ struct AnalyticsView: View {
     @State private var viewMode: AnalyticsViewMode = .chart
     @State private var chartAxis: AnalyticsChartAxis = .byYear
 
+    /// Start year for the chart x-axis and year-data filter. Defaults to 1861
+    /// (the year of the first FRUS volume).
+    @State private var yearRangeStart: Int = 1861
+
+    /// End year for the chart x-axis and year-data filter. Defaults to the
+    /// current calendar year, re-evaluated at view construction.
+    @State private var yearRangeEnd: Int = Calendar.current.component(.year, from: Date())
+
+    // MARK: - Derived Properties
+
+    /// Current calendar year, used as the default upper bound and stepper maximum.
+    private var currentYear: Int {
+        Calendar.current.component(.year, from: Date())
+    }
+
+    /// `yearData` filtered to `yearRangeStart...yearRangeEnd`.
+    ///
+    /// Filtering is applied at display time so no re-query is needed when the
+    /// range changes.
+    private var filteredYearData: [YearFrequency] {
+        guard !yearData.isEmpty else { return [] }
+        return yearData.filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
+    }
+
+    /// `true` when the user has narrowed the range away from its default values.
+    private var yearRangeIsCustom: Bool {
+        yearRangeStart != 1861 || yearRangeEnd != currentYear
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -78,6 +117,10 @@ struct AnalyticsView: View {
                 } else {
                     VStack(spacing: 0) {
                         searchBar
+                        if chartAxis == .byYear && !committedTerm.isEmpty {
+                            Divider()
+                            yearRangeBar
+                        }
                         Divider()
                         contentArea
                     }
@@ -94,6 +137,57 @@ struct AnalyticsView: View {
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 520)
         #endif
+    }
+
+    // MARK: - Year Range Bar
+
+    /// Compact year-range filter shown below the search field when the "By Year"
+    /// axis is active. Steppers adjust `yearRangeStart` and `yearRangeEnd`;
+    /// a "Reset" link appears when the range has been customised.
+    private var yearRangeBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "calendar")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+
+            Text(String(localized: "analytics.yearRange.label",
+                        defaultValue: "Year range:"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Stepper(value: $yearRangeStart, in: 1776...yearRangeEnd) {
+                Text(verbatim: String(yearRangeStart))
+                    .font(.caption.monospacedDigit())
+                    .frame(width: 36, alignment: .trailing)
+            }
+
+            Text(verbatim: "–")
+                .foregroundStyle(.tertiary)
+                .font(.caption)
+
+            Stepper(value: $yearRangeEnd, in: yearRangeStart...currentYear) {
+                Text(verbatim: String(yearRangeEnd))
+                    .font(.caption.monospacedDigit())
+                    .frame(width: 36, alignment: .trailing)
+            }
+
+            if yearRangeIsCustom {
+                Button {
+                    yearRangeStart = 1861
+                    yearRangeEnd = currentYear
+                } label: {
+                    Text(String(localized: "analytics.yearRange.reset",
+                                defaultValue: "Reset"))
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.accentColor)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Search Bar
@@ -172,7 +266,10 @@ struct AnalyticsView: View {
     }
 
     private var yearChartSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let data = filteredYearData
+        let totalAllYears = yearData.reduce(0) { $0 + $1.count }
+        let totalFiltered = data.reduce(0) { $0 + $1.count }
+        return VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.year.heading",
                        defaultValue: "\"\(committedTerm)\" \u{2014} by Year")
@@ -181,7 +278,7 @@ struct AnalyticsView: View {
             .padding(.horizontal)
 
             Chart {
-                ForEach(yearData) { point in
+                ForEach(data) { point in
                     BarMark(
                         x: .value(
                             String(localized: "analytics.axis.year", defaultValue: "Year"),
@@ -194,7 +291,7 @@ struct AnalyticsView: View {
                     )
                     .foregroundStyle(Color.accentColor.opacity(0.65))
                 }
-                ForEach(yearData) { point in
+                ForEach(data) { point in
                     LineMark(
                         x: .value(
                             String(localized: "analytics.axis.year", defaultValue: "Year"),
@@ -209,6 +306,7 @@ struct AnalyticsView: View {
                     .foregroundStyle(Color.accentColor)
                 }
             }
+            .chartXScale(domain: yearRangeStart...yearRangeEnd)
             .chartXAxisLabel(
                 String(localized: "analytics.axis.year", defaultValue: "Year"),
                 alignment: .center
@@ -219,8 +317,25 @@ struct AnalyticsView: View {
             .frame(height: 280)
             .padding(.horizontal)
 
-            totalFootnote(count: yearData.reduce(0) { $0 + $1.count })
-                .padding(.horizontal)
+            // Show filtered count; if range is custom also show the full-corpus total.
+            HStack(spacing: 4) {
+                totalFootnote(count: totalFiltered)
+                if yearRangeIsCustom && totalAllYears != totalFiltered {
+                    Text(verbatim: "·")
+                        .foregroundStyle(.tertiary)
+                        .font(.caption)
+                    Text(
+                        String(
+                            format: String(localized: "analytics.total.all %lld",
+                                           defaultValue: "%lld total in full corpus"),
+                            Int64(totalAllYears)
+                        )
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.horizontal)
         }
         .padding(.vertical)
     }
@@ -281,7 +396,7 @@ struct AnalyticsView: View {
     private var tableContent: some View {
         switch chartAxis {
         case .byYear:
-            List(yearData) { point in
+            List(filteredYearData) { point in
                 HStack {
                     Text(verbatim: String(point.year))
                         .foregroundStyle(.secondary)

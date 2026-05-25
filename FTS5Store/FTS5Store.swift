@@ -56,6 +56,9 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///   1.2 — Session 118: removed automatic `optimize()` from `insertBatch()`;
 ///          callers are now responsible for calling `optimize()` once per batch;
 ///          `#if DEBUG` prints replaced with `os.Logger`
+///   1.3 — Session 119: `matchedDocumentKeys` default limit raised from 20,000 to
+///          500,000 so corpus-wide analytics cover the full FRUS series (~83,000 docs
+///          maximum) for high-frequency terms like "security" or "rights"
 public actor FTS5Store {
 
     private let connection: FTS5Connection
@@ -267,9 +270,12 @@ public actor FTS5Store {
     ///
     /// - Parameters:
     ///   - query: Structured search parameters.
-    ///   - limit: Hard cap on returned rows. Defaults to 20,000.
+    ///   - limit: Hard cap on returned rows. Defaults to 500,000 — well above the
+    ///     maximum possible FRUS corpus size (~83,000 documents across ~552 volumes),
+    ///     so analytics queries always return the full match set for any term.
+    ///     Pass a smaller value only when a hard upper bound is intentionally required.
     /// - Returns: Array of (documentId, volumeId) tuples in FTS5 scan order.
-    public func matchedDocumentKeys(query: FTS5Query, limit: Int = 20_000) throws -> [(documentId: String, volumeId: String)] {
+    public func matchedDocumentKeys(query: FTS5Query, limit: Int = 500_000) throws -> [(documentId: String, volumeId: String)] {
         guard let matchExpr = query.toFTS5MatchExpression() else {
             throw FTS5Error.emptyQuery
         }
