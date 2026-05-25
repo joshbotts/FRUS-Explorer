@@ -58,9 +58,18 @@ struct TermCount: Sendable, Identifiable {
 ///
 /// ## Caching
 /// Results are cached in memory using the query term as key, bounded at
-/// 50 entries per cache dictionary. When the underlying index changes
-/// (e.g. after a new volume is indexed), call `invalidateCache()` to
-/// flush all caches.
+/// 50 entries per cache dictionary. The full `document_dates` table is
+/// fetched once from `IndexingPipeline` and cached in `documentDateCache`;
+/// it is cleared alongside the other caches when `invalidateCache()` is
+/// called (e.g. after a volume is indexed or deleted).
+///
+/// ## Year bucketing
+/// `termFrequencyByYear(term:)` groups results by the **actual date** of
+/// each matching document, taken from the `date_iso` column of the
+/// `document_dates` auxiliary table (e.g. `"1969-02-15"` → year 1969).
+/// Documents with no stored date fall back to the start year of their
+/// volume ID. This replaces the previous approach of bucketing every
+/// document in a volume under the volume's start year.
 ///
 /// ## Volume ID Parsing
 /// FRUS volume IDs follow the pattern `frus{subseries}v{number}[suffix]`,
@@ -69,48 +78,77 @@ struct TermCount: Sendable, Identifiable {
 /// trailing volume suffix (`v\d+[a-z0-9]*`).
 ///
 /// ## Analytics Coverage
-/// - `termFrequencyByYear(term:)` — how many matching docs per year
-/// - `termFrequencyBySubseries(term:)` — how many matching docs per subseries
+/// - `termFrequencyByYear(term:)` — matching docs per year (actual document date)
+/// - `termFrequencyBySubseries(term:)` — matching docs per subseries (volume ID)
 /// - `topTermsByYear(year:limit:)` — stub; returns empty array (FTS5 vocabulary
 ///   tables are implementation-specific and not available in the current schema)
 ///
 /// Version history:
 ///   1.0 — Session 98: initial implementation
+///   1.1 — Session 119: `termFrequencyByYear` now uses per-document `date_iso`
+///          from `IndexingPipeline.allDocumentDates()` instead of bucketing by
+///          volume start year; `pipeline` dependency added; `documentDateCache`
+///          lazy-populated and cleared with other caches on `invalidateCache()`
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
 
     private let fts5Store: FTS5Store
+    private let pipeline: IndexingPipeline
 
     // MARK: - Caches
 
     private var yearFrequencyCache: [String: [YearFrequency]] = [:]
     private var subseriesFrequencyCache: [String: [SubseriesFrequency]] = [:]
+    /// Lazily populated on the first `termFrequencyByYear` call; maps
+    /// `"volumeId/documentId"` → `date_iso` string (e.g. `"1969-02-15"`).
+    private var documentDateCache: [String: String]? = nil
     private let cacheLimit = 50
 
     // MARK: - Initialiser
 
-    init(fts5Store: FTS5Store) {
+    init(fts5Store: FTS5Store, pipeline: IndexingPipeline) {
         self.fts5Store = fts5Store
+        self.pipeline = pipeline
     }
 
     // MARK: - Cache Management
 
-    /// Flushes all in-memory caches.
+    /// Flushes all in-memory caches, including the document-date lookup table.
     ///
     /// Call after the FTS5 index has been modified (e.g. a volume was indexed
     /// or deleted) so stale analytics results are not served.
     func invalidateCache() {
         yearFrequencyCache.removeAll()
         subseriesFrequencyCache.removeAll()
+        documentDateCache = nil
+    }
+
+    // MARK: - Private Helpers
+
+    /// Returns the cached document-date dictionary, fetching it from the
+    /// pipeline on first call.
+    ///
+    /// The dictionary maps `"volumeId/documentId"` → ISO 8601 date string.
+    /// Populated once per cache lifetime; cleared by `invalidateCache()`.
+    private func resolvedDocumentDates() async throws -> [String: String] {
+        if let cached = documentDateCache { return cached }
+        let dates = try await pipeline.allDocumentDates()
+        documentDateCache = dates
+        return dates
     }
 
     // MARK: - Frequency Queries
 
     /// Returns the count of documents matching `term`, grouped by year.
     ///
-    /// Results are sorted by year ascending. Documents in volumes whose IDs
-    /// cannot be parsed into a start year are silently omitted.
+    /// The year for each document is taken from the `date_iso` value stored
+    /// in the `document_dates` auxiliary table (the actual document date, e.g.
+    /// `"1969-02-15"` → 1969). Documents with no stored date fall back to the
+    /// start year parsed from their volume ID. Documents for which neither
+    /// source yields a valid year are silently omitted.
+    ///
+    /// Results are sorted by year ascending.
     ///
     /// - Parameter term: A single keyword to search (no FTS5 operators).
     /// - Returns: Array of `YearFrequency` sorted by `year` ascending.
@@ -120,11 +158,22 @@ actor CorpusAnalyticsService {
 
         let query = FTS5Query(keywords: [term])
         let keys = try await fts5Store.matchedDocumentKeys(query: query)
+        let dates = try await resolvedDocumentDates()
 
         var counts: [Int: Int] = [:]
         for key in keys {
-            guard let year = Self.startYear(fromVolumeId: key.volumeId) else { continue }
-            counts[year, default: 0] += 1
+            let compositeKey = "\(key.volumeId)/\(key.documentId)"
+            let year: Int?
+            if let iso = dates[compositeKey] {
+                // date_iso is "yyyy-MM-dd" or occasionally just "yyyy"; either way
+                // the first four characters encode the year.
+                year = Int(iso.prefix(4))
+            } else {
+                // Fall back to volume start year for undated documents.
+                year = Self.startYear(fromVolumeId: key.volumeId)
+            }
+            guard let y = year else { continue }
+            counts[y, default: 0] += 1
         }
 
         let result = counts

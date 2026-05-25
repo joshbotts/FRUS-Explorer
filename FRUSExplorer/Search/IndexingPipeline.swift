@@ -96,6 +96,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          (`volumeIndexingStartTime` never set); fix `metadataStream` dark during bulk
 ///          indexing (`emitMetadata` never called); add per-volume `.reading` update in
 ///          `indexAllVolumes`; carry `volumeId` through parse-failure events (was "unknown")
+///   2.5 — Session 119: `allDocumentDates()` — full-table scan returning every indexed
+///          document's `date_iso`; used by `CorpusAnalyticsService` to bucket analytics
+///          results by actual document date rather than volume start year
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -813,6 +816,34 @@ public actor IndexingPipeline {
         for (i, key) in keys.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
         }
+        var result: [String: String] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                result[k] = d
+            }
+        }
+        return result
+    }
+
+    /// Returns every indexed document date as a single dictionary.
+    ///
+    /// Performs one full sequential scan of `document_dates` and returns a
+    /// `[compositeKey: dateISO]` dictionary where the key is
+    /// `"volumeId/documentId"` and the value is the `date_iso` string
+    /// (e.g. `"1969-02-15"`). Rows with a `NULL` `date_iso` are excluded.
+    ///
+    /// The result is intended for analytics workloads that need per-document
+    /// dates for the entire indexed corpus. At ~83,000 rows maximum the
+    /// dictionary fits comfortably in memory (< 15 MB). Callers should cache
+    /// the result and invalidate it when the index changes.
+    public func allDocumentDates() throws -> [String: String] {
+        let sql = """
+            SELECT volume_id || '/' || document_id, date_iso
+            FROM document_dates
+            WHERE date_iso IS NOT NULL
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
         var result: [String: String] = [:]
         while sqlite3_step(stmt) == SQLITE_ROW {
             if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
