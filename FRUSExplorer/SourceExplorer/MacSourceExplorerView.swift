@@ -39,6 +39,8 @@ import AppKit
 ///   1.2 — Session 95: toolbar (Refresh / Copy / Export), manual NARA search field for
 ///          lot file and Presidential Library provenance, NSSavePanel plain-text export,
 ///          NSPasteboard copy; load() pre-fills manualQuery from parsed provenance
+///   1.3 — Session 118: `naraBox` RG-59 button label changes to "Browse RG-59 in NARA
+///          Catalog" when `fileId` is nil, matching the iOS fix for the misleading label
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -305,9 +307,18 @@ struct MacSourceExplorerView: View {
                     Button {
                         openURL(client.resolveRG59CentralFiles(fileIdentifier: fileId ?? ""))
                     } label: {
-                        Label(String(localized: "source.explorer.centralFiles.naraLink",
-                                     defaultValue: "Search NARA Catalog for This File"),
-                              systemImage: "arrow.up.right.square")
+                        // When a specific file identifier was parsed, label the action as a
+                        // targeted search. When nil (narrative note with no extractable ID),
+                        // use a general browse label so the user is not misled.
+                        if fileId != nil {
+                            Label(String(localized: "source.explorer.centralFiles.naraLink",
+                                         defaultValue: "Search NARA Catalog for This File"),
+                                  systemImage: "arrow.up.right.square")
+                        } else {
+                            Label(String(localized: "source.explorer.centralFiles.naraLinkGeneral",
+                                         defaultValue: "Browse RG-59 in NARA Catalog"),
+                                  systemImage: "arrow.up.right.square")
+                        }
                     }
                     Text(String(localized: "source.explorer.centralFiles.noKeyNote",
                                 defaultValue: "Central file searches open directly in your browser — no API key required."))
