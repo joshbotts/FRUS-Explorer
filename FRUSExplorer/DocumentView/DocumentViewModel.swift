@@ -352,12 +352,6 @@ public final class DocumentViewModel {
         isSummarizing = false
     }
 
-    // MARK: - Source Note Extraction
-
-    private func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
-        extractSourceNote(from: nodes)
-    }
-
     // MARK: - Person Mention Count
 
     /// Fetches and stores the number of indexed documents that mention `person`.
