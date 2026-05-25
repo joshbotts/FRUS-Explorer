@@ -10,6 +10,7 @@ import SwiftUI
 
 // MARK: - CompilationView
 
+
 /// Browser level showing the document list for a single compilation or chapter.
 ///
 /// Documents are loaded lazily via `BrowserViewModel.loadDocuments(for:volumeId:)` on
@@ -42,6 +43,8 @@ struct CompilationView: View {
     let vm: BrowserViewModel
     let volumeId: String
     let section: VolumeSection
+
+    @Environment(AppState.self) private var appState
 
     private var cacheKey: String {
         vm.compilationKey(volumeId: volumeId, sectionId: section.sectionId)
@@ -82,6 +85,17 @@ struct CompilationView: View {
         // user had to navigate away and back to see documents after indexing.
         .onChange(of: vm.isIndexing) { wasIndexing, isIndexing in
             if wasIndexing && !isIndexing && vm.indexingError == nil {
+                Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
+            }
+        }
+        // Handle external (Settings-triggered) bulk indexing: when the pipeline
+        // finishes and progress drops to nil, re-check whether our volume is now
+        // indexed. This prevents the "Index Required" banner from persisting after
+        // a batch indexing run completes outside the browser flow.
+        .onChange(of: appState.currentIndexingProgress) { _, progress in
+            guard progress == nil else { return }
+            guard !vm.isIndexing else { return }
+            if vm.isIndexed(volumeId) {
                 Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
             }
         }

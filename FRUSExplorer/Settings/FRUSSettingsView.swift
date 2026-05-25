@@ -838,6 +838,9 @@ private struct SettingsStoragePane: View {
     @Environment(AppState.self) private var appState
     @State private var storageReport: StorageReport? = nil
     @State private var reindexingVolumeId: String? = nil
+    /// Number of volumes that failed during the most recent "Index Remaining" or "Reindex All" run.
+    /// Shown as an error notice after the batch completes. Reset to nil when the next batch starts.
+    @State private var bulkIndexingFailureCount: Int? = nil
 
     var body: some View {
         ScrollView {
@@ -865,6 +868,7 @@ private struct SettingsStoragePane: View {
                 // Indexing actions
                 HStack(spacing: 8) {
                     Button {
+                        bulkIndexingFailureCount = nil
                         Task { await indexRemaining() }
                     } label: {
                         Label("Index Remaining", systemImage: "plus.circle")
@@ -874,6 +878,7 @@ private struct SettingsStoragePane: View {
                     .help("Index only volumes that have not been indexed yet.")
 
                     Button {
+                        bulkIndexingFailureCount = nil
                         Task { await reindexAll() }
                     } label: {
                         Label("Reindex All", systemImage: "arrow.clockwise")
@@ -888,6 +893,18 @@ private struct SettingsStoragePane: View {
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                     }
+                }
+
+                if let failures = bulkIndexingFailureCount, failures > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.orange)
+                        Text("\(failures) volume\(failures == 1 ? "" : "s") failed to index. Check Console.app (subsystem: bottsywattsy.FRUS-Explorer) for details.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 6)
                 }
             }
             .padding(24)
@@ -1098,15 +1115,32 @@ private struct SettingsStoragePane: View {
         let unindexed = report.perVolume.filter {
             (try? pipeline.isVolumeIndexed($0.volumeId)) != true
         }
+        var failures = 0
         for entry in unindexed {
-            try? await pipeline.indexVolume(entry.volumeId)
+            do {
+                try await pipeline.indexVolume(entry.volumeId)
+            } catch {
+                failures += 1
+            }
         }
+        bulkIndexingFailureCount = failures > 0 ? failures : nil
         await loadReport()
     }
 
     private func reindexAll() async {
         guard let pipeline = appState.indexingPipeline else { return }
+        // indexAllVolumes() is non-throwing: failures are emitted as .failed progress
+        // events and do not propagate as thrown errors. Monitor the failure count via
+        // the .failed events on AppState or check Console.app for error-level entries.
         try? await pipeline.indexAllVolumes()
+        // Compute the failure count post-hoc by comparing the indexed count against
+        // the total downloaded count.
+        if let report = storageReport {
+            let downloaded = report.perVolume.count
+            let indexed = indexedCount
+            let failures = downloaded - indexed
+            bulkIndexingFailureCount = failures > 0 ? failures : nil
+        }
         await loadReport()
     }
 
