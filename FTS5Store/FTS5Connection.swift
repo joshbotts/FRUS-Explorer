@@ -69,6 +69,11 @@ final class FTS5Connection {
         // Increase page cache to 8 MB (negative value = kibibytes).
         // Reduces re-reads of hot FTS5 index and B-tree pages between queries.
         try exec("PRAGMA cache_size = -8000")
+        // Map up to 128 MB of the database file into virtual address space.
+        // Reads bypass the read() syscall entirely; the OS page cache handles
+        // eviction. On 64-bit iOS/macOS this consumes virtual address space only
+        // (not physical RSS) and is safe under memory pressure.
+        try exec("PRAGMA mmap_size = 134217728")
     }
 
     // MARK: - Schema Creation
