@@ -1826,6 +1826,53 @@ public actor IndexingPipeline {
         try fetchCache(volumeId: volumeId, documentId: documentId)?.bodyText
     }
 
+    /// Returns the unstemmed `body_text` for each of the given document keys.
+    ///
+    /// The values come from `document_cache.body_text`, which stores the original
+    /// AST-derived plain text **before** Porter stemming was applied for FTS5. This
+    /// is the correct source for user-facing search snippets: it preserves the actual
+    /// spelling of every word in the document, whereas the FTS5 `frus_documents.body_text`
+    /// column contains stemmed tokens (`negoti` instead of `negotiating`) and would
+    /// mislead the reader if surfaced directly.
+    ///
+    /// One SQL statement with an `IN (?, ?, …)` clause is used, so the call cost
+    /// scales as a single SQLite round-trip regardless of result count. SQLite's
+    /// default variable cap of 999 is respected by chunking; callers requesting
+    /// thousands of documents will incur a small number of sequential queries.
+    ///
+    /// - Parameter keys: `(volumeId, documentId)` pairs to look up.
+    /// - Returns: Dictionary mapping `"volumeId/documentId"` → body text.
+    ///   Documents not present in `document_cache` are absent from the result.
+    public func documentBodyTexts(
+        for keys: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        guard !keys.isEmpty else { return [:] }
+        var out: [String: String] = [:]
+        // Chunk to stay inside SQLite's default 999 host-parameter cap.
+        let chunkSize = 400
+        for chunk in stride(from: 0, to: keys.count, by: chunkSize)
+                .map({ Array(keys[$0..<min($0 + chunkSize, keys.count)]) }) {
+            let composite = chunk.map { "\($0.volumeId)/\($0.documentId)" }
+            let placeholders = composite.map { _ in "?" }.joined(separator: ", ")
+            let sql = """
+                SELECT volume_id || '/' || document_id, body_text
+                FROM document_cache
+                WHERE volume_id || '/' || document_id IN (\(placeholders))
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, key) in composite.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let k = auxColumnString(stmt, 0), let b = auxColumnString(stmt, 1) {
+                    out[k] = b
+                }
+            }
+        }
+        return out
+    }
+
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {
         let sql = """
             SELECT document_number, header, dateline, source_note, body_text,

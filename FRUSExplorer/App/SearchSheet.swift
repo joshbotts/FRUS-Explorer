@@ -49,6 +49,9 @@ import SwiftUI
 ///   1.0 — New UI scaffolding (macOS-only; uses MacSearchViewModel)
 ///   1.1 — Add pagination, page size picker, Advanced Filters sheet, resizable frame
 ///   1.2 — Converted from sheet to Window scene; removed navigationPath binding and Cancel
+///   1.3 — Session 120: result-count label shows true uncapped total; over-cap advisory
+///          recommends narrowing by date; result row uses TEI-derived snippet with two
+///          full lines of surrounding context (no stemmed-token leakage)
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -81,6 +84,8 @@ struct MacSearchWindowView: View {
                 .padding(.vertical, 6)
 
             Divider()
+
+            overCapAdvisory
 
             resultsList
 
@@ -327,19 +332,70 @@ struct MacSearchWindowView: View {
 
     @ViewBuilder
     private var resultCountLabel: some View {
-        let total = searchVM.results.count
-        let start = searchVM.currentPage * searchVM.pageSize + 1
-        let end   = min(start + searchVM.pageSize - 1, total)
+        // `loaded` = how many results are materialised on the client (capped at
+        // `MacSearchViewModel.searchHardLimit`).
+        // `total`  = the true uncapped match count returned by FTS5 COUNT(*).
+        let loaded   = searchVM.results.count
+        let total    = max(searchVM.totalMatchCount, loaded)
+        let start    = searchVM.currentPage * searchVM.pageSize + 1
+        let end      = min(start + searchVM.pageSize - 1, loaded)
+        let truncated = searchVM.isResultSetTruncated
 
-        if total == 0 {
-            Text("No results")
-                .font(.system(size: 11, weight: .medium))
-        } else if total <= searchVM.pageSize {
-            Text("\(total) result\(total == 1 ? "" : "s")")
-                .font(.system(size: 11, weight: .medium))
-        } else {
-            Text("\(start)–\(end) of \(total) results")
-                .font(.system(size: 11, weight: .medium))
+        HStack(spacing: 6) {
+            if loaded == 0 {
+                Text("No results")
+                    .font(.system(size: 11, weight: .medium))
+            } else if loaded <= searchVM.pageSize {
+                Text("\(loaded) of \(total.formatted()) result\(total == 1 ? "" : "s")")
+                    .font(.system(size: 11, weight: .medium))
+            } else {
+                Text("\(start)–\(end) of \(loaded.formatted()) loaded · \(total.formatted()) total")
+                    .font(.system(size: 11, weight: .medium))
+            }
+
+            if truncated {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.orange)
+                    .help(
+                        String(
+                            localized: "search.cap.tooltip",
+                            defaultValue:
+                                "Showing \(loaded.formatted()) of \(total.formatted()) matches. Narrow your search with a date range, volume filter, or more specific terms to see every result."
+                        )
+                    )
+            }
+        }
+    }
+
+    /// Advisory banner shown directly below the results header when the underlying
+    /// match count exceeds what was loaded (capped at `searchHardLimit`).
+    ///
+    /// Encourages the user to constrain with date filters rather than scrolling
+    /// through a partial set unknowingly.
+    @ViewBuilder
+    private var overCapAdvisory: some View {
+        if searchVM.isResultSetTruncated {
+            let loaded = searchVM.results.count.formatted()
+            let total  = searchVM.totalMatchCount.formatted()
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Showing \(loaded) of \(total) matches")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("Narrow your search with a date range, volume filter, or more specific terms to load every match.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.orange.opacity(0.08))
+            .overlay(alignment: .top) { Divider() }
+            .overlay(alignment: .bottom) { Divider() }
         }
     }
 
@@ -493,10 +549,15 @@ private struct SearchResultRow: View {
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(2)
 
+            // TEI-derived snippet (~400 chars of surrounding context). `lineLimit(4)`
+            // shows ≥2 full lines on the typical Search window width; readers see
+            // enough sentence context to judge relevance without opening the document.
             SnippetView(snippet: result.snippet)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineSpacing(2)
+                .lineLimit(4)
+                .fixedSize(horizontal: false, vertical: true)
 
             if !result.userTagIds.isEmpty {
                 HStack(spacing: 4) {

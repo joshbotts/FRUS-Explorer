@@ -46,8 +46,17 @@ enum SearchSortOrder: CaseIterable {
 ///
 /// ## Sorting and Pagination
 /// Sorting is applied client-side on all results. `pagedResults` slices `allSortedResults`
-/// by `pageSize`/`currentPage`. `performSearch` always fetches up to 500 results so that
-/// all pages are available without a server round-trip.
+/// by `pageSize`/`currentPage`. `performSearch` fetches up to 7,500 results so that all
+/// pages are available without a server round-trip. `totalMatchCount` is fetched in
+/// parallel via `SearchService.searchCount` and represents the true uncapped match count
+/// — when it exceeds `results.count`, the UI surfaces an over-cap advisory.
+///
+/// ## Search-in Scope Toggles
+/// `scopeDocuments`, `scopeNotes`, and `scopeSummaries` mirror
+/// `SearchParameters.includeDocumentText`/`includeSummaries`/`includeNotes`. Toggling a
+/// scope chip is equivalent to toggling the corresponding scope checkbox in the advanced
+/// filter sheet. If all three scopes are disabled `performSearch` short-circuits with a
+/// friendly error rather than asking the FTS5 layer to throw `emptyQuery`.
 ///
 /// ## Naming
 /// Named `MacSearchViewModel` to distinguish from the existing iOS `SearchViewModel`
@@ -56,6 +65,9 @@ enum SearchSortOrder: CaseIterable {
 /// Version history:
 ///   1.0 — New UI scaffolding (macOS-only; iOS revamp will unify)
 ///   1.1 — Add pagination, parametersVersion, filterVM bridge, advanced filter sync
+///   1.2 — Session 120: raise cap from 500 → 7,500; add `totalMatchCount`; wire
+///          `scopeDocuments` to `includeDocumentText`; clamp `currentPage` when results
+///          shrink; gate empty-scope searches with a friendly error
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -77,8 +89,15 @@ final class MacSearchViewModel {
 
     // MARK: - Scope toggles
 
+    /// Whether full document text (header, dateline, source note, body) is searched.
+    /// Mirrors `parameters.includeDocumentText`. Toggling this off is equivalent to
+    /// unchecking "Document text" in the advanced filter sheet.
     var scopeDocuments: Bool = true {
-        didSet { /* documents scope always on in current model */ }
+        didSet {
+            parameters.includeDocumentText = scopeDocuments
+            filterVM?.includeDocumentText = scopeDocuments
+            parametersVersion += 1
+        }
     }
 
     var scopeNotes: Bool = true {
@@ -141,6 +160,21 @@ final class MacSearchViewModel {
     var results: [SearchResult] = []
     var isSearching: Bool = false
     var searchError: Error? = nil
+
+    /// True total number of matches across the full corpus for the current query,
+    /// independent of `searchHardLimit`. Updated in parallel with `results` by
+    /// `performSearch`. When `totalMatchCount > results.count`, results have been
+    /// truncated to fit `searchHardLimit` and the UI shows an over-cap advisory.
+    var totalMatchCount: Int = 0
+
+    /// True iff the displayed `results` are a truncated subset of `totalMatchCount`.
+    var isResultSetTruncated: Bool { totalMatchCount > results.count }
+
+    /// Hard upper bound on the number of results materialised by `performSearch`.
+    /// Raised from 500 → 7,500 in Session 120 (PR #45). At ~5 KB body-text average
+    /// the working set stays well under 50 MB on macOS; the count badge displays the
+    /// true uncapped total via `totalMatchCount`.
+    static let searchHardLimit: Int = 7_500
 
     var allSortedResults: [SearchResult] {
         switch sortOrder {
@@ -254,6 +288,7 @@ final class MacSearchViewModel {
         filterVM.excludedTermsText  = parameters.excludedTerms.joined(separator: ", ")
         filterVM.personRefText      = parameters.personRef ?? ""
         filterVM.documentTypeFilter = parameters.documentTypeFilter
+        filterVM.includeDocumentText = parameters.includeDocumentText
         filterVM.includeSummaries   = parameters.includeSummaries
         filterVM.includeNotes       = parameters.includeNotes
     }
@@ -285,10 +320,15 @@ final class MacSearchViewModel {
             .filter { !$0.isEmpty }
         parameters.personRef        = filterVM.personRefText.isEmpty ? nil : filterVM.personRefText
         parameters.documentTypeFilter = filterVM.documentTypeFilter
+        parameters.includeDocumentText = filterVM.includeDocumentText
         parameters.includeSummaries = filterVM.includeSummaries
         parameters.includeNotes     = filterVM.includeNotes
 
-        // Keep scope toggles in sync
+        // Keep scope toggles in sync. Direct assignment to the backing storage
+        // would skip the `didSet` observers (which bump `parametersVersion`), but
+        // since we already bump `parametersVersion` below this is intentional —
+        // the chips just visually reflect what advanced filters already applied.
+        scopeDocuments  = filterVM.includeDocumentText
         scopeNotes      = filterVM.includeNotes
         scopeSummaries  = filterVM.includeSummaries
 
@@ -310,6 +350,7 @@ final class MacSearchViewModel {
             debouncedQuery = kw
         }
         parameters = params
+        scopeDocuments = params.includeDocumentText
         scopeNotes     = params.includeNotes
         scopeSummaries = params.includeSummaries
         parametersVersion += 1
@@ -318,32 +359,91 @@ final class MacSearchViewModel {
     // MARK: - Search
 
     /// Executes a search against `SearchService` using the current `parameters` and `queryText`.
-    /// Fetches up to 500 results so all pagination pages are available client-side.
+    ///
+    /// Fetches up to `searchHardLimit` (7,500) results so all pagination pages are available
+    /// client-side. In parallel, fetches the true total match count via
+    /// `SearchService.searchCount` and stores it in `totalMatchCount`. When all three scope
+    /// flags are disabled (`includeDocumentText`, `includeSummaries`, `includeNotes` all
+    /// false), a friendly error is set before any FTS5 call is attempted.
+    ///
+    /// `currentPage` is reset to 0 on every successful fetch; if the result set shrank below
+    /// the previous page index it is clamped to a valid page.
     func performSearch(service: SearchService?) async {
         let query = queryText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty, let service else {
             results = []
+            totalMatchCount = 0
             return
         }
 
         var params = parameters
         params.keywords = query
 
+        // Empty scope guard: at least one of the three scope flags must be enabled.
+        // Without this, SearchService throws `emptyQuery`, which surfaces as an unhelpful
+        // technical error string.
+        guard params.includeDocumentText || params.includeSummaries || params.includeNotes else {
+            results = []
+            totalMatchCount = 0
+            searchError = MacSearchError.emptyScope
+            return
+        }
+
         isSearching = true
         searchError = nil
         currentPage = 0
 
+        // Capture an immutable copy so Swift 6 region-based isolation is happy
+        // when the same parameters value is sent to two actor-isolated calls below.
+        let frozenParams = params
+
+        // Fetch results and total count in parallel. searchCount runs an FTS5 COUNT(*)
+        // without snippet/bm25 work so it returns substantially faster than search().
+        async let resultsTask  = service.search(parameters: frozenParams,
+                                                limit: Self.searchHardLimit)
+        async let countTask    = service.searchCount(parameters: frozenParams)
         do {
-            results = try await service.search(parameters: params, limit: 500)
+            let fetched = try await resultsTask
+            let total   = (try? await countTask) ?? fetched.count
+            results = fetched
+            totalMatchCount = max(total, fetched.count)
+            // Clamp page index to the new result set.
+            if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
+            #if DEBUG
+            print("[MacSearchViewModel] Search returned \(fetched.count)/\(totalMatchCount) results")
+            #endif
         } catch {
             searchError = error
             results = []
+            totalMatchCount = 0
             #if DEBUG
             print("[MacSearchViewModel] Search failed: \(error)")
             #endif
         }
 
         isSearching = false
+    }
+}
+
+// MARK: - MacSearchError
+
+/// User-facing error states that originate in `MacSearchViewModel` rather than the
+/// underlying `SearchService` / `FTS5Store` layer.
+///
+/// Version history:
+///   1.0 — Session 120: added for the empty-scope guard in `performSearch`
+enum MacSearchError: LocalizedError {
+    /// All three "Search in" scope flags are disabled — there is nothing to search.
+    case emptyScope
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyScope:
+            return String(
+                localized: "search.error.emptyScope",
+                defaultValue: "Enable at least one of Documents, Notes, or Summaries to search."
+            )
+        }
     }
 }
 

@@ -33,6 +33,11 @@ import Foundation
 ///   1.0 — Session 09: initial implementation
 ///   1.1 — Session 38: document type filter applied in `search(_:limit:offset:)`
 ///   1.2 — Session 39: `personMentionStore` added; `personRef` filter applied in `search`
+///   1.3 — Session 120: TEI-derived snippet pass. After the FTS5 row set is filtered,
+///          each result's `snippet` is regenerated from the unstemmed
+///          `document_cache.body_text` so users see the actual word forms in the
+///          document rather than stemmed tokens. The match window is sized for two
+///          full lines of surrounding context.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -152,7 +157,14 @@ public actor SearchService {
             if filtered.count >= effectiveLimit { break }
         }
 
-        return filtered
+        // Replace FTS5's stemmed-token snippets with TEI-derived snippets pulled from
+        // `document_cache.body_text` (the original, unstemmed AST text). The match
+        // window aims for two lines of surrounding context. Falls back to the FTS5
+        // snippet on cache miss.
+        return await rebuildSnippetsFromTEI(
+            results: filtered,
+            queryTerms: positiveTerms(from: parameters)
+        )
     }
 
     /// Returns the total number of results matching `parameters` (for pagination UI).
@@ -216,5 +228,155 @@ public actor SearchService {
             throw FTS5Error.emptyQuery
         }
         return query
+    }
+
+    // MARK: - TEI Snippet Generation
+
+    /// Returns the set of positive search terms (keywords + phrase words + prefix)
+    /// that should be highlighted in the result snippet. Excluded terms are not
+    /// included.
+    private func positiveTerms(from parameters: SearchParameters) -> [String] {
+        var terms: [String] = []
+        if let kw = parameters.keywords {
+            terms.append(contentsOf: kw
+                .split(whereSeparator: \.isWhitespace)
+                .map(String.init)
+                .filter { !$0.isEmpty })
+        }
+        if let phrase = parameters.phrase, !phrase.isEmpty {
+            terms.append(contentsOf: phrase
+                .split(whereSeparator: \.isWhitespace)
+                .map(String.init)
+                .filter { !$0.isEmpty })
+        }
+        if let prefix = parameters.prefixWildcard, !prefix.isEmpty {
+            terms.append(prefix)
+        }
+        // De-duplicate case-insensitively while preserving order.
+        var seen = Set<String>()
+        return terms.filter { seen.insert($0.lowercased()).inserted }
+    }
+
+    /// Replaces each result's `snippet` with a TEI-derived context window.
+    ///
+    /// For every result the unstemmed body text is fetched from
+    /// `document_cache.body_text` via a single batched `IN (...)` query. The body
+    /// text is scanned for the first word whose Porter stem matches any positive
+    /// query term's stem; ~400 characters of surrounding context (two lines at the
+    /// macOS list font size) is extracted and the matched word is wrapped in
+    /// `<b>…</b>` so `SnippetView` highlights it without ever exposing a stemmed
+    /// token to the user.
+    ///
+    /// Documents not present in `document_cache` (e.g. just-indexed volumes whose
+    /// cache row didn't land yet) fall back to the FTS5 snippet so highlighting is
+    /// never blank.
+    private func rebuildSnippetsFromTEI(
+        results: [SearchResult],
+        queryTerms: [String]
+    ) async -> [SearchResult] {
+        guard !results.isEmpty, !queryTerms.isEmpty else { return results }
+
+        // Stem each positive term once; the same stems are reused across all rows.
+        let stemmedQueryTerms = queryTerms.map { PorterStemmer.stem($0.lowercased()) }
+
+        // Batched fetch — one round-trip into SQLite for every chunk of 400 docs.
+        let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        let bodies: [String: String]
+        do {
+            bodies = try await pipeline.documentBodyTexts(for: keys)
+        } catch {
+            #if DEBUG
+            print("[SearchService] documentBodyTexts failed: \(error) — keeping FTS5 snippets")
+            #endif
+            return results
+        }
+
+        return results.map { result in
+            let key = "\(result.volumeId)/\(result.documentId)"
+            guard let body = bodies[key], !body.isEmpty else { return result }
+            let snippet = Self.makeContextSnippet(
+                body: body,
+                stemmedTerms: stemmedQueryTerms,
+                contextRadius: 200
+            ) ?? result.snippet
+            return SearchResult(
+                documentId: result.documentId,
+                volumeId: result.volumeId,
+                documentNumber: result.documentNumber,
+                header: result.header,
+                dateline: result.dateline,
+                sourceNote: result.sourceNote,
+                snippet: snippet,
+                bm25Score: result.bm25Score,
+                subjectTagIds: result.subjectTagIds,
+                userTagIds: result.userTagIds,
+                isEditorialNote: result.isEditorialNote
+            )
+        }
+    }
+
+    /// Builds a `<b>…</b>`-marked context snippet from a document body string.
+    ///
+    /// The body is scanned word-by-word; the first word whose Porter stem matches
+    /// any entry in `stemmedTerms` is wrapped in `<b>…</b>` and ~`contextRadius`
+    /// characters of text on either side are included. The window is snapped to
+    /// word boundaries so the snippet does not begin or end mid-word, and ellipses
+    /// are added when the body extends beyond the window.
+    ///
+    /// Returns `nil` if no word in `body` matches any stemmed term — callers should
+    /// fall back to the FTS5 snippet so the result row is never blank.
+    ///
+    /// - Parameters:
+    ///   - body: The unstemmed, plain-text document body to search.
+    ///   - stemmedTerms: Query terms already reduced to their Porter stems.
+    ///   - contextRadius: Approximate number of characters of context to include on
+    ///     each side of the match. 200 chars ≈ two lines at the 12-point macOS list
+    ///     font with a typical column width.
+    nonisolated static func makeContextSnippet(
+        body: String,
+        stemmedTerms: [String],
+        contextRadius: Int
+    ) -> String? {
+        guard !body.isEmpty, !stemmedTerms.isEmpty else { return nil }
+        let stems = Set(stemmedTerms)
+
+        // Walk the body and find the first word whose Porter stem hits the query set.
+        let scalars = Array(body)
+        var i = 0
+        let n = scalars.count
+        while i < n {
+            // Skip non-letters.
+            while i < n, !scalars[i].isLetter { i += 1 }
+            guard i < n else { break }
+            let wordStart = i
+            while i < n, scalars[i].isLetter || scalars[i] == "'" || scalars[i] == "-" {
+                i += 1
+            }
+            let wordEnd = i
+            let word = String(scalars[wordStart..<wordEnd])
+            let alpha = word.filter { $0.isLetter }
+            let stem = alpha.isEmpty ? word.lowercased() : PorterStemmer.stem(alpha.lowercased())
+            if stems.contains(stem) {
+                // Found a match. Build the surrounding window.
+                let lowerBound = max(0, wordStart - contextRadius)
+                let upperBound = min(n, wordEnd + contextRadius)
+                // Snap to word boundaries so we don't begin/end mid-word.
+                var snapLow = lowerBound
+                while snapLow > 0, scalars[snapLow - 1].isLetter { snapLow -= 1 }
+                var snapHigh = upperBound
+                while snapHigh < n, scalars[snapHigh].isLetter { snapHigh += 1 }
+                let prefix = String(scalars[snapLow..<wordStart])
+                let highlight = String(scalars[wordStart..<wordEnd])
+                let suffix = String(scalars[wordEnd..<snapHigh])
+                var out = ""
+                if snapLow > 0 { out += "… " }
+                out += prefix
+                out += "<b>" + highlight + "</b>"
+                out += suffix
+                if snapHigh < n { out += " …" }
+                return out
+            }
+        }
+        return nil
     }
 }
