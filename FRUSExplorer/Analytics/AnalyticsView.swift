@@ -244,6 +244,10 @@ struct AnalyticsView: View {
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(Color.accentColor)
+                .help(String(
+                    localized: "analytics.yearRange.reset.help",
+                    defaultValue: "Reset the year range to 1861 – current year (the full FRUS corpus span)"
+                ))
             }
 
             Spacer()
@@ -826,6 +830,10 @@ struct AnalyticsView: View {
             }
             .pickerStyle(.segmented)
             .disabled(committedTerm.isEmpty)
+            .help(String(
+                localized: "analytics.viewMode.picker.help",
+                defaultValue: "Switch between chart visualisation and a tabular list of the same data"
+            ))
         }
 
         // Axis: granularity picker (decade / year / month / day / subseries)
@@ -839,6 +847,10 @@ struct AnalyticsView: View {
                 }
             }
             .disabled(committedTerm.isEmpty)
+            .help(String(
+                localized: "analytics.axis.picker.help",
+                defaultValue: "Choose how to bucket results: by decade, year, month, day, or subseries"
+            ))
         }
 
         // Fit-line toggle. Only meaningful on date-based charts.
@@ -870,6 +882,10 @@ struct AnalyticsView: View {
                         String(localized: "analytics.info.a11y", defaultValue: "About these results")
                     )
             }
+            .help(String(
+                localized: "analytics.info.help",
+                defaultValue: "What do the numbers mean? Multi-word handling, phrases, stemming, and how dates are determined."
+            ))
             .popover(isPresented: $showInfoPopover, arrowEdge: .top) {
                 infoPopoverContent
             }

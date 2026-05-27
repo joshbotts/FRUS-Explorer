@@ -89,18 +89,30 @@ struct ResearchStripView: View {
                 systemImage: "folder.badge.plus",
                 isDisabled: isDisabled
             ) { showAddToCollection = true }
+            .help(String(
+                localized: "researchStrip.addToCollection.help",
+                defaultValue: "Add this document to an existing collection or create a new one"
+            ))
 
             ResearchStripButton(
                 title: "Add note",
                 systemImage: "note.text.badge.plus",
                 isDisabled: isDisabled
             ) { showAddNote = true }
+            .help(String(
+                localized: "researchStrip.addNote.help",
+                defaultValue: "Create a research note attached to this document"
+            ))
 
             ResearchStripButton(
                 title: "Tag",
                 systemImage: "tag",
                 isDisabled: isDisabled
             ) { showTagPicker = true }
+            .help(String(
+                localized: "researchStrip.tag.help",
+                defaultValue: "Apply user tags to this document"
+            ))
 
             ResearchStripButton(
                 title: "Graph",
@@ -112,6 +124,10 @@ struct ResearchStripView: View {
                     openWindow(id: "frus.crossReferenceGraph")
                 }
             }
+            .help(String(
+                localized: "researchStrip.graph.help",
+                defaultValue: "Show this document's cross-reference graph (inbound and outbound references)"
+            ))
 
             // Sources — only shown when the current document has a source note
             if let note = entry?.sourceNote, !note.isEmpty {
@@ -123,6 +139,10 @@ struct ResearchStripView: View {
                     appState.currentSourceNote = note
                     openWindow(id: "frus.sourceExplorer")
                 }
+                .help(String(
+                    localized: "researchStrip.sources.help",
+                    defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"
+                ))
             }
 
             // Highlight Mode toggle
@@ -139,6 +159,11 @@ struct ResearchStripView: View {
                     highlightCoordinator.showHighlightMode = true
                 }
             }
+            .help(highlightCoordinator.showHighlightMode
+                  ? String(localized: "researchStrip.highlight.exit.help",
+                           defaultValue: "Exit highlight mode and return to normal reading")
+                  : String(localized: "researchStrip.highlight.enter.help",
+                           defaultValue: "Enter highlight mode — select text to create coloured highlights"))
 
             // Create Highlight — visible only in highlight mode
             if highlightCoordinator.showHighlightMode {
@@ -149,6 +174,10 @@ struct ResearchStripView: View {
                 ) {
                     showHighlightColorPicker = true
                 }
+                .help(String(
+                    localized: "researchStrip.createHighlight.help",
+                    defaultValue: "Save the current selection as a coloured highlight"
+                ))
                 .popover(isPresented: $showHighlightColorPicker) {
                     highlightColorPicker
                 }
@@ -161,6 +190,10 @@ struct ResearchStripView: View {
                 ) {
                     showHighlightNoteEditor = true
                 }
+                .help(String(
+                    localized: "researchStrip.highlightNote.help",
+                    defaultValue: "Attach a research note to the highlight you just created"
+                ))
             }
 
             // Cite — opens citation popover
@@ -184,6 +217,10 @@ struct ResearchStripView: View {
                     )
             )
             .disabled(isDisabled)
+            .help(String(
+                localized: "researchStrip.cite.help",
+                defaultValue: "Show this document's formatted citation; copy or export to BibTeX/RIS"
+            ))
             .popover(isPresented: $showCitationPopover, arrowEdge: .bottom) {
                 if let entry { CitationPopoverView(entry: entry) }
             }
@@ -458,6 +495,14 @@ struct SummaryBlockView: View {
                             }
                             .buttonStyle(.plain)
                             .disabled(vm.activeSummaryIndex >= vm.summaries.count - 1)
+                            .help(String(
+                                localized: "summary.history.older.help",
+                                defaultValue: "Show older summary"
+                            ))
+                            .accessibilityLabel(String(
+                                localized: "summary.history.older.a11y",
+                                defaultValue: "Older summary"
+                            ))
 
                             Text("\(vm.activeSummaryIndex + 1)/\(vm.summaries.count)")
                                 .font(.system(size: 10))
@@ -470,6 +515,14 @@ struct SummaryBlockView: View {
                             }
                             .buttonStyle(.plain)
                             .disabled(vm.activeSummaryIndex <= 0)
+                            .help(String(
+                                localized: "summary.history.newer.help",
+                                defaultValue: "Show newer summary"
+                            ))
+                            .accessibilityLabel(String(
+                                localized: "summary.history.newer.a11y",
+                                defaultValue: "Newer summary"
+                            ))
                         }
                     }
 
@@ -808,6 +861,10 @@ struct StatusBarView: View {
                 taskLabel(task, showDisclosure: true)
             }
             .buttonStyle(.plain)
+            .help(String(
+                localized: "statusbar.indexingQueue.help",
+                defaultValue: "Show indexing-queue progress and ETA"
+            ))
             .popover(isPresented: $showQueuePopover, arrowEdge: .top) {
                 MacIndexingQueuePanel(
                     update: update,
@@ -1001,6 +1058,11 @@ private struct MacIndexingQueuePanel: View {
                     localized: "indexing.queue.mac.expand.a11y",
                     defaultValue: isExpanded ? "Collapse queue list" : "Expand queue list"
                 ))
+                .help(isExpanded
+                      ? String(localized: "indexing.queue.mac.expand.collapse.help",
+                               defaultValue: "Collapse the pending-volumes list")
+                      : String(localized: "indexing.queue.mac.expand.expand.help",
+                               defaultValue: "Expand to see the next volumes waiting to be indexed"))
 
                 if isExpanded {
                     VStack(alignment: .leading, spacing: 4) {
@@ -1109,6 +1171,10 @@ struct CitationPopoverView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
+            .help(String(
+                localized: "citation.popover.stylePicker.help",
+                defaultValue: "Choose citation style (history.state.gov, Chicago footnote, Chicago bibliography…)"
+            ))
 
             // Citation text — rendered as Markdown so _series title_ displays as italic.
             Group {
@@ -1170,6 +1236,10 @@ struct CitationPopoverView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .help(String(
+                    localized: "citation.popover.copyCitation.help",
+                    defaultValue: "Copy the formatted citation to the clipboard"
+                ))
 
                 if let url = canonicalURL {
                     Button {
@@ -1179,6 +1249,10 @@ struct CitationPopoverView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .help(String(
+                        localized: "citation.popover.copyURL.help",
+                        defaultValue: "Copy the canonical history.state.gov URL for this document"
+                    ))
                 }
 
                 Spacer()
@@ -1207,6 +1281,10 @@ struct CitationPopoverView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
                 .disabled(volumeEntry == nil)
+                .help(String(
+                    localized: "citation.popover.export.help",
+                    defaultValue: "Export this citation as BibTeX or RIS, or save a .bib file to disk"
+                ))
             }
 
         }

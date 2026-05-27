@@ -303,6 +303,10 @@ struct MacDocumentView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .help(String(
+                    localized: "document.nav.previous.help",
+                    defaultValue: "Previous document in this volume"
+                ))
             }
 
             Spacer()
@@ -331,6 +335,10 @@ struct MacDocumentView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .help(String(
+                    localized: "document.nav.next.help",
+                    defaultValue: "Next document in this volume"
+                ))
             }
         }
     }

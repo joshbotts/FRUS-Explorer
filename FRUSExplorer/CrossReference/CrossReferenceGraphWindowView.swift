@@ -132,6 +132,10 @@ struct CrossReferenceGraphWindowView: View {
                                     systemImage: "chevron.left"
                                 )
                             }
+                            .help(String(
+                                localized: "xref.picker.back.help",
+                                defaultValue: "Return to the volume picker"
+                            ))
                         }
                     }
                 }
@@ -230,6 +234,10 @@ struct CrossReferenceGraphWindowView: View {
                     String(localized: "xref.picker.volumeGraph.hint",
                            defaultValue: "Shows all cross-references to and from documents in this volume, across the full corpus")
                 )
+                .help(String(
+                    localized: "xref.picker.volumeGraph.help",
+                    defaultValue: "Show every cross-reference between this volume and other indexed volumes"
+                ))
             } footer: {
                 Text(String(localized: "xref.picker.volumeGraph.footer",
                             defaultValue: "Corpus-wide connections for this volume — every other volume it cross-references or is referenced by."))
@@ -253,6 +261,10 @@ struct CrossReferenceGraphWindowView: View {
                     String(localized: "xref.picker.browseDocuments.hint",
                            defaultValue: "Pick a specific document to view its ego-level cross-reference graph")
                 )
+                .help(String(
+                    localized: "xref.picker.browseDocuments.help",
+                    defaultValue: "Choose a specific document and see its inbound/outbound references"
+                ))
             } footer: {
                 Text(String(localized: "xref.picker.browseDocuments.footer",
                             defaultValue: "Choose a specific document to explore its inbound and outbound cross-references."))

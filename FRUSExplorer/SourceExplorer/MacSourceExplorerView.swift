@@ -320,6 +320,11 @@ struct MacSourceExplorerView: View {
                                   systemImage: "arrow.up.right.square")
                         }
                     }
+                    .help(fileId != nil
+                          ? String(localized: "source.explorer.centralFiles.naraLink.help",
+                                   defaultValue: "Open archives.gov with this exact decimal-file identifier")
+                          : String(localized: "source.explorer.centralFiles.naraLinkGeneral.help",
+                                   defaultValue: "Open the RG-59 Central Files browse page on archives.gov"))
                     Text(String(localized: "source.explorer.centralFiles.noKeyNote",
                                 defaultValue: "Central file searches open directly in your browser — no API key required."))
                         .font(.caption)
@@ -433,6 +438,10 @@ struct MacSourceExplorerView: View {
             }
             .buttonStyle(.link)
             .padding(.top, 2)
+            .help(String(
+                localized: "source.explorer.nara.viewRecord.help",
+                defaultValue: "Open this NARA catalog record in your browser"
+            ))
         }
     }
 

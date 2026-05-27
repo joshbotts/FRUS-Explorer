@@ -538,6 +538,10 @@ private struct MacEntryRow: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+        .help(String(
+            localized: "collection.entry.noteMenu.help",
+            defaultValue: "Attach an existing research note to this entry, clear it, or create a new note"
+        ))
     }
 
     // MARK: - Helpers

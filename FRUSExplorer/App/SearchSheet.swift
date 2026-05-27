@@ -146,6 +146,14 @@ struct MacSearchWindowView: View {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
                     }
                     .buttonStyle(.plain)
+                    .help(String(
+                        localized: "search.field.clear.help",
+                        defaultValue: "Clear search field"
+                    ))
+                    .accessibilityLabel(String(
+                        localized: "search.field.clear.a11y",
+                        defaultValue: "Clear search"
+                    ))
                 }
             }
             .padding(.horizontal, 10)
@@ -165,6 +173,10 @@ struct MacSearchWindowView: View {
                     .foregroundStyle(searchVM.showTips ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
+            .help(String(
+                localized: "search.tips.help",
+                defaultValue: "Show or hide search-syntax tips: quoted phrases, OR, exclusion, date filters, and stemming"
+            ))
         }
     }
 
@@ -177,9 +189,25 @@ struct MacSearchWindowView: View {
                 .foregroundStyle(.tertiary)
 
             ScopeChip(label: "Documents",   isOn: $searchVM.scopeDocuments)
+                .help(String(
+                    localized: "search.scope.documents.help",
+                    defaultValue: "Search the full text of FRUS documents (header, dateline, source note, body)"
+                ))
             ScopeChip(label: "Notes",       isOn: $searchVM.scopeNotes)
+                .help(String(
+                    localized: "search.scope.notes.help",
+                    defaultValue: "Search the body text of your research notes"
+                ))
             ScopeChip(label: "Summaries",   isOn: $searchVM.scopeSummaries)
+                .help(String(
+                    localized: "search.scope.summaries.help",
+                    defaultValue: "Search the text of generated AI summaries"
+                ))
             ScopeChip(label: "Collections", isOn: $searchVM.scopeCollections)
+                .help(String(
+                    localized: "search.scope.collections.help",
+                    defaultValue: "Search collection names and notes (deferred — not yet wired)"
+                ))
         }
     }
 
@@ -192,6 +220,10 @@ struct MacSearchWindowView: View {
                 value: searchVM.dateRangeLabel,
                 isActive: searchVM.parameters.dateRange != nil
             ) { searchVM.clearDateFilter() }
+            .help(String(
+                localized: "search.filter.date.help",
+                defaultValue: "Date-range filter (TEI document dates). Tap × to clear."
+            ))
 
             Divider().frame(height: 16)
 
@@ -200,6 +232,10 @@ struct MacSearchWindowView: View {
                 value: searchVM.volumeFilterLabel,
                 isActive: searchVM.parameters.volumeIds != nil
             ) { searchVM.clearVolumeFilter() }
+            .help(String(
+                localized: "search.filter.volume.help",
+                defaultValue: "Volume or subseries filter. Tap × to clear."
+            ))
 
             Divider().frame(height: 16)
 
@@ -208,6 +244,10 @@ struct MacSearchWindowView: View {
                 value: searchVM.tagFilterLabel,
                 isActive: !searchVM.parameters.userTagIds.isEmpty
             ) { searchVM.clearTagFilter() }
+            .help(String(
+                localized: "search.filter.tags.help",
+                defaultValue: "User-tag filter. Tap × to clear."
+            ))
 
             Divider().frame(height: 16)
 
@@ -233,6 +273,10 @@ struct MacSearchWindowView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Open advanced search filters")
+            .help(String(
+                localized: "search.filter.advanced.help",
+                defaultValue: "Open advanced filters — phrase search, boolean mode, prefix wildcard, excluded terms, person reference"
+            ))
         }
     }
 
@@ -273,6 +317,7 @@ struct MacSearchWindowView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .help(documentTypeHelpText(for: option.filter))
             }
         }
     }
@@ -325,6 +370,7 @@ struct MacSearchWindowView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .help(sortOrderHelpText(for: order))
                 }
             }
         }
@@ -423,6 +469,10 @@ struct MacSearchWindowView: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
+            .help(String(
+                localized: "search.pageSize.help",
+                defaultValue: "Choose how many results to display per page"
+            ))
         }
     }
 
@@ -456,6 +506,14 @@ struct MacSearchWindowView: View {
             }
             .buttonStyle(.plain)
             .disabled(searchVM.currentPage == 0)
+            .help(String(
+                localized: "search.pagination.previous.help",
+                defaultValue: "Previous page of results"
+            ))
+            .accessibilityLabel(String(
+                localized: "search.pagination.previous.a11y",
+                defaultValue: "Previous page"
+            ))
 
             Text("Page \(searchVM.currentPage + 1) of \(searchVM.totalPages)")
                 .font(.system(size: 11))
@@ -472,6 +530,14 @@ struct MacSearchWindowView: View {
             }
             .buttonStyle(.plain)
             .disabled(searchVM.currentPage >= searchVM.totalPages - 1)
+            .help(String(
+                localized: "search.pagination.next.help",
+                defaultValue: "Next page of results"
+            ))
+            .accessibilityLabel(String(
+                localized: "search.pagination.next.a11y",
+                defaultValue: "Next page"
+            ))
         }
         .frame(maxWidth: .infinity)
     }
@@ -494,6 +560,36 @@ struct MacSearchWindowView: View {
                 TipItem(code: nil, description: "Person filter searches indexed <persName> mentions across volumes")
                 TipItem(code: nil, description: "Scope toggles persist across sessions; adjust in Settings")
             }
+        }
+    }
+
+    // MARK: - Tooltip Helpers
+
+    private func documentTypeHelpText(for filter: DocumentTypeFilter) -> String {
+        switch filter {
+        case .all:
+            return String(localized: "search.docType.both.help",
+                          defaultValue: "Include both primary-source documents and editorial notes in results")
+        case .documentsOnly:
+            return String(localized: "search.docType.documents.help",
+                          defaultValue: "Restrict results to numbered primary-source documents only")
+        case .editorialNotesOnly:
+            return String(localized: "search.docType.editorialNotes.help",
+                          defaultValue: "Restrict results to FRUS editorial notes only")
+        }
+    }
+
+    private func sortOrderHelpText(for order: SearchSortOrder) -> String {
+        switch order {
+        case .relevance:
+            return String(localized: "search.sort.relevance.help",
+                          defaultValue: "Sort results by BM25 relevance — best matches first")
+        case .dateAscending:
+            return String(localized: "search.sort.dateAsc.help",
+                          defaultValue: "Sort by document date, oldest first. Undated documents go to the end.")
+        case .dateDescending:
+            return String(localized: "search.sort.dateDesc.help",
+                          defaultValue: "Sort by document date, most recent first. Undated documents go to the end.")
         }
     }
 
@@ -666,6 +762,14 @@ private struct FilterChip: View {
                             .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
+                    .help(String(
+                        localized: "search.filter.chip.clear.help",
+                        defaultValue: "Clear this filter"
+                    ))
+                    .accessibilityLabel(String(
+                        localized: "search.filter.chip.clear.a11y",
+                        defaultValue: "Clear filter"
+                    ))
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)

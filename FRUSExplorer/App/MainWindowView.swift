@@ -170,6 +170,10 @@ struct MainWindowView: View {
             } label: {
                 Label("Search", systemImage: "magnifyingglass")
             }
+            .help(String(
+                localized: "mainwindow.tools.search.help",
+                defaultValue: "Open the full-text search window (⌘F)"
+            ))
 
             Divider().frame(height: 20)
 
@@ -181,6 +185,10 @@ struct MainWindowView: View {
                 Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
             }
             .disabled(currentEntry == nil)
+            .help(String(
+                localized: "mainwindow.tools.graph.help",
+                defaultValue: "Show cross-references for the current document in a separate window"
+            ))
 
             Divider().frame(height: 20)
 
@@ -196,6 +204,10 @@ struct MainWindowView: View {
                     CitationPopoverView(entry: entry)
                 }
             }
+            .help(String(
+                localized: "mainwindow.tools.info.help",
+                defaultValue: "Show document citation and metadata"
+            ))
 
             Divider().frame(height: 20)
 
@@ -206,6 +218,10 @@ struct MainWindowView: View {
                 Label("Collections", systemImage: "tray.2")
             }
             .keyboardShortcut("k", modifiers: [.command, .shift])
+            .help(String(
+                localized: "mainwindow.tools.collections.help",
+                defaultValue: "Open the Collections window (⇧⌘K)"
+            ))
 
             Divider().frame(height: 20)
 
@@ -215,6 +231,10 @@ struct MainWindowView: View {
             } label: {
                 Label("Corpus", systemImage: "books.vertical")
             }
+            .help(String(
+                localized: "mainwindow.tools.corpus.help",
+                defaultValue: "Open the Corpus Browser to browse volumes by subseries"
+            ))
 
             // Analytics window
             Button {
@@ -222,6 +242,10 @@ struct MainWindowView: View {
             } label: {
                 Label("Analytics", systemImage: "chart.bar.xaxis")
             }
+            .help(String(
+                localized: "mainwindow.tools.analytics.help",
+                defaultValue: "Open Corpus Analytics — chart term frequency over time"
+            ))
         }
     }
 
