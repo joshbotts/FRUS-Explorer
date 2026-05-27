@@ -38,6 +38,9 @@ import Foundation
 ///          `document_cache.body_text` so users see the actual word forms in the
 ///          document rather than stemmed tokens. The match window is sized for two
 ///          full lines of surrounding context.
+///   1.4 — Session 122: `dateISO` populated on every `SearchResult` from
+///          `document_dates.date_iso` via a batched lookup. Enables chronologically
+///          correct date-asc / date-desc sorting in the macOS search window.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -146,6 +149,7 @@ public actor SearchService {
                 documentNumber: nil,          // populated from document_cache in a future session
                 header: raw.header,
                 dateline: raw.dateline,
+                dateISO: nil,                 // attached by attachDates(_:) below
                 sourceNote: raw.sourceNote,
                 snippet: raw.snippet,
                 bm25Score: raw.bm25Score,
@@ -161,10 +165,14 @@ public actor SearchService {
         // `document_cache.body_text` (the original, unstemmed AST text). The match
         // window aims for two lines of surrounding context. Falls back to the FTS5
         // snippet on cache miss.
-        return await rebuildSnippetsFromTEI(
+        let withSnippets = await rebuildSnippetsFromTEI(
             results: filtered,
             queryTerms: positiveTerms(from: parameters)
         )
+
+        // Attach the canonical ISO date to every result so the macOS search
+        // window's date-asc / date-desc sort can order results chronologically.
+        return await attachDates(to: withSnippets)
     }
 
     /// Returns the total number of results matching `parameters` (for pagination UI).
@@ -257,6 +265,45 @@ public actor SearchService {
         return terms.filter { seen.insert($0.lowercased()).inserted }
     }
 
+    /// Populates `SearchResult.dateISO` from the `document_dates` auxiliary
+    /// table for every result in `results`.
+    ///
+    /// Uses `pipeline.documentDates(for:)`, which issues one batched
+    /// `IN (?, ?, …)` query per chunk of 400 keys — fast even for the 7,500-row
+    /// macOS search cap. Results without a stored date keep `dateISO == nil`;
+    /// downstream sort code is responsible for placing them appropriately
+    /// (typically at the end of the list in both ascending and descending order).
+    private func attachDates(to results: [SearchResult]) async -> [SearchResult] {
+        guard !results.isEmpty else { return results }
+        let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        let dates: [String: String]
+        do {
+            dates = try await pipeline.documentDates(for: keys)
+        } catch {
+            #if DEBUG
+            print("[SearchService] documentDates failed: \(error) — date sort will degrade")
+            #endif
+            return results
+        }
+        return results.map { result in
+            let key = "\(result.volumeId)/\(result.documentId)"
+            return SearchResult(
+                documentId: result.documentId,
+                volumeId: result.volumeId,
+                documentNumber: result.documentNumber,
+                header: result.header,
+                dateline: result.dateline,
+                dateISO: dates[key],
+                sourceNote: result.sourceNote,
+                snippet: result.snippet,
+                bm25Score: result.bm25Score,
+                subjectTagIds: result.subjectTagIds,
+                userTagIds: result.userTagIds,
+                isEditorialNote: result.isEditorialNote
+            )
+        }
+    }
+
     /// Replaces each result's `snippet` with a TEI-derived context window.
     ///
     /// For every result the unstemmed body text is fetched from
@@ -305,6 +352,7 @@ public actor SearchService {
                 documentNumber: result.documentNumber,
                 header: result.header,
                 dateline: result.dateline,
+                dateISO: result.dateISO,
                 sourceNote: result.sourceNote,
                 snippet: snippet,
                 bm25Score: result.bm25Score,

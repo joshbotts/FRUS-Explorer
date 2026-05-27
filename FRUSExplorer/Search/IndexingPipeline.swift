@@ -1826,6 +1826,52 @@ public actor IndexingPipeline {
         try fetchCache(volumeId: volumeId, documentId: documentId)?.bodyText
     }
 
+    /// Returns the structured `date_iso` value for each of the given document keys.
+    ///
+    /// Sources `document_dates.date_iso` — the canonical ISO 8601 date string
+    /// (typically `yyyy-MM-dd`, occasionally just `yyyy` for partial-precision
+    /// dates). Used by `SearchService` to attach a sortable date to each
+    /// `SearchResult` so the macOS search window's date-asc / date-desc sort
+    /// orders results chronologically instead of by the free-text dateline.
+    ///
+    /// One batched SQL statement with an `IN (...)` clause is used; the call
+    /// chunks at 400 keys to stay within SQLite's 999-host-parameter cap.
+    /// Documents not present in `document_dates` (e.g. genuinely undated, or
+    /// volumes not yet indexed) are absent from the returned dictionary —
+    /// callers should treat that as a missing date and sort accordingly.
+    ///
+    /// - Parameter keys: `(volumeId, documentId)` pairs to look up.
+    /// - Returns: Dictionary mapping `"volumeId/documentId"` → date_iso string.
+    public func documentDates(
+        for keys: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        guard !keys.isEmpty else { return [:] }
+        var out: [String: String] = [:]
+        let chunkSize = 400
+        for chunk in stride(from: 0, to: keys.count, by: chunkSize)
+                .map({ Array(keys[$0..<min($0 + chunkSize, keys.count)]) }) {
+            let composite = chunk.map { "\($0.volumeId)/\($0.documentId)" }
+            let placeholders = composite.map { _ in "?" }.joined(separator: ", ")
+            let sql = """
+                SELECT volume_id || '/' || document_id, date_iso
+                FROM document_dates
+                WHERE volume_id || '/' || document_id IN (\(placeholders))
+                AND date_iso IS NOT NULL
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, key) in composite.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                    out[k] = d
+                }
+            }
+        }
+        return out
+    }
+
     /// Returns the unstemmed `body_text` for each of the given document keys.
     ///
     /// The values come from `document_cache.body_text`, which stores the original

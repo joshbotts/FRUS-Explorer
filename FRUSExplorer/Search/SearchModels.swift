@@ -169,6 +169,12 @@ public struct SearchParameters: Sendable, Equatable {
 /// Version history:
 ///   1.0 — Session 09: initial implementation
 ///   1.1 — Session 38: `isEditorialNote` field added
+///   1.2 — Session 122: `dateISO` field added. Populated from
+///          `document_dates.date_iso` (e.g. `"1969-02-15"`). Used by the macOS
+///          search window's date-asc / date-desc sort so results are ordered
+///          chronologically rather than by the free-text `dateline` string,
+///          which begins with the place of authorship and a textual month name
+///          and therefore cannot be sorted as a date.
 public struct SearchResult: Sendable, Identifiable {
 
     /// Document identifier (e.g. `"d1"`), unique within its volume.
@@ -184,7 +190,14 @@ public struct SearchResult: Sendable, Identifiable {
     public let header: String
 
     /// Dateline string (place and date of authorship), if present.
+    /// This is a free-text TEI value like `"Washington, March 5, 1969"` and is
+    /// intended for **display only**. Do not sort on it — use `dateISO` instead.
     public let dateline: String?
+
+    /// Canonical ISO 8601 date string from `document_dates.date_iso`, e.g.
+    /// `"1969-02-15"` or (for partial-precision dates) `"1969"`. Sorts correctly
+    /// as a string. `nil` for genuinely undated documents.
+    public let dateISO: String?
 
     /// Source note describing archival provenance, if present.
     public let sourceNote: String?
@@ -212,6 +225,7 @@ public struct SearchResult: Sendable, Identifiable {
         documentNumber: String? = nil,
         header: String,
         dateline: String? = nil,
+        dateISO: String? = nil,
         sourceNote: String? = nil,
         snippet: String,
         bm25Score: Double,
@@ -224,6 +238,7 @@ public struct SearchResult: Sendable, Identifiable {
         self.documentNumber = documentNumber
         self.header = header
         self.dateline = dateline
+        self.dateISO = dateISO
         self.sourceNote = sourceNote
         self.snippet = snippet
         self.bm25Score = bm25Score

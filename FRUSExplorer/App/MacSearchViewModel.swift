@@ -176,14 +176,47 @@ final class MacSearchViewModel {
     /// true uncapped total via `totalMatchCount`.
     static let searchHardLimit: Int = 7_500
 
+    /// Returns `results` ordered according to `sortOrder`.
+    ///
+    /// Date sorting uses the structured `dateISO` value (`yyyy-MM-dd`, from
+    /// `document_dates.date_iso`) — NOT the raw `dateline` string, which begins
+    /// with a place name and a textual month and therefore cannot be sorted
+    /// chronologically. Documents without a stored date are pushed to the **end**
+    /// of the list in both ascending and descending order so the dated stream
+    /// remains contiguous (mirrors history.state.gov's `empty greatest`/`empty
+    /// least` XQuery behaviour).
+    ///
+    /// Ties on the ISO date are broken by BM25 score (more relevant first) so
+    /// the order within a single day is stable and meaningful.
     var allSortedResults: [SearchResult] {
         switch sortOrder {
         case .relevance:
             return results
         case .dateAscending:
-            return results.sorted { ($0.dateline ?? "") < ($1.dateline ?? "") }
+            return results.sorted { Self.dateOrder($0, $1, ascending: true) }
         case .dateDescending:
-            return results.sorted { ($0.dateline ?? "") > ($1.dateline ?? "") }
+            return results.sorted { Self.dateOrder($0, $1, ascending: false) }
+        }
+    }
+
+    /// Tuple comparator for date-asc / date-desc. Undated rows always go last;
+    /// ties are broken by BM25 score (lower is better, so ascending bm25 = more
+    /// relevant first).
+    private static func dateOrder(
+        _ lhs: SearchResult,
+        _ rhs: SearchResult,
+        ascending: Bool
+    ) -> Bool {
+        switch (lhs.dateISO, rhs.dateISO) {
+        case let (a?, b?):
+            if a == b { return lhs.bm25Score < rhs.bm25Score }
+            return ascending ? a < b : a > b
+        case (.some, .none):
+            return true                      // lhs dated → comes before undated rhs
+        case (.none, .some):
+            return false                     // lhs undated → goes after dated rhs
+        case (.none, .none):
+            return lhs.bm25Score < rhs.bm25Score
         }
     }
 
