@@ -44,6 +44,8 @@ import SwiftUI
 /// Version history:
 ///   1.0 — New UI scaffolding
 ///   1.1 — Session 99: Analytics toolbar button; opens frus.analytics Window
+///   1.2 — Session 120: CitationLookupView sheet wired to appState.showCitationLookup
+///          so the menu command (⌘⇧F) and any code path that sets the flag works on macOS
 @MainActor
 struct MainWindowView: View {
 
@@ -112,6 +114,11 @@ struct MainWindowView: View {
         .onChange(of: appState.pendingSearch) { _, params in
             guard params != nil else { return }
             openWindow(id: "frus.search")
+        }
+        // Citation Lookup sheet — responds to both the menu command (⌘⇧F) and any
+        // code that sets appState.showCitationLookup = true.
+        .sheet(isPresented: $appStateBindable.showCitationLookup) {
+            CitationLookupView()
         }
     }
 

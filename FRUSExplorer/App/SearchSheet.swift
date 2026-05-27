@@ -52,12 +52,15 @@ import SwiftUI
 ///   1.3 — Session 120: result-count label shows true uncapped total; over-cap advisory
 ///          recommends narrowing by date; result row uses TEI-derived snippet with two
 ///          full lines of surrounding context (no stemmed-token leakage)
+///   1.4 — Session 120: "Find by Citation" button surfaces CitationLookupView in the
+///          search window so macOS users have a direct entry point
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
 
     @State private var searchVM = MacSearchViewModel()
     @State private var showAdvancedFilters = false
+    @State private var showCitationLookup = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -125,6 +128,9 @@ struct MacSearchWindowView: View {
                 SearchFilterView(vm: filterVM)
             }
         }
+        .sheet(isPresented: $showCitationLookup) {
+            CitationLookupView()
+        }
     }
 
     // MARK: - Search Input Row
@@ -176,6 +182,23 @@ struct MacSearchWindowView: View {
             .help(String(
                 localized: "search.tips.help",
                 defaultValue: "Show or hide search-syntax tips: quoted phrases, OR, exclusion, date filters, and stemming"
+            ))
+
+            Button {
+                showCitationLookup = true
+            } label: {
+                Label(
+                    String(localized: "search.citationLookup.button",
+                           defaultValue: "Find by Citation"),
+                    systemImage: "doc.text.magnifyingglass"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(String(
+                localized: "search.citationLookup.help",
+                defaultValue: "Resolve a pasted or manually entered FRUS citation to a specific document"
             ))
         }
     }

@@ -33,6 +33,8 @@ enum DocumentSheet: Identifiable {
     case summarizePromptPicker
     case sourceExplorer(String)
     case editNote(ResearchNote)
+    /// User-tag picker — lets the user toggle or create document-level tags on iOS.
+    case tagPicker
 
     var id: String {
         switch self {
@@ -45,6 +47,7 @@ enum DocumentSheet: Identifiable {
         case .summarizePromptPicker:           return "summarizePromptPicker"
         case .sourceExplorer:                  return "sourceExplorer"
         case .editNote(let note):              return "editNote-\(note.id)"
+        case .tagPicker:                       return "tagPicker"
         }
     }
 }
@@ -114,6 +117,8 @@ enum DocumentSheet: Identifiable {
 ///   2.8 — Session 110: Replace HStack notes panel with .inspector(isPresented:) — system-
 ///          managed width, collapsible; Notes toggle button in .topBarLeading (iPad only);
 ///          toggleHighlightMode() closes inspector; remove iPadDocumentLayout HStack
+///   2.9 — Session 120: DocumentSheet.tagPicker added; tag toolbar button wired to show
+///          TagPickerSheetView (replaces empty Session-14 stub on iOS)
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -407,6 +412,8 @@ struct DocumentView: View {
                 )
             case .sourceExplorer(let note):
                 SourceExplorerView(rawSourceNote: note)
+            case .tagPicker:
+                TagPickerSheetView(entry: entry)
             }
         }
         .sheet(isPresented: $showHighlightColorPicker) {
@@ -613,7 +620,7 @@ struct DocumentView: View {
 
                 // 2. Tag document (direct — fast single-tap)
                 Button {
-                    // Wired in Session 14
+                    activeSheet = .tagPicker
                 } label: {
                     Label(
                         String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
@@ -1462,6 +1469,102 @@ private struct GlossDetailSheet: View {
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 220)
         #endif
+    }
+}
+
+// MARK: - TagPickerSheetView (iOS)
+
+/// iOS document-level user-tag picker.
+///
+/// Lists all `UserTag` records from SwiftData and lets the user toggle which tags
+/// apply to this document. A "New Tag" field lets the user create tags inline.
+/// Presented from `DocumentView`'s toolbar "Tag Document" button.
+///
+/// Version history:
+///   1.0 — Session 120: initial implementation; replaces empty Session-14 stub
+private struct TagPickerSheetView: View {
+
+    let entry: DocumentBrowserEntry
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \UserTag.name) private var allTags: [UserTag]
+    @State private var selectedTagIds: Set<UUID> = []
+    @State private var newTagName: String = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if allTags.isEmpty {
+                    Section {
+                        Text(String(localized: "document.tags.empty",
+                                    defaultValue: "No tags yet. Type a name below to create one."))
+                            .foregroundStyle(.secondary)
+                            .font(.callout)
+                    }
+                } else {
+                    Section(String(localized: "document.tags.yourTags",
+                                   defaultValue: "Your Tags")) {
+                        ForEach(allTags) { tag in
+                            Toggle(isOn: Binding(
+                                get: { selectedTagIds.contains(tag.id) },
+                                set: { on in
+                                    if on { selectedTagIds.insert(tag.id) }
+                                    else  { selectedTagIds.remove(tag.id) }
+                                }
+                            )) {
+                                Text(tag.name)
+                            }
+                        }
+                    }
+                }
+
+                Section(String(localized: "document.tags.newTag",
+                               defaultValue: "New Tag")) {
+                    HStack {
+                        TextField(
+                            String(localized: "document.tags.newTag.placeholder",
+                                   defaultValue: "Tag name…"),
+                            text: $newTagName
+                        )
+                        .onSubmit { createTag() }
+                        Button(
+                            String(localized: "document.tags.addButton",
+                                   defaultValue: "Add"),
+                            action: createTag
+                        )
+                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+            }
+            .navigationTitle(
+                String(
+                    localized: "document.tags.sheet.title",
+                    defaultValue: "Tags — \(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)"
+                )
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "document.tags.cancel",
+                                  defaultValue: "Cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "document.tags.done",
+                                  defaultValue: "Done")) { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func createTag() {
+        let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let tag = UserTag(name: name)
+        modelContext.insert(tag)
+        selectedTagIds.insert(tag.id)
+        newTagName = ""
     }
 }
 
