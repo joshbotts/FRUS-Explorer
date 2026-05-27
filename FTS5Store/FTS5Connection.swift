@@ -66,6 +66,9 @@ final class FTS5Connection {
         // Keep temporary structures (sort buffers, CTE materializations) in RAM.
         // Avoids the overhead of creating a transient temp-file for short-lived data.
         try exec("PRAGMA temp_store=MEMORY")
+        // Increase page cache to 8 MB (negative value = kibibytes).
+        // Reduces re-reads of hot FTS5 index and B-tree pages between queries.
+        try exec("PRAGMA cache_size = -8000")
     }
 
     // MARK: - Schema Creation
