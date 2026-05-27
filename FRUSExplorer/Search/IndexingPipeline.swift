@@ -104,6 +104,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          doesn't appear to stall during the 30–60 s optimise phase. Previously the
 ///          only completion signal was on the legacy `progressContinuation` stream,
 ///          which `AppState.connectIndexingProgress` does not observe.
+///   2.7 — Session 123: search performance pass:
+///          • `documentDates` + `documentBodyTexts` use CTE VALUES joins instead of
+///            `volume_id || '/' || document_id IN (…)` — composite PK index now used
+///            instead of a full table scan (83k-row scan → 400-row index lookup per chunk).
+///          • `documentBodyTextsAndDates` combined function fetches both values in one
+///            SQL statement, halving actor round-trips during search post-processing.
+///          • `PRAGMA temp_store=MEMORY` added to keep CTE materializations in RAM.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1540,6 +1547,8 @@ public actor IndexingPipeline {
         }
         try exec("PRAGMA journal_mode=WAL")
         try exec("PRAGMA synchronous=NORMAL")
+        // Keep temporary structures (sort buffers, CTE materializations) in RAM.
+        try exec("PRAGMA temp_store=MEMORY")
         try exec("""
             CREATE TABLE IF NOT EXISTS cross_references (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1861,8 +1870,11 @@ public actor IndexingPipeline {
     /// `SearchResult` so the macOS search window's date-asc / date-desc sort
     /// orders results chronologically instead of by the free-text dateline.
     ///
-    /// One batched SQL statement with an `IN (...)` clause is used; the call
-    /// chunks at 400 keys to stay within SQLite's 999-host-parameter cap.
+    /// Uses a `WITH keys(v, d) AS (VALUES …)` CTE joined against the
+    /// `document_dates` composite primary key so SQLite performs index point-lookups
+    /// instead of a full table scan. Each chunk of 400 pairs binds 800 parameters
+    /// (well within the 999-parameter limit).
+    ///
     /// Documents not present in `document_dates` (e.g. genuinely undated, or
     /// volumes not yet indexed) are absent from the returned dictionary —
     /// callers should treat that as a missing date and sort accordingly.
@@ -1874,21 +1886,23 @@ public actor IndexingPipeline {
     ) throws -> [String: String] {
         guard !keys.isEmpty else { return [:] }
         var out: [String: String] = [:]
+        // 400 pairs × 2 params/pair = 800 — safely under the SQLite 999-variable cap.
         let chunkSize = 400
         for chunk in stride(from: 0, to: keys.count, by: chunkSize)
                 .map({ Array(keys[$0..<min($0 + chunkSize, keys.count)]) }) {
-            let composite = chunk.map { "\($0.volumeId)/\($0.documentId)" }
-            let placeholders = composite.map { _ in "?" }.joined(separator: ", ")
+            let valuePlaceholders = chunk.map { _ in "(?, ?)" }.joined(separator: ", ")
             let sql = """
-                SELECT volume_id || '/' || document_id, date_iso
-                FROM document_dates
-                WHERE volume_id || '/' || document_id IN (\(placeholders))
-                AND date_iso IS NOT NULL
+                WITH keys(v, d) AS (VALUES \(valuePlaceholders))
+                SELECT dc.volume_id || '/' || dc.document_id, dc.date_iso
+                FROM document_dates dc
+                JOIN keys ON dc.volume_id = keys.v AND dc.document_id = keys.d
+                WHERE dc.date_iso IS NOT NULL
                 """
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
-            for (i, key) in composite.enumerated() {
-                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            for (i, pair) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(2 * i + 1), pair.volumeId,   -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, Int32(2 * i + 2), pair.documentId, -1, SQLITE_TRANSIENT_IP)
             }
             while sqlite3_step(stmt) == SQLITE_ROW {
                 if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
@@ -1908,10 +1922,10 @@ public actor IndexingPipeline {
     /// column contains stemmed tokens (`negoti` instead of `negotiating`) and would
     /// mislead the reader if surfaced directly.
     ///
-    /// One SQL statement with an `IN (?, ?, …)` clause is used, so the call cost
-    /// scales as a single SQLite round-trip regardless of result count. SQLite's
-    /// default variable cap of 999 is respected by chunking; callers requesting
-    /// thousands of documents will incur a small number of sequential queries.
+    /// Uses a `WITH keys(v, d) AS (VALUES …)` CTE joined against the
+    /// `document_cache` composite primary key so SQLite performs index point-lookups
+    /// instead of a full table scan. Prefer `documentBodyTextsAndDates(for:)` when
+    /// dates are also needed — it fetches both in a single query.
     ///
     /// - Parameter keys: `(volumeId, documentId)` pairs to look up.
     /// - Returns: Dictionary mapping `"volumeId/documentId"` → body text.
@@ -1921,21 +1935,22 @@ public actor IndexingPipeline {
     ) throws -> [String: String] {
         guard !keys.isEmpty else { return [:] }
         var out: [String: String] = [:]
-        // Chunk to stay inside SQLite's default 999 host-parameter cap.
+        // 400 pairs × 2 params/pair = 800 — safely under the SQLite 999-variable cap.
         let chunkSize = 400
         for chunk in stride(from: 0, to: keys.count, by: chunkSize)
                 .map({ Array(keys[$0..<min($0 + chunkSize, keys.count)]) }) {
-            let composite = chunk.map { "\($0.volumeId)/\($0.documentId)" }
-            let placeholders = composite.map { _ in "?" }.joined(separator: ", ")
+            let valuePlaceholders = chunk.map { _ in "(?, ?)" }.joined(separator: ", ")
             let sql = """
-                SELECT volume_id || '/' || document_id, body_text
-                FROM document_cache
-                WHERE volume_id || '/' || document_id IN (\(placeholders))
+                WITH keys(v, d) AS (VALUES \(valuePlaceholders))
+                SELECT dc.volume_id || '/' || dc.document_id, dc.body_text
+                FROM document_cache dc
+                JOIN keys ON dc.volume_id = keys.v AND dc.document_id = keys.d
                 """
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
-            for (i, key) in composite.enumerated() {
-                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            for (i, pair) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(2 * i + 1), pair.volumeId,   -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, Int32(2 * i + 2), pair.documentId, -1, SQLITE_TRANSIENT_IP)
             }
             while sqlite3_step(stmt) == SQLITE_ROW {
                 if let k = auxColumnString(stmt, 0), let b = auxColumnString(stmt, 1) {
@@ -1944,6 +1959,58 @@ public actor IndexingPipeline {
             }
         }
         return out
+    }
+
+    /// Returns both `body_text` (from `document_cache`) and `date_iso` (from
+    /// `document_dates`) for each of the given document keys in a single SQL round-trip.
+    ///
+    /// This is the preferred lookup for search post-processing because it halves the
+    /// number of actor hops and SQL statements compared to calling `documentBodyTexts`
+    /// and `documentDates` separately. A CTE VALUES join is used so SQLite resolves
+    /// each pair via the composite primary key index rather than scanning the table.
+    ///
+    /// The returned `dates` dictionary omits entries for documents whose `date_iso`
+    /// is NULL (genuinely undated documents, or volumes not yet indexed).
+    ///
+    /// - Parameter keys: `(volumeId, documentId)` pairs to look up.
+    /// - Returns:
+    ///   - `bodies`: `"volumeId/documentId"` → unstemmed body text.
+    ///   - `dates`:  `"volumeId/documentId"` → ISO 8601 date string (where available).
+    public func documentBodyTextsAndDates(
+        for keys: [(volumeId: String, documentId: String)]
+    ) throws -> (bodies: [String: String], dates: [String: String]) {
+        guard !keys.isEmpty else { return ([:], [:]) }
+        var bodies: [String: String] = [:]
+        var dates:  [String: String] = [:]
+        // 400 pairs × 2 params/pair = 800 — safely under the SQLite 999-variable cap.
+        let chunkSize = 400
+        for chunk in stride(from: 0, to: keys.count, by: chunkSize)
+                .map({ Array(keys[$0..<min($0 + chunkSize, keys.count)]) }) {
+            let valuePlaceholders = chunk.map { _ in "(?, ?)" }.joined(separator: ", ")
+            let sql = """
+                WITH keys(v, d) AS (VALUES \(valuePlaceholders))
+                SELECT dc.volume_id || '/' || dc.document_id,
+                       dc.body_text,
+                       dd.date_iso
+                FROM document_cache dc
+                LEFT JOIN document_dates dd
+                    ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
+                JOIN keys ON dc.volume_id = keys.v AND dc.document_id = keys.d
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, pair) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(2 * i + 1), pair.volumeId,   -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, Int32(2 * i + 2), pair.documentId, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let k = auxColumnString(stmt, 0),
+                      let b = auxColumnString(stmt, 1) else { continue }
+                bodies[k] = b
+                if let d = auxColumnString(stmt, 2) { dates[k] = d }
+            }
+        }
+        return (bodies: bodies, dates: dates)
     }
 
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {

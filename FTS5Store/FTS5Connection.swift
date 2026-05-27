@@ -63,6 +63,9 @@ final class FTS5Connection {
     private func enableWAL() throws {
         try exec("PRAGMA journal_mode=WAL")
         try exec("PRAGMA synchronous=NORMAL")
+        // Keep temporary structures (sort buffers, CTE materializations) in RAM.
+        // Avoids the overhead of creating a transient temp-file for short-lived data.
+        try exec("PRAGMA temp_store=MEMORY")
     }
 
     // MARK: - Schema Creation

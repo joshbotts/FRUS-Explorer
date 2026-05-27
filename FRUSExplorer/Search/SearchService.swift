@@ -41,6 +41,10 @@ import Foundation
 ///   1.4 — Session 122: `dateISO` populated on every `SearchResult` from
 ///          `document_dates.date_iso` via a batched lookup. Enables chronologically
 ///          correct date-asc / date-desc sorting in the macOS search window.
+///   1.5 — Session 123: performance pass — `rebuildSnippetsFromTEI` + `attachDates`
+///          replaced by `rebuildSnippetsAndAttachDates`, which fetches body text and
+///          dates together via `IndexingPipeline.documentBodyTextsAndDates(for:)`.
+///          Halves actor round-trips and SQL statements for the post-processing phase.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -149,9 +153,9 @@ public actor SearchService {
                 documentNumber: nil,          // populated from document_cache in a future session
                 header: raw.header,
                 dateline: raw.dateline,
-                dateISO: nil,                 // attached by attachDates(_:) below
+                dateISO: nil,                 // populated by rebuildSnippetsAndAttachDates below
                 sourceNote: raw.sourceNote,
-                snippet: raw.snippet,
+                snippet: raw.snippet,         // empty string (FTS5 snippet() removed); replaced below
                 bm25Score: raw.bm25Score,
                 subjectTagIds: raw.subjectTagIds,
                 userTagIds: raw.userTagIds,
@@ -161,18 +165,14 @@ public actor SearchService {
             if filtered.count >= effectiveLimit { break }
         }
 
-        // Replace FTS5's stemmed-token snippets with TEI-derived snippets pulled from
-        // `document_cache.body_text` (the original, unstemmed AST text). The match
-        // window aims for two lines of surrounding context. Falls back to the FTS5
-        // snippet on cache miss.
-        let withSnippets = await rebuildSnippetsFromTEI(
+        // Build TEI-derived snippets and attach ISO dates in a single actor round-trip.
+        // `documentBodyTextsAndDates` fetches body_text + date_iso with one CTE join,
+        // replacing what was previously two sequential calls (rebuildSnippetsFromTEI
+        // + attachDates) with two separate SQL queries and two actor hops.
+        return await rebuildSnippetsAndAttachDates(
             results: filtered,
             queryTerms: positiveTerms(from: parameters)
         )
-
-        // Attach the canonical ISO date to every result so the macOS search
-        // window's date-asc / date-desc sort can order results chronologically.
-        return await attachDates(to: withSnippets)
     }
 
     /// Returns the total number of results matching `parameters` (for pagination UI).
@@ -265,94 +265,70 @@ public actor SearchService {
         return terms.filter { seen.insert($0.lowercased()).inserted }
     }
 
-    /// Populates `SearchResult.dateISO` from the `document_dates` auxiliary
-    /// table for every result in `results`.
+    /// Builds TEI-derived snippets and attaches ISO dates to every result in a
+    /// single `IndexingPipeline` round-trip.
     ///
-    /// Uses `pipeline.documentDates(for:)`, which issues one batched
-    /// `IN (?, ?, …)` query per chunk of 400 keys — fast even for the 7,500-row
-    /// macOS search cap. Results without a stored date keep `dateISO == nil`;
-    /// downstream sort code is responsible for placing them appropriately
-    /// (typically at the end of the list in both ascending and descending order).
-    private func attachDates(to results: [SearchResult]) async -> [SearchResult] {
-        guard !results.isEmpty else { return results }
-        let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-        let dates: [String: String]
-        do {
-            dates = try await pipeline.documentDates(for: keys)
-        } catch {
-            #if DEBUG
-            print("[SearchService] documentDates failed: \(error) — date sort will degrade")
-            #endif
-            return results
-        }
-        return results.map { result in
-            let key = "\(result.volumeId)/\(result.documentId)"
-            return SearchResult(
-                documentId: result.documentId,
-                volumeId: result.volumeId,
-                documentNumber: result.documentNumber,
-                header: result.header,
-                dateline: result.dateline,
-                dateISO: dates[key],
-                sourceNote: result.sourceNote,
-                snippet: result.snippet,
-                bm25Score: result.bm25Score,
-                subjectTagIds: result.subjectTagIds,
-                userTagIds: result.userTagIds,
-                isEditorialNote: result.isEditorialNote
-            )
-        }
-    }
-
-    /// Replaces each result's `snippet` with a TEI-derived context window.
+    /// Calls `pipeline.documentBodyTextsAndDates(for:)`, which issues one CTE-join
+    /// query per chunk of 400 keys to fetch both `body_text` (unstemmed, from
+    /// `document_cache`) and `date_iso` (from `document_dates`) simultaneously.
+    /// This replaces the previous two-step pattern (`rebuildSnippetsFromTEI` +
+    /// `attachDates`) which required two separate actor hops and SQL statements.
     ///
-    /// For every result the unstemmed body text is fetched from
-    /// `document_cache.body_text` via a single batched `IN (...)` query. The body
-    /// text is scanned for the first word whose Porter stem matches any positive
-    /// query term's stem; ~400 characters of surrounding context (two lines at the
-    /// macOS list font size) is extracted and the matched word is wrapped in
-    /// `<b>…</b>` so `SnippetView` highlights it without ever exposing a stemmed
-    /// token to the user.
+    /// **Snippet building**: the body text is scanned word-by-word; the first word
+    /// whose Porter stem matches any positive query term is wrapped in `<b>…</b>`
+    /// with ~400 characters of surrounding context (approximately two lines at the
+    /// macOS list font).
     ///
-    /// Documents not present in `document_cache` (e.g. just-indexed volumes whose
-    /// cache row didn't land yet) fall back to the FTS5 snippet so highlighting is
-    /// never blank.
-    private func rebuildSnippetsFromTEI(
+    /// **Date attachment**: `dateISO` is populated from `date_iso`; results without
+    /// a stored date keep `dateISO == nil` and are placed at the end of sorted lists.
+    ///
+    /// **Cache miss fallback**: documents absent from `document_cache` receive a
+    /// snippet of `header · dateline` so the result row is never blank.
+    private func rebuildSnippetsAndAttachDates(
         results: [SearchResult],
         queryTerms: [String]
     ) async -> [SearchResult] {
-        guard !results.isEmpty, !queryTerms.isEmpty else { return results }
+        guard !results.isEmpty else { return results }
 
-        // Stem each positive term once; the same stems are reused across all rows.
-        let stemmedQueryTerms = queryTerms.map { PorterStemmer.stem($0.lowercased()) }
+        // Stem each positive term once; the same set is reused across all rows.
+        let stemmedQueryTerms = queryTerms.isEmpty ? [] : queryTerms.map { PorterStemmer.stem($0.lowercased()) }
 
-        // Batched fetch — one round-trip into SQLite for every chunk of 400 docs.
         let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
         let bodies: [String: String]
+        let dates:  [String: String]
         do {
-            bodies = try await pipeline.documentBodyTexts(for: keys)
+            (bodies, dates) = try await pipeline.documentBodyTextsAndDates(for: keys)
         } catch {
             #if DEBUG
-            print("[SearchService] documentBodyTexts failed: \(error) — keeping FTS5 snippets")
+            print("[SearchService] documentBodyTextsAndDates failed: \(error) — snippets and date sort will degrade")
             #endif
             return results
         }
 
         return results.map { result in
             let key = "\(result.volumeId)/\(result.documentId)"
-            guard let body = bodies[key], !body.isEmpty else { return result }
-            let snippet = Self.makeContextSnippet(
-                body: body,
-                stemmedTerms: stemmedQueryTerms,
-                contextRadius: 200
-            ) ?? result.snippet
+            let dateISO = dates[key]
+
+            let snippet: String
+            if let body = bodies[key], !body.isEmpty, !stemmedQueryTerms.isEmpty {
+                // Build TEI-derived context snippet; falls back to header·dateline on miss.
+                snippet = Self.makeContextSnippet(
+                    body: body,
+                    stemmedTerms: stemmedQueryTerms,
+                    contextRadius: 200
+                ) ?? headerFallbackSnippet(result)
+            } else {
+                // Cache miss or no query terms: show header + dateline as minimal context.
+                snippet = headerFallbackSnippet(result)
+            }
+
             return SearchResult(
                 documentId: result.documentId,
                 volumeId: result.volumeId,
                 documentNumber: result.documentNumber,
                 header: result.header,
                 dateline: result.dateline,
-                dateISO: result.dateISO,
+                dateISO: dateISO,
                 sourceNote: result.sourceNote,
                 snippet: snippet,
                 bm25Score: result.bm25Score,
@@ -361,6 +337,17 @@ public actor SearchService {
                 isEditorialNote: result.isEditorialNote
             )
         }
+    }
+
+    /// Builds a minimal fallback snippet from a result's header and dateline fields.
+    ///
+    /// Used when the `document_cache` body text is unavailable for a result (e.g. a
+    /// volume that was just indexed and whose cache row hasn't landed yet). Showing
+    /// the header and dateline is preferable to an empty snippet row.
+    private func headerFallbackSnippet(_ result: SearchResult) -> String {
+        [result.header, result.dateline]
+            .compactMap { s in (s?.isEmpty == false) ? s : nil }
+            .joined(separator: " · ")
     }
 
     /// Builds a `<b>…</b>`-marked context snippet from a document body string.
@@ -372,7 +359,7 @@ public actor SearchService {
     /// are added when the body extends beyond the window.
     ///
     /// Returns `nil` if no word in `body` matches any stemmed term — callers should
-    /// fall back to the FTS5 snippet so the result row is never blank.
+    /// fall back to the header/dateline fallback so the result row is never blank.
     ///
     /// - Parameters:
     ///   - body: The unstemmed, plain-text document body to search.

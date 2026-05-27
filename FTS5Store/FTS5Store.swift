@@ -59,6 +59,12 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///   1.3 — Session 119: `matchedDocumentKeys` default limit raised from 20,000 to
 ///          500,000 so corpus-wide analytics cover the full FRUS series (~83,000 docs
 ///          maximum) for high-frequency terms like "security" or "rights"
+///   1.4 — Session 123: `search` no longer calls `snippet()`. FTS5's `snippet()`
+///          function traversed the inverted index and extracted context per row, but
+///          `SearchService` replaced every snippet with TEI-derived body text anyway.
+///          Skipping it eliminates the most expensive per-row operation for large
+///          result sets. `FTS5Result.snippet` now carries an empty string; callers
+///          that care about snippets (e.g. `SearchService`) must supply their own.
 public actor FTS5Store {
 
     private let connection: FTS5Connection
@@ -202,11 +208,15 @@ public actor FTS5Store {
             throw FTS5Error.emptyQuery
         }
 
+        // Note: snippet() is intentionally omitted. SearchService replaces every
+        // FTS5 snippet with TEI-derived body text via documentBodyTextsAndDates(),
+        // making snippet() pure overhead. Column 7 (snip) is a fixed empty string
+        // so the column offsets of subsequent result-row bindings are unchanged.
         let sql = """
         SELECT
             document_id, volume_id, header, dateline, source_note,
             subject_tag_ids, user_tag_ids,
-            snippet(\(schema.tableName), 6, '<b>', '</b>', '…', 3) AS snip,
+            '' AS snip,
             bm25(\(schema.tableName)) AS score,
             is_editorial_note
         FROM \(schema.tableName)

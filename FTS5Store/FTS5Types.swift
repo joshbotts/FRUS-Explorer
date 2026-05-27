@@ -167,13 +167,15 @@ public struct FTS5Document: Sendable {
 /// Results are ordered by BM25 relevance score (lower = more relevant; SQLite's
 /// `bm25()` function returns negative values, so sort ascending for best-first).
 ///
-/// The `snippet` field contains the output of SQLite's `snippet()` function with
-/// `<b>` / `</b>` delimiters around matching terms. The surrounding context window
-/// is three tokens on each side of the first match.
+/// The `snippet` field is always an empty string. `FTS5Store.search` no longer
+/// calls `snippet()` because `SearchService` replaces every snippet with TEI-derived
+/// body text via `IndexingPipeline.documentBodyTextsAndDates(for:)`. Callers that
+/// need a user-visible context snippet are responsible for building their own.
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
 ///   1.1 — Session 38: `isEditorialNote` field added
+///   1.2 — Session 123: `snippet` field is now always "" (FTS5 snippet() removed)
 public struct FTS5Result: Sendable {
     /// Document identifier (matches `FTS5Document.id`).
     public let documentId: String
