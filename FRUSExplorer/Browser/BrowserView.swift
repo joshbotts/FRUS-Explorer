@@ -49,6 +49,8 @@ import SwiftUI
 ///          search tools grouped as .primaryAction, download filter as .secondaryAction
 ///          with Label; iPad splitLayout retains only picker + filter (tabs cover the rest)
 ///   1.9 — Session 61: About sheet removed; About is now a Window scene (F-014)
+///   2.0 — Session 121: suppress BrowserBreadcrumbBar at .document level; multi-row
+///          breadcrumb path was blocking document header on narrow screens (iOS)
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -323,6 +325,14 @@ struct BrowserView: View {
     /// Using `AnyView` here erases structural identity. When `BrowserView.body` re-renders
     /// (triggered by any change to `vm.navigationPath`), SwiftUI cannot diff through `AnyView`
     /// and recreates the wrapped view, resetting `@State` and restarting document loading.
+    ///
+    /// ## Breadcrumb suppression at the document level
+    /// `BrowserBreadcrumbBar` is not shown when `level == .document`. A full-path breadcrumb
+    /// at the document level wraps to multiple rows on narrow screens (the `BreadcrumbFlowLayout`
+    /// path can reach 4–5 crumbs, each row ~36 pt, totalling ~100 pt). This tall bar sits as a
+    /// `.safeAreaInset` overlay and blocks the document header and initial body content. The
+    /// navigation bar title (inline document header) and the navigation back button are
+    /// sufficient for navigation once inside a document.
     @ViewBuilder
     private func levelView(for level: BrowserViewModel.BrowserLevel, vm: BrowserViewModel) -> some View {
         Group {
@@ -336,11 +346,16 @@ struct BrowserView: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            BrowserBreadcrumbBar(path: vm.navigationPath) { index in
-                if let index {
-                    vm.navigationPath = Array(vm.navigationPath.prefix(index + 1))
-                } else {
-                    vm.navigationPath = []
+            // Suppress the breadcrumb bar at the document level (see doc comment above).
+            if case .document = level {
+                EmptyView()
+            } else {
+                BrowserBreadcrumbBar(path: vm.navigationPath) { index in
+                    if let index {
+                        vm.navigationPath = Array(vm.navigationPath.prefix(index + 1))
+                    } else {
+                        vm.navigationPath = []
+                    }
                 }
             }
         }

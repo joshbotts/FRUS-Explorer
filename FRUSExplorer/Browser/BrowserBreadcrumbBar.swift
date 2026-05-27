@@ -23,12 +23,20 @@ import SwiftUI
 /// it floats below the navigation bar and scrolls content insets correctly on both
 /// `NavigationSplitView` (iPad/macOS) and `NavigationStack` (iPhone) layouts.
 ///
+/// ## Document-level suppression
+/// `BrowserView.levelView` does **not** inject this bar when the current level is
+/// `.document`. A full corpus-to-document path wraps to 2–3 rows on a narrow screen,
+/// occupying ~100 pt and blocking the document header. The navigation bar title and
+/// back button are sufficient once inside a document.
+///
 /// Version history:
 ///   1.0 — Session 32: initial implementation
 ///   1.1 — Session 50: replaced horizontal ScrollView with BreadcrumbFlowLayout so long
 ///          paths wrap to multiple lines instead of scrolling off-screen
 ///   1.2 — Session 56: expand interactive crumb tap targets to 44 pt minimum vertical
 ///          height (HIG requirement for touch targets on iOS)
+///   1.3 — Session 121: bar is suppressed at the document level in BrowserView.levelView
+///          to prevent the wrapped multi-row path from blocking document content
 struct BrowserBreadcrumbBar: View {
 
     let path: [BrowserViewModel.BrowserLevel]
