@@ -56,41 +56,65 @@ struct IndexingBannerView: View {
             Divider()
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Image(systemName: "square.and.arrow.down")
+                    // Swap the icon + label for the post-batch optimise phase so
+                    // the banner doesn't pin on "Indexing …" with a blank volumeId
+                    // for 30–60 s while FTS5 segments are merged.
+                    if update.stage == .optimizing {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: FRUSTheme.captionSize))
+                            .foregroundStyle(.secondary)
+
+                        Text(String(
+                            localized: "indexing.banner.finalizing",
+                            defaultValue: "Finalizing index…"
+                        ))
                         .font(.system(size: FRUSTheme.captionSize))
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
 
-                    Text(String(
-                        localized: "indexing.banner.label",
-                        defaultValue: "Indexing \(update.volumeId)…"
-                    ))
-                    .font(.system(size: FRUSTheme.captionSize))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                        Spacer()
 
-                    Spacer()
-
-                    if update.totalDocuments > 0 {
-                        ProgressView(
-                            value: Double(update.completedDocuments),
-                            total: Double(update.totalDocuments)
-                        )
-                        .progressViewStyle(.linear)
-                        .frame(width: 80)
-                        .tint(.accentColor)
-
-                        if let eta = etaString {
-                            Text(eta)
-                                .font(.system(size: FRUSTheme.captionSmallSize))
-                                .foregroundStyle(.tertiary)
-                                .monospacedDigit()
-                        }
-                    } else {
                         ProgressView()
                             .progressViewStyle(.linear)
                             .frame(width: 80)
                             .tint(.accentColor)
+                    } else {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: FRUSTheme.captionSize))
+                            .foregroundStyle(.secondary)
+
+                        Text(String(
+                            localized: "indexing.banner.label",
+                            defaultValue: "Indexing \(update.volumeId)…"
+                        ))
+                        .font(.system(size: FRUSTheme.captionSize))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                        Spacer()
+
+                        if update.totalDocuments > 0 {
+                            ProgressView(
+                                value: Double(update.completedDocuments),
+                                total: Double(update.totalDocuments)
+                            )
+                            .progressViewStyle(.linear)
+                            .frame(width: 80)
+                            .tint(.accentColor)
+
+                            if let eta = etaString {
+                                Text(eta)
+                                    .font(.system(size: FRUSTheme.captionSmallSize))
+                                    .foregroundStyle(.tertiary)
+                                    .monospacedDigit()
+                            }
+                        } else {
+                            ProgressView()
+                                .progressViewStyle(.linear)
+                                .frame(width: 80)
+                                .tint(.accentColor)
+                        }
                     }
                 }
 

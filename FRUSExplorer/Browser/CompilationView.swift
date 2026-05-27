@@ -360,6 +360,9 @@ struct CompilationView: View {
         case .storingBatch(let current, let total):
             return String(localized: "browser.compilation.indexing.stage.storingBatch",
                           defaultValue: "Storing batch \(current) of \(total)…")
+        case .optimizing:
+            return String(localized: "browser.compilation.indexing.stage.optimizing",
+                          defaultValue: "Finalizing index…")
         case .complete:
             return String(localized: "browser.compilation.indexing.stage.complete",
                           defaultValue: "Complete")

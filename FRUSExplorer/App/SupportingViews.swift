@@ -708,6 +708,21 @@ struct StatusBarView: View {
         }
 
         if let update = appState.currentIndexingProgress {
+            // Special case: during the post-batch FTS5 optimise phase the update
+            // carries an empty volumeId and stage == .optimizing. Render a clear
+            // "Finalizing index…" label so the status bar doesn't show
+            // "Indexing … (5/5)" with a blank volume name and a frozen-looking bar.
+            if update.stage == .optimizing {
+                return ActiveTask(
+                    label: String(
+                        localized: "indexing.queue.statusbar.finalizing",
+                        defaultValue: "Finalizing index…"
+                    ),
+                    systemImage: "wand.and.stars",
+                    progress: nil,  // indeterminate; optimise() has no sub-progress
+                    eta: nil
+                )
+            }
             let progress: Double? = update.totalDocuments > 0
                 ? Double(update.completedDocuments) / Double(update.totalDocuments)
                 : nil
@@ -898,41 +913,63 @@ private struct MacIndexingQueuePanel: View {
 
             Divider()
 
-            // Current volume progress
+            // Current volume progress (or batch-wide "Finalizing" state during
+            // the post-storage FTS5 optimise phase, when stage == .optimizing).
             VStack(alignment: .leading, spacing: 5) {
-                Text(update.volumeId)
-                    .font(.system(size: 11, weight: .medium))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                if update.totalDocuments > 0 {
-                    ProgressView(
-                        value: Double(update.completedDocuments),
-                        total: Double(update.totalDocuments)
-                    )
-                    .progressViewStyle(.linear)
-                    .tint(.accentColor)
-
-                    HStack {
+                if update.stage == .optimizing {
+                    Label {
                         Text(String(
-                            localized: "indexing.queue.mac.docs",
-                            defaultValue: "\(update.completedDocuments) / \(update.totalDocuments) docs"
+                            localized: "indexing.queue.mac.finalizing",
+                            defaultValue: "Finalizing index — applying optimisations…"
                         ))
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                        Spacer()
-                        if let eta = totalETAString {
-                            Text(eta)
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                                .monospacedDigit()
-                        }
+                        .font(.system(size: 11, weight: .medium))
+                    } icon: {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .controlSize(.mini)
                     }
+                    Text(String(
+                        localized: "indexing.queue.mac.finalizing.detail",
+                        defaultValue: "Merging FTS5 segments for \(update.totalDocuments.formatted()) indexed documents. This may take 30–60 seconds."
+                    ))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    ProgressView()
+                    Text(update.volumeId)
+                        .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                    if update.totalDocuments > 0 {
+                        ProgressView(
+                            value: Double(update.completedDocuments),
+                            total: Double(update.totalDocuments)
+                        )
                         .progressViewStyle(.linear)
-                        .controlSize(.small)
+                        .tint(.accentColor)
+
+                        HStack {
+                            Text(String(
+                                localized: "indexing.queue.mac.docs",
+                                defaultValue: "\(update.completedDocuments) / \(update.totalDocuments) docs"
+                            ))
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                            Spacer()
+                            if let eta = totalETAString {
+                                Text(eta)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                                    .monospacedDigit()
+                            }
+                        }
+                    } else {
+                        ProgressView()
+                            .progressViewStyle(.linear)
+                            .controlSize(.small)
+                    }
                 }
             }
 
@@ -2334,6 +2371,9 @@ private struct CorpusVolumeDetailSheet: View {
         case .storingBatch(let current, let total):
             return String(localized: "corpus.detail.indexing.stage.storingBatch",
                           defaultValue: "Storing batch \(current) of \(total)…")
+        case .optimizing:
+            return String(localized: "corpus.detail.indexing.stage.optimizing",
+                          defaultValue: "Finalizing index…")
         case .complete:
             return String(localized: "corpus.detail.indexing.stage.complete",
                           defaultValue: "Complete")

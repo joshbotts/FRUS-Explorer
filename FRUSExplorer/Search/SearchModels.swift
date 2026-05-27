@@ -264,6 +264,10 @@ public struct SearchResult: Sendable, Identifiable {
 /// Version history:
 ///   1.0 — Session 51: initial implementation
 ///   2.0 — Session 112: replace four-stage sequence with .reading / .storingBatch / .complete
+///   2.1 — Session 123: `.optimizing` case added so the UI can show progress during
+///          the post-batch FTS5 `optimize()` phase (30–60 s on a full corpus rebuild).
+///          Without this case the bulk-reindex UI appeared to stall on the last
+///          volume's final `.storingBatch` until `optimize()` returned.
 public enum IndexingStage: Sendable, Equatable {
     /// Single-pass XML parse: document text, dates, persons, and cross-references
     /// are all extracted simultaneously. `totalDocuments` is 0 until the parse
@@ -272,7 +276,14 @@ public enum IndexingStage: Sendable, Equatable {
     /// Batched SQLite writes: FTS5 rows, document cache, and auxiliary tables.
     /// `current` is the 1-based batch number; `total` is the total batch count.
     case storingBatch(current: Int, total: Int)
-    /// All stages are complete for this volume.
+    /// FTS5 `optimize()` is merging b-tree segments. Emitted once by
+    /// `indexAllVolumes` after every volume has finished storing and before the
+    /// final `.complete`. No sub-progress is available — the UI should show an
+    /// indeterminate spinner. Carries `volumeId == ""` because it is a
+    /// batch-wide phase, not per-volume.
+    case optimizing
+    /// All stages are complete for this volume (single-volume path) or for the
+    /// whole batch (bulk path). `volumeId == ""` in the bulk-completion case.
     case complete
 }
 

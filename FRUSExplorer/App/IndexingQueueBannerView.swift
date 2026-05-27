@@ -64,8 +64,12 @@ struct IndexingQueueBannerView: View {
             Divider()
             VStack(alignment: .leading, spacing: 2) {
                 mainRow
-                subtitleRow
-                if isExpanded { expandedList }
+                // Per-volume subtitle is suppressed during the batch-wide
+                // optimise phase because update.volumeId is empty then.
+                if update.stage != .optimizing {
+                    subtitleRow
+                    if isExpanded { expandedList }
+                }
             }
             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
             .padding(.vertical, 5)
@@ -78,21 +82,29 @@ struct IndexingQueueBannerView: View {
 
     private var mainRow: some View {
         HStack(spacing: 8) {
-            Image(systemName: "square.and.arrow.down.on.square")
+            Image(systemName: update.stage == .optimizing
+                  ? "wand.and.stars"
+                  : "square.and.arrow.down.on.square")
                 .font(.system(size: FRUSTheme.captionSize))
                 .foregroundStyle(.secondary)
 
-            Text(String(
-                localized: "indexing.queue.position",
-                defaultValue: "Volume \(queuePosition.current) of \(queuePosition.total)"
-            ))
+            Text(update.stage == .optimizing
+                 ? String(localized: "indexing.queue.finalizing",
+                          defaultValue: "Finalizing index…")
+                 : String(localized: "indexing.queue.position",
+                          defaultValue: "Volume \(queuePosition.current) of \(queuePosition.total)"))
             .font(.system(size: FRUSTheme.captionSize))
             .foregroundStyle(.secondary)
             .lineLimit(1)
 
             Spacer()
 
-            if update.totalDocuments > 0 {
+            if update.stage == .optimizing {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(width: 80)
+                    .tint(.accentColor)
+            } else if update.totalDocuments > 0 {
                 ProgressView(
                     value: Double(update.completedDocuments),
                     total: Double(update.totalDocuments)

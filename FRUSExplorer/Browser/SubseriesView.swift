@@ -423,6 +423,9 @@ private struct IndexingCapsule: View {
         case .storingBatch(let current, let total):
             return String(localized: "indexing.stage.storingBatch",
                           defaultValue: "Storing batch \(current) of \(total)…")
+        case .optimizing:
+            return String(localized: "indexing.stage.optimizing",
+                          defaultValue: "Finalizing index…")
         case .complete:
             return String(localized: "indexing.stage.complete", defaultValue: "Complete")
         }

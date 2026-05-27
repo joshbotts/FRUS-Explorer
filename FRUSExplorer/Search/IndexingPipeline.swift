@@ -99,6 +99,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///   2.5 — Session 119: `allDocumentDates()` — full-table scan returning every indexed
 ///          document's `date_iso`; used by `CorpusAnalyticsService` to bucket analytics
 ///          results by actual document date rather than volume start year
+///   2.6 — Session 123: emit `.optimizing` + `.complete` IndexingProgressUpdate events
+///          around the post-batch `fts5Store.optimize()` call so the bulk-reindex UI
+///          doesn't appear to stall during the 30–60 s optimise phase. Previously the
+///          only completion signal was on the legacy `progressContinuation` stream,
+///          which `AppState.connectIndexingProgress` does not observe.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -545,6 +550,17 @@ public actor IndexingPipeline {
         // written during the indexing run. With 552 volumes, this takes ~30–60s — but
         // calling it after each volume (the old behaviour) scaled to O(n²) overall and
         // was the root cause of 60+ minute indexing runs.
+        //
+        // IMPORTANT: emit `.optimizing` on progressStream BEFORE calling optimize() so the
+        // UI can swap to a "Finalizing index…" indeterminate spinner instead of appearing
+        // to stall on the last volume's final `.storingBatch` event for 30–60 s.
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: "",
+            stage: .optimizing,
+            completedDocuments: totalDocuments,
+            totalDocuments: totalDocuments,
+            docsPerSecond: 0
+        ))
         let optStart = Date()
         logger.info("indexAllVolumes: running optimize() after \(completedVolumes, privacy: .public) volumes")
         do {
@@ -554,6 +570,17 @@ public actor IndexingPipeline {
         } catch {
             logger.error("indexAllVolumes: optimize() failed — \(error.localizedDescription, privacy: .public)")
         }
+
+        // Emit `.complete` on progressStream so AppState.connectIndexingProgress clears
+        // currentIndexingProgress (and therefore indexingQueuePosition). Without this the
+        // queue panel/banner remain pinned on the .optimizing state forever.
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: "",
+            stage: .complete,
+            completedDocuments: totalDocuments,
+            totalDocuments: totalDocuments,
+            docsPerSecond: 0
+        ))
 
         emit(.completed(volumeCount: completedVolumes, documentCount: totalDocuments))
 
