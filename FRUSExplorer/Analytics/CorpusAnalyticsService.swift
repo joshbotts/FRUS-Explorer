@@ -48,6 +48,50 @@ struct TermCount: Sendable, Identifiable {
     var id: String { term }
 }
 
+/// Document frequency aggregated into ten-year buckets (1860s, 1870s, …).
+///
+/// The decade is the year floored to the nearest ten: a document dated 1973
+/// is counted under `decadeStart = 1970`. Documents whose date cannot be
+/// resolved to a year are excluded.
+///
+/// Version history:
+///   1.0 — Session 121: initial implementation
+struct DecadeFrequency: Sendable, Identifiable {
+    /// The first calendar year of the ten-year bucket (e.g. `1960` for the 1960s).
+    let decadeStart: Int
+    let count: Int
+    var id: Int { decadeStart }
+}
+
+/// Document frequency aggregated per calendar month.
+///
+/// Documents whose `date_iso` lacks a month component (e.g. only `"1969"`) are
+/// excluded — they cannot be placed in a specific month bucket.
+///
+/// Version history:
+///   1.0 — Session 121: initial implementation
+struct MonthFrequency: Sendable, Identifiable {
+    /// First day of the month, used for Swift Charts date-axis positioning.
+    let date: Date
+    /// Display label in `yyyy-MM` form (e.g. `"1969-02"`).
+    let label: String
+    let count: Int
+    var id: String { label }
+}
+
+/// Document frequency aggregated per calendar day.
+///
+/// Documents whose `date_iso` lacks a day component (e.g. only `"1969-02"` or
+/// only `"1969"`) are excluded — they cannot be placed on a specific day.
+///
+/// Version history:
+///   1.0 — Session 121: initial implementation
+struct DayFrequency: Sendable, Identifiable {
+    let date: Date
+    let count: Int
+    var id: Date { date }
+}
+
 // MARK: - CorpusAnalyticsService
 
 /// Provides corpus-level frequency analytics over the FTS5 search index.
@@ -89,6 +133,11 @@ struct TermCount: Sendable, Identifiable {
 ///          from `IndexingPipeline.allDocumentDates()` instead of bucketing by
 ///          volume start year; `pipeline` dependency added; `documentDateCache`
 ///          lazy-populated and cleared with other caches on `invalidateCache()`
+///   1.2 — Session 121: add `termFrequencyByDecade`, `termFrequencyByMonth`, and
+///          `termFrequencyByDay`; new `DecadeFrequency`/`MonthFrequency`/`DayFrequency`
+///          result types; multi-word queries are now split on whitespace and ANDed
+///          (each word individually Porter-stemmed) rather than treated as a single
+///          opaque keyword
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -100,6 +149,9 @@ actor CorpusAnalyticsService {
 
     private var yearFrequencyCache: [String: [YearFrequency]] = [:]
     private var subseriesFrequencyCache: [String: [SubseriesFrequency]] = [:]
+    private var decadeFrequencyCache: [String: [DecadeFrequency]] = [:]
+    private var monthFrequencyCache: [String: [MonthFrequency]] = [:]
+    private var dayFrequencyCache: [String: [DayFrequency]] = [:]
     /// Lazily populated on the first `termFrequencyByYear` call; maps
     /// `"volumeId/documentId"` → `date_iso` string (e.g. `"1969-02-15"`).
     private var documentDateCache: [String: String]? = nil
@@ -121,6 +173,9 @@ actor CorpusAnalyticsService {
     func invalidateCache() {
         yearFrequencyCache.removeAll()
         subseriesFrequencyCache.removeAll()
+        decadeFrequencyCache.removeAll()
+        monthFrequencyCache.removeAll()
+        dayFrequencyCache.removeAll()
         documentDateCache = nil
     }
 
@@ -136,6 +191,36 @@ actor CorpusAnalyticsService {
         let dates = try await pipeline.allDocumentDates()
         documentDateCache = dates
         return dates
+    }
+
+    /// Splits the user-supplied input into individual whitespace-delimited keywords
+    /// so each word can be tokenised and Porter-stemmed independently before being
+    /// embedded in the FTS5 MATCH expression.
+    ///
+    /// Without this split, a multi-word input like "national security" is passed
+    /// to FTS5Query as a single keyword, the Porter stemmer treats the whole
+    /// string as one word, and the resulting expression fails to match documents
+    /// containing the morphological variants of either word. Splitting here makes
+    /// analytics behave the same way as `SearchService.makeFTS5Query`.
+    nonisolated private static func splitKeywords(_ input: String) -> [String] {
+        input.split(whereSeparator: \.isWhitespace)
+            .map(String.init)
+            .filter { !$0.isEmpty }
+    }
+
+    /// Helper for the four date-bucketed methods. Returns the matched
+    /// `(documentId, volumeId)` keys for the given term along with the cached
+    /// document-date dictionary. Returns nil if `term` contains no searchable
+    /// keywords.
+    private func matchedDocsAndDates(term: String) async throws
+        -> (keys: [(documentId: String, volumeId: String)], dates: [String: String])?
+    {
+        let words = Self.splitKeywords(term)
+        guard !words.isEmpty else { return nil }
+        let query = FTS5Query(keywords: words)
+        let keys = try await fts5Store.matchedDocumentKeys(query: query)
+        let dates = try await resolvedDocumentDates()
+        return (keys, dates)
     }
 
     // MARK: - Frequency Queries
@@ -156,9 +241,7 @@ actor CorpusAnalyticsService {
         let cacheKey = term
         if let cached = yearFrequencyCache[cacheKey] { return cached }
 
-        let query = FTS5Query(keywords: [term])
-        let keys = try await fts5Store.matchedDocumentKeys(query: query)
-        let dates = try await resolvedDocumentDates()
+        guard let (keys, dates) = try await matchedDocsAndDates(term: term) else { return [] }
 
         var counts: [Int: Int] = [:]
         for key in keys {
@@ -184,18 +267,134 @@ actor CorpusAnalyticsService {
         return result
     }
 
+    /// Returns the count of documents matching `term`, grouped into ten-year
+    /// decade buckets.
+    ///
+    /// Each year is floored to the nearest ten — 1973 → 1970 — and counts are
+    /// summed within the resulting bucket. Documents with no parseable year
+    /// (neither in `date_iso` nor in the volume ID) are silently omitted.
+    ///
+    /// - Parameter term: One or more whitespace-separated keywords. Multiple
+    ///   keywords are AND-combined and individually Porter-stemmed (matching
+    ///   the main search behaviour).
+    /// - Returns: Array of `DecadeFrequency` sorted by `decadeStart` ascending.
+    func termFrequencyByDecade(term: String) async throws -> [DecadeFrequency] {
+        let cacheKey = term
+        if let cached = decadeFrequencyCache[cacheKey] { return cached }
+
+        // Reuse the per-year computation rather than re-walking the FTS5 result set.
+        let yearData = try await termFrequencyByYear(term: term)
+        var bucket: [Int: Int] = [:]
+        for entry in yearData {
+            let decade = (entry.year / 10) * 10
+            bucket[decade, default: 0] += entry.count
+        }
+        let result = bucket
+            .map { DecadeFrequency(decadeStart: $0.key, count: $0.value) }
+            .sorted { $0.decadeStart < $1.decadeStart }
+
+        insertIntoCache(&decadeFrequencyCache, key: cacheKey, value: result)
+        return result
+    }
+
+    /// Returns the count of documents matching `term`, grouped per calendar month.
+    ///
+    /// Documents whose `date_iso` lacks a month component (e.g. `"1969"`) are
+    /// excluded — they cannot be placed in a specific month. There is no fallback
+    /// to the volume start year here because the granularity demands month-level
+    /// precision that volume IDs do not encode.
+    ///
+    /// Results are sorted by date ascending.
+    func termFrequencyByMonth(term: String) async throws -> [MonthFrequency] {
+        let cacheKey = term
+        if let cached = monthFrequencyCache[cacheKey] { return cached }
+
+        guard let (keys, dates) = try await matchedDocsAndDates(term: term) else { return [] }
+
+        var counts: [String: Int] = [:]
+        for key in keys {
+            let compositeKey = "\(key.volumeId)/\(key.documentId)"
+            guard let iso = dates[compositeKey], iso.count >= 7 else { continue }
+            // Require a literal "yyyy-MM" prefix with a parseable two-digit month.
+            let parts = iso.split(separator: "-")
+            guard parts.count >= 2,
+                  let year  = Int(parts[0]),
+                  let month = Int(parts[1]),
+                  (1...12).contains(month),
+                  year > 0
+            else { continue }
+            let label = String(format: "%04d-%02d", year, month)
+            counts[label, default: 0] += 1
+        }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let result: [MonthFrequency] = counts.compactMap { (label, count) in
+            let parts = label.split(separator: "-")
+            guard parts.count == 2,
+                  let year = Int(parts[0]),
+                  let month = Int(parts[1])
+            else { return nil }
+            var comps = DateComponents()
+            comps.year = year
+            comps.month = month
+            comps.day = 1
+            guard let date = calendar.date(from: comps) else { return nil }
+            return MonthFrequency(date: date, label: label, count: count)
+        }.sorted { $0.date < $1.date }
+
+        insertIntoCache(&monthFrequencyCache, key: cacheKey, value: result)
+        return result
+    }
+
+    /// Returns the count of documents matching `term`, grouped per calendar day.
+    ///
+    /// Documents whose `date_iso` is not a full `yyyy-MM-dd` are excluded.
+    /// Results are sorted by date ascending. Note: for high-frequency terms
+    /// spanning many decades this returns a very large number of points; callers
+    /// should restrict the displayed range via the year-range filter.
+    func termFrequencyByDay(term: String) async throws -> [DayFrequency] {
+        let cacheKey = term
+        if let cached = dayFrequencyCache[cacheKey] { return cached }
+
+        guard let (keys, dates) = try await matchedDocsAndDates(term: term) else { return [] }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+
+        var counts: [Date: Int] = [:]
+        for key in keys {
+            let compositeKey = "\(key.volumeId)/\(key.documentId)"
+            guard let iso = dates[compositeKey],
+                  iso.count == 10,
+                  let date = formatter.date(from: iso)
+            else { continue }
+            counts[date, default: 0] += 1
+        }
+
+        let result = counts
+            .map { DayFrequency(date: $0.key, count: $0.value) }
+            .sorted { $0.date < $1.date }
+
+        insertIntoCache(&dayFrequencyCache, key: cacheKey, value: result)
+        return result
+    }
+
     /// Returns the count of documents matching `term`, grouped by subseries.
     ///
     /// Results are sorted by subseries string ascending. Documents in volumes
     /// whose IDs cannot be parsed are silently omitted.
     ///
-    /// - Parameter term: A single keyword to search (no FTS5 operators).
+    /// - Parameter term: One or more whitespace-separated keywords (AND-combined).
     /// - Returns: Array of `SubseriesFrequency` sorted by `subseries` ascending.
     func termFrequencyBySubseries(term: String) async throws -> [SubseriesFrequency] {
         let cacheKey = term
         if let cached = subseriesFrequencyCache[cacheKey] { return cached }
 
-        let query = FTS5Query(keywords: [term])
+        let words = Self.splitKeywords(term)
+        guard !words.isEmpty else { return [] }
+        let query = FTS5Query(keywords: words)
         let keys = try await fts5Store.matchedDocumentKeys(query: query)
 
         var counts: [String: Int] = [:]
