@@ -36,6 +36,10 @@ import Foundation
 ///          fallback preserved; new CSS for headings, datelines, footnotes, attachments
 ///   1.4 — Session 83: `markdownItalics(_:)` applies `_text_` → `<em>text</em>`
 ///          conversion to the collection note field
+///   1.5 — Session 128: `markdownItalics(_:)` now applied to citation labels in ToC and
+///          section headings, and to research note paragraphs; `options: CollectionExportOptions`
+///          parameter controls ToC label style; `noteTexts: [String]` and `includeDocumentBody`
+///          respected for per-entry content selection
 final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -43,9 +47,10 @@ final class HTMLCollectionExporter: CollectionExporter {
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
     ) async throws -> URL {
-        let html = buildHTML(collection: metadata, documents: documents)
+        let html = buildHTML(collection: metadata, documents: documents, options: options)
         let filename = sanitized(metadata.name) + ".html"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
@@ -58,7 +63,11 @@ final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - HTML Construction
 
-    private func buildHTML(collection: CollectionExportMetadata, documents: [CollectionExportDocument]) -> String {
+    private func buildHTML(
+        collection: CollectionExportMetadata,
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
+    ) -> String {
         let title = escaped(collection.name)
         var body = ""
 
@@ -70,54 +79,57 @@ final class HTMLCollectionExporter: CollectionExporter {
         }
         body += "</header>\n\n"
 
-        // Table of contents — shows citations with internal anchor links
+        // Table of contents — label style controlled by options.tocStyle
         body += "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
         for doc in documents {
             let anchor = anchorId(doc: doc)
-            let label = doc.citation.isEmpty ? doc.title : doc.citation
-            body += "    <li><a href=\"#\(anchor)\">\(escaped(label))</a></li>\n"
+            let label = doc.tocLabel(style: options.tocStyle)
+            body += "    <li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
         }
         body += "  </ol>\n</nav>\n\n"
 
         // Document sections
         for doc in documents {
             let anchor = anchorId(doc: doc)
+            // Section heading always shows the citation (regardless of ToC style).
             let heading = doc.citation.isEmpty ? doc.title : doc.citation
             body += "<section id=\"\(anchor)\">\n"
 
-            // Citation as heading with external link
+            // Citation as heading with external link — apply markdownItalics for _text_ spans.
             if !doc.historyStateGovURL.isEmpty {
                 body += "  <h2><a href=\"\(escaped(doc.historyStateGovURL))\" "
                 body +=     "class=\"doc-ext-link\" target=\"_blank\" rel=\"noopener noreferrer\">"
-                body +=     "\(escaped(heading))</a></h2>\n"
+                body +=     "\(markdownItalics(escaped(heading)))</a></h2>\n"
                 body += "  <p class=\"doc-url\">"
                 body +=     "<a href=\"\(escaped(doc.historyStateGovURL))\" target=\"_blank\" rel=\"noopener noreferrer\">"
                 body +=     "\(escaped(doc.historyStateGovURL))</a></p>\n"
             } else {
-                body += "  <h2>\(escaped(heading))</h2>\n"
+                body += "  <h2>\(markdownItalics(escaped(heading)))</h2>\n"
             }
 
-            // Body — rich rendering if available, else flat-text fallback
-            if let model = doc.renderModel {
-                body += renderModelToHTML(model)
-            } else if !doc.bodyText.isEmpty {
-                let paragraphs = doc.bodyText
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in paragraphs {
-                    body += "  <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+            // Body — rich rendering if available, else flat-text fallback; skipped when !includeDocumentBody.
+            if doc.includeDocumentBody {
+                if let model = doc.renderModel {
+                    body += renderModelToHTML(model)
+                } else if !doc.bodyText.isEmpty {
+                    let paragraphs = doc.bodyText
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in paragraphs {
+                        body += "  <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+                    }
                 }
             }
 
-            // Research note
-            if let note = doc.noteText, !note.isEmpty {
+            // Research notes — one <aside> per note; markdownItalics applied to each paragraph.
+            for note in doc.noteTexts where !note.isEmpty {
                 body += "  <aside class=\"research-note\">\n"
                 body += "    <strong>Research Note</strong>\n"
                 let noteParagraphs = note
                     .components(separatedBy: "\n\n")
                     .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
                 for para in noteParagraphs {
-                    body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+                    body += "    <p>\(markdownItalics(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines))))</p>\n"
                 }
                 body += "  </aside>\n"
             }

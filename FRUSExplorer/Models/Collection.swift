@@ -121,6 +121,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
+///   1.1 — Session 128: added `includeDocumentBody` and `selectedNoteIds` for per-entry
+///          content selection in exports; `researchNoteId` retained for backward compatibility
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -158,7 +160,23 @@ import SwiftData
     // MARK: - Optional Note Link
 
     /// An optional `ResearchNote.id` included with this entry in exports.
+    /// Retained for backward compatibility. When `selectedNoteIds` is non-empty,
+    /// it takes precedence over this field during export resolution.
     var researchNoteId: UUID? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Per-Entry Export Options
+
+    /// When `false`, the exporter skips the full document body for this entry (notes only).
+    /// Defaults to `true` (full document included).
+    var includeDocumentBody: Bool = true {
+        didSet { lastModified = .now }
+    }
+
+    /// IDs of `ResearchNote` records to include with this entry in exports.
+    /// When non-empty, overrides `researchNoteId`. CloudKit-compatible (same pattern as `Collection.projectIds`).
+    var selectedNoteIds: [UUID] = [] {
         didSet { lastModified = .now }
     }
 
@@ -176,7 +194,9 @@ import SwiftData
         documentId: String,
         volumeId: String,
         sortOrder: Int,
-        researchNoteId: UUID? = nil
+        researchNoteId: UUID? = nil,
+        includeDocumentBody: Bool = true,
+        selectedNoteIds: [UUID] = []
     ) {
         self.id = UUID()
         self.collectionId = collectionId
@@ -184,6 +204,8 @@ import SwiftData
         self.volumeId = volumeId
         self.sortOrder = sortOrder
         self.researchNoteId = researchNoteId
+        self.includeDocumentBody = includeDocumentBody
+        self.selectedNoteIds = selectedNoteIds
         let now = Date.now
         createdAt = now
         lastModified = now

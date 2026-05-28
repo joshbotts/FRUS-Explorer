@@ -638,13 +638,18 @@ struct CollectionEditorView: View {
 
 // MARK: - EntryRow
 
-/// A single row in the documents list that lets the user associate a `ResearchNote`.
+/// A single row in the documents list that lets the user configure per-entry export options.
+///
+/// Users can:
+/// - Toggle whether the document body is included in the export.
+/// - Select zero or more research notes to include alongside the document.
 private struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
+            // Document identity
             Text(entry.documentId)
                 .font(.body)
                 .accessibilityLabel(
@@ -656,40 +661,64 @@ private struct EntryRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            if let id = entry.researchNoteId,
-               let note = availableNotes.first(where: { $0.id == id }),
-               !note.bodyText.isEmpty {
-                Text(note.bodyText)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // Include body toggle
+            Toggle(
+                String(localized: "collection.entry.includeBody.label",
+                       defaultValue: "Include document body"),
+                isOn: Binding(
+                    get: { entry.includeDocumentBody },
+                    set: { entry.includeDocumentBody = $0 }
+                )
+            )
+            .font(.caption)
+            .toggleStyle(.switch)
 
+            // Per-note selection (multi-select)
             if !availableNotes.isEmpty {
-                Picker(
-                    String(localized: "collection.entry.notePicker.label",
-                           defaultValue: "Note"),
-                    selection: Binding(
-                        get: { entry.researchNoteId },
-                        set: { entry.researchNoteId = $0 }
+                Text(String(localized: "collection.entry.notes.header",
+                            defaultValue: "Include notes:"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(availableNotes) { note in
+                    let isOn = Binding<Bool>(
+                        get: {
+                            // Prefer selectedNoteIds when non-empty; fall back to researchNoteId.
+                            if !entry.selectedNoteIds.isEmpty {
+                                return entry.selectedNoteIds.contains(note.id)
+                            }
+                            return entry.researchNoteId == note.id
+                        },
+                        set: { include in
+                            // Migrate from legacy single-note to multi-note on first edit.
+                            if entry.selectedNoteIds.isEmpty, let legacy = entry.researchNoteId {
+                                entry.selectedNoteIds = [legacy]
+                                entry.researchNoteId = nil
+                            }
+                            if include {
+                                if !entry.selectedNoteIds.contains(note.id) {
+                                    entry.selectedNoteIds.append(note.id)
+                                }
+                            } else {
+                                entry.selectedNoteIds.removeAll { $0 == note.id }
+                            }
+                        }
                     )
-                ) {
-                    Text(String(localized: "collection.entry.notePicker.none",
-                                defaultValue: "None")).tag(UUID?.none)
-                    ForEach(availableNotes) { note in
-                        Text(noteLabel(note)).tag(Optional(note.id))
+                    Toggle(isOn: isOn) {
+                        Text(noteLabel(note))
+                            .font(.caption)
                     }
+                    #if os(macOS)
+                    .toggleStyle(.checkbox)
+                    #endif
                 }
-                .pickerStyle(.menu)
-                .font(.caption)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 
     private func noteLabel(_ note: ResearchNote) -> String {
-        let preview = note.bodyText.prefix(40).trimmingCharacters(in: .whitespacesAndNewlines)
+        let preview = note.bodyText.prefix(50).trimmingCharacters(in: .whitespacesAndNewlines)
         return preview.isEmpty ? String(localized: "collection.entry.note.emptyPreview",
                                         defaultValue: "Untitled Note") : String(preview)
     }
@@ -759,6 +788,7 @@ struct ExportSheetView: View {
     let appState: AppState
 
     @State private var selectedFormat: ExportFormat = .pdf
+    @State private var tocStyle: CollectionToCStyle = .citation
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
     @State private var exportError: String? = nil
@@ -788,6 +818,22 @@ struct ExportSheetView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                Section(String(localized: "export.tocStyle.header", defaultValue: "Contents List")) {
+                    Picker(
+                        String(localized: "export.tocStyle.picker", defaultValue: "Show"),
+                        selection: $tocStyle
+                    ) {
+                        ForEach(CollectionToCStyle.allCases) { style in
+                            Text(style.displayName).tag(style)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    Text(String(localized: "export.tocStyle.hint",
+                                defaultValue: "\"Header & Dateline\" shows the document heading and date extracted from the text; requires the volume to be downloaded."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section {
@@ -879,7 +925,8 @@ struct ExportSheetView: View {
                 let docs = await resolveSmartDocuments(smartEntries)
                 let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
                 let exporter = selectedFormat.makeExporter()
-                let url = try await exporter.export(metadata: metadata, documents: docs)
+                let options = CollectionExportOptions(tocStyle: tocStyle)
+                let url = try await exporter.export(metadata: metadata, documents: docs, options: options)
                 exportedURL = url
                 appState.logEvent(.export(
                     format: selectedFormat.rawValue,
@@ -901,7 +948,8 @@ struct ExportSheetView: View {
             let docs = await resolveDocuments()
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
             let exporter = selectedFormat.makeExporter()
-            let url = try await exporter.export(metadata: metadata, documents: docs)
+            let options = CollectionExportOptions(tocStyle: tocStyle)
+            let url = try await exporter.export(metadata: metadata, documents: docs, options: options)
             exportedURL = url
             appState.logEvent(.export(
                 format: selectedFormat.rawValue,
@@ -1041,21 +1089,37 @@ struct ExportSheetView: View {
         }
 
         return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
-            let note = entry.researchNoteId.flatMap { nid in allNotes.first { $0.id == nid } }
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
+            let key = "\(entry.volumeId)/\(entry.documentId)"
+            let renderModel = renderModels[key]
+
+            // Extract header and dateline from the render model when available.
+            let (header, dateline) = renderModelHeadAndDateline(renderModel)
+
             let docNum: String? = entry.documentId.hasPrefix("d")
                 ? Int(entry.documentId.dropFirst()).map { String($0) }
                 : nil
             let docMeta = FRUSDocumentMetadata(
                 documentId: entry.documentId, documentNumber: docNum,
-                header: "", dateline: nil)
+                header: header, dateline: dateline)
             let citation = volMeta.map { formatter.format(document: docMeta, volume: $0) }
                 ?? "\(entry.volumeId)/\(entry.documentId)"
             let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
             let volumeTitle = manifestEntry?.title ?? entry.volumeId
-            let bodyText = bodyTexts["\(entry.volumeId)/\(entry.documentId)"] ?? ""
-            let renderModel = renderModels["\(entry.volumeId)/\(entry.documentId)"]
+            let bodyText = bodyTexts[key] ?? ""
+
+            // Resolve note texts: selectedNoteIds takes precedence over legacy researchNoteId.
+            let resolvedNoteTexts: [String]
+            if !entry.selectedNoteIds.isEmpty {
+                resolvedNoteTexts = entry.selectedNoteIds.compactMap { nid in
+                    allNotes.first { $0.id == nid }?.bodyText
+                }.filter { !$0.isEmpty }
+            } else if let legacyNote = entry.researchNoteId.flatMap({ nid in allNotes.first { $0.id == nid } }) {
+                resolvedNoteTexts = legacyNote.bodyText.isEmpty ? [] : [legacyNote.bodyText]
+            } else {
+                resolvedNoteTexts = []
+            }
 
             return CollectionExportDocument(
                 documentId: entry.documentId,
@@ -1064,11 +1128,73 @@ struct ExportSheetView: View {
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,
-                noteText: note?.bodyText,
+                includeDocumentBody: entry.includeDocumentBody,
+                noteTexts: resolvedNoteTexts,
                 citation: citation,
                 historyStateGovURL: urlString,
-                renderModel: renderModel
+                renderModel: renderModel,
+                header: header,
+                dateline: dateline
             )
+        }
+    }
+
+    // MARK: - Render Model Extraction Helpers
+
+    /// Extracts the first heading and first dateline from a render model's body nodes.
+    private func renderModelHeadAndDateline(_ model: FRUSDocumentRenderModel?) -> (header: String, dateline: String?) {
+        guard let model else { return ("", nil) }
+        var header = ""
+        var dateline: String? = nil
+        for node in model.bodyNodes {
+            if case .heading(let c) = node, header.isEmpty {
+                header = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
+            } else if case .dateline(let c) = node, dateline == nil {
+                let text = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !text.isEmpty { dateline = text }
+            }
+            if !header.isEmpty && dateline != nil { break }
+        }
+        return (header, dateline)
+    }
+
+    /// Recursively extracts plain text from an array of `FRUSRenderNode` values.
+    private func renderNodePlainText(_ nodes: [FRUSRenderNode]) -> String {
+        nodes.map { renderNodePlainText($0) }.joined()
+    }
+
+    /// Recursively extracts plain text from a single `FRUSRenderNode`.
+    private func renderNodePlainText(_ node: FRUSRenderNode) -> String {
+        switch node {
+        case .plainText(let s):
+            return s
+        case .boldText(let c), .italicText(let c), .smallCapsText(let c),
+             .underlineText(let c), .termText(let c), .corrText(let c),
+             .suppliedText(let c), .sicText(let c):
+            return renderNodePlainText(c)
+        case .heading(let c), .dateline(let c), .salutation(let c),
+             .paragraph(let c), .attachmentHeading(let c):
+            return renderNodePlainText(c)
+        case .letterOpener(let c), .letterCloser(let c),
+             .editorialNoteBlock(let c), .titlePageBlock(let c):
+            return renderNodePlainText(c)
+        case .attachmentBlock(_, let c), .unknown(_, let c):
+            return renderNodePlainText(c)
+        case .persNameLink(_, let c, _), .glossLink(_, let c, _),
+             .crossRefLink(_, _, let c):
+            return renderNodePlainText(c)
+        case .formulaText(let s):
+            return s
+        case .lineBreak:
+            return " "
+        case .footnoteMarker(_, let label):
+            return "[\(label)]"
+        case .listBlock(_, let items):
+            return items.map { renderNodePlainText($0) }.joined(separator: " ")
+        case .tableBlock(let rows):
+            return rows.map { row in row.map { renderNodePlainText($0.children) }.joined(separator: " | ") }.joined(separator: "\n")
+        case .footnoteBody, .pageBreak, .figureBlock:
+            return ""
         }
     }
 
@@ -1134,18 +1260,22 @@ struct ExportSheetView: View {
         return smartEntries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
+            let key = "\(entry.volumeId)/\(entry.documentId)"
+            let renderModel = renderModels[key]
+
+            let (header, dateline) = renderModelHeadAndDateline(renderModel)
+
             let docNum: String? = entry.documentId.hasPrefix("d")
                 ? Int(entry.documentId.dropFirst()).map { String($0) }
                 : nil
             let docMeta = FRUSDocumentMetadata(
                 documentId: entry.documentId, documentNumber: docNum,
-                header: "", dateline: nil)
+                header: header, dateline: dateline)
             let citation = volMeta.map { formatter.format(document: docMeta, volume: $0) }
                 ?? "\(entry.volumeId)/\(entry.documentId)"
             let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
             let volumeTitle = manifestEntry?.title ?? entry.volumeId
-            let bodyText = bodyTexts["\(entry.volumeId)/\(entry.documentId)"] ?? ""
-            let renderModel = renderModels["\(entry.volumeId)/\(entry.documentId)"]
+            let bodyText = bodyTexts[key] ?? ""
             return CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
@@ -1153,10 +1283,12 @@ struct ExportSheetView: View {
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,
-                noteText: nil,
+                includeDocumentBody: true,
                 citation: citation,
                 historyStateGovURL: urlString,
-                renderModel: renderModel
+                renderModel: renderModel,
+                header: header,
+                dateline: dateline
             )
         }
     }

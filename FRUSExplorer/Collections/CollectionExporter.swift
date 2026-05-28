@@ -8,6 +8,41 @@
 
 import Foundation
 
+// MARK: - CollectionToCStyle
+
+/// Controls what label appears for each document in the collection table of contents.
+///
+/// Version history:
+///   1.0 — Session 128: introduced alongside `CollectionExportOptions`
+enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
+    /// Use the formatted `history.state.gov`-style citation string (default).
+    case citation
+    /// Use the document's heading and dateline extracted from the TEI body.
+    case headerAndDateline
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .citation:          return String(localized: "export.tocStyle.citation",
+                                               defaultValue: "Citation")
+        case .headerAndDateline: return String(localized: "export.tocStyle.headerAndDateline",
+                                               defaultValue: "Header & Dateline")
+        }
+    }
+}
+
+// MARK: - CollectionExportOptions
+
+/// Rendering options passed to every exporter.
+///
+/// Version history:
+///   1.0 — Session 128: initial implementation
+struct CollectionExportOptions: Sendable {
+    /// Which label style to use in the table of contents.
+    var tocStyle: CollectionToCStyle = .citation
+}
+
 // MARK: - ExportFormat
 
 /// Supported output formats for collection export.
@@ -61,6 +96,9 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 ///          fields with empty-string defaults; both included in PDF and HTML exports
 ///   1.2 — Session 81: added `renderModel: FRUSDocumentRenderModel?` for rich export output;
 ///          flat-text fallback preserved when render model is unavailable
+///   1.3 — Session 128: added `header`, `dateline` (for headerAndDateline ToC style);
+///          replaced single `noteText` with `noteTexts: [String]` (multi-note per entry);
+///          added `includeDocumentBody: Bool`; `noteText` retained as computed backward-compat accessor
 struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     let documentId: String
@@ -74,8 +112,10 @@ struct CollectionExportDocument: Sendable {
     let date: String?
     /// Plain-text body of the document. Preserved as fallback when `renderModel` is nil.
     let bodyText: String
-    /// Optional research note text linked to this entry.
-    let noteText: String?
+    /// Whether the exporter should include the full document body for this entry.
+    let includeDocumentBody: Bool
+    /// Research note texts linked to this entry (one per linked `ResearchNote`).
+    let noteTexts: [String]
     /// Formatted citation string (history.state.gov style).
     let citation: String
     /// `https://history.state.gov/historicaldocuments/{volumeId}/{documentId}`
@@ -83,6 +123,26 @@ struct CollectionExportDocument: Sendable {
     /// Fully converted render model for structured export output.
     /// Non-nil when the volume XML was successfully parsed during collection assembly.
     let renderModel: FRUSDocumentRenderModel?
+    /// The document heading extracted from the TEI body (e.g. `"1. Memorandum From…"`).
+    /// Used when `tocStyle == .headerAndDateline`.
+    let header: String
+    /// The dateline extracted from the TEI body. Used with `header` for the headerAndDateline ToC style.
+    let dateline: String?
+
+    /// Backward-compatible single-note accessor. Returns the first note text, or `nil` when empty.
+    var noteText: String? { noteTexts.first }
+
+    /// Returns the ToC label appropriate for the given display style.
+    func tocLabel(style: CollectionToCStyle) -> String {
+        switch style {
+        case .citation:
+            return citation.isEmpty ? title : citation
+        case .headerAndDateline:
+            guard !header.isEmpty else { return citation.isEmpty ? title : citation }
+            if let dl = dateline, !dl.isEmpty { return "\(header) — \(dl)" }
+            return header
+        }
+    }
 
     init(
         documentId: String,
@@ -91,10 +151,14 @@ struct CollectionExportDocument: Sendable {
         title: String,
         date: String? = nil,
         bodyText: String,
+        includeDocumentBody: Bool = true,
         noteText: String? = nil,
+        noteTexts: [String]? = nil,
         citation: String = "",
         historyStateGovURL: String = "",
-        renderModel: FRUSDocumentRenderModel? = nil
+        renderModel: FRUSDocumentRenderModel? = nil,
+        header: String = "",
+        dateline: String? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -102,10 +166,19 @@ struct CollectionExportDocument: Sendable {
         self.title = title
         self.date = date
         self.bodyText = bodyText
-        self.noteText = noteText
+        self.includeDocumentBody = includeDocumentBody
+        if let noteTexts {
+            self.noteTexts = noteTexts
+        } else if let noteText {
+            self.noteTexts = [noteText]
+        } else {
+            self.noteTexts = []
+        }
         self.citation = citation
         self.historyStateGovURL = historyStateGovURL
         self.renderModel = renderModel
+        self.header = header
+        self.dateline = dateline
     }
 }
 
@@ -137,16 +210,30 @@ struct CollectionExportMetadata: Sendable {
 ///   1.1 — Session 32: replaced `Collection` parameter with `CollectionExportMetadata`
 ///   1.2 — Session 73: `export()` marked `@MainActor` to satisfy CoreGraphics/CoreText
 ///          thread-safety requirements; previously crashed when called off the main thread
+///   1.3 — Session 128: `options: CollectionExportOptions` parameter added; backward-compat
+///          no-options overload provided via protocol extension
 protocol CollectionExporter {
-    /// Exports `metadata` and its `documents` to a temporary file.
+    /// Exports `metadata` and its `documents` to a temporary file using the given `options`.
     ///
     /// - Returns: A `file://` URL pointing to the written output.
     /// - Throws: `ExportError` on rendering or I/O failure.
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
     ) async throws -> URL
+}
+
+extension CollectionExporter {
+    /// Backward-compatible overload that uses default `CollectionExportOptions`.
+    @MainActor
+    func export(
+        metadata: CollectionExportMetadata,
+        documents: [CollectionExportDocument]
+    ) async throws -> URL {
+        try await export(metadata: metadata, documents: documents, options: CollectionExportOptions())
+    }
 }
 
 // MARK: - ExportError

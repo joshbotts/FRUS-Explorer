@@ -32,6 +32,12 @@ import CoreText
 ///   1.4 — Session 83: `noteAttributedString(_:fontSize:gray:)` parses `_text_` italic
 ///          spans in the collection note using `NSRegularExpression`; overloaded
 ///          `draw(_:in:rect:)` and `measureHeight(_:width:)` accept `NSAttributedString`
+///   1.5 — Session 128: `noteAttributedString(_:fontSize:gray:)` now used for ToC citation
+///          labels, document citation headings, and citation reminders in research-note pages
+///          so `_Foreign Relations..._` renders as italic instead of literal underscores;
+///          research note body text uses `noteAttributedString` for the same reason;
+///          `options: CollectionExportOptions` controls ToC label style;
+///          `noteTexts: [String]` and `includeDocumentBody` respected per entry
 final class PDFCollectionExporter: CollectionExporter {
 
     // MARK: - Page geometry
@@ -49,9 +55,10 @@ final class PDFCollectionExporter: CollectionExporter {
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
     ) async throws -> URL {
-        let data = try buildPDF(collection: metadata, documents: documents)
+        let data = try buildPDF(collection: metadata, documents: documents, options: options)
         let filename = sanitized(metadata.name) + ".pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
@@ -66,7 +73,8 @@ final class PDFCollectionExporter: CollectionExporter {
 
     private func buildPDF(
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
     ) throws -> Data {
         let mutableData = NSMutableData()
         var mediaBox = Self.pageRect
@@ -79,7 +87,7 @@ final class PDFCollectionExporter: CollectionExporter {
 
         // Cover page
         ctx.beginPDFPage(nil)
-        drawCoverPage(ctx: ctx, collection: collection, documents: documents)
+        drawCoverPage(ctx: ctx, collection: collection, documents: documents, options: options)
         drawPageNumber(ctx: ctx, number: pageNumber)
         ctx.endPDFPage()
         pageNumber += 1
@@ -98,7 +106,8 @@ final class PDFCollectionExporter: CollectionExporter {
     private func drawCoverPage(
         ctx: CGContext,
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
     ) {
         let W = Self.pageWidth, H = Self.pageHeight
         let M = Self.margin, cw = Self.contentWidth
@@ -131,15 +140,16 @@ final class PDFCollectionExporter: CollectionExporter {
              fontSize: 13, bold: true)
         y -= 30
 
-        // ToC entries — each shows the full citation, wrapped if needed
+        // ToC entries — label style controlled by options.tocStyle;
+        // _text_ spans in citation labels rendered as italic via noteAttributedString.
         for (i, doc) in documents.enumerated() {
             guard y > M + 20 else { break }
-            let label = "\(i + 1).  \(doc.citation.isEmpty ? doc.title : doc.citation)"
-            let lineH = measureHeight(label, width: cw - 16, fontSize: 10, bold: false)
-            let rowH = min(lineH, 40) // cap at ~3 lines in the ToC
-            draw(label, in: ctx,
-                 rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH),
-                 fontSize: 10, bold: false)
+            let rawLabel = "\(i + 1).  \(doc.tocLabel(style: options.tocStyle))"
+            let labelAttr = noteAttributedString(rawLabel, fontSize: 10, gray: 0.1)
+            let lineH = measureHeight(labelAttr, width: cw - 16)
+            let rowH = min(lineH, 40) // cap at ~3 lines
+            draw(labelAttr, in: ctx,
+                 rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH))
             y -= rowH + 6
         }
 
@@ -159,12 +169,12 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.beginPDFPage(nil)
         var y = H - M
 
-        // Citation heading
+        // Citation heading — noteAttributedString renders _text_ spans as italic.
         let cit = doc.citation.isEmpty ? doc.title : doc.citation
-        let citH = measureHeight(cit, width: cw, fontSize: 13, bold: true)
-        draw(cit, in: ctx,
-             rect: CGRect(x: M, y: y - citH, width: cw, height: citH),
-             fontSize: 13, bold: true)
+        let citBoldAttr = noteAttributedString(cit, fontSize: 13, gray: 0.0, bold: true)
+        let citH = measureHeight(citBoldAttr, width: cw)
+        draw(citBoldAttr, in: ctx,
+             rect: CGRect(x: M, y: y - citH, width: cw, height: citH))
         y -= citH + 6
 
         // history.state.gov URL
@@ -178,52 +188,55 @@ final class PDFCollectionExporter: CollectionExporter {
         drawHRule(ctx: ctx, y: y, gray: 0.6, thickness: 0.3)
         y -= 12
 
-        // Body text — rich rendering when available, else plain-text fallback
-        let bodyAttrStr: NSAttributedString
-        if let model = doc.renderModel {
-            bodyAttrStr = renderModelToAttributedString(model)
-        } else if !doc.bodyText.isEmpty {
-            bodyAttrStr = NSAttributedString(string: doc.bodyText,
-                                             attributes: makeAttrs(fontSize: 10, bold: false))
-        } else {
-            bodyAttrStr = NSAttributedString()
-        }
-        if bodyAttrStr.length > 0 {
-            let framesetter = CTFramesetterCreateWithAttributedString(bodyAttrStr)
-            var charOffset = 0
-            let totalChars = bodyAttrStr.length
+        // Body text — rich rendering when available, else plain-text fallback;
+        // skipped entirely when includeDocumentBody is false.
+        if doc.includeDocumentBody {
+            let bodyAttrStr: NSAttributedString
+            if let model = doc.renderModel {
+                bodyAttrStr = renderModelToAttributedString(model)
+            } else if !doc.bodyText.isEmpty {
+                bodyAttrStr = NSAttributedString(string: doc.bodyText,
+                                                 attributes: makeAttrs(fontSize: 10, bold: false))
+            } else {
+                bodyAttrStr = NSAttributedString()
+            }
+            if bodyAttrStr.length > 0 {
+                let framesetter = CTFramesetterCreateWithAttributedString(bodyAttrStr)
+                var charOffset = 0
+                let totalChars = bodyAttrStr.length
 
-            while charOffset < totalChars {
-                let availH = y - (M + 20)
-                if availH < 20 {
-                    // No room on this page — start a new one
-                    drawPageNumber(ctx: ctx, number: pageNumber)
-                    ctx.endPDFPage()
-                    pageNumber += 1
-                    ctx.beginPDFPage(nil)
-                    y = H - M
-                    continue
-                }
+                while charOffset < totalChars {
+                    let availH = y - (M + 20)
+                    if availH < 20 {
+                        // No room on this page — start a new one
+                        drawPageNumber(ctx: ctx, number: pageNumber)
+                        ctx.endPDFPage()
+                        pageNumber += 1
+                        ctx.beginPDFPage(nil)
+                        y = H - M
+                        continue
+                    }
 
-                let rect = CGRect(x: M, y: M + 20, width: cw, height: availH)
-                let path = CGPath(rect: rect, transform: nil)
-                let cfRange = CFRangeMake(charOffset, 0)
-                let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
-                CTFrameDraw(frame, ctx)
+                    let rect = CGRect(x: M, y: M + 20, width: cw, height: availH)
+                    let path = CGPath(rect: rect, transform: nil)
+                    let cfRange = CFRangeMake(charOffset, 0)
+                    let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
+                    CTFrameDraw(frame, ctx)
 
-                let visible = CTFrameGetVisibleStringRange(frame)
-                if visible.length == 0 { break }
-                charOffset += visible.length
+                    let visible = CTFrameGetVisibleStringRange(frame)
+                    if visible.length == 0 { break }
+                    charOffset += visible.length
 
-                if charOffset < totalChars {
-                    // Text overflowed — new page
-                    drawPageNumber(ctx: ctx, number: pageNumber)
-                    ctx.endPDFPage()
-                    pageNumber += 1
-                    ctx.beginPDFPage(nil)
-                    y = H - M
-                } else {
-                    y = M + 20 // set y to bottom; note goes on next page for cleanliness
+                    if charOffset < totalChars {
+                        // Text overflowed — new page
+                        drawPageNumber(ctx: ctx, number: pageNumber)
+                        ctx.endPDFPage()
+                        pageNumber += 1
+                        ctx.beginPDFPage(nil)
+                        y = H - M
+                    } else {
+                        y = M + 20
+                    }
                 }
             }
         }
@@ -232,8 +245,8 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.endPDFPage()
         pageNumber += 1
 
-        // ── Research note page (if any) ─────────────────────────────────────
-        if let note = doc.noteText, !note.isEmpty {
+        // ── Research note pages (one per note) ─────────────────────────────
+        for note in doc.noteTexts where !note.isEmpty {
             ctx.beginPDFPage(nil)
             var ny = H - M
 
@@ -245,20 +258,20 @@ final class PDFCollectionExporter: CollectionExporter {
                  fontSize: 11, bold: true, gray: 0.2)
             ny -= 36
 
-            // Citation reminder
-            let shortCit = cit.count > 100 ? String(cit.prefix(100)) + "…" : cit
-            draw(shortCit, in: ctx,
-                 rect: CGRect(x: M, y: ny - 12, width: cw, height: 12),
-                 fontSize: 8, bold: false, gray: 0.5)
-            ny -= 20
+            // Citation reminder — noteAttributedString renders _text_ as italic.
+            let rawShortCit = cit.count > 100 ? String(cit.prefix(100)) + "…" : cit
+            let shortCitAttr = noteAttributedString(rawShortCit, fontSize: 8, gray: 0.5)
+            let shortCitH = measureHeight(shortCitAttr, width: cw)
+            draw(shortCitAttr, in: ctx,
+                 rect: CGRect(x: M, y: ny - shortCitH, width: cw, height: shortCitH))
+            ny -= shortCitH + 8
 
             drawHRule(ctx: ctx, y: ny, gray: 0.7, thickness: 0.3)
             ny -= 12
 
-            // Note body text
-            let attrs = makeAttrs(fontSize: 11, bold: false)
-            let attrStr = NSAttributedString(string: note, attributes: attrs)
-            let framesetter = CTFramesetterCreateWithAttributedString(attrStr)
+            // Note body text — noteAttributedString renders _text_ as italic.
+            let noteAttr = noteAttributedString(note, fontSize: 11, gray: 0.1)
+            let framesetter = CTFramesetterCreateWithAttributedString(noteAttr)
             let rect = CGRect(x: M, y: M + 20, width: cw, height: ny - M - 20)
             let path = CGPath(rect: rect, transform: nil)
             let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), path, nil)
@@ -509,16 +522,23 @@ final class PDFCollectionExporter: CollectionExporter {
         return ceil(size.height) + 4
     }
 
-    /// Builds an `NSAttributedString` for a user-typed note string,
-    /// converting `_text_` patterns to italic runs. Non-italic spans use
-    /// the default (non-bold, gray) attribute set.
+    /// Builds an `NSAttributedString` converting `_text_` patterns to italic runs.
+    /// Non-italic spans use the specified font weight and gray level.
+    ///
+    /// - Parameters:
+    ///   - text: Raw text, may contain `_span_` markers.
+    ///   - fontSize: Point size for non-italic runs.
+    ///   - gray: Grayscale level (0 = black, 1 = white) for all runs.
+    ///   - bold: When `true`, non-italic runs use the bold font face.
     private func noteAttributedString(_ text: String, fontSize: CGFloat,
-                                       gray: CGFloat = 0.2) -> NSAttributedString {
+                                       gray: CGFloat = 0.2,
+                                       bold: Bool = false) -> NSAttributedString {
         let result = NSMutableAttributedString()
         let ns = text as NSString
         guard let regex = try? NSRegularExpression(pattern: "_([^_\\n]+)_") else {
             return NSAttributedString(string: text,
-                                      attributes: makeAttrs(fontSize: fontSize, bold: false, gray: gray))
+                                      attributes: makeStyledAttrs(fontSize: fontSize,
+                                                                   bold: bold, gray: gray))
         }
         var lastEnd = 0
         for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
@@ -526,13 +546,13 @@ final class PDFCollectionExporter: CollectionExporter {
             if beforeRange.length > 0 {
                 result.append(NSAttributedString(
                     string: ns.substring(with: beforeRange),
-                    attributes: makeAttrs(fontSize: fontSize, bold: false, gray: gray)))
+                    attributes: makeStyledAttrs(fontSize: fontSize, bold: bold, gray: gray)))
             }
             let g1 = match.range(at: 1)
             if g1.location != NSNotFound, g1.length > 0 {
                 result.append(NSAttributedString(
                     string: ns.substring(with: g1),
-                    attributes: makeStyledAttrs(fontSize: fontSize, bold: false,
+                    attributes: makeStyledAttrs(fontSize: fontSize, bold: bold,
                                                 italic: true, gray: gray)))
             }
             lastEnd = match.range.upperBound
@@ -540,7 +560,7 @@ final class PDFCollectionExporter: CollectionExporter {
         if lastEnd < ns.length {
             result.append(NSAttributedString(
                 string: ns.substring(from: lastEnd),
-                attributes: makeAttrs(fontSize: fontSize, bold: false, gray: gray)))
+                attributes: makeStyledAttrs(fontSize: fontSize, bold: bold, gray: gray)))
         }
         return result
     }

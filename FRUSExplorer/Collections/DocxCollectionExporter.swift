@@ -42,6 +42,10 @@ import Foundation
 ///          export date and document/volume count; TOC replaced with Word field-code
 ///          TOC; new styles: Heading3, Dateline, AttachmentHeading, FootnoteText,
 ///          DefaultParagraphFont, FootnoteReference
+///   1.2 — Session 128: `markdownItalicRuns(_:styleId:)` converts `_text_` patterns
+///          to inline italic Word runs; applied to citation headings, collection note,
+///          and research note paragraphs; `options: CollectionExportOptions` controls ToC
+///          label style; `noteTexts: [String]` and `includeDocumentBody` respected per entry
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -49,9 +53,10 @@ final class DocxCollectionExporter: CollectionExporter {
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
     ) async throws -> URL {
-        let data = buildDocx(collection: metadata, documents: documents)
+        let data = buildDocx(collection: metadata, documents: documents, options: options)
         let filename = sanitized(metadata.name) + ".docx"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
@@ -66,12 +71,14 @@ final class DocxCollectionExporter: CollectionExporter {
 
     private func buildDocx(
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions
     ) -> Data {
         let ctx = DocxRenderContext()
         let decl = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 
-        let bodyXML = documentBodyXML(collection: collection, documents: documents, ctx: ctx)
+        let bodyXML = documentBodyXML(collection: collection, documents: documents,
+                                       ctx: ctx, options: options)
         let wNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         let docXML = "<w:document xmlns:w=\"\(wNS)\">\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
 
@@ -231,16 +238,17 @@ final class DocxCollectionExporter: CollectionExporter {
     private func documentBodyXML(
         collection: CollectionExportMetadata,
         documents: [CollectionExportDocument],
-        ctx: DocxRenderContext
+        ctx: DocxRenderContext,
+        options: CollectionExportOptions
     ) -> String {
         var body = ""
 
         // Cover: collection title
         body += styledPara(escaped(collection.name), styleId: "Heading1")
 
-        // Cover: optional note
+        // Cover: optional note — markdownItalicRuns converts _text_ to italic Word runs.
         if let note = collection.note, !note.isEmpty {
-            body += styledPara(escaped(note), styleId: "CollectionNote")
+            body += markdownItalicRuns(note, styleId: "CollectionNote")
         }
 
         // Cover: export metadata
@@ -260,30 +268,34 @@ final class DocxCollectionExporter: CollectionExporter {
 
         // Document sections
         for doc in documents {
+            // Section heading always shows the citation; markdownItalicRuns handles _text_.
             let heading = doc.citation.isEmpty ? doc.title : doc.citation
-            body += styledPara(escaped(heading), styleId: "Heading2")
+            body += markdownItalicRuns(heading, styleId: "Heading2", bold: true)
 
             if !doc.historyStateGovURL.isEmpty {
                 body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
             }
 
-            // Body: rich rendering from render model, else flat-text fallback
-            if let model = doc.renderModel {
-                body += renderModelToDocxParagraphs(model, ctx: ctx)
-            } else {
-                let paras = doc.bodyText
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in paras {
-                    let text = para
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                        .replacingOccurrences(of: "\n", with: " ")
-                    body += styledPara(escaped(text), styleId: "Normal")
+            // Body: rich rendering from render model, else flat-text fallback;
+            // skipped when includeDocumentBody is false.
+            if doc.includeDocumentBody {
+                if let model = doc.renderModel {
+                    body += renderModelToDocxParagraphs(model, ctx: ctx)
+                } else {
+                    let paras = doc.bodyText
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in paras {
+                        let text = para
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                            .replacingOccurrences(of: "\n", with: " ")
+                        body += styledPara(escaped(text), styleId: "Normal")
+                    }
                 }
             }
 
-            // Research note
-            if let note = doc.noteText, !note.isEmpty {
+            // Research notes — one block per note; markdownItalicRuns handles _text_.
+            for note in doc.noteTexts where !note.isEmpty {
                 body += researchNoteHeadingPara()
                 let noteParagraphs = note
                     .components(separatedBy: "\n\n")
@@ -292,7 +304,7 @@ final class DocxCollectionExporter: CollectionExporter {
                     let text = para
                         .trimmingCharacters(in: .whitespacesAndNewlines)
                         .replacingOccurrences(of: "\n", with: " ")
-                    body += styledPara(escaped(text), styleId: "ResearchNote")
+                    body += markdownItalicRuns(text, styleId: "ResearchNote")
                 }
             }
         }
@@ -575,6 +587,52 @@ final class DocxCollectionExporter: CollectionExporter {
     }
 
     // MARK: - XML Element Helpers
+
+    /// Emits a styled paragraph whose text may contain `_span_` Markdown italic markers.
+    ///
+    /// Splits `text` on `_..._` patterns and emits alternating normal / italic runs so that
+    /// `_Foreign Relations of the United States_` appears as italic text in Word/Pages/LibreOffice
+    /// rather than literal underscores.
+    ///
+    /// - Parameters:
+    ///   - text: Raw (un-escaped) source text with optional `_span_` markers.
+    ///   - styleId: The Word paragraph style to apply.
+    ///   - bold: When `true`, the base run properties include `<w:b/>`.
+    private func markdownItalicRuns(_ text: String, styleId: String, bold: Bool = false) -> String {
+        guard let regex = try? NSRegularExpression(pattern: "_([^_\\n]+)_") else {
+            return styledPara(escaped(text), styleId: styleId)
+        }
+        let ns = text as NSString
+        let length = ns.length
+        var runs = ""
+        var lastEnd = 0
+        var boldTag: String { bold ? "<w:b/>" : "" }
+
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: length)) {
+            // Normal run before the italic span
+            let beforeRange = NSRange(location: lastEnd, length: match.range.location - lastEnd)
+            if beforeRange.length > 0 {
+                let chunk = xmlEscaped(ns.substring(with: beforeRange))
+                runs += "<w:r><w:rPr>\(boldTag)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+            }
+            // Italic run for the matched span content
+            let g1 = match.range(at: 1)
+            if g1.location != NSNotFound, g1.length > 0 {
+                let chunk = xmlEscaped(ns.substring(with: g1))
+                runs += "<w:r><w:rPr>\(boldTag)<w:i/></w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+            }
+            lastEnd = match.range.upperBound
+        }
+        // Trailing normal run
+        if lastEnd < length {
+            let chunk = xmlEscaped(ns.substring(from: lastEnd))
+            runs += "<w:r><w:rPr>\(boldTag)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+        }
+
+        return runs.isEmpty
+            ? styledPara("", styleId: styleId)
+            : wPara(runs: runs, styleId: styleId)
+    }
 
     /// Emits a styled paragraph with a single plain-text run.
     private func styledPara(_ text: String, styleId: String) -> String {
