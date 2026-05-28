@@ -1176,6 +1176,36 @@ struct FootnoteNumberTests {
         }
         #expect(foundLink, "No frusexplorer:// link found in AttributedString runs")
     }
+
+    // MARK: - Session 79: Converter test (uses private parseFixture)
+
+    @Test("Converter: .titlePage converts to .titlePageBlock render node")
+    func titlePageConvertsToTitlePageBlock() async throws {
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d1">
+          <titlePage>
+            <docTitle><titlePart>FRUS Title</titlePart></docTitle>
+          </titlePage>
+        </div>
+        </body></text></TEI>
+        """
+        guard let model = try await parseFixture(xml) else {
+            Issue.record("parseFixture returned nil"); return
+        }
+        // Walk bodyNodes (may be one level deep if the .document wrapper is present)
+        func hasTitlePageBlock(_ nodes: [FRUSRenderNode]) -> Bool {
+            for node in nodes {
+                if case .titlePageBlock = node { return true }
+                // Recurse into unknown wrappers (document-level passthrough)
+                if case .unknown(_, let c) = node, hasTitlePageBlock(c) { return true }
+            }
+            return false
+        }
+        #expect(hasTitlePageBlock(model.bodyNodes),
+                ".titlePage must convert to .titlePageBlock in the render model")
+    }
 }
 
 // MARK: - Session 64: parseVolumeFull
@@ -1483,34 +1513,6 @@ struct ParseVolumeFullTests {
         #expect(hasTitlePage, "<titlePage> must produce a .titlePage AST node")
     }
 
-    @Test("Converter: .titlePage converts to .titlePageBlock render node")
-    func titlePageConvertsToTitlePageBlock() async throws {
-        let xml = """
-        <?xml version="1.0"?>
-        <TEI><text><body>
-        <div type="document" xml:id="d1">
-          <titlePage>
-            <docTitle><titlePart>FRUS Title</titlePart></docTitle>
-          </titlePage>
-        </div>
-        </body></text></TEI>
-        """
-        guard let model = try await parseFixture(xml) else {
-            Issue.record("parseFixture returned nil"); return
-        }
-        // Walk bodyNodes (may be one level deep if the .document wrapper is present)
-        func hasTitlePageBlock(_ nodes: [FRUSRenderNode]) -> Bool {
-            for node in nodes {
-                if case .titlePageBlock = node { return true }
-                // Recurse into unknown wrappers (document-level passthrough)
-                if case .unknown(_, let c) = node, hasTitlePageBlock(c) { return true }
-            }
-            return false
-        }
-        #expect(hasTitlePageBlock(model.bodyNodes),
-                ".titlePage must convert to .titlePageBlock in the render model")
-    }
-
     @Test("parseVolumeFull does not produce document entries for persons or terms divs")
     func noSpuriousDocumentsFromFrontMatter() async throws {
         let url = try makeFullVolumeFixture()
@@ -1520,8 +1522,7 @@ struct ParseVolumeFullTests {
 
         // Only the <div type="document" xml:id="d1"> should appear in documents.
         #expect(result.documents.count == 1,
-                "Expected exactly 1 document, got \(result.documents.count): " +
-                "\(result.documents.map(\.documentId))")
+                "Expected exactly 1 document, got \(result.documents.count): \(result.documents.map(\.documentId))")
         #expect(result.documents.first?.documentId == "d1",
                 "Expected document ID 'd1'")
     }

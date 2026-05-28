@@ -297,7 +297,7 @@ struct SourceNoteExtractionTests {
             // This node is what the parser produces after the isTransparent fix:
             // rend="inline" type="source" → NOT transparent → .footnote(type: .source)
             .footnote(id: nil, type: .source, printedNumber: nil,
-                      children: [.text("[Source: Johnson Library, National Security File, Vietnam, Vol. I. No classification marking. 2 pages of source text not declassified.]")]),
+                      children: [.text("[Source: Johnson Library, National Security File, Vietnam, Vol. I. No classification marking. 2 pages of source text. Not declassified.]")]),
             .paragraph(children: [.text("[Not declassified.]")])
         ]
         let result = extractSourceNote(from: nodes)

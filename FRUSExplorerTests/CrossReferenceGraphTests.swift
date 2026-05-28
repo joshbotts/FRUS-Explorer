@@ -240,9 +240,9 @@ struct CrossReferenceGraphTests {
 
     // MARK: - InteractionTest
 
-    @Test("InteractionTest: tapping a node selects it; second tap triggers navigation")
+    @Test("InteractionTest: tapping a node selects it; second tap re-centres the graph")
     @MainActor
-    func tapSelectsNodeThenNavigates() throws {
+    func tapSelectsNodeThenRecentres() throws {
         let graph = makeTestGraph(inboundCount: 3, outboundCount: 2)
         let vm = CrossReferenceGraphViewModel(
             centralDocumentId: "d0", centralVolumeId: "vol1"
@@ -251,21 +251,27 @@ struct CrossReferenceGraphTests {
         vm.rebuildDisplay()
         vm.onCanvasSizeChanged(canvasSize, reduceMotion: true)
 
-        // Pick a non-central node with metadata (so makeEntry succeeds)
+        // Pick a non-central node with metadata (so nodeMetadata lookup succeeds)
         let target = try #require(
             vm.displayNodes.first { !$0.isCentral && $0.metadata?.header != nil }
         )
+        let targetDocId  = try #require(target.metadata?.documentId)
+        let targetVolId  = try #require(target.metadata?.volumeId)
 
-        // First tap: select (info panel)
+        // First tap: select (shows info panel)
         #expect(vm.selectedNodeKey == nil)
         vm.tapNode(target.id, reduceMotion: true)
         #expect(vm.selectedNodeKey == target.id)
 
-        // Second tap: navigate and deselect
+        // Second tap: re-centres the graph (version 1.2 behavior).
+        // recenterOn() pushes the old centre onto history and resets state.
+        let prevDocId = vm.centralDocumentId
         vm.tapNode(target.id, reduceMotion: true)
-        #expect(vm.selectedNodeKey == nil)
-        #expect(!vm.navigationPath.isEmpty)
-        #expect(vm.navigationPath.last?.documentId == target.metadata?.documentId)
+        #expect(vm.selectedNodeKey == nil,    "selectedNodeKey should be cleared on re-centre")
+        #expect(vm.centralDocumentId == targetDocId, "graph should re-centre on the tapped document")
+        #expect(vm.centralVolumeId   == targetVolId, "volume should also update on re-centre")
+        #expect(vm.history.count == 1,        "old centre should be pushed to history")
+        #expect(vm.history.last?.documentId == prevDocId, "history entry should record old centre")
     }
 
     // MARK: - AccessibilityTest

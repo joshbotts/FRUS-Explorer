@@ -28,11 +28,18 @@ import SwiftData
 /// a structured JSON object (`.structured`). The Document view renders structured
 /// summaries as a labeled field list.
 ///
+/// ## Sendability
+/// Marked `@unchecked Sendable` so `SummarizationService.summarize()` can return
+/// the persisted model across the actor boundary to callers. Instances are only ever
+/// mutated through the `ModelContext` that owns them, which enforces its own thread safety.
+///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
-///   1.1 — Session 32: added `@unchecked Sendable` conformance; the model is only ever
-///          mutated on the `@MainActor` context that owns its `ModelContext`
-@Model final class GeneratedSummary {
+///   1.1 — Session 32: `@unchecked Sendable` documented as planned; conformance was
+///          mistakenly omitted from source
+///   1.2 — Session 128: `@unchecked Sendable` conformance added (fixes Swift 6 strict-
+///          concurrency errors in `SummarizationServiceTests`)
+@Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity
 

@@ -557,14 +557,17 @@ struct DateParsingTests {
 
     @Test("parseDateISO extracts year-month from month-year dateline")
     func monthYearExtraction() {
+        // normalizeToFullDate pads "1971-10" → "1971-10-01" so string-comparison
+        // date filtering works correctly across precisions.
         let date = IndexingPipeline.parseDateISO(from: "Moscow, October 1971")
-        #expect(date == "1971-10")
+        #expect(date == "1971-10-01")
     }
 
     @Test("parseDateISO falls back to year for year-only datelines")
     func yearOnlyFallback() {
+        // normalizeToFullDate pads "1972" → "1972-01-01".
         let date = IndexingPipeline.parseDateISO(from: "Undated. Presumably early 1972.")
-        #expect(date == "1972")
+        #expect(date == "1972-01-01")
     }
 
     @Test("parseDateISO returns nil for unparseable datelines")
@@ -636,6 +639,7 @@ struct DateIndexingAccuracyTests {
 
     @Test("rangeStartUsedWhenNoExact — @from used when @when absent")
     func rangeStartUsedWhenNoExact() {
+        // normalizeToFullDate pads "1969-03" → "1969-03-01".
         let nodes: [FRUSASTNode] = [
             .dateline(children: [
                 .date(when: nil, from: "1969-03", to: "1969-04",
@@ -644,11 +648,12 @@ struct DateIndexingAccuracyTests {
             ])
         ]
         let result = IndexingPipeline.extractStructuredDate(from: nodes)
-        #expect(result == "1969-03")
+        #expect(result == "1969-03-01")
     }
 
     @Test("notBeforeUsedWhenNoWhenOrFrom — @notBefore used when @when and @from absent")
     func notBeforeUsedWhenNoWhenOrFrom() {
+        // normalizeToFullDate pads "1952" → "1952-01-01".
         let nodes: [FRUSASTNode] = [
             .dateline(children: [
                 .date(when: nil, from: nil, to: nil,
@@ -657,7 +662,7 @@ struct DateIndexingAccuracyTests {
             ])
         ]
         let result = IndexingPipeline.extractStructuredDate(from: nodes)
-        #expect(result == "1952")
+        #expect(result == "1952-01-01")
     }
 
     @Test("bodyDateUsedWhenNoDatelineDate — @when in body paragraph, no dateline date")
@@ -678,12 +683,12 @@ struct DateIndexingAccuracyTests {
     @Test("fallbackToHeuristicWhenNoAttributes — plain dateline without <date> element")
     func fallbackToHeuristicWhenNoAttributes() {
         // Dateline has no <date> child, just plain text — heuristic must fire.
+        // normalizeToFullDate pads the month-year result "1969-01" → "1969-01-01".
         let nodes: [FRUSASTNode] = [
             .dateline(children: [.text("Washington, January 1969.")])
         ]
         let result = IndexingPipeline.extractStructuredDate(from: nodes)
-        // Heuristic should extract year-month
-        #expect(result == "1969-01")
+        #expect(result == "1969-01-01")
     }
 
     @Test("nullWhenTrulyUnparseable — no date information at all")

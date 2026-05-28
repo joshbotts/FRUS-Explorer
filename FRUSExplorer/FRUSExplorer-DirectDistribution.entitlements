@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+    FRUS Explorer — Direct Distribution (Developer ID) Entitlements
+    Used by: macOS target (DirectDistribution config only)
+
+    Security posture is intentionally identical to FRUSExplorer-AppStore.entitlements
+    so that the DirectDistribution build is sandbox-equivalent to the App Store build.
+    The DistributionTests SandboxParityTest suite enforces this invariant.
+
+    Sparkle (automatic updates) is linked via OTHER_LDFLAGS in the DirectDistribution
+    build configuration and enabled at runtime via the -DDIRECT_DISTRIBUTION Swift flag;
+    it does not require additional entitlements.
+-->
+<dict>
+    <!-- Sandbox: enforced for Developer ID distribution to match App Store posture -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- Outbound network: GitHub API, NARA Catalog API, Sparkle update checks -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!--
+        Read/write access to files selected via NSSavePanel / NSOpenPanel.
+        Required for collection exports: MacExportCompleteView's "Save To…" button copies
+        the exported PDF/HTML from temporaryDirectory to the user-chosen destination.
+    -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- iCloud container for CloudKit (SwiftData sync) -->
+    <key>com.apple.developer.icloud-container-identifiers</key>
+    <array>
+        <string>iCloud.bottsywattsy.FRUS-Explorer</string>
+    </array>
+
+    <!-- iCloud services enabled for this container -->
+    <key>com.apple.developer.icloud-services</key>
+    <array>
+        <string>CloudKit</string>
+    </array>
+
+    <!-- iCloud KV store for lightweight cross-device defaults (e.g., active project ID) -->
+    <key>com.apple.developer.ubiquity-kvstore-identifier</key>
+    <string>$(TeamIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
+
+    <!--
+        Keychain access group for the NARA Catalog API key.
+        Items stored in this group with kSecAttrSynchronizable=true sync via iCloud Keychain.
+    -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
+    </array>
+</dict>
+</plist>
