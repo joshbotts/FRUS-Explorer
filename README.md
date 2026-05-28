@@ -6,7 +6,7 @@ series more effectively.
 
 ## Features
 
-- Full-text search and filtering across the FRUS corpus (FTS5, English stemming)
+- Full-text search and filtering across the FRUS corpus (FTS5, English stemming, BM25 ranking)
 - TEI-rendered document view faithful to history.state.gov content and annotation
 - Structured date indexing from TEI `<date>` attributes; accurate date-range filtering
 - Editorial note distinction: index and filter primary documents vs. editorial notes separately
@@ -18,18 +18,19 @@ series more effectively.
 - AI summarization via Apple Intelligence (FoundationModels framework)
 - User-configurable summarization prompts with structured output support
 - Citation formatter (history.state.gov recommended style)
-- Citation lookup: resolve citations encountered in publications to FRUS documents
+- Citation lookup: resolve citations encountered in publications to FRUS documents (⌘⇧F on macOS, Find by Citation button in the macOS search window)
 - NARA Source Explorer: link document source notes to NARA Catalog records
-- Composable document collections with PDF and HTML export
+- Composable document collections with PDF, HTML, and DOCX export; configurable table-of-contents label style (citation or header/dateline) and per-document body and research note inclusion
+- Corpus Analytics: corpus-wide term frequency histograms (Swift Charts) with Decade / Year / Month / Day / Subseries granularity, optional linear regression fit line, year-range filter, and metric explanation popover
 - CloudKit-synced user data (notes, tags, collections, projects)
 - Offline functionality with download queue; volumes indexed automatically after download
-- Live indexing progress (stage, document count, throughput) shown in the volume browser; document list loads automatically when indexing completes — no navigate-away required
-- Per-volume indexing status and one-tap Reindex control in Settings → Storage Management
+- Live indexing progress (stage, document count, throughput) in the volume browser; document list loads automatically on completion without navigating away; macOS status bar shows a tappable queue popover with per-volume progress, combined ETA, and pending-volume list for multi-volume batches
+- Per-volume indexing status, one-tap Reindex control, and destructive Delete Index & Rebuild action in Settings → Storage Management
 - Breadcrumb navigation trail in the volume browser
 - Front matter sections (preface, introduction, errata) browsable directly from the corpus
 - Accurate subseries grouping in the volume browser and manifest diff
-- **iOS/iPadOS (iPhone)**: five-tab navigation — Browse, Search, Activity, Collections, Settings
-- **macOS**: native Settings scene (⌘,) with tabbed preferences window; ⌘F / ⌘⇧F shortcuts
+- **iOS/iPadOS**: five-tab navigation — Browse, Search, Activity, Collections, Settings
+- **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons
 
 ## Requirements
 
@@ -49,9 +50,10 @@ FRUSExplorer/
 ├── project.yml                   XcodeGen spec — edit this, not the .xcodeproj directly
 ├── FRUSExplorer/                 Main app source
 │   ├── App/                      Entry point, AppState, root views
+│   ├── Distribution/             Direct-distribution-only code (SparkleUpdater, guarded by DIRECT_DISTRIBUTION flag)
 │   ├── Resources/                Bundled data (manifest, taxonomy, subject tags)
 │   └── Localizable.strings       English base localisation
-├── FRUSExplorerTests/            Unit tests
+├── FRUSExplorerTests/            Unit tests (509 tests, all passing)
 ├── FRUSExplorerUITests/          UI tests
 ├── ManifestGenerator/            SPM tool: generates manifest.json from FRUS GitHub
 ├── TaxonomyGenerator/            SPM tool: generates volume-tag-taxonomy.json
@@ -75,7 +77,7 @@ Select the **FRUSExplorerMac** scheme with the **AppStore** build configuration.
 Select the **FRUSExplorerMac** scheme with the **DirectDistribution** build configuration.
 This configuration:
 - Links **Sparkle 2** for automatic updates (configured in `project.yml`)
-- Sets the `-DDIRECT_DISTRIBUTION` compiler flag to enable `SparkleUpdater.swift`
+- Sets the `-DDIRECT_DISTRIBUTION` compiler flag to enable `Distribution/SparkleUpdater.swift`
 - Uses `CODE_SIGN_STYLE: Manual` with Developer ID signing
 - Includes a "Check for Updates…" menu item in the application menu
 
@@ -187,16 +189,24 @@ network access and must be verified manually before each release:
 | **EditorialNoteFilterTest** | Switch Document Type filter; confirm editorial notes included/excluded correctly |
 | **FrontMatterTest** | Navigate to a volume preface; confirm "Read" button appears and opens document |
 | **IndexingProgressInBrowserTest** | Trigger "Index Now" from a CompilationView; confirm live progress bar appears (stage label + doc count + throughput), then doc list populates automatically on completion without navigating away |
+| **MacQueueProgressPanelTest** | Trigger download of ≥2 volumes simultaneously on macOS; confirm status-bar popover shows "Volume N of M", current-volume progress bar, combined ETA, and expandable pending-volume list; confirm popover closes when indexing finishes |
 | **StorageReindexTest** | Open Settings → Storage Management; confirm per-volume indexed badge; tap Reindex on an indexed volume; confirm it re-indexes and badge updates |
+| **DeleteIndexRebuildTest** | Open Settings → Storage Management; tap "Delete Index & Rebuild"; confirm confirmation alert appears; confirm that after accepting, all volumes are re-indexed from scratch and search results are correct |
 | **CrossRefNavigationTest** | Tap a cross-reference link in a document; confirm DocumentView loads the target document body (not just updates the nav title) |
 | **SearchResultNavigationTest** | Select a search result; confirm the full document body loads in DocumentView, not just the header |
+| **SearchResultDisplayTest** | Run a keyword search; confirm result rows show the original document header and dateline text (e.g. "Memorandum of Conversation", "Washington, January 20, 1969."), not Porter-stemmed tokens |
+| **MacSearchCapTest** | Run a broad search on macOS with a large corpus; confirm result count label shows "N of M total" when results are capped at 7,500, with guidance text below the list |
 | **SearchPerformanceTest** | Search a large corpus; results appear in <1 second |
 | **GraphRenderPerformanceTest** | Open a document with 20+ cross-references; confirm smooth animation; hover an edge to see context |
+| **AnalyticsGranularityTest** | Open Corpus Analytics; change the "Group by" picker through Decade / Year / Month / Day / Subseries; confirm chart updates at each granularity; toggle the fit-line switch and confirm the regression line appears/disappears; tap the info button and confirm the metric explanation popover opens |
+| **CollectionExportOptionsTest** | Open a collection with ≥2 entries and multiple research notes; verify per-entry include-body toggle hides/shows the body in the export; select multiple notes per entry; switch the ToC label picker between Citation and Header & Dateline; export to PDF, HTML, and DOCX; confirm italics render correctly (not as literal underscores) in all three formats |
+| **FindByCitationMacTest** | On macOS, use both the ⌘⇧F shortcut and the "Find by Citation" button in the search window to open the Citation Lookup sheet; confirm a citation resolves to the correct document |
 | **CloudKitSyncTest** | Create a research note on device A; confirm it appears on device B |
 | **OfflineResilienceTest** | Disable network mid-session; confirm no crash or data loss |
 | **CrossPlatformVerification** | Verify all major workflows on macOS, iPadOS, and iPhone |
 | **iOSTabNavigationTest** | Verify all five tabs (Browse, Search, Activity, Collections, Settings) on iPhone |
-| **macOSSettingsSceneTest** | Open macOS Settings via ⌘,; verify all panes scroll correctly with long volume lists (Download Manager, Volume Management, Storage Management); verify per-volume reindex control in Storage Management |
+| **macOSSettingsSceneTest** | Open macOS Settings via ⌘,; verify all panes scroll correctly with long volume lists (Download Manager, Volume Management, Storage Management); verify per-volume reindex control and Delete Index & Rebuild button in Storage Management |
+| **MacTooltipsTest** | On macOS, hover over icon-only toolbar buttons throughout the app (document view toolbar, search window, Source Explorer, Collections, Analytics); confirm `.help()` tooltip appears for each |
 
 ## Coding Standards
 
@@ -223,11 +233,12 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 │  (Summarization, Search, Export, Citation,        │
 │   NARA Resolution, Download, Indexing)            │
 ├──────────────────┬───────────────────────────────┤
-│   SwiftData      │   SQLite FTS5 + Edge DB        │
+│   SwiftData      │   SQLite FTS5 + Auxiliary DB   │
 │  (User Data +    │   (Search Index +              │
 │   CloudKit Sync) │    Cross-References +          │
 │                  │    Person Mentions +            │
-│                  │    Persons/Terms Glossaries)   │
+│                  │    Persons/Terms Glossaries +  │
+│                  │    Document Cache)             │
 ├──────────────────┴───────────────────────────────┤
 │           TEI Rendering Pipeline                  │
 │    (XML Parser → Swift AST → SwiftUI)             │
