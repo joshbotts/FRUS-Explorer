@@ -342,4 +342,63 @@ struct PersonFilterTests {
         #expect(vm.personRefText == "kissinger-henry-a")
         #expect(vm.searchParameters.personRef == "kissinger-henry-a")
     }
+
+    // MARK: - UnstemmedHeaderDisplayTest
+
+    /// Verifies that `SearchResult.header` and `SearchResult.dateline` contain the
+    /// original (unstemmed) document text rather than the Porter-stemmed tokens stored
+    /// in the FTS5 virtual table.
+    ///
+    /// The FTS5 table stores `stemForIndex(header)` — e.g. "Memorandum of Conversation"
+    /// becomes "memorandum of convers". Reading `header` back from the FTS5 search row
+    /// therefore returns stemmed junk. `rebuildSnippetsAndAttachDates` must substitute
+    /// `document_cache.header` (original text) for the FTS5-indexed value.
+    @Test("Search results show unstemmed header and dateline from document_cache")
+    @MainActor
+    func searchResultsShowUnstemmedHeaderAndDateline() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSUnstemmedHeader-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dbURL  = dir.appendingPathComponent("unstemmed.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+        let store = try FTS5Store(databaseURL: dbURL)
+        let subjectStore = SubjectTagStore(entries: [], appearances: [])
+        let pipeline = try IndexingPipeline(
+            fts5Store: store,
+            databaseURL: dbURL,
+            volumesDirectory: volDir,
+            subjectTagStore: subjectStore,
+            concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+        // The header contains words that Porter-stem differently:
+        // "Memorandum" → "memorandum", "Conversation" → "convers", "Assistant" → "assist".
+        // The dateline has a full proper name and ordinal date that would be mangled.
+        let originalHeader   = "Memorandum of Conversation"
+        let originalDateline = "Washington, January 20, 1969."
+
+        try writeSearchFixture(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: [
+                (id: "d1", xml: "<head>\(originalHeader)</head><dateline>\(originalDateline)</dateline><p>Discussed détente policy.</p>")
+            ]
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        vm.keywords = "détente"
+        await vm.search()
+
+        let result = try #require(vm.results.first { $0.documentId == "d1" })
+        #expect(result.header == originalHeader,
+                "header should be the original text from document_cache, not a stemmed FTS5 token")
+        #expect(result.dateline == originalDateline,
+                "dateline should be the original text from document_cache, not a stemmed FTS5 token")
+    }
 }

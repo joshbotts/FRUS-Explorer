@@ -111,6 +111,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          • `documentBodyTextsAndDates` combined function fetches both values in one
 ///            SQL statement, halving actor round-trips during search post-processing.
 ///          • `PRAGMA temp_store=MEMORY` added to keep CTE materializations in RAM.
+///   2.8 — Session 129: `documentBodyTextsAndDates` extended to also return `header` and
+///          `dateline` from `document_cache`. `SearchService` now substitutes these
+///          unstemmed values for the FTS5-indexed (Porter-stemmed) ones so search result
+///          rows display the original document text rather than stemmed tokens.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -2011,27 +2015,42 @@ public actor IndexingPipeline {
         return out
     }
 
-    /// Returns both `body_text` (from `document_cache`) and `date_iso` (from
-    /// `document_dates`) for each of the given document keys in a single SQL round-trip.
+    /// Returns `body_text`, `header`, `dateline` (all from `document_cache`) and
+    /// `date_iso` (from `document_dates`) for each of the given document keys in a
+    /// single SQL round-trip.
     ///
-    /// This is the preferred lookup for search post-processing because it halves the
-    /// number of actor hops and SQL statements compared to calling `documentBodyTexts`
-    /// and `documentDates` separately. A CTE VALUES join is used so SQLite resolves
-    /// each pair via the composite primary key index rather than scanning the table.
+    /// This is the preferred lookup for search post-processing because it combines
+    /// everything needed to fully populate a `SearchResult` in one CTE-join query.
+    /// A `WITH keys(v, d) AS (VALUES …)` CTE is used so SQLite resolves each pair
+    /// via the composite primary key index rather than scanning the table.
     ///
-    /// The returned `dates` dictionary omits entries for documents whose `date_iso`
-    /// is NULL (genuinely undated documents, or volumes not yet indexed).
+    /// ## Why header/dateline come from document_cache (not FTS5)
+    /// The FTS5 table stores **stemmed** text — `stemForIndex()` is applied to
+    /// `header` and `dateline` at index time so they participate in full-text search.
+    /// Reading them back from FTS5 would yield token strings like
+    /// `"memorandum presid special assist"` instead of the original
+    /// `"Memorandum From the President's Special Assistant …"`.
+    /// `document_cache` preserves the original AST-derived plain text and is the
+    /// correct source for any user-facing display.
+    ///
+    /// The returned `dates` and `datelines` dictionaries omit entries for documents
+    /// whose `date_iso` / `dateline` column is NULL.
     ///
     /// - Parameter keys: `(volumeId, documentId)` pairs to look up.
     /// - Returns:
-    ///   - `bodies`: `"volumeId/documentId"` → unstemmed body text.
-    ///   - `dates`:  `"volumeId/documentId"` → ISO 8601 date string (where available).
+    ///   - `bodies`:    `"volumeId/documentId"` → unstemmed body text.
+    ///   - `dates`:     `"volumeId/documentId"` → ISO 8601 date string (where available).
+    ///   - `headers`:   `"volumeId/documentId"` → original (unstemmed) header text.
+    ///   - `datelines`: `"volumeId/documentId"` → original dateline string (where present).
     public func documentBodyTextsAndDates(
         for keys: [(volumeId: String, documentId: String)]
-    ) throws -> (bodies: [String: String], dates: [String: String]) {
-        guard !keys.isEmpty else { return ([:], [:]) }
-        var bodies: [String: String] = [:]
-        var dates:  [String: String] = [:]
+    ) throws -> (bodies: [String: String], dates: [String: String],
+                 headers: [String: String], datelines: [String: String]) {
+        guard !keys.isEmpty else { return ([:], [:], [:], [:]) }
+        var bodies:    [String: String] = [:]
+        var dates:     [String: String] = [:]
+        var headers:   [String: String] = [:]
+        var datelines: [String: String] = [:]
         // 400 pairs × 2 params/pair = 800 — safely under the SQLite 999-variable cap.
         let chunkSize = 400
         for chunk in stride(from: 0, to: keys.count, by: chunkSize)
@@ -2041,7 +2060,9 @@ public actor IndexingPipeline {
                 WITH keys(v, d) AS (VALUES \(valuePlaceholders))
                 SELECT dc.volume_id || '/' || dc.document_id,
                        dc.body_text,
-                       dd.date_iso
+                       dd.date_iso,
+                       dc.header,
+                       dc.dateline
                 FROM document_cache dc
                 LEFT JOIN document_dates dd
                     ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
@@ -2057,10 +2078,12 @@ public actor IndexingPipeline {
                 guard let k = auxColumnString(stmt, 0),
                       let b = auxColumnString(stmt, 1) else { continue }
                 bodies[k] = b
-                if let d = auxColumnString(stmt, 2) { dates[k] = d }
+                if let d  = auxColumnString(stmt, 2) { dates[k]     = d }
+                if let h  = auxColumnString(stmt, 3) { headers[k]   = h }
+                if let dl = auxColumnString(stmt, 4) { datelines[k] = dl }
             }
         }
-        return (bodies: bodies, dates: dates)
+        return (bodies: bodies, dates: dates, headers: headers, datelines: datelines)
     }
 
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {

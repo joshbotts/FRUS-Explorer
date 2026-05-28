@@ -45,6 +45,11 @@ import Foundation
 ///          replaced by `rebuildSnippetsAndAttachDates`, which fetches body text and
 ///          dates together via `IndexingPipeline.documentBodyTextsAndDates(for:)`.
 ///          Halves actor round-trips and SQL statements for the post-processing phase.
+///   1.6 — Session 129: `rebuildSnippetsAndAttachDates` now also reads `header` and
+///          `dateline` from `document_cache` (via the extended return tuple of
+///          `documentBodyTextsAndDates`) and substitutes them for the FTS5-indexed
+///          (Porter-stemmed) values. Search result rows now show the original document
+///          header and dateline text rather than stemmed tokens.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -265,14 +270,22 @@ public actor SearchService {
         return terms.filter { seen.insert($0.lowercased()).inserted }
     }
 
-    /// Builds TEI-derived snippets and attaches ISO dates to every result in a
-    /// single `IndexingPipeline` round-trip.
+    /// Builds TEI-derived snippets, attaches ISO dates, and replaces FTS5-stemmed
+    /// header/dateline values with the originals — all in a single `IndexingPipeline`
+    /// round-trip.
     ///
     /// Calls `pipeline.documentBodyTextsAndDates(for:)`, which issues one CTE-join
-    /// query per chunk of 400 keys to fetch both `body_text` (unstemmed, from
-    /// `document_cache`) and `date_iso` (from `document_dates`) simultaneously.
-    /// This replaces the previous two-step pattern (`rebuildSnippetsFromTEI` +
-    /// `attachDates`) which required two separate actor hops and SQL statements.
+    /// query per chunk of 400 keys to fetch `body_text`, `date_iso`, `header`, and
+    /// `dateline` from `document_cache` / `document_dates` simultaneously.
+    ///
+    /// **Why header/dateline must be re-fetched**: The FTS5 table stores **stemmed**
+    /// text. `stemForIndex()` is applied to `header` and `dateline` before insertion,
+    /// so the values returned by the FTS5 `search()` call are Porter-stemmed tokens
+    /// (`"memorandum presid special assist"` instead of the original
+    /// `"Memorandum From the President's Special Assistant …"`).
+    /// `document_cache` stores the original unstemmed text and is the correct source
+    /// for display. The fallback (for documents absent from `document_cache`) keeps
+    /// the FTS5-stemmed value, which is a graceful degradation.
     ///
     /// **Snippet building**: the body text is scanned word-by-word; the first word
     /// whose Porter stem matches any positive query term is wrapped in `<b>…</b>`
@@ -294,13 +307,16 @@ public actor SearchService {
         let stemmedQueryTerms = queryTerms.isEmpty ? [] : queryTerms.map { PorterStemmer.stem($0.lowercased()) }
 
         let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-        let bodies: [String: String]
-        let dates:  [String: String]
+        let bodies:    [String: String]
+        let dates:     [String: String]
+        let headers:   [String: String]
+        let datelines: [String: String]
         do {
-            (bodies, dates) = try await pipeline.documentBodyTextsAndDates(for: keys)
+            (bodies, dates, headers, datelines) =
+                try await pipeline.documentBodyTextsAndDates(for: keys)
         } catch {
             #if DEBUG
-            print("[SearchService] documentBodyTextsAndDates failed: \(error) — snippets and date sort will degrade")
+            print("[SearchService] documentBodyTextsAndDates failed: \(error) — snippets, date sort, and header display will degrade")
             #endif
             return results
         }
@@ -309,6 +325,11 @@ public actor SearchService {
             let key = "\(result.volumeId)/\(result.documentId)"
             let dateISO = dates[key]
 
+            // Prefer the document_cache (original) header/dateline over the FTS5
+            // (stemmed) version. Falls back to the FTS5 value on a cache miss.
+            let header   = headers[key]   ?? result.header
+            let dateline = datelines[key] ?? result.dateline
+
             let snippet: String
             if let body = bodies[key], !body.isEmpty, !stemmedQueryTerms.isEmpty {
                 // Build TEI-derived context snippet; falls back to header·dateline on miss.
@@ -316,18 +337,18 @@ public actor SearchService {
                     body: body,
                     stemmedTerms: stemmedQueryTerms,
                     contextRadius: 200
-                ) ?? headerFallbackSnippet(result)
+                ) ?? headerFallbackSnippet(header: header, dateline: dateline)
             } else {
                 // Cache miss or no query terms: show header + dateline as minimal context.
-                snippet = headerFallbackSnippet(result)
+                snippet = headerFallbackSnippet(header: header, dateline: dateline)
             }
 
             return SearchResult(
                 documentId: result.documentId,
                 volumeId: result.volumeId,
                 documentNumber: result.documentNumber,
-                header: result.header,
-                dateline: result.dateline,
+                header: header,
+                dateline: dateline,
                 dateISO: dateISO,
                 sourceNote: result.sourceNote,
                 snippet: snippet,
@@ -339,13 +360,13 @@ public actor SearchService {
         }
     }
 
-    /// Builds a minimal fallback snippet from a result's header and dateline fields.
+    /// Builds a minimal fallback snippet from a header and dateline string.
     ///
     /// Used when the `document_cache` body text is unavailable for a result (e.g. a
     /// volume that was just indexed and whose cache row hasn't landed yet). Showing
     /// the header and dateline is preferable to an empty snippet row.
-    private func headerFallbackSnippet(_ result: SearchResult) -> String {
-        [result.header, result.dateline]
+    private func headerFallbackSnippet(header: String, dateline: String?) -> String {
+        [header, dateline]
             .compactMap { s in (s?.isEmpty == false) ? s : nil }
             .joined(separator: " · ")
     }
