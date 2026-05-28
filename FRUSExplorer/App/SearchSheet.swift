@@ -54,6 +54,9 @@ import SwiftUI
 ///          full lines of surrounding context (no stemmed-token leakage)
 ///   1.4 — Session 120: "Find by Citation" button surfaces CitationLookupView in the
 ///          search window so macOS users have a direct entry point
+///   1.5 — Session 121: `.onSubmit` now calls `searchVM.submitSearch()` instead of
+///          launching an independent Task; avoids parallel search tasks that caused
+///          the "three result sets" cycling bug
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -143,7 +146,7 @@ struct MacSearchWindowView: View {
                 TextField("Search documents, notes, summaries…", text: $searchVM.queryText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 14))
-                    .onSubmit { Task { await searchVM.performSearch(service: appState.searchService) } }
+                    .onSubmit { searchVM.submitSearch() }
 
                 if !searchVM.queryText.isEmpty {
                     Button {

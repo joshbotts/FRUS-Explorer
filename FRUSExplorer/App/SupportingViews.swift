@@ -246,7 +246,9 @@ struct ResearchStripView: View {
             }
         }
         .sheet(isPresented: $showTagPicker) {
-            if let entry { MacTagPickerSheet(entry: entry) }
+            if let entry {
+                MacTagPickerSheet(entry: entry, indexingPipeline: appState.indexingPipeline)
+            }
         }
         .sheet(isPresented: $showHighlightNoteEditor, onDismiss: {
             highlightCoordinator.pendingHighlightLink = nil
@@ -1532,17 +1534,29 @@ private enum CitationPopoverStyle: String, CaseIterable, Identifiable {
 /// macOS document-level user-tag picker.
 ///
 /// Lists all `UserTag` records from SwiftData and lets the user toggle which tags
-/// apply to this document. Tags are stored as `userTagIds` on a dedicated
-/// `DocumentUserTag` record (note: the full document-level tag persistence model
-/// is scaffolded here; complete write-back requires a `DocumentUserTag` SwiftData
-/// model to be added in a future session).
+/// apply to this document. A "New Tag" field lets the user create tags inline.
+///
+/// ## Persistence
+/// On appear the view reads existing tag IDs from `IndexingPipeline.currentUserTagIds`
+/// and pre-populates the toggle list. When the user clicks Done, the updated set is
+/// written back to both `document_cache` and the FTS5 index via
+/// `IndexingPipeline.updateUserTagIds`. If `indexingPipeline` is nil (document not yet
+/// indexed), the selection is a no-op and the sheet dismisses normally.
+///
+/// Version history:
+///   1.0 — Session 60+: initial scaffold (save was a no-op; stale comment referenced a
+///          non-existent DocumentUserTag model)
+///   1.1 — Session 121: loads existing tags on appear; saves via IndexingPipeline.updateUserTagIds
+///          on Done (Bug 2 — selection was stored in @State only, lost on dismiss)
 struct MacTagPickerSheet: View {
     let entry: DocumentBrowserEntry
+    let indexingPipeline: IndexingPipeline?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @State private var selectedTagIds: Set<UUID> = []
     @State private var newTagName: String = ""
+    @State private var isSaving: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -1585,11 +1599,21 @@ struct MacTagPickerSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") { saveAndDismiss() }
+                        .disabled(isSaving)
                 }
             }
         }
         .frame(minWidth: 340, minHeight: 300)
+        // Load existing tag associations when the sheet appears.
+        .task {
+            guard let pipeline = indexingPipeline else { return }
+            let ids = (try? await pipeline.currentUserTagIds(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId
+            )) ?? []
+            selectedTagIds = Set(ids.compactMap { UUID(uuidString: $0) })
+        }
     }
 
     private func createTag() {
@@ -1599,6 +1623,30 @@ struct MacTagPickerSheet: View {
         modelContext.insert(tag)
         selectedTagIds.insert(tag.id)
         newTagName = ""
+    }
+
+    private func saveAndDismiss() {
+        guard let pipeline = indexingPipeline else {
+            dismiss()
+            return
+        }
+        isSaving = true
+        let tagString = selectedTagIds.isEmpty
+            ? nil
+            : selectedTagIds.map(\.uuidString).joined(separator: " ")
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        Task {
+            try? await pipeline.updateUserTagIds(
+                volumeId: vId,
+                documentId: dId,
+                userTagIds: tagString
+            )
+            await MainActor.run {
+                isSaving = false
+                dismiss()
+            }
+        }
     }
 }
 

@@ -667,6 +667,56 @@ public actor IndexingPipeline {
                                   userTagIds: userTagIds, noteText: bodyText)
     }
 
+    /// Updates user-tag assignments for a document in both the FTS5 index and
+    /// `document_cache`, without touching the note or summary text.
+    ///
+    /// Reads the existing `noteText` from `document_cache` so the FTS5 row update
+    /// preserves it. Pass `nil` for `userTagIds` to remove all tag associations.
+    ///
+    /// - Parameters:
+    ///   - volumeId:   Volume identifier (e.g. `"frus1969-76v10"`).
+    ///   - documentId: Document identifier within the volume.
+    ///   - userTagIds: Space-separated UUID strings, or `nil` to clear all tags.
+    public func updateUserTagIds(
+        volumeId: String,
+        documentId: String,
+        userTagIds: String?
+    ) async throws {
+        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
+            logger.warning("updateUserTagIds: \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
+            return
+        }
+        let updated = cached.toFTS5Document(
+            summaryText: cached.summaryText,
+            noteText: cached.noteText,
+            updatedUserTagIds: userTagIds
+        )
+        try await fts5Store.update(document: updated)
+        try updateCacheNoteFields(
+            volumeId: volumeId,
+            documentId: documentId,
+            userTagIds: userTagIds,
+            noteText: cached.noteText
+        )
+    }
+
+    /// Returns the current user-tag IDs stored for a document as an array of UUID strings.
+    ///
+    /// Reads `document_cache`. Returns an empty array if the document is not indexed
+    /// or has no tag associations. The returned strings are `UUID.uuidString` values.
+    ///
+    /// Marked `async` so callers outside the actor (e.g. SwiftUI `.task` closures)
+    /// can use `await` to hop onto the actor's executor without a warning.
+    ///
+    /// - Parameters:
+    ///   - volumeId:   Volume identifier.
+    ///   - documentId: Document identifier within the volume.
+    public func currentUserTagIds(volumeId: String, documentId: String) async throws -> [String] {
+        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId),
+              let raw = cached.userTagIds, !raw.isEmpty else { return [] }
+        return raw.split(separator: " ").map(String.init)
+    }
+
     /// Updates the summary text for a document that is already in the index.
     ///
     /// Reads original field text from `document_cache`, merges in `summary.responseText`,

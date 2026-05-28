@@ -221,9 +221,9 @@ struct SourceNoteExtractionTests {
             .footnote(
                 id: "d1fn1", type: .unclassified, printedNumber: "1",
                 children: [
-                    .unknown("seg", ["type": "summary"],
+                    .unknown(name: "seg", attributes: ["type": "summary"], children:
                              [.text("Summary: Kissinger met with Dobrynin to discuss SALT.")]),
-                    .unknown("seg", ["type": "source"],
+                    .unknown(name: "seg", attributes: ["type": "source"], children:
                              [.text("Source: Library of Congress, Manuscript Division, Kissinger Papers, Box 374, Chronological File.")])
                 ]
             )
@@ -241,10 +241,10 @@ struct SourceNoteExtractionTests {
                 id: "d1fn1", type: .unclassified, printedNumber: "1",
                 children: [
                     .paragraph(children: [
-                        .unknown("seg", ["type": "summary"], [.text("Summary: Discussed arms control.")])
+                        .unknown(name: "seg", attributes: ["type": "summary"], children: [.text("Summary: Discussed arms control.")])
                     ]),
                     .paragraph(children: [
-                        .unknown("seg", ["type": "source"], [.text("Source: National Security Archive, Kissinger Transcripts.")])
+                        .unknown(name: "seg", attributes: ["type": "source"], children: [.text("Source: National Security Archive, Kissinger Transcripts.")])
                     ])
                 ]
             )
@@ -259,7 +259,7 @@ struct SourceNoteExtractionTests {
             .footnote(
                 id: "d1fn1", type: .unclassified, printedNumber: "1",
                 children: [
-                    .unknown("seg", ["type": "summary"], [.text("Summary: Only a summary, no source.")])
+                    .unknown(name: "seg", attributes: ["type": "summary"], children: [.text("Summary: Only a summary, no source.")])
                 ]
             )
         ]

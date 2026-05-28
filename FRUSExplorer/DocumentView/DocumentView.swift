@@ -23,6 +23,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 59: initial implementation (F-024)
+///   1.1 — Session 121: `addToCollection` case added (Bug 3 — iOS had no document-level
+///          collection membership control; only tag-based membership was available)
 enum DocumentSheet: Identifiable {
     case personDetail(PersonEntry)
     case glossDetail(GlossEntry)
@@ -35,6 +37,9 @@ enum DocumentSheet: Identifiable {
     case editNote(ResearchNote)
     /// User-tag picker — lets the user toggle or create document-level tags on iOS.
     case tagPicker
+    /// Collection picker — lets the user add this document to an existing collection
+    /// or create a new one directly from the document view.
+    case addToCollection
 
     var id: String {
         switch self {
@@ -48,6 +53,7 @@ enum DocumentSheet: Identifiable {
         case .sourceExplorer:                  return "sourceExplorer"
         case .editNote(let note):              return "editNote-\(note.id)"
         case .tagPicker:                       return "tagPicker"
+        case .addToCollection:                 return "addToCollection"
         }
     }
 }
@@ -119,6 +125,11 @@ enum DocumentSheet: Identifiable {
 ///          toggleHighlightMode() closes inspector; remove iPadDocumentLayout HStack
 ///   2.9 — Session 120: DocumentSheet.tagPicker added; tag toolbar button wired to show
 ///          TagPickerSheetView (replaces empty Session-14 stub on iOS)
+///   3.0 — Session 121: TagPickerSheetView now saves tag associations via IndexingPipeline
+///          (Bug 2 — selected tags were stored in @State only and lost on dismiss);
+///          DocumentSheet.addToCollection + CollectionPickerSheetView added (Bug 3 — iOS
+///          had no document-level collection membership control); "Add to Collection"
+///          button added to moreMenu
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -413,7 +424,12 @@ struct DocumentView: View {
             case .sourceExplorer(let note):
                 SourceExplorerView(rawSourceNote: note)
             case .tagPicker:
-                TagPickerSheetView(entry: entry)
+                TagPickerSheetView(
+                    entry: entry,
+                    indexingPipeline: appState.indexingPipeline
+                )
+            case .addToCollection:
+                CollectionPickerSheetView(entry: entry)
             }
         }
         .sheet(isPresented: $showHighlightColorPicker) {
@@ -702,6 +718,21 @@ struct DocumentView: View {
                     systemImage: "quote.opening"
                 )
             }
+
+            // Add to Collection
+            Button {
+                activeSheet = .addToCollection
+            } label: {
+                Label(
+                    String(localized: "document.toolbar.addToCollection",
+                           defaultValue: "Add to Collection"),
+                    systemImage: "folder.badge.plus"
+                )
+            }
+            .accessibilityLabel(
+                String(localized: "document.toolbar.addToCollection.a11y",
+                       defaultValue: "Add document to a collection")
+            )
 
             // Cross-references
             Button {
@@ -1480,17 +1511,28 @@ private struct GlossDetailSheet: View {
 /// apply to this document. A "New Tag" field lets the user create tags inline.
 /// Presented from `DocumentView`'s toolbar "Tag Document" button.
 ///
+/// ## Persistence
+/// On appear the view reads the current tag IDs stored in `IndexingPipeline`'s
+/// `document_cache` and pre-populates `selectedTagIds`. When the user taps Done,
+/// the updated set is written back to both `document_cache` and the FTS5 index via
+/// `IndexingPipeline.updateUserTagIds`. If `indexingPipeline` is nil (document not
+/// yet indexed), the selection is a no-op and the sheet dismisses normally.
+///
 /// Version history:
 ///   1.0 — Session 120: initial implementation; replaces empty Session-14 stub
+///   1.1 — Session 121: loads existing tags on appear; saves via IndexingPipeline.updateUserTagIds
+///          on Done (Bug 2 — selection was stored in @State only, lost on dismiss)
 private struct TagPickerSheetView: View {
 
     let entry: DocumentBrowserEntry
+    let indexingPipeline: IndexingPipeline?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @State private var selectedTagIds: Set<UUID> = []
     @State private var newTagName: String = ""
+    @State private var isSaving: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -1551,11 +1593,23 @@ private struct TagPickerSheetView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "document.tags.done",
-                                  defaultValue: "Done")) { dismiss() }
+                                  defaultValue: "Done")) {
+                        saveAndDismiss()
+                    }
+                    .disabled(isSaving)
                 }
             }
         }
         .presentationDetents([.medium, .large])
+        // Load existing tag associations when the sheet appears.
+        .task {
+            guard let pipeline = indexingPipeline else { return }
+            let ids = (try? await pipeline.currentUserTagIds(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId
+            )) ?? []
+            selectedTagIds = Set(ids.compactMap { UUID(uuidString: $0) })
+        }
     }
 
     private func createTag() {
@@ -1565,6 +1619,178 @@ private struct TagPickerSheetView: View {
         modelContext.insert(tag)
         selectedTagIds.insert(tag.id)
         newTagName = ""
+    }
+
+    private func saveAndDismiss() {
+        guard let pipeline = indexingPipeline else {
+            dismiss()
+            return
+        }
+        isSaving = true
+        let tagString = selectedTagIds.isEmpty
+            ? nil
+            : selectedTagIds.map(\.uuidString).joined(separator: " ")
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        Task {
+            try? await pipeline.updateUserTagIds(
+                volumeId: vId,
+                documentId: dId,
+                userTagIds: tagString
+            )
+            await MainActor.run {
+                isSaving = false
+                dismiss()
+            }
+        }
+    }
+}
+
+// MARK: - CollectionPickerSheetView (iOS)
+
+/// iOS document-level collection picker.
+///
+/// Presents a searchable list of all collections so the user can add this document
+/// to an existing collection or create a new one. Tapping a collection row inserts a
+/// `CollectionEntry` and briefly shows a confirmation checkmark before auto-dismissing.
+/// The "New Collection" toolbar button opens `CollectionEditorView` inline.
+///
+/// This is the iOS-styled counterpart of the macOS `CollectionPickerSheet` in
+/// `SupportingViews.swift`. The two share identical logic; the only differences
+/// are list style and the absence of a fixed frame (iOS manages size via presentation
+/// detents instead).
+///
+/// Version history:
+///   1.0 — Session 121: initial implementation (Bug 3 — iOS had no document-level
+///          collection membership control)
+private struct CollectionPickerSheetView: View {
+
+    let entry: DocumentBrowserEntry
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Collection.lastModified, order: .reverse) private var collections: [Collection]
+
+    @State private var searchText: String = ""
+    @State private var showNewCollection = false
+    @State private var addedCollectionId: UUID? = nil
+
+    private var filtered: [Collection] {
+        guard !searchText.isEmpty else { return collections }
+        return collections.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if collections.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "collection.picker.empty.title",
+                               defaultValue: "No Collections"),
+                        systemImage: "folder",
+                        description: Text(
+                            String(localized: "collection.picker.empty.detail",
+                                   defaultValue: "Create a collection using the button above.")
+                        )
+                    )
+                } else {
+                    List(filtered) { collection in
+                        Button {
+                            addDocument(to: collection)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(collection.name)
+                                        .font(.body)
+                                        .foregroundStyle(.primary)
+                                    let count = collection.documentEntries?.count ?? 0
+                                    Text(
+                                        String(
+                                            localized: "collection.picker.documentCount",
+                                            defaultValue: "\(count) \(count == 1 ? "document" : "documents")"
+                                        )
+                                    )
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if addedCollectionId == collection.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(.green)
+                                        .accessibilityLabel(
+                                            String(localized: "collection.picker.added.a11y",
+                                                   defaultValue: "Added")
+                                        )
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(collection.name)
+                    }
+                    .listStyle(.insetGrouped)
+                    .searchable(
+                        text: $searchText,
+                        prompt: String(localized: "collection.picker.search.prompt",
+                                       defaultValue: "Search collections")
+                    )
+                }
+            }
+            .navigationTitle(
+                String(localized: "collection.picker.title",
+                       defaultValue: "Add to Collection")
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "collection.picker.cancel",
+                                  defaultValue: "Cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showNewCollection = true
+                    } label: {
+                        Label(
+                            String(localized: "collection.picker.newCollection",
+                                   defaultValue: "New Collection"),
+                            systemImage: "folder.badge.plus"
+                        )
+                    }
+                    .accessibilityLabel(
+                        String(localized: "collection.picker.newCollection.a11y",
+                               defaultValue: "Create a new collection")
+                    )
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .sheet(isPresented: $showNewCollection) {
+            CollectionEditorView(collection: nil)
+        }
+    }
+
+    private func addDocument(to collection: Collection) {
+        let existing = collection.documentEntries ?? []
+        // Guard against duplicates — show checkmark and dismiss if already a member.
+        guard !existing.contains(where: {
+            $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
+        }) else {
+            addedCollectionId = collection.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { dismiss() }
+            return
+        }
+
+        let nextOrder = (existing.map(\.sortOrder).max() ?? -1) + 1
+        let collectionEntry = CollectionEntry(
+            collectionId: collection.id,
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            sortOrder: nextOrder
+        )
+        modelContext.insert(collectionEntry)
+        collection.documentEntries?.append(collectionEntry)
+
+        addedCollectionId = collection.id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
     }
 }
 

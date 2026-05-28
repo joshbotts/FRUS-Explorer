@@ -68,6 +68,9 @@ enum SearchSortOrder: CaseIterable {
 ///   1.2 — Session 120: raise cap from 500 → 7,500; add `totalMatchCount`; wire
 ///          `scopeDocuments` to `includeDocumentText`; clamp `currentPage` when results
 ///          shrink; gate empty-scope searches with a friendly error
+///   1.3 — Session 121: add `submitSearch()` so `.onSubmit` bypasses debounce instead of
+///          spawning a parallel Task; fix `performSearch` catch to skip result-clearing on
+///          `CancellationError` (prevents flash of empty results when task is superseded)
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -391,6 +394,20 @@ final class MacSearchViewModel {
 
     // MARK: - Search
 
+    /// Submits the current query immediately, bypassing the 300 ms debounce.
+    ///
+    /// Cancels any in-flight debounce task, then sets `debouncedQuery = queryText`.
+    /// Because `searchTrigger` derives from `debouncedQuery`, the change propagates
+    /// to the `.task(id: searchTrigger)` observer in `SearchSheet` and fires exactly
+    /// one new search. This is the correct path for `.onSubmit` (Return key) — it avoids
+    /// launching an independent `Task { await performSearch() }` in parallel with the
+    /// debounce-triggered `.task(id:)`, which was the root cause of the "cycling through
+    /// three result sets" bug.
+    func submitSearch() {
+        debounceTask?.cancel()
+        debouncedQuery = queryText
+    }
+
     /// Executes a search against `SearchService` using the current `parameters` and `queryText`.
     ///
     /// Fetches up to `searchHardLimit` (7,500) results so all pagination pages are available
@@ -401,6 +418,13 @@ final class MacSearchViewModel {
     ///
     /// `currentPage` is reset to 0 on every successful fetch; if the result set shrank below
     /// the previous page index it is clamped to a valid page.
+    ///
+    /// ## Cancellation handling
+    /// Called exclusively from `.task(id: searchTrigger)` in `SearchSheet`. When
+    /// `searchTrigger` changes, SwiftUI cancels the running task before starting a new one.
+    /// `CancellationError` is caught here and causes an early return **without** clearing
+    /// `results` — preserving the previous result set during the transition rather than
+    /// flashing an empty list. `isSearching` is always reset via `defer`.
     func performSearch(service: SearchService?) async {
         let query = queryText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty, let service else {
@@ -425,6 +449,7 @@ final class MacSearchViewModel {
         isSearching = true
         searchError = nil
         currentPage = 0
+        defer { isSearching = false }
 
         // Capture an immutable copy so Swift 6 region-based isolation is happy
         // when the same parameters value is sent to two actor-isolated calls below.
@@ -446,6 +471,9 @@ final class MacSearchViewModel {
             print("[MacSearchViewModel] Search returned \(fetched.count)/\(totalMatchCount) results")
             #endif
         } catch {
+            // CancellationError means this task was superseded by a new search trigger.
+            // Preserve the current results rather than flashing an empty list.
+            guard !(error is CancellationError) else { return }
             searchError = error
             results = []
             totalMatchCount = 0
@@ -453,8 +481,6 @@ final class MacSearchViewModel {
             print("[MacSearchViewModel] Search failed: \(error)")
             #endif
         }
-
-        isSearching = false
     }
 }
 
