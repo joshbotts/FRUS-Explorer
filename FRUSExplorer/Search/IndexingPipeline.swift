@@ -119,6 +119,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          queries (499 strings/chunk, matches 999-variable limit); `currentDateIndexVersion`
 ///          bumped to 6 to trigger a full clean reindex on devices that accumulated FTS5
 ///          duplicate rows before the Session 118 `deleteVolume()` fix.
+///   3.0 — Current session: `resolvePageBasedCrossReferences(volumeId:)` post-indexes
+///          TEI `<ref target="#p{N}">` / `<ref target="#pg{N}">` page references to their
+///          containing document IDs via the `page_ranges` table; called in `storeIndexData`
+///          after both tables are populated.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1103,6 +1107,9 @@ public actor IndexingPipeline {
 
         try auxInsertCrossReferences(data.crossReferences)
         try auxInsertPageRanges(data.pageRanges)
+        // Resolve page-based cross-references (e.g. <ref target="#p42">) now that
+        // both cross_references and page_ranges are populated for this volume.
+        try resolvePageBasedCrossReferences(volumeId: data.volumeId)
         try auxInsertDocumentDates(data.documentDates)
         try auxInsertPersonMentions(data.personMentions)
         try auxInsertPersons(data.persons)
@@ -1895,6 +1902,92 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(stmt)
+    }
+
+    /// Resolves cross-references whose `target_document_id` looks like a page identifier
+    /// (`p{N}` or `pg{N}` where N is a positive integer) to the document that contains
+    /// that page number according to the `page_ranges` table.
+    ///
+    /// FRUS TEI uses `<ref target="#p42">` or `<ref target="#pg42">` to point to a
+    /// specific printed page. The `page_ranges` table records which document in a volume
+    /// starts at (or contains) each arabic page number, so we can resolve the reference
+    /// to a real document ID after indexing.
+    ///
+    /// Called in `storeIndexData` after both `auxInsertCrossReferences` and
+    /// `auxInsertPageRanges` are complete for the volume, so all page data is available.
+    /// Same-volume resolution only — cross-volume page refs require the target volume
+    /// to be indexed first and are left unresolved.
+    private func resolvePageBasedCrossReferences(volumeId: String) throws {
+        // Find cross-reference rows for this volume whose target looks like a page ID.
+        // GLOB 'p[0-9]*'  matches "p" followed by a digit and then anything (e.g. "p42").
+        // GLOB 'pg[0-9]*' matches "pg" followed by a digit (e.g. "pg42").
+        let findSQL = """
+            SELECT rowid, target_document_id
+            FROM cross_references
+            WHERE source_volume_id = ?
+              AND (target_document_id GLOB 'p[0-9]*'
+                   OR target_document_id GLOB 'pg[0-9]*')
+            """
+        let findStmt = try auxPrepare(findSQL)
+        defer { sqlite3_finalize(findStmt) }
+        sqlite3_bind_text(findStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+
+        var toResolve: [(rowid: Int64, pageId: String)] = []
+        while sqlite3_step(findStmt) == SQLITE_ROW {
+            let rowid  = sqlite3_column_int64(findStmt, 0)
+            if let pageId = auxColumnString(findStmt, 1), !pageId.isEmpty {
+                toResolve.append((rowid: rowid, pageId: pageId))
+            }
+        }
+        guard !toResolve.isEmpty else { return }
+
+        #if DEBUG
+        print("[IndexingPipeline] resolvePageBasedCrossReferences: found \(toResolve.count) candidates in \(volumeId)")
+        #endif
+
+        // Lookup: find the document_id for a given page number within this volume.
+        let lookupSQL = """
+            SELECT document_id FROM page_ranges
+            WHERE volume_id = ?
+              AND page_number_int = ?
+              AND page_number_type = 'arabic'
+            ORDER BY rowid LIMIT 1
+            """
+        let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
+        let lookupStmt = try auxPrepare(lookupSQL)
+        defer { sqlite3_finalize(lookupStmt) }
+        let updateStmt = try auxPrepare(updateSQL)
+        defer { sqlite3_finalize(updateStmt) }
+
+        var resolvedCount = 0
+        for (rowid, pageId) in toResolve {
+            // Strip the "p" or "pg" prefix to extract the numeric page number.
+            let numStr: String
+            if pageId.hasPrefix("pg") {
+                numStr = String(pageId.dropFirst(2))
+            } else {
+                numStr = String(pageId.dropFirst())   // strip single "p"
+            }
+            guard let pageNum = Int(numStr), pageNum > 0 else { continue }
+
+            sqlite3_reset(lookupStmt)
+            sqlite3_bind_text(lookupStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int64(lookupStmt, 2, Int64(pageNum))
+            guard sqlite3_step(lookupStmt) == SQLITE_ROW,
+                  let docId = auxColumnString(lookupStmt, 0) else { continue }
+
+            sqlite3_reset(updateStmt)
+            sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int64(updateStmt, 2, rowid)
+            sqlite3_step(updateStmt)
+            resolvedCount += 1
+        }
+
+        #if DEBUG
+        if resolvedCount > 0 {
+            print("[IndexingPipeline] resolvePageBasedCrossReferences: resolved \(resolvedCount)/\(toResolve.count) page refs in \(volumeId)")
+        }
+        #endif
     }
 
     private func auxDeleteVolume(_ volumeId: String) throws {

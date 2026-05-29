@@ -577,6 +577,129 @@ struct DateParsingTests {
     }
 }
 
+// MARK: - PageBasedCrossReferenceResolutionTests
+
+@Suite("IndexingPipeline — page-based cross-reference resolution")
+struct PageBasedCrossReferenceResolutionTests {
+
+    /// Opens the test database read-only and returns the `target_document_id` for the single
+    /// cross-reference row matching the given source volume + document IDs, or `nil` if not found.
+    private func queryTargetDocumentId(
+        dbURL: URL, sourceVolumeId: String, sourceDocumentId: String
+    ) -> String? {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(
+            dbURL.path, &db, SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nil
+        ) == SQLITE_OK, let db else { return nil }
+        defer { sqlite3_close_v2(db) }
+
+        let sql = """
+            SELECT target_document_id FROM cross_references
+            WHERE source_volume_id = ? AND source_document_id = ?
+            ORDER BY rowid LIMIT 1
+            """
+        var stmt: OpaquePointer?
+        sqlite3_prepare_v2(db, sql, -1, &stmt, nil)
+        defer { sqlite3_finalize(stmt) }
+
+        let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        sqlite3_bind_text(stmt, 1, sourceVolumeId,   -1, TRANSIENT)
+        sqlite3_bind_text(stmt, 2, sourceDocumentId, -1, TRANSIENT)
+
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard let cStr = sqlite3_column_text(stmt, 0) else { return nil }
+        return String(cString: cStr)
+    }
+
+    @Test("p-prefix page target (#p42) resolved to document-id after indexing")
+    func pPrefixPageTargetResolvedToDocumentId() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // d1 references page 42 via "#p42"; d2 contains the matching <pb n="42"/>.
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", """
+                    <head>Report</head>
+                    <p>See <ref target=\"#p42\">page 42</ref> for details.</p>
+                    """),
+                    ("d2", "<head>Annex</head><pb n=\"42\"/><p>Annex text.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let resolved = queryTargetDocumentId(
+                dbURL: dbURL, sourceVolumeId: "frus1969-76v01", sourceDocumentId: "d1"
+            )
+            #expect(resolved == "d2",
+                    "Page target '#p42' must resolve to document 'd2'; got: \(resolved ?? "nil")")
+        }
+    }
+
+    @Test("pg-prefix page target (#pg42) resolved to document-id after indexing")
+    func pgPrefixPageTargetResolvedToDocumentId() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // d1 references page 42 via "#pg42"; d2 contains the matching <pb n="42"/>.
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", """
+                    <head>Report</head>
+                    <p>See <ref target=\"#pg42\">page 42</ref> for details.</p>
+                    """),
+                    ("d2", "<head>Annex</head><pb n=\"42\"/><p>Annex text.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let resolved = queryTargetDocumentId(
+                dbURL: dbURL, sourceVolumeId: "frus1969-76v01", sourceDocumentId: "d1"
+            )
+            #expect(resolved == "d2",
+                    "Page target '#pg42' must resolve to document 'd2'; got: \(resolved ?? "nil")")
+        }
+    }
+
+    @Test("Unresolvable page target left unchanged when no matching page_range exists")
+    func unresolvablePageTargetLeftAsIs() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // d1 references page 999 but no document contains <pb n="999"/>.
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", """
+                    <head>Report</head>
+                    <p>See <ref target=\"#p999\">page 999</ref>.</p>
+                    """),
+                    ("d2", "<head>Annex</head><pb n=\"42\"/><p>Annex text.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // The pipeline leaves unresolvable page targets in place rather than deleting them.
+            let resolved = queryTargetDocumentId(
+                dbURL: dbURL, sourceVolumeId: "frus1969-76v01", sourceDocumentId: "d1"
+            )
+            #expect(resolved == "p999",
+                    "Unresolvable page target 'p999' should remain unchanged; got: \(resolved ?? "nil")")
+        }
+    }
+}
+
 // MARK: - Text Extraction Tests
 
 @Suite("IndexingPipeline — text extraction")

@@ -32,6 +32,8 @@ struct DisplayNode: Identifiable, Sendable {
         case central
         case inbound
         case outbound
+        /// A node reachable in 2 or more hops from the central document.
+        case extended
         case clusterInbound(volumeId: String, count: Int)
         case clusterOutbound(volumeId: String, count: Int)
     }
@@ -40,6 +42,24 @@ struct DisplayNode: Identifiable, Sendable {
     let kind: Kind
     let metadata: CrossReferenceNodeMetadata?
     let isDownloaded: Bool
+    /// Shortest hop distance from the central node (0 for central, 1 for direct neighbours, 2+ for extended).
+    let degree: Int
+
+    /// Designated initializer. `degree` defaults to 1 so that pre-existing call sites
+    /// (tests and cluster builders) that do not specify degree remain valid.
+    init(
+        id: String,
+        kind: Kind,
+        metadata: CrossReferenceNodeMetadata?,
+        isDownloaded: Bool,
+        degree: Int = 1
+    ) {
+        self.id = id
+        self.kind = kind
+        self.metadata = metadata
+        self.isDownloaded = isDownloaded
+        self.degree = degree
+    }
 
     var isCentral: Bool { if case .central = kind { true } else { false } }
 
@@ -63,6 +83,12 @@ struct DisplayNode: Identifiable, Sendable {
             String(
                 format: String(localized: "graph.a11y.outbound %@", defaultValue: "Outbound: %@"),
                 metadata?.header ?? id
+            )
+        case .extended:
+            String(
+                format: String(localized: "graph.a11y.extended %@ %lld",
+                               defaultValue: "Degree %2$lld: %1$@"),
+                metadata?.header ?? id, Int64(degree)
             )
         case .clusterInbound(let vol, let count):
             String(
@@ -89,6 +115,23 @@ struct DisplayEdge: Sendable {
     /// `nil` when the reference was not inside a note block, or for edges indexed
     /// before Session 37 populated this column.
     let context: String?
+    /// The degree of this edge: 1 for direct (inbound/outbound), 2+ for extended.
+    /// Defaults to 1 so pre-existing call sites remain valid.
+    let degree: Int
+
+    init(
+        source: String,
+        target: String,
+        referenceType: ReferenceType,
+        context: String?,
+        degree: Int = 1
+    ) {
+        self.source = source
+        self.target = target
+        self.referenceType = referenceType
+        self.context = context
+        self.degree = degree
+    }
 }
 
 // MARK: - CrossReferenceGraphViewModel
@@ -114,6 +157,13 @@ struct NavigationHistoryEntry: Sendable {
 ///   - **Force-directed layout** (21–100): iterative spring-repulsion simulation;
 ///     animated settling unless system Reduce Motion is active.
 ///
+/// ## Degree Expansion
+/// `graphDegree` controls how many hops from the central document are loaded:
+/// - **1** (default) — direct inbound and outbound references only.
+/// - **2** — additionally loads edges for each 1st-degree node (capped at 20 nodes).
+/// - **3** — extends further from 2nd-degree nodes (capped at 15).
+/// Extended nodes render as `.extended` (grey) and with thinner, lighter edges.
+///
 /// ## Interactive Re-centering
 /// Clicking a non-cluster node on macOS (or second-tapping on iOS) calls `recenterOn`,
 /// which pushes the current central document onto `history`, updates the central identity,
@@ -130,6 +180,8 @@ struct NavigationHistoryEntry: Sendable {
 ///   1.2 — Interactive re-centering: mutable central identity, history stack,
 ///          `recenterOn()`, `navigateBack()`; macOS navigateToNode re-centres instead
 ///          of pushing to navigationPath
+///   1.3 — Current session: `graphDegree` (1/2/3) for multi-hop expansion; node labels;
+///          edge context-snippet labels; `DisplayNode.Kind.extended`; `DisplayEdge.degree`
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -163,6 +215,11 @@ final class CrossReferenceGraphViewModel {
 
     var filterMode: GraphFilterMode = .unfiltered
     var expandedClusterKeys: Set<String> = []
+
+    // MARK: - Degree Expansion
+
+    /// Number of reference hops to display (1 = direct neighbours only, 2 or 3 = extended).
+    var graphDegree: Int = 1
 
     // MARK: - Navigation History
 
@@ -220,10 +277,12 @@ final class CrossReferenceGraphViewModel {
         guard let store = crossReferenceStore else { return }
         isLoading = true
         error = nil
+        let degree = graphDegree
         do {
-            graph = try await store.graph(
+            graph = try await store.expandedGraph(
                 forDocumentId: centralDocumentId,
                 volumeId: centralVolumeId,
+                degree: degree,
                 downloadedVolumeIds: downloadedVolumeIds
             )
             rebuildDisplay()
@@ -233,7 +292,7 @@ final class CrossReferenceGraphViewModel {
         isLoading = false
 
         #if DEBUG
-        print("[CrossReferenceGraph] Loaded \(displayNodes.count) nodes, \(displayEdges.count) edges for \(centralKey)")
+        print("[CrossReferenceGraph] Loaded \(displayNodes.count) nodes, \(displayEdges.count) edges (degree=\(degree)) for \(centralKey)")
         #endif
     }
 
@@ -307,6 +366,8 @@ final class CrossReferenceGraphViewModel {
         expandedClusterKeys = []
         layoutTask?.cancel()
         isAnimatingLayout   = false
+        // graphDegree is intentionally preserved so the user's expansion preference
+        // survives re-centering on a different document.
     }
 
     func toggleCluster(_ key: String) {
@@ -336,6 +397,7 @@ final class CrossReferenceGraphViewModel {
     /// For inbound nodes the context is the text of the footnote in the source document
     /// that contained the `<ref>` pointing to the central document.
     /// For outbound nodes it is the text from the central document's footnote.
+    /// For extended nodes, returns the context of any edge that connects to or from the node.
     /// Returns `nil` for cluster nodes, the central node, or edges without context.
     func contextForSelectedNode() -> String? {
         guard let key = selectedNodeKey,
@@ -346,6 +408,11 @@ final class CrossReferenceGraphViewModel {
             return displayEdges.first(where: { $0.source == key && $0.target == centralKey })?.context
         case .outbound:
             return displayEdges.first(where: { $0.source == centralKey && $0.target == key })?.context
+        case .extended:
+            // Return context from any edge touching this node that has context available.
+            return displayEdges.first(where: {
+                ($0.source == key || $0.target == key) && $0.context != nil
+            })?.context
         default:
             return nil
         }
@@ -571,6 +638,9 @@ final class CrossReferenceGraphViewModel {
     /// Computes the `DisplayNode` and `DisplayEdge` arrays from a `CrossReferenceGraph`.
     /// When `totalEdges > 30`, same-volume nodes are collapsed into cluster nodes unless
     /// their key is in `expandedClusterKeys`.
+    ///
+    /// Extended edges (degree ≥ 2) are added after degree-1 edges. Extended nodes
+    /// not already present in the degree-1 set are given `.extended` kind.
     static func buildDisplayNodesAndEdges(
         graph: CrossReferenceGraph,
         centralKey: String,
@@ -584,7 +654,8 @@ final class CrossReferenceGraphViewModel {
             DisplayNode(
                 id: centralKey, kind: .central,
                 metadata: graph.nodeMetadata[centralKey],
-                isDownloaded: downloadedVolumeIds.contains(graph.centralVolumeId)
+                isDownloaded: downloadedVolumeIds.contains(graph.centralVolumeId),
+                degree: 0
             )
         ]
         var edges: [DisplayEdge] = []
@@ -599,17 +670,19 @@ final class CrossReferenceGraphViewModel {
                             let key = "\(e.sourceVolumeId)/\(e.sourceDocumentId)"
                             nodes.append(DisplayNode(id: key, kind: .inbound,
                                 metadata: graph.nodeMetadata[key],
-                                isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId)))
+                                isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId),
+                                degree: 1))
                             edges.append(DisplayEdge(source: key, target: centralKey,
-                                referenceType: e.referenceType, context: e.context))
+                                referenceType: e.referenceType, context: e.context, degree: 1))
                         }
                     } else {
                         nodes.append(DisplayNode(id: clusterKey,
                             kind: .clusterInbound(volumeId: vol, count: volEdges.count),
                             metadata: nil,
-                            isDownloaded: downloadedVolumeIds.contains(vol)))
+                            isDownloaded: downloadedVolumeIds.contains(vol),
+                            degree: 1))
                         edges.append(DisplayEdge(source: clusterKey, target: centralKey,
-                            referenceType: .footnote, context: nil))
+                            referenceType: .footnote, context: nil, degree: 1))
                     }
                 }
             } else {
@@ -617,9 +690,10 @@ final class CrossReferenceGraphViewModel {
                     let key = "\(e.sourceVolumeId)/\(e.sourceDocumentId)"
                     nodes.append(DisplayNode(id: key, kind: .inbound,
                         metadata: graph.nodeMetadata[key],
-                        isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId)))
+                        isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId),
+                        degree: 1))
                     edges.append(DisplayEdge(source: key, target: centralKey,
-                        referenceType: e.referenceType, context: e.context))
+                        referenceType: e.referenceType, context: e.context, degree: 1))
                 }
             }
         }
@@ -634,17 +708,19 @@ final class CrossReferenceGraphViewModel {
                             let key = "\(e.targetVolumeId)/\(e.targetDocumentId)"
                             nodes.append(DisplayNode(id: key, kind: .outbound,
                                 metadata: graph.nodeMetadata[key],
-                                isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId)))
+                                isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId),
+                                degree: 1))
                             edges.append(DisplayEdge(source: centralKey, target: key,
-                                referenceType: e.referenceType, context: e.context))
+                                referenceType: e.referenceType, context: e.context, degree: 1))
                         }
                     } else {
                         nodes.append(DisplayNode(id: clusterKey,
                             kind: .clusterOutbound(volumeId: vol, count: volEdges.count),
                             metadata: nil,
-                            isDownloaded: downloadedVolumeIds.contains(vol)))
+                            isDownloaded: downloadedVolumeIds.contains(vol),
+                            degree: 1))
                         edges.append(DisplayEdge(source: centralKey, target: clusterKey,
-                            referenceType: .footnote, context: nil))
+                            referenceType: .footnote, context: nil, degree: 1))
                     }
                 }
             } else {
@@ -652,15 +728,51 @@ final class CrossReferenceGraphViewModel {
                     let key = "\(e.targetVolumeId)/\(e.targetDocumentId)"
                     nodes.append(DisplayNode(id: key, kind: .outbound,
                         metadata: graph.nodeMetadata[key],
-                        isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId)))
+                        isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId),
+                        degree: 1))
                     edges.append(DisplayEdge(source: centralKey, target: key,
-                        referenceType: e.referenceType, context: e.context))
+                        referenceType: e.referenceType, context: e.context, degree: 1))
                 }
             }
         }
 
         addInbound(graph.inboundEdges)
         addOutbound(graph.outboundEdges)
+
+        // --- Extended edges (degree 2+) ---
+        if !graph.extendedEdges.isEmpty {
+            var addedNodeKeys: Set<String> = Set(nodes.map(\.id))
+
+            for extEdge in graph.extendedEdges {
+                let srcKey = "\(extEdge.sourceVolumeId)/\(extEdge.sourceDocumentId)"
+                let tgtKey = "\(extEdge.targetVolumeId)/\(extEdge.targetDocumentId)"
+
+                // Determine degree of each endpoint.
+                // A node that was already present at degree 1 is still degree 1.
+                // A new node connected to a degree-1 node is degree 2.
+                // A new node connected only to other new nodes is degree 3+.
+                for key in [srcKey, tgtKey] where !addedNodeKeys.contains(key) {
+                    addedNodeKeys.insert(key)
+                    nodes.append(DisplayNode(
+                        id: key, kind: .extended,
+                        metadata: graph.nodeMetadata[key],
+                        isDownloaded: {
+                            let vPart = key.split(separator: "/", maxSplits: 1).first.map(String.init) ?? ""
+                            return downloadedVolumeIds.contains(vPart)
+                        }(),
+                        degree: graph.fetchedDegree
+                    ))
+                }
+
+                // Only add the edge if both endpoints are present.
+                edges.append(DisplayEdge(
+                    source: srcKey, target: tgtKey,
+                    referenceType: extEdge.referenceType, context: extEdge.context,
+                    degree: graph.fetchedDegree
+                ))
+            }
+        }
+
         return (nodes, edges)
     }
 }

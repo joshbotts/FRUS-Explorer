@@ -277,4 +277,61 @@ struct CrossReferenceStoreTests {
         #expect(edges.first?.context == nil,
                 "nil context must be returned as nil, not an empty string")
     }
+
+    // MARK: - ExpandedGraphDegree2Test
+
+    @Test("expandedGraph degree=2 includes 2nd-degree edges not present in degree-1 graph")
+    func expandedGraphDegree2IncludesExtendedEdges() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Graph structure:
+        //   d1 → d2 (central) → d3
+        //           d4 → d3
+        //   d1 → d5            (this edge is 2nd-degree from d2's perspective)
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "d1",
+                       targetVolumeId: nil, targetDocumentId: "d2")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "d2",
+                       targetVolumeId: nil, targetDocumentId: "d3")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "d4",
+                       targetVolumeId: nil, targetDocumentId: "d3")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "d1",
+                       targetVolumeId: nil, targetDocumentId: "d5")
+
+        // Degree-1 graph centred on d2 has edges: d1→d2 (inbound) + d2→d3 (outbound).
+        let deg1 = try await store.expandedGraph(
+            forDocumentId: "d2", volumeId: "vol1",
+            degree: 1, downloadedVolumeIds: ["vol1"]
+        )
+        #expect(deg1.inboundEdges.count == 1)
+        #expect(deg1.outboundEdges.count == 1)
+        #expect(deg1.extendedEdges.isEmpty)
+        #expect(deg1.fetchedDegree == 1)
+
+        // Degree-2 graph should pick up edges involving d1 and d3 (the 1st-degree nodes):
+        // - d1→d5 (d1 is a 1st-degree inbound node; its outbound edge to d5 is new)
+        // - d4→d3 (d3 is a 1st-degree outbound node; this inbound edge to d3 is new)
+        let deg2 = try await store.expandedGraph(
+            forDocumentId: "d2", volumeId: "vol1",
+            degree: 2, downloadedVolumeIds: ["vol1"]
+        )
+        #expect(deg2.inboundEdges.count == 1,  "degree-1 inbound unchanged")
+        #expect(deg2.outboundEdges.count == 1, "degree-1 outbound unchanged")
+        #expect(!deg2.extendedEdges.isEmpty,   "degree-2 should have extended edges")
+        #expect(deg2.fetchedDegree == 2)
+
+        // The extended edges should include both d1→d5 and d4→d3.
+        let extSources = Set(deg2.extendedEdges.map(\.sourceDocumentId))
+        let extTargets = Set(deg2.extendedEdges.map(\.targetDocumentId))
+        #expect(extSources.contains("d1") || extTargets.contains("d5"),
+                "d1→d5 should appear in extended edges")
+        #expect(extSources.contains("d4") || extTargets.contains("d3"),
+                "d4→d3 should appear in extended edges")
+
+        // Metadata should now include d4 and d5 (new 2nd-degree nodes).
+        // (They may not be in document_cache since we didn't insert them, but keys exist.)
+        let knownKeys = Set(deg2.nodeMetadata.keys)
+        #expect(knownKeys.contains("vol1/d4") || knownKeys.contains("vol1/d5"),
+                "nodeMetadata should include at least one 2nd-degree node")
+    }
 }

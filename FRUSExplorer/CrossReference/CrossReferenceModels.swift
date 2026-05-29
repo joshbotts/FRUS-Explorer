@@ -101,14 +101,21 @@ public struct CrossReferenceNodeMetadata: Sendable {
 /// `nodeMetadata` is keyed by `"volumeId/documentId"` and includes the central document.
 /// Nodes from volumes not present in `document_cache` have `nil` header/dateline fields.
 ///
+/// When `fetchedDegree > 1`, `extendedEdges` carries the degree-2+ edges loaded by
+/// `CrossReferenceStore.expandedGraph(forDocumentId:volumeId:degree:downloadedVolumeIds:)`.
+/// These connect 1st-degree nodes to their own neighbors and, for degree 3, those
+/// neighbors to their neighbors. The `inboundEdges` and `outboundEdges` arrays always
+/// contain the degree-1 (direct) edges only.
+///
 /// Version history:
 ///   1.0 — Session 17: initial implementation
+///   1.1 — Current session: `extendedEdges` and `fetchedDegree` for multi-degree expansion
 public struct CrossReferenceGraph: Sendable {
     public let centralDocumentId: String
     public let centralVolumeId: String
-    /// References whose target is the central document.
+    /// References whose target is the central document (degree 1 only).
     public let inboundEdges: [CrossReferenceEdge]
-    /// References whose source is the central document.
+    /// References whose source is the central document (degree 1 only).
     public let outboundEdges: [CrossReferenceEdge]
     /// `true` when at least one inbound edge has a source volume absent from the
     /// caller-supplied `downloadedVolumeIds` set — indicating potentially incomplete
@@ -116,6 +123,11 @@ public struct CrossReferenceGraph: Sendable {
     public let hasUndownloadedSources: Bool
     /// Metadata for all nodes reachable from the central document, keyed by `nodeKey`.
     public let nodeMetadata: [String: CrossReferenceNodeMetadata]
+    /// Degree-2+ edges loaded by `expandedGraph(degree:)`.
+    /// Empty when `fetchedDegree == 1` (the default).
+    public let extendedEdges: [CrossReferenceEdge]
+    /// How many degrees were fetched when building this graph (1, 2, or 3).
+    public let fetchedDegree: Int
 
     public init(
         centralDocumentId: String,
@@ -123,7 +135,9 @@ public struct CrossReferenceGraph: Sendable {
         inboundEdges: [CrossReferenceEdge],
         outboundEdges: [CrossReferenceEdge],
         hasUndownloadedSources: Bool,
-        nodeMetadata: [String: CrossReferenceNodeMetadata]
+        nodeMetadata: [String: CrossReferenceNodeMetadata],
+        extendedEdges: [CrossReferenceEdge] = [],
+        fetchedDegree: Int = 1
     ) {
         self.centralDocumentId = centralDocumentId
         self.centralVolumeId = centralVolumeId
@@ -131,10 +145,15 @@ public struct CrossReferenceGraph: Sendable {
         self.outboundEdges = outboundEdges
         self.hasUndownloadedSources = hasUndownloadedSources
         self.nodeMetadata = nodeMetadata
+        self.extendedEdges = extendedEdges
+        self.fetchedDegree = fetchedDegree
     }
 
-    /// Total number of edges (inbound + outbound).
+    /// Total number of degree-1 edges (inbound + outbound).
     public var edgeCount: Int { inboundEdges.count + outboundEdges.count }
+
+    /// Total number of edges across all degrees.
+    public var totalEdgeCount: Int { inboundEdges.count + outboundEdges.count + extendedEdges.count }
 }
 
 // MARK: - VolumeConnectionEdge

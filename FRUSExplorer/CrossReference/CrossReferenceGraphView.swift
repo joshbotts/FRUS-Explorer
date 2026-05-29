@@ -23,6 +23,21 @@ import SwiftUI
 /// When the total node count exceeds 30, same-volume nodes are grouped into cluster
 /// nodes. Clusters expand on tap/click.
 ///
+/// ## Node Labels
+/// Each node displays a short text label: the document number (e.g. "42") or the
+/// first 20 characters of the document header, rendered below the node circle.
+/// Cluster nodes show "N refs".
+///
+/// ## Edge Labels
+/// When there are 10 or fewer visible edges and an edge carries context text,
+/// a truncated snippet (up to 40 characters) is drawn at the edge midpoint.
+/// The full context is always available in the node info panel.
+///
+/// ## Degree Expansion
+/// A segmented picker in the filter bar lets users toggle between 1st, 2nd, and 3rd
+/// degree neighbourhoods. Extended nodes (degree 2+) appear in grey; extended edges
+/// are drawn thinner and lighter than degree-1 edges.
+///
 /// ## Accessibility
 /// The `Canvas` is hidden from VoiceOver. Transparent hit-area buttons overlaid at
 /// each node position serve as accessibility elements, each labelled with the document
@@ -42,6 +57,8 @@ import SwiftUI
 ///   1.4 — Interactive re-centering: breadcrumb history bar; macOS "View Document"
 ///          sets `appState.pendingBrowseDocument` to open in the main window rather
 ///          than pushing inline; macOS click re-centres instead of navigating
+///   1.5 — Current session: node labels, edge context-snippet labels, degree picker,
+///          extended node colours
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -122,6 +139,9 @@ struct CrossReferenceGraphView: View {
         .frame(minWidth: 640, minHeight: 520)
         #endif
         .task { await vm.loadGraph() }
+        .onChange(of: vm.graphDegree) {
+            Task { await vm.loadGraph() }
+        }
     }
 
     // MARK: - Graph Content
@@ -170,6 +190,10 @@ struct CrossReferenceGraphView: View {
             if case .clusterOutbound = $0.kind { return true }
             return false
         }
+        let extended = vm.displayNodes.filter {
+            if case .extended = $0.kind { return true }
+            return false
+        }
 
         VStack(alignment: .leading, spacing: 0) {
             if !inbound.isEmpty {
@@ -204,20 +228,41 @@ struct CrossReferenceGraphView: View {
                     }
                 }
             }
+            if !extended.isEmpty {
+                Text(String(localized: "graph.a11y.section.extended",
+                            defaultValue: "Extended References"))
+                    .accessibilityAddTraits(.isHeader)
+                ForEach(extended) { node in
+                    Button {
+                        #if os(macOS)
+                        vm.navigateToNode(node.id)
+                        #else
+                        vm.tapNode(node.id, reduceMotion: reduceMotion)
+                        #endif
+                    } label: {
+                        Text(node.accessibilityLabel)
+                    }
+                }
+            }
         }
     }
 
     // MARK: - Canvas
 
     private var graphCanvas: some View {
-        Canvas { context, size in
-            // Draw edges
+        let showEdgeLabels = vm.displayEdges.count <= 10
+        return Canvas { context, size in
+            // Draw edges first (below nodes)
             for edge in vm.displayEdges {
                 guard let from = vm.nodePositions[edge.source],
                       let to   = vm.nodePositions[edge.target] else { continue }
-                drawEdge(&context, from: from, to: to, referenceType: edge.referenceType)
+                let snippet = showEdgeLabels ? edge.context.flatMap { Self.edgeSnippet($0) } : nil
+                drawEdge(&context, from: from, to: to,
+                         referenceType: edge.referenceType,
+                         degree: edge.degree,
+                         contextSnippet: snippet)
             }
-            // Draw nodes
+            // Draw nodes on top
             for node in vm.displayNodes {
                 guard let pos = vm.nodePositions[node.id] else { continue }
                 drawNode(&context, node: node, at: pos,
@@ -226,6 +271,17 @@ struct CrossReferenceGraphView: View {
         }
         .accessibilityHidden(true)
         .allowsHitTesting(false)
+    }
+
+    /// Returns a display snippet (up to 40 chars, word-truncated) from `context`.
+    private static func edgeSnippet(_ context: String) -> String? {
+        guard !context.isEmpty else { return nil }
+        guard context.count > 40 else { return context }
+        let prefix = context.prefix(40)
+        if let lastSpace = prefix.lastIndex(of: " ") {
+            return String(prefix[..<lastSpace]) + "…"
+        }
+        return String(prefix) + "…"
     }
 
     // MARK: - Hit Areas (accessibility elements + interaction)
@@ -362,6 +418,9 @@ struct CrossReferenceGraphView: View {
         case .outbound:
             return String(localized: "graph.context.referencesFrom",
                           defaultValue: "References from")
+        case .extended:
+            return String(localized: "graph.context.extendedRef",
+                          defaultValue: "Extended reference")
         default:
             return String(localized: "graph.context.context",
                           defaultValue: "Context")
@@ -425,18 +484,45 @@ struct CrossReferenceGraphView: View {
     // MARK: - Filter Toolbar
 
     private var filterToolbar: some View {
-        Picker(
-            String(localized: "graph.filter.label", defaultValue: "Filter"),
-            selection: Binding(
-                get: { vm.filterMode },
-                set: { vm.filterMode = $0 }
-            )
-        ) {
-            ForEach(GraphFilterMode.allCases, id: \.self) { mode in
-                Text(mode.label).tag(mode)
+        HStack(spacing: 12) {
+            Picker(
+                String(localized: "graph.filter.label", defaultValue: "Filter"),
+                selection: Binding(
+                    get: { vm.filterMode },
+                    set: { vm.filterMode = $0 }
+                )
+            ) {
+                ForEach(GraphFilterMode.allCases, id: \.self) { mode in
+                    Text(mode.label).tag(mode)
+                }
             }
+            .pickerStyle(.segmented)
+
+            Picker(
+                String(localized: "graph.degree.label", defaultValue: "Degree"),
+                selection: Binding(
+                    get: { vm.graphDegree },
+                    set: { vm.graphDegree = $0 }
+                )
+            ) {
+                Text(String(localized: "graph.degree.1", defaultValue: "1°"))
+                    .tag(1)
+                    .help(String(localized: "graph.degree.1.help",
+                                 defaultValue: "Show only direct inbound and outbound references"))
+                Text(String(localized: "graph.degree.2", defaultValue: "2°"))
+                    .tag(2)
+                    .help(String(localized: "graph.degree.2.help",
+                                 defaultValue: "Also show references to and from each direct neighbour"))
+                Text(String(localized: "graph.degree.3", defaultValue: "3°"))
+                    .tag(3)
+                    .help(String(localized: "graph.degree.3.help",
+                                 defaultValue: "Extend the graph one further hop from each 2nd-degree node"))
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 120)
+            .help(String(localized: "graph.degree.picker.help",
+                         defaultValue: "Select how many hops of cross-references to display"))
         }
-        .pickerStyle(.segmented)
         .padding(.horizontal)
         .padding(.vertical, 6)
     }
@@ -477,10 +563,12 @@ struct CrossReferenceGraphView: View {
     // MARK: - Canvas Drawing Helpers
 
     private func drawEdge(
-        _ context: inout GraphicsContext,
+        _ ctx: inout GraphicsContext,
         from: CGPoint,
         to: CGPoint,
-        referenceType: ReferenceType
+        referenceType: ReferenceType,
+        degree: Int,
+        contextSnippet: String?
     ) {
         let cp1 = CGPoint(x: from.x + (to.x - from.x) * 0.5, y: from.y)
         let cp2 = CGPoint(x: to.x   - (to.x - from.x) * 0.5, y: to.y)
@@ -488,19 +576,44 @@ struct CrossReferenceGraphView: View {
         path.move(to: from)
         path.addCurve(to: to, control1: cp1, control2: cp2)
 
-        let color: Color = referenceType == .editorialNote
-            ? .accentColor.opacity(0.4)
-            : .secondary.opacity(0.35)
-        context.stroke(path, with: .color(color), lineWidth: 1.5)
+        let isExtended = degree > 1
+        let lineWidth: CGFloat = isExtended ? 1.0 : 1.5
+        let color: Color
+        if isExtended {
+            color = .secondary.opacity(0.2)
+        } else if referenceType == .editorialNote {
+            color = .accentColor.opacity(0.4)
+        } else {
+            color = .secondary.opacity(0.35)
+        }
+        ctx.stroke(path, with: .color(color), lineWidth: lineWidth)
+
+        // Edge label — truncated context snippet drawn at the midpoint (degree-1 only).
+        if let snippet = contextSnippet, !isExtended {
+            let midX = (from.x + to.x) / 2
+            // Offset above the Bézier arc midpoint using the control-point bias.
+            let arcBias = (from.y + to.y) / 2 - (from.y + (to.y - from.y) * 0.5) * 0.3
+            let midPt = CGPoint(x: midX, y: arcBias)
+            let label = Text(verbatim: snippet)
+                .font(.system(size: 8))
+                .foregroundStyle(Color.secondary.opacity(0.7))
+            ctx.draw(label, at: midPt, anchor: .center)
+        }
     }
 
     private func drawNode(
-        _ context: inout GraphicsContext,   // shadows the outer `context` intentionally
+        _ ctx: inout GraphicsContext,
         node: DisplayNode,
         at pos: CGPoint,
         isSelected: Bool
     ) {
-        let r: CGFloat = node.isCentral ? 24 : 18
+        let r: CGFloat
+        switch node.kind {
+        case .central:                     r = 24
+        case .inbound, .outbound:          r = 18
+        case .extended:                    r = 14
+        case .clusterInbound, .clusterOutbound: r = 18
+        }
         let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
 
         // Background circle
@@ -509,15 +622,16 @@ struct CrossReferenceGraphView: View {
         case .central:                     fillColor = .accentColor
         case .inbound:                     fillColor = isSelected ? .blue.opacity(0.7) : .blue.opacity(0.3)
         case .outbound:                    fillColor = isSelected ? .green.opacity(0.7) : .green.opacity(0.3)
+        case .extended:                    fillColor = isSelected ? .secondary.opacity(0.5) : .secondary.opacity(0.2)
         case .clusterInbound:              fillColor = isSelected ? .blue.opacity(0.5) : .blue.opacity(0.2)
         case .clusterOutbound:             fillColor = isSelected ? .green.opacity(0.5) : .green.opacity(0.2)
         }
-        context.fill(Path(ellipseIn: rect), with: .color(fillColor))
+        ctx.fill(Path(ellipseIn: rect), with: .color(fillColor))
 
         // Border ring for selected / undownloaded
         if isSelected || !node.isDownloaded {
             let borderColor: Color = !node.isDownloaded ? .orange : .white
-            context.stroke(
+            ctx.stroke(
                 Path(ellipseIn: rect.insetBy(dx: -1.5, dy: -1.5)),
                 with: .color(borderColor),
                 lineWidth: 2
@@ -528,7 +642,51 @@ struct CrossReferenceGraphView: View {
         let symbolName = node.isCluster ? "folder" : "doc.text"
         let symbolRect = rect.insetBy(dx: r * 0.3, dy: r * 0.3)
         let image = Image(systemName: symbolName)
-        context.draw(image, in: symbolRect)
+        ctx.draw(image, in: symbolRect)
+
+        // Node label — document number or truncated header drawn below the circle.
+        let labelText: String
+        switch node.kind {
+        case .clusterInbound(_, let count):
+            labelText = String(
+                format: String(localized: "graph.node.cluster.label %lld",
+                               defaultValue: "%lld refs"),
+                Int64(count)
+            )
+        case .clusterOutbound(_, let count):
+            labelText = String(
+                format: String(localized: "graph.node.cluster.label %lld",
+                               defaultValue: "%lld refs"),
+                Int64(count)
+            )
+        default:
+            if let num = node.metadata?.documentNumber {
+                labelText = String(
+                    format: String(localized: "graph.node.docNumber %@",
+                                   defaultValue: "Doc. %@"),
+                    num
+                )
+            } else if let header = node.metadata?.header {
+                let trimmed = header.trimmingCharacters(in: .whitespaces)
+                labelText = trimmed.count > 20
+                    ? String(trimmed.prefix(18)) + "…"
+                    : trimmed
+            } else {
+                labelText = ""
+            }
+        }
+
+        if !labelText.isEmpty {
+            let isExtendedNode: Bool
+            if case .extended = node.kind { isExtendedNode = true } else { isExtendedNode = false }
+            let labelStyle: AnyShapeStyle = isExtendedNode
+                ? AnyShapeStyle(Color.secondary.opacity(0.6))
+                : AnyShapeStyle(Color.primary.opacity(0.75))
+            let label = Text(verbatim: labelText)
+                .font(.system(size: node.isCentral ? 10 : 8))
+                .foregroundStyle(labelStyle)
+            ctx.draw(label, at: CGPoint(x: pos.x, y: pos.y + r + 4), anchor: .top)
+        }
     }
 }
 

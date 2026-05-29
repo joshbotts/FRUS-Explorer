@@ -23,6 +23,8 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Session 17: initial implementation
+///   1.1 — Current session: `expandedGraph(forDocumentId:volumeId:degree:downloadedVolumeIds:)`
+///          for multi-degree ego graph expansion
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -117,6 +119,158 @@ public actor CrossReferenceStore {
             hasUndownloadedSources: hasUndownloaded,
             nodeMetadata: meta
         )
+    }
+
+    /// Builds a multi-degree ego graph centred on a single document.
+    ///
+    /// - **Degree 1**: returns the same result as `graph(forDocumentId:volumeId:downloadedVolumeIds:)`.
+    /// - **Degree 2**: additionally loads inbound + outbound edges for each 1st-degree node
+    ///   (capped at the 20 most-connected first-degree nodes to keep graph size manageable)
+    ///   and stores them in `CrossReferenceGraph.extendedEdges`.
+    /// - **Degree 3**: extends further from 2nd-degree nodes (capped at 15).
+    ///
+    /// Edges already present at a lower degree are deduplicated. All node metadata
+    /// encountered during expansion is included in the returned `nodeMetadata` dictionary.
+    ///
+    /// - Parameters:
+    ///   - documentId: The `xml:id` of the central document.
+    ///   - volumeId: The volume the central document belongs to.
+    ///   - degree: 1, 2, or 3 — how many hops to expand from the central document.
+    ///   - downloadedVolumeIds: All volume IDs currently downloaded.
+    /// - Returns: A `CrossReferenceGraph` with `fetchedDegree` set to `degree` and
+    ///   `extendedEdges` populated for degree > 1.
+    public func expandedGraph(
+        forDocumentId documentId: String,
+        volumeId: String,
+        degree: Int,
+        downloadedVolumeIds: Set<String>
+    ) throws -> CrossReferenceGraph {
+        guard degree > 1 else {
+            return try graph(forDocumentId: documentId, volumeId: volumeId,
+                             downloadedVolumeIds: downloadedVolumeIds)
+        }
+
+        // Build the degree-1 base graph.
+        let base = try graph(forDocumentId: documentId, volumeId: volumeId,
+                             downloadedVolumeIds: downloadedVolumeIds)
+
+        // Collect 1st-degree node keys.
+        var firstDegreeKeys: Set<String> = []
+        for edge in base.inboundEdges {
+            firstDegreeKeys.insert("\(edge.sourceVolumeId)/\(edge.sourceDocumentId)")
+        }
+        for edge in base.outboundEdges {
+            firstDegreeKeys.insert("\(edge.targetVolumeId)/\(edge.targetDocumentId)")
+        }
+
+        // Track all edges already present to avoid duplication.
+        var seenEdgeKeys: Set<String> = []
+        for edge in base.inboundEdges + base.outboundEdges {
+            seenEdgeKeys.insert(Self.edgeKey(edge))
+        }
+
+        var extendedEdges: [CrossReferenceEdge] = []
+        var extendedMeta: [String: CrossReferenceNodeMetadata] = base.nodeMetadata
+        var allNodeKeys: Set<String> = Set(["\(volumeId)/\(documentId)"] + firstDegreeKeys)
+
+        // Expand degree-2: load edges for each 1st-degree node (capped).
+        let deg2Nodes = Array(firstDegreeKeys).sorted().prefix(20)
+        var secondDegreeKeys: Set<String> = []
+        for nodeKey in deg2Nodes {
+            let newEdges = try edgesFor(nodeKey: nodeKey,
+                                        seenEdgeKeys: &seenEdgeKeys,
+                                        allNodeKeys: &allNodeKeys,
+                                        extendedMeta: &extendedMeta,
+                                        downloadedVolumeIds: downloadedVolumeIds)
+            for edge in newEdges {
+                // A node is 2nd-degree if it's new (not in degree-1 set).
+                let srcKey = "\(edge.sourceVolumeId)/\(edge.sourceDocumentId)"
+                let tgtKey = "\(edge.targetVolumeId)/\(edge.targetDocumentId)"
+                if !firstDegreeKeys.contains(srcKey) && srcKey != "\(volumeId)/\(documentId)" {
+                    secondDegreeKeys.insert(srcKey)
+                }
+                if !firstDegreeKeys.contains(tgtKey) && tgtKey != "\(volumeId)/\(documentId)" {
+                    secondDegreeKeys.insert(tgtKey)
+                }
+            }
+            extendedEdges.append(contentsOf: newEdges)
+        }
+
+        // Expand degree-3: load edges for each 2nd-degree node (capped).
+        if degree >= 3 {
+            for nodeKey in Array(secondDegreeKeys).sorted().prefix(15) {
+                let newEdges = try edgesFor(nodeKey: nodeKey,
+                                            seenEdgeKeys: &seenEdgeKeys,
+                                            allNodeKeys: &allNodeKeys,
+                                            extendedMeta: &extendedMeta,
+                                            downloadedVolumeIds: downloadedVolumeIds)
+                extendedEdges.append(contentsOf: newEdges)
+            }
+        }
+
+        #if DEBUG
+        print("[CrossReferenceStore] expandedGraph degree=\(degree): \(base.edgeCount) deg-1 + \(extendedEdges.count) extended edges")
+        #endif
+
+        return CrossReferenceGraph(
+            centralDocumentId: documentId,
+            centralVolumeId:   volumeId,
+            inboundEdges:      base.inboundEdges,
+            outboundEdges:     base.outboundEdges,
+            hasUndownloadedSources: base.hasUndownloadedSources,
+            nodeMetadata:      extendedMeta,
+            extendedEdges:     extendedEdges,
+            fetchedDegree:     degree
+        )
+    }
+
+    /// Loads all inbound and outbound edges for `nodeKey`, returning only those not
+    /// already in `seenEdgeKeys`. Updates `seenEdgeKeys`, `allNodeKeys`, and `extendedMeta`
+    /// in-place.
+    private func edgesFor(
+        nodeKey: String,
+        seenEdgeKeys: inout Set<String>,
+        allNodeKeys:  inout Set<String>,
+        extendedMeta: inout [String: CrossReferenceNodeMetadata],
+        downloadedVolumeIds: Set<String>
+    ) throws -> [CrossReferenceEdge] {
+        let parts = nodeKey.split(separator: "/", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else { return [] }
+        let vol = parts[0], doc = parts[1]
+
+        let nodeIn  = try inboundEdges(forDocumentId: doc, volumeId: vol)
+        let nodeOut = try outboundEdges(forDocumentId: doc, volumeId: vol)
+        var newEdges: [CrossReferenceEdge] = []
+
+        for edge in nodeIn + nodeOut {
+            let ek = Self.edgeKey(edge)
+            guard !seenEdgeKeys.contains(ek) else { continue }
+            seenEdgeKeys.insert(ek)
+            newEdges.append(edge)
+
+            // Ensure metadata exists for all endpoints of the new edge.
+            for nk in ["\(edge.sourceVolumeId)/\(edge.sourceDocumentId)",
+                       "\(edge.targetVolumeId)/\(edge.targetDocumentId)"]
+            where !allNodeKeys.contains(nk) {
+                allNodeKeys.insert(nk)
+                let np = nk.split(separator: "/", maxSplits: 1).map(String.init)
+                guard np.count == 2 else { continue }
+                if let m = try? fetchMetadata(volumeId: np[0], documentId: np[1]) {
+                    extendedMeta[nk] = m
+                } else {
+                    extendedMeta[nk] = CrossReferenceNodeMetadata(
+                        documentId: np[1], volumeId: np[0],
+                        documentNumber: nil, header: nil, dateline: nil
+                    )
+                }
+            }
+        }
+        return newEdges
+    }
+
+    /// Stable string key for deduplicating edges.
+    private static func edgeKey(_ edge: CrossReferenceEdge) -> String {
+        "\(edge.sourceVolumeId)/\(edge.sourceDocumentId)->\(edge.targetVolumeId)/\(edge.targetDocumentId)"
     }
 
     /// Returns all edges whose target is `(documentId, volumeId)`.

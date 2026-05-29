@@ -312,4 +312,100 @@ struct CrossReferenceGraphTests {
                     "Cluster node \(node.id) has empty accessibility label")
         }
     }
+
+    // MARK: - ExtendedNodesTest
+
+    @Test("ExtendedNodesTest: buildDisplayNodesAndEdges includes extended nodes for degree-2 graphs")
+    func extendedNodesAppearsInDisplay() throws {
+        let centralKey = "vol1/d0"
+
+        // Build a graph that already has extendedEdges (simulating what expandedGraph returns).
+        var baseGraph = makeTestGraph(inboundCount: 2, outboundCount: 2)
+
+        // Manually add an extended edge connecting an inbound node to a new 2nd-degree node.
+        let extEdge = CrossReferenceEdge(
+            sourceDocumentId: "d-ext-99",
+            sourceVolumeId:   "vol-ext",
+            targetDocumentId: "d-in-0",    // connects to the 1st-degree inbound node
+            targetVolumeId:   "vol-src",
+            context:          "Extended context for testing.",
+            referenceType:    .footnote
+        )
+
+        let extendedGraph = CrossReferenceGraph(
+            centralDocumentId: baseGraph.centralDocumentId,
+            centralVolumeId:   baseGraph.centralVolumeId,
+            inboundEdges:      baseGraph.inboundEdges,
+            outboundEdges:     baseGraph.outboundEdges,
+            hasUndownloadedSources: false,
+            nodeMetadata:      baseGraph.nodeMetadata,
+            extendedEdges:     [extEdge],
+            fetchedDegree:     2
+        )
+
+        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: extendedGraph,
+            centralKey: centralKey,
+            expandedClusterKeys: [],
+            downloadedVolumeIds: ["vol1", "vol-src", "vol-tgt"]
+        )
+
+        // Should have the 1 central + 2 inbound + 2 outbound + 1 extended = 6 nodes.
+        #expect(nodes.count == 6, "Expected 6 nodes (5 base + 1 extended), got \(nodes.count)")
+
+        // The extended node (d-ext-99 / vol-ext) should be present with .extended kind.
+        let extNode = nodes.first { $0.id == "vol-ext/d-ext-99" }
+        #expect(extNode != nil, "Extended node vol-ext/d-ext-99 must appear in display nodes")
+        if let n = extNode {
+            if case .extended = n.kind { /* expected */ } else {
+                Issue.record("Expected .extended kind for node \(n.id), got \(n.kind)")
+            }
+            #expect(n.degree == 2, "Extended node should have degree 2")
+        }
+
+        // The extended edge should appear in displayEdges with degree == 2.
+        let extDisplayEdge = edges.first { $0.source == "vol-ext/d-ext-99" }
+        #expect(extDisplayEdge != nil, "Extended edge must appear in displayEdges")
+        #expect(extDisplayEdge?.degree == 2, "Extended edge should have degree 2")
+        #expect(extDisplayEdge?.context == "Extended context for testing.",
+                "Edge context must be preserved for extended edges")
+
+        // Extended node must have a non-empty accessibility label.
+        if let extN = extNode {
+            #expect(!extN.accessibilityLabel.isEmpty,
+                    "Extended node must have a non-empty accessibility label")
+        }
+    }
+
+    // MARK: - NodeDegreeTest
+
+    @Test("NodeDegreeTest: degree-1 nodes carry degree 1; central node carries degree 0")
+    func nodeDegreeValues() throws {
+        let graph = makeTestGraph(inboundCount: 3, outboundCount: 2)
+        let centralKey = "vol1/d0"
+
+        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph,
+            centralKey: centralKey,
+            expandedClusterKeys: [],
+            downloadedVolumeIds: ["vol1"]
+        )
+
+        let centralNode = nodes.first { $0.isCentral }
+        #expect(centralNode?.degree == 0, "Central node should have degree 0")
+
+        let inboundNodes = nodes.filter { if case .inbound = $0.kind { true } else { false } }
+        for n in inboundNodes {
+            #expect(n.degree == 1, "Inbound node \(n.id) should have degree 1")
+        }
+
+        let outboundNodes = nodes.filter { if case .outbound = $0.kind { true } else { false } }
+        for n in outboundNodes {
+            #expect(n.degree == 1, "Outbound node \(n.id) should have degree 1")
+        }
+
+        for e in edges {
+            #expect(e.degree == 1, "Degree-1 display edges should carry degree 1")
+        }
+    }
 }
