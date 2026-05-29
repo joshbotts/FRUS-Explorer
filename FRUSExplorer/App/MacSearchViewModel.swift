@@ -31,10 +31,17 @@ enum SearchSortOrder: CaseIterable {
 
 /// Owns all state for the macOS Search sheet.
 ///
-/// ## Debouncing
-/// `queryText` is observed by a `.task(id: searchTrigger)` in `SearchSheet`.
-/// `debouncedQuery` updates after a 300ms delay. `parametersVersion` is bumped
-/// whenever filter state changes. Either change triggers a new search.
+/// ## Submit-Only Search
+/// `queryText` is the live text-field buffer and never triggers a search on its own.
+/// A search fires only when the user presses Return, which calls `submitSearch()` and
+/// sets `submittedQuery = queryText`. `searchTrigger` derives from `submittedQuery` and
+/// `parametersVersion`; a `.task(id: searchTrigger)` in `SearchSheet` calls
+/// `performSearch` whenever the trigger changes.
+///
+/// Filter changes (scope toggles, advanced filter sheet apply) bump `parametersVersion`,
+/// which changes `searchTrigger` and re-runs `performSearch` against the **already-
+/// submitted** query. If no query has been submitted yet (`submittedQuery` is empty),
+/// `performSearch` short-circuits harmlessly.
 ///
 /// ## Filter State
 /// Two-tier filter model:
@@ -71,24 +78,24 @@ enum SearchSortOrder: CaseIterable {
 ///   1.3 — Session 121: add `submitSearch()` so `.onSubmit` bypasses debounce instead of
 ///          spawning a parallel Task; fix `performSearch` catch to skip result-clearing on
 ///          `CancellationError` (prevents flash of empty results when task is superseded)
+///   1.4 — Session 129: remove 300 ms auto-debounce from `queryText.didSet`; rename
+///          `debouncedQuery` → `submittedQuery`; `performSearch` reads `submittedQuery`
+///          so queries never fire before the user presses Return; filter/scope changes
+///          re-run the previously submitted query (not the live text-field buffer)
 @Observable
 @MainActor
 final class MacSearchViewModel {
 
     // MARK: - Input State
 
-    var queryText: String = "" {
-        didSet {
-            debounceTask?.cancel()
-            debounceTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(300))
-                debouncedQuery = queryText
-            }
-        }
-    }
+    /// Live text-field buffer. Does **not** trigger a search on its own.
+    /// Call `submitSearch()` (bound to `.onSubmit`) to commit this value to
+    /// `submittedQuery` and fire a search.
+    var queryText: String = ""
 
-    /// Updated after debounce delay. Observed by `SearchSheet`'s `.task(id:)`.
-    var debouncedQuery: String = ""
+    /// The last query string committed by `submitSearch()` or `applyParameters(_:)`.
+    /// `searchTrigger` derives from this value, so only committed queries drive searches.
+    var submittedQuery: String = ""
 
     // MARK: - Scope toggles
 
@@ -128,8 +135,10 @@ final class MacSearchViewModel {
     /// Triggers a re-search whenever any filter changes. Observed via `searchTrigger`.
     var parametersVersion: Int = 0
 
-    /// Combined token for `.task(id:)` — changes when query or any filter changes.
-    var searchTrigger: String { "\(debouncedQuery)|\(parametersVersion)" }
+    /// Combined token for `.task(id:)` — changes when the submitted query or any
+    /// filter changes. Does **not** change when the user is merely typing in the
+    /// text field; only `submitSearch()` (Return key) updates `submittedQuery`.
+    var searchTrigger: String { "\(submittedQuery)|\(parametersVersion)" }
 
     // MARK: - Advanced Filter ViewModel
 
@@ -263,10 +272,6 @@ final class MacSearchViewModel {
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 
-    // MARK: - Private
-
-    private var debounceTask: Task<Void, Never>?
-
     // MARK: - Filter Mutations (each bumps parametersVersion to trigger re-search)
 
     func setDocumentTypeFilter(_ filter: DocumentTypeFilter) {
@@ -383,7 +388,7 @@ final class MacSearchViewModel {
         let kw = params.keywords ?? (params.personRef.map { "person:\($0)" } ?? "")
         if !kw.isEmpty {
             queryText = kw
-            debouncedQuery = kw
+            submittedQuery = kw
         }
         parameters = params
         scopeDocuments = params.includeDocumentText
@@ -394,21 +399,17 @@ final class MacSearchViewModel {
 
     // MARK: - Search
 
-    /// Submits the current query immediately, bypassing the 300 ms debounce.
+    /// Commits the current `queryText` as the submitted query and fires a search.
     ///
-    /// Cancels any in-flight debounce task, then sets `debouncedQuery = queryText`.
-    /// Because `searchTrigger` derives from `debouncedQuery`, the change propagates
-    /// to the `.task(id: searchTrigger)` observer in `SearchSheet` and fires exactly
-    /// one new search. This is the correct path for `.onSubmit` (Return key) — it avoids
-    /// launching an independent `Task { await performSearch() }` in parallel with the
-    /// debounce-triggered `.task(id:)`, which was the root cause of the "cycling through
-    /// three result sets" bug.
+    /// Sets `submittedQuery = queryText`, which changes `searchTrigger` and causes
+    /// the `.task(id: searchTrigger)` observer in `SearchSheet` to call `performSearch`.
+    /// This is the **only** path that updates `submittedQuery`; it is bound to
+    /// `.onSubmit` (Return key) so searches fire only when the user explicitly submits.
     func submitSearch() {
-        debounceTask?.cancel()
-        debouncedQuery = queryText
+        submittedQuery = queryText
     }
 
-    /// Executes a search against `SearchService` using the current `parameters` and `queryText`.
+    /// Executes a search against `SearchService` using `submittedQuery` and the current `parameters`.
     ///
     /// Fetches up to `searchHardLimit` (7,500) results so all pagination pages are available
     /// client-side. In parallel, fetches the true total match count via
@@ -426,7 +427,7 @@ final class MacSearchViewModel {
     /// `results` — preserving the previous result set during the transition rather than
     /// flashing an empty list. `isSearching` is always reset via `defer`.
     func performSearch(service: SearchService?) async {
-        let query = queryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty, let service else {
             results = []
             totalMatchCount = 0

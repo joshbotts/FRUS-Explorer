@@ -34,6 +34,11 @@
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
+///   1.1 — Session 129: fix stemming asymmetry — keywords and excluded-terms paths now
+///          filter to `isLetter` characters before calling `PorterStemmer.stem`, matching
+///          the behaviour of `stemForIndex` in `FTS5Store` and the phrase-search path.
+///          Previously, terms containing punctuation (apostrophes, hyphens) were stemmed
+///          from the full sanitized string, producing different stems than the indexed text.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -122,10 +127,18 @@ public struct FTS5Query: Sendable {
         }
 
         // Keyword terms — sanitize then stem so they match the indexed stemmed tokens.
+        // Filter to letter-only characters before stemming, matching the behaviour of
+        // `stemForIndex` in `FTS5Store` and the phrase-search path below. Without this
+        // filter, terms containing apostrophes or hyphens (e.g. "don't", "non-proliferation")
+        // produce different stems than the indexed text.
         let sanitizedKeywords = keywords
             .map { sanitizeTerm($0) }
             .filter { !$0.isEmpty }
-            .map { PorterStemmer.stem($0.lowercased()) }
+            .map { term -> String in
+                let lower = term.lowercased()
+                let alpha = lower.filter { $0.isLetter }
+                return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
+            }
 
         if !sanitizedKeywords.isEmpty {
             let operator_ = booleanMode == .or ? " OR " : " "
@@ -169,10 +182,15 @@ public struct FTS5Query: Sendable {
 
         // NOT terms — appended to whatever positive expression exists.
         // FTS5 requires at least one positive term when using NOT.
+        // Apply the same letter-filter-before-stem transform used for keywords above.
         let sanitizedExclusions = excludedTerms
             .map { sanitizeTerm($0) }
             .filter { !$0.isEmpty }
-            .map { PorterStemmer.stem($0.lowercased()) }
+            .map { term -> String in
+                let lower = term.lowercased()
+                let alpha = lower.filter { $0.isLetter }
+                return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
+            }
 
         if !sanitizedExclusions.isEmpty {
             let notPart = sanitizedExclusions.map { "NOT \($0)" }.joined(separator: " ")

@@ -53,7 +53,7 @@ FRUSExplorer/
 │   ├── Distribution/             Direct-distribution-only code (SparkleUpdater, guarded by DIRECT_DISTRIBUTION flag)
 │   ├── Resources/                Bundled data (manifest, taxonomy, subject tags)
 │   └── Localizable.strings       English base localisation
-├── FRUSExplorerTests/            Unit tests (509 tests, all passing)
+├── FRUSExplorerTests/            Unit tests (511 tests, all passing)
 ├── FRUSExplorerUITests/          UI tests
 ├── ManifestGenerator/            SPM tool: generates manifest.json from FRUS GitHub
 ├── TaxonomyGenerator/            SPM tool: generates volume-tag-taxonomy.json

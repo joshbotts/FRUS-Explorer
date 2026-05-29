@@ -115,6 +115,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `dateline` from `document_cache`. `SearchService` now substitutes these
 ///          unstemmed values for the FTS5-indexed (Porter-stemmed) ones so search result
 ///          rows display the original document text rather than stemmed tokens.
+///   2.9 — Session 129: `datesByDocumentKey` silent 500-pair cap replaced with chunked
+///          queries (499 strings/chunk, matches 999-variable limit); `currentDateIndexVersion`
+///          bumped to 6 to trigger a full clean reindex on devices that accumulated FTS5
+///          duplicate rows before the Session 118 `deleteVolume()` fix.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -214,7 +218,11 @@ public actor IndexingPipeline {
     /// - Version 5: `date_iso_max` column added; interval overlap filtering; `@to` and
     ///   `@notAfter` now captured as range end; `frus:doc-dateTime-min`/`max` used when
     ///   present as authoritative editorial date bounds (Session 76)
-    public static let currentDateIndexVersion: Int = 5
+    /// - Version 6: FTS5 duplicate-row migration (Session 129) — devices that indexed
+    ///   before Session 118 accumulated duplicate rows in `frus_documents` because the
+    ///   `deleteVolume()` call before reindex was not yet present; bumping this version
+    ///   triggers a full clean reindex via `needsDateReindex` on affected devices
+    public static let currentDateIndexVersion: Int = 6
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -883,31 +891,37 @@ public actor IndexingPipeline {
     /// Only pairs with a parseable `date_iso` value in `document_dates` are included.
     /// Unindexed or genuinely undated documents are absent from the result dictionary.
     ///
-    /// - Parameter docs: `(volumeId, documentId)` pairs to query. Capped at 500 to stay
-    ///   within SQLite's default variable limit; excess pairs are silently ignored.
+    /// Queries are issued in chunks of 499 to stay within SQLite's 999-variable limit.
+    /// All pairs are queried; none are silently dropped.
+    ///
+    /// - Parameter docs: `(volumeId, documentId)` pairs to query.
     /// - Returns: Dictionary mapping composite key → `date_iso` string (e.g. `"1969-02-15"`).
     public func datesByDocumentKey(
         _ docs: [(volumeId: String, documentId: String)]
     ) throws -> [String: String] {
-        let capped = Array(docs.prefix(500))
-        guard !capped.isEmpty else { return [:] }
-        let keys = capped.map { "\($0.volumeId)/\($0.documentId)" }
-        let placeholders = keys.map { _ in "?" }.joined(separator: ", ")
-        let sql = """
-            SELECT volume_id || '/' || document_id, date_iso
-            FROM document_dates
-            WHERE volume_id || '/' || document_id IN (\(placeholders))
-            AND date_iso IS NOT NULL
-            """
-        let stmt = try auxPrepare(sql)
-        defer { sqlite3_finalize(stmt) }
-        for (i, key) in keys.enumerated() {
-            sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
-        }
+        guard !docs.isEmpty else { return [:] }
+        // 499 key strings × 1 param/key = 499 — safely under the SQLite 999-variable cap.
+        let chunkSize = 499
+        let allKeys = docs.map { "\($0.volumeId)/\($0.documentId)" }
         var result: [String: String] = [:]
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
-                result[k] = d
+        for chunk in stride(from: 0, to: allKeys.count, by: chunkSize)
+                .map({ Array(allKeys[$0..<min($0 + chunkSize, allKeys.count)]) }) {
+            let placeholders = chunk.map { _ in "?" }.joined(separator: ", ")
+            let sql = """
+                SELECT volume_id || '/' || document_id, date_iso
+                FROM document_dates
+                WHERE volume_id || '/' || document_id IN (\(placeholders))
+                AND date_iso IS NOT NULL
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, key) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                    result[k] = d
+                }
             }
         }
         return result

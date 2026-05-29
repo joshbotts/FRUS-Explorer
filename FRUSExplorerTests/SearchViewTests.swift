@@ -402,3 +402,77 @@ struct PersonFilterTests {
                 "dateline should be the original text from document_cache, not a stemmed FTS5 token")
     }
 }
+
+#if os(macOS)
+
+// MARK: - MacSearchViewModelTests
+
+/// Tests for the submit-only search contract introduced in Session 129.
+///
+/// `MacSearchViewModel` must never fire a search while the user is merely typing.
+/// A search fires only when `submitSearch()` is called (bound to `.onSubmit` / Return),
+/// which commits `queryText` to `submittedQuery`. `searchTrigger` derives exclusively
+/// from `submittedQuery` and `parametersVersion`.
+///
+/// Version history:
+///   1.0 — Session 129: initial tests for submit-only constraint
+@MainActor
+struct MacSearchViewModelTests {
+
+    // MARK: - SubmitOnlyTest
+
+    @Test("SubmitOnlyTest: typing in queryText does not change searchTrigger")
+    func queryTextDoesNotChangeTrigger() {
+        let vm = MacSearchViewModel()
+        let triggerBefore = vm.searchTrigger
+        vm.queryText = "détente"
+        #expect(vm.searchTrigger == triggerBefore,
+                "searchTrigger must not change when queryText is typed — only submitSearch() should trigger a search")
+    }
+
+    @Test("SubmitOnlyTest: submitSearch() commits queryText to submittedQuery and changes searchTrigger")
+    func submitSearchUpdatesTrigger() {
+        let vm = MacSearchViewModel()
+        let triggerBefore = vm.searchTrigger
+        vm.queryText = "détente"
+        vm.submitSearch()
+        #expect(vm.submittedQuery == "détente",
+                "submitSearch must commit queryText to submittedQuery")
+        #expect(vm.searchTrigger != triggerBefore,
+                "searchTrigger must change after submitSearch() so .task(id:) fires a search")
+    }
+
+    @Test("SubmitOnlyTest: submittedQuery is still empty after typing but before submit")
+    func submittedQueryRemainsEmptyBeforeSubmit() {
+        let vm = MacSearchViewModel()
+        vm.queryText = "kennedy"
+        #expect(vm.submittedQuery.isEmpty,
+                "submittedQuery must stay empty until submitSearch() is explicitly called")
+    }
+
+    @Test("SubmitOnlyTest: scope toggle after submit re-fires search against submitted query")
+    func scopeToggleAfterSubmitRetriggersSearch() {
+        let vm = MacSearchViewModel()
+        vm.queryText = "détente"
+        vm.submitSearch()
+        let triggerAfterSubmit = vm.searchTrigger
+        vm.scopeNotes = false
+        #expect(vm.searchTrigger != triggerAfterSubmit,
+                "Scope toggle should change searchTrigger when a query has already been submitted")
+    }
+
+    // MARK: - ApplyParametersTest
+
+    @Test("ApplyParametersTest: applyParameters sets both queryText and submittedQuery")
+    func applyParametersSetsSubmittedQuery() {
+        let vm = MacSearchViewModel()
+        let params = SearchParameters(keywords: "détente")
+        vm.applyParameters(params)
+        #expect(vm.queryText == "détente",
+                "applyParameters must populate the text field")
+        #expect(vm.submittedQuery == "détente",
+                "applyParameters must set submittedQuery so the programmatic search fires immediately")
+    }
+}
+
+#endif // os(macOS)

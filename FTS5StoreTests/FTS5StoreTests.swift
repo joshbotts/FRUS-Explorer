@@ -426,4 +426,31 @@ struct FTS5QueryTests {
         #expect(expr != nil)
         #expect(!(expr?.contains("\"") ?? false))
     }
+
+    // MARK: - Stemming Asymmetry Tests (Session 129)
+
+    @Test("StemmingAsymmetryTest: keyword with apostrophe stems same as letter-only equivalent")
+    func apostropheKeywordConsistentStemming() {
+        // Before the Session 129 fix the keyword path called PorterStemmer.stem on the
+        // full lowercased string (including the apostrophe), producing a different stem
+        // than stemForIndex (which filters to isLetter first). After the fix both paths
+        // agree: "don't" → filter letters → "dont" → stem.
+        let qApostrophe = FTS5Query(keywords: ["don't"])
+        let qClean      = FTS5Query(keywords: ["dont"])
+        let exprApostrophe = qApostrophe.toFTS5MatchExpression()
+        let exprClean      = qClean.toFTS5MatchExpression()
+        #expect(exprApostrophe == exprClean,
+                "Apostrophe in keyword must be stripped before stemming, matching stemForIndex")
+    }
+
+    @Test("StemmingAsymmetryTest: excluded term with apostrophe stems same as letter-only equivalent")
+    func apostropheExclusionConsistentStemming() {
+        // The NOT-terms path had the same asymmetry as the keyword path.
+        var qApostrophe = FTS5Query(keywords: ["war"])
+        qApostrophe.excludedTerms = ["don't"]
+        var qClean = FTS5Query(keywords: ["war"])
+        qClean.excludedTerms = ["dont"]
+        #expect(qApostrophe.toFTS5MatchExpression() == qClean.toFTS5MatchExpression(),
+                "Apostrophe in excluded term must be stripped before stemming")
+    }
 }

@@ -746,6 +746,51 @@ struct DateIndexingAccuracyTests {
             UserDefaults.standard.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
         }
     }
+
+    // MARK: - DatesByDocumentKeyChunkingTest (Session 129)
+
+    @Test("DatesByDocumentKeyChunkingTest: datesByDocumentKey returns all pairs when count exceeds 499")
+    func datesByDocumentKeyReturnsAllPairsAboveChunkBoundary() async throws {
+        // The old implementation silently capped results at 500 pairs. The new chunked
+        // implementation processes all pairs in batches of 499. This test verifies that
+        // all 502 document keys are returned correctly, spanning two chunks.
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+            // Build a fixture with 502 documents each bearing a unique date.
+            let docCount = 502
+            let docs: [(id: String, xml: String)] = (1...docCount).map { n in
+                let year = 1960 + (n % 50) // spread dates across 50 years
+                let month = max(1, n % 12)
+                let day   = max(1, (n % 28))
+                return (
+                    id: "d\(n)",
+                    xml: "<head>Document \(n)</head><date when=\"\(year)-\(String(format: "%02d", month))-\(String(format: "%02d", day))\">text</date><p>Body \(n).</p>"
+                )
+            }
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: docs
+            )
+
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // Build the full list of 502 document key pairs.
+            let pairs = (1...docCount).map { n in
+                (volumeId: "frus1969-76v01", documentId: "d\(n)")
+            }
+            let result = try await pipeline.datesByDocumentKey(pairs)
+
+            // All documents with a <date @when> should appear in the result.
+            // Allow a small tolerance for documents whose date falls outside the indexed range,
+            // but at minimum all 502 keys must be queried (none silently dropped).
+            #expect(result.count == docCount,
+                    "datesByDocumentKey should return an entry for all \(docCount) dated documents, not just the first 499")
+        }
+    }
 }
 
 // MARK: - CrossReferenceContextTests
