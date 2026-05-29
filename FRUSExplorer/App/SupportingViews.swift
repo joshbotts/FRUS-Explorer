@@ -54,6 +54,9 @@ final class HighlightCoordinator {
 ///   1.1 — Removed collapse behaviour
 ///   1.2 — Sources, Highlight Mode, Create Highlight, Add Note to Highlight moved here
 ///          from MacDocumentView toolbar and MainWindowView trailingTools
+///   1.3 — Session 129: `CollectionPickerSheet` and `MacTagPickerSheet` split into
+///          macOS/iOS bodies; macOS variants use VStack + button-bar to prevent
+///          NavigationStack sidebar from hiding list content in sheet presentations
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
@@ -313,6 +316,19 @@ struct ResearchStripView: View {
 /// The "New Collection" button opens `CollectionEditorView` to create a collection
 /// first; the document is not automatically added to the new collection (the user
 /// manages membership via the Collections window).
+/// Sheet for adding a document to an existing or new collection.
+///
+/// ## Platform layout
+/// On macOS, `NavigationStack { List }` inside a `.sheet()` renders the list as a
+/// collapsed sidebar with an empty detail area. The macOS body uses a plain `VStack`
+/// with an inline search `TextField`, an explicit button bar, and a "New Collection"
+/// button replacing the toolbar primary-action button. The iOS body retains
+/// `NavigationStack` with `.searchable` and toolbar buttons.
+///
+/// Version history:
+///   1.0 — Session 35+: initial implementation
+///   1.1 — Session 129: split macOS / iOS bodies to prevent NavigationStack sidebar
+///          from hiding list content; macOS replaces `.searchable` with inline TextField
 private struct CollectionPickerSheet: View {
 
     let entry: DocumentBrowserEntry
@@ -331,61 +347,179 @@ private struct CollectionPickerSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if collections.isEmpty {
-                    ContentUnavailableView(
-                        "No Collections",
-                        systemImage: "folder",
-                        description: Text("Create a collection first using the button below.")
-                    )
-                } else {
-                    List(filtered) { collection in
-                        Button {
-                            addDocument(to: collection)
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(collection.name)
-                                        .font(.body)
-                                        .foregroundStyle(.primary)
-                                    let count = collection.documentEntries?.count ?? 0
-                                    Text("\(count) document\(count == 1 ? "" : "s")")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if addedCollectionId == collection.id {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.green)
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .listStyle(.inset)
-                    .searchable(text: $searchText, prompt: "Search collections")
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - Shared collection row
+
+    private func collectionRow(_ collection: Collection) -> some View {
+        Button {
+            addDocument(to: collection)
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(collection.name)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                    let count = collection.documentEntries?.count ?? 0
+                    Text(String(localized: "collection.picker.docCount",
+                                defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if addedCollectionId == collection.id {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
                 }
             }
-            .navigationTitle("Add to Collection")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - macOS Body
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            // Title bar
+            HStack {
+                Text(String(localized: "collection.picker.nav.title",
+                            defaultValue: "Add to Collection"))
+                    .font(.headline)
+                Spacer()
+                Button {
+                    showNewCollection = true
+                } label: {
+                    Label(String(localized: "collection.picker.newCollection",
+                                 defaultValue: "New Collection"),
+                          systemImage: "folder.badge.plus")
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showNewCollection = true
-                    } label: {
-                        Label("New Collection", systemImage: "folder.badge.plus")
-                    }
-                }
+                .labelStyle(.iconOnly)
+                .help(String(localized: "collection.picker.newCollection.help",
+                             defaultValue: "Create a new collection"))
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 8)
+
+            // Inline search field
+            if !collections.isEmpty {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.tertiary)
+                    TextField(String(localized: "collection.picker.search.placeholder",
+                                     defaultValue: "Search collections…"), text: $searchText)
+                        .textFieldStyle(.plain)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+            }
+
+            Divider()
+
+            // Collection list or empty state
+            if collections.isEmpty {
+                VStack(spacing: 8) {
+                    Spacer()
+                    Image(systemName: "folder")
+                        .font(.largeTitle)
+                        .foregroundStyle(.tertiary)
+                    Text(String(localized: "collection.picker.empty",
+                                defaultValue: "No Collections"))
+                        .font(.headline)
+                    Text(String(localized: "collection.picker.empty.hint",
+                                defaultValue: "Use the button above to create one."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            } else if filtered.isEmpty {
+                VStack(spacing: 8) {
+                    Spacer()
+                    Text(String(localized: "collection.picker.noResults",
+                                defaultValue: "No collections match \"\(searchText)\"."))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+            } else {
+                List(filtered) { collection in
+                    collectionRow(collection)
+                }
+                .listStyle(.inset)
+            }
+
+            Divider()
+
+            // Button bar
+            HStack {
+                Spacer()
+                Button(String(localized: "collection.picker.cancel",
+                              defaultValue: "Cancel")) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
         }
         .frame(minWidth: 380, minHeight: 340)
         .sheet(isPresented: $showNewCollection) {
             CollectionEditorView(collection: nil)
         }
     }
+    #endif
+
+    // MARK: - iOS Body
+
+    private var iOSBody: some View {
+        NavigationStack {
+            Group {
+                if collections.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "collection.picker.empty",
+                               defaultValue: "No Collections"),
+                        systemImage: "folder",
+                        description: Text(String(localized: "collection.picker.empty.hint",
+                                                 defaultValue: "Create a collection first using the button below."))
+                    )
+                } else {
+                    List(filtered) { collection in
+                        collectionRow(collection)
+                    }
+                    .listStyle(.inset)
+                    .searchable(text: $searchText,
+                                prompt: String(localized: "collection.picker.search.placeholder",
+                                               defaultValue: "Search collections…"))
+                }
+            }
+            .navigationTitle(String(localized: "collection.picker.nav.title",
+                                    defaultValue: "Add to Collection"))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "collection.picker.cancel",
+                                  defaultValue: "Cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showNewCollection = true
+                    } label: {
+                        Label(String(localized: "collection.picker.newCollection",
+                                     defaultValue: "New Collection"),
+                              systemImage: "folder.badge.plus")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showNewCollection) {
+            CollectionEditorView(collection: nil)
+        }
+    }
+
+    // MARK: - Add action
 
     private func addDocument(to collection: Collection) {
         // Guard against duplicates
@@ -1531,14 +1665,20 @@ private enum CitationPopoverStyle: String, CaseIterable, Identifiable {
 
 // MARK: - MacTagPickerSheet
 
-/// macOS document-level user-tag picker.
+/// Document-level user-tag picker presented from `ResearchStripView`.
 ///
 /// Lists all `UserTag` records from SwiftData and lets the user toggle which tags
 /// apply to this document. A "New Tag" field lets the user create tags inline.
 ///
+/// ## Platform layout
+/// On macOS, `NavigationStack { List }` inside a `.sheet()` renders the list as a
+/// collapsed sidebar with an empty detail area, hiding all controls. The macOS body
+/// uses a plain `VStack` with explicit Cancel / Done buttons so all controls are always
+/// visible. The iOS body retains the `NavigationStack` toolbar approach.
+///
 /// ## Persistence
 /// On appear the view reads existing tag IDs from `IndexingPipeline.currentUserTagIds`
-/// and pre-populates the toggle list. When the user clicks Done, the updated set is
+/// and pre-populates the toggle list. When the user taps/clicks Done, the updated set is
 /// written back to both `document_cache` and the FTS5 index via
 /// `IndexingPipeline.updateUserTagIds`. If `indexingPipeline` is nil (document not yet
 /// indexed), the selection is a no-op and the sheet dismisses normally.
@@ -1548,6 +1688,8 @@ private enum CitationPopoverStyle: String, CaseIterable, Identifiable {
 ///          non-existent DocumentUserTag model)
 ///   1.1 — Session 121: loads existing tags on appear; saves via IndexingPipeline.updateUserTagIds
 ///          on Done (Bug 2 — selection was stored in @State only, lost on dismiss)
+///   1.2 — Session 129: split macOS / iOS bodies; macOS uses VStack + button-bar to prevent
+///          NavigationStack sidebar from hiding list content in a sheet presentation
 struct MacTagPickerSheet: View {
     let entry: DocumentBrowserEntry
     let indexingPipeline: IndexingPipeline?
@@ -1559,61 +1701,144 @@ struct MacTagPickerSheet: View {
     @State private var isSaving: Bool = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                if allTags.isEmpty {
-                    Section {
-                        Text("No user tags yet. Type a name below to create one.")
-                            .foregroundStyle(.secondary)
-                            .font(.callout)
-                    }
-                } else {
-                    Section("Your Tags") {
-                        ForEach(allTags) { tag in
-                            Toggle(isOn: Binding(
-                                get: { selectedTagIds.contains(tag.id) },
-                                set: { on in
-                                    if on { selectedTagIds.insert(tag.id) }
-                                    else  { selectedTagIds.remove(tag.id) }
-                                }
-                            )) {
-                                Text(tag.name)
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - Tag List Content (shared between both platforms)
+
+    /// The toggle rows and new-tag field — same content on both platforms.
+    private var tagListContent: some View {
+        Group {
+            if allTags.isEmpty {
+                Section {
+                    Text(String(localized: "tags.picker.empty",
+                                defaultValue: "No user tags yet. Type a name below to create one."))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                }
+            } else {
+                Section(String(localized: "tags.picker.section.yourTags",
+                               defaultValue: "Your Tags")) {
+                    ForEach(allTags) { tag in
+                        Toggle(isOn: Binding(
+                            get: { selectedTagIds.contains(tag.id) },
+                            set: { on in
+                                if on { selectedTagIds.insert(tag.id) }
+                                else  { selectedTagIds.remove(tag.id) }
                             }
+                        )) {
+                            Text(tag.name)
                         }
                     }
                 }
+            }
 
-                Section("New Tag") {
-                    HStack {
-                        TextField("Tag name…", text: $newTagName)
-                            .onSubmit { createTag() }
-                        Button("Add", action: createTag)
-                            .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
+            Section(String(localized: "tags.picker.section.newTag", defaultValue: "New Tag")) {
+                HStack {
+                    TextField(String(localized: "tags.picker.newTag.placeholder",
+                                     defaultValue: "Tag name…"), text: $newTagName)
+                        .onSubmit { createTag() }
+                    Button(String(localized: "tags.picker.newTag.add",
+                                  defaultValue: "Add"), action: createTag)
+                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
+        }
+    }
+
+    // MARK: - macOS Body
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            // Title bar
+            HStack {
+                Text(String(localized: "tags.picker.nav.title",
+                            defaultValue: "Tags"))
+                    .font(.headline)
+                if let docNum = entry.documentNumber {
+                    Text("— Doc \(docNum)")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            List {
+                tagListContent
+            }
             .listStyle(.inset)
-            .navigationTitle("Tags — \(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)")
+
+            Divider()
+
+            // Button bar
+            HStack {
+                Button(String(localized: "tags.picker.cancel", defaultValue: "Cancel")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button(String(localized: "tags.picker.done", defaultValue: "Done")) {
+                    saveAndDismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(isSaving)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 340, minHeight: 300)
+        .task { await loadExistingTags() }
+    }
+    #endif
+
+    // MARK: - iOS Body
+
+    private var iOSBody: some View {
+        NavigationStack {
+            List {
+                tagListContent
+            }
+            .listStyle(.inset)
+            .navigationTitle(String(localized: "tags.picker.nav.title", defaultValue: "Tags"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(String(localized: "tags.picker.cancel",
+                                  defaultValue: "Cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { saveAndDismiss() }
+                    Button(String(localized: "tags.picker.done",
+                                  defaultValue: "Done")) { saveAndDismiss() }
                         .disabled(isSaving)
                 }
             }
         }
-        .frame(minWidth: 340, minHeight: 300)
-        // Load existing tag associations when the sheet appears.
-        .task {
-            guard let pipeline = indexingPipeline else { return }
-            let ids = (try? await pipeline.currentUserTagIds(
-                volumeId: entry.volumeId,
-                documentId: entry.documentId
-            )) ?? []
-            selectedTagIds = Set(ids.compactMap { UUID(uuidString: $0) })
-        }
+        .task { await loadExistingTags() }
+    }
+
+    // MARK: - Helpers
+
+    private func loadExistingTags() async {
+        guard let pipeline = indexingPipeline else { return }
+        let ids = (try? await pipeline.currentUserTagIds(
+            volumeId: entry.volumeId,
+            documentId: entry.documentId
+        )) ?? []
+        selectedTagIds = Set(ids.compactMap { UUID(uuidString: $0) })
     }
 
     private func createTag() {

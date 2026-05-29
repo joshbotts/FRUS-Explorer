@@ -45,6 +45,9 @@ import SwiftData
 ///          (deleteRule .nullify replaces .cascade for CloudKit compatibility)
 ///   1.5 — Session 97: smart collection — `savedSearchId` field on `Collection`; link/unlink UI
 ///          in editor; smart export path in `ExportSheetView` resolves documents via `SearchService`
+///   1.6 — Session 129: `AddByTagSheet` and `LinkSavedSearchSheet` split into macOS/iOS bodies;
+///          macOS uses VStack + button-bar to prevent NavigationStack sidebar from hiding list
+///          content inside a `.sheet()` presentation
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -401,6 +404,80 @@ struct CollectionEditorView: View {
     // MARK: - Link Saved Search Sheet
 
     private var linkSavedSearchSheet: some View {
+        #if os(macOS)
+        linkSavedSearchMacBody
+        #else
+        linkSavedSearchiOSBody
+        #endif
+    }
+
+    #if os(macOS)
+    /// macOS variant: plain VStack + button bar avoids the NavigationStack sidebar issue.
+    private var linkSavedSearchMacBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "collection.editor.smart.picker.title",
+                            defaultValue: "Link to Saved Search"))
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            if allSavedSearches.isEmpty {
+                VStack(spacing: 8) {
+                    Spacer()
+                    Text(String(localized: "collection.editor.smart.picker.empty",
+                                defaultValue: "No saved searches yet. Save a search from the Search window first."))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                    Spacer()
+                }
+            } else {
+                List(allSavedSearches) { search in
+                    Button {
+                        linkedSavedSearchId = search.id
+                        showLinkSavedSearch = false
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(search.name).font(.body)
+                            if !search.queryText.isEmpty {
+                                Text(search.queryText)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .listStyle(.inset)
+            }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(String(localized: "collection.editor.smart.picker.cancel",
+                              defaultValue: "Cancel")) {
+                    showLinkSavedSearch = false
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 360, minHeight: 280)
+    }
+    #endif
+
+    /// iOS / iPadOS variant: NavigationStack with inline title and Cancel toolbar button.
+    private var linkSavedSearchiOSBody: some View {
         NavigationStack {
             List(allSavedSearches) { search in
                 Button {
@@ -434,9 +511,6 @@ struct CollectionEditorView: View {
                 }
             }
         }
-        #if os(macOS)
-        .frame(minWidth: 360, minHeight: 280)
-        #endif
     }
 
     // MARK: - Name Section
@@ -727,6 +801,17 @@ private struct EntryRow: View {
 // MARK: - AddByTagSheet
 
 /// Sheet that lets the user pick a `UserTag` then appends all tagged documents.
+///
+/// ## Platform layout
+/// On macOS, `NavigationStack { List }` inside a `.sheet()` renders as a split-column
+/// layout — the list becomes a collapsed sidebar and the detail area appears blank.
+/// The macOS body uses a plain `VStack` with an explicit button bar (the same pattern
+/// used by `CollectionEditorView.macBody`) so all controls are always visible.
+///
+/// Version history:
+///   1.0 — Session 88: initial implementation
+///   1.1 — Session 129: split macOS / iOS bodies; macOS uses VStack + button-bar
+///          pattern to prevent NavigationStack sidebar from hiding list content
 struct AddByTagSheet: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -734,13 +819,78 @@ struct AddByTagSheet: View {
     let allNotes: [ResearchNote]
     let onAdd: ([(documentId: String, volumeId: String)]) -> Void
 
-    @State private var selectedTagId: UUID? = nil
-
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS Body
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            // Title bar
+            HStack {
+                Text(String(localized: "collection.addByTag.nav.title",
+                            defaultValue: "Add by Tag"))
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            // Tag list
+            List(allTags) { tag in
+                Button {
+                    let pairs = allNotes
+                        .filter { $0.userTagIds.contains(tag.id) }
+                        .map { (documentId: $0.documentId, volumeId: $0.volumeId) }
+                    onAdd(pairs)
+                    dismiss()
+                } label: {
+                    HStack {
+                        Text(tag.name)
+                        Spacer()
+                        let count = allNotes.filter { $0.userTagIds.contains(tag.id) }.count
+                        Text("\(count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            .listStyle(.inset)
+
+            Divider()
+
+            // Button bar
+            HStack {
+                Spacer()
+                Button(String(localized: "collection.addByTag.cancel",
+                              defaultValue: "Cancel")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 320, minHeight: 260)
+    }
+    #endif
+
+    // MARK: - iOS Body
+
+    private var iOSBody: some View {
         NavigationStack {
             List(allTags) { tag in
                 Button {
-                    selectedTagId = tag.id
                     let pairs = allNotes
                         .filter { $0.userTagIds.contains(tag.id) }
                         .map { (documentId: $0.documentId, volumeId: $0.volumeId) }
