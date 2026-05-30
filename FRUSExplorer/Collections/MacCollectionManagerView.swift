@@ -205,6 +205,9 @@ private struct CollectionDetailPane: View {
     /// Document headers loaded asynchronously from `document_cache`.
     /// Keyed by `"volumeId/documentId"`.
     @State private var documentHeaders: [String: String] = [:]
+    /// Per-document ISO-8601 dates loaded from `document_dates` for chronological sorting.
+    /// Keyed by `"volumeId/documentId"`. Documents without a parseable date are absent.
+    @State private var documentDates: [String: String] = [:]
 
     private struct NoteCreateContext: Identifiable {
         let id = UUID()
@@ -246,12 +249,16 @@ private struct CollectionDetailPane: View {
         .toolbar { toolbarContent }
         .onChange(of: name) { _, _ in saveMetadata() }
         .onChange(of: note) { _, _ in saveMetadata() }
-        // Reload document headers whenever the entry list changes (entries added / removed).
+        // Reload document headers and per-document dates whenever the entry list changes.
         .task(id: sortedEntries.map(\.id)) {
-            guard let store = appState.crossReferenceStore else { return }
             let keys = sortedEntries.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-            if let headers = try? await store.documentHeaders(for: keys) {
+            if let store = appState.crossReferenceStore,
+               let headers = try? await store.documentHeaders(for: keys) {
                 documentHeaders = headers
+            }
+            if let pipeline = appState.indexingPipeline,
+               let dates = try? await pipeline.datesByDocumentKey(keys) {
+                documentDates = dates
             }
         }
         .sheet(isPresented: $showAddByTag) {
@@ -446,6 +453,8 @@ private struct CollectionDetailPane: View {
 
     private func reindexEntries() {
         for (i, entry) in sortedEntries.enumerated() { entry.sortOrder = i }
+        // Persist the new sort orders immediately so they survive the next render cycle.
+        try? modelContext.save()
     }
 
     private func appendEntries(_ pairs: [(documentId: String, volumeId: String)]) {
@@ -467,14 +476,38 @@ private struct CollectionDetailPane: View {
         }
     }
 
+    /// Sorts `sortedEntries` in ascending chronological order, then persists the new
+    /// `sortOrder` values to SwiftData.
+    ///
+    /// **Sort key hierarchy (most precise wins):**
+    /// 1. Per-document `date_iso` from `document_dates` (loaded asynchronously at pane entry).
+    ///    This gives individual-document precision within a volume — e.g. memoranda from
+    ///    the same subseries sort correctly relative to each other.
+    /// 2. Volume `dateRange.earliest` from the manifest. Used when a document isn't indexed
+    ///    or genuinely lacks a date, so all documents from a later volume still sort after
+    ///    those from an earlier volume.
+    /// 3. `"9999"` sentinel — documents with no date information sort to the end.
     private func sortByDate() {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
-        let dateMap = Dictionary(uniqueKeysWithValues: manifest.compactMap { e -> (String, String)? in
-            guard let d = e.dateRange.earliest else { return nil }
-            return (e.volumeId, d)
-        })
-        sortedEntries.sort { (dateMap[$0.volumeId] ?? "9999") < (dateMap[$1.volumeId] ?? "9999") }
+        // Volume-level dates as a fallback for documents that lack a date_iso row.
+        var volumeDateMap: [String: String] = [:]
+        for entry in manifest {
+            if let d = entry.dateRange.earliest {
+                volumeDateMap[entry.volumeId] = d
+            }
+        }
+        sortedEntries.sort { a, b in
+            let aKey = "\(a.volumeId)/\(a.documentId)"
+            let bKey = "\(b.volumeId)/\(b.documentId)"
+            let aDate = documentDates[aKey]
+                     ?? volumeDateMap[a.volumeId]
+                     ?? "9999"
+            let bDate = documentDates[bKey]
+                     ?? volumeDateMap[b.volumeId]
+                     ?? "9999"
+            return aDate < bDate
+        }
         reindexEntries()
     }
 
