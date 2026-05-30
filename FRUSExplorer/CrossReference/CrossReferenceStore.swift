@@ -26,6 +26,7 @@ import SQLite3
 ///   1.1 — Session 129: `expandedGraph(forDocumentId:volumeId:degree:downloadedVolumeIds:)`
 ///          for multi-degree ego graph expansion
 ///   1.2 — Session 130: removed 20-node and 15-node caps; all reachable nodes now included
+///   1.3 — Session 130: `documentHeaders(for:)` public method for batch header lookup
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -272,6 +273,24 @@ public actor CrossReferenceStore {
     /// Stable string key for deduplicating edges.
     private static func edgeKey(_ edge: CrossReferenceEdge) -> String {
         "\(edge.sourceVolumeId)/\(edge.sourceDocumentId)->\(edge.targetVolumeId)/\(edge.targetDocumentId)"
+    }
+
+    /// Returns the document header text for a batch of `(volumeId, documentId)` pairs,
+    /// queried from the `document_cache` table.
+    ///
+    /// Keys with no matching row (volume not yet indexed) are omitted from the result.
+    /// The return dictionary is keyed by `"volumeId/documentId"`.
+    public func documentHeaders(
+        for keys: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        var result: [String: String] = [:]
+        for (vol, doc) in keys {
+            if let meta = try fetchMetadata(volumeId: vol, documentId: doc),
+               let header = meta.header {
+                result["\(vol)/\(doc)"] = header
+            }
+        }
+        return result
     }
 
     /// Returns all edges whose target is `(documentId, volumeId)`.

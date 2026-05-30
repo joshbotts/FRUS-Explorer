@@ -29,6 +29,9 @@ import SwiftData
 ///   1.2 — Session 89: manual entry deletion before collection delete (deleteRule .nullify)
 ///   1.3 — Session 130: drop outer ScrollView from CollectionDetailPane so the document
 ///          List fills available window height instead of being fixed to entry-count height
+///   1.4 — Session 130: document header (from document_cache) shown in each row;
+///          per-row delete button; multi-note support via selectedNoteIds; inline
+///          Sort by Date control in Documents section header; toolbar tooltip improvements
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -199,6 +202,9 @@ private struct CollectionDetailPane: View {
     @State private var showAddByTag = false
     @State private var showExport = false
     @State private var noteCreateContext: NoteCreateContext? = nil
+    /// Document headers loaded asynchronously from `document_cache`.
+    /// Keyed by `"volumeId/documentId"`.
+    @State private var documentHeaders: [String: String] = [:]
 
     private struct NoteCreateContext: Identifiable {
         let id = UUID()
@@ -240,6 +246,14 @@ private struct CollectionDetailPane: View {
         .toolbar { toolbarContent }
         .onChange(of: name) { _, _ in saveMetadata() }
         .onChange(of: note) { _, _ in saveMetadata() }
+        // Reload document headers whenever the entry list changes (entries added / removed).
+        .task(id: sortedEntries.map(\.id)) {
+            guard let store = appState.crossReferenceStore else { return }
+            let keys = sortedEntries.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+            if let headers = try? await store.documentHeaders(for: keys) {
+                documentHeaders = headers
+            }
+        }
         .sheet(isPresented: $showAddByTag) {
             AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
                 appendEntries(newEntries)
@@ -318,38 +332,61 @@ private struct CollectionDetailPane: View {
     @ViewBuilder
     private var documentsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Documents")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
+            // Section header with inline sort control
+            HStack(spacing: 8) {
+                Text(String(localized: "collection.section.documents",
+                            defaultValue: "Documents"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+
+                Spacer()
+
+                Button {
+                    sortByDate()
+                } label: {
+                    Label(String(localized: "collection.sort.date",
+                                 defaultValue: "Sort by Date"),
+                          systemImage: "arrow.up.arrow.down")
+                        .font(.caption)
+                        .foregroundStyle(sortedEntries.isEmpty ? .tertiary : .secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(sortedEntries.isEmpty)
+                .help(String(localized: "collection.sort.date.help",
+                             defaultValue: "Re-order documents chronologically by volume date"))
+            }
 
             if sortedEntries.isEmpty {
-                Text("No documents yet. Use Add by Tag in the toolbar to add documents.")
+                Text(String(localized: "collection.documents.empty",
+                            defaultValue: "No documents yet. Use Add by Tag in the toolbar to add documents."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.top, 4)
             } else {
                 List {
                     ForEach(Array(sortedEntries.enumerated()), id: \.element.id) { idx, entry in
+                        let nodeKey = "\(entry.volumeId)/\(entry.documentId)"
                         MacEntryRow(
                             entry: $sortedEntries[idx],
                             availableNotes: notes(for: entry),
                             volumeTitle: volumeTitle(for: entry),
+                            documentHeader: documentHeaders[nodeKey],
                             onNewNote: {
                                 noteCreateContext = NoteCreateContext(
                                     documentId: entry.documentId,
                                     volumeId: entry.volumeId,
                                     entryIndex: idx)
+                            },
+                            onDelete: {
+                                modelContext.delete(sortedEntries[idx])
+                                sortedEntries.remove(at: idx)
+                                reindexEntries()
                             }
                         )
                     }
                     .onMove { from, to in
                         sortedEntries.move(fromOffsets: from, toOffset: to)
-                        reindexEntries()
-                    }
-                    .onDelete { idxSet in
-                        for i in idxSet { modelContext.delete(sortedEntries[i]) }
-                        sortedEntries.remove(atOffsets: idxSet)
                         reindexEntries()
                     }
                 }
@@ -372,25 +409,25 @@ private struct CollectionDetailPane: View {
             Button {
                 showAddByTag = true
             } label: {
-                Label("Add by Tag", systemImage: "tag")
+                Label(String(localized: "collection.toolbar.addByTag",
+                             defaultValue: "Add by Tag"),
+                      systemImage: "tag")
             }
-            .help("Add documents by research note tag")
+            .help(String(localized: "collection.toolbar.addByTag.help",
+                         defaultValue: "Add documents to this collection by selecting a research note tag — all notes with that tag are added at once"))
             .disabled(allTags.isEmpty)
-
-            Button { sortByDate() } label: {
-                Label("Sort by Date", systemImage: "calendar")
-            }
-            .help("Sort documents by volume date")
-            .disabled(sortedEntries.isEmpty)
 
             Divider()
 
             Button {
                 showExport = true
             } label: {
-                Label("Export…", systemImage: "square.and.arrow.up")
+                Label(String(localized: "collection.toolbar.export",
+                             defaultValue: "Export…"),
+                      systemImage: "square.and.arrow.up")
             }
-            .help("Export collection as PDF, HTML, or DOCX")
+            .help(String(localized: "collection.toolbar.export.help",
+                         defaultValue: "Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes"))
             .disabled(sortedEntries.isEmpty)
         }
     }
@@ -450,75 +487,142 @@ private struct CollectionDetailPane: View {
 
 // MARK: - MacEntryRow
 
+/// A single row in the collection's document list.
+///
+/// Displays document number, header (loaded from `document_cache`), volume title,
+/// and note previews. Provides:
+/// - A multi-note picker backed by `CollectionEntry.selectedNoteIds`
+/// - A delete button that removes this entry from the collection
+/// - An external-link button to open the document on history.state.gov
 private struct MacEntryRow: View {
 
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
     let volumeTitle: String
+    /// Document header fetched from `document_cache` by `CollectionDetailPane`.
+    let documentHeader: String?
     let onNewNote: () -> Void
+    let onDelete: () -> Void
 
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            // Document info
+        HStack(alignment: .top, spacing: 10) {
+            // Document info column
             VStack(alignment: .leading, spacing: 2) {
                 Text(documentLabel)
                     .font(.body)
+
+                if let header = documentHeader, !header.isEmpty {
+                    Text(header)
+                        .font(.callout)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Text(volumeTitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
-                if let id = entry.researchNoteId,
-                   let note = availableNotes.first(where: { $0.id == id }),
-                   !note.bodyText.isEmpty {
-                    Text(note.bodyText)
+
+                // Note preview(s)
+                let effective = effectiveNoteIds
+                if !effective.isEmpty {
+                    let attached = effective.compactMap { id in
+                        availableNotes.first(where: { $0.id == id })
+                    }
+                    if attached.count == 1, let n = attached.first, !n.bodyText.isEmpty {
+                        Text(n.bodyText)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else if attached.count > 1 {
+                        Text(String(
+                            format: String(localized: "collection.entry.noteCount %lld",
+                                           defaultValue: "%lld notes attached"),
+                            Int64(attached.count)
+                        ))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
 
             Spacer()
 
-            // Open on history.state.gov
-            Button {
-                if let url = URL(string: "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)") {
-                    openURL(url)
+            // Action controls
+            HStack(spacing: 6) {
+                // Open on history.state.gov
+                Button {
+                    if let url = URL(string:
+                        "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
+                    ) {
+                        openURL(url)
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.right.square")
+                        .foregroundStyle(.secondary)
                 }
-            } label: {
-                Image(systemName: "arrow.up.right.square")
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .help("Open on history.state.gov")
+                .buttonStyle(.plain)
+                .help(String(localized: "collection.entry.openExternal.help",
+                             defaultValue: "Open this document on history.state.gov"))
 
-            // Note picker
-            noteMenu
+                // Multi-note picker
+                noteMenu
+
+                // Delete from collection
+                Button(role: .destructive) {
+                    onDelete()
+                } label: {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.red.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "collection.entry.delete.help",
+                             defaultValue: "Remove this document from the collection"))
+            }
+            .padding(.top, 2)
         }
         .padding(.vertical, 4)
     }
 
     // MARK: - Note Menu
 
+    /// The effective set of attached note IDs.
+    ///
+    /// Uses `selectedNoteIds` when non-empty (new multi-note path); otherwise falls back
+    /// to `researchNoteId` (legacy single-note path) for backward compatibility.
+    private var effectiveNoteIds: [UUID] {
+        if !entry.selectedNoteIds.isEmpty { return entry.selectedNoteIds }
+        if let id = entry.researchNoteId  { return [id] }
+        return []
+    }
+
     private var noteMenu: some View {
         Menu {
+            // Clear all
             Button {
-                entry.researchNoteId = nil
+                entry.selectedNoteIds = []
+                entry.researchNoteId  = nil
             } label: {
-                Label("No Note", systemImage: entry.researchNoteId == nil ? "checkmark" : "")
+                Label(
+                    String(localized: "collection.entry.noteMenu.clearAll",
+                           defaultValue: "No Notes"),
+                    systemImage: effectiveNoteIds.isEmpty ? "checkmark" : ""
+                )
             }
 
             if !availableNotes.isEmpty {
                 Divider()
                 ForEach(availableNotes) { note in
                     Button {
-                        entry.researchNoteId = note.id
+                        toggleNote(note.id)
                     } label: {
                         Label(
                             noteLabel(note),
-                            systemImage: entry.researchNoteId == note.id ? "checkmark" : ""
+                            systemImage: effectiveNoteIds.contains(note.id) ? "checkmark" : ""
                         )
                     }
                 }
@@ -529,49 +633,89 @@ private struct MacEntryRow: View {
             Button {
                 onNewNote()
             } label: {
-                Label("New Note…", systemImage: "plus")
+                Label(
+                    String(localized: "collection.entry.noteMenu.newNote",
+                           defaultValue: "New Note…"),
+                    systemImage: "plus"
+                )
             }
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "note.text")
                     .font(.caption)
-                Text(currentNoteLabel)
+                Text(noteMenuLabel)
                     .font(.caption)
                     .lineLimit(1)
                     .frame(maxWidth: 120, alignment: .leading)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 9))
             }
-            .foregroundStyle(entry.researchNoteId != nil ? .primary : .secondary)
+            .foregroundStyle(effectiveNoteIds.isEmpty ? .secondary : .primary)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help(String(
             localized: "collection.entry.noteMenu.help",
-            defaultValue: "Attach an existing research note to this entry, clear it, or create a new note"
+            defaultValue: "Attach one or more research notes to this entry for inclusion in exports"
         ))
     }
 
     // MARK: - Helpers
 
+    /// Toggles a note in/out of `selectedNoteIds`, migrating from `researchNoteId` if needed.
+    private func toggleNote(_ id: UUID) {
+        // Migrate legacy single-note to selectedNoteIds on first multi-note interaction.
+        var current = entry.selectedNoteIds
+        if current.isEmpty, let legacy = entry.researchNoteId {
+            current = [legacy]
+        }
+        if let idx = current.firstIndex(of: id) {
+            current.remove(at: idx)
+        } else {
+            current.append(id)
+        }
+        entry.selectedNoteIds = current
+        // Keep researchNoteId in sync with the first selected note for export backward compat.
+        entry.researchNoteId = current.first
+    }
+
     private var documentLabel: String {
         if entry.documentId.hasPrefix("d"), let n = Int(entry.documentId.dropFirst()) {
-            return "Document \(n)"
+            return String(
+                format: String(localized: "collection.entry.documentLabel %lld",
+                               defaultValue: "Document %lld"),
+                Int64(n)
+            )
         }
         return entry.documentId
     }
 
-    private var currentNoteLabel: String {
-        guard let id = entry.researchNoteId,
-              let note = availableNotes.first(where: { $0.id == id }) else {
-            return "No Note"
+    private var noteMenuLabel: String {
+        let ids = effectiveNoteIds
+        switch ids.count {
+        case 0:
+            return String(localized: "collection.entry.noteMenu.noNote",
+                          defaultValue: "No Notes")
+        case 1:
+            if let note = availableNotes.first(where: { $0.id == ids[0] }) {
+                return noteLabel(note)
+            }
+            return String(localized: "collection.entry.noteMenu.noNote",
+                          defaultValue: "No Notes")
+        default:
+            return String(
+                format: String(localized: "collection.entry.noteMenu.count %lld",
+                               defaultValue: "%lld Notes"),
+                Int64(ids.count)
+            )
         }
-        return noteLabel(note)
     }
 
     private func noteLabel(_ note: ResearchNote) -> String {
         let preview = note.bodyText.prefix(40).trimmingCharacters(in: .whitespacesAndNewlines)
-        return preview.isEmpty ? "Untitled Note" : String(preview)
+        return preview.isEmpty ? String(localized: "collection.entry.noteMenu.untitled",
+                                        defaultValue: "Untitled Note")
+                               : String(preview)
     }
 }
 
