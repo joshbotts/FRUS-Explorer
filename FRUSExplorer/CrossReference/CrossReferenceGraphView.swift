@@ -676,7 +676,7 @@ struct CrossReferenceGraphView: View {
                 .foregroundStyle(.secondary)
 
             Picker(
-                String(localized: "graph.degree.label", defaultValue: "Degree"),
+                String(localized: "graph.degree.a11y", defaultValue: "Neighbourhood degree"),
                 selection: Binding(
                     get: { vm.graphDegree },
                     set: { vm.graphDegree = $0 }
@@ -696,6 +696,7 @@ struct CrossReferenceGraphView: View {
                                  defaultValue: "Extend one further hop from each 2nd-degree node"))
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .frame(maxWidth: 140)
             .help(String(localized: "graph.degree.picker.help",
                          defaultValue: "Choose how many hops of cross-references to display"))
