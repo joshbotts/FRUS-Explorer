@@ -23,8 +23,9 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Session 17: initial implementation
-///   1.1 — Current session: `expandedGraph(forDocumentId:volumeId:degree:downloadedVolumeIds:)`
+///   1.1 — Session 129: `expandedGraph(forDocumentId:volumeId:degree:downloadedVolumeIds:)`
 ///          for multi-degree ego graph expansion
+///   1.2 — Session 130: removed 20-node and 15-node caps; all reachable nodes now included
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -173,8 +174,8 @@ public actor CrossReferenceStore {
         var extendedMeta: [String: CrossReferenceNodeMetadata] = base.nodeMetadata
         var allNodeKeys: Set<String> = Set(["\(volumeId)/\(documentId)"] + firstDegreeKeys)
 
-        // Expand degree-2: load edges for each 1st-degree node (capped).
-        let deg2Nodes = Array(firstDegreeKeys).sorted().prefix(20)
+        // Expand degree-2: load edges for every 1st-degree node.
+        let deg2Nodes = Array(firstDegreeKeys).sorted()
         var secondDegreeKeys: Set<String> = []
         for nodeKey in deg2Nodes {
             let newEdges = try edgesFor(nodeKey: nodeKey,
@@ -196,9 +197,9 @@ public actor CrossReferenceStore {
             extendedEdges.append(contentsOf: newEdges)
         }
 
-        // Expand degree-3: load edges for each 2nd-degree node (capped).
+        // Expand degree-3: load edges for every 2nd-degree node.
         if degree >= 3 {
-            for nodeKey in Array(secondDegreeKeys).sorted().prefix(15) {
+            for nodeKey in Array(secondDegreeKeys).sorted() {
                 let newEdges = try edgesFor(nodeKey: nodeKey,
                                             seenEdgeKeys: &seenEdgeKeys,
                                             allNodeKeys: &allNodeKeys,

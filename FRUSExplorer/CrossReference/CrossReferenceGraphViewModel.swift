@@ -11,21 +11,6 @@ import SwiftUI
 
 // MARK: - Supporting Types
 
-/// Toolbar filter mode for the cross-reference graph view.
-enum GraphFilterMode: String, CaseIterable, Sendable {
-    case unfiltered
-    case custom
-    case projectLevel
-
-    var label: String {
-        switch self {
-        case .unfiltered:   return String(localized: "graph.filter.unfiltered",   defaultValue: "All")
-        case .custom:       return String(localized: "graph.filter.custom",       defaultValue: "Custom")
-        case .projectLevel: return String(localized: "graph.filter.projectLevel", defaultValue: "Project")
-        }
-    }
-}
-
 /// A node visible in the cross-reference graph canvas.
 struct DisplayNode: Identifiable, Sendable {
     enum Kind: Sendable {
@@ -107,7 +92,9 @@ struct DisplayNode: Identifiable, Sendable {
 }
 
 /// A directed edge to render in the cross-reference graph canvas.
-struct DisplayEdge: Sendable {
+struct DisplayEdge: Identifiable, Sendable {
+    /// Stable identity for use in `ForEach` and `selectedEdgeKey` lookups.
+    var id: String { "\(source)->\(target)" }
     let source: String
     let target: String
     let referenceType: ReferenceType
@@ -180,8 +167,10 @@ struct NavigationHistoryEntry: Sendable {
 ///   1.2 — Interactive re-centering: mutable central identity, history stack,
 ///          `recenterOn()`, `navigateBack()`; macOS navigateToNode re-centres instead
 ///          of pushing to navigationPath
-///   1.3 — Current session: `graphDegree` (1/2/3) for multi-hop expansion; node labels;
+///   1.3 — Session 129: `graphDegree` (1/2/3) for multi-hop expansion; node labels;
 ///          edge context-snippet labels; `DisplayNode.Kind.extended`; `DisplayEdge.degree`
+///   1.4 — Session 130: removed `GraphFilterMode`/`filterMode`; added `selectedEdgeKey`;
+///          fixed `rerunLayout` to force-direct whenever extended nodes are present
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -211,9 +200,14 @@ final class CrossReferenceGraphViewModel {
     var panOffset: CGSize = .zero
     var navigationPath: [DocumentBrowserEntry] = []
 
-    // MARK: - Filter & Cluster
+    // MARK: - Selection
 
-    var filterMode: GraphFilterMode = .unfiltered
+    /// Key of the edge currently selected (hovered or tapped). Format: `"src->tgt"`.
+    /// `nil` when no edge is selected. Setting this clears `selectedNodeKey`.
+    var selectedEdgeKey: String?
+
+    // MARK: - Cluster
+
     var expandedClusterKeys: Set<String> = []
 
     // MARK: - Degree Expansion
@@ -363,6 +357,7 @@ final class CrossReferenceGraphViewModel {
         displayEdges        = []
         nodePositions       = [:]
         selectedNodeKey     = nil
+        selectedEdgeKey     = nil
         expandedClusterKeys = []
         layoutTask?.cancel()
         isAnimatingLayout   = false
@@ -418,6 +413,12 @@ final class CrossReferenceGraphViewModel {
         }
     }
 
+    /// Returns the edge whose `id` matches `selectedEdgeKey`, or `nil` if none.
+    func selectedEdge() -> DisplayEdge? {
+        guard let key = selectedEdgeKey else { return nil }
+        return displayEdges.first { $0.id == key }
+    }
+
     /// Returns the node key for the first node whose centre is within its hit radius of `point`.
     func nodeAt(point: CGPoint) -> String? {
         for node in displayNodes {
@@ -455,7 +456,11 @@ final class CrossReferenceGraphViewModel {
         layoutTask?.cancel()
         isAnimatingLayout = false
 
-        let useForce = displayNodes.count > 21
+        // Use force-directed layout when the graph is large OR when extended (degree 2+)
+        // nodes are present.  The three-column `standardLayout` does not place extended
+        // nodes, so they would be invisible without this override.
+        let hasExtended = displayNodes.contains { if case .extended = $0.kind { true } else { false } }
+        let useForce = displayNodes.count > 21 || hasExtended
         let nodes = displayNodes
         let edges = displayEdges
         let central = centralKey

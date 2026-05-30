@@ -57,8 +57,17 @@ import SwiftUI
 ///   1.4 — Interactive re-centering: breadcrumb history bar; macOS "View Document"
 ///          sets `appState.pendingBrowseDocument` to open in the main window rather
 ///          than pushing inline; macOS click re-centres instead of navigating
-///   1.5 — Current session: node labels, edge context-snippet labels, degree picker,
+///   1.5 — Session 129: node labels, edge context-snippet labels, degree picker,
 ///          extended node colours
+///   1.6 — Session 130:
+///          • Filter controls removed; toolbar shows degree picker only
+///          • 2nd-degree bug fixed (force-directed layout now used when extended nodes present)
+///          • Edge context labels replaced by hover/tap disclosure on edge midpoint hit areas
+///          • Node hit areas gain `.contextMenu` with Recenter Graph / Open in Main Window
+///          • macOS primary click changed from immediate re-centre to node selection;
+///            re-centre moved to context menu and info panel
+///          • Info button added (popover explaining the graph)
+///          • `GraphFilterMode` removed; `filterMode` state dropped
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -66,6 +75,7 @@ struct CrossReferenceGraphView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var vm: CrossReferenceGraphViewModel
+    @State private var showInfoPopover = false
 
     init(
         entry: DocumentBrowserEntry,
@@ -121,6 +131,24 @@ struct CrossReferenceGraphView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showInfoPopover.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .accessibilityLabel(
+                                String(localized: "graph.info.a11y",
+                                       defaultValue: "About this graph")
+                            )
+                    }
+                    .help(String(
+                        localized: "graph.info.help",
+                        defaultValue: "Learn what this graph shows and how to interact with it"
+                    ))
+                    .popover(isPresented: $showInfoPopover, arrowEdge: .top) {
+                        graphInfoPopoverContent
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "graph.done", defaultValue: "Done")) {
                         dismiss()
@@ -152,6 +180,7 @@ struct CrossReferenceGraphView: View {
             GeometryReader { geo in
                 ZStack(alignment: .topLeading) {
                     graphCanvas
+                    edgeHitAreas    // invisible hit areas at each edge midpoint
                     nodeHitAreas
                 }
                 .scaleEffect(vm.scale, anchor: .center)
@@ -163,13 +192,16 @@ struct CrossReferenceGraphView: View {
                 }
             }
 
-            // Info panel floats above the scaled canvas at a fixed location.
-            nodeInfoPanel
+            // Info / edge-context panel floats above the canvas at a fixed location.
+            infoPanel
                 .padding()
-                // Q4: suppress scale animation under Reduce Motion
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
                     value: vm.selectedNodeKey
+                )
+                .animation(
+                    reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
+                    value: vm.selectedEdgeKey
                 )
         }
         // Q3: VoiceOver alternative — structured inbound/outbound reference list
@@ -250,17 +282,17 @@ struct CrossReferenceGraphView: View {
     // MARK: - Canvas
 
     private var graphCanvas: some View {
-        let showEdgeLabels = vm.displayEdges.count <= 10
-        return Canvas { context, size in
-            // Draw edges first (below nodes)
+        Canvas { context, size in
+            // Draw edges first (below nodes). Context snippets are no longer drawn inline;
+            // they appear in the info panel when the user hovers over or taps an edge midpoint.
             for edge in vm.displayEdges {
                 guard let from = vm.nodePositions[edge.source],
                       let to   = vm.nodePositions[edge.target] else { continue }
-                let snippet = showEdgeLabels ? edge.context.flatMap { Self.edgeSnippet($0) } : nil
+                let isSelected = vm.selectedEdgeKey == edge.id
                 drawEdge(&context, from: from, to: to,
                          referenceType: edge.referenceType,
                          degree: edge.degree,
-                         contextSnippet: snippet)
+                         isSelected: isSelected)
             }
             // Draw nodes on top
             for node in vm.displayNodes {
@@ -273,19 +305,55 @@ struct CrossReferenceGraphView: View {
         .allowsHitTesting(false)
     }
 
-    /// Returns a display snippet (up to 40 chars, word-truncated) from `context`.
-    private static func edgeSnippet(_ context: String) -> String? {
-        guard !context.isEmpty else { return nil }
-        guard context.count > 40 else { return context }
-        let prefix = context.prefix(40)
-        if let lastSpace = prefix.lastIndex(of: " ") {
-            return String(prefix[..<lastSpace]) + "…"
-        }
-        return String(prefix) + "…"
-    }
-
     // MARK: - Hit Areas (accessibility elements + interaction)
 
+    /// Invisible hit areas positioned at the midpoint of each edge that carries context.
+    /// Hover (macOS) or tap (iOS) discloses the context text in the info panel.
+    @ViewBuilder
+    private var edgeHitAreas: some View {
+        ForEach(vm.displayEdges.filter { $0.context != nil }) { edge in
+            if let from = vm.nodePositions[edge.source],
+               let to   = vm.nodePositions[edge.target] {
+                let mid = CGPoint(x: (from.x + to.x) / 2,
+                                  y: (from.y + to.y) / 2)
+                edgeHitArea(edge: edge, at: mid)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func edgeHitArea(edge: DisplayEdge, at pos: CGPoint) -> some View {
+        Button {
+            // Tap/click toggles edge context panel; clears any node selection.
+            let key = edge.id
+            if vm.selectedEdgeKey == key {
+                vm.selectedEdgeKey = nil
+            } else {
+                vm.selectedEdgeKey = key
+                vm.selectedNodeKey = nil
+            }
+        } label: {
+            Circle()
+                .fill(Color.clear)
+                .frame(width: 28, height: 28)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .position(pos)
+        #if os(macOS)
+        .onHover { hovering in
+            vm.selectedEdgeKey = hovering ? edge.id : nil
+            if hovering { vm.selectedNodeKey = nil }
+        }
+        .help(edge.context ?? "")
+        #endif
+        .accessibilityLabel(String(
+            localized: "graph.edge.a11y",
+            defaultValue: "Reference context — tap to view"
+        ))
+    }
+
+    /// Node hit areas — accessibility elements and tap/click interaction targets.
     @ViewBuilder
     private var nodeHitAreas: some View {
         ForEach(vm.displayNodes) { node in
@@ -298,14 +366,17 @@ struct CrossReferenceGraphView: View {
     @ViewBuilder
     private func nodeHitArea(node: DisplayNode, at pos: CGPoint) -> some View {
         let isHint = node.isCluster
-            ? String(localized: "graph.node.cluster.hint", defaultValue: "Tap to expand")
-            : String(localized: "graph.node.hint", defaultValue: "Tap to see details")
+            ? String(localized: "graph.node.cluster.hint", defaultValue: "Right-click or long-press for options")
+            : String(localized: "graph.node.hint", defaultValue: "Tap to see details; right-click or long-press for actions")
         // Using Button (not Circle+onTapGesture) so the hit area participates in the
         // SwiftUI focus system. Tab-key and Full Keyboard Access users can now navigate
         // between nodes without VoiceOver (F-018).
         Button {
             #if os(macOS)
-            vm.navigateToNode(node.id)
+            // Toggle selection so the info panel stays visible until dismissed.
+            // Re-centre action has moved to the context menu and the info panel.
+            vm.selectedEdgeKey = nil
+            vm.selectedNodeKey = (vm.selectedNodeKey == node.id) ? nil : node.id
             #else
             vm.tapNode(node.id, reduceMotion: reduceMotion)
             #endif
@@ -319,70 +390,187 @@ struct CrossReferenceGraphView: View {
         .position(pos)
         #if os(macOS)
         .onHover { hovering in
-            vm.selectNode(hovering ? node.id : nil)
+            // Show info panel transiently on hover; respect a click-pinned selection.
+            if hovering {
+                vm.selectedEdgeKey = nil
+                if vm.selectedNodeKey == nil { vm.selectedNodeKey = node.id }
+            } else if vm.selectedNodeKey == node.id {
+                vm.selectedNodeKey = nil
+            }
         }
         #endif
+        .contextMenu {
+            nodeContextMenuItems(for: node)
+        }
         .accessibilityLabel(node.accessibilityLabel)
         .accessibilityHint(isHint)
-        // Button already carries .isButton implicitly — no addTraits needed.
+    }
+
+    @ViewBuilder
+    private func nodeContextMenuItems(for node: DisplayNode) -> some View {
+        if node.isCluster {
+            Button {
+                vm.toggleCluster(node.id)
+                vm.selectedNodeKey = nil
+            } label: {
+                Label(
+                    String(localized: "graph.contextMenu.expandCluster",
+                           defaultValue: "Expand Cluster"),
+                    systemImage: "arrow.up.left.and.arrow.down.right"
+                )
+            }
+        } else if !node.isCentral {
+            Button {
+                vm.navigateToNode(node.id)
+            } label: {
+                Label(
+                    String(localized: "graph.contextMenu.recenter",
+                           defaultValue: "Recenter Graph"),
+                    systemImage: "arrow.triangle.2.circlepath"
+                )
+            }
+
+            Divider()
+
+            Button {
+                guard let entry = vm.makeEntry(for: node.id) else { return }
+                #if os(macOS)
+                appState.pendingBrowseDocument = entry
+                #else
+                vm.navigationPath.append(entry)
+                #endif
+                vm.selectedNodeKey = nil
+            } label: {
+                Label(
+                    String(localized: "graph.contextMenu.openDocument",
+                           defaultValue: "Open in Main Window"),
+                    systemImage: "arrow.up.right.square"
+                )
+            }
+            .disabled(!node.isDownloaded)
+        }
     }
 
     // MARK: - Info Panel
 
+    /// Unified info panel: shows node details when a node is selected, or edge
+    /// context when an edge midpoint is hovered / tapped. Edge selection takes
+    /// priority over node selection (they are mutually exclusive in practice).
     @ViewBuilder
-    private var nodeInfoPanel: some View {
-        if let key = vm.selectedNodeKey,
-           let node = vm.displayNodes.first(where: { $0.id == key }) {
-            GroupBox {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(node.metadata?.header ?? key)
-                        .font(.headline)
-                        .lineLimit(2)
+    private var infoPanel: some View {
+        if let edge = vm.selectedEdge(), let context = edge.context {
+            edgeInfoPanel(edge: edge, context: context)
+        } else if let key = vm.selectedNodeKey,
+                  let node = vm.displayNodes.first(where: { $0.id == key }) {
+            nodeInfoPanel(node: node, key: key)
+        }
+    }
 
-                    if let dateline = node.metadata?.dateline {
-                        Text(dateline)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+    @ViewBuilder
+    private func edgeInfoPanel(edge: DisplayEdge, context: String) -> some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 6) {
+                // Source → Target header
+                HStack(spacing: 4) {
+                    Text(vm.displayNodes.first(where: { $0.id == edge.source })?.metadata?.header
+                         ?? edge.source)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                    Image(systemName: "arrow.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(vm.displayNodes.first(where: { $0.id == edge.target })?.metadata?.header
+                         ?? edge.target)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(.secondary)
 
-                    if let volId = node.metadata?.volumeId {
-                        Text(volId)
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
+                Divider()
 
-                    // Context passage — shown only when the edge carries footnote text.
-                    if let context = vm.contextForSelectedNode() {
-                        EdgeContextView(
-                            context: context,
-                            directionLabel: edgeContextLabel(for: node)
-                        )
-                    }
+                let directionLabel = edge.degree > 1
+                    ? String(localized: "graph.context.extendedRef", defaultValue: "Extended reference")
+                    : (edge.source == vm.centralKey
+                        ? String(localized: "graph.context.referencesFrom", defaultValue: "References from")
+                        : String(localized: "graph.context.referencedIn",   defaultValue: "Referenced in"))
+                EdgeContextView(context: context, directionLabel: directionLabel)
 
-                    if !node.isDownloaded && !node.isCentral {
-                        Label(
-                            String(localized: "graph.node.notDownloaded",
-                                   defaultValue: "Volume not downloaded"),
-                            systemImage: "icloud.slash"
-                        )
+                Button {
+                    vm.selectedEdgeKey = nil
+                } label: {
+                    Text(String(localized: "graph.edge.dismiss", defaultValue: "Dismiss"))
+                }
+                .buttonStyle(.bordered)
+                .font(.caption)
+            }
+        }
+        .frame(maxWidth: 280)
+        .fixedSize()
+        .transition(reduceMotion
+            ? .opacity
+            : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+    }
+
+    @ViewBuilder
+    private func nodeInfoPanel(node: DisplayNode, key: String) -> some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(node.metadata?.header ?? key)
+                    .font(.headline)
+                    .lineLimit(2)
+
+                if let dateline = node.metadata?.dateline {
+                    Text(dateline)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let volId = node.metadata?.volumeId {
+                    Text(volId)
                         .font(.caption)
-                        .foregroundStyle(.orange)
-                    }
+                        .foregroundStyle(.tertiary)
+                }
 
-                    if node.isCluster {
+                // Context passage — shown only when the edge carries footnote text.
+                if let context = vm.contextForSelectedNode() {
+                    EdgeContextView(
+                        context: context,
+                        directionLabel: nodeEdgeContextLabel(for: node)
+                    )
+                }
+
+                if !node.isDownloaded && !node.isCentral {
+                    Label(
+                        String(localized: "graph.node.notDownloaded",
+                               defaultValue: "Volume not downloaded"),
+                        systemImage: "icloud.slash"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                }
+
+                if node.isCluster {
+                    Button {
+                        vm.toggleCluster(key)
+                        vm.selectedNodeKey = nil
+                    } label: {
+                        Text(String(localized: "graph.cluster.expand",
+                                    defaultValue: "Expand Cluster"))
+                    }
+                    .buttonStyle(.bordered)
+                } else if !node.isCentral {
+                    HStack(spacing: 8) {
                         Button {
-                            vm.toggleCluster(key)
-                            vm.selectedNodeKey = nil
+                            vm.navigateToNode(key)
                         } label: {
-                            Text(String(localized: "graph.cluster.expand",
-                                        defaultValue: "Expand Cluster"))
+                            Text(String(localized: "graph.node.recenter",
+                                        defaultValue: "Recenter"))
                         }
                         .buttonStyle(.bordered)
-                    } else {
+
                         Button {
                             if let entry = vm.makeEntry(for: key) {
                                 #if os(macOS)
-                                // Open in the main window rather than pushing inline.
                                 appState.pendingBrowseDocument = entry
                                 #else
                                 vm.navigationPath.append(entry)
@@ -398,19 +586,17 @@ struct CrossReferenceGraphView: View {
                     }
                 }
             }
-            .frame(maxWidth: 280)
-            .fixedSize()
-            // Q4: scale part of transition is decorative; suppress it under Reduce Motion
-            .transition(reduceMotion
-                ? .opacity
-                : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
         }
+        .frame(maxWidth: 280)
+        .fixedSize()
+        .transition(reduceMotion
+            ? .opacity
+            : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
     }
 
-    // MARK: - Edge Context Helpers
+    // MARK: - Node Edge Context Helper
 
-    /// Returns the direction label for the context disclosure based on node kind.
-    private func edgeContextLabel(for node: DisplayNode) -> String {
+    private func nodeEdgeContextLabel(for node: DisplayNode) -> String {
         switch node.kind {
         case .inbound:
             return String(localized: "graph.context.referencedIn",
@@ -481,22 +667,13 @@ struct CrossReferenceGraphView: View {
         .overlay(alignment: .bottom) { Divider() }
     }
 
-    // MARK: - Filter Toolbar
+    // MARK: - Degree Toolbar
 
     private var filterToolbar: some View {
-        HStack(spacing: 12) {
-            Picker(
-                String(localized: "graph.filter.label", defaultValue: "Filter"),
-                selection: Binding(
-                    get: { vm.filterMode },
-                    set: { vm.filterMode = $0 }
-                )
-            ) {
-                ForEach(GraphFilterMode.allCases, id: \.self) { mode in
-                    Text(mode.label).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
+        HStack(spacing: 8) {
+            Text(String(localized: "graph.degree.label", defaultValue: "Neighbourhood:"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             Picker(
                 String(localized: "graph.degree.label", defaultValue: "Degree"),
@@ -508,23 +685,75 @@ struct CrossReferenceGraphView: View {
                 Text(String(localized: "graph.degree.1", defaultValue: "1°"))
                     .tag(1)
                     .help(String(localized: "graph.degree.1.help",
-                                 defaultValue: "Show only direct inbound and outbound references"))
+                                 defaultValue: "Direct inbound and outbound references only"))
                 Text(String(localized: "graph.degree.2", defaultValue: "2°"))
                     .tag(2)
                     .help(String(localized: "graph.degree.2.help",
-                                 defaultValue: "Also show references to and from each direct neighbour"))
+                                 defaultValue: "Add references to and from each direct neighbour"))
                 Text(String(localized: "graph.degree.3", defaultValue: "3°"))
                     .tag(3)
                     .help(String(localized: "graph.degree.3.help",
-                                 defaultValue: "Extend the graph one further hop from each 2nd-degree node"))
+                                 defaultValue: "Extend one further hop from each 2nd-degree node"))
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 120)
+            .frame(maxWidth: 140)
             .help(String(localized: "graph.degree.picker.help",
-                         defaultValue: "Select how many hops of cross-references to display"))
+                         defaultValue: "Choose how many hops of cross-references to display"))
+
+            Spacer()
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+    }
+
+    // MARK: - Info Popover
+
+    private var graphInfoPopoverContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "graph.info.heading",
+                        defaultValue: "About the Cross-Reference Graph"))
+                .font(.headline)
+
+            graphInfoRow(
+                title: String(localized: "graph.info.what.title",
+                              defaultValue: "What the graph shows"),
+                body:  String(localized: "graph.info.what.body",
+                              defaultValue: "Each node is a FRUS document. Blue nodes reference the central document (inbound); green nodes are referenced by the central document (outbound). Grey nodes are 2nd- or 3rd-degree neighbours.")
+            )
+            graphInfoRow(
+                title: String(localized: "graph.info.edges.title",
+                              defaultValue: "Edge context"),
+                body:  String(localized: "graph.info.edges.body",
+                              defaultValue: "Many edges carry the original footnote or editorial-note text where the reference appeared. Hover over (or tap) a line between nodes to read that text.")
+            )
+            graphInfoRow(
+                title: String(localized: "graph.info.degree.title",
+                              defaultValue: "Neighbourhood degree"),
+                body:  String(localized: "graph.info.degree.body",
+                              defaultValue: "1° shows only direct neighbours of the central document. 2° adds neighbours of those neighbours. 3° extends one further hop. Resize the window to see denser graphs more clearly.")
+            )
+            graphInfoRow(
+                title: String(localized: "graph.info.interact.title",
+                              defaultValue: "Navigating the graph"),
+                body:  String(localized: "graph.info.interact.body",
+                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.")
+            )
+        }
+        .padding(16)
+        .frame(width: 360)
+    }
+
+    @ViewBuilder
+    private func graphInfoRow(title: String, body: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(body)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: - Undownloaded Banner
@@ -562,13 +791,18 @@ struct CrossReferenceGraphView: View {
 
     // MARK: - Canvas Drawing Helpers
 
+    /// Draws a single directed edge as an S-curve Bézier.
+    ///
+    /// When `isSelected` is `true` (the edge's midpoint hit area is being hovered or
+    /// was tapped), the stroke is drawn slightly brighter to provide visual feedback.
+    /// Context text is no longer drawn inline; it appears in the info panel instead.
     private func drawEdge(
         _ ctx: inout GraphicsContext,
         from: CGPoint,
         to: CGPoint,
         referenceType: ReferenceType,
         degree: Int,
-        contextSnippet: String?
+        isSelected: Bool
     ) {
         let cp1 = CGPoint(x: from.x + (to.x - from.x) * 0.5, y: from.y)
         let cp2 = CGPoint(x: to.x   - (to.x - from.x) * 0.5, y: to.y)
@@ -577,9 +811,11 @@ struct CrossReferenceGraphView: View {
         path.addCurve(to: to, control1: cp1, control2: cp2)
 
         let isExtended = degree > 1
-        let lineWidth: CGFloat = isExtended ? 1.0 : 1.5
+        let lineWidth: CGFloat = isSelected ? 2.5 : (isExtended ? 1.0 : 1.5)
         let color: Color
-        if isExtended {
+        if isSelected {
+            color = .accentColor.opacity(0.7)
+        } else if isExtended {
             color = .secondary.opacity(0.2)
         } else if referenceType == .editorialNote {
             color = .accentColor.opacity(0.4)
@@ -587,18 +823,6 @@ struct CrossReferenceGraphView: View {
             color = .secondary.opacity(0.35)
         }
         ctx.stroke(path, with: .color(color), lineWidth: lineWidth)
-
-        // Edge label — truncated context snippet drawn at the midpoint (degree-1 only).
-        if let snippet = contextSnippet, !isExtended {
-            let midX = (from.x + to.x) / 2
-            // Offset above the Bézier arc midpoint using the control-point bias.
-            let arcBias = (from.y + to.y) / 2 - (from.y + (to.y - from.y) * 0.5) * 0.3
-            let midPt = CGPoint(x: midX, y: arcBias)
-            let label = Text(verbatim: snippet)
-                .font(.system(size: 8))
-                .foregroundStyle(Color.secondary.opacity(0.7))
-            ctx.draw(label, at: midPt, anchor: .center)
-        }
     }
 
     private func drawNode(
