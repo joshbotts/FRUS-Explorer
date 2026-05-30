@@ -86,7 +86,11 @@ struct FRUSExplorerApp: App {
     @Environment(\.openWindow) private var openWindow
     #endif
 
-    private let modelContainer: ModelContainer = ModelContainer.makeFRUSContainer()
+    // `makeFRUSContainer()` returns a tuple so the CloudKit-enabled flag is available
+    // without a second call. `modelContainer` is a computed property for backward
+    // compatibility with all existing `.modelContainer(modelContainer)` call sites.
+    private let _containerSetup = ModelContainer.makeFRUSContainer()
+    private var modelContainer: ModelContainer { _containerSetup.container }
 
     var body: some Scene {
         mainWindowScene
@@ -284,6 +288,13 @@ struct FRUSExplorerApp: App {
         let volumesDir = Self.makeVolumesDirectory()
         let dbURL = Self.makeDatabaseURL()
         appState.indexDirectory = dbURL.deletingLastPathComponent()
+
+        // Surface the CloudKit init result in AppState so the status bar and settings
+        // panel can show a "Local Only" warning when sync is unavailable.
+        appState.cloudKitSyncEnabled = _containerSetup.cloudKitEnabled
+        if !_containerSetup.cloudKitEnabled {
+            appState.cloudKitInitError = "CloudKit initialisation failed. Check console for details."
+        }
 
         // Seed interrupted volume IDs from the sentinel store before creating the pipeline
         // so the UI can show amber badges immediately after the first render.

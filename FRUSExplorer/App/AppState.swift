@@ -65,6 +65,7 @@ import SwiftData
 ///   3.2 — Session 115: interruptedVolumeIds; cleared on .complete from connectIndexingProgress
 ///   3.3 — Session 116: indexingQueuePosition + indexingQueueVolumeTitles for multi-volume queue banner;
 ///          indexingQueueAverageDocsPerSecond + indexingQueueAverageDocumentCount for queue ETA
+///   3.4 — Session 130: cloudKitSyncEnabled + cloudKitInitError for sync-state diagnostics
 
 // MARK: - AppTab
 
@@ -136,6 +137,27 @@ final class AppState {
     /// on `ContentView`) enqueues the scope with `DownloadManager` and clears this
     /// property immediately after enqueueing.
     var pendingDownloadScope: DownloadScope? = nil
+
+    // MARK: - iCloud Sync State
+
+    /// Whether the app's SwiftData container was successfully initialised with CloudKit sync.
+    ///
+    /// Starts `true` (optimistic) and is corrected to the real value by
+    /// `FRUSExplorerApp.bootApp()` immediately after the first `.task` fires.
+    /// When `false` the app is running against a local-only SQLite store — no data
+    /// changes will sync across devices until the underlying problem is resolved
+    /// (sign in to iCloud, CloudKit schema migration, entitlement configuration, etc.).
+    ///
+    /// Observed by `StatusBarView` (macOS) and the Settings → Storage panel to surface
+    /// a "Local Only" warning with actionable guidance.
+    var cloudKitSyncEnabled: Bool = true
+
+    /// Human-readable description of the error that prevented CloudKit initialisation.
+    ///
+    /// `nil` when CloudKit initialised successfully. Set alongside `cloudKitSyncEnabled = false`
+    /// by `FRUSExplorerApp.bootApp()`. Displayed in the Settings → Storage panel and in
+    /// `StatusBarView`'s sync-state tooltip so users can self-diagnose the failure.
+    var cloudKitInitError: String? = nil
 
     // MARK: - Network State
 

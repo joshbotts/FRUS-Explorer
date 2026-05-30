@@ -834,10 +834,30 @@ struct StatusBarView: View {
 
             Spacer()
 
-            // Right: sync state
-            Label("Synced", systemImage: "checkmark.icloud")
+            // Right: iCloud sync state — reflects the actual CloudKit init result.
+            if appState.cloudKitSyncEnabled {
+                Label(
+                    String(localized: "statusBar.sync.enabled",
+                           defaultValue: "iCloud Sync"),
+                    systemImage: "checkmark.icloud"
+                )
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
+                .help(String(localized: "statusBar.sync.enabled.help",
+                             defaultValue: "User data syncs via iCloud across your devices"))
+            } else {
+                Label(
+                    String(localized: "statusBar.sync.disabled",
+                           defaultValue: "Local Only"),
+                    systemImage: "icloud.slash"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(.orange)
+                .help(String(
+                    localized: "statusBar.sync.disabled.help",
+                    defaultValue: "iCloud sync is unavailable — notes, collections, and tags won't sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
+                ))
+            }
         }
         .padding(.horizontal, 14)
         .frame(height: 24)

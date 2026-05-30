@@ -20,6 +20,11 @@ extension ModelContainer {
     /// a CloudKit config attempt and a local/test config can cause SwiftData to
     /// apply CloudKit validation to every subsequent container, so we never reuse
     /// a Schema that has been passed to a CloudKit `ModelConfiguration`.
+    ///
+    /// Version history:
+    ///   1.0 — Session 04: initial implementation
+    ///   1.1 — Session 130: `makeFRUSContainer()` returns `(container:, cloudKitEnabled:)` tuple;
+    ///          CloudKit error logging promoted from #if DEBUG to always-on for diagnostics
     private static var frusModelTypes: [any PersistentModel.Type] {
         [
             Project.self,
@@ -48,10 +53,16 @@ extension ModelContainer {
     /// is skipped entirely. Without a CloudKit entitlement the background sync setup
     /// fires a SIGTRAP ~30 s after launch, crashing the host before tests can run.
     ///
+    /// ## Return value
+    /// Returns a named tuple `(container:, cloudKitEnabled:)` so the caller can
+    /// surface the CloudKit status in `AppState` and the status bar without
+    /// re-querying the container. `cloudKitEnabled` is `false` whenever the
+    /// container fell back to the local store.
+    ///
     /// ## Calling convention
     /// Call once at app startup from `FRUSExplorerApp`. The resulting container
     /// is injected into the SwiftUI environment via `.modelContainer(_:)`.
-    static func makeFRUSContainer() -> ModelContainer {
+    static func makeFRUSContainer() -> (container: ModelContainer, cloudKitEnabled: Bool) {
         // Skip CloudKit when running under the unit-test host (XCTestConfigurationFilePath)
         // or the UI-test app process (FRUS_UI_TEST_MODE injected via launchEnvironment).
         // Without this, CloudKit's background sync fires a SIGTRAP ~30 s after launch
@@ -59,12 +70,10 @@ extension ModelContainer {
         let isTestHost = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
             || ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
         guard !isTestHost else {
-            #if DEBUG
             let reason = ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
                 ? "UI test mode" : "XCTest host"
             print("[SwiftData] \(reason) detected — using local store (no CloudKit)")
-            #endif
-            return makeLocalContainer()
+            return (makeLocalContainer(), false)
         }
 
         // Use a fresh schema for the CloudKit attempt.
@@ -76,17 +85,18 @@ extension ModelContainer {
         )
         do {
             let container = try ModelContainer(for: cloudSchema, configurations: [cloudConfig])
-            #if DEBUG
-            print("[SwiftData] ModelContainer created with CloudKit sync")
-            #endif
-            return container
+            print("[SwiftData] ModelContainer created — CloudKit sync ENABLED")
+            return (container, true)
         } catch {
-            // CloudKit unavailable (e.g., simulator without iCloud account, entitlement missing,
-            // or schema not yet fully CloudKit-compatible). Fall back to a local SQLite store.
-            #if DEBUG
-            print("[SwiftData] CloudKit container failed (\(error)); falling back to local store")
-            #endif
-            return makeLocalContainer()
+            // CloudKit unavailable: log the full error so developers/testers can diagnose
+            // the exact failure reason (schema migration, entitlement, sign-in, etc.).
+            // This is intentionally NOT gated on #if DEBUG because sync failures are
+            // critical operational events that must be visible in all build configurations.
+            print("[SwiftData] ⚠️  CloudKit container FAILED — falling back to local-only store")
+            print("[SwiftData] ⚠️  Error: \(error)")
+            print("[SwiftData] ⚠️  localizedDescription: \(error.localizedDescription)")
+            print("[SwiftData] ⚠️  Data changes will NOT sync across devices until this is resolved.")
+            return (makeLocalContainer(), false)
         }
     }
 

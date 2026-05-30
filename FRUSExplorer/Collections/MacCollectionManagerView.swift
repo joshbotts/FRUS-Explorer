@@ -27,6 +27,8 @@ import SwiftData
 ///   1.1 — Session 74: two-line research note preview added to MacEntryRow beneath
 ///          volume title; caption2/tertiary styling; fixedSize for correct wrapping
 ///   1.2 — Session 89: manual entry deletion before collection delete (deleteRule .nullify)
+///   1.3 — Session 130: drop outer ScrollView from CollectionDetailPane so the document
+///          List fills available window height instead of being fixed to entry-count height
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -218,15 +220,21 @@ private struct CollectionDetailPane: View {
     // MARK: - Body
 
     var body: some View {
-        ScrollView {
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed-height header: name field + collection note.
+            // Padded on all sides except the bottom (the divider provides separation).
             VStack(alignment: .leading, spacing: 0) {
                 nameSection
                 Divider().padding(.vertical, 16)
                 noteSection
                 Divider().padding(.vertical, 16)
-                documentsSection
             }
-            .padding(24)
+            .padding([.horizontal, .top], 24)
+
+            // Document list fills the rest of the available window height.
+            documentsSection
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
         }
         .navigationTitle(name.isEmpty ? "Untitled Collection" : name)
         .toolbar { toolbarContent }
@@ -346,7 +354,7 @@ private struct CollectionDetailPane: View {
                     }
                 }
                 .listStyle(.inset)
-                .frame(minHeight: 200, maxHeight: CGFloat(sortedEntries.count) * 62 + 20)
+                .frame(minHeight: 200, maxHeight: .infinity)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
