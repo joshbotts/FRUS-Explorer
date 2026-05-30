@@ -211,6 +211,8 @@ private struct PersonIndexDetailSheet: View {
                         )
                     }
                     .disabled(indexEntry.mentionCount == 0)
+                    .help(String(localized: "people.detail.findMentions.help",
+                                 defaultValue: "Open Search filtered to documents that mention this person"))
                 }
             }
             .navigationTitle(indexEntry.entry.name)

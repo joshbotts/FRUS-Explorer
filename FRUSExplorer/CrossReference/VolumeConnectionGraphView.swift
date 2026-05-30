@@ -454,7 +454,12 @@ struct VolumeConnectionGraphView: View {
                 }
                 #endif
                 .accessibilityLabel(id)
-                .accessibilityHint("Tap to view connections")
+                .accessibilityHint(String(localized: "volumeGraph.node.hint",
+                                          defaultValue: "Tap to view connections"))
+                .help(String(
+                    localized: "volumeGraph.node.help",
+                    defaultValue: "View cross-volume reference counts for this volume — click for details and to explore its connections"
+                ))
             }
         }
     }
@@ -470,13 +475,16 @@ struct VolumeConnectionGraphView: View {
                         Task { await vm.navigateBack(from: store) }
                     }
                 } label: {
-                    Label("Back", systemImage: "chevron.left")
+                    Label(String(localized: "volumeGraph.back", defaultValue: "Back"),
+                          systemImage: "chevron.left")
                         .font(.system(size: 13, weight: .medium))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(.regularMaterial, in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .help(String(localized: "volumeGraph.back.help",
+                             defaultValue: "Return to the previous volume in the navigation history"))
                 .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .topLeading)))
             }
 
@@ -523,12 +531,15 @@ struct VolumeConnectionGraphView: View {
                 }
 
                 if let store = appState.crossReferenceStore {
-                    Button("Explore connections") {
+                    Button(String(localized: "volumeGraph.exploreConnections",
+                                  defaultValue: "Explore connections")) {
                         Task { await vm.recenterOn(volumeId: partnerId, from: store) }
                     }
                     .buttonStyle(.bordered)
                     .font(.caption)
                     .padding(.top, 2)
+                    .help(String(localized: "volumeGraph.exploreConnections.help",
+                                 defaultValue: "Recenter the graph on this volume to explore its own cross-volume references"))
                 }
             }
         }

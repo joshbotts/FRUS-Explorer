@@ -45,6 +45,8 @@ struct CorpusView: View {
                     String(localized: "browser.corpus.people.a11y",
                            defaultValue: "Browse people mentioned across all indexed volumes")
                 )
+                .help(String(localized: "browser.corpus.people.help",
+                             defaultValue: "Browse an alphabetical index of all people mentioned across your indexed volumes — tap a name to search for every document where they appear"))
             }
 
             // Subseries list
@@ -64,6 +66,10 @@ struct CorpusView: View {
                         String(localized: "browser.corpus.subseries.a11y",
                                defaultValue: "Subseries \(group.subseries), \(group.totalVolumes) volumes")
                     )
+                    .help(String(
+                        localized: "browser.corpus.subseries.help",
+                        defaultValue: "Browse the volumes and documents in this subseries"
+                    ))
                 }
             }
         }

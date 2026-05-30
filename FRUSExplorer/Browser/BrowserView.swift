@@ -191,6 +191,8 @@ struct BrowserView: View {
                             String(localized: "browser.search.a11y",
                                    defaultValue: "Search documents")
                         )
+                        .help(String(localized: "browser.search.help",
+                                     defaultValue: "Search the full text of indexed FRUS documents — keywords, phrases, date ranges, and more"))
                         Button {
                             appState.showCitationLookup = true
                         } label: {
@@ -200,6 +202,8 @@ struct BrowserView: View {
                             String(localized: "browser.citationLookup.a11y",
                                    defaultValue: "Find by citation")
                         )
+                        .help(String(localized: "browser.citationLookup.help",
+                                     defaultValue: "Find a document by its formal FRUS citation — enter a volume identifier and document number to jump directly to the document"))
                         Button {
                             activePanel = (activePanel == .collections) ? nil : .collections
                         } label: {
@@ -209,6 +213,8 @@ struct BrowserView: View {
                             String(localized: "browser.collections.a11y",
                                    defaultValue: "Open Collections")
                         )
+                        .help(String(localized: "browser.collections.help",
+                                     defaultValue: "Open your document collections — curated sets of documents you can export as PDF, HTML, or Word"))
                     }
                     // Download filter is a secondary action — it modifies the list
                     // view's contents rather than opening a panel or tool.
@@ -234,6 +240,13 @@ struct BrowserView: View {
                                 : String(localized: "browser.filter.on.a11y",
                                          defaultValue: "Show downloaded volumes only")
                         )
+                        .help(
+                            appState.filterDownloadedOnly
+                                ? String(localized: "browser.filter.off.help",
+                                         defaultValue: "Show all volumes in the corpus, including those not yet downloaded")
+                                : String(localized: "browser.filter.on.help",
+                                         defaultValue: "Show only volumes you have downloaded and can browse offline")
+                        )
                     }
                     #else
                     // iPad split layout: Search and Citation Lookup are persistent
@@ -257,6 +270,13 @@ struct BrowserView: View {
                                          defaultValue: "Show all volumes")
                                 : String(localized: "browser.filter.on.a11y",
                                          defaultValue: "Show downloaded volumes only")
+                        )
+                        .help(
+                            appState.filterDownloadedOnly
+                                ? String(localized: "browser.filter.off.help",
+                                         defaultValue: "Show all volumes in the corpus, including those not yet downloaded")
+                                : String(localized: "browser.filter.on.help",
+                                         defaultValue: "Show only volumes you have downloaded and can browse offline")
                         )
                     }
                     #endif
@@ -307,6 +327,13 @@ struct BrowserView: View {
                                          defaultValue: "Show all volumes")
                                 : String(localized: "browser.filter.on.a11y",
                                          defaultValue: "Show downloaded volumes only")
+                        )
+                        .help(
+                            appState.filterDownloadedOnly
+                                ? String(localized: "browser.filter.off.help",
+                                         defaultValue: "Show all volumes in the corpus, including those not yet downloaded")
+                                : String(localized: "browser.filter.on.help",
+                                         defaultValue: "Show only volumes you have downloaded and can browse offline")
                         )
                     }
                 }

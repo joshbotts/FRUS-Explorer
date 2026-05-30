@@ -204,6 +204,10 @@ private struct VolumeTagChipsView: View {
                         String(localized: "browser.volume.filterChip.a11y",
                                defaultValue: "Filter by \(chip.displayName)")
                     )
+                    .help(String(
+                        localized: "browser.volume.filterChip.help",
+                        defaultValue: "Show other volumes in this subseries with this tag"
+                    ))
                 }
             }
             .padding(.vertical, 2)

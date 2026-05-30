@@ -162,6 +162,10 @@ struct SubseriesTagFilterBar: View {
                                     String(localized: "browser.filter.remove.a11y",
                                            defaultValue: "Remove \(name) filter")
                                 )
+                                .help(String(
+                                    localized: "browser.filter.remove.help",
+                                    defaultValue: "Remove this tag filter"
+                                ))
                             }
                             .padding(.vertical, 5)
                             .background(Color.accentColor.opacity(0.15))
@@ -175,6 +179,8 @@ struct SubseriesTagFilterBar: View {
                         }
                         .buttonStyle(.borderless)
                         .foregroundStyle(.secondary)
+                        .help(String(localized: "browser.filter.clearAll.help",
+                                     defaultValue: "Remove all active tag filters and show every volume in this subseries"))
                     }
                     .padding(.vertical, 2)
                 }
@@ -191,6 +197,8 @@ struct SubseriesTagFilterBar: View {
                 .font(.callout)
             }
             .buttonStyle(.borderless)
+            .help(String(localized: "browser.filter.addTag.help",
+                         defaultValue: "Filter volumes by research topic — select one or more tags to narrow the list to volumes covering those themes"))
         }
         .sheet(isPresented: $showingPicker) {
             TagPickerSheet(vm: vm, subseries: subseries, isPresented: $showingPicker)
