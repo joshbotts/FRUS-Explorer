@@ -39,6 +39,16 @@ import SwiftData
 ///          mistakenly omitted from source
 ///   1.2 — Session 128: `@unchecked Sendable` conformance added (fixes Swift 6 strict-
 ///          concurrency errors in `SummarizationServiceTests`)
+///   1.3 — Session 130: investigated "redundant conformance" warning. Root cause: the
+///          `@Model` macro in iOS/macOS 26 unconditionally synthesizes a plain `Sendable`
+///          conformance in its macro expansion, which conflicts with our explicit
+///          `@unchecked Sendable`. The explicit declaration cannot be removed: without it
+///          `SummarizationServiceTests` fails because the macro's plain `Sendable`
+///          uses strict checking that rejects the actor-boundary crossing in
+///          `SummarizationService.summarize()`. This is a deficiency in the `@Model`
+///          macro — it should not synthesize `Sendable` when the type already declares
+///          it. The warning is located in the generated macro expansion file, not in
+///          this source, and is harmless. Track for removal when Apple fixes the macro.
 @Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity

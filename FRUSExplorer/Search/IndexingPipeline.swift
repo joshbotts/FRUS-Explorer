@@ -621,7 +621,7 @@ public actor IndexingPipeline {
             try await fts5Store.delete(documentId: docId)
         }
         try auxDeleteVolume(volumeId)
-        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId]) { _ in }
+        try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
 
         logger.info("removeVolume: removed \(docIds.count, privacy: .public) FTS5 documents for \(volumeId, privacy: .public)")
     }

@@ -112,7 +112,7 @@ public actor KeychainStore {
         let query = baseQuery(account: Keys.naraCatalogAPIKey)
         let update: [CFString: Any] = [
             kSecValueData:          data,
-            kSecAttrSynchronizable: kCFBooleanTrue,   // migrate / keep sync enabled
+            kSecAttrSynchronizable: true as CFBoolean,  // migrate / keep sync enabled
         ]
         let updateStatus = SecItemUpdate(query as CFDictionary, update as CFDictionary)
 

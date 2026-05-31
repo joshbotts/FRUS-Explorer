@@ -46,7 +46,10 @@ actor AppleIntelligenceProvider: SummarizationProvider {
     /// Conservative token budget for document content per request (see header comment).
     let contextWindowTokenLimit: Int = 3_072
 
-    var isAvailable: Bool {
+    /// `nonisolated` so DocumentView can read this from the `@MainActor` without an
+    /// `await`. `SystemLanguageModel.default.isAvailable` is a safe synchronous read;
+    /// no actor state is mutated here.
+    nonisolated var isAvailable: Bool {
         SystemLanguageModel.default.isAvailable
     }
 

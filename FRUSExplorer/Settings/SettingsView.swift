@@ -231,7 +231,7 @@ struct SettingsView: View {
                 LabeledContent(
                     String(localized: "settings.icloud.lastSync", defaultValue: "Last Sync")
                 ) {
-                    Text(date, style: .relative) + Text(String(localized: "settings.icloud.ago", defaultValue: " ago"))
+                    Text(date, style: .relative)   // already emits "5 minutes ago" etc.
                 }
                 .font(.footnote)
                 .foregroundStyle(.secondary)
