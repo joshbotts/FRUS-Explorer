@@ -60,6 +60,9 @@ struct ResearchDocumentEntry: Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 130: initial implementation
+///   1.1 — Session 130: added `onChange(of: allNotes.count)` + `onChange` on latest note
+///          timestamp so the window reliably reloads headers whenever any note is created
+///          or modified; note save paths now call `try? modelContext.save()` explicitly
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -96,8 +99,19 @@ struct ResearchView: View {
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 480)
         #endif
-        // Reload headers whenever the selected item (and thus the visible document set) changes.
+        // Reload headers when the selected item or the visible document set changes.
         .task(id: selectedItemDocumentIds) { await loadHeaders() }
+        // Also reload when a note is added or removed (count change) — catches the case
+        // where a new document enters "All Annotated Documents" for the first time.
+        .onChange(of: allNotes.count) { _, _ in
+            Task { await loadHeaders() }
+        }
+        // Reload when the most-recently-modified note timestamp changes — catches the case
+        // where tags are added to an already-listed document whose document key is unchanged,
+        // as well as cross-window @Query refreshes that arrive after an explicit context save.
+        .onChange(of: allNotes.first?.lastModified) { _, _ in
+            Task { await loadHeaders() }
+        }
     }
 
     // MARK: - Sidebar

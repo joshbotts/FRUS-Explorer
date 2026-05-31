@@ -125,6 +125,11 @@ struct ResearchNoteEditorView: View {
                         ))
                         linkNoteToHighlight(noteId: noteId)
                     }
+                    // Explicit save ensures the persistent store is updated before dismiss()
+                    // animates. Without this, the Research window's @Query (which uses a
+                    // different ModelContext on macOS) may not see the change until SwiftData's
+                    // auto-save fires — which can be several seconds later.
+                    try? modelContext.save()
                     pushNoteToFTS5()
                     dismiss()
                 }
@@ -306,6 +311,7 @@ struct ResearchNoteEditorView: View {
                     ))
                     linkNoteToHighlight(noteId: noteId)
                 }
+                try? modelContext.save()   // ensure @Query in Research view updates promptly
                 pushNoteToFTS5()
                 dismiss()
             }

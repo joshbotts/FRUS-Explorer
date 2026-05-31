@@ -803,6 +803,7 @@ private struct InlineNoteCreateSheet: View {
                         projectIds: activeProjectId.map { [$0] } ?? []
                     )
                     modelContext.insert(note)
+                    try? modelContext.save()   // ensure Research window @Query updates promptly
                     // Push immediately so note text is searchable in this session.
                     if let pipeline = appState.indexingPipeline {
                         let vid = volumeId
