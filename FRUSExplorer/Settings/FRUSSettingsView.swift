@@ -1381,7 +1381,11 @@ private struct SettingsStoragePane: View {
 
     private func loadReport() async {
         guard let dm = appState.downloadManager else { return }
-        storageReport = try? await dm.storageReport()
+        // Pass indexDirectory so the search index size (frus.db + WAL/SHM files) is
+        // included in totalIndexBytes. Without it the parameter defaults to nil and the
+        // index is reported as 0 bytes. The iOS StorageManagementView already passes this
+        // correctly; this was the missing piece on macOS.
+        storageReport = try? await dm.storageReport(indexDirectory: appState.indexDirectory)
     }
 
     private func reindexVolume(_ volumeId: String) async {
