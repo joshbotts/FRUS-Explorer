@@ -295,6 +295,12 @@ private struct DownloadsSettingsView: View {
     @State private var singleVolumeSearch: String = ""
     @State private var enqueuedMessage: String? = nil
 
+    // Phase 1: storage limit gate
+    @AppStorage("frus.storage.limitGB") private var storageLimitGBiOS: Int = 0
+    @State private var showLimitWarningIOS = false
+    @State private var pendingEnqueueiOS: [VolumeManifestEntry] = []
+    @State private var projectedTotaliOS: Int = 0
+
     var body: some View {
         Form {
             // 1. Active Downloads — hidden when queue is idle.
@@ -501,6 +507,33 @@ private struct DownloadsSettingsView: View {
                 format: String(localized: "settings.volumes.delete.confirm.message",
                                defaultValue: "\"%@\" will be removed from your device. You can re-download it later."),
                 entry.title
+            ))
+        }
+        // Phase 1: storage limit warning before batch download.
+        .confirmationDialog(
+            String(localized: "settings.download.limitWarning.title",
+                   defaultValue: "Storage Limit"),
+            isPresented: $showLimitWarningIOS,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.download.limitWarning.proceed",
+                          defaultValue: "Download Anyway")) {
+                let pending = pendingEnqueueiOS
+                pendingEnqueueiOS = []
+                Task { await performEnqueueiOS(pending) }
+            }
+            Button(String(localized: "settings.download.limitWarning.cancel",
+                          defaultValue: "Cancel"),
+                   role: .cancel) {
+                pendingEnqueueiOS = []
+            }
+        } message: {
+            let limitStr = "\(storageLimitGBiOS) GB"
+            let projStr = ByteCountFormatter.string(fromByteCount: Int64(projectedTotaliOS), countStyle: .file)
+            Text(String(
+                format: String(localized: "settings.download.limitWarning.message",
+                               defaultValue: "Downloading these volumes would bring total storage to approximately %@, exceeding your %@ limit. The estimate includes a ~40%% search index overhead per volume."),
+                projStr, limitStr
             ))
         }
     }
@@ -732,20 +765,42 @@ private struct DownloadsSettingsView: View {
             toEnqueue = source.filter { $0.volumeId == id }
         }
         Task {
-            for entry in toEnqueue {
-                let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
-                await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
+            // Phase 1: check storage limit before downloading.
+            if storageLimitGBiOS > 0,
+               let report = try? await dm.storageReport(indexDirectory: appState.indexDirectory) {
+                let limitBytes = storageLimitGBiOS * 1_073_741_824
+                let newOnly = toEnqueue.filter { !dm.isVolumeDownloaded($0.volumeId) }
+                let newBytes = newOnly.reduce(0) { $0 + $1.sizeBytes }
+                let estimated = Int(Double(newBytes) * 1.4)  // XML + ~40% index
+                let projected = report.grandTotalBytes + newBytes + estimated
+                if projected > limitBytes {
+                    await MainActor.run {
+                        projectedTotaliOS = projected
+                        pendingEnqueueiOS = newOnly
+                        showLimitWarningIOS = true
+                    }
+                    return
+                }
             }
-            await MainActor.run {
-                let count = toEnqueue.count
-                enqueuedMessage = String(
-                    localized: "settings.downloadManager.enqueued",
-                    defaultValue: "\(count) volume\(count == 1 ? "" : "s") queued for download.")
-            }
-            #if DEBUG
-            print("[Settings] Downloads enqueued \(toEnqueue.count) volumes.")
-            #endif
+            await performEnqueueiOS(toEnqueue)
         }
+    }
+
+    private func performEnqueueiOS(_ volumes: [VolumeManifestEntry]) async {
+        guard let dm = appState.downloadManager else { return }
+        for entry in volumes {
+            let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+            await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
+        }
+        await MainActor.run {
+            let count = volumes.count
+            enqueuedMessage = String(
+                localized: "settings.downloadManager.enqueued",
+                defaultValue: "\(count) volume\(count == 1 ? "" : "s") queued for download.")
+        }
+        #if DEBUG
+        print("[Settings] Downloads enqueued \(volumes.count) volumes.")
+        #endif
     }
 
     private func availableFiltered(_ volumes: [VolumeManifestEntry]) -> [VolumeManifestEntry] {

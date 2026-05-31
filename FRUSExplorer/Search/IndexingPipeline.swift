@@ -642,6 +642,23 @@ public actor IndexingPipeline {
         logger.info("removeAllVolumesFromIndex: complete")
     }
 
+    /// Runs `VACUUM` on the auxiliary SQLite database to reclaim pages freed by
+    /// `removeVolume()` calls and shrink the `frus.db` file on disk.
+    ///
+    /// This is intentionally **not** called automatically after each `removeVolume()`.
+    /// VACUUM requires a brief exclusive write lock and can take several seconds on a
+    /// large database. Call it once after all desired removals are complete.
+    ///
+    /// The FTS5 store (`frus.db`) stores both the FTS5 tables and the auxiliary tables
+    /// (cross_references, page_ranges, etc.) in the same file. A single VACUUM call
+    /// on `auxDb` covers the entire file.
+    public func vacuumIndex() async throws {
+        let stmt = try auxPrepare("VACUUM")
+        defer { sqlite3_finalize(stmt) }
+        try auxStep(stmt)
+        logger.info("vacuumIndex: complete")
+    }
+
     /// Updates the FTS5 index and document cache with a plain-text summary.
     ///
     /// Use this overload when the `GeneratedSummary` SwiftData model cannot safely cross

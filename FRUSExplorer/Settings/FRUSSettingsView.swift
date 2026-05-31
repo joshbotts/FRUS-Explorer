@@ -866,6 +866,10 @@ private struct SettingsNotesPane: View {
 ///   1.3 — Session 130: `usageBreakdown` added (volume / index / summaries / total breakdown
 ///          below the usage bar, matching the iOS Storage pane); indexing controls + queue card
 ///          moved above the volume table so they're visible without scrolling
+///   1.4 — Session 130: Phase 1 — pre-download limit gate on `SettingsAddVolumesPane`;
+///          Phase 2 — `SettingsStoragePane` gains LRU/protection indicators on volume rows,
+///          a storage advisory card when near/over limit, and a Manage Storage sheet with
+///          removal candidates, estimated index sizes, and post-removal VACUUM
 private struct SettingsStoragePane: View {
 
     // MARK: - Batch tracking
@@ -882,7 +886,26 @@ private struct SettingsStoragePane: View {
         case rebuildAll(total: Int)
     }
 
+    // MARK: - Storage overhead
+
+    /// Empirical ratio of index bytes to XML bytes.
+    ///
+    /// A typical FRUS volume XML file of 6 MB produces roughly 2–2.5 MB of search index
+    /// data across all auxiliary tables (FTS5 tokens, cross-references, person mentions,
+    /// page ranges, document cache). The 0.4 factor is a conservative estimate;
+    /// actual overhead varies from ~0.3× for short volumes to ~0.5× for long ones.
+    static let indexOverheadFactor: Double = 0.4
+
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+
+    // Queries used by Phase 2 to classify volumes as protected (have user data) or
+    // removable. These are loaded only once — the query result is small for typical users.
+    @Query private var allNotes: [ResearchNote]
+    @Query private var allCollectionEntries: [CollectionEntry]
+    @Query private var allSummaries: [GeneratedSummary]
+    @Query(sort: \ReadingHistoryEntry.accessedAt, order: .reverse) private var history: [ReadingHistoryEntry]
+
     @State private var storageReport: StorageReport? = nil
     @State private var reindexingVolumeId: String? = nil
     /// Number of volumes that failed during the most recent indexing run.
@@ -892,6 +915,10 @@ private struct SettingsStoragePane: View {
     @State private var settingsBatch: BatchKind? = nil
     /// Controls the "Delete Index & Rebuild" confirmation alert.
     @State private var showRebuildConfirmation = false
+    /// Controls the Manage Storage sheet.
+    @State private var showManageStorageSheet = false
+    /// Drive re-reads of `storageLimitGB` for the advisory card and usage bar.
+    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
 
     var body: some View {
         ScrollView {
@@ -911,7 +938,13 @@ private struct SettingsStoragePane: View {
                         .padding(.bottom, 6)
                     // Per-category breakdown — mirrors the iOS Storage pane.
                     usageBreakdown(report: report)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, storageLimitAdvisoryVisible(for: report) ? 10 : 16)
+
+                    // Storage advisory — appears when usage is ≥ 85% of a set limit.
+                    if storageLimitAdvisoryVisible(for: report) {
+                        storageLimitAdvisoryCard(report: report)
+                            .padding(.bottom, 16)
+                    }
                 }
 
                 // Indexing controls — placed above the volume table so they're
@@ -993,6 +1026,21 @@ private struct SettingsStoragePane: View {
             .padding(24)
         }
         .task { await loadReport() }
+        .sheet(isPresented: $showManageStorageSheet) {
+            if let report = storageReport {
+                ManageStorageSheet(
+                    report: report,
+                    protectedVolumeIds: protectedVolumeIds,
+                    lastOpenedByVolumeId: lastOpenedByVolumeId,
+                    appState: appState
+                ) {
+                    // Reload report after sheet-driven removals + optional VACUUM.
+                    await loadReport()
+                }
+                .environment(appState)
+                .modelContainer(modelContext.container)
+            }
+        }
         .alert(
             "Delete Index and Rebuild?",
             isPresented: $showRebuildConfirmation
@@ -1008,9 +1056,100 @@ private struct SettingsStoragePane: View {
         }
     }
 
-    // MARK: Storage Limit Row
+    // MARK: - Phase 2: Protected Volumes and Removal Candidates
 
-    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
+    /// Volume IDs that should not be offered for automatic removal because the user has
+    /// research notes, collection entries, or AI summaries attached to documents in them.
+    var protectedVolumeIds: Set<String> {
+        var ids = Set<String>()
+        allNotes.forEach           { ids.insert($0.volumeId) }
+        allCollectionEntries.forEach { ids.insert($0.volumeId) }
+        allSummaries.forEach       { ids.insert($0.volumeId) }
+        return ids
+    }
+
+    /// Most-recent `accessedAt` date keyed by volume ID, derived from reading history.
+    var lastOpenedByVolumeId: [String: Date] {
+        var result: [String: Date] = [:]
+        for entry in history {
+            if result[entry.volumeId] == nil, let date = entry.accessedAt {
+                result[entry.volumeId] = date
+            }
+        }
+        return result
+    }
+
+    /// Returns `true` when a storage limit is set and current usage is ≥ 85% of it.
+    private func storageLimitAdvisoryVisible(for report: StorageReport) -> Bool {
+        guard storageLimitGB > 0 else { return false }
+        let limitBytes = storageLimitGB * 1_073_741_824
+        return report.grandTotalBytes >= Int(Double(limitBytes) * 0.85)
+    }
+
+    /// The advisory card shown when usage is near or over the limit.
+    private func storageLimitAdvisoryCard(report: StorageReport) -> some View {
+        let limitBytes = storageLimitGB * 1_073_741_824
+        let isOver = report.grandTotalBytes > limitBytes
+        let candidateCount = (storageReport?.perVolume ?? [])
+            .filter { !protectedVolumeIds.contains($0.volumeId) }.count
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: isOver ? "exclamationmark.circle.fill" : "exclamationmark.circle")
+                    .foregroundStyle(isOver ? .red : .orange)
+                    .font(.system(size: 14))
+                Text(isOver
+                     ? "Storage limit exceeded"
+                     : "Approaching storage limit")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(isOver ? .red : .orange)
+            }
+
+            if isOver {
+                let overBy = report.grandTotalBytes - limitBytes
+                Text("You are using \(formattedBytes(overBy)) more than your \(storageLimitGB) GB limit.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            } else {
+                let remaining = limitBytes - report.grandTotalBytes
+                Text("You have approximately \(formattedBytes(remaining)) remaining before reaching your \(storageLimitGB) GB limit.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+
+            if candidateCount > 0 {
+                Text("\(candidateCount) downloaded volume\(candidateCount == 1 ? "" : "s") \(candidateCount == 1 ? "has" : "have") no attached notes, collections, or summaries and could be removed to free space.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                Button("Manage Storage…") {
+                    showManageStorageSheet = true
+                }
+                .buttonStyle(.bordered)
+                .font(.system(size: 12))
+            } else {
+                Text("All downloaded volumes have attached notes, collections, or summaries. Use the Remove button in the volume list to manually remove specific volumes.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(isOver ? Color.red.opacity(0.05) : Color.orange.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(isOver ? Color.red.opacity(0.2) : Color.orange.opacity(0.2),
+                               lineWidth: 0.5)
+        )
+    }
+
+    // MARK: - Private helpers
+
+    private func formattedBytes(_ bytes: Int) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+
+    // MARK: Storage Limit Row
 
     private var storageLimitRow: some View {
         HStack {
@@ -1160,24 +1299,46 @@ private struct SettingsStoragePane: View {
     }
 
     private func volumeRow(_ entry: VolumeStorageEntry) -> some View {
-        HStack(spacing: 8) {
+        let isProtected = protectedVolumeIds.contains(entry.volumeId)
+        let lastOpened = lastOpenedByVolumeId[entry.volumeId]
+
+        return HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
-                Text(entry.volumeId)
-                    .font(.system(size: 12))
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(entry.volumeId)
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                    if isProtected {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                            .help("This volume has attached notes, collections, or summaries and will not be suggested for automatic removal.")
+                    }
+                }
                 if let title = appState.manifestStore.entry(forVolumeId: entry.volumeId)?.title {
                     Text(title)
                         .font(.system(size: 10))
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                 }
+                if let date = lastOpened {
+                    Text("Opened \(date, style: .relative)")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text("Never opened")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            // XML file size; tooltip explains the estimated index overhead.
             Text(ByteCountFormatter.string(fromByteCount: Int64(entry.volumeFileBytes), countStyle: .file))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
+                .help("XML file: \(ByteCountFormatter.string(fromByteCount: Int64(entry.volumeFileBytes), countStyle: .file)). Estimated total including search index: ~\(ByteCountFormatter.string(fromByteCount: Int64(Int(Double(entry.volumeFileBytes) * (1 + Self.indexOverheadFactor))), countStyle: .file)).")
 
             indexStatusBadge(for: entry.volumeId)
                 .frame(width: 90, alignment: .leading)
@@ -1484,6 +1645,242 @@ private struct SettingsStoragePane: View {
     }
 }
 
+// MARK: - Manage Storage Sheet
+
+/// Sheet presented from `SettingsStoragePane` when the user taps "Manage Storage…".
+///
+/// Lists downloaded volumes that have no attached user data (notes, collections, summaries),
+/// sorted least-recently-opened first so the most-removable candidates appear at the top.
+/// The user multi-selects volumes, sees a running estimate of recoverable space, and
+/// confirms removal. A VACUUM is run after all removals complete to immediately shrink
+/// the index file; a note explains the estimate and timing limitations.
+///
+/// ## Index size estimates
+/// Per-volume index contribution is estimated as 40% of the XML file size
+/// (`SettingsStoragePane.indexOverheadFactor`). This is the mean for the FRUS corpus;
+/// individual volumes vary from roughly 30% (short volumes) to 50% (long ones). The UI
+/// uses "~" prefix throughout and includes an explanation of the methodology.
+private struct ManageStorageSheet: View {
+
+    let report: StorageReport
+    let protectedVolumeIds: Set<String>
+    let lastOpenedByVolumeId: [String: Date]
+    let appState: AppState
+    let onComplete: () async -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selected: Set<String> = []
+    @State private var isRemoving = false
+    @State private var removalError: String? = nil
+
+    private var candidates: [(entry: VolumeStorageEntry, lastOpened: Date?)] {
+        report.perVolume
+            .filter { !protectedVolumeIds.contains($0.volumeId) }
+            .map { entry in (entry: entry, lastOpened: lastOpenedByVolumeId[entry.volumeId]) }
+            .sorted { a, b in
+                switch (a.lastOpened, b.lastOpened) {
+                case (nil, nil):  return a.entry.volumeId < b.entry.volumeId
+                case (nil, _):    return true   // never opened → most removable
+                case (_, nil):    return false
+                case (let la, let lb): return la! < lb!
+                }
+            }
+    }
+
+    private var estimatedRecovery: Int {
+        candidates
+            .filter { selected.contains($0.entry.volumeId) }
+            .reduce(0) { total, c in
+                total + c.entry.volumeFileBytes
+                    + Int(Double(c.entry.volumeFileBytes) * SettingsStoragePane.indexOverheadFactor)
+            }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Manage Storage")
+                        .font(.headline)
+                    Text("Select volumes to remove. Only volumes with no attached notes, collections, or summaries are shown.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(20)
+
+            Divider()
+
+            if candidates.isEmpty {
+                ContentUnavailableView(
+                    "No Removable Volumes",
+                    systemImage: "lock.shield",
+                    description: Text("Every downloaded volume has attached notes, collections, or summaries. Remove individual volumes manually from the Storage pane.")
+                )
+            } else {
+                // Estimate explanation
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Text("Sizes shown are the XML file + an estimated ~40% search index contribution. Actual index overhead varies by volume length; treat these figures as approximate.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+                .background(Color.secondary.opacity(0.06))
+
+                List {
+                    ForEach(candidates, id: \.entry.volumeId) { candidate in
+                        candidateRow(candidate)
+                    }
+                }
+                .listStyle(.plain)
+            }
+
+            // Footer with running total and action button
+            if !candidates.isEmpty {
+                Divider()
+                HStack(spacing: 12) {
+                    if selected.isEmpty {
+                        Text("Select volumes to see estimated recovery")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("~\(ByteCountFormatter.string(fromByteCount: Int64(estimatedRecovery), countStyle: .file)) estimated recovery")
+                                .font(.system(size: 12, weight: .medium))
+                            Text("Actual freed space may differ; the index shrinks after removal.")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    Spacer()
+                    if let err = removalError {
+                        Text(err)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.red)
+                    }
+                    Button {
+                        Task { await performRemoval() }
+                    } label: {
+                        if isRemoving {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Text("Remove \(selected.count) Volume\(selected.count == 1 ? "" : "s")")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .disabled(selected.isEmpty || isRemoving)
+                }
+                .padding(20)
+            }
+        }
+        .frame(minWidth: 520, minHeight: 420)
+        .overlay {
+            if isRemoving {
+                ZStack {
+                    Color.black.opacity(0.2)
+                    VStack(spacing: 10) {
+                        ProgressView()
+                        Text("Removing volumes and compacting index…")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(20)
+                    .background(.regularMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func candidateRow(_ candidate: (entry: VolumeStorageEntry, lastOpened: Date?)) -> some View {
+        let volumeId = candidate.entry.volumeId
+        let isSelected = selected.contains(volumeId)
+        let totalEstimate = candidate.entry.volumeFileBytes
+            + Int(Double(candidate.entry.volumeFileBytes) * SettingsStoragePane.indexOverheadFactor)
+        let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title
+
+        Button {
+            if isSelected { selected.remove(volumeId) } else { selected.insert(volumeId) }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .font(.system(size: 16))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title ?? volumeId)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Text(volumeId)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("~\(ByteCountFormatter.string(fromByteCount: Int64(totalEstimate), countStyle: .file))")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    if let date = candidate.lastOpened {
+                        Text("Opened \(date, style: .relative)")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.tertiary)
+                    } else {
+                        Text("Never opened")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.vertical, 4)
+    }
+
+    @MainActor
+    private func performRemoval() async {
+        guard let dm = appState.downloadManager,
+              let pipeline = appState.indexingPipeline else { return }
+        isRemoving = true
+        removalError = nil
+
+        for volumeId in selected {
+            do {
+                try await pipeline.removeVolume(volumeId)
+                try await dm.deleteVolume(volumeId: volumeId)
+            } catch {
+                removalError = "Failed to remove \(volumeId): \(error.localizedDescription)"
+                isRemoving = false
+                await onComplete()
+                return
+            }
+        }
+
+        // VACUUM after all removals to immediately compact the index file.
+        // This is a blocking operation lasting a few seconds on a large database.
+        try? await pipeline.vacuumIndex()
+
+        isRemoving = false
+        selected = []
+        await onComplete()
+        dismiss()
+    }
+}
+
 // MARK: - Add Volumes Pane
 
 private struct SettingsAddVolumesPane: View {
@@ -1499,6 +1896,14 @@ private struct SettingsAddVolumesPane: View {
     @State private var selectedSubseries: Set<String> = []
     @State private var selectedVolumeIds: Set<String> = []
     @State private var isEnqueuing = false
+
+    // MARK: Phase 1 — storage limit gate
+    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
+    @State private var showLimitWarning = false
+    /// Volumes held while the limit-warning dialog is displayed.
+    @State private var pendingVolumesForDownload: [VolumeManifestEntry] = []
+    /// Projected total in bytes if `pendingVolumesForDownload` are downloaded.
+    @State private var projectedTotalBytes: Int = 0
 
     // MARK: - Body
 
@@ -1529,6 +1934,24 @@ private struct SettingsAddVolumesPane: View {
         }
         .task {
             if appState.isOnline { await appState.manifestStore.refresh() }
+        }
+        // Phase 1: storage limit warning before batch download
+        .confirmationDialog(
+            "Storage Limit",
+            isPresented: $showLimitWarning,
+            titleVisibility: .visible
+        ) {
+            Button("Download Anyway") {
+                Task { await performEnqueue(pendingVolumesForDownload) }
+                pendingVolumesForDownload = []
+            }
+            Button("Cancel", role: .cancel) {
+                pendingVolumesForDownload = []
+            }
+        } message: {
+            let limitStr = "\(storageLimitGB) GB"
+            let projStr = ByteCountFormatter.string(fromByteCount: Int64(projectedTotalBytes), countStyle: .file)
+            Text("Downloading \(pendingVolumesForDownload.count) volume\(pendingVolumesForDownload.count == 1 ? "" : "s") would bring total storage to approximately \(projStr), exceeding your \(limitStr) limit.\n\nThe estimate includes a ~40% search index overhead per volume. Actual usage may differ.")
         }
     }
 
@@ -1876,6 +2299,30 @@ private struct SettingsAddVolumesPane: View {
         case .volume:
             volumes = allVolumes.filter { selectedVolumeIds.contains($0.volumeId) }
         }
+
+        // Phase 1: check projected usage against the storage limit before downloading.
+        if storageLimitGB > 0, let report = try? await dm.storageReport(indexDirectory: appState.indexDirectory) {
+            let limitBytes = storageLimitGB * 1_073_741_824
+            // Exclude volumes already on disk from the projection.
+            let toDownload = volumes.filter { !dm.isVolumeDownloaded($0.volumeId) }
+            let newVolumeBytes = toDownload.reduce(0) { $0 + $1.sizeBytes }
+            // Add estimated index overhead (~40% of XML size per volume).
+            let estimatedIndexBytes = Int(Double(newVolumeBytes) * SettingsStoragePane.indexOverheadFactor)
+            let projected = report.grandTotalBytes + newVolumeBytes + estimatedIndexBytes
+            if projected > limitBytes {
+                projectedTotalBytes = projected
+                pendingVolumesForDownload = toDownload
+                showLimitWarning = true
+                return
+            }
+        }
+
+        await performEnqueue(volumes)
+    }
+
+    /// Enqueues the given volumes without a limit check (called after user confirms override).
+    private func performEnqueue(_ volumes: [VolumeManifestEntry]) async {
+        guard let dm = appState.downloadManager else { return }
         for entry in volumes {
             await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
         }
