@@ -67,6 +67,9 @@ import SwiftData
 ///          indexingQueueAverageDocsPerSecond + indexingQueueAverageDocumentCount for queue ETA
 ///   3.4 — Session 130: cloudKitSyncEnabled + cloudKitInitError for sync-state diagnostics
 ///   3.5 — Session 130: CloudKitSyncState enum + cloudKitSyncState for real-time event monitoring
+///   3.6 — Session 130: cloudKitDiagnostic() now extracts per-item errors from CKPartialErrorsByItemIDKey
+///          so CKError.partialFailure (code 2) surfaces actionable sub-error codes instead of
+///          the useless "Some items failed." localizedDescription
 
 // MARK: - CloudKitSyncState
 

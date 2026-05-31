@@ -15,6 +15,7 @@
 import SwiftUI
 import SwiftData
 import CoreData       // NSPersistentCloudKitContainer for sync-event monitoring
+import CloudKit       // CKError codes, CKPartialErrorsByItemIDKey for detailed diagnostics
 import CoreSpotlight
 
 /// Root entry point for FRUS Explorer.
@@ -527,8 +528,19 @@ struct FRUSExplorerApp: App {
                         as? NSPersistentCloudKitContainer.Event else { return }
                 let hasEnded  = event.endDate != nil
                 let succeeded = event.succeeded
-                let errorMsg  = event.error?.localizedDescription
                 let endDate   = event.endDate ?? Date.now
+
+                // Build a detailed diagnostic from the error.
+                // For CKError.partialFailure (code 2), the per-item sub-errors inside
+                // CKPartialErrorsByItemIDKey are the real diagnosis; localizedDescription
+                // only returns the useless "Some items failed." string.
+                let errorMsg: String?
+                if let error = event.error as? NSError {
+                    errorMsg = Self.cloudKitDiagnostic(error)
+                } else {
+                    errorMsg = event.error?.localizedDescription
+                }
+
                 Task { @MainActor in
                     if !hasEnded {
                         appState.cloudKitSyncState = .syncing
@@ -590,6 +602,96 @@ struct FRUSExplorerApp: App {
         let dir = base.appendingPathComponent("FRUSExplorer", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("frus.db")
+    }
+
+    // MARK: - CloudKit Diagnostics
+
+    /// Converts a CloudKit `NSError` into a human-readable diagnostic string.
+    ///
+    /// For `CKError.partialFailure` (code 2), `localizedDescription` returns the
+    /// useless "Some items failed." string. This function extracts the per-item
+    /// sub-errors from `CKPartialErrorsByItemIDKey`, counts them by error code,
+    /// and returns a summary like:
+    ///
+    ///   `"Partial sync failure (12 records): 10× changeTokenExpired, 2× serverRecordChanged"`
+    ///
+    /// The detailed breakdown is also written to the console via `print` so it
+    /// survives app relaunch and can be captured in Console.app (subsystem:
+    /// `bottsywattsy.FRUS-Explorer`).
+    ///
+    /// ## Interpreting common sub-error codes
+    /// - **changeTokenExpired (21)**: Sync token stale after a schema change — usually
+    ///   self-healing as `NSPersistentCloudKitContainer` fetches a new token.
+    /// - **zoneNotFound (26)** / **userDeletedZone (28)**: The iCloud private database zone
+    ///   was deleted (user reset iCloud data). The container should recreate it; if it does
+    ///   not, sign out of iCloud and back in.
+    /// - **serverRecordChanged (14)**: Merge conflict — auto-resolved by the container.
+    /// - **notAuthenticated (9)**: No iCloud account. User must sign in via Settings.
+    /// - **serverRejectedRequest (15)** / **incompatibleVersion (18)**: Schema or data
+    ///   mismatch between the app and the deployed CloudKit schema. May require a
+    ///   CloudKit Dashboard schema reset or an app update.
+    /// - **unknownItem (11)**: Record being updated does not exist on the server. Usually
+    ///   follows a zone/token reset; resolves after the container re-uploads.
+    static func cloudKitDiagnostic(_ error: NSError) -> String {
+        // Human-readable labels for the CloudKit error codes most likely to appear
+        // in a SwiftData+CloudKit app during normal operation and schema migration.
+        let codeNames: [Int: String] = [
+            1:  "internalError",
+            2:  "partialFailure",
+            3:  "networkUnavailable",
+            4:  "networkFailure",
+            5:  "badContainer",
+            6:  "serviceUnavailable",
+            7:  "requestRateLimited",
+            8:  "missingEntitlement",
+            9:  "notAuthenticated",
+            10: "permissionFailure",
+            11: "unknownItem",
+            12: "invalidArguments",
+            14: "serverRecordChanged",
+            15: "serverRejectedRequest",
+            18: "incompatibleVersion",
+            19: "constraintViolation",
+            20: "operationCancelled",
+            21: "changeTokenExpired",
+            22: "batchRequestFailed",
+            23: "zoneBusy",
+            24: "badDatabase",
+            25: "quotaExceeded",
+            26: "zoneNotFound",
+            28: "userDeletedZone",
+        ]
+
+        // For partialFailure, drill into the per-item errors.
+        if error.domain == CKErrorDomain, error.code == CKError.partialFailure.rawValue,
+           let partialErrors = error.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
+
+            var byCode: [Int: Int] = [:]
+            for (_, subError) in partialErrors {
+                byCode[(subError as NSError).code, default: 0] += 1
+            }
+
+            // Log the full breakdown (visible in Console.app).
+            let breakdown = byCode.sorted { $0.value > $1.value }
+                .map { code, count in "\(count)× \(codeNames[code] ?? "code \(code)")" }
+                .joined(separator: ", ")
+            print("[CloudKit] ⚠️ Partial failure: \(partialErrors.count) records — \(breakdown)")
+
+            // Log a sample of item IDs for cross-referencing in CloudKit Dashboard.
+            let sample = partialErrors.prefix(5)
+            for (itemID, subError) in sample {
+                let sub = subError as NSError
+                print("[CloudKit]   item \(itemID): \(sub.domain) \(codeNames[sub.code] ?? "code \(sub.code)") — \(sub.localizedDescription)")
+            }
+
+            // Return the user-visible summary.
+            return "Partial sync failure (\(partialErrors.count) record\(partialErrors.count == 1 ? "" : "s")): \(breakdown)"
+        }
+
+        // Non-partial error: include the code name if known.
+        let name = codeNames[error.code] ?? "code \(error.code)"
+        print("[CloudKit] ⚠️ \(error.domain) \(name): \(error.localizedDescription)")
+        return "\(error.domain) \(name): \(error.localizedDescription)"
     }
 }
 
