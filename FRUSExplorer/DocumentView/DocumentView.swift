@@ -1522,8 +1522,7 @@ private struct GlossDetailSheet: View {
 ///   1.0 — Session 120: initial implementation; replaces empty Session-14 stub
 ///   1.1 — Session 121: loads existing tags on appear; saves via IndexingPipeline.updateUserTagIds
 ///          on Done (Bug 2 — selection was stored in @State only, lost on dismiss)
-///   1.2 — Session 130: `syncTagsToSwiftData()` added — same fix as MacTagPickerSheet;
-///          bridges document_cache (SQLite/FTS5) with ResearchNote.userTagIds (SwiftData)
+///   1.2 — Session 130: `documentTaggingGeneration` increment added
 private struct TagPickerSheetView: View {
 
     let entry: DocumentBrowserEntry
@@ -1623,9 +1622,12 @@ private struct TagPickerSheetView: View {
         newTagName = ""
     }
 
+    @Environment(AppState.self) private var appState
+
     private func saveAndDismiss() {
         guard let pipeline = indexingPipeline else {
-            syncTagsToSwiftData()
+            appState.documentTaggingGeneration += 1
+            try? modelContext.save()
             dismiss()
             return
         }
@@ -1642,40 +1644,12 @@ private struct TagPickerSheetView: View {
                 userTagIds: tagString
             )
             await MainActor.run {
-                syncTagsToSwiftData()
+                appState.documentTaggingGeneration += 1
+                try? modelContext.save()
                 isSaving = false
                 dismiss()
             }
         }
-    }
-
-    /// Mirrors the tag selection into SwiftData — see MacTagPickerSheet.syncTagsToSwiftData()
-    /// for full documentation. Identical logic, separate copy for the iOS-only sheet.
-    private func syncTagsToSwiftData() {
-        let tagIds  = Array(selectedTagIds)
-        let vId     = entry.volumeId
-        let dId     = entry.documentId
-
-        let descriptor = FetchDescriptor<ResearchNote>(
-            predicate: #Predicate<ResearchNote> { note in
-                note.volumeId == vId && note.documentId == dId
-            }
-        )
-        let existing = (try? modelContext.fetch(descriptor)) ?? []
-
-        if let note = existing.first {
-            note.userTagIds = tagIds
-        } else if !tagIds.isEmpty {
-            let note = ResearchNote(
-                documentId: dId,
-                volumeId: vId,
-                bodyText: "",
-                userTagIds: tagIds
-            )
-            modelContext.insert(note)
-        }
-
-        try? modelContext.save()
     }
 }
 

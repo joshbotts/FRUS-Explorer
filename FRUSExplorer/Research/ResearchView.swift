@@ -21,18 +21,26 @@ enum ResearchSidebarItem: Hashable {
 
 // MARK: - ResearchDocumentEntry
 
-/// One row in the Research document list: all notes for a single (volumeId, documentId) pair
-/// aggregated into a single entry.
+/// One row in the Research document list, aggregating all annotations for a single
+/// `(volumeId, documentId)` pair from BOTH data sources:
+///
+/// - `ResearchNote` records in SwiftData (`latestNote`, `noteCount`, note-level tags)
+/// - Direct user tags stored in `document_cache.user_tag_ids` (SQLite/FTS5)
+///
+/// `latestNote` is `nil` when a document has only direct tags (no notes). Both
+/// annotation types contribute to `allTagIds` so the Research window reflects the
+/// complete tagging picture regardless of how the tag was applied.
 struct ResearchDocumentEntry: Identifiable {
     /// Stable key: `"volumeId/documentId"`.
     let id: String
     let volumeId: String
     let documentId: String
-    /// The most-recently-modified note for this document (used for preview and sort order).
-    let latestNote: ResearchNote
-    /// Total number of notes attached to this document.
+    /// Most-recently-modified note, or `nil` if this document has only direct tags.
+    let latestNote: ResearchNote?
+    /// Total number of `ResearchNote` records for this document.
     let noteCount: Int
-    /// Union of `userTagIds` across all notes on this document.
+    /// Union of tags from all notes (`ResearchNote.userTagIds`) and direct
+    /// `document_cache.user_tag_ids` assignments.
     let allTagIds: Set<UUID>
 }
 
@@ -60,9 +68,10 @@ struct ResearchDocumentEntry: Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 130: initial implementation
-///   1.1 — Session 130: added `onChange(of: allNotes.count)` + `onChange` on latest note
-///          timestamp so the window reliably reloads headers whenever any note is created
-///          or modified; note save paths now call `try? modelContext.save()` explicitly
+///   1.1 — Session 130: explicit context saves + onChange triggers for note reactivity
+///   1.2 — Session 130: directly-tagged documents (document_cache.user_tag_ids) merged
+///          as a first-class data source alongside SwiftData notes; tags and notes are
+///          now independent annotation types in the Research window
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -77,6 +86,10 @@ struct ResearchView: View {
     @State private var selectedItem: ResearchSidebarItem? = .allNotes
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
     @State private var documentHeaders: [String: String] = [:]
+    /// Documents that have user tags set in `document_cache` (SQLite/FTS5), keyed by
+    /// `"volumeId/documentId"`. Populated independently of `allNotes` so tags applied
+    /// via "Tag Document" appear in the Research window without creating a ResearchNote.
+    @State private var directlyTaggedDocs: [String: [UUID]] = [:]
 
     // MARK: - Body
 
@@ -101,17 +114,13 @@ struct ResearchView: View {
         #endif
         // Reload headers when the selected item or the visible document set changes.
         .task(id: selectedItemDocumentIds) { await loadHeaders() }
-        // Also reload when a note is added or removed (count change) — catches the case
-        // where a new document enters "All Annotated Documents" for the first time.
-        .onChange(of: allNotes.count) { _, _ in
-            Task { await loadHeaders() }
-        }
-        // Reload when the most-recently-modified note timestamp changes — catches the case
-        // where tags are added to an already-listed document whose document key is unchanged,
-        // as well as cross-window @Query refreshes that arrive after an explicit context save.
-        .onChange(of: allNotes.first?.lastModified) { _, _ in
-            Task { await loadHeaders() }
-        }
+        // Reload note-sourced headers when any note changes.
+        .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
+        .onChange(of: allNotes.first?.lastModified){ _, _ in Task { await loadHeaders() } }
+        // Reload SQLite-sourced directly-tagged documents whenever the user tags a
+        // document. AppState.documentTaggingGeneration is incremented by both
+        // MacTagPickerSheet and TagPickerSheetView after every tag save.
+        .task(id: appState.documentTaggingGeneration) { await loadDirectlyTaggedDocs() }
     }
 
     // MARK: - Sidebar
@@ -221,16 +230,16 @@ struct ResearchView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer()
-                if let date = entry.latestNote.lastModified {
+                if let date = entry.latestNote?.lastModified {
                     Text(date, style: .relative)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
             }
 
-            // Latest note preview
-            if !entry.latestNote.bodyText.isEmpty {
-                Text(entry.latestNote.bodyText)
+            // Latest note preview (nil when document has only direct tags, no notes)
+            if let note = entry.latestNote, !note.bodyText.isEmpty {
+                Text(note.bodyText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -331,63 +340,103 @@ struct ResearchView: View {
         }
     }
 
-    // MARK: - Computed Data
-
-    /// Total number of distinct documents that have at least one note.
-    private var allAnnotatedDocumentCount: Int {
-        Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" }).count
+    /// Loads all documents that have user tags set in `document_cache` (SQLite/FTS5).
+    /// Called on first appear and whenever `AppState.documentTaggingGeneration` changes.
+    private func loadDirectlyTaggedDocs() async {
+        guard let store = appState.crossReferenceStore else { return }
+        let rows = (try? await store.documentsWithUserTags()) ?? []
+        var result: [String: [UUID]] = [:]
+        for row in rows {
+            result["\(row.volumeId)/\(row.documentId)"] = row.userTagIds
+        }
+        directlyTaggedDocs = result
     }
 
-    /// Tags paired with their distinct-document count, sorted most-used first,
-    /// filtering out tags with zero annotated documents.
+    // MARK: - Computed Data
+
+    /// Total distinct documents that have at least one note OR at least one direct tag.
+    private var allAnnotatedDocumentCount: Int {
+        let noteKeys = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
+        let tagKeys  = Set(directlyTaggedDocs.keys)
+        return noteKeys.union(tagKeys).count
+    }
+
+    /// Tags paired with their distinct-document count (from BOTH notes and direct tags),
+    /// sorted most-used first, filtering out tags with zero annotated documents.
     private var sortedTagsWithCounts: [(tag: UserTag, count: Int)] {
         allTags.compactMap { tag in
-            let count = Set(
+            let fromNotes = Set(
                 allNotes
                     .filter { $0.userTagIds.contains(tag.id) }
                     .map { "\($0.volumeId)/\($0.documentId)" }
-            ).count
+            )
+            let fromDirect = Set(
+                directlyTaggedDocs
+                    .filter { $0.value.contains(tag.id) }
+                    .map(\.key)
+            )
+            let count = fromNotes.union(fromDirect).count
             guard count > 0 else { return nil }
             return (tag: tag, count: count)
         }
         .sorted { $0.count > $1.count }
     }
 
-    /// Aggregates notes by document for the given sidebar item and sorts the result
-    /// by most-recently-modified note, newest first.
+    /// Aggregates annotations (notes + direct tags) by document for the given sidebar
+    /// item. Documents with only direct tags (no notes) appear with `latestNote == nil`.
+    /// Sorted newest-note-first; directly-tagged-only documents sort after noted ones.
     private func documents(for item: ResearchSidebarItem) -> [ResearchDocumentEntry] {
-        let relevant: [ResearchNote]
+        // Collect relevant document keys from notes.
+        let relevantNotes: [ResearchNote]
         switch item {
-        case .allNotes:
-            relevant = Array(allNotes)
-        case .tag(let tagId):
-            relevant = allNotes.filter { $0.userTagIds.contains(tagId) }
+        case .allNotes:    relevantNotes = Array(allNotes)
+        case .tag(let id): relevantNotes = allNotes.filter { $0.userTagIds.contains(id) }
         }
 
+        // Collect relevant document keys from directly-tagged docs.
+        let directKeys: Set<String>
+        switch item {
+        case .allNotes:
+            directKeys = Set(directlyTaggedDocs.keys)
+        case .tag(let id):
+            directKeys = Set(directlyTaggedDocs.filter { $0.value.contains(id) }.map(\.key))
+        }
+
+        // Group notes by document key.
         var grouped: [String: [ResearchNote]] = [:]
-        for note in relevant {
-            let key = "\(note.volumeId)/\(note.documentId)"
-            grouped[key, default: []].append(note)
+        for note in relevantNotes {
+            grouped["\(note.volumeId)/\(note.documentId)", default: []].append(note)
+        }
+        // Add directly-tagged documents that have no notes in this selection.
+        for key in directKeys where grouped[key] == nil {
+            grouped[key] = []
         }
 
         return grouped.compactMap { key, notes -> ResearchDocumentEntry? in
             let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { return nil }
-            let sorted = notes.sorted {
+
+            let sortedNotes = notes.sorted {
                 ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast)
             }
-            guard let latest = sorted.first else { return nil }
+            let directTagIds = Set(directlyTaggedDocs[key] ?? [])
+            let noteTagIds   = Set(notes.flatMap { $0.userTagIds })
+
             return ResearchDocumentEntry(
                 id: key,
                 volumeId: parts[0],
                 documentId: parts[1],
-                latestNote: latest,
+                latestNote: sortedNotes.first,   // nil for directly-tagged-only docs
                 noteCount: notes.count,
-                allTagIds: Set(notes.flatMap { $0.userTagIds })
+                allTagIds: noteTagIds.union(directTagIds)
             )
         }
         .sorted {
-            ($0.latestNote.lastModified ?? .distantPast) > ($1.latestNote.lastModified ?? .distantPast)
+            // Documents with notes sort by most-recent note; directly-tagged-only
+            // documents (latestNote == nil) sort after all noted documents.
+            let lhs = $0.latestNote?.lastModified ?? .distantPast
+            let rhs = $1.latestNote?.lastModified ?? .distantPast
+            return lhs > rhs
         }
     }
 

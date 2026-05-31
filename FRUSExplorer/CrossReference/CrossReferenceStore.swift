@@ -27,6 +27,8 @@ import SQLite3
 ///          for multi-degree ego graph expansion
 ///   1.2 — Session 130: removed 20-node and 15-node caps; all reachable nodes now included
 ///   1.3 — Session 130: `documentHeaders(for:)` public method for batch header lookup
+///   1.4 — Session 130: `documentsWithUserTags()` — returns all (vol, doc, tagIds) rows
+///          from document_cache for use by ResearchView's direct-tag data source
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -288,6 +290,33 @@ public actor CrossReferenceStore {
             if let meta = try fetchMetadata(volumeId: vol, documentId: doc),
                let header = meta.header {
                 result["\(vol)/\(doc)"] = header
+            }
+        }
+        return result
+    }
+
+    /// Returns every `(volumeId, documentId, userTagIds)` tuple where `document_cache`
+    /// has at least one user tag stored in the `user_tag_ids` column.
+    ///
+    /// Used by `ResearchView` to build the directly-tagged-documents data source,
+    /// independently of whether those documents also have `ResearchNote` records in
+    /// SwiftData. This keeps user tags and research notes as separate annotation types.
+    public func documentsWithUserTags() throws -> [(volumeId: String, documentId: String, userTagIds: [UUID])] {
+        let sql = """
+            SELECT volume_id, document_id, user_tag_ids
+            FROM document_cache
+            WHERE user_tag_ids IS NOT NULL AND LENGTH(TRIM(user_tag_ids)) > 0
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var result: [(volumeId: String, documentId: String, userTagIds: [UUID])] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let vol = columnString(stmt, 0) ?? ""
+            let doc = columnString(stmt, 1) ?? ""
+            let raw = columnString(stmt, 2) ?? ""
+            let ids = raw.split(separator: " ").compactMap { UUID(uuidString: String($0)) }
+            if !ids.isEmpty {
+                result.append((volumeId: vol, documentId: doc, userTagIds: ids))
             }
         }
         return result

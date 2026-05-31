@@ -1757,12 +1757,12 @@ private enum CitationPopoverStyle: String, CaseIterable, Identifiable {
 ///          on Done (Bug 2 — selection was stored in @State only, lost on dismiss)
 ///   1.2 — Session 129: split macOS / iOS bodies; macOS uses VStack + button-bar to prevent
 ///          NavigationStack sidebar from hiding list content in a sheet presentation
-///   1.3 — Session 130: `syncTagsToSwiftData()` added — bridges the gap between the
-///          SQLite/FTS5 `document_cache.user_tag_ids` written by the pipeline and the
-///          SwiftData `ResearchNote.userTagIds` queried by the Research window
+///   1.3 — Session 130: `documentTaggingGeneration` increment added so `ResearchView`
+///          reloads its SQLite-sourced tag data whenever tags are applied or removed
 struct MacTagPickerSheet: View {
     let entry: DocumentBrowserEntry
     let indexingPipeline: IndexingPipeline?
+    @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
@@ -1922,9 +1922,10 @@ struct MacTagPickerSheet: View {
 
     private func saveAndDismiss() {
         guard let pipeline = indexingPipeline else {
-            // No pipeline (unindexed doc): still sync to SwiftData so the Research
-            // window reflects the selection even without a search index entry.
-            syncTagsToSwiftData()
+            // No pipeline (document not indexed): still bump the generation counter so
+            // ResearchView can reload its directly-tagged documents list.
+            appState.documentTaggingGeneration += 1
+            try? modelContext.save()   // persist any newly-created UserTag records
             dismiss()
             return
         }
@@ -1941,56 +1942,13 @@ struct MacTagPickerSheet: View {
                 userTagIds: tagString
             )
             await MainActor.run {
-                // Bridge the two tagging systems: the pipeline wrote to document_cache
-                // (SQLite/FTS5); now mirror the same selection into SwiftData so the
-                // Research window's @Query allNotes can reflect it.
-                syncTagsToSwiftData()
+                // Signal ResearchView to reload its SQLite-sourced tag data.
+                appState.documentTaggingGeneration += 1
+                try? modelContext.save()   // persist any newly-created UserTag records
                 isSaving = false
                 dismiss()
             }
         }
-    }
-
-    /// Mirrors the current tag selection into SwiftData so the Research window's
-    /// `@Query allNotes` can show this document under tagged and annotated categories.
-    ///
-    /// ## Why this is necessary
-    /// `IndexingPipeline.updateUserTagIds` writes to `document_cache.user_tag_ids`
-    /// (SQLite). The Research window queries `ResearchNote.userTagIds` (SwiftData) —
-    /// a completely separate storage system. Without this bridge, documents tagged
-    /// here are invisible to the Research window regardless of reactivity improvements.
-    ///
-    /// ## Behaviour
-    /// - If a `ResearchNote` already exists for this document, its `userTagIds` is
-    ///   updated to match the current selection (additive or subtractive).
-    /// - If no note exists and at least one tag is selected, a new empty-body note is
-    ///   created. An empty-body note with tags is a valid research artifact.
-    /// - If no note exists and the selection is empty, nothing is created or modified.
-    private func syncTagsToSwiftData() {
-        let tagIds  = Array(selectedTagIds)
-        let vId     = entry.volumeId
-        let dId     = entry.documentId
-
-        let descriptor = FetchDescriptor<ResearchNote>(
-            predicate: #Predicate<ResearchNote> { note in
-                note.volumeId == vId && note.documentId == dId
-            }
-        )
-        let existing = (try? modelContext.fetch(descriptor)) ?? []
-
-        if let note = existing.first {
-            note.userTagIds = tagIds
-        } else if !tagIds.isEmpty {
-            let note = ResearchNote(
-                documentId: dId,
-                volumeId: vId,
-                bodyText: "",
-                userTagIds: tagIds
-            )
-            modelContext.insert(note)
-        }
-
-        try? modelContext.save()
     }
 }
 
