@@ -107,7 +107,7 @@ struct AppTabTests {
     func appTabRawValues() {
         #expect(AppTab.browse.rawValue      == "browse")
         #expect(AppTab.search.rawValue      == "search")
-        #expect(AppTab.activity.rawValue    == "activity")
+        #expect(AppTab.research.rawValue    == "research")
         #expect(AppTab.collections.rawValue == "collections")
         #expect(AppTab.settings.rawValue    == "settings")
     }

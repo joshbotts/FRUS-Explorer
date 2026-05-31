@@ -79,6 +79,8 @@ import CoreSpotlight
 ///          WindowGroup id:"frus.sourceExplorer.ios" for source explorer windows
 ///   3.5 — Session 115: IndexingStateTracker created at boot; interruptedVolumeIds seeded from
 ///          sentinel store; tracker passed to IndexingPipeline for interrupted-state detection
+///   3.6 — Session 130: Research window added (frus.research, ⌘⌥R); iOS Activity tab replaced
+///          by Research tab in MainTabView
 @main
 struct FRUSExplorerApp: App {
 
@@ -195,6 +197,16 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
         }
         .defaultSize(width: 760, height: 560)
+
+        // MARK: - Research Window
+        Window(String(localized: "research.window.title", defaultValue: "Research"),
+               id: "frus.research") {
+            ResearchView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 760, height: 600)
+        .keyboardShortcut("r", modifiers: [.command, .option])
 
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {

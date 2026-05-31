@@ -48,12 +48,12 @@ struct MainTabViewTests {
         clearTabDefault()
     }
 
-    @Test("projectPickerClosureSwitchesToActivityTabOnIOS — closure writes .activity")
-    func projectPickerClosureSwitchesToActivityTabOnIOS() {
+    @Test("projectPickerClosureSwitchesToResearchTabOnIOS — closure writes .research (formerly .activity)")
+    func projectPickerClosureSwitchesToResearchTabOnIOS() {
         clearTabDefault()
         let state = AppState()
-        state.activeTab = .activity
-        #expect(state.activeTab == .activity)
+        state.activeTab = .research
+        #expect(state.activeTab == .research)
         clearTabDefault()
     }
 
@@ -69,19 +69,21 @@ struct MainTabViewTests {
         clearTabDefault()
     }
 
-    @Test("lastActivityTabVisitUpdatesOnActivityTabSelect — stamped near .now when Activity selected")
-    func lastActivityTabVisitUpdatesOnActivityTabSelect() {
+    @Test("lastActivityTabVisitNotAutoStamped — tab switches no longer auto-stamp lastActivityTabVisit")
+    func lastActivityTabVisitNotAutoStamped() {
+        // Activity tab was replaced by Research in Session 130.
+        // lastActivityTabVisit is retained in AppState but is no longer
+        // automatically stamped on any tab switch.
         clearTabDefault()
         UserDefaults.standard.removeObject(forKey: "frus.lastActivityTabVisit")
         let state = AppState()
         state.lastActivityTabVisit = .distantPast
 
-        state.activeTab = .browse   // must NOT stamp
-        #expect(state.lastActivityTabVisit == .distantPast)
-
-        state.activeTab = .activity // MUST stamp
-        let elapsed = Date.now.timeIntervalSince(state.lastActivityTabVisit)
-        #expect(elapsed < 2, "lastActivityTabVisit should be near .now after selecting Activity tab")
+        for tab in AppTab.allCases {
+            state.activeTab = tab
+            #expect(state.lastActivityTabVisit == .distantPast,
+                    "lastActivityTabVisit must not change on tab switch to .\(tab.rawValue)")
+        }
 
         clearTabDefault()
         UserDefaults.standard.removeObject(forKey: "frus.lastActivityTabVisit")

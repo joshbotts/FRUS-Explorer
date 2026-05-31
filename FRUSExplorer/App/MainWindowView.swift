@@ -218,6 +218,21 @@ struct MainWindowView: View {
 
             Divider().frame(height: 20)
 
+            // Research window — annotated documents and tags
+            Button {
+                openWindow(id: "frus.research")
+            } label: {
+                Label(String(localized: "mainwindow.tools.research", defaultValue: "Research"),
+                      systemImage: "note.text")
+            }
+            .keyboardShortcut("r", modifiers: [.command, .option])
+            .help(String(
+                localized: "mainwindow.tools.research.help",
+                defaultValue: "Open the Research window — browse annotated documents by tag (⌘⌥R)"
+            ))
+
+            Divider().frame(height: 20)
+
             // Collections window
             Button {
                 openWindow(id: "frus.collections")

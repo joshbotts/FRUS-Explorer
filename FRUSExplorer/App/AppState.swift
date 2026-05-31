@@ -91,11 +91,14 @@ enum CloudKitSyncState: Sendable {
 /// The five top-level tabs available on iOS.
 ///
 /// `rawValue` is persisted to `UserDefaults` so the active tab survives app relaunch.
+/// The `.research` rawValue differs from the former `.activity` rawValue ("activity"),
+/// so devices upgrading from Activity will fall back to `.browse` on first launch —
+/// an acceptable one-time reset.
 #if os(iOS)
 enum AppTab: String, CaseIterable, Sendable {
     case browse      = "browse"
     case search      = "search"
-    case activity    = "activity"
+    case research    = "research"
     case collections = "collections"
     case settings    = "settings"
 }
@@ -527,9 +530,7 @@ final class AppState {
     }() {
         didSet {
             UserDefaults.standard.set(activeTab.rawValue, forKey: Keys.activeTab)
-            if activeTab == .activity {
-                lastActivityTabVisit = .now
-            }
+            // lastActivityTabVisit is retained for potential future Research-tab badge use.
             #if DEBUG
             print("[FRUSExplorer] Active tab: \(activeTab.rawValue)")
             #endif

@@ -202,6 +202,8 @@
 		AA22BB01CC03DD04EE2216 /* CollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2215 /* CollectionTests.swift */; };
 		AA22BB01CC03DD04EE2219 /* MacCollectionManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */; };
 		AA22BB01CC03DD04EE221A /* MacCollectionManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */; };
+		AA99BB01CC03DD04EE9902 /* ResearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA99BB01CC03DD04EE9901 /* ResearchView.swift */; };
+		AA99BB01CC03DD04EE9903 /* ResearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA99BB01CC03DD04EE9901 /* ResearchView.swift */; };
 		AA22BB01CC03DD04EE221C /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */; };
 		AA22BB01CC03DD04EE221D /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */; };
 		AA22BB01CC03DD04EE221F /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */; };
@@ -445,6 +447,7 @@
 		AA22BB01CC03DD04EE2212 /* CollectionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2215 /* CollectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionTests.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2218 /* MacCollectionManagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacCollectionManagerView.swift; sourceTree = "<group>"; };
+		AA99BB01CC03DD04EE9901 /* ResearchView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE221B /* DocxCollectionExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocxCollectionExporter.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE221E /* AppActivityTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2221 /* BibtexExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibtexExporter.swift; sourceTree = "<group>"; };
@@ -812,6 +815,14 @@
 			path = Collections;
 			sourceTree = "<group>";
 		};
+		AA99BB01CC03DD04EE99FF /* Research */ = {
+			isa = PBXGroup;
+			children = (
+				AA99BB01CC03DD04EE9901 /* ResearchView.swift */,
+			);
+			path = Research;
+			sourceTree = "<group>";
+		};
 		AA23BB01CC03DD04EE23FF /* SourceExplorer */ = {
 			isa = PBXGroup;
 			children = (
@@ -876,6 +887,7 @@
 				AA22BB01CC03DD04EE2239 /* Analytics */,
 				AA17BB01CC03DD04EE1709 /* CrossReference */,
 				AA22BB01CC03DD04EE22FF /* Collections */,
+				AA99BB01CC03DD04EE99FF /* Research */,
 				AA23BB01CC03DD04EE23FF /* SourceExplorer */,
 				AA24BB01CC03DD04EE24FF /* Settings */,
 				AA19BB01CC03DD04EE190F /* Summarization */,
@@ -1186,6 +1198,7 @@
 				AA22BB01CC03DD04EE2210 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2213 /* CollectionEditorView.swift in Sources */,
 				AA22BB01CC03DD04EE2219 /* MacCollectionManagerView.swift in Sources */,
+				AA99BB01CC03DD04EE9902 /* ResearchView.swift in Sources */,
 				AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */,
 				AA23BB01CC03DD04EE2304 /* NARACatalogClient.swift in Sources */,
 				AA50BB01CC03DD04EE5011 /* NARAAPIKeyStore.swift in Sources */,
@@ -1322,6 +1335,7 @@
 				AA22BB01CC03DD04EE2211 /* CollectionListView.swift in Sources */,
 				AA22BB01CC03DD04EE2214 /* CollectionEditorView.swift in Sources */,
 				AA22BB01CC03DD04EE221A /* MacCollectionManagerView.swift in Sources */,
+				AA99BB01CC03DD04EE9903 /* ResearchView.swift in Sources */,
 				AA23BB01CC03DD04EE2302 /* SourceNoteParser.swift in Sources */,
 				AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */,
 				AA50BB01CC03DD04EE5012 /* NARAAPIKeyStore.swift in Sources */,

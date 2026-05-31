@@ -209,19 +209,19 @@ struct TabBarAccessibilityTests {
         }
     }
 
-    @Test("activityTabBadgeClearsOnVisit — lastActivityTabVisit stamped when Activity tab selected")
-    func activityTabBadgeClearsOnVisit() {
-        cleanup()
+    @Test("researchTabExists — AppTab has .research case replacing former .activity case")
+    func researchTabExists() {
+        // The Activity tab was replaced by Research in Session 130.
+        // Verify the new case exists and persists correctly via activeTab.
         let state = AppState()
-        // Simulate "user has not visited Activity tab recently"
-        state.lastActivityTabVisit = .distantPast
-        #expect(state.lastActivityTabVisit == .distantPast)
-
-        // Select Activity tab — AppState.activeTab.didSet stamps lastActivityTabVisit = .now
-        state.activeTab = .activity
-        let elapsed = Date.now.timeIntervalSince(state.lastActivityTabVisit)
-        #expect(elapsed < 2, "lastActivityTabVisit should be stamped to near-now")
-        cleanup()
+        state.activeTab = .research
+        #expect(state.activeTab == .research)
+        // lastActivityTabVisit is retained in AppState for potential future badge use,
+        // but is no longer stamped automatically on tab switch.
+        let baseline = state.lastActivityTabVisit
+        state.activeTab = .browse
+        #expect(state.lastActivityTabVisit == baseline,
+                "lastActivityTabVisit should not change on tab switch")
     }
 
     @Test("settingsTabBadgeReturnsZeroWhenInfrastructureAbsent — no crash on nil pipeline or dm")

@@ -253,7 +253,7 @@ struct BrowserView: View {
                     // tabs, so only the project picker and download filter appear here.
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu {
-                            appState.activeTab = .activity
+                            appState.activeTab = .research
                         }
                     }
                     ToolbarItem(placement: .primaryAction) {
@@ -307,7 +307,7 @@ struct BrowserView: View {
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu {
                             #if os(iOS)
-                            appState.activeTab = .activity
+                            appState.activeTab = .research
                             #else
                             showProjectContext = true
                             #endif

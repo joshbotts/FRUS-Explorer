@@ -42,22 +42,11 @@ import SwiftData
 ///   1.5 — Session 99: Analytics toolbar button in BrowserTabView; AnalyticsView sheet
 ///   1.6 — Session 114: IndexingSummaryCard shown when completedIndexingMetadata non-nil;
 ///          transitions between banner ↔ card via .move + .opacity
+///   1.7 — Session 130: Activity tab replaced by Research tab (ResearchView); no badge
+///          on Research tab (it is a navigation tool, not an inbox)
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
-
-    /// All research notes; filtered in `newNoteCount` to those newer than last visit.
-    @Query private var allNotes: [ResearchNote]
-
-    /// Count of notes created after the last visit to the Activity tab.
-    ///
-    /// Uses `createdAt`; notes with a nil `createdAt` (legacy) are not counted.
-    private var newNoteCount: Int {
-        allNotes.filter { note in
-            guard let created = note.createdAt else { return false }
-            return created > appState.lastActivityTabVisit
-        }.count
-    }
 
     var body: some View {
         @Bindable var appState = appState
@@ -79,14 +68,13 @@ struct MainTabView: View {
                     .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
             Tab(
-                String(localized: "tab.activity", defaultValue: "Activity"),
-                systemImage: "person.crop.rectangle.stack",
-                value: AppTab.activity
+                String(localized: "tab.research", defaultValue: "Research"),
+                systemImage: "note.text",
+                value: AppTab.research
             ) {
-                ActivityTabView()
+                ResearchView()
                     .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
             }
-            .badge(newNoteCount)
             Tab(
                 String(localized: "tab.collections", defaultValue: "Collections"),
                 systemImage: "tray.2",
@@ -258,18 +246,4 @@ private struct SearchTabView: View {
     }
 }
 
-// MARK: - ActivityTabView
-
-/// Activity tab root on iOS.
-///
-/// `ProjectContextView` renders as a persistent tab root — the user sees their
-/// projects and activity feeds without tapping a toolbar button or dismissing a sheet.
-///
-/// Version history:
-///   1.0 — Session 44: initial implementation
-private struct ActivityTabView: View {
-    var body: some View {
-        ProjectContextView()
-    }
-}
 #endif
