@@ -47,6 +47,16 @@ import UniformTypeIdentifiers
 /// Version history:
 ///   1.0 — New UI scaffolding
 ///   1.1 — Session 101: Log Research Sessions toggle added to SettingsNotesPane
+///   1.2 — Session 130:
+///          • Window is resizable — NavigationSplitView + min-only frame was already
+///            sufficient; every pane (ScrollView-based or Notes split-layout) handles
+///            larger windows correctly without modification.
+///          • Menu buttons in Projects, Tags, and Summarization panes now show only
+///            the ellipsis.circle icon; `.menuIndicatorVisibility(.hidden)` removes
+///            the redundant disclosure chevron.
+///          • Notes pane: added horizontal padding to note rows for consistency.
+///          • Storage pane: index + volume size breakdown added below usage bar;
+///            indexing queue card and action buttons moved above the volume table.
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -476,7 +486,9 @@ private struct SettingsProjectsPane: View {
                     Label("Delete", systemImage: "trash")
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                // "ellipsis" (three dots) + the borderless-button disclosure chevron
+                // together form a single "more options" affordance (•••▾).
+                Image(systemName: "ellipsis")
                     .foregroundStyle(.tertiary)
                     .font(.system(size: 14))
             }
@@ -587,7 +599,9 @@ private struct SettingsTagsPane: View {
                     Label("Delete", systemImage: "trash")
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                // "ellipsis" (three dots) + the borderless-button disclosure chevron
+                // together form a single "more options" affordance (•••▾).
+                Image(systemName: "ellipsis")
                     .foregroundStyle(.tertiary)
                     .font(.system(size: 14))
             }
@@ -812,7 +826,8 @@ private struct SettingsNotesPane: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .contextMenu {
             Button(role: .destructive) {
                 noteToDelete = note
@@ -848,6 +863,9 @@ private struct SettingsNotesPane: View {
 ///   1.2 — Session 118: "Delete Index & Rebuild" action — wipes all SQLite index tables via
 ///          `removeAllVolumesFromIndex()` then rebuilds with `indexAllVolumes()`; shows
 ///          confirmation alert; `.rebuildAll` BatchKind surfaces distinct header in queue card
+///   1.3 — Session 130: `usageBreakdown` added (volume / index / summaries / total breakdown
+///          below the usage bar, matching the iOS Storage pane); indexing controls + queue card
+///          moved above the volume table so they're visible without scrolling
 private struct SettingsStoragePane: View {
 
     // MARK: - Batch tracking
@@ -890,13 +908,15 @@ private struct SettingsStoragePane: View {
 
                 if let report = storageReport {
                     usageBar(report: report)
+                        .padding(.bottom, 6)
+                    // Per-category breakdown — mirrors the iOS Storage pane.
+                    usageBreakdown(report: report)
                         .padding(.bottom, 16)
                 }
 
-                // Volume table
-                PaneSectionHeader(title: "Volumes on device")
-                volumeTable
-                    .padding(.bottom, 12)
+                // Indexing controls — placed above the volume table so they're
+                // immediately visible regardless of how many volumes are downloaded.
+                PaneSectionHeader(title: "Indexing")
 
                 // Live queue progress — shown while a Settings-triggered batch runs.
                 if settingsBatch != nil || appState.currentIndexingProgress != nil {
@@ -964,6 +984,11 @@ private struct SettingsStoragePane: View {
                     }
                     .padding(.top, 6)
                 }
+
+                // Volume table — below the controls so short volume lists don't push
+                // the indexing controls off-screen.
+                PaneSectionHeader(title: "Volumes on device")
+                volumeTable
             }
             .padding(24)
         }
@@ -1041,6 +1066,60 @@ private struct SettingsStoragePane: View {
             }
             .frame(height: 6)
         }
+    }
+
+    // MARK: Usage Breakdown
+
+    /// Per-category storage breakdown shown below the usage bar.
+    /// Mirrors the iOS `StorageManagementView` which uses `LabeledContent` rows.
+    private func usageBreakdown(report: StorageReport) -> some View {
+        VStack(spacing: 2) {
+            storageRow(label: "Volume XML files",
+                       bytes: report.totalVolumesBytes,
+                       icon: "doc.text")
+            storageRow(label: "Search index",
+                       bytes: report.totalIndexBytes,
+                       icon: "magnifyingglass")
+            if report.totalSummariesBytes > 0 {
+                storageRow(label: "AI summaries",
+                           bytes: report.totalSummariesBytes,
+                           icon: "sparkles")
+            }
+            Divider()
+            HStack {
+                Text("Total")
+                    .font(.system(size: 12, weight: .medium))
+                Spacer()
+                Text(ByteCountFormatter.string(
+                    fromByteCount: Int64(report.grandTotalBytes),
+                    countStyle: .file
+                ))
+                .font(.system(size: 12, weight: .medium))
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 2)
+        }
+        .padding(8)
+        .background(Color.secondary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+    }
+
+    private func storageRow(label: String, bytes: Int, icon: String) -> some View {
+        HStack {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+                .frame(width: 14)
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file))
+                .font(.system(size: 12).monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 2)
     }
 
     // MARK: Volume Table
@@ -2063,7 +2142,9 @@ private struct SettingsSummarizationPane: View {
                     Label("Delete", systemImage: "trash")
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                // "ellipsis" (three dots) + the borderless-button disclosure chevron
+                // together form a single "more options" affordance (•••▾).
+                Image(systemName: "ellipsis")
                     .foregroundStyle(.tertiary)
                     .font(.system(size: 14))
             }
