@@ -13,24 +13,25 @@ series more effectively.
 - Person mention indexing: cross-volume search by person reference with mention counts
 - Persons and terms glossaries persisted to SQLite; live autocomplete person picker
 - Accurate footnote numbers from TEI `@n` attributes (matching printed volume numbering)
-- Cross-reference graph with footnote and editorial note context on each edge
+- Cross-reference graph with node and edge labels, hover/click edge-context disclosure, 1°/2°/3° neighbourhood expansion, node context menu (Recenter Graph / Open in Main Window), page-based reference resolution, and an info popover explaining the graph
 - Document-level research notes and user tagging
+- **Research window / tab**: browse all annotated documents organized by user tag (document count descending); opens documents in the main window; macOS `⌘⌥R` shortcut; iOS Research tab (third tab)
 - AI summarization via Apple Intelligence (FoundationModels framework)
 - User-configurable summarization prompts with structured output support
 - Citation formatter (history.state.gov recommended style)
 - Citation lookup: resolve citations encountered in publications to FRUS documents (⌘⇧F on macOS, Find by Citation button in the macOS search window)
 - NARA Source Explorer: link document source notes to NARA Catalog records
-- Composable document collections with PDF, HTML, and DOCX export; configurable table-of-contents label style (citation or header/dateline) and per-document body and research note inclusion
+- Composable document collections with PDF, HTML, and DOCX export; document header (from indexed TEI `document_cache`) shown per row; per-entry delete, multi-note attachment, and inline date sort; configurable table-of-contents label style and per-document body/note inclusion
 - Corpus Analytics: corpus-wide term frequency histograms (Swift Charts) with Decade / Year / Month / Day / Subseries granularity, optional linear regression fit line, year-range filter, and metric explanation popover
-- CloudKit-synced user data (notes, tags, collections, projects)
+- CloudKit-synced user data (notes, tags, collections, projects) with live sync monitoring: macOS status bar and iOS Settings surface "Syncing…", "Synced", or "Sync Error" (with error detail) in real time via `NSPersistentCloudKitContainer.eventChangedNotification`
 - Offline functionality with download queue; volumes indexed automatically after download
 - Live indexing progress (stage, document count, throughput) in the volume browser; document list loads automatically on completion without navigating away; macOS status bar shows a tappable queue popover with per-volume progress, combined ETA, and pending-volume list for multi-volume batches
-- Per-volume indexing status, one-tap Reindex control, and destructive Delete Index & Rebuild action in Settings → Storage Management
+- macOS Settings → Storage: per-category usage breakdown (volume XML / search index / AI summaries / total); indexing controls (Index Remaining, Reindex All, Delete & Rebuild) positioned above the volume list for immediate access; per-volume reindex and remove controls
 - Breadcrumb navigation trail in the volume browser
 - Front matter sections (preface, introduction, errata) browsable directly from the corpus
 - Accurate subseries grouping in the volume browser and manifest diff
-- **iOS/iPadOS**: five-tab navigation — Browse, Search, Activity, Collections, Settings
-- **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons
+- **iOS/iPadOS**: five-tab navigation — Browse, Search, Research, Collections, Settings
+- **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons throughout the app
 
 ## Requirements
 
@@ -50,10 +51,24 @@ FRUSExplorer/
 ├── project.yml                   XcodeGen spec — edit this, not the .xcodeproj directly
 ├── FRUSExplorer/                 Main app source
 │   ├── App/                      Entry point, AppState, root views
-│   ├── Distribution/             Direct-distribution-only code (SparkleUpdater, guarded by DIRECT_DISTRIBUTION flag)
+│   ├── Browser/                  Corpus / subseries / volume browser views
+│   ├── CrossReference/           Cross-reference graph, volume connection graph
+│   ├── Collections/              Collection editor, PDF/HTML/DOCX exporters
+│   ├── Research/                 Research window / tab (annotated documents by tag)
+│   ├── Search/                   SearchService, IndexingPipeline, SearchView
+│   ├── DocumentView/             Document display, research notes, cross-reference links
+│   ├── Summarization/            Apple Intelligence integration, prompt management
+│   ├── Analytics/                Corpus Analytics with Swift Charts
+│   ├── Citation/                 Citation formatter, lookup engine, BibTeX/RIS export
+│   ├── SourceExplorer/           NARA catalog integration
+│   ├── Downloads/                DownloadManager, download queue UI
+│   ├── Models/                   SwiftData models, manifest structs, supporting types
+│   ├── Settings/                 macOS FRUSSettingsView + iOS SettingsView
+│   ├── TEI/                      XML parser, AST types, renderer
+│   ├── Distribution/             Direct-distribution-only code (SparkleUpdater)
 │   ├── Resources/                Bundled data (manifest, taxonomy, subject tags)
 │   └── Localizable.strings       English base localisation
-├── FRUSExplorerTests/            Unit tests (511 tests, all passing)
+├── FRUSExplorerTests/            Unit tests (517 tests, all passing)
 ├── FRUSExplorerUITests/          UI tests
 ├── ManifestGenerator/            SPM tool: generates manifest.json from FRUS GitHub
 ├── TaxonomyGenerator/            SPM tool: generates volume-tag-taxonomy.json
@@ -147,6 +162,11 @@ If `project.yml` is modified, regenerate the `.xcodeproj` using XcodeGen:
 xcodegen generate --spec project.yml
 ```
 
+> **Note:** XcodeGen regenerates all file references. New source files added to directories
+> already tracked by the project (e.g. `FRUSExplorer/Research/`) will appear automatically
+> after regeneration. When XcodeGen is unavailable, file references can be added manually
+> to `project.pbxproj` following the existing `AA…` UUID pattern.
+
 ### Command-Line Tools
 
 ```sh
@@ -190,23 +210,28 @@ network access and must be verified manually before each release:
 | **FrontMatterTest** | Navigate to a volume preface; confirm "Read" button appears and opens document |
 | **IndexingProgressInBrowserTest** | Trigger "Index Now" from a CompilationView; confirm live progress bar appears (stage label + doc count + throughput), then doc list populates automatically on completion without navigating away |
 | **MacQueueProgressPanelTest** | Trigger download of ≥2 volumes simultaneously on macOS; confirm status-bar popover shows "Volume N of M", current-volume progress bar, combined ETA, and expandable pending-volume list; confirm popover closes when indexing finishes |
-| **StorageReindexTest** | Open Settings → Storage Management; confirm per-volume indexed badge; tap Reindex on an indexed volume; confirm it re-indexes and badge updates |
-| **DeleteIndexRebuildTest** | Open Settings → Storage Management; tap "Delete Index & Rebuild"; confirm confirmation alert appears; confirm that after accepting, all volumes are re-indexed from scratch and search results are correct |
+| **StorageReindexTest** | Open Settings → Storage; confirm indexing controls appear above the volume list; confirm per-volume indexed badge; tap Reindex on an indexed volume; confirm it re-indexes and badge updates; confirm per-category size breakdown (volumes / index / summaries / total) is displayed |
+| **DeleteIndexRebuildTest** | Open Settings → Storage; tap "Delete Index & Rebuild"; confirm confirmation alert appears; confirm that after accepting, all volumes are re-indexed from scratch and search results are correct |
 | **CrossRefNavigationTest** | Tap a cross-reference link in a document; confirm DocumentView loads the target document body (not just updates the nav title) |
+| **CrossRefGraphTest** | Open the cross-reference graph for a document with ≥3 direct references; hover over an edge midpoint to see footnote context; right-click a node and verify "Recenter Graph" and "Open in Main Window" options appear; switch to 2° and confirm 2nd-degree nodes appear in grey with connections to their 1st-degree neighbours; tap the info button (ⓘ) and confirm the explanation popover opens |
 | **SearchResultNavigationTest** | Select a search result; confirm the full document body loads in DocumentView, not just the header |
 | **SearchResultDisplayTest** | Run a keyword search; confirm result rows show the original document header and dateline text (e.g. "Memorandum of Conversation", "Washington, January 20, 1969."), not Porter-stemmed tokens |
+| **iOSSearchCapTest** | Run a broad search on iOS with a large corpus; confirm up to 500 results are returned with an over-cap guidance message when the cap is hit |
 | **MacSearchCapTest** | Run a broad search on macOS with a large corpus; confirm result count label shows "N of M total" when results are capped at 7,500, with guidance text below the list |
 | **SearchPerformanceTest** | Search a large corpus; results appear in <1 second |
 | **GraphRenderPerformanceTest** | Open a document with 20+ cross-references; confirm smooth animation; hover an edge to see context |
 | **AnalyticsGranularityTest** | Open Corpus Analytics; change the "Group by" picker through Decade / Year / Month / Day / Subseries; confirm chart updates at each granularity; toggle the fit-line switch and confirm the regression line appears/disappears; tap the info button and confirm the metric explanation popover opens |
-| **CollectionExportOptionsTest** | Open a collection with ≥2 entries and multiple research notes; verify per-entry include-body toggle hides/shows the body in the export; select multiple notes per entry; switch the ToC label picker between Citation and Header & Dateline; export to PDF, HTML, and DOCX; confirm italics render correctly (not as literal underscores) in all three formats |
+| **CollectionEnhancementsTest** | Open a collection with ≥3 entries; confirm the document header (from indexed TEI) appears between the document number and volume title; tap the trash icon to remove an entry; attach multiple notes via the note picker and confirm the row shows "N notes"; tap Sort by Date and confirm entries reorder chronologically; resize the Collections window and confirm the document list expands to fill the new height |
 | **FindByCitationMacTest** | On macOS, use both the ⌘⇧F shortcut and the "Find by Citation" button in the search window to open the Citation Lookup sheet; confirm a citation resolves to the correct document |
-| **CloudKitSyncTest** | Create a research note on device A; confirm it appears on device B |
+| **CloudKitSyncTest** | Create a research note on device A; confirm it appears on device B; verify the macOS status bar shows "Synced" after sync completes and "Sync Error" (with tooltip detail) if sync fails |
+| **CloudKitSyncDiagnosticsTest** | On iOS, open Settings; confirm an "iCloud Sync" section appears at the top showing the live sync state (enabled / syncing / synced / error with message) |
+| **ResearchWindowTest** | On macOS, open the Research window (⌘⌥R or Window menu); confirm the sidebar lists tags sorted by document count descending with a count badge; select a tag and confirm the document list shows only documents whose notes carry that tag; click a row and confirm the document opens in the main window; right-click and confirm "Show Cross-References" opens the graph window |
+| **ResearchTabTest** | On iOS, tap the Research tab (third tab); confirm "All Annotated Documents" entry shows the correct count; confirm tag entries appear sorted by document count; tap a tag and verify the document list; tap a document row and confirm navigation to the Browse tab with the document loaded |
 | **OfflineResilienceTest** | Disable network mid-session; confirm no crash or data loss |
 | **CrossPlatformVerification** | Verify all major workflows on macOS, iPadOS, and iPhone |
-| **iOSTabNavigationTest** | Verify all five tabs (Browse, Search, Activity, Collections, Settings) on iPhone |
-| **macOSSettingsSceneTest** | Open macOS Settings via ⌘,; verify all panes scroll correctly with long volume lists (Download Manager, Volume Management, Storage Management); verify per-volume reindex control and Delete Index & Rebuild button in Storage Management |
-| **MacTooltipsTest** | On macOS, hover over icon-only toolbar buttons throughout the app (document view toolbar, search window, Source Explorer, Collections, Analytics); confirm `.help()` tooltip appears for each |
+| **iOSTabNavigationTest** | Verify all five tabs (Browse, Search, Research, Collections, Settings) on iPhone |
+| **macOSSettingsSceneTest** | Open macOS Settings via ⌘,; verify all panes open correctly; in the Notes pane, confirm rows have consistent horizontal padding; in Storage, confirm per-category breakdown appears and indexing controls are above the volume list |
+| **MacTooltipsTest** | On macOS, hover over icon-only toolbar buttons throughout the app (document view toolbar, search window, corpus viewer, Source Explorer, Collections, Analytics, Research window); confirm `.help()` tooltip appears for each |
 
 ## Coding Standards
 
@@ -226,8 +251,10 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 ```
 ┌──────────────────────────────────────────────────┐
 │                  SwiftUI Views                    │
-│  iOS: MainTabView (5 tabs)                        │
-│  macOS: NavigationSplitView + Settings scene (⌘,) │
+│  iOS: MainTabView (Browse, Search, Research,      │
+│        Collections, Settings)                     │
+│  macOS: NavigationSplitView + Window scenes +     │
+│          Settings scene (⌘,)                      │
 ├──────────────────────────────────────────────────┤
 │              Service Layer                        │
 │  (Summarization, Search, Export, Citation,        │
@@ -236,7 +263,8 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 │   SwiftData      │   SQLite FTS5 + Auxiliary DB   │
 │  (User Data +    │   (Search Index +              │
 │   CloudKit Sync) │    Cross-References +          │
-│                  │    Person Mentions +            │
+│   [live sync     │    Page Ranges +               │
+│    monitoring])  │    Person Mentions +            │
 │                  │    Persons/Terms Glossaries +  │
 │                  │    Document Cache)             │
 ├──────────────────┴───────────────────────────────┤
@@ -249,6 +277,19 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 │   Manifest, iCloud Keychain)                      │
 └──────────────────────────────────────────────────┘
 ```
+
+### macOS Window Scenes
+
+| Scene ID | Title | Shortcut | Purpose |
+|---|---|---|---|
+| `frus.search` | Search | ⌘F | Full-text search with filters and pagination |
+| `frus.corpusBrowser` | Corpus Browser | — | Subseries/volume browser with volume-level graph |
+| `frus.crossReferenceGraph` | Cross-Reference Graph | — | Document ego graph with degree expansion |
+| `frus.sourceExplorer` | Source Explorer | — | NARA catalog integration |
+| `frus.analytics` | Corpus Analytics | — | Term frequency charts |
+| `frus.collections` | Collections | ⇧⌘K | Document collection editor and exporter |
+| `frus.research` | Research | ⌘⌥R | Annotated documents organized by user tag |
+| `about` | About FRUS Explorer | — | Version and acknowledgements |
 
 ## Bundle Identifiers
 
