@@ -888,13 +888,9 @@ private struct SettingsStoragePane: View {
 
     // MARK: - Storage overhead
 
-    /// Empirical ratio of index bytes to XML bytes.
-    ///
-    /// A typical FRUS volume XML file of 6 MB produces roughly 2–2.5 MB of search index
-    /// data across all auxiliary tables (FTS5 tokens, cross-references, person mentions,
-    /// page ranges, document cache). The 0.4 factor is a conservative estimate;
-    /// actual overhead varies from ~0.3× for short volumes to ~0.5× for long ones.
-    static let indexOverheadFactor: Double = 0.4
+    /// Cross-platform index size estimate. Use `StorageReport.indexOverheadFactor`
+    /// (defined in DownloadModels, calibrated with 552-volume measurements).
+    static var indexOverheadFactor: Double { StorageReport.indexOverheadFactor }
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -1156,15 +1152,16 @@ private struct SettingsStoragePane: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("On-device limit")
                     .font(.system(size: 13))
-                Text("App will warn before downloads exceed this threshold. Full corpus is ~3.4 GB.")
+                Text("App will warn before downloads exceed this limit. The full FRUS corpus uses ~3.4 GB of XML and ~9–10 GB of search index — approximately 13 GB total on device.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             Spacer()
             Picker("Limit", selection: $storageLimitGB) {
-                Text("1 GB").tag(1)
-                Text("2 GB").tag(2)
-                Text("3 GB").tag(3)
+                Text("5 GB").tag(5)
+                Text("10 GB").tag(10)
+                Text("15 GB").tag(15)
+                Text("20 GB").tag(20)
                 Text("No limit").tag(0)
             }
             .frame(width: 100)
@@ -1338,7 +1335,7 @@ private struct SettingsStoragePane: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-                .help("XML file: \(ByteCountFormatter.string(fromByteCount: Int64(entry.volumeFileBytes), countStyle: .file)). Estimated total including search index: ~\(ByteCountFormatter.string(fromByteCount: Int64(Int(Double(entry.volumeFileBytes) * (1 + Self.indexOverheadFactor))), countStyle: .file)).")
+                .help("XML file: \(ByteCountFormatter.string(fromByteCount: Int64(entry.volumeFileBytes), countStyle: .file)). Estimated total including search index: ~\(ByteCountFormatter.string(fromByteCount: Int64(Int(Double(entry.volumeFileBytes) * (1 + Self.indexOverheadFactor))), countStyle: .file)). The search index is typically 2.5–3× the XML file size; this figure is approximate.")
 
             indexStatusBadge(for: entry.volumeId)
                 .frame(width: 90, alignment: .leading)
@@ -1728,7 +1725,7 @@ private struct ManageStorageSheet: View {
                     Image(systemName: "info.circle")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
-                    Text("Sizes shown are the XML file + an estimated ~40% search index contribution. Actual index overhead varies by volume length; treat these figures as approximate.")
+                    Text("Sizes shown are the XML file + an estimated 2.8× search index contribution (based on full-corpus measurements: ~9–10 GB index for ~3.4 GB of XML). The index stores FTS5 tokens, full document text, cross-references, and other data. Actual per-volume overhead varies from roughly 2.5× to 3×; treat these figures as approximate.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -1951,7 +1948,7 @@ private struct SettingsAddVolumesPane: View {
         } message: {
             let limitStr = "\(storageLimitGB) GB"
             let projStr = ByteCountFormatter.string(fromByteCount: Int64(projectedTotalBytes), countStyle: .file)
-            Text("Downloading \(pendingVolumesForDownload.count) volume\(pendingVolumesForDownload.count == 1 ? "" : "s") would bring total storage to approximately \(projStr), exceeding your \(limitStr) limit.\n\nThe estimate includes a ~40% search index overhead per volume. Actual usage may differ.")
+            Text("Downloading \(pendingVolumesForDownload.count) volume\(pendingVolumesForDownload.count == 1 ? "" : "s") would bring total storage to approximately \(projStr), exceeding your \(limitStr) limit.\n\nThe estimate includes a 2.8× search index overhead (the full FRUS corpus produces roughly 2.5–3× its XML size in search index data). Actual usage will vary.")
         }
     }
 

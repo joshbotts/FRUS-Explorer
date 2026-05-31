@@ -68,6 +68,8 @@ public struct VolumeStorageEntry: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 05: initial implementation
+///   1.1 — Session 130: `indexOverheadFactor` constant added; calibrated with full-corpus
+///          measurements (552 volumes: macOS 10.09 GB index, iOS 8.77 GB index, ~3.4 GB XML)
 public struct StorageReport: Sendable {
     /// Sum of all downloaded volume XML file sizes.
     public let totalVolumesBytes: Int
@@ -83,4 +85,32 @@ public struct StorageReport: Sendable {
 
     /// Combined total of all managed storage.
     public var grandTotalBytes: Int { totalVolumesBytes + totalIndexBytes + totalSummariesBytes }
+
+    // MARK: - Index size estimation
+
+    /// Empirical ratio of search index bytes to volume XML bytes, calibrated against
+    /// a full 552-volume FRUS corpus download.
+    ///
+    /// Measurements (all 552 volumes, ~3.4 GB XML):
+    /// - macOS: 10.09 GB index → factor ≈ 2.97
+    /// - iOS:    8.77 GB index → factor ≈ 2.58
+    /// - Cross-platform average used here: **2.8**
+    ///
+    /// ## Why the index is so large
+    /// The index database stores document text in multiple forms to support fast
+    /// full-text search and TEI-faithful snippet rendering:
+    /// - **FTS5 posting lists** — token → document mapping (compressed but still large)
+    /// - **`document_cache.body_text`** — full unstemmed body text per document,
+    ///   used for snippet regeneration after FTS5 returns results
+    /// - **`document_cache` other columns** — header, dateline, source note, summaries
+    /// - **Auxiliary tables** — cross_references, page_ranges, person_mentions,
+    ///   persons, terms, document_dates
+    ///
+    /// XML files contain substantial tag markup that takes space but isn't indexed,
+    /// so the searchable text content per byte of XML is denser than the ratio suggests.
+    /// The actual factor ranges from ~2.5× for short volumes to ~3.0× for long ones.
+    ///
+    /// Use `indexOverheadFactor` for pre-download estimates and removal size
+    /// calculations. Always prefix displayed estimates with "~" and note the variance.
+    public static let indexOverheadFactor: Double = 2.8
 }

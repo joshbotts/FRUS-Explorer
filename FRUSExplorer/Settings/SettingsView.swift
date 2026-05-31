@@ -532,7 +532,7 @@ private struct DownloadsSettingsView: View {
             let projStr = ByteCountFormatter.string(fromByteCount: Int64(projectedTotaliOS), countStyle: .file)
             Text(String(
                 format: String(localized: "settings.download.limitWarning.message",
-                               defaultValue: "Downloading these volumes would bring total storage to approximately %@, exceeding your %@ limit. The estimate includes a ~40%% search index overhead per volume."),
+                               defaultValue: "Downloading these volumes would bring total storage to approximately %@, exceeding your %@ limit. The estimate uses a 2.8× search index factor (the full FRUS corpus produces roughly 2.5–3× its XML size in search index data)."),
                 projStr, limitStr
             ))
         }
@@ -771,7 +771,7 @@ private struct DownloadsSettingsView: View {
                 let limitBytes = storageLimitGBiOS * 1_073_741_824
                 let newOnly = toEnqueue.filter { !dm.isVolumeDownloaded($0.volumeId) }
                 let newBytes = newOnly.reduce(0) { $0 + $1.sizeBytes }
-                let estimated = Int(Double(newBytes) * 1.4)  // XML + ~40% index
+                let estimated = Int(Double(newBytes) * StorageReport.indexOverheadFactor)  // XML × 2.8 index overhead
                 let projected = report.grandTotalBytes + newBytes + estimated
                 if projected > limitBytes {
                     await MainActor.run {
@@ -876,13 +876,14 @@ private struct StorageManagementView: View {
         Form {
             Section(header: EmptyView(),
                     footer: Text(String(localized: "settings.storage.limit.footer",
-                                        defaultValue: "The app will warn before downloads exceed this threshold. The full FRUS corpus is approximately 3.4 GB."))) {
+                                        defaultValue: "The app will warn before downloads exceed this limit. The full FRUS corpus uses ~3.4 GB of XML and ~9 GB of search index — approximately 12–13 GB total on device."))) {
                 Picker(String(localized: "settings.storage.limit.label",
                               defaultValue: "On-Device Limit"),
                        selection: $storageLimitGB) {
-                    Text("1 GB").tag(1)
-                    Text("2 GB").tag(2)
-                    Text("3 GB").tag(3)
+                    Text("5 GB").tag(5)
+                    Text("10 GB").tag(10)
+                    Text("15 GB").tag(15)
+                    Text("20 GB").tag(20)
                     Text(String(localized: "settings.storage.limit.none",
                                 defaultValue: "No Limit")).tag(0)
                 }
