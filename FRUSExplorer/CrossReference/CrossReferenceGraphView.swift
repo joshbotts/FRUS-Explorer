@@ -739,6 +739,12 @@ struct CrossReferenceGraphView: View {
                 body:  String(localized: "graph.info.interact.body",
                               defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.")
             )
+            graphInfoRow(
+                title: String(localized: "graph.info.undownloaded.title",
+                              defaultValue: "Undownloaded volumes"),
+                body:  String(localized: "graph.info.undownloaded.body",
+                              defaultValue: "References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with an orange border and no title or date, and cannot be opened until the volume is downloaded.\n\nReferences from volumes you haven't indexed yet are not shown at all, because those volumes have never been parsed. An orange banner at the top of the graph appears when your inbound connections may be incomplete for this reason. Download and index additional volumes to fill in the missing edges.")
+            )
         }
         .padding(16)
         .frame(width: 360)
