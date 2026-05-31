@@ -82,6 +82,8 @@ import CoreSpotlight
 ///          sentinel store; tracker passed to IndexingPipeline for interrupted-state detection
 ///   3.6 — Session 130: Research window added (frus.research, ⌘⌥R); iOS Activity tab replaced
 ///          by Research tab in MainTabView
+///   3.7 — Session 130: boot-time DocumentTagAssignment→document_cache FTS5 sync;
+///          one-time migration of legacy document_cache.user_tag_ids to DocumentTagAssignment
 @main
 struct FRUSExplorerApp: App {
 
@@ -556,6 +558,21 @@ struct FRUSExplorerApp: App {
             }
         }
 
+        // Sync DocumentTagAssignment records from SwiftData into document_cache (FTS5)
+        // so search tag-filtering reflects the CloudKit-synced state. Also runs the
+        // one-time migration that promotes legacy document_cache.user_tag_ids values
+        // (pre-DocumentTagAssignment) to proper SwiftData records.
+        if let pipeline = appState.indexingPipeline,
+           let store = appState.crossReferenceStore {
+            Task {
+                await syncDocumentTagAssignmentsToFTS5(
+                    pipeline: pipeline,
+                    store: store,
+                    modelContainer: modelContainer
+                )
+            }
+        }
+
         // Wire the logging context last so the session log is ready before any
         // user interaction fires (document opens, searches) but after the
         // SwiftData container and schema are fully initialised.
@@ -602,6 +619,85 @@ struct FRUSExplorerApp: App {
         let dir = base.appendingPathComponent("FRUSExplorer", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("frus.db")
+    }
+
+    // MARK: - Document Tag Sync
+
+    /// Synchronises `DocumentTagAssignment` records from SwiftData into
+    /// `document_cache.user_tag_ids` (SQLite/FTS5) so that search tag-filtering
+    /// reflects the CloudKit-synced state on every device.
+    ///
+    /// Also performs a **one-time migration** (guarded by a UserDefaults flag) that
+    /// promotes legacy `document_cache.user_tag_ids` values written before
+    /// `DocumentTagAssignment` existed into proper SwiftData records. This ensures
+    /// devices that had direct tags before the migration don't lose them.
+    ///
+    /// Both operations are idempotent and run in a background Task so they don't
+    /// block app launch.
+    @MainActor
+    private func syncDocumentTagAssignmentsToFTS5(
+        pipeline: IndexingPipeline,
+        store: CrossReferenceStore,
+        modelContainer: ModelContainer
+    ) async {
+        let context = ModelContext(modelContainer)
+
+        // MARK: One-time migration: document_cache.user_tag_ids → DocumentTagAssignment
+        let migrationKey = "frus.migration.documentTagAssignment.v1"
+        if !UserDefaults.standard.bool(forKey: migrationKey) {
+            let legacyRows = (try? await store.documentsWithUserTags()) ?? []
+            if !legacyRows.isEmpty {
+                for row in legacyRows {
+                    let vId = row.volumeId
+                    let dId = row.documentId
+                    // Only create records when no assignments already exist for this doc.
+                    let existing = (try? context.fetch(
+                        FetchDescriptor<DocumentTagAssignment>(
+                            predicate: #Predicate<DocumentTagAssignment> { a in
+                                a.volumeId == vId && a.documentId == dId
+                            }
+                        )
+                    )) ?? []
+                    if existing.isEmpty {
+                        for tagId in row.userTagIds {
+                            context.insert(DocumentTagAssignment(
+                                volumeId: vId, documentId: dId, tagId: tagId
+                            ))
+                        }
+                    }
+                }
+                try? context.save()
+                #if DEBUG
+                print("[FRUSExplorer] Migrated \(legacyRows.count) document(s) from document_cache.user_tag_ids to DocumentTagAssignment")
+                #endif
+            }
+            UserDefaults.standard.set(true, forKey: migrationKey)
+        }
+
+        // MARK: Sync DocumentTagAssignment → document_cache.user_tag_ids
+        // Groups assignments by (volumeId, documentId) and pushes the tag string to
+        // the pipeline so the FTS5 search index reflects the SwiftData state.
+        let allAssignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
+        var byDocument: [String: [UUID]] = [:]
+        for a in allAssignments {
+            let key = "\(a.volumeId)/\(a.documentId)"
+            byDocument[key, default: []].append(a.tagId)
+        }
+        for (key, tagIds) in byDocument {
+            let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { continue }
+            let tagString = tagIds.map(\.uuidString).joined(separator: " ")
+            try? await pipeline.updateUserTagIds(
+                volumeId: parts[0],
+                documentId: parts[1],
+                userTagIds: tagString.isEmpty ? nil : tagString
+            )
+        }
+        #if DEBUG
+        if !byDocument.isEmpty {
+            print("[FRUSExplorer] Boot sync: pushed \(byDocument.count) document tag assignment(s) to FTS5")
+        }
+        #endif
     }
 
     // MARK: - CloudKit Diagnostics

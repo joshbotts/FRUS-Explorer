@@ -240,6 +240,8 @@
 		AA22BB01CC03DD04EE2251 /* SessionLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2249 /* SessionLogView.swift */; };
 		AA22BB01CC03DD04EE2253 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */; };
 		AA22BB01CC03DD04EE2254 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */; };
+		AA88BB01CC03DD04EE8802 /* DocumentTagAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA88BB01CC03DD04EE8801 /* DocumentTagAssignment.swift */; };
+		AA88BB01CC03DD04EE8803 /* DocumentTagAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA88BB01CC03DD04EE8801 /* DocumentTagAssignment.swift */; };
 		AA22BB01CC03DD04EE2256 /* DocumentHighlightTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */; };
 		AA22BB01CC03DD04EE2257 /* DocumentHighlightTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */; };
 		AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */; };
@@ -466,6 +468,7 @@
 		AA22BB01CC03DD04EE2246 /* ResearchSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchSession.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2249 /* SessionLogView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionLogView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentHighlight.swift; sourceTree = "<group>"; };
+		AA88BB01CC03DD04EE8801 /* DocumentTagAssignment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentTagAssignment.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentHighlightTextView.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARACatalogClient.swift; sourceTree = "<group>"; };
@@ -935,6 +938,7 @@
 				AA22BB01CC03DD04EE2233 /* SavedSearch.swift */,
 				AA22BB01CC03DD04EE2246 /* ResearchSession.swift */,
 				AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */,
+				AA88BB01CC03DD04EE8801 /* DocumentTagAssignment.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1110,6 +1114,7 @@
 				AA22BB01CC03DD04EE2247 /* ResearchSession.swift in Sources */,
 				AA22BB01CC03DD04EE2250 /* SessionLogView.swift in Sources */,
 				AA22BB01CC03DD04EE2253 /* DocumentHighlight.swift in Sources */,
+				AA88BB01CC03DD04EE8802 /* DocumentTagAssignment.swift in Sources */,
 				AA22BB01CC03DD04EE2256 /* DocumentHighlightTextView.swift in Sources */,
 				96D3EA2639884EDD9E2065AF /* MainTabView.swift in Sources */,
 				6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */,
@@ -1245,6 +1250,7 @@
 				AA22BB01CC03DD04EE2248 /* ResearchSession.swift in Sources */,
 				AA22BB01CC03DD04EE2251 /* SessionLogView.swift in Sources */,
 				AA22BB01CC03DD04EE2254 /* DocumentHighlight.swift in Sources */,
+				AA88BB01CC03DD04EE8803 /* DocumentTagAssignment.swift in Sources */,
 				AA22BB01CC03DD04EE2257 /* DocumentHighlightTextView.swift in Sources */,
 				1D450CCEF5BF408FB3368C6E /* MainTabView.swift in Sources */,
 				AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */,

@@ -68,8 +68,10 @@ import SwiftData
 ///   3.4 — Session 130: cloudKitSyncEnabled + cloudKitInitError for sync-state diagnostics
 ///   3.5 — Session 130: CloudKitSyncState enum + cloudKitSyncState for real-time event monitoring
 ///   3.6 — Session 130: cloudKitDiagnostic() now extracts per-item errors from CKPartialErrorsByItemIDKey
-///   3.7 — Session 130: documentTaggingGeneration counter so ResearchView can reload its
-///          SQLite-sourced directly-tagged-documents data when the user tags a document
+///   3.7 — Session 130: documentTaggingGeneration counter (removed in 3.8 — superseded by
+///          @Query allTagAssignments in ResearchView which is reactive natively)
+///   3.8 — Session 130: DocumentTagAssignment model; direct tag associations now live in
+///          SwiftData and sync via CloudKit
 ///          so CKError.partialFailure (code 2) surfaces actionable sub-error codes instead of
 ///          the useless "Some items failed." localizedDescription
 
@@ -344,15 +346,6 @@ final class AppState {
     /// Set by `MainWindowView` immediately before `openWindow(id: "frus.sourceExplorer")`
     /// is called. `SourceExplorerWindowView` passes this to `MacSourceExplorerView`.
     var currentSourceNote: String? = nil
-
-    /// Incremented each time a user tag is applied to or removed from a document via
-    /// `MacTagPickerSheet` or `TagPickerSheetView`. `ResearchView` observes this via
-    /// `.task(id:)` to reload its SQLite-sourced `directlyTaggedDocs` data.
-    ///
-    /// This is intentionally separate from the SwiftData `@Query` reactive chain because
-    /// document-level tags are stored in `document_cache.user_tag_ids` (SQLite), not in
-    /// SwiftData, so `@Query` observers cannot detect them directly.
-    var documentTaggingGeneration: Int = 0
 
     /// Incremented each time the full-text index is completely cleared (app reset).
     ///

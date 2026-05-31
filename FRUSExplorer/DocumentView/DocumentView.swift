@@ -1622,12 +1622,9 @@ private struct TagPickerSheetView: View {
         newTagName = ""
     }
 
-    @Environment(AppState.self) private var appState
-
     private func saveAndDismiss() {
         guard let pipeline = indexingPipeline else {
-            appState.documentTaggingGeneration += 1
-            try? modelContext.save()
+            syncAssignmentsToSwiftData()
             dismiss()
             return
         }
@@ -1644,12 +1641,32 @@ private struct TagPickerSheetView: View {
                 userTagIds: tagString
             )
             await MainActor.run {
-                appState.documentTaggingGeneration += 1
-                try? modelContext.save()
+                syncAssignmentsToSwiftData()
                 isSaving = false
                 dismiss()
             }
         }
+    }
+
+    /// Identical to MacTagPickerSheet.syncAssignmentsToSwiftData() — see that method
+    /// for documentation. Separate copy for this iOS-only private struct.
+    private func syncAssignmentsToSwiftData() {
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        let descriptor = FetchDescriptor<DocumentTagAssignment>(
+            predicate: #Predicate<DocumentTagAssignment> { a in
+                a.volumeId == vId && a.documentId == dId
+            }
+        )
+        for assignment in (try? modelContext.fetch(descriptor)) ?? [] {
+            modelContext.delete(assignment)
+        }
+        for tagId in selectedTagIds {
+            modelContext.insert(DocumentTagAssignment(
+                volumeId: vId, documentId: dId, tagId: tagId
+            ))
+        }
+        try? modelContext.save()
     }
 }
 

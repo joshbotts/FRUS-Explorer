@@ -39,6 +39,7 @@ extension ModelContainer {
             ResearchSession.self,
             SessionEvent.self,
             DocumentHighlight.self,
+            DocumentTagAssignment.self,
         ]
     }
 

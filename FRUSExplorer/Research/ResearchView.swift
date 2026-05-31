@@ -83,13 +83,14 @@ struct ResearchView: View {
     @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
 
+    /// Direct tag-to-document assignments from SwiftData (CloudKit-synced).
+    /// Reactive via `@Observable` — the Research window updates automatically when
+    /// the user tags a document on any device.
+    @Query private var allTagAssignments: [DocumentTagAssignment]
+
     @State private var selectedItem: ResearchSidebarItem? = .allNotes
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
     @State private var documentHeaders: [String: String] = [:]
-    /// Documents that have user tags set in `document_cache` (SQLite/FTS5), keyed by
-    /// `"volumeId/documentId"`. Populated independently of `allNotes` so tags applied
-    /// via "Tag Document" appear in the Research window without creating a ResearchNote.
-    @State private var directlyTaggedDocs: [String: [UUID]] = [:]
 
     // MARK: - Body
 
@@ -117,10 +118,8 @@ struct ResearchView: View {
         // Reload note-sourced headers when any note changes.
         .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
         .onChange(of: allNotes.first?.lastModified){ _, _ in Task { await loadHeaders() } }
-        // Reload SQLite-sourced directly-tagged documents whenever the user tags a
-        // document. AppState.documentTaggingGeneration is incremented by both
-        // MacTagPickerSheet and TagPickerSheetView after every tag save.
-        .task(id: appState.documentTaggingGeneration) { await loadDirectlyTaggedDocs() }
+        // directlyTaggedDocs is now derived from @Query allTagAssignments which is
+        // reactive natively — no explicit reload needed.
     }
 
     // MARK: - Sidebar
@@ -342,14 +341,15 @@ struct ResearchView: View {
 
     /// Loads all documents that have user tags set in `document_cache` (SQLite/FTS5).
     /// Called on first appear and whenever `AppState.documentTaggingGeneration` changes.
-    private func loadDirectlyTaggedDocs() async {
-        guard let store = appState.crossReferenceStore else { return }
-        let rows = (try? await store.documentsWithUserTags()) ?? []
+    /// Directly-tagged documents derived from the reactive `@Query allTagAssignments`.
+    /// Keyed by `"volumeId/documentId"` → `[UUID]` tag IDs.
+    private var directlyTaggedDocs: [String: [UUID]] {
         var result: [String: [UUID]] = [:]
-        for row in rows {
-            result["\(row.volumeId)/\(row.documentId)"] = row.userTagIds
+        for a in allTagAssignments {
+            let key = "\(a.volumeId)/\(a.documentId)"
+            result[key, default: []].append(a.tagId)
         }
-        directlyTaggedDocs = result
+        return result
     }
 
     // MARK: - Computed Data

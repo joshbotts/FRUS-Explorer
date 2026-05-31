@@ -1762,7 +1762,6 @@ private enum CitationPopoverStyle: String, CaseIterable, Identifiable {
 struct MacTagPickerSheet: View {
     let entry: DocumentBrowserEntry
     let indexingPipeline: IndexingPipeline?
-    @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
@@ -1922,10 +1921,9 @@ struct MacTagPickerSheet: View {
 
     private func saveAndDismiss() {
         guard let pipeline = indexingPipeline else {
-            // No pipeline (document not indexed): still bump the generation counter so
-            // ResearchView can reload its directly-tagged documents list.
-            appState.documentTaggingGeneration += 1
-            try? modelContext.save()   // persist any newly-created UserTag records
+            // No pipeline (unindexed doc): still write SwiftData assignments so the
+            // Research window reflects the selection via @Query.
+            syncAssignmentsToSwiftData()
             dismiss()
             return
         }
@@ -1942,13 +1940,42 @@ struct MacTagPickerSheet: View {
                 userTagIds: tagString
             )
             await MainActor.run {
-                // Signal ResearchView to reload its SQLite-sourced tag data.
-                appState.documentTaggingGeneration += 1
-                try? modelContext.save()   // persist any newly-created UserTag records
+                // Write DocumentTagAssignment records to SwiftData so the selection
+                // syncs via CloudKit and is visible to @Query observers in ResearchView.
+                syncAssignmentsToSwiftData()
                 isSaving = false
                 dismiss()
             }
         }
+    }
+
+    /// Replaces all `DocumentTagAssignment` records for the current document with the
+    /// current `selectedTagIds` selection, then saves the context.
+    ///
+    /// This keeps `DocumentTagAssignment` (SwiftData/CloudKit) in sync with
+    /// `document_cache.user_tag_ids` (SQLite/FTS5) written by the pipeline.
+    private func syncAssignmentsToSwiftData() {
+        let vId = entry.volumeId
+        let dId = entry.documentId
+
+        // Delete all existing assignments for this document.
+        let descriptor = FetchDescriptor<DocumentTagAssignment>(
+            predicate: #Predicate<DocumentTagAssignment> { a in
+                a.volumeId == vId && a.documentId == dId
+            }
+        )
+        for assignment in (try? modelContext.fetch(descriptor)) ?? [] {
+            modelContext.delete(assignment)
+        }
+
+        // Insert a new assignment for each selected tag.
+        for tagId in selectedTagIds {
+            modelContext.insert(DocumentTagAssignment(
+                volumeId: vId, documentId: dId, tagId: tagId
+            ))
+        }
+
+        try? modelContext.save()
     }
 }
 
