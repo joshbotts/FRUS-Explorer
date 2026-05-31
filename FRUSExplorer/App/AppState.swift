@@ -66,6 +66,25 @@ import SwiftData
 ///   3.3 — Session 116: indexingQueuePosition + indexingQueueVolumeTitles for multi-volume queue banner;
 ///          indexingQueueAverageDocsPerSecond + indexingQueueAverageDocumentCount for queue ETA
 ///   3.4 — Session 130: cloudKitSyncEnabled + cloudKitInitError for sync-state diagnostics
+///   3.5 — Session 130: CloudKitSyncState enum + cloudKitSyncState for real-time event monitoring
+
+// MARK: - CloudKitSyncState
+
+/// Live status of the CloudKit sync channel, updated from
+/// `NSPersistentCloudKitContainer.eventChangedNotification` events.
+///
+/// Version history:
+///   1.0 — Session 130: initial implementation
+enum CloudKitSyncState: Sendable {
+    /// No sync event has been received yet since app launch.
+    case unknown
+    /// An import or export operation is currently in flight.
+    case syncing
+    /// The most recent sync event completed successfully.
+    case succeeded(Date)
+    /// The most recent sync event failed; `message` is `NSError.localizedDescription`.
+    case failed(String)
+}
 
 // MARK: - AppTab
 
@@ -158,6 +177,15 @@ final class AppState {
     /// by `FRUSExplorerApp.bootApp()`. Displayed in the Settings → Storage panel and in
     /// `StatusBarView`'s sync-state tooltip so users can self-diagnose the failure.
     var cloudKitInitError: String? = nil
+
+    /// Real-time CloudKit sync state, updated by observing
+    /// `NSPersistentCloudKitContainer.eventChangedNotification`.
+    ///
+    /// `.unknown` at startup; transitions to `.syncing` when an import or export begins,
+    /// `.succeeded` when it completes cleanly, or `.failed` when it errors. A `.failed`
+    /// state surfaces the error message in the macOS status bar and iOS Settings so
+    /// developers and users can see exactly what is preventing data from syncing.
+    var cloudKitSyncState: CloudKitSyncState = .unknown
 
     // MARK: - Network State
 

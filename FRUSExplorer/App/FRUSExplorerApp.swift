@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import CoreData       // NSPersistentCloudKitContainer for sync-event monitoring
 import CoreSpotlight
 
 /// Root entry point for FRUS Explorer.
@@ -493,6 +494,42 @@ struct FRUSExplorerApp: App {
             #if DEBUG
             print("[FRUSExplorer] Deferred onboarding scope enqueued: \(toEnqueue.count) volumes.")
             #endif
+        }
+
+        // Observe real-time CloudKit sync events so the UI can surface failures
+        // (e.g. schema migration needed, network error, quota exceeded) that occur
+        // after container init — these are invisible without this observer.
+        // Only installed when CloudKit was successfully initialised; the observer
+        // captures only Sendable values before crossing into the @MainActor Task.
+        if appState.cloudKitSyncEnabled {
+            let eventNotificationName = NSPersistentCloudKitContainer.eventChangedNotification
+            let eventUserInfoKey = NSPersistentCloudKitContainer.eventNotificationUserInfoKey
+            NotificationCenter.default.addObserver(
+                forName: eventNotificationName,
+                object: nil,
+                queue: .main
+            ) { [appState] notification in
+                // Extract only Sendable values on the calling thread before the
+                // @MainActor hop, avoiding Sendable warnings on NSPersistentCloudKitContainer.Event.
+                guard let event = notification.userInfo?[eventUserInfoKey]
+                        as? NSPersistentCloudKitContainer.Event else { return }
+                let hasEnded  = event.endDate != nil
+                let succeeded = event.succeeded
+                let errorMsg  = event.error?.localizedDescription
+                let endDate   = event.endDate ?? Date.now
+                Task { @MainActor in
+                    if !hasEnded {
+                        appState.cloudKitSyncState = .syncing
+                    } else if succeeded {
+                        appState.cloudKitSyncState = .succeeded(endDate)
+                    } else {
+                        let msg = errorMsg ?? String(localized: "cloudkit.error.unknown",
+                                                     defaultValue: "Unknown sync error")
+                        appState.cloudKitSyncState = .failed(msg)
+                        print("[CloudKit] ⚠️ Sync event failed: \(msg)")
+                    }
+                }
+            }
         }
 
         // Wire the logging context last so the session log is ready before any

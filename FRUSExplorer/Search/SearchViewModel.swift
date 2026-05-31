@@ -40,6 +40,8 @@ import Observation
 ///   1.2 — Session 40: `personRefText` property and `applyParameters(_:)` added
 ///   1.3 — Session 62: `showFilterPanel` semantics changed from inline panel to sheet flag
 ///   1.4 — Session 100: `appState` property for logEvent(.searchSubmit) after search()
+///   1.5 — Session 130: `searchHardLimit = 500` passed to `searchService.search()`; iOS
+///          was silently capped at `defaultPageSize = 20` (the macOS VM already used 7 500)
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -111,6 +113,15 @@ final class SearchViewModel {
     var showFilterPanel: Bool = false
     var navigationPath: [DocumentBrowserEntry] = []
 
+    // MARK: - Pagination
+
+    /// Maximum results fetched by `search()`.
+    ///
+    /// iOS shows all results in a continuous list (no client-side pagination), so a
+    /// cap of 500 balances completeness against list-render memory. The macOS search
+    /// window uses a separate hard limit of 7 500 with explicit page controls.
+    static let searchHardLimit: Int = 500
+
     // MARK: - Dependencies
 
     private let searchService: SearchService
@@ -168,7 +179,8 @@ final class SearchViewModel {
         searchError = nil
         hasSearched = true
         do {
-            results = try await searchService.search(parameters: params)
+            results = try await searchService.search(parameters: params,
+                                                     limit: Self.searchHardLimit)
             #if DEBUG
             print("[SearchView] Search returned \(results.count) results")
             #endif
@@ -247,6 +259,10 @@ final class SearchViewModel {
     }
 
     var resultCount: Int { results.count }
+
+    /// `true` when the result set hit `searchHardLimit`, indicating the query matches
+    /// more documents than are shown. Users should narrow their search terms.
+    var isResultsCapped: Bool { results.count == Self.searchHardLimit }
 
     var hasActiveFilters: Bool {
         if documentTypeFilter != .all { return true }

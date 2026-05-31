@@ -834,30 +834,10 @@ struct StatusBarView: View {
 
             Spacer()
 
-            // Right: iCloud sync state — reflects the actual CloudKit init result.
-            if appState.cloudKitSyncEnabled {
-                Label(
-                    String(localized: "statusBar.sync.enabled",
-                           defaultValue: "iCloud Sync"),
-                    systemImage: "checkmark.icloud"
-                )
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
-                .help(String(localized: "statusBar.sync.enabled.help",
-                             defaultValue: "User data syncs via iCloud across your devices"))
-            } else {
-                Label(
-                    String(localized: "statusBar.sync.disabled",
-                           defaultValue: "Local Only"),
-                    systemImage: "icloud.slash"
-                )
-                .font(.system(size: 11))
-                .foregroundStyle(.orange)
-                .help(String(
-                    localized: "statusBar.sync.disabled.help",
-                    defaultValue: "iCloud sync is unavailable — notes, collections, and tags won't sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
-                ))
-            }
+            // Right: iCloud sync state.
+            // Layer 1 — container init: shows "Local Only" if CloudKit init failed.
+            // Layer 2 — live events: reflects the most recent import/export event.
+            cloudKitStatusChip
         }
         .padding(.horizontal, 14)
         .frame(height: 24)
@@ -1005,6 +985,73 @@ struct StatusBarView: View {
             segments.append("\(meta.datedDocumentCount)/\(meta.totalDocuments) dated")
         }
         return segments.joined(separator: " · ")
+    }
+
+    // MARK: - CloudKit Status Chip
+
+    /// Renders a compact sync-state label for the right side of the status bar.
+    ///
+    /// Shows "Local Only" when CloudKit init failed, a spinning indicator while a
+    /// sync event is in flight, and the error message (with tooltip) when the most
+    /// recent event failed.  Falls back to the plain "iCloud Sync" label when no
+    /// events have fired yet (i.e. all is well and quiet).
+    @ViewBuilder
+    private var cloudKitStatusChip: some View {
+        if !appState.cloudKitSyncEnabled {
+            // Container fell back to local SQLite — CloudKit init failed at launch.
+            Label(
+                String(localized: "statusBar.sync.disabled", defaultValue: "Local Only"),
+                systemImage: "icloud.slash"
+            )
+            .font(.system(size: 11))
+            .foregroundStyle(.orange)
+            .help(String(
+                localized: "statusBar.sync.disabled.help",
+                defaultValue: "iCloud sync is unavailable — notes, collections, and tags won't sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
+            ))
+        } else {
+            switch appState.cloudKitSyncState {
+            case .unknown:
+                // Waiting for the first event; assume OK until proven otherwise.
+                Label(
+                    String(localized: "statusBar.sync.enabled", defaultValue: "iCloud Sync"),
+                    systemImage: "checkmark.icloud"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+                .help(String(localized: "statusBar.sync.enabled.help",
+                             defaultValue: "User data syncs via iCloud across your devices"))
+
+            case .syncing:
+                HStack(spacing: 4) {
+                    ProgressView().scaleEffect(0.55, anchor: .center).frame(width: 11, height: 11)
+                    Text(String(localized: "statusBar.sync.syncing", defaultValue: "Syncing…"))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .help(String(localized: "statusBar.sync.syncing.help",
+                             defaultValue: "iCloud is syncing your notes, collections, and tags"))
+
+            case .succeeded:
+                Label(
+                    String(localized: "statusBar.sync.synced", defaultValue: "Synced"),
+                    systemImage: "checkmark.icloud"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+                .help(String(localized: "statusBar.sync.synced.help",
+                             defaultValue: "iCloud sync completed successfully"))
+
+            case .failed(let message):
+                Label(
+                    String(localized: "statusBar.sync.error", defaultValue: "Sync Error"),
+                    systemImage: "exclamationmark.icloud"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(.orange)
+                .help(message)
+            }
+        }
     }
 
     @ViewBuilder

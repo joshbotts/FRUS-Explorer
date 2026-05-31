@@ -71,10 +71,18 @@ struct SettingsView: View {
     #endif
 
     @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
+    @Environment(AppState.self) private var appState
 
     var body: some View {
         NavigationStack {
             Form {
+                // iCloud sync status — visible on iOS where there is no macOS status bar.
+                // Shows container init result and the most recent sync event outcome.
+                Section(String(localized: "settings.section.icloud",
+                               defaultValue: "iCloud Sync")) {
+                    iCloudSyncStatusRow
+                }
+
                 Section(String(localized: "settings.section.general",
                                defaultValue: "General")) {
                     NavigationLink(String(localized: "settings.row.display",
@@ -166,6 +174,83 @@ struct SettingsView: View {
         // NavigationLink destinations inherit a proper sized container and render correctly.
         .frame(minWidth: 500, minHeight: 440)
         #endif
+    }
+
+    // MARK: - iCloud Sync Status Row
+
+    @ViewBuilder
+    private var iCloudSyncStatusRow: some View {
+        if !appState.cloudKitSyncEnabled {
+            LabeledContent(
+                String(localized: "settings.icloud.status", defaultValue: "Status")
+            ) {
+                Label(
+                    String(localized: "settings.icloud.localOnly", defaultValue: "Local Only"),
+                    systemImage: "icloud.slash"
+                )
+                .foregroundStyle(.orange)
+            }
+            Text(String(localized: "settings.icloud.localOnly.detail",
+                        defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        } else {
+            switch appState.cloudKitSyncState {
+            case .unknown:
+                LabeledContent(
+                    String(localized: "settings.icloud.status", defaultValue: "Status")
+                ) {
+                    Label(
+                        String(localized: "settings.icloud.enabled", defaultValue: "iCloud Sync Enabled"),
+                        systemImage: "checkmark.icloud"
+                    )
+                    .foregroundStyle(.secondary)
+                }
+
+            case .syncing:
+                LabeledContent(
+                    String(localized: "settings.icloud.status", defaultValue: "Status")
+                ) {
+                    HStack(spacing: 6) {
+                        ProgressView().scaleEffect(0.75, anchor: .center)
+                        Text(String(localized: "settings.icloud.syncing", defaultValue: "Syncing…"))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+            case .succeeded(let date):
+                LabeledContent(
+                    String(localized: "settings.icloud.status", defaultValue: "Status")
+                ) {
+                    Label(
+                        String(localized: "settings.icloud.synced", defaultValue: "Synced"),
+                        systemImage: "checkmark.icloud"
+                    )
+                    .foregroundStyle(.green)
+                }
+                LabeledContent(
+                    String(localized: "settings.icloud.lastSync", defaultValue: "Last Sync")
+                ) {
+                    Text(date, style: .relative) + Text(String(localized: "settings.icloud.ago", defaultValue: " ago"))
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            case .failed(let message):
+                LabeledContent(
+                    String(localized: "settings.icloud.status", defaultValue: "Status")
+                ) {
+                    Label(
+                        String(localized: "settings.icloud.error", defaultValue: "Sync Error"),
+                        systemImage: "exclamationmark.icloud"
+                    )
+                    .foregroundStyle(.orange)
+                }
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 }
 

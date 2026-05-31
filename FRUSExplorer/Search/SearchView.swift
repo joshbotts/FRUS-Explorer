@@ -260,17 +260,30 @@ struct SearchView: View {
     }
 
     private var resultCountHeader: some View {
-        HStack {
-            Text(
-                String(
-                    format: String(localized: "search.count %lld",
-                                   defaultValue: "%lld results"),
-                    Int64(vm.resultCount)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(
+                    String(
+                        format: String(localized: "search.count %lld",
+                                       defaultValue: "%lld results"),
+                        Int64(vm.resultCount)
+                    )
                 )
-            )
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            Spacer()
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                Spacer()
+            }
+            // Over-cap guidance: shown when the result set hit the hard limit, meaning
+            // there are likely more matching documents not visible in the list.
+            if vm.isResultsCapped {
+                Text(String(
+                    format: String(localized: "search.capped.guidance %lld",
+                                   defaultValue: "Showing the first %lld results — add more keywords or filters to see more specific results."),
+                    Int64(SearchViewModel.searchHardLimit)
+                ))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
