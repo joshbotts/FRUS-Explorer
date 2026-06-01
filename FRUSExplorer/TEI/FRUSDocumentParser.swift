@@ -926,9 +926,29 @@ private struct ParseFrame {
 
 /// Minimal SAX delegate that extracts `PersonEntry` records from a FRUS volume.
 ///
-/// Handles two common structures found across the corpus:
-///   - `<listPerson><person xml:id="p1"><persName>Name</persName><note>Desc</note></person></listPerson>`
-///   - `<div type="persons"><list><item xml:id="p1">Name: description</item></list></div>`
+/// Handles the common structures found across the corpus:
+///
+/// **`<listPerson>` structure** (modern FRUS, teiHeader or body):
+/// ```xml
+/// <listPerson>
+///   <person xml:id="AlexanderHaig">
+///     <persName>Haig, Alexander M.</persName>
+///     <note>National Security Advisor</note>
+///   </person>
+/// </listPerson>
+/// ```
+///
+/// **`<div>` list structure** (older FRUS, front or back matter):
+/// ```xml
+/// <div type="persons">
+///   <list>
+///     <item xml:id="AlexanderHaig">Haig, Alexander M.: National Security Advisor</item>
+///   </list>
+/// </div>
+/// ```
+///
+/// The `<div>` type can be `"persons"`, `"persname"`, or `"listofpersons"` depending
+/// on the volume era. All are treated identically.
 private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     var entries: [PersonEntry] = []
@@ -941,14 +961,23 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private var elementDepth = 0
     private var personsSectionDepth = -1
 
+    /// Returns `true` when the given element starts a persons section.
+    private static func isPersonsSection(elementName: String, attributes: [String: String]) -> Bool {
+        if elementName == "listPerson" { return true }
+        if elementName == "div" {
+            let type = attributes["type"]?.lowercased() ?? ""
+            return type == "persons" || type == "persname" || type == "listofpersons"
+        }
+        return false
+    }
+
     func parser(_ parser: XMLParser,
                 didStartElement elementName: String,
                 namespaceURI: String?,
                 qualifiedName qName: String?,
                 attributes attributeDict: [String: String] = [:]) {
         elementDepth += 1
-        if (elementName == "div" && attributeDict["type"] == "persons") ||
-            elementName == "listPerson" {
+        if Self.isPersonsSection(elementName: elementName, attributes: attributeDict) {
             inPersonsSection = true
             personsSectionDepth = elementDepth
         }
@@ -1031,7 +1060,16 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
                 qualifiedName qName: String?,
                 attributes attributeDict: [String: String] = [:]) {
         elementDepth += 1
-        if elementName == "div" && attributeDict["type"] == "terms" {
+        // Accept "terms", "abbreviations", and "listofabbreviations" — FRUS uses
+        // different type values across volume eras.
+        if elementName == "div" {
+            let type = attributeDict["type"]?.lowercased() ?? ""
+            if type == "terms" || type == "abbreviations" || type == "listofabbreviations" {
+                inTermsSection = true
+                termsSectionDepth = elementDepth
+            }
+        } else if elementName == "listBibl" && !inTermsSection {
+            // Some volumes use <listBibl> for abbreviations.
             inTermsSection = true
             termsSectionDepth = elementDepth
         }

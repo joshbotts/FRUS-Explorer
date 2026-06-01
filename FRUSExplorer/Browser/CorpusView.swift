@@ -18,17 +18,14 @@ import SwiftUI
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 58: wrap bare interpolation in accessibilityLabel with String(localized:) (F-022)
 ///   1.2 — Session 87: People cross-volume index entry
+///   1.3 — Session 130: removed CorpusStatsView section (volume/document counts and date ranges
+///          from the manifest were inaccurate or irrelevant to in-app navigation)
 struct CorpusView: View {
 
     let vm: BrowserViewModel
 
     var body: some View {
         List {
-            // Statistics header
-            Section {
-                CorpusStatsView(stats: vm.corpusStats)
-            }
-
             // Cross-volume indices
             Section {
                 Button {
@@ -82,57 +79,6 @@ struct CorpusView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
-    }
-}
-
-// MARK: - CorpusStatsView
-
-private struct CorpusStatsView: View {
-    let stats: CorpusStats
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 24) {
-                StatCell(
-                    label: String(localized: "browser.stats.volumes", defaultValue: "Volumes"),
-                    value: "\(stats.totalVolumes)"
-                )
-                StatCell(
-                    label: String(localized: "browser.stats.documents", defaultValue: "Documents"),
-                    value: stats.totalDocuments > 0
-                        ? "\(stats.totalDocuments)"
-                        : String(localized: "browser.stats.unknown", defaultValue: "—")
-                )
-            }
-            if let earliest = stats.earliestDocumentDate, let latest = stats.latestDocumentDate {
-                Text("Documents: \(earliest) – \(latest)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if let earliest = stats.earliestPublicationDate, let latest = stats.latestPublicationDate {
-                Text("Published: \(earliest) – \(latest)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-private struct StatCell: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(.title2.bold())
-            Text(label).font(.caption).foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            String(localized: "browser.corpus.stat.a11y",
-                   defaultValue: "\(value) \(label)")
-        )
     }
 }
 

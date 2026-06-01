@@ -200,12 +200,17 @@ public struct ASTToRenderNodeConverter {
             return [.footnoteMarker(id: id, displayLabel: displayLabel)]
 
         case .persName(let ref, let children):
-            let person = ref.flatMap { personLookup?($0) }
-            return [.persNameLink(ref: ref, children: convertNodes(children), person: person)]
+            // Normalise the ref by stripping the leading '#' that FRUS TEI uses
+            // (e.g. ref="#AlexanderHaig"). PersonEntry.ref stores the bare xml:id
+            // value without '#', so the lookup only succeeds after normalisation.
+            let normRef = ref.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
+            let person  = normRef.flatMap { personLookup?($0) }
+            return [.persNameLink(ref: normRef, children: convertNodes(children), person: person)]
 
         case .gloss(let ref, let children):
-            let entry = ref.flatMap { glossLookup?($0) }
-            return [.glossLink(ref: ref, children: convertNodes(children), entry: entry)]
+            let normRef = ref.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
+            let entry   = normRef.flatMap { glossLookup?($0) }
+            return [.glossLink(ref: normRef, children: convertNodes(children), entry: entry)]
 
         case .crossReference(let target, let volumeId, let children):
             return [.crossRefLink(target: target, volumeId: volumeId, children: convertNodes(children))]

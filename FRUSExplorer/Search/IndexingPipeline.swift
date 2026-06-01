@@ -1333,7 +1333,13 @@ public actor IndexingPipeline {
         var result = Set<String>()
         for node in nodes {
             if case .persName(let ref, let children) = node {
-                if let ref, !ref.isEmpty { result.insert(ref) }
+                if let ref, !ref.isEmpty {
+                    // FRUS TEI uses ref="#AlexanderHaig" with a leading '#'.
+                    // Strip it so person_mentions.person_ref matches persons.ref (which
+                    // comes from the xml:id attribute and never carries a '#' prefix).
+                    let normalised = ref.hasPrefix("#") ? String(ref.dropFirst()) : ref
+                    result.insert(normalised)
+                }
                 result.formUnion(extractPersonRefs(from: children))
             } else {
                 result.formUnion(extractPersonRefs(from: node.children))
