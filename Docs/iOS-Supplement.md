@@ -82,7 +82,7 @@ This is the Research window from macOS, adapted for touch.
 
 `[SCREENSHOT: Collections tab on iPhone showing collection list with a "+" button in the navigation bar]`
 
-**What's the same:** Creating collections, adding documents (individually or by tag), smart collection linking, export formats (PDF and HTML).
+**What's the same:** Creating collections, adding documents (individually or by tag), smart collection linking, export formats (PDF, HTML, and DOCX).
 
 **What's different:**
 

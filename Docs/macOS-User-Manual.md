@@ -364,7 +364,7 @@ The graph uses a three-column layout:
 
 When a document has more than 30 references, nodes from the same volume are grouped into a collapsible cluster. Click a cluster to expand it.
 
-For documents with very large reference networks (more than 20 refs), the layout switches to a force-directed spring simulation that animates into a stable arrangement.
+For documents with very large reference networks (more than 21 nodes), the layout switches to a force-directed spring simulation that animates into a stable arrangement.
 
 ### 8.2 Interacting with Nodes
 
@@ -419,7 +419,6 @@ Results are ranked by confidence:
 | Matched by page number | Page range overlaps |
 | Match — document number assigned digitally | Pre-1955 volumes where document numbers were added digitally |
 | Possible match — nearest is *N* | Fuzzy document-number match |
-| Matched via volume title; verify | Title fragment identified the volume |
 | Volume identified — download to find document | Volume not yet downloaded |
 | Best guess | Explanation provided |
 
@@ -474,6 +473,7 @@ Click **Export** in the Collections window to generate a formatted document.
 |--------|---------|
 | **PDF** | Printing, archiving, sharing with colleagues who do not have FRUS Explorer |
 | **HTML** | Web-based viewing, browser printing with custom CSS, embedding links |
+| **DOCX** | Microsoft Word format with styles, footnotes, and internal links |
 
 The export includes:
 - Collection title and note
@@ -483,7 +483,7 @@ The export includes:
 
 After exporting, a Finder reveal button opens the enclosing folder.
 
-`[SCREENSHOT: Export format picker sheet with PDF and HTML options]`
+`[SCREENSHOT: Export format picker sheet with PDF, HTML, and DOCX options]`
 
 ---
 
@@ -518,13 +518,13 @@ The summary appears in the strip above the document. If a previously generated s
 4. Write your prompt instructions.
 5. Save.
 
-**Templates** — Six built-in templates are available as starting points: Diplomatic Exchange, Policy Decision, Intelligence Report, Meeting Record, Crisis Event, and Biographical Reference.
+**Templates** — Eight built-in templates are available as starting points: General Summary, Diplomatic Exchange, Policy Decision, Analytical Report, Meeting Record, Crisis Event, Individual Role Trace, and Relevance Assessment.
 
 `[SCREENSHOT: User prompt creation form showing the schema builder for a Structured output type]`
 
 ### 11.3 Long Documents
 
-Documents that are too long for a single model call are automatically chunked at TEI structural boundaries, each chunk summarized independently, and then synthesized into a final summary. A **"synthesized"** indicator appears in the summary strip when this has occurred.
+Documents that are too long for a single model call are automatically chunked at TEI structural boundaries, each chunk summarized independently, and then combined into a final summary. A **"Summarized in sections"** indicator appears in the summary strip when this has occurred.
 
 ### 11.4 Background Summarization
 
