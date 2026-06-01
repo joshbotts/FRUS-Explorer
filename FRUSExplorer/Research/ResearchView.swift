@@ -13,35 +13,38 @@ import SwiftData
 
 /// Identifies a selection in the Research sidebar.
 enum ResearchSidebarItem: Hashable {
-    /// Synthetic "all annotated documents" entry — shows every document with at least one note.
+    /// Synthetic "all research documents" entry — union of notes, direct tags, and collections.
     case allNotes
-    /// A specific user tag — shows only documents whose notes carry this tag ID.
+    /// A specific user tag — shows only documents whose notes or direct assignments carry this tag ID.
     case tag(UUID)
+    /// A specific named collection — shows only documents in that `Collection`.
+    case collection(UUID)
 }
 
 // MARK: - ResearchDocumentEntry
 
-/// One row in the Research document list, aggregating all annotations for a single
-/// `(volumeId, documentId)` pair from BOTH data sources:
+/// One row in the Research document list, aggregating all researcher engagement for a single
+/// `(volumeId, documentId)` pair from three independent sources:
 ///
 /// - `ResearchNote` records in SwiftData (`latestNote`, `noteCount`, note-level tags)
-/// - Direct user tags stored in `document_cache.user_tag_ids` (SQLite/FTS5)
+/// - `DocumentTagAssignment` records in SwiftData (direct user tags)
+/// - `CollectionEntry` records in SwiftData (collection membership)
 ///
-/// `latestNote` is `nil` when a document has only direct tags (no notes). Both
-/// annotation types contribute to `allTagIds` so the Research window reflects the
-/// complete tagging picture regardless of how the tag was applied.
+/// `latestNote` is `nil` when a document has only direct tags or collection entries (no notes).
+/// `collectionIds` is empty when the document has not been added to any collection.
 struct ResearchDocumentEntry: Identifiable {
     /// Stable key: `"volumeId/documentId"`.
     let id: String
     let volumeId: String
     let documentId: String
-    /// Most-recently-modified note, or `nil` if this document has only direct tags.
+    /// Most-recently-modified note, or `nil` if this document has no notes.
     let latestNote: ResearchNote?
     /// Total number of `ResearchNote` records for this document.
     let noteCount: Int
-    /// Union of tags from all notes (`ResearchNote.userTagIds`) and direct
-    /// `document_cache.user_tag_ids` assignments.
+    /// Union of tags from all notes and direct `DocumentTagAssignment` records.
     let allTagIds: Set<UUID>
+    /// IDs of `Collection` records this document belongs to.
+    let collectionIds: Set<UUID>
 }
 
 // MARK: - ResearchView
@@ -69,9 +72,9 @@ struct ResearchDocumentEntry: Identifiable {
 /// Version history:
 ///   1.0 — Session 130: initial implementation
 ///   1.1 — Session 130: explicit context saves + onChange triggers for note reactivity
-///   1.2 — Session 130: directly-tagged documents (document_cache.user_tag_ids) merged
-///          as a first-class data source alongside SwiftData notes; tags and notes are
-///          now independent annotation types in the Research window
+///   1.2 — Session 130: directly-tagged documents merged as a first-class data source
+///   1.3 — Session 130: collection membership merged as a third data source; "By Collection"
+///          sidebar section; collection chips in document rows; ResearchSidebarItem.collection
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -84,9 +87,11 @@ struct ResearchView: View {
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
 
     /// Direct tag-to-document assignments from SwiftData (CloudKit-synced).
-    /// Reactive via `@Observable` — the Research window updates automatically when
-    /// the user tags a document on any device.
     @Query private var allTagAssignments: [DocumentTagAssignment]
+
+    /// Collections and their entries — the third annotation source.
+    @Query(sort: \Collection.name) private var allCollections: [Collection]
+    @Query private var allCollectionEntries: [CollectionEntry]
 
     @State private var selectedItem: ResearchSidebarItem? = .allNotes
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
@@ -131,7 +136,7 @@ struct ResearchView: View {
                 Label {
                     HStack {
                         Text(String(localized: "research.sidebar.allNotes",
-                                    defaultValue: "All Annotated Documents"))
+                                    defaultValue: "All Research Documents"))
                         Spacer()
                         Text("\(allAnnotatedDocumentCount)")
                             .font(.system(size: 12))
@@ -141,6 +146,30 @@ struct ResearchView: View {
                     Image(systemName: "note.text")
                 }
                 .tag(ResearchSidebarItem.allNotes)
+            }
+
+            // Collections sorted alphabetically by name
+            if !sortedCollectionsWithCounts.isEmpty {
+                Section(String(localized: "research.sidebar.collections", defaultValue: "By Collection")) {
+                    ForEach(sortedCollectionsWithCounts, id: \.collection.id) { item in
+                        Label {
+                            HStack {
+                                Text(item.collection.name.isEmpty
+                                     ? String(localized: "research.sidebar.collections.untitled",
+                                              defaultValue: "Untitled Collection")
+                                     : item.collection.name)
+                                Spacer()
+                                Text("\(item.count)")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "tray.2")
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        .tag(ResearchSidebarItem.collection(item.collection.id))
+                    }
+                }
             }
 
             // Tags sorted by document count descending
@@ -174,18 +203,25 @@ struct ResearchView: View {
     @ViewBuilder
     private func documentList(for item: ResearchSidebarItem) -> some View {
         let docs = documents(for: item)
+        let emptyDescription: String = {
+            switch item {
+            case .allNotes:
+                return String(localized: "research.empty.noDocs.allNotes",
+                              defaultValue: "Research notes, tags, and collections you add from the document view will appear here.")
+            case .tag:
+                return String(localized: "research.empty.noDocs.tag",
+                              defaultValue: "No documents have notes or tags matching this tag.")
+            case .collection:
+                return String(localized: "research.empty.noDocs.collection",
+                              defaultValue: "This collection has no documents.")
+            }
+        }()
         Group {
             if docs.isEmpty {
                 ContentUnavailableView(
-                    String(localized: "research.empty.noDocs", defaultValue: "No Annotated Documents"),
+                    String(localized: "research.empty.noDocs", defaultValue: "No Documents"),
                     systemImage: "note.text",
-                    description: Text(
-                        item == .allNotes
-                            ? String(localized: "research.empty.noDocs.allNotes",
-                                     defaultValue: "Research notes you add from the document view will appear here.")
-                            : String(localized: "research.empty.noDocs.tag",
-                                     defaultValue: "No documents have notes with this tag.")
-                    )
+                    description: Text(emptyDescription)
                 )
             } else {
                 List {
@@ -263,6 +299,27 @@ struct ResearchView: View {
                         ))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+
+            // Collection chips — shown for documents in one or more collections
+            let collectionNames = entry.collectionIds
+                .compactMap { id in allCollections.first(where: { $0.id == id })?.name }
+                .sorted()
+            if !collectionNames.isEmpty {
+                HStack(spacing: 4) {
+                    ForEach(collectionNames, id: \.self) { name in
+                        HStack(spacing: 2) {
+                            Image(systemName: "tray.2")
+                                .font(.system(size: 8))
+                            Text(name.isEmpty
+                                 ? String(localized: "research.row.untitledCollection",
+                                          defaultValue: "Untitled Collection")
+                                 : name)
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(Color.secondary)
                     }
                 }
             }
@@ -354,15 +411,40 @@ struct ResearchView: View {
 
     // MARK: - Computed Data
 
-    /// Total distinct documents that have at least one note OR at least one direct tag.
-    private var allAnnotatedDocumentCount: Int {
-        let noteKeys = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
-        let tagKeys  = Set(directlyTaggedDocs.keys)
-        return noteKeys.union(tagKeys).count
+    /// Doc key → Set of Collection IDs the document belongs to, derived from `allCollectionEntries`.
+    private var collectionMemberships: [String: Set<UUID>] {
+        var result: [String: Set<UUID>] = [:]
+        for entry in allCollectionEntries {
+            guard !entry.volumeId.isEmpty, !entry.documentId.isEmpty else { continue }
+            result["\(entry.volumeId)/\(entry.documentId)", default: []].insert(entry.collectionId)
+        }
+        return result
     }
 
-    /// Tags paired with their distinct-document count (from BOTH notes and direct tags),
-    /// sorted most-used first, filtering out tags with zero annotated documents.
+    /// Collections paired with their document count, sorted alphabetically.
+    /// Filters out smart collections (savedSearchId != nil) and empty collections.
+    private var sortedCollectionsWithCounts: [(collection: Collection, count: Int)] {
+        allCollections.compactMap { collection in
+            // Exclude smart collections — their document list is dynamic, not curated entries.
+            guard collection.savedSearchId == nil else { return nil }
+            let count = (collection.documentEntries ?? []).count
+            guard count > 0 else { return nil }
+            return (collection: collection, count: count)
+        }
+        .sorted {
+            $0.collection.name.localizedCaseInsensitiveCompare($1.collection.name) == .orderedAscending
+        }
+    }
+
+    /// Total distinct documents across all three annotation sources: notes, direct tags, collections.
+    private var allAnnotatedDocumentCount: Int {
+        let noteKeys       = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
+        let tagKeys        = Set(directlyTaggedDocs.keys)
+        let collectionKeys = Set(collectionMemberships.keys)
+        return noteKeys.union(tagKeys).union(collectionKeys).count
+    }
+
+    /// Tags paired with their distinct-document count (notes + direct tags), sorted most-used first.
     private var sortedTagsWithCounts: [(tag: UserTag, count: Int)] {
         allTags.compactMap { tag in
             let fromNotes = Set(
@@ -382,61 +464,64 @@ struct ResearchView: View {
         .sorted { $0.count > $1.count }
     }
 
-    /// Aggregates annotations (notes + direct tags) by document for the given sidebar
-    /// item. Documents with only direct tags (no notes) appear with `latestNote == nil`.
-    /// Sorted newest-note-first; directly-tagged-only documents sort after noted ones.
+    /// Aggregates all three annotation sources by document for the given sidebar item.
+    ///
+    /// - `.allNotes`: union of notes, direct tags, and collection entries
+    /// - `.tag(id)`: documents whose notes or direct assignments carry this tag
+    /// - `.collection(id)`: documents in this specific collection
+    ///
+    /// Documents with no notes have `latestNote == nil`. Sorted newest-note-first;
+    /// unannotated documents (collection/tag only) sort after noted documents.
     private func documents(for item: ResearchSidebarItem) -> [ResearchDocumentEntry] {
-        // Collect relevant document keys from notes.
-        let relevantNotes: [ResearchNote]
-        switch item {
-        case .allNotes:    relevantNotes = Array(allNotes)
-        case .tag(let id): relevantNotes = allNotes.filter { $0.userTagIds.contains(id) }
-        }
-
-        // Collect relevant document keys from directly-tagged docs.
-        let directKeys: Set<String>
+        // Determine the set of document keys that match this sidebar selection.
+        let matchingKeys: Set<String>
         switch item {
         case .allNotes:
-            directKeys = Set(directlyTaggedDocs.keys)
+            matchingKeys = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
+                .union(directlyTaggedDocs.keys)
+                .union(collectionMemberships.keys)
         case .tag(let id):
-            directKeys = Set(directlyTaggedDocs.filter { $0.value.contains(id) }.map(\.key))
+            let fromNotes  = Set(allNotes.filter { $0.userTagIds.contains(id) }
+                                         .map { "\($0.volumeId)/\($0.documentId)" })
+            let fromDirect = Set(directlyTaggedDocs.filter { $0.value.contains(id) }.map(\.key))
+            matchingKeys = fromNotes.union(fromDirect)
+        case .collection(let collId):
+            matchingKeys = Set(collectionMemberships.filter { $0.value.contains(collId) }.map(\.key))
         }
 
-        // Group notes by document key.
+        // Seed the grouped dictionary so every matching key has an entry (possibly []).
         var grouped: [String: [ResearchNote]] = [:]
-        for note in relevantNotes {
-            grouped["\(note.volumeId)/\(note.documentId)", default: []].append(note)
-        }
-        // Add directly-tagged documents that have no notes in this selection.
-        for key in directKeys where grouped[key] == nil {
-            grouped[key] = []
+        for key in matchingKeys { grouped[key] = [] }
+
+        // Distribute notes into the correct buckets.
+        for note in allNotes {
+            let key = "\(note.volumeId)/\(note.documentId)"
+            if matchingKeys.contains(key) {
+                grouped[key, default: []].append(note)
+            }
         }
 
         return grouped.compactMap { key, notes -> ResearchDocumentEntry? in
             let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { return nil }
 
-            let sortedNotes = notes.sorted {
-                ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast)
-            }
+            let sortedNotes  = notes.sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
             let directTagIds = Set(directlyTaggedDocs[key] ?? [])
             let noteTagIds   = Set(notes.flatMap { $0.userTagIds })
+            let colIds       = collectionMemberships[key] ?? []
 
             return ResearchDocumentEntry(
                 id: key,
                 volumeId: parts[0],
                 documentId: parts[1],
-                latestNote: sortedNotes.first,   // nil for directly-tagged-only docs
+                latestNote: sortedNotes.first,
                 noteCount: notes.count,
-                allTagIds: noteTagIds.union(directTagIds)
+                allTagIds: noteTagIds.union(directTagIds),
+                collectionIds: colIds
             )
         }
         .sorted {
-            // Documents with notes sort by most-recent note; directly-tagged-only
-            // documents (latestNote == nil) sort after all noted documents.
-            let lhs = $0.latestNote?.lastModified ?? .distantPast
-            let rhs = $1.latestNote?.lastModified ?? .distantPast
-            return lhs > rhs
+            ($0.latestNote?.lastModified ?? .distantPast) > ($1.latestNote?.lastModified ?? .distantPast)
         }
     }
 
@@ -445,10 +530,16 @@ struct ResearchView: View {
         switch item {
         case .allNotes:
             return String(localized: "research.sidebar.allNotes",
-                          defaultValue: "All Annotated Documents")
+                          defaultValue: "All Research Documents")
         case .tag(let id):
             return allTags.first(where: { $0.id == id })?.name
                 ?? String(localized: "research.list.unknownTag", defaultValue: "Tag")
+        case .collection(let id):
+            let name = allCollections.first(where: { $0.id == id })?.name ?? ""
+            return name.isEmpty
+                ? String(localized: "research.list.untitledCollection",
+                         defaultValue: "Untitled Collection")
+                : name
         }
     }
 }
