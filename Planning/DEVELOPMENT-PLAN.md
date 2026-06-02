@@ -96,6 +96,14 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 118 | Consolidate Storage & Index | Absorb Reindex All into `StorageManagementView`; remove standalone Reindex pane; rename Summarization Prompts row | 51, 67, 90 | ✅ |
 | 119–127 | Bug fixes, polish, tooltips, search improvements, analytics | macOS search triple-result bug fixed; tag-save pipeline for iOS+macOS; iOS Add-to-Collection sheet; search tooltips; analytics polish; breadcrumb overlap fix | various | ✅ |
 | 128 | Collection Export Improvements | Fix `_text_` italic markup in all 3 exporters; ToC label style picker (citation vs. header+dateline); per-document body/note content selection | 22, 81, 83 | ✅ |
+| 129 | WebKit Migration — HTML Serializer | `FRUSRenderNodeHTMLSerializer`; all node types; `data-skip` attributes; `colspan`/`rowspan` tables; footnote `popover` markup; round-trip tests | 81, 128 |
+| 130 | WebKit Migration — WKWebView Wrapper & Theming | `FRUSDocumentWebView`; `WKWebViewConfiguration` factory; HTML template; CSS bundle; `FRUSTheme` → CSS variable bridge; dark mode + Dynamic Type | 129 |
+| 131 | WebKit Migration — Interactive Elements & Document View | `FRUSURLSchemeHandler`; footnote popover verification; replace `FRUSDocumentRenderer` in `DocumentView` + `MacDocumentView`; feature flag | 130 |
+| 132 | WebKit Migration — JS Flat-Text Offset Engine | `frus-offset-engine.js`; Swift–JS offset equivalence test harness; `FRUSOffsetEngineTests` | 131 |
+| 133 | WebKit Migration — CSS Custom Highlight API | `frus-highlights.js`; `CSS.highlights.set()` rendering; stale highlight amber overlay; stored highlight injection on page load | 132 |
+| 134 | WebKit Migration — Highlight Selection & Creation | `frus-selection.js`; `selectionChanged` message handler; reverse offset mapping; `DocumentHighlightTextView` disabled | 133 |
+| 135 | WebKit Migration — Collection Export Unification | Refactor `HTMLCollectionExporter` to use shared serializer; `frus-print.css`; footnote print layout | 129, 128 |
+| 136 | WebKit Migration — Cleanup, Accessibility & Testing | Delete `FRUSDocumentRenderer` (1,117 lines) + `DocumentHighlightTextView` (646 lines); accessibility audit; VoiceOver testing; performance profiling | 131–135 |
 
 ---
 
