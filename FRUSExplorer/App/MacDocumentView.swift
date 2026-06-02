@@ -139,6 +139,51 @@ struct MacDocumentView: View {
                 documentIdentityView
                     .padding(.bottom, 6)
 
+                // Highlights banner — Option A: passive indicator in normal reading
+                // mode so researchers know this document has saved highlights.
+                if !highlights.isEmpty {
+                    Button {
+                        highlightCoordinator.showHighlightMode = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "highlighter")
+                                .font(.system(size: 11))
+                            Text(highlights.count == 1
+                                 ? String(localized: "document.mac.highlightsBanner.one",
+                                          defaultValue: "1 highlight — click to view")
+                                 : String(format: String(localized: "document.mac.highlightsBanner.many",
+                                                         defaultValue: "%lld highlights — click to view"),
+                                          Int64(highlights.count)))
+                                .font(.system(size: 11))
+                            Spacer()
+                            HStack(spacing: 3) {
+                                ForEach(
+                                    Array(Dictionary(grouping: highlights, by: { $0.color }).keys)
+                                        .sorted(by: { $0.rawValue < $1.rawValue }),
+                                    id: \.self
+                                ) { color in
+                                    Circle()
+                                        .fill(color.swiftUIColor.opacity(0.75))
+                                        .frame(width: 8, height: 8)
+                                }
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 48)
+                        .padding(.vertical, 6)
+                        .background(Color.secondary.opacity(0.06))
+                    }
+                    .buttonStyle(.plain)
+                    .help(String(localized: "document.mac.highlightsBanner.help",
+                                 defaultValue: "Enter highlight mode to view and create highlights"))
+                    .accessibilityLabel(String(
+                        localized: "document.mac.highlightsBanner.a11y",
+                        defaultValue: "View document highlights"
+                    ))
+                }
+
                 if let renderModel = vm.renderModel {
                     FRUSDocumentRenderer(
                         nodes: renderModel.bodyNodes,
@@ -254,12 +299,14 @@ struct MacDocumentView: View {
     private func createHighlight(color: DocumentHighlight.Color) {
         guard let range = highlightCoordinator.highlightTextSelection,
               let model = vm.renderModel else { return }
+        let selected = extractHighlightText(from: model, nsRange: range)
         let highlight = DocumentHighlight(
             volumeId: entry.volumeId,
             documentId: entry.documentId,
             startOffset: range.location,
             endOffset: range.location + range.length,
             colorTag: color.rawValue,
+            selectedText: selected,
             renderingVersion: ASTToRenderNodeConverter.renderingVersion(for: model)
         )
         modelContext.insert(highlight)

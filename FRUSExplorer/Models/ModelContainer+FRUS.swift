@@ -63,6 +63,26 @@ extension ModelContainer {
     /// ## Calling convention
     /// Call once at app startup from `FRUSExplorerApp`. The resulting container
     /// is injected into the SwiftUI environment via `.modelContainer(_:)`.
+    // MARK: - CloudKit schema note
+    //
+    // SwiftData's NSPersistentCloudKitContainer.initializeCloudKitSchema(options:) cannot
+    // be called directly because SwiftData wraps the container and does not expose it in
+    // any public API. The container's managed object model is generated internally and is
+    // not accessible via Schema or ModelContainer public interfaces.
+    //
+    // Instead, CloudKit record types are created lazily when the first record of each
+    // type is pushed. This means model types that have never had a record (e.g.
+    // SavedSearch if no user has saved a search, DocumentHighlight if no one has
+    // highlighted text) will be ABSENT from the CloudKit schema until that happens.
+    //
+    // To proactively populate the CloudKit schema with all 13 record types:
+    //   1. Run a Development build with a real iCloud account signed in.
+    //   2. Save at least one search → creates SavedSearch schema entry.
+    //   3. Highlight text in a document → creates DocumentHighlight schema entry.
+    //   4. CloudKit Dashboard → Deploy Schema Changes to Production.
+    //
+    // See Planning/130-CloudKit-SchemaInit.md for full context.
+
     static func makeFRUSContainer() -> (container: ModelContainer, cloudKitEnabled: Bool) {
         // Skip CloudKit when running under the unit-test host (XCTestConfigurationFilePath)
         // or the UI-test app process (FRUS_UI_TEST_MODE injected via launchEnvironment).

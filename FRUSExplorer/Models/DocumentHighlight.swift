@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 // MARK: - DocumentHighlight
 
@@ -78,6 +79,15 @@ import SwiftData
     /// Stored as a plain `UUID?` (not a `@Relationship`) for CloudKit safety.
     var noteId: UUID? = nil
 
+    // MARK: - Excerpt
+
+    /// The verbatim text the user selected when creating this highlight.
+    ///
+    /// Stored at creation time so the Research window can display highlight
+    /// excerpts without re-parsing the full TEI XML for each document.
+    /// Empty string for highlights created before Session 131.
+    var selectedText: String = ""
+
     // MARK: - Versioning
 
     /// 16-character hex prefix of SHA-256(rawXMLBytes ++ converterVersionBytes).
@@ -98,6 +108,7 @@ import SwiftData
         endOffset: Int,
         colorTag: String = "yellow",
         noteId: UUID? = nil,
+        selectedText: String = "",
         renderingVersion: String
     ) {
         self.id = UUID()
@@ -107,6 +118,7 @@ import SwiftData
         self.endOffset = endOffset
         self.colorTag = colorTag
         self.noteId = noteId
+        self.selectedText = selectedText
         self.renderingVersion = renderingVersion
         self.createdAt = .now
     }
@@ -126,4 +138,32 @@ extension DocumentHighlight {
 
     /// Convenience accessor for the typed color.
     var color: Color { Color(rawValue: colorTag) ?? .yellow }
+}
+
+// MARK: - Color display helpers
+
+extension DocumentHighlight.Color {
+
+    /// Localised display name for use in the Research sidebar and color pickers.
+    var displayName: String {
+        switch self {
+        case .yellow: return String(localized: "highlight.color.yellow", defaultValue: "Yellow")
+        case .green:  return String(localized: "highlight.color.green",  defaultValue: "Green")
+        case .blue:   return String(localized: "highlight.color.blue",   defaultValue: "Blue")
+        case .pink:   return String(localized: "highlight.color.pink",   defaultValue: "Pink")
+        }
+    }
+
+    /// SwiftUI `Color` matching this highlight color at full opacity.
+    var swiftUIColor: SwiftUI.Color {
+        switch self {
+        case .yellow: return .yellow
+        case .green:  return .green
+        case .blue:   return .blue
+        case .pink:   return .pink
+        }
+    }
+
+    /// SF Symbol name for use in the Research sidebar icon column.
+    var symbolName: String { "highlighter" }
 }

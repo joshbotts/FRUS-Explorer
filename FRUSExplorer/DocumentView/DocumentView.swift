@@ -318,6 +318,51 @@ struct DocumentView: View {
                         .padding(.top, 12)
                 }
 
+                // Highlights banner — Option A: passive indicator so researchers
+                // know this document has saved highlights without requiring
+                // highlight mode to be active during normal reading.
+                if !highlights.isEmpty {
+                    Button {
+                        toggleHighlightMode()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "highlighter")
+                                .font(.caption)
+                            Text(highlights.count == 1
+                                 ? String(localized: "document.highlightsBanner.one",
+                                          defaultValue: "1 highlight — tap to view")
+                                 : String(format: String(localized: "document.highlightsBanner.many",
+                                                         defaultValue: "%lld highlights — tap to view"),
+                                          Int64(highlights.count)))
+                                .font(.caption)
+                            Spacer()
+                            // Color dots for quick visual summary
+                            HStack(spacing: 3) {
+                                ForEach(
+                                    Array(Dictionary(grouping: highlights, by: { $0.color }).keys)
+                                        .sorted(by: { $0.rawValue < $1.rawValue }),
+                                    id: \.self
+                                ) { color in
+                                    Circle()
+                                        .fill(color.swiftUIColor.opacity(0.75))
+                                        .frame(width: 8, height: 8)
+                                }
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                        .padding(.vertical, 7)
+                        .background(Color.secondary.opacity(0.07))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(
+                        localized: "document.highlightsBanner.a11y",
+                        defaultValue: "View document highlights"
+                    ))
+                }
+
                 // Document body — embedInScrollView: false because this LazyVStack
                 // is already inside DocumentView's own ScrollView.  Nested ScrollViews
                 // capture all scroll and click events on macOS, which breaks link taps
@@ -852,12 +897,14 @@ struct DocumentView: View {
     private func createHighlight(color: DocumentHighlight.Color) {
         guard let range = highlightTextSelection,
               let model = vm?.renderModel else { return }
+        let selected = extractHighlightText(from: model, nsRange: range)
         let highlight = DocumentHighlight(
             volumeId: entry.volumeId,
             documentId: entry.documentId,
             startOffset: range.location,
             endOffset: range.location + range.length,
             colorTag: color.rawValue,
+            selectedText: selected,
             renderingVersion: ASTToRenderNodeConverter.renderingVersion(for: model)
         )
         modelContext.insert(highlight)

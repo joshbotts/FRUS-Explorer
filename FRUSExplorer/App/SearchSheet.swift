@@ -60,10 +60,14 @@ import SwiftUI
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
 
     @State private var searchVM = MacSearchViewModel()
     @State private var showAdvancedFilters = false
     @State private var showCitationLookup = false
+    @State private var showSaveSearchSheet = false
+    @State private var showSavedSearches = false
+    @State private var saveSearchName = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -134,6 +138,17 @@ struct MacSearchWindowView: View {
         .sheet(isPresented: $showCitationLookup) {
             CitationLookupView()
         }
+        .sheet(isPresented: $showSaveSearchSheet) {
+            saveSearchSheet
+                .modelContainer(modelContext.container)
+        }
+        .sheet(isPresented: $showSavedSearches) {
+            SavedSearchesView { saved in
+                searchVM.applyParameters(saved.searchParameters)
+                Task { await searchVM.performSearch(service: appState.searchService) }
+            }
+            .modelContainer(modelContext.container)
+        }
     }
 
     // MARK: - Search Input Row
@@ -203,7 +218,99 @@ struct MacSearchWindowView: View {
                 localized: "search.citationLookup.help",
                 defaultValue: "Resolve a pasted or manually entered FRUS citation to a specific document"
             ))
+
+            Divider()
+                .frame(height: 14)
+                .padding(.horizontal, 2)
+
+            // Save this search
+            Button {
+                saveSearchName = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
+                showSaveSearchSheet = true
+            } label: {
+                Image(systemName: "bookmark")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty)
+            .help(String(
+                localized: "search.saveSearch.help",
+                defaultValue: "Save this search so you can quickly run it again"
+            ))
+            .accessibilityLabel(String(
+                localized: "search.saveSearch.a11y",
+                defaultValue: "Save this search"
+            ))
+
+            // Open saved searches
+            Button {
+                showSavedSearches = true
+            } label: {
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(String(
+                localized: "search.savedSearches.help",
+                defaultValue: "Browse and re-run your saved searches"
+            ))
+            .accessibilityLabel(String(
+                localized: "search.savedSearches.a11y",
+                defaultValue: "Saved searches"
+            ))
         }
+    }
+
+    // MARK: - Save Search Sheet
+
+    private var saveSearchSheet: some View {
+        NavigationStack {
+            Form {
+                Section(String(localized: "search.saveSearch.section",
+                               defaultValue: "Search Name")) {
+                    TextField(
+                        String(localized: "search.saveSearch.placeholder",
+                               defaultValue: "Name this search"),
+                        text: $saveSearchName
+                    )
+                }
+                Section(String(localized: "search.saveSearch.query",
+                               defaultValue: "Query")) {
+                    Text(searchVM.submittedQuery).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle(String(localized: "search.saveSearch.title",
+                                    defaultValue: "Save Search"))
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "search.saveSearch.save",
+                                  defaultValue: "Save")) {
+                        // Merge the submitted query text into the parameters snapshot
+                        // before persisting — MacSearchViewModel tracks keywords
+                        // separately in `submittedQuery`.
+                        var paramsToSave = searchVM.parameters
+                        let kw = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
+                        paramsToSave.keywords = kw.isEmpty ? nil : kw
+                        let record = SavedSearch(
+                            name: saveSearchName.trimmingCharacters(in: .whitespaces),
+                            parameters: paramsToSave
+                        )
+                        modelContext.insert(record)
+                        showSaveSearchSheet = false
+                    }
+                    .disabled(saveSearchName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "search.saveSearch.cancel",
+                                  defaultValue: "Cancel")) {
+                        showSaveSearchSheet = false
+                    }
+                }
+            }
+        }
+        .frame(minWidth: 360, idealWidth: 400, minHeight: 240, idealHeight: 280)
     }
 
     // MARK: - Scope Row

@@ -6,6 +6,94 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
+
+// MARK: - Flat-text extraction (platform-independent)
+
+/// Extracts the verbatim text at `nsRange` from the flat-text representation
+/// of `model.bodyNodes`, using the same deterministic DFS defined in
+/// `Planning/102-DocumentHighlight-Architecture.md §1`.
+///
+/// Only `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes contribute
+/// characters. All container nodes recurse in array order. `.pageBreak`,
+/// `.footnoteMarker`, and `.figureBlock` are skipped. This matches the
+/// character positions stored in `DocumentHighlight.startOffset`/`endOffset`.
+///
+/// Returns an empty string if `nsRange` is invalid or out-of-bounds.
+/// Call this in `createHighlight()` to populate `DocumentHighlight.selectedText`.
+// MARK: - Content Signature (platform-independent)
+
+/// Lightweight cache key used by both the macOS and iOS `DocumentHighlightTextView`
+/// Coordinators to detect when the document body or its highlights have actually
+/// changed between SwiftUI renders, so `updateNSView`/`updateUIView` can skip no-op
+/// attributed-string replacements that would otherwise clear the user's in-progress
+/// text selection.
+struct ContentSignature: Equatable {
+    let documentId: String
+    let highlightIds: [UUID]
+
+    static let empty = ContentSignature(documentId: "", highlightIds: [])
+
+    init(documentId: String, highlights: [DocumentHighlight]) {
+        self.documentId = documentId
+        self.highlightIds = highlights.map(\.id)
+    }
+
+    private init(documentId: String, highlightIds: [UUID]) {
+        self.documentId = documentId
+        self.highlightIds = highlightIds
+    }
+}
+
+// MARK: - Flat-text extraction (platform-independent)
+
+func extractHighlightText(from model: FRUSDocumentRenderModel, nsRange: NSRange) -> String {
+    var flat = ""
+    appendFlatText(from: model.bodyNodes, into: &flat)
+    guard nsRange.location != NSNotFound,
+          let swiftRange = Range(nsRange, in: flat) else { return "" }
+    return String(flat[swiftRange])
+}
+
+private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout String) {
+    for node in nodes {
+        switch node {
+        case .plainText(let s), .formulaText(let s):
+            flat += s
+        case .lineBreak:
+            flat += "\n"
+        case .tableBlock(let rows):
+            for row in rows {
+                for cell in row { appendFlatText(from: cell.children, into: &flat) }
+            }
+        case .listBlock(_, let items):
+            for item in items { appendFlatText(from: item, into: &flat) }
+        case .heading(let cs), .dateline(let cs), .letterOpener(let cs),
+             .letterCloser(let cs), .salutation(let cs), .paragraph(let cs),
+             .boldText(let cs), .italicText(let cs), .smallCapsText(let cs),
+             .underlineText(let cs), .termText(let cs), .suppliedText(let cs),
+             .sicText(let cs), .corrText(let cs), .editorialNoteBlock(let cs),
+             .titlePageBlock(let cs), .attachmentHeading(let cs):
+            appendFlatText(from: cs, into: &flat)
+        case .persNameLink(_, let cs, _):
+            appendFlatText(from: cs, into: &flat)
+        case .glossLink(_, let cs, _):
+            appendFlatText(from: cs, into: &flat)
+        case .crossRefLink(_, _, let cs):
+            appendFlatText(from: cs, into: &flat)
+        case .attachmentBlock(_, let cs):
+            appendFlatText(from: cs, into: &flat)
+        case .unknown(_, let cs):
+            appendFlatText(from: cs, into: &flat)
+        case .footnoteBody(_, _, _, _, _, let cs):
+            appendFlatText(from: cs, into: &flat)
+        default:
+            // .pageBreak, .footnoteMarker, .figureBlock — contribute no characters
+            break
+        }
+    }
+}
+
 #if os(macOS)
 
 import AppKit
@@ -81,8 +169,22 @@ struct DocumentHighlightTextView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        // Guard against the selection-clearing feedback loop:
+        //   textViewDidChangeSelection → selectionRange binding write → SwiftUI re-render
+        //   → updateNSView → setAttributedString → selection cleared → loop.
+        // Only rebuild when the document or its highlights have actually changed.
+        let sig = ContentSignature(documentId: renderModel.documentId, highlights: highlights)
+        guard context.coordinator.lastSignature != sig else { return }
+        context.coordinator.lastSignature = sig
         let attrStr = Self.buildAttributedString(from: renderModel, highlights: highlights)
+        let savedRange = textView.selectedRange()
         textView.textStorage?.setAttributedString(attrStr)
+        // Restore selection if it's still valid within the new content length.
+        if savedRange.length > 0,
+           let storage = textView.textStorage,
+           NSMaxRange(savedRange) <= storage.length {
+            textView.setSelectedRange(savedRange)
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(selectionRange: $selectionRange) }
@@ -92,6 +194,8 @@ struct DocumentHighlightTextView: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         @Binding var selectionRange: NSRange?
         weak var textView: NSTextView?
+        /// Tracks the last rendered content so `updateNSView` can skip no-op updates.
+        var lastSignature: ContentSignature = .empty
 
         init(selectionRange: Binding<NSRange?>) { _selectionRange = selectionRange }
 
@@ -395,8 +499,22 @@ struct DocumentHighlightTextView: UIViewRepresentable {
     }
 
     func updateUIView(_ textView: UITextView, context: Context) {
+        // Guard against the selection-clearing feedback loop:
+        //   textViewDidChangeSelection → selectionRange binding write → SwiftUI re-render
+        //   → updateUIView → attributedText = … → UITextView clears selection → loop.
+        // Only rebuild when the document or its highlights have actually changed.
+        let sig = ContentSignature(documentId: renderModel.documentId, highlights: highlights)
+        guard context.coordinator.lastSignature != sig else { return }
+        context.coordinator.lastSignature = sig
         let attrStr = Self.buildAttributedString(from: renderModel, highlights: highlights)
+        let savedRange = textView.selectedRange
         textView.attributedText = attrStr
+        // Restore a valid selection after the content replacement (setting attributedText
+        // always resets selectedRange to {0,0}).
+        if savedRange.length > 0,
+           NSMaxRange(savedRange) <= textView.text.utf16.count {
+            textView.selectedRange = savedRange
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(selectionRange: $selectionRange) }
@@ -405,6 +523,8 @@ struct DocumentHighlightTextView: UIViewRepresentable {
 
     final class Coordinator: NSObject, UITextViewDelegate {
         @Binding var selectionRange: NSRange?
+        /// Tracks the last rendered content so `updateUIView` can skip no-op updates.
+        var lastSignature: ContentSignature = .empty
 
         init(selectionRange: Binding<NSRange?>) { _selectionRange = selectionRange }
 

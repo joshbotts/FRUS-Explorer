@@ -13,25 +13,29 @@ import SwiftData
 
 /// Identifies a selection in the Research sidebar.
 enum ResearchSidebarItem: Hashable {
-    /// Synthetic "all research documents" entry — union of notes, direct tags, and collections.
+    /// Synthetic "all research documents" entry — union of notes, direct tags, collections, and highlights.
     case allNotes
     /// A specific user tag — shows only documents whose notes or direct assignments carry this tag ID.
     case tag(UUID)
     /// A specific named collection — shows only documents in that `Collection`.
     case collection(UUID)
+    /// A specific highlight color — shows documents that have at least one highlight of this color.
+    case highlightColor(DocumentHighlight.Color)
 }
 
 // MARK: - ResearchDocumentEntry
 
 /// One row in the Research document list, aggregating all researcher engagement for a single
-/// `(volumeId, documentId)` pair from three independent sources:
+/// `(volumeId, documentId)` pair from four independent sources:
 ///
 /// - `ResearchNote` records in SwiftData (`latestNote`, `noteCount`, note-level tags)
 /// - `DocumentTagAssignment` records in SwiftData (direct user tags)
 /// - `CollectionEntry` records in SwiftData (collection membership)
+/// - `DocumentHighlight` records in SwiftData (highlighted passages, newest-first)
 ///
-/// `latestNote` is `nil` when a document has only direct tags or collection entries (no notes).
+/// `latestNote` is `nil` when a document has only direct tags, collection entries, or highlights.
 /// `collectionIds` is empty when the document has not been added to any collection.
+/// `highlights` is empty when the document has no saved highlights.
 struct ResearchDocumentEntry: Identifiable {
     /// Stable key: `"volumeId/documentId"`.
     let id: String
@@ -45,6 +49,8 @@ struct ResearchDocumentEntry: Identifiable {
     let allTagIds: Set<UUID>
     /// IDs of `Collection` records this document belongs to.
     let collectionIds: Set<UUID>
+    /// Highlights for this document, newest first. May be empty.
+    let highlights: [DocumentHighlight]
 }
 
 // MARK: - ResearchView
@@ -85,13 +91,13 @@ struct ResearchView: View {
 
     @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
-
     /// Direct tag-to-document assignments from SwiftData (CloudKit-synced).
     @Query private var allTagAssignments: [DocumentTagAssignment]
-
     /// Collections and their entries — the third annotation source.
     @Query(sort: \Collection.name) private var allCollections: [Collection]
     @Query private var allCollectionEntries: [CollectionEntry]
+    /// Saved highlights — the fourth annotation source; newest-first for display ordering.
+    @Query(sort: \DocumentHighlight.createdAt, order: .reverse) private var allHighlights: [DocumentHighlight]
 
     @State private var selectedItem: ResearchSidebarItem? = .allNotes
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
@@ -193,6 +199,29 @@ struct ResearchView: View {
                     }
                 }
             }
+
+            // Highlight colors present in the user's corpus
+            if !sortedHighlightColorsWithCounts.isEmpty {
+                Section(String(localized: "research.sidebar.highlights",
+                               defaultValue: "By Highlight")) {
+                    ForEach(sortedHighlightColorsWithCounts, id: \.color) { item in
+                        Label {
+                            HStack {
+                                Text(item.color.displayName)
+                                Spacer()
+                                Text("\(item.count)")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Circle()
+                                .fill(item.color.swiftUIColor.opacity(0.75))
+                                .frame(width: 10, height: 10)
+                        }
+                        .tag(ResearchSidebarItem.highlightColor(item.color))
+                    }
+                }
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle(String(localized: "research.title", defaultValue: "Research"))
@@ -207,13 +236,16 @@ struct ResearchView: View {
             switch item {
             case .allNotes:
                 return String(localized: "research.empty.noDocs.allNotes",
-                              defaultValue: "Research notes, tags, and collections you add from the document view will appear here.")
+                              defaultValue: "Research notes, tags, highlights, and collections you add from the document view will appear here.")
             case .tag:
                 return String(localized: "research.empty.noDocs.tag",
                               defaultValue: "No documents have notes or tags matching this tag.")
             case .collection:
                 return String(localized: "research.empty.noDocs.collection",
                               defaultValue: "This collection has no documents.")
+            case .highlightColor:
+                return String(localized: "research.empty.noDocs.highlight",
+                              defaultValue: "No documents have highlights in this color.")
             }
         }()
         Group {
@@ -244,20 +276,20 @@ struct ResearchView: View {
     // MARK: - Document Row
 
     private func documentRow(_ entry: ResearchDocumentEntry) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 4) {
             // Document header (or fallback to documentId)
             let header = documentHeaders[entry.id]
             if let h = header, !h.isEmpty {
                 Text(h)
                     .font(.body)
-                    .lineLimit(1)
+                    .lineLimit(2)
             } else {
                 Text(entry.documentId)
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
 
-            // Volume title + relative date
+            // Volume title + most-recent annotation date
             HStack(spacing: 6) {
                 let volumeTitle = appState.manifestStore.entry(forVolumeId: entry.volumeId)?.title
                 Text(volumeTitle ?? entry.volumeId)
@@ -265,26 +297,58 @@ struct ResearchView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer()
-                if let date = entry.latestNote?.lastModified {
+                // Show the date of whichever annotation is newest
+                let annotationDate = [
+                    entry.latestNote?.lastModified,
+                    entry.highlights.first?.createdAt
+                ].compactMap { $0 }.max()
+                if let date = annotationDate {
                     Text(date, style: .relative)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
             }
 
-            // Latest note preview (nil when document has only direct tags, no notes)
+            // Highlight strips — displayed first so the user sees the document's
+            // own words before their note commentary. Up to 3 strips; overflow
+            // is indicated by a count line.
+            if !entry.highlights.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(entry.highlights.prefix(3)) { hl in
+                        highlightStrip(hl)
+                    }
+                    if entry.highlights.count > 3 {
+                        Text(String(
+                            format: String(localized: "research.row.moreHighlights %lld",
+                                           defaultValue: "and %lld more"),
+                            Int64(entry.highlights.count - 3)
+                        ))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .padding(.leading, 10)
+                    }
+                }
+                .padding(.top, 2)
+            }
+
+            // Latest note preview
             if let note = entry.latestNote, !note.bodyText.isEmpty {
                 Text(note.bodyText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                    .italic()
             }
 
-            // Tag chips + note count
+            // Footer: tags · note count · collections
             let tagNames = entry.allTagIds
                 .compactMap { id in allTags.first(where: { $0.id == id })?.name }
                 .sorted()
-            if !tagNames.isEmpty || entry.noteCount > 1 {
+            let collectionNames = entry.collectionIds
+                .compactMap { id in allCollections.first(where: { $0.id == id })?.name }
+                .sorted()
+            let hasFooter = !tagNames.isEmpty || entry.noteCount > 1 || !collectionNames.isEmpty
+            if hasFooter {
                 HStack(spacing: 4) {
                     ForEach(tagNames, id: \.self) { name in
                         Text("◆ \(name)")
@@ -300,15 +364,6 @@ struct ResearchView: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                     }
-                }
-            }
-
-            // Collection chips — shown for documents in one or more collections
-            let collectionNames = entry.collectionIds
-                .compactMap { id in allCollections.first(where: { $0.id == id })?.name }
-                .sorted()
-            if !collectionNames.isEmpty {
-                HStack(spacing: 4) {
                     ForEach(collectionNames, id: \.self) { name in
                         HStack(spacing: 2) {
                             Image(systemName: "tray.2")
@@ -325,6 +380,43 @@ struct ResearchView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    // MARK: - Highlight Strip
+
+    /// A single highlighted passage displayed in a Research document row.
+    ///
+    /// Shows a narrow color accent bar on the left, the verbatim selected text
+    /// (or a placeholder for pre-Session 131 highlights), and a tinted background.
+    private func highlightStrip(_ highlight: DocumentHighlight) -> some View {
+        let color = highlight.color.swiftUIColor
+        return HStack(spacing: 0) {
+            Rectangle()
+                .fill(color.opacity(0.75))
+                .frame(width: 3)
+                .clipShape(UnevenRoundedRectangle(
+                    topLeadingRadius: 2, bottomLeadingRadius: 2,
+                    bottomTrailingRadius: 0, topTrailingRadius: 0
+                ))
+            Group {
+                if highlight.selectedText.isEmpty {
+                    Text(String(localized: "research.highlight.noText",
+                                defaultValue: "Highlighted passage"))
+                        .italic()
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(highlight.selectedText)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.caption)
+            .lineLimit(2)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            Spacer(minLength: 0)
+        }
+        .background(color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
     // MARK: - Context Menu
@@ -436,12 +528,13 @@ struct ResearchView: View {
         }
     }
 
-    /// Total distinct documents across all three annotation sources: notes, direct tags, collections.
+    /// Total distinct documents across all four annotation sources.
     private var allAnnotatedDocumentCount: Int {
-        let noteKeys       = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
-        let tagKeys        = Set(directlyTaggedDocs.keys)
-        let collectionKeys = Set(collectionMemberships.keys)
-        return noteKeys.union(tagKeys).union(collectionKeys).count
+        Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
+            .union(directlyTaggedDocs.keys)
+            .union(collectionMemberships.keys)
+            .union(highlightedDocs.keys)
+            .count
     }
 
     /// Tags paired with their distinct-document count (notes + direct tags), sorted most-used first.
@@ -464,22 +557,46 @@ struct ResearchView: View {
         .sorted { $0.count > $1.count }
     }
 
-    /// Aggregates all three annotation sources by document for the given sidebar item.
+    /// Doc key → highlights array (newest-first), built from `allHighlights`.
+    private var highlightedDocs: [String: [DocumentHighlight]] {
+        var result: [String: [DocumentHighlight]] = [:]
+        for h in allHighlights {
+            let key = "\(h.volumeId)/\(h.documentId)"
+            result[key, default: []].append(h)
+        }
+        return result
+    }
+
+    /// Highlight colors that have at least one document, paired with distinct-document
+    /// count, in the canonical order: yellow, green, blue, pink.
+    private var sortedHighlightColorsWithCounts: [(color: DocumentHighlight.Color, count: Int)] {
+        DocumentHighlight.Color.allCases.compactMap { color in
+            let docs = Set(
+                allHighlights
+                    .filter { $0.color == color }
+                    .map { "\($0.volumeId)/\($0.documentId)" }
+            )
+            return docs.isEmpty ? nil : (color: color, count: docs.count)
+        }
+    }
+
+    /// Aggregates all four annotation sources by document for the given sidebar item.
     ///
-    /// - `.allNotes`: union of notes, direct tags, and collection entries
+    /// - `.allNotes`: union of notes, direct tags, collection entries, and highlights
     /// - `.tag(id)`: documents whose notes or direct assignments carry this tag
     /// - `.collection(id)`: documents in this specific collection
+    /// - `.highlightColor(color)`: documents with at least one highlight of this color
     ///
-    /// Documents with no notes have `latestNote == nil`. Sorted newest-note-first;
-    /// unannotated documents (collection/tag only) sort after noted documents.
+    /// Documents with no notes have `latestNote == nil`. Sorted by newest annotation
+    /// date (considering both `lastModified` of notes and `createdAt` of highlights).
     private func documents(for item: ResearchSidebarItem) -> [ResearchDocumentEntry] {
-        // Determine the set of document keys that match this sidebar selection.
         let matchingKeys: Set<String>
         switch item {
         case .allNotes:
             matchingKeys = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
                 .union(directlyTaggedDocs.keys)
                 .union(collectionMemberships.keys)
+                .union(highlightedDocs.keys)
         case .tag(let id):
             let fromNotes  = Set(allNotes.filter { $0.userTagIds.contains(id) }
                                          .map { "\($0.volumeId)/\($0.documentId)" })
@@ -487,13 +604,17 @@ struct ResearchView: View {
             matchingKeys = fromNotes.union(fromDirect)
         case .collection(let collId):
             matchingKeys = Set(collectionMemberships.filter { $0.value.contains(collId) }.map(\.key))
+        case .highlightColor(let color):
+            matchingKeys = Set(
+                allHighlights
+                    .filter { $0.color == color }
+                    .map { "\($0.volumeId)/\($0.documentId)" }
+            )
         }
 
-        // Seed the grouped dictionary so every matching key has an entry (possibly []).
+        // Seed the grouped notes dictionary.
         var grouped: [String: [ResearchNote]] = [:]
         for key in matchingKeys { grouped[key] = [] }
-
-        // Distribute notes into the correct buckets.
         for note in allNotes {
             let key = "\(note.volumeId)/\(note.documentId)"
             if matchingKeys.contains(key) {
@@ -509,6 +630,8 @@ struct ResearchView: View {
             let directTagIds = Set(directlyTaggedDocs[key] ?? [])
             let noteTagIds   = Set(notes.flatMap { $0.userTagIds })
             let colIds       = collectionMemberships[key] ?? []
+            let docHighlights = (highlightedDocs[key] ?? [])
+                .sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
 
             return ResearchDocumentEntry(
                 id: key,
@@ -517,11 +640,17 @@ struct ResearchView: View {
                 latestNote: sortedNotes.first,
                 noteCount: notes.count,
                 allTagIds: noteTagIds.union(directTagIds),
-                collectionIds: colIds
+                collectionIds: colIds,
+                highlights: docHighlights
             )
         }
-        .sorted {
-            ($0.latestNote?.lastModified ?? .distantPast) > ($1.latestNote?.lastModified ?? .distantPast)
+        .sorted { lhs, rhs in
+            // Sort by the most recent annotation of any type.
+            let lhsDate = [lhs.latestNote?.lastModified,
+                           lhs.highlights.first?.createdAt].compactMap { $0 }.max() ?? .distantPast
+            let rhsDate = [rhs.latestNote?.lastModified,
+                           rhs.highlights.first?.createdAt].compactMap { $0 }.max() ?? .distantPast
+            return lhsDate > rhsDate
         }
     }
 
@@ -540,6 +669,9 @@ struct ResearchView: View {
                 ? String(localized: "research.list.untitledCollection",
                          defaultValue: "Untitled Collection")
                 : name
+        case .highlightColor(let color):
+            return color.displayName + " " + String(localized: "research.list.highlights",
+                                                    defaultValue: "Highlights")
         }
     }
 }
