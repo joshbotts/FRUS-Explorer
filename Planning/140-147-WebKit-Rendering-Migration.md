@@ -1,5 +1,5 @@
 ---
-name: Sessions 129–136 — WebKit Document Rendering Migration
+name: Sessions 140–147 — WebKit Document Rendering Migration
 description: Replace FRUSDocumentRenderer (SwiftUI VStack/LazyVStack path) and
   DocumentHighlightTextView (NSTextView/UITextView dual-render path) with a single
   WKWebView renderer backed by a new FRUSRenderNodeHTMLSerializer. Adopts the HTML
@@ -11,7 +11,7 @@ type: implementation
 originSessionId: session-128
 ---
 
-# Sessions 129–136: WebKit Document Rendering Migration
+# Sessions 140–147: WebKit Document Rendering Migration
 
 ## Background and Motivation
 
@@ -61,18 +61,18 @@ This approach was evaluated and approved after confirming that:
 
 | Session | Title | Effort | Risk | Depends On |
 |---------|-------|--------|------|------------|
-| 129 | HTML Serializer — Core | Medium | Low | 81, 128 |
-| 130 | WKWebView Wrapper & Theming | Medium | Medium | 129 |
-| 131 | Interactive Elements & Document View Migration | Medium | Medium | 130 |
-| 132 | JS Flat-Text Offset Engine | Medium | High | 131 |
-| 133 | CSS Custom Highlight API — Rendering | Medium | Medium | 132 |
-| 134 | Highlight Selection & Creation | Medium | Medium | 133 |
-| 135 | Collection Export Unification | Low–Medium | Low | 129, 128 |
-| 136 | Legacy Renderer Removal, Accessibility & Testing | Medium | Low | 131–135 |
+| 140 | HTML Serializer — Core | Medium | Low | 81, 128 |
+| 141 | WKWebView Wrapper & Theming | Medium | Medium | 140 |
+| 142 | Interactive Elements & Document View Migration | Medium | Medium | 141 |
+| 143 | JS Flat-Text Offset Engine | Medium | High | 142 |
+| 144 | CSS Custom Highlight API — Rendering | Medium | Medium | 143 |
+| 145 | Highlight Selection & Creation | Medium | Medium | 144 |
+| 146 | Collection Export Unification | Low–Medium | Low | 140, 128 |
+| 147 | Legacy Renderer Removal, Accessibility & Testing | Medium | Low | 142–146 |
 
-Sessions 129–131 and 135 are the lower-risk track (new code alongside existing
-code). Sessions 132–134 are the highlight system rewrite; they carry higher risk
-and should be done in sequence. Session 136 is cleanup and cannot begin until all
+Sessions 140–142 and 135 are the lower-risk track (new code alongside existing
+code). Sessions 143–145 are the highlight system rewrite; they carry higher risk
+and should be done in sequence. Session 147 is cleanup and cannot begin until all
 prior sessions are complete and stable.
 
 ---
@@ -81,12 +81,12 @@ prior sessions are complete and stable.
 
 ---
 
-### Session 129 — HTML Serializer: Core
+### Session 140 — HTML Serializer: Core
 
 **Scope:** Build `FRUSRenderNodeHTMLSerializer`, a new type that accepts a
 `FRUSDocumentRenderModel` and produces a self-contained HTML fragment string
 (no `<html>`/`<body>` wrapper). This is the foundation for both the document view
-(Sessions 130–131) and the collection export unification (Session 135).  
+(Sessions 141–142) and the collection export unification (Session 146).  
 **Effort:** Medium (one session). Mostly mechanical translation of the existing
 render-node → SwiftUI mapping to render-node → HTML string.  
 **Risk:** Low. Purely additive new code. Nothing is deleted or changed in this
@@ -106,7 +106,7 @@ session.
 ///
 /// Offset-invisible elements (pageBreak, footnoteMarker, figureBlock, and the
 /// inline markers within footnoteBody) are emitted with `data-skip="1"` so that
-/// the JavaScript flat-text DFS in Session 132 can apply the same skip rules as
+/// the JavaScript flat-text DFS in Session 143 can apply the same skip rules as
 /// ASTToRenderNodeConverter.renderingVersion(for:).
 struct FRUSRenderNodeHTMLSerializer {
     func serialize(_ model: FRUSDocumentRenderModel) -> String
@@ -173,7 +173,7 @@ attributes. No additional logic required.
 #### Offset-Skip Attribute Convention
 
 Elements that `ASTToRenderNodeConverter.flatText()` skips must emit
-`data-skip="1"` so the JavaScript offset engine (Session 132) applies the same
+`data-skip="1"` so the JavaScript offset engine (Session 143) applies the same
 rules. The full skip list from `flatText()` (lines 76–108 of the converter):
 
 | Skipped element | What is emitted |
@@ -207,7 +207,7 @@ Add `FRUSRenderNodeHTMLSerializerTests` in `FRUSExplorerTests`:
 
 ---
 
-### Session 130 — WKWebView Wrapper and Theming
+### Session 141 — WKWebView Wrapper and Theming
 
 **Scope:** Build `FRUSDocumentWebView`, a SwiftUI-representable `WKWebView` that
 loads HTML produced by `FRUSRenderNodeHTMLSerializer` inside a full HTML template
@@ -231,8 +231,8 @@ FRUSDocumentWebView (SwiftUI View)
           └── WKWebView (same configuration)
   └── Coordinator
         WKNavigationDelegate  — page-load lifecycle
-        WKURLSchemeHandler    — frusexplorer:// dispatch (Session 131)
-        WKScriptMessageHandler — JS → Swift bridge (Sessions 132–134)
+        WKURLSchemeHandler    — frusexplorer:// dispatch (Session 142)
+        WKScriptMessageHandler — JS → Swift bridge (Sessions 143–145)
 ```
 
 The `WKWebViewConfiguration` is built once via a shared factory:
@@ -244,7 +244,7 @@ extension WKWebViewConfiguration {
     static func frusExplorerConfiguration() -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(FRUSURLSchemeHandler(), forURLScheme: "frusexplorer")
-        // JS injection added in Session 132
+        // JS injection added in Session 143
         return config
     }
 }
@@ -252,7 +252,7 @@ extension WKWebViewConfiguration {
 
 #### HTML Template
 
-The serializer (Session 129) produces an HTML fragment. This session wraps it in
+The serializer (Session 140) produces an HTML fragment. This session wraps it in
 a full document template:
 
 ```html
@@ -343,13 +343,13 @@ Call `load(model:)` from the SwiftUI view's `.onChange(of: model)` modifier.
 
 ---
 
-### Session 131 — Interactive Elements and Document View Migration
+### Session 142 — Interactive Elements and Document View Migration
 
 **Scope:** Wire up `frusexplorer://` link dispatch in the WKWebView, confirm
 footnote popovers work natively, and replace `FRUSDocumentRenderer` in both
 `DocumentView.swift` (iOS) and `MacDocumentView.swift` (macOS) with
 `FRUSDocumentWebView`. The legacy renderer is **not yet deleted** — keep it in
-place, guarded by a compile-time feature flag, until Session 136 confirms the
+place, guarded by a compile-time feature flag, until Session 147 confirms the
 migration is stable.  
 **Effort:** Medium. Most complexity is in the URL scheme handler and adapting the
 existing `activeSheet` / `DocumentSheet` enum machinery to the new dispatch path.  
@@ -359,7 +359,7 @@ session; none of the changes after this point alter the dispatch path.
 #### Interactive URL Scheme Handler
 
 `FRUSURLSchemeHandler` implements `WKURLSchemeHandler`. It is registered in
-`WKWebViewConfiguration.frusExplorerConfiguration()` (Session 130) and receives
+`WKWebViewConfiguration.frusExplorerConfiguration()` (Session 141) and receives
 all navigations to `frusexplorer://`:
 
 ```swift
@@ -453,7 +453,7 @@ enum FeatureFlags {
 ```
 
 Guard both call sites with this flag. Remove the flag and the legacy renderer
-entirely in Session 136 after the highlight rewrite (Sessions 132–134) is stable.
+entirely in Session 147 after the highlight rewrite (Sessions 143–145) is stable.
 
 #### Files to Create / Modify
 
@@ -466,14 +466,14 @@ entirely in Session 136 after the highlight rewrite (Sessions 132–134) is stab
 
 ---
 
-### Session 132 — JS Flat-Text Offset Engine
+### Session 143 — JS Flat-Text Offset Engine
 
 **Scope:** Port `ASTToRenderNodeConverter.flatText()` to JavaScript. The JS
 function traverses the live HTML DOM, respecting `data-skip="1"` attributes, and
 builds two data structures: (1) a flat `String` whose contents and length exactly
 match the Swift-produced `flatText`, and (2) a map from every character offset in
 that string to a `{node: Text, localOffset: number}` DOM pair. These structures are
-used by Sessions 133 (rendering stored highlights) and 134 (capturing new
+used by Sessions 144 (rendering stored highlights) and 145 (capturing new
 selection-based highlights).  
 **Effort:** Medium. The traversal logic itself is simple; the risk lies in
 correctness.  
@@ -493,7 +493,7 @@ The Swift `flatText` DFS rules (from `ASTToRenderNodeConverter`, lines 76–108)
 | `<br>` | Append `"\n"` | Append `"\n"` |
 | Element with children | Recurse | Recurse into `childNodes` |
 
-The `data-skip` attribute is set on exactly the elements listed in Session 129
+The `data-skip` attribute is set on exactly the elements listed in Session 140
 (`.pageBreak`, `.footnoteMarker`, `.figureBlock`, `.footnoteBody`). No other
 elements are skipped.
 
@@ -536,7 +536,7 @@ This script is injected as a `WKUserScript` with injection time
 
 #### Swift–JS Equivalence Test Harness
 
-This is the critical deliverable of Session 132. Without it, Session 133's
+This is the critical deliverable of Session 143. Without it, Session 144's
 highlight rendering cannot be trusted.
 
 **Approach:**
@@ -573,12 +573,12 @@ SwiftData migration is needed.
 
 ---
 
-### Session 133 — CSS Custom Highlight API: Rendering Stored Highlights
+### Session 144 — CSS Custom Highlight API: Rendering Stored Highlights
 
 **Scope:** Use the CSS Custom Highlight API (`CSS.highlights.set(...)`) to render
 existing `DocumentHighlight` records in the web view. On page load, Swift injects
 stored highlights as JSON; a JS function maps offsets to DOM Ranges using the
-`FRUSOffsets.charToNode` map from Session 132 and registers them as named CSS
+`FRUSOffsets.charToNode` map from Session 143 and registers them as named CSS
 highlights. Stale highlights (version mismatch) appear in the existing amber
 warning style. `DocumentHighlightTextView` is **not yet deleted** but is disabled
 for documents using the WebKit renderer.  
@@ -672,7 +672,7 @@ state accordingly. The banner UI code is unchanged.
 
 ---
 
-### Session 134 — Highlight Selection and Creation
+### Session 145 — Highlight Selection and Creation
 
 **Scope:** Replace the selection-to-offset flow in `DocumentHighlightTextView`
 with a JS + `WKScriptMessageHandler` implementation. The user selects text in the
@@ -682,10 +682,10 @@ offsets and presents the existing highlight color picker. On color selection, a
 `DocumentHighlight` is written to SwiftData using the same schema as today.
 After this session, `DocumentHighlightTextView.swift` is **disabled** (guarded
 behind the inverse of `FeatureFlags.useWebKitRenderer`). Deletion occurs in
-Session 136.  
+Session 147.  
 **Effort:** Medium.  
 **Risk:** Medium. The selection-to-offset reverse mapping is the mirror of
-Session 133's forward mapping and uses the same `charToNode` array.
+Session 144's forward mapping and uses the same `charToNode` array.
 
 #### JS Selection Listener
 
@@ -772,7 +772,7 @@ SwiftData schema is unchanged; only the code that populates it changes.
 
 The JS linear scan for `rangeEndpointToOffset` is O(n) in document length. For
 typical selections (< 1,000 chars selected in a document of < 50,000 chars) this
-is imperceptible. If profiling in Session 138 identifies it as a bottleneck,
+is imperceptible. If profiling in Session 147 identifies it as a bottleneck,
 replace with a `WeakMap<Text, Map<localOffset, charIndex>>` built during `walk()`.
 
 #### Files to Create / Modify
@@ -783,11 +783,11 @@ replace with a `WeakMap<Text, Map<localOffset, charIndex>>` built during `walk()
 | `FRUSExplorer/TEI/FRUSWebViewConfiguration.swift` | **Modify** — inject `frus-selection.js`; register `selectionChanged` handler |
 | `FRUSExplorer/DocumentView/DocumentView.swift` | **Modify** — handle selection messages; present color picker; create `DocumentHighlight` |
 | `FRUSExplorer/App/MacDocumentView.swift` | **Modify** — same |
-| `FRUSExplorer/TEI/DocumentHighlightTextView.swift` | **Modify** — guard with `!FeatureFlags.useWebKitRenderer` (deletion in Session 136) |
+| `FRUSExplorer/TEI/DocumentHighlightTextView.swift` | **Modify** — guard with `!FeatureFlags.useWebKitRenderer` (deletion in Session 147) |
 
 ---
 
-### Session 135 — Collection Export Unification
+### Session 146 — Collection Export Unification
 
 **Scope:** Refactor `HTMLCollectionExporter` to use
 `FRUSRenderNodeHTMLSerializer` rather than its own HTML-generation code.
@@ -798,12 +798,12 @@ are unaffected by this session.
 **Effort:** Low–Medium. The HTMLCollectionExporter already generates HTML from
 render nodes; refactoring to use the shared serializer is mostly mechanical.  
 **Risk:** Low. This is a refactor with identical output behaviour; the test
-fixture from Session 129 (round-trip HTML serialization) is directly applicable.
+fixture from Session 140 (round-trip HTML serialization) is directly applicable.
 
 #### Refactor Plan
 
 `HTMLCollectionExporter` currently has its own HTML-generation logic that partly
-duplicates `FRUSRenderNodeHTMLSerializer`. After Session 129, the shared serializer
+duplicates `FRUSRenderNodeHTMLSerializer`. After Session 140, the shared serializer
 covers all node types. The exporter should:
 
 1. Call `FRUSRenderNodeHTMLSerializer().serialize(doc.renderModel)` for each
@@ -811,7 +811,7 @@ covers all node types. The exporter should:
 2. Wrap the body fragment in the existing collection-document template (citation
    header + research note sections remain exporter-specific).
 3. Replace the exporter's inline CSS with `frus-document.css` (already created in
-   Session 130) plus a `frus-print.css` override for print-specific rules.
+   Session 141) plus a `frus-print.css` override for print-specific rules.
 
 **Print CSS additions** (`FRUSExplorer/Resources/frus-print.css`):
 
@@ -836,10 +836,10 @@ are not rendered by the browser print engine. The print CSS re-shows them inline
 
 ---
 
-### Session 136 — Legacy Renderer Removal, Accessibility, and Testing
+### Session 147 — Legacy Renderer Removal, Accessibility, and Testing
 
 **Scope:** Remove `FRUSDocumentRenderer.swift` and `DocumentHighlightTextView.swift`
-after confirming the WebKit renderer is stable across Sessions 131–134. Audit HTML
+after confirming the WebKit renderer is stable across Sessions 142–145. Audit HTML
 output for semantic correctness and VoiceOver compatibility. Profile performance
 with large documents and fix any identified issues.  
 **Effort:** Medium (testing and profiling take most of the time; code removal is
@@ -926,26 +926,26 @@ text nodes without materializing every individual character entry.
 
 | File | Session | Purpose |
 |------|---------|---------|
-| `FRUSExplorer/TEI/FRUSRenderNodeHTMLSerializer.swift` | 129 | Core HTML serializer |
-| `FRUSExplorer/TEI/FRUSDocumentWebView.swift` | 130 | SwiftUI WKWebView wrapper (both platforms) |
-| `FRUSExplorer/TEI/FRUSWebViewConfiguration.swift` | 130 | WKWebViewConfiguration factory |
-| `FRUSExplorer/TEI/HTMLTemplate.swift` | 130 | HTML template with CSS injection |
-| `FRUSExplorer/TEI/FRUSURLSchemeHandler.swift` | 131 | `frusexplorer://` dispatch |
-| `FRUSExplorer/App/FeatureFlags.swift` | 131 | Feature flag (removed in 136) |
-| `FRUSExplorer/Resources/frus-document.css` | 130 | Static CSS bundle |
-| `FRUSExplorer/Resources/frus-print.css` | 135 | Print-specific CSS overrides |
-| `FRUSExplorer/Resources/frus-offset-engine.js` | 132 | JS flat-text DFS |
-| `FRUSExplorer/Resources/frus-highlights.js` | 133 | CSS Custom Highlight API |
-| `FRUSExplorer/Resources/frus-selection.js` | 134 | Selection → offset bridge |
-| `FRUSExplorerTests/FRUSRenderNodeHTMLSerializerTests.swift` | 129 | Serializer unit tests |
-| `FRUSExplorerTests/FRUSOffsetEngineTests.swift` | 132 | Swift–JS offset equivalence tests |
+| `FRUSExplorer/TEI/FRUSRenderNodeHTMLSerializer.swift` | 140 | Core HTML serializer |
+| `FRUSExplorer/TEI/FRUSDocumentWebView.swift` | 141 | SwiftUI WKWebView wrapper (both platforms) |
+| `FRUSExplorer/TEI/FRUSWebViewConfiguration.swift` | 141 | WKWebViewConfiguration factory |
+| `FRUSExplorer/TEI/HTMLTemplate.swift` | 141 | HTML template with CSS injection |
+| `FRUSExplorer/TEI/FRUSURLSchemeHandler.swift` | 142 | `frusexplorer://` dispatch |
+| `FRUSExplorer/App/FeatureFlags.swift` | 142 | Feature flag (removed in 147) |
+| `FRUSExplorer/Resources/frus-document.css` | 141 | Static CSS bundle |
+| `FRUSExplorer/Resources/frus-print.css` | 146 | Print-specific CSS overrides |
+| `FRUSExplorer/Resources/frus-offset-engine.js` | 143 | JS flat-text DFS |
+| `FRUSExplorer/Resources/frus-highlights.js` | 144 | CSS Custom Highlight API |
+| `FRUSExplorer/Resources/frus-selection.js` | 145 | Selection → offset bridge |
+| `FRUSExplorerTests/FRUSRenderNodeHTMLSerializerTests.swift` | 140 | Serializer unit tests |
+| `FRUSExplorerTests/FRUSOffsetEngineTests.swift` | 143 | Swift–JS offset equivalence tests |
 
 ## Summary of Deleted Files
 
 | File | Session | Lines |
 |------|---------|-------|
-| `FRUSExplorer/TEI/FRUSDocumentRenderer.swift` | 136 | 1,117 |
-| `FRUSExplorer/TEI/DocumentHighlightTextView.swift` | 136 | 646 |
+| `FRUSExplorer/TEI/FRUSDocumentRenderer.swift` | 147 | 1,117 |
+| `FRUSExplorer/TEI/DocumentHighlightTextView.swift` | 147 | 646 |
 
 Net new code: ~1,400 lines added (serializer, web view wrappers, JS, tests)  
 Net deleted: ~1,763 lines (renderer + highlight text view)  
