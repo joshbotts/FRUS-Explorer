@@ -346,12 +346,13 @@ resolving a lot file or presidential library reference produces no result, an
 incorrect result, or a result that does not match the archival collection cited in
 the source note.
 
-**Effort:** Medium–Large. The session begins with empirical analysis of a supplied
-CSV file (`citations2.csv`) to determine how FRUS source note patterns map to
-actual NARA Catalog entries. The implementation scope depends on what the CSV
-analysis reveals.  
+**Effort:** Medium–Large. The session begins with live API testing against
+`citations2.csv` to empirically determine which query strategies reliably reach
+the correct catalog record. All resolution is done through API queries at runtime;
+there is no pre-computed mapping from citation values to naIds.  
 **Risk:** Medium. The NARA Catalog API is a third-party service; query strategy
-changes must be validated against live API responses.
+changes must be validated against live API responses. Rate limit is 10,000
+queries/month — test sets must be kept small.
 
 #### Pre-Investigation Findings
 
@@ -367,185 +368,277 @@ changes must be validated against live API responses.
 
 1. **Free-text queries with no record group constraint.** The NARA Catalog
    full-text search returns whatever it considers the best text match across all
-   holdings. A lot file query like `"State Department Lot File 61-D 146"` will
-   match any description mentioning those tokens, not necessarily the series
+   holdings. A lot file query like `"State Department Lot File 61-D 146"` may
+   match any description mentioning those tokens — not necessarily the series
    record for that specific lot.
 
 2. **Only the top result is returned** (`rows=1`). If the correct record is not
    rank 1, it is silently discarded.
 
-3. **No pre-computed lookup table.** There is no mapping from FRUS lot numbers or
-   library collection names to NARA Catalog `naId` values. Every query is resolved
-   purely by text search at runtime.
+3. **`resultType=description` may not be optimal.** The API supports
+   `resultType=object` (item/file level) and `resultType=description`
+   (series/collection level). For FRUS source notes, series-level records are
+   appropriate, but this must be confirmed empirically.
 
-4. **`resultType=description` may not be optimal.** The NARA Catalog API supports
-   `resultType=object` (specific items/files) and `resultType=description`
-   (series/collection-level records). For FRUS source notes, series-level records
-   (`description`) are appropriate, but the query must be precise enough to land
-   on the right series.
+4. **Known API constraint: no direct naId→naId mapping exists.** There is no
+   way to derive a NARA Catalog record's `naId` from a FRUS lot number or
+   collection name without issuing an API query. All resolution must go through
+   the search endpoint.
+
+#### API Query Capabilities
+
+The following NARA Catalog API v1 parameters are confirmed available and should
+be used to constrain queries beyond unstructured free text:
+
+| Parameter | Description | Relevant use |
+|-----------|-------------|--------------|
+| `q` | Free-text query across all indexed fields | Lot number, collection name |
+| `resultType` | `description` (series) or `object` (item) | Always `description` for FRUS source notes |
+| `rows` | Number of results returned (default 1) | Increase to 5 for candidate display |
+| `f.parentDescriptionNaId` | Restricts results to children of a known record | Filter lot files to RG-59 (naId 302028) |
+| `recordGroupNumber` | Restricts to a specific NARA record group number | `recordGroupNumber=59` for lot files |
+
+The `recordGroupNumber=59` and `f.parentDescriptionNaId=302028` filters are
+complementary: `recordGroupNumber` restricts to the RG-59 *record group* broadly;
+`f.parentDescriptionNaId=302028` restricts to children of the specific RG-59
+top-level description record already hardcoded in `NARACatalogClient`. Use both
+in tandem for lot file queries to maximise precision.
+
+Presidential libraries are not record groups; they are NARA-operated institutions
+with their own top-level description naIds. These naIds are not known in advance
+and must be discovered through a one-time institution-lookup query at session start,
+then cached for the session.
 
 #### Session Workflow
 
-This session differs from the others because it is partly exploratory. It begins
-with the CSV analysis and produces both a design and an implementation.
+**Phase 1 — Live API Testing with citations2.csv (start of session)**
 
-**Phase 1 — CSV Analysis (start of session)**
+`citations2.csv` will be supplied at the start of the session. Treat it as a
+validation corpus, not a source of pre-computed mappings. Before writing any code:
 
-`citations2.csv` will be supplied at the start of the session. This file contains
-corpus-extracted citation data from FRUS source notes. Before writing any code:
+1. Examine the CSV schema: confirm which fields are present (expected: volumeId,
+   documentId, parsedProvenanceType, extractedLotNumber, library, collection,
+   fileIdentifier). Note how many distinct lot numbers and library references appear.
 
-1. Load the CSV and examine its schema:
-   - What fields are present? (expected: volumeId, documentId, sourceNoteText,
-     parsedProvenanceType, extractedLotNumber / library / collection, etc.)
-   - How many distinct lot numbers appear? How many distinct presidential libraries?
-   - Are there NARA `naId` values already resolved in the CSV, or only the raw
-     source note strings?
+2. Select a representative sample of 10–15 lot numbers and 5 presidential library
+   references. Issue live API queries for each using the candidate strategies below,
+   recording: query sent, top-5 results returned (naId + title), and whether the
+   correct record appears in those 5.
 
-2. Cross-reference a sample of lot numbers against the live NARA Catalog API
-   (authenticated with the stored API key) to determine:
-   - What query string reliably returns the correct series record?
-   - Are there patterns (e.g., "Lot {number}" vs "Record Group 59, Lot {number}")
-     that improve precision?
-   - Which lot numbers return zero results, one result, or ambiguous multiple
-     results?
+3. For each provenance type, determine which query strategy produces the correct
+   record in position 1–5 most reliably. Document findings as a strategy table
+   before writing any implementation code.
 
-3. For presidential library references, test whether adding the NARA institution
-   naId as a parent filter (e.g., filter to records under the JFK Library naId)
-   narrows results to the correct collection.
+4. Identify which citations return zero results from the API. These represent a
+   "no match" state that the UI must handle gracefully — they are not errors.
 
-4. Document findings as a query strategy table before implementing.
+**Phase 2 — Query Strategy Design**
 
-**Phase 2 — Design: Improved Query Strategy**
+The query strategy is built in tiers. Attempt the most-constrained query first;
+fall back to progressively looser queries if the constrained form returns zero
+results. All resolution goes through the API.
 
-Based on Phase 1 findings, implement one or more of the following improvements.
-The precise set depends on the CSV analysis results.
+**Tier 1 — Lot files: constrained to RG-59**
 
-**Option A — naId lookup table for known lot numbers**
-
-If the CSV reveals that a significant fraction of FRUS lot numbers can be
-pre-resolved to specific NARA `naId` values, build a lookup table embedded in
-the app:
-
-```swift
-// FRUSExplorer/SourceExplorer/NARACatalogLookupTable.swift
-struct NARACatalogLookupTable {
-    /// Maps State Department lot number strings (e.g. "61-D 146") to NARA naId.
-    static let lotFileNaIds: [String: Int] = [
-        "61-D 146": 302028,   // example
-        // ... populated from CSV analysis
-    ]
-
-    /// Maps (library identifier, collection slug) to NARA naId.
-    static let libraryCollectionNaIds: [(library: String, collection: String, naId: Int)] = [
-        // ... populated from CSV analysis
-    ]
-}
-```
-
-When a lot number is in the table, skip the text search entirely and deep-link
-directly to `catalog.archives.gov/id/{naId}`. This is the highest-confidence path.
-
-**Option B — Constrained text search with naId parent filter**
-
-For lot numbers not in the lookup table, refine the query using the NARA API's
-`naId` filter parameter to restrict results to records under the State Department's
-holdings (naId 10648145 for the National Archives at College Park, or the RG-59
-series naId):
+State Department lot files live under Record Group 59. Use both available
+constraints simultaneously:
 
 ```
 GET https://catalog.archives.gov/api/v1/search
-  ?q=Lot+File+61-D+146
+  ?q={lotNumber}
+  &recordGroupNumber=59
+  &f.parentDescriptionNaId=302028
   &resultType=description
   &rows=5
-  &naId=302028       ← constrains to RG-59 holdings
 ```
 
-**Option C — Return multiple candidates for user selection**
+The `lotNumber` query term should be sent as extracted from the source note (e.g.
+`61-D 146`), without decorative prefixes like "State Department Lot File". The
+lot number string itself is the most distinctive token. If the Tier 1 query
+returns zero results, retry without `f.parentDescriptionNaId` (keeping
+`recordGroupNumber=59` only), then without both constraints if still empty.
 
-Change `rows=1` to `rows=5` and present a ranked list of candidates to the user
-rather than silently displaying (or failing to display) the top result:
+**Tier 2 — Presidential libraries: two-phase institution lookup**
 
-```swift
-struct NARACatalogResult: Identifiable, Decodable {
-    let naId: Int
-    let title: String
-    let scopeNote: String?
-    let matchScore: Double?    // add if API returns relevance score
-}
+Presidential libraries are not record groups. Resolution requires two queries:
+
+*Phase A — Discover the institution's naId (one query per library per session,
+result cached in memory):*
+
+```
+GET https://catalog.archives.gov/api/v1/search
+  ?q={libraryName}+Presidential+Library
+  &resultType=description
+  &rows=1
 ```
 
-Show up to 5 candidates in `SourceExplorerView` with titles; user taps to select
-the correct one and open it in NARA Catalog.
+where `libraryName` is the surname extracted by `SourceNoteParser` (e.g.
+`"Kennedy"`). Extract the `naId` of the top result; cache it in a
+`[String: Int]` dictionary keyed on the surname for the session lifetime.
 
-**Option D — Presidential library naId filtering**
+*Phase B — Search for the collection under the institution:*
 
-Map FRUS presidential library names to their NARA institution naIds:
-
-```swift
-static let presidentialLibraryNaIds: [String: Int] = [
-    "Kennedy":   74884925,   // JFK Library
-    "Johnson":   74884926,   // LBJ Library
-    "Nixon":     74884927,   // Nixon Library
-    "Ford":      74884928,   // Ford Library
-    "Carter":    74884929,   // Carter Library
-    // ...
-]
+```
+GET https://catalog.archives.gov/api/v1/search
+  ?q={collection}
+  &f.parentDescriptionNaId={institutionNaId}
+  &resultType=description
+  &rows=5
 ```
 
-Use the institution naId as a parent filter in the API call, constraining results
-to that library's holdings.
+If Phase A returns zero results (unknown library surname), fall back to a single
+unconstrained query:
+
+```
+GET https://catalog.archives.gov/api/v1/search
+  ?q={libraryName}+{collection}
+  &resultType=description
+  &rows=5
+```
+
+This two-phase approach uses at most two API calls per presidential library
+reference, but the institution lookup is cached so repeated references to the
+same library cost only one call total per session.
+
+**Tier 3 — RG-59 central files**
+
+The current implementation constructs a static URL to the RG-59 landing page
+(`catalog.archives.gov/id/302028`) with no API call. This is correct and should
+be retained. Central files do not need a search query because the citation
+identifies them only as "RG-59, decimal file {identifier}" — the record group
+record itself is the right destination.
 
 **Phase 3 — Implementation**
 
-After Phase 1 and 2 produce a clear strategy, implement:
-
-1. **`NARACatalogLookupTable.swift`** — embed the lookup table built from CSV
-   analysis. Generate it programmatically if the CSV is large (write a one-time
-   Swift script to produce the static dictionary literal from the CSV).
-
-2. **`NARACatalogClient.swift`** — update `resolveLotFile(lotNumber:)` and
+1. **`NARACatalogClient.swift`** — replace `resolveLotFile(lotNumber:)` and
    `resolvePresidentialLibrary(library:collection:)`:
-   - Check lookup table first; if hit, return a direct `NARACatalogResult` with
-     the known naId (no network call).
-   - If miss, issue a constrained query (`rows=5`, naId parent filter if
-     applicable).
-   - Return `[NARACatalogResult]` (array) instead of `NARACatalogResult?`.
+
+   ```swift
+   // Lot file — tiered query with RG-59 constraints
+   func resolveLotFile(lotNumber: String) async throws -> [NARACatalogResult] {
+       // Tier 1: both constraints
+       var results = try await search(
+           query: lotNumber,
+           extraParams: ["recordGroupNumber": "59",
+                         "f.parentDescriptionNaId": "\(rg59NaId)",
+                         "resultType": "description",
+                         "rows": "5"]
+       )
+       // Tier 2: record group only
+       if results.isEmpty {
+           results = try await search(
+               query: lotNumber,
+               extraParams: ["recordGroupNumber": "59",
+                             "resultType": "description",
+                             "rows": "5"]
+           )
+       }
+       // Tier 3: unconstrained
+       if results.isEmpty {
+           results = try await search(
+               query: lotNumber,
+               extraParams: ["resultType": "description", "rows": "5"]
+           )
+       }
+       return results
+   }
+
+   // Presidential library — two-phase with institution naId cache
+   private var institutionNaIdCache: [String: Int] = [:]
+
+   func resolvePresidentialLibrary(
+       library: String, collection: String
+   ) async throws -> [NARACatalogResult] {
+       let institutionNaId = try await resolveLibraryInstitution(library: library)
+       if let naId = institutionNaId {
+           return try await search(
+               query: collection,
+               extraParams: ["f.parentDescriptionNaId": "\(naId)",
+                             "resultType": "description",
+                             "rows": "5"]
+           )
+       } else {
+           // Phase A failed — fall back to combined free-text query
+           return try await search(
+               query: "\(library) \(collection)",
+               extraParams: ["resultType": "description", "rows": "5"]
+           )
+       }
+   }
+
+   private func resolveLibraryInstitution(library: String) async throws -> Int? {
+       if let cached = institutionNaIdCache[library] { return cached }
+       let results = try await search(
+           query: "\(library) Presidential Library",
+           extraParams: ["resultType": "description", "rows": "1"]
+       )
+       let naId = results.first?.naId
+       if let naId { institutionNaIdCache[library] = naId }
+       return naId
+   }
+   ```
+
+   Change the return type of both resolution functions from `NARACatalogResult?`
+   to `[NARACatalogResult]`. Extract the shared `search(query:extraParams:)` helper
+   to avoid duplicating URL construction and response parsing.
+
+2. **`NARACatalogClient.swift`** — update `NARACatalogResult`:
+
+   ```swift
+   struct NARACatalogResult: Identifiable, Sendable {
+       let naId: Int
+       let title: String
+       let scopeContent: String?
+       let seriesTitle: String?   // parent series title if available from API response
+   }
+   ```
 
 3. **`SourceExplorerView.swift`** — update the result display:
-   - If the lookup table matched: show single result with a "Direct match" label.
-   - If API returned multiple candidates: show a list the user can select from.
-   - If API returned zero results: show an actionable message with a manual search
-     link to `catalog.archives.gov/search?q={lotNumber}`.
+
+   - If the API returned exactly one result: display it directly (existing layout).
+   - If the API returned 2–5 results: replace the single-result view with a
+     `List` of candidates. Each row shows title and (if present) a truncated scope
+     note. Tapping a row opens `catalog.archives.gov/id/{naId}` in the in-app
+     browser.
+   - If the API returned zero results: show an actionable empty state with a
+     "Search NARA Catalog" button that opens
+     `catalog.archives.gov/search?q={urlEncodedQuery}` in the in-app browser.
 
 4. **Error specificity** — replace the generic `error.localizedDescription` catch
-   in `SourceExplorerView.fetchResult()` (around lines 437–445) with explicit
-   handling:
+   in `SourceExplorerView.fetchResult()` (around lines 437–445):
 
    | Error condition | User message |
    |-----------------|-------------|
-   | No API key | "Add a NARA Catalog API key in Settings → Advanced → NARA API to look up lot files." |
+   | No API key configured | "Add a NARA Catalog API key in Settings → Advanced → NARA API to look up lot files." |
    | Network unavailable | "Network unavailable. Connect to look up this source in the NARA Catalog." |
-   | No results found | "No matching NARA Catalog record found. [Search manually ↗]" |
-   | Multiple ambiguous results | Candidate list UI (see Option C above) |
+   | HTTP 403 / rate limit | "NARA Catalog API limit reached. Try again later or search manually." |
+   | Zero results | "No matching NARA Catalog record found. [Search NARA ↗]" |
 
-#### Files to Create / Modify
+5. **`citations2.csv` as a test fixture** — at the end of the session, run a
+   batch test function (DEBUG only) that iterates over a sample from the CSV,
+   fires the new tiered queries, and logs which citations produced a result in
+   position 1–5. This validates the strategy without any manual browsing.
+
+#### Files to Modify
 
 | File | Change |
 |------|--------|
-| `FRUSExplorer/SourceExplorer/NARACatalogLookupTable.swift` | **Create** — static lookup table from CSV analysis |
-| `FRUSExplorer/SourceExplorer/NARACatalogClient.swift` | **Modify** — lookup-table-first resolution; constrained queries; return arrays |
-| `FRUSExplorer/SourceExplorer/SourceExplorerView.swift` | **Modify** — candidate list UI; specific error messages; direct-match label |
-| `FRUSExplorer/SourceExplorer/SourceNoteParser.swift` | **Modify** (if needed) — normalise lot number strings for lookup table key matching |
+| `FRUSExplorer/SourceExplorer/NARACatalogClient.swift` | Tiered queries with RG-59 constraints; institution naId cache; return arrays; shared `search(query:extraParams:)` helper |
+| `FRUSExplorer/SourceExplorer/SourceExplorerView.swift` | Candidate list UI; specific error messages; manual search fallback link |
+| `FRUSExplorer/SourceExplorer/SourceNoteParser.swift` | Trim lot number strings if raw extraction includes surrounding whitespace or punctuation |
 
 #### Acceptance Criteria
 
-- [ ] For any FRUS lot file whose naId is in the lookup table: Source Explorer
-      opens the correct NARA Catalog record without a network search call.
-- [ ] For a lot file not in the table: Source Explorer issues a constrained API
-      query and either displays a correct result or a ranked list of candidates.
+- [ ] Lot file query uses `recordGroupNumber=59` and `f.parentDescriptionNaId`
+      constraints; verify via URL logged in DEBUG output.
+- [ ] Lot file with no API results (all tiers exhausted) shows a manual search
+      link rather than a blank state or generic error.
+- [ ] Presidential library references issue a two-phase query; institution naId is
+      cached across multiple references to the same library in one session.
+- [ ] Source Explorer displays up to 5 ranked candidates when the API returns
+      more than one result; user can tap any candidate to open it.
 - [ ] A missing API key shows a specific actionable message, not a generic error.
-- [ ] Zero-result cases show a manual search link rather than a blank state.
-- [ ] Presidential library references are constrained to that institution's
-      NARA holdings (not searching all of NARA).
-- [ ] Verify at least 10 lot numbers from `citations2.csv` resolve to correct
-      NARA Catalog entries in the updated implementation.
+- [ ] HTTP 403 and rate-limit errors show a distinct user-facing message.
+- [ ] Batch test against a sample from `citations2.csv` confirms at least 70% of
+      lot file citations return a non-empty candidate list from the constrained
+      Tier 1 or Tier 2 query.
