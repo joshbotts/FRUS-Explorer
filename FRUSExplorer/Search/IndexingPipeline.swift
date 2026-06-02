@@ -634,7 +634,8 @@ public actor IndexingPipeline {
     public func removeAllVolumesFromIndex() async throws {
         try await fts5Store.deleteAll()
         for table in ["cross_references", "page_ranges", "document_dates",
-                      "document_cache", "person_mentions", "persons", "terms"] {
+                      "document_cache", "person_mentions", "persons", "terms",
+                      "document_sources", "volume_sources"] {
             let stmt = try auxPrepare("DELETE FROM \(table)")
             defer { sqlite3_finalize(stmt) }
             try auxStep(stmt)
@@ -1054,12 +1055,59 @@ public actor IndexingPipeline {
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
         }
 
+        // Parse source notes into structured archival citation fields.
+        // This is pure string processing — no I/O — so it adds negligible overhead
+        // to the indexing pass but enables NARA Catalog queries and archive-browse
+        // features without any API calls.
+        let sourceNoteParser = SourceNoteParser()
+        let documentSourceRows: [DocumentSourceRow] = cacheRows.compactMap { row in
+            guard let raw = row.sourceNote, !raw.isEmpty else { return nil }
+            let parsed = sourceNoteParser.parse(raw)
+            return Self.documentSourceRow(
+                volumeId: volumeId, documentId: row.documentId,
+                parsed: parsed, rawText: raw
+            )
+        }
+
+        // Extract embedded archival citations from editorial note body text.
+        let footnoteSourceRows: [DocumentSourceRow] = cacheRows.compactMap { row in
+            guard row.isEditorialNote, !row.bodyText.isEmpty else { return nil }
+            let citations = sourceNoteParser.extractCitations(from: row.bodyText)
+            guard let first = citations.first else { return nil }
+            return DocumentSourceRow(
+                volumeId: volumeId,
+                documentId: row.documentId,
+                repository: first.repository,
+                recordGroup: first.recordGroup,
+                lotFile: first.lotFile,
+                seriesName: first.seriesName,
+                citationEra: "footnote",
+                rawText: first.rawText
+            )
+        }
+
+        // Volume-level sources from front-matter (parsed by SourcesParserDelegate).
+        let volumeSourceRows: [VolumeSourceRow] = fullResult.volumeSources
+            .enumerated().map { i, entry in
+                VolumeSourceRow(
+                    volumeId: volumeId,
+                    repository: entry.repository,
+                    recordGroup: entry.recordGroup,
+                    lotFile: entry.lotFile,
+                    seriesName: entry.seriesName,
+                    entryText: entry.rawText,
+                    sortOrder: i
+                )
+            }
+
         return VolumeIndexData(
             volumeId: volumeId, documents: fts5Docs, crossReferences: crossRefs,
             pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
             personMentions: personMentionRows,
             persons: personRows,
-            terms: termRows
+            terms: termRows,
+            documentSources: documentSourceRows + footnoteSourceRows,
+            volumeSources: volumeSourceRows
         )
     }
 
@@ -1131,6 +1179,8 @@ public actor IndexingPipeline {
         try auxInsertPersonMentions(data.personMentions)
         try auxInsertPersons(data.persons)
         try auxInsertTerms(data.terms)
+        try auxInsertDocumentSources(data.documentSources)
+        try auxInsertVolumeSources(data.volumeSources)
     }
 
     // MARK: - Progress
@@ -1737,6 +1787,37 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_terms_term ON terms(term)")
+
+        // Session 130: archival citation tables
+        try exec("""
+            CREATE TABLE IF NOT EXISTS document_sources (
+                volume_id    TEXT NOT NULL,
+                document_id  TEXT NOT NULL,
+                repository   TEXT,
+                record_group TEXT,
+                lot_file     TEXT,
+                series_name  TEXT,
+                citation_era TEXT NOT NULL DEFAULT 'unrecognized',
+                raw_text     TEXT NOT NULL,
+                PRIMARY KEY (volume_id, document_id)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_rg ON document_sources(record_group)")
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_repo ON document_sources(repository)")
+
+        try exec("""
+            CREATE TABLE IF NOT EXISTS volume_sources (
+                volume_id    TEXT NOT NULL,
+                repository   TEXT,
+                record_group TEXT,
+                lot_file     TEXT,
+                series_name  TEXT,
+                entry_text   TEXT NOT NULL,
+                sort_order   INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (volume_id, entry_text)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_rg ON volume_sources(volume_id, record_group)")
     }
 
     // MARK: - Auxiliary Table DML
@@ -1896,6 +1977,99 @@ public actor IndexingPipeline {
         logger.debug("Inserted \(rows.count, privacy: .public) terms for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
+    private func auxInsertDocumentSources(_ rows: [DocumentSourceRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = """
+            INSERT OR REPLACE INTO document_sources
+            (volume_id, document_id, repository, record_group, lot_file, series_name, citation_era, raw_text)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId,   -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 3, row.repository)
+                auxBindOptional(stmt, 4, row.recordGroup)
+                auxBindOptional(stmt, 5, row.lotFile)
+                auxBindOptional(stmt, 6, row.seriesName)
+                sqlite3_bind_text(stmt, 7, row.citationEra, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 8, row.rawText,     -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+        logger.debug("Inserted \(rows.count, privacy: .public) document_sources for \(rows.first?.volumeId ?? "?", privacy: .public)")
+    }
+
+    private func auxInsertVolumeSources(_ rows: [VolumeSourceRow]) throws {
+        guard !rows.isEmpty else { return }
+        let sql = """
+            INSERT OR REPLACE INTO volume_sources
+            (volume_id, repository, record_group, lot_file, series_name, entry_text, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """
+        try inTransaction {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 2, row.repository)
+                auxBindOptional(stmt, 3, row.recordGroup)
+                auxBindOptional(stmt, 4, row.lotFile)
+                auxBindOptional(stmt, 5, row.seriesName)
+                sqlite3_bind_text(stmt, 6, row.entryText, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 7, Int64(row.sortOrder))
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
+        }
+        logger.debug("Inserted \(rows.count, privacy: .public) volume_sources for \(rows.first?.volumeId ?? "?", privacy: .public)")
+    }
+
+    /// Converts a `ParsedSourceNote` into a `DocumentSourceRow` for storage.
+    nonisolated private static func documentSourceRow(
+        volumeId: String, documentId: String,
+        parsed: ParsedSourceNote, rawText: String
+    ) -> DocumentSourceRow {
+        switch parsed {
+        case .centralFiles(let rg, let fid):
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: "Department of State", recordGroup: rg,
+                lotFile: nil, seriesName: fid, citationEra: "decimal", rawText: rawText)
+        case .lotFile(let rg, let lot, let fid):
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: "Department of State", recordGroup: rg,
+                lotFile: lot, seriesName: fid, citationEra: "lot_file", rawText: rawText)
+        case .naraCollection(let rg, let series, let lot, let box):
+            let sid = [series, box.map { "Box \($0)" }].compactMap { $0 }.joined(separator: ", ")
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: "National Archives", recordGroup: rg,
+                lotFile: lot, seriesName: sid.isEmpty ? nil : sid, citationEra: "structured", rawText: rawText)
+        case .presidentialLibrary(let lib, let coll, _):
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: lib, recordGroup: nil,
+                lotFile: nil, seriesName: coll.isEmpty ? nil : coll, citationEra: "structured", rawText: rawText)
+        case .ciaCollection(let job, _, _):
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: "Central Intelligence Agency", recordGroup: nil,
+                lotFile: job, seriesName: nil, citationEra: "structured", rawText: rawText)
+        case .foreignGovernmentArchive(let desc):
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: nil, recordGroup: nil,
+                lotFile: nil, seriesName: desc.prefix(80).description, citationEra: "foreign", rawText: rawText)
+        case .previouslyPublished:
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: nil, recordGroup: nil,
+                lotFile: nil, seriesName: nil, citationEra: "published", rawText: rawText)
+        case .unrecognized:
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: nil, recordGroup: nil,
+                lotFile: nil, seriesName: nil, citationEra: "unrecognized", rawText: rawText)
+        }
+    }
+
     /// Deletes all `cross_references` rows where `source_volume_id` matches.
     ///
     /// Called by `storeIndexData` before re-inserting so that re-indexing a volume
@@ -2015,13 +2189,15 @@ public actor IndexingPipeline {
 
     private func auxDeleteVolume(_ volumeId: String) throws {
         for (table, col) in [
-            ("cross_references", "source_volume_id"),
-            ("page_ranges", "volume_id"),
-            ("document_dates", "volume_id"),
-            ("document_cache", "volume_id"),
-            ("person_mentions", "volume_id"),
-            ("persons", "volume_id"),
-            ("terms",   "volume_id"),
+            ("cross_references",  "source_volume_id"),
+            ("page_ranges",       "volume_id"),
+            ("document_dates",    "volume_id"),
+            ("document_cache",    "volume_id"),
+            ("person_mentions",   "volume_id"),
+            ("persons",           "volume_id"),
+            ("terms",             "volume_id"),
+            ("document_sources",  "volume_id"),
+            ("volume_sources",    "volume_id"),
         ] {
             let stmt = try auxPrepare("DELETE FROM \(table) WHERE \(col) = ?")
             defer { sqlite3_finalize(stmt) }
@@ -2319,6 +2495,27 @@ public actor IndexingPipeline {
 
 // MARK: - Private Data Structures
 
+private struct DocumentSourceRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    let repository: String?
+    let recordGroup: String?
+    let lotFile: String?
+    let seriesName: String?
+    let citationEra: String
+    let rawText: String
+}
+
+private struct VolumeSourceRow: Sendable {
+    let volumeId: String
+    let repository: String?
+    let recordGroup: String?
+    let lotFile: String?
+    let seriesName: String?
+    let entryText: String
+    let sortOrder: Int
+}
+
 private struct VolumeIndexData: Sendable {
     let volumeId: String
     let documents: [FTS5Document]
@@ -2329,6 +2526,8 @@ private struct VolumeIndexData: Sendable {
     let personMentions: [PersonMentionRow]
     let persons: [PersonRow]
     let terms: [TermRow]
+    let documentSources: [DocumentSourceRow]
+    let volumeSources: [VolumeSourceRow]
 }
 
 private struct PersonMentionRow: Sendable {

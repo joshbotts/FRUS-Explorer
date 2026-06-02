@@ -117,8 +117,14 @@ struct SourceExplorerView: View {
         case .centralFiles(let rg, let fileId):
             centralFilesPanel(recordGroup: rg, fileIdentifier: fileId)
 
-        case .lotFile(let lotNumber, let fileId):
-            lotFilePanel(lotNumber: lotNumber, fileIdentifier: fileId)
+        case .lotFile(let rg, let lotNumber, let fileId):
+            lotFilePanel(recordGroup: rg, lotNumber: lotNumber, fileIdentifier: fileId)
+
+        case .naraCollection(let rg, let series, let lot, let box):
+            naraCollectionPanel(recordGroup: rg, series: series, lotFile: lot, box: box)
+
+        case .ciaCollection(let job, let box, let desc):
+            ciaPanel(jobNumber: job, box: box, description: desc)
 
         case .presidentialLibrary(let library, let collection, let fileId):
             presidentialLibraryPanel(library: library, collection: collection, fileIdentifier: fileId)
@@ -131,6 +137,46 @@ struct SourceExplorerView: View {
 
         case .unrecognized(let raw):
             unrecognizedPanel(rawText: raw)
+        }
+    }
+
+    // MARK: - NARA Collection Panel (new case)
+
+    @ViewBuilder
+    private func naraCollectionPanel(recordGroup: String, series: String?, lotFile: String?, box: String?) -> some View {
+        Section(String(localized: "source.explorer.provenance.header", defaultValue: "Provenance")) {
+            LabeledContent(
+                String(localized: "source.explorer.nara.repository", defaultValue: "Repository"),
+                value: "National Archives and Records Administration"
+            )
+            LabeledContent(
+                String(localized: "source.explorer.nara.rg", defaultValue: "Record Group"),
+                value: "RG \(recordGroup)"
+            )
+            if let series  { LabeledContent(String(localized: "source.explorer.nara.series", defaultValue: "Series"), value: series) }
+            if let lotFile  { LabeledContent(String(localized: "source.explorer.nara.lot", defaultValue: "Lot File"), value: lotFile) }
+            if let box     { LabeledContent(String(localized: "source.explorer.nara.box", defaultValue: "Box"), value: box) }
+        }
+        naraResultSection(requiresKey: true)
+    }
+
+    // MARK: - CIA Panel (new case)
+
+    @ViewBuilder
+    private func ciaPanel(jobNumber: String?, box: String?, description: String) -> some View {
+        Section(String(localized: "source.explorer.provenance.header", defaultValue: "Provenance")) {
+            LabeledContent(
+                String(localized: "source.explorer.cia.repository", defaultValue: "Repository"),
+                value: "Central Intelligence Agency"
+            )
+            if let jobNumber { LabeledContent(String(localized: "source.explorer.cia.job", defaultValue: "Job/Accession No."), value: jobNumber) }
+            if let box       { LabeledContent(String(localized: "source.explorer.cia.box", defaultValue: "Box"), value: box) }
+        }
+        Section {
+            Text(String(localized: "source.explorer.cia.note",
+                        defaultValue: "CIA accession records are not publicly available in the NARA Catalog. Use the description above to request records through FOIA or the CIA Historical Collections."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -193,7 +239,7 @@ struct SourceExplorerView: View {
     // MARK: - Lot File Panel
 
     @ViewBuilder
-    private func lotFilePanel(lotNumber: String, fileIdentifier: String?) -> some View {
+    private func lotFilePanel(recordGroup: String?, lotNumber: String, fileIdentifier: String?) -> some View {
         Section(String(localized: "source.explorer.provenance.header",
                        defaultValue: "Provenance")) {
             LabeledContent(
@@ -201,6 +247,12 @@ struct SourceExplorerView: View {
                 value: String(localized: "source.explorer.lotFile.typeValue",
                               defaultValue: "State Dept. Lot File")
             )
+            if let rg = recordGroup {
+                LabeledContent(
+                    String(localized: "source.explorer.lotFile.rg", defaultValue: "Record Group"),
+                    value: "RG \(rg)"
+                )
+            }
             LabeledContent(
                 String(localized: "source.explorer.lotFile.lot", defaultValue: "Lot Number"),
                 value: lotNumber
@@ -419,9 +471,16 @@ struct SourceExplorerView: View {
 
         // Only hit the API for provenance types that need it
         switch note {
-        case .lotFile(let lotNumber, _):
+        case .lotFile(let rg, let lotNumber, _):
             guard hasAPIKey else { return }
-            await fetchResult { try await client.resolveLotFile(lotNumber: lotNumber) }
+            let rgToUse = rg ?? "59"
+            await fetchResult { try await client.searchByLotFile(recordGroup: rgToUse, lotNumber: lotNumber) }
+
+        case .naraCollection(let rg, let series, let lot, _):
+            guard hasAPIKey else { return }
+            let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
+            let results  = try? await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 1)
+            if let first = results?.first { await MainActor.run { catalogResult = first } }
 
         case .presidentialLibrary(let library, let collection, _):
             guard hasAPIKey else { return }

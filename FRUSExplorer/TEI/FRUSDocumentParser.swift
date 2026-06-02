@@ -204,13 +204,15 @@ public actor FRUSDocumentParser {
         let name = volumeURL.lastPathComponent
         print("[TEIParser] parseVolumeFull: \(composite.teiDelegate.documents.count) docs, " +
               "\(composite.personsDelegate.entries.count) persons, " +
-              "\(composite.termsDelegate.entries.count) terms from \(name).")
+              "\(composite.termsDelegate.entries.count) terms, " +
+              "\(composite.sourcesDelegate.entries.count) sources from \(name).")
         #endif
 
         return VolumeFullParseResult(
-            documents: composite.teiDelegate.documents,
-            persons:   composite.personsDelegate.entries,
-            terms:     composite.termsDelegate.entries
+            documents:     composite.teiDelegate.documents,
+            persons:       composite.personsDelegate.entries,
+            terms:         composite.termsDelegate.entries,
+            volumeSources: composite.sourcesDelegate.entries
         )
     }
 
@@ -426,11 +428,25 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
 /// with one and eliminate two redundant disk reads.
 public struct VolumeFullParseResult: Sendable {
     /// All `<div type="document">` and `<div type="editorialNote">` entries.
-    public let documents: [FRUSDocumentAST]
+    public let documents:      [FRUSDocumentAST]
     /// Person entries from `<div type="persons">` or `<listPerson>`.
-    public let persons:   [PersonEntry]
+    public let persons:        [PersonEntry]
     /// Term/abbreviation entries from `<div type="terms">`.
-    public let terms:     [GlossEntry]
+    public let terms:          [GlossEntry]
+    /// Archival source entries from the volume front-matter sources list.
+    public let volumeSources:  [VolumeSourceEntry]
+}
+
+/// One entry from a FRUS volume's front-matter archival sources list.
+///
+/// Produced by `SourcesParserDelegate` when it encounters a `<div type="sources">`,
+/// `<div type="listofworks">`, or `<listBibl>` section.
+public struct VolumeSourceEntry: Sendable {
+    public let repository: String?
+    public let recordGroup: String?
+    public let lotFile: String?
+    public let seriesName: String?
+    public let rawText: String
 }
 
 // MARK: - Parser Error
@@ -1145,6 +1161,7 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
     let teiDelegate:     TEIParserDelegate     = TEIParserDelegate(targetDocumentId: nil)
     let personsDelegate: PersonsParserDelegate = PersonsParserDelegate()
     let termsDelegate:   TermsParserDelegate   = TermsParserDelegate()
+    let sourcesDelegate: SourcesParserDelegate = SourcesParserDelegate()
 
     // MARK: - XMLParserDelegate Forwarding
 
@@ -1156,12 +1173,14 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
         teiDelegate    .parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
         personsDelegate.parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
         termsDelegate  .parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
+        sourcesDelegate.parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         teiDelegate    .parser(parser, foundCharacters: string)
         personsDelegate.parser(parser, foundCharacters: string)
         termsDelegate  .parser(parser, foundCharacters: string)
+        sourcesDelegate.parser(parser, foundCharacters: string)
     }
 
     func parser(_ parser: XMLParser, foundIgnorableWhitespace whitespaceString: String) {
@@ -1176,10 +1195,170 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
         teiDelegate    .parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
         personsDelegate.parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
         termsDelegate  .parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
+        sourcesDelegate.parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
     }
 
     func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
         teiDelegate.parser(parser, parseErrorOccurred: parseError)
+    }
+}
+
+// MARK: - Sources Parser Delegate
+
+/// Minimal SAX delegate that extracts source-list entries from a FRUS volume's
+/// front-matter `<div type="sources">`, `<div type="listofworks">`, or similar section.
+///
+/// FRUS front-matter source lists have a hierarchical structure:
+/// ```xml
+/// <div type="sources">
+///   <list>
+///     <item>National Archives and Records Administration, College Park, Maryland</item>
+///     <item>  Record Group 59, General Records of the Department of State</item>
+///     <item>    Central Files</item>
+///     <item>    Lot Files</item>
+///     <item>      Lot 64 D 199, Records of the Policy Planning Staff</item>
+///   </list>
+/// </div>
+/// ```
+///
+/// Each `<item>` becomes a `VolumeSourceEntry`. Repository context is carried forward
+/// from the current indentation level.
+private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
+
+    var entries: [VolumeSourceEntry] = []
+
+    private var inSourcesSection = false
+    private var inItem           = false
+    private var textBuffer       = ""
+    private var elementDepth     = 0
+    private var sectionDepth     = -1
+    private var sortOrder        = 0
+
+    // Context carried across items to resolve hierarchical structure
+    private var currentRepository: String?
+    private var currentRecordGroup: String?
+
+    private static let rgPat = try? NSRegularExpression(
+        pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
+    private static let lotPat = try? NSRegularExpression(
+        pattern: #"\bLot\s+([\w\s\-]+?D\s*\d+)\b"#, options: .caseInsensitive)
+
+    private static let sourceSectionTypes: Set<String> = [
+        "sources", "listofworks", "listofworks", "listofabbreviations",
+        "sources-and-abbreviations"
+    ]
+
+    func parser(_ parser: XMLParser,
+                didStartElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?,
+                attributes attributeDict: [String: String] = [:]) {
+        elementDepth += 1
+        if !inSourcesSection {
+            let type = attributeDict["type"]?.lowercased() ?? ""
+            if (elementName == "div" && Self.sourceSectionTypes.contains(type))
+               || elementName == "listBibl" {
+                inSourcesSection = true
+                sectionDepth     = elementDepth
+            }
+        }
+        guard inSourcesSection else { return }
+        if elementName == "item" || elementName == "p" {
+            inItem     = true
+            textBuffer = ""
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        guard inItem else { return }
+        textBuffer += string
+    }
+
+    func parser(_ parser: XMLParser,
+                didEndElement elementName: String,
+                namespaceURI: String?,
+                qualifiedName qName: String?) {
+        defer { elementDepth -= 1 }
+        guard inSourcesSection else { return }
+
+        if elementName == "item" || elementName == "p" {
+            let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !raw.isEmpty {
+                let entry = parseSourceEntry(raw)
+                entries.append(entry)
+                sortOrder += 1
+            }
+            inItem     = false
+            textBuffer = ""
+        }
+
+        if elementDepth <= sectionDepth {
+            inSourcesSection = false
+            sectionDepth     = -1
+        }
+    }
+
+    private func parseSourceEntry(_ text: String) -> VolumeSourceEntry {
+        // Extract record group
+        var rg: String?
+        if let regex = Self.rgPat {
+            let ns = NSRange(text.startIndex..., in: text)
+            if let m = regex.firstMatch(in: text, range: ns) {
+                if m.range(at: 1).location != NSNotFound, let r = Range(m.range(at: 1), in: text) {
+                    rg = String(text[r])
+                } else if m.range(at: 2).location != NSNotFound, let r = Range(m.range(at: 2), in: text) {
+                    rg = String(text[r])
+                }
+            }
+        }
+
+        // Extract lot file
+        var lot: String?
+        if let regex = Self.lotPat {
+            let ns = NSRange(text.startIndex..., in: text)
+            if let m = regex.firstMatch(in: text, range: ns),
+               let r = Range(m.range(at: 1), in: text) {
+                lot = String(text[r]).trimmingCharacters(in: .whitespaces)
+            }
+        }
+
+        // Heuristic repository detection
+        let repoKeywords = [
+            "National Archives", "Library of Congress", "Washington National Records Center",
+            "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
+            "Reagan Library", "Bush Library", "Clinton Library", "Eisenhower Library",
+            "Truman Library", "Roosevelt Library", "Hoover Institution",
+            "Central Intelligence Agency", "Department of State",
+            "Department of Defense", "Naval Historical", "Center of Military History",
+        ]
+        var repo: String?
+        for keyword in repoKeywords {
+            if text.range(of: keyword, options: .caseInsensitive) != nil {
+                repo = keyword
+                break
+            }
+        }
+
+        // Series name: everything that isn't repository/RG/lot
+        // Use the trimmed text as the series description when there's a lot or RG
+        let seriesName: String?
+        if rg != nil || lot != nil {
+            // Strip RG and lot from text to get the series description
+            var s = text
+            if let r = rg { s = s.replacingOccurrences(of: "RG \(r)", with: "", options: .caseInsensitive) }
+            s = s.components(separatedBy: ",").last?.trimmingCharacters(in: .whitespaces) ?? s
+            seriesName = s.count > 3 ? s : nil
+        } else {
+            seriesName = nil
+        }
+
+        return VolumeSourceEntry(
+            repository: repo,
+            recordGroup: rg,
+            lotFile: lot,
+            seriesName: seriesName,
+            rawText: text
+        )
     }
 }
 

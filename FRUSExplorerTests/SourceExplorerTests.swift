@@ -30,7 +30,7 @@ struct SourceExplorerTests {
 
         // Era 3b — lot file (inline)
         let lotFileInline = "SPA Files: Lot 61-D 146, Box 4581"
-        if case .lotFile(let lot, _) = parser.parse(lotFileInline) {
+        if case .lotFile(_, let lot, _) = parser.parse(lotFileInline) {
             #expect(lot.contains("61-D 146"))
         } else {
             Issue.record("Expected .lotFile for inline lot file, got \(parser.parse(lotFileInline))")
@@ -84,7 +84,7 @@ struct SourceExplorerTests {
             // Simply verify no crash and result is a valid case
             switch result {
             case .centralFiles, .lotFile, .presidentialLibrary, .foreignGovernmentArchive,
-                    .previouslyPublished, .unrecognized:
+                    .previouslyPublished, .unrecognized, .naraCollection, .ciaCollection:
                 break // any structured result is acceptable
             }
             _ = era // suppress unused warning

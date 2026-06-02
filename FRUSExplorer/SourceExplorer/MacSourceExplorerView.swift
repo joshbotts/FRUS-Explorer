@@ -168,7 +168,7 @@ struct MacSourceExplorerView: View {
 
     private var showsManualSearch: Bool {
         switch parsed {
-        case .lotFile, .presidentialLibrary: return true
+        case .lotFile, .presidentialLibrary, .naraCollection: return true
         default: return false
         }
     }
@@ -214,11 +214,23 @@ struct MacSourceExplorerView: View {
                                       value: fileId)
                     }
 
-                case .lotFile(let lot, let fileId):
+                case .naraCollection(let rg, let series, let lotFile, let box):
+                    provenanceRow(label: "Repository", value: "National Archives (RG \(rg))")
+                    if let s = series  { provenanceRow(label: "Series", value: s) }
+                    if let l = lotFile { provenanceRow(label: "Lot File", value: l) }
+                    if let b = box     { provenanceRow(label: "Box", value: b) }
+
+                case .ciaCollection(let job, let box, _):
+                    provenanceRow(label: "Repository", value: "Central Intelligence Agency")
+                    if let j = job { provenanceRow(label: "Job No.", value: j) }
+                    if let b = box { provenanceRow(label: "Box", value: b) }
+
+                case .lotFile(let rg, let lot, let fileId):
                     provenanceRow(label: String(localized: "source.explorer.lotFile.type",
                                                defaultValue: "Type"),
                                   value: String(localized: "source.explorer.lotFile.typeValue",
                                                defaultValue: "State Dept. Lot File"))
+                    if let r = rg { provenanceRow(label: "Record Group", value: "RG \(r)") }
                     provenanceRow(label: String(localized: "source.explorer.lotFile.lot",
                                                defaultValue: "Lot Number"),
                                   value: lot)
@@ -331,6 +343,14 @@ struct MacSourceExplorerView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+        case .ciaCollection:
+            GroupBox(header) {
+                Text(String(localized: "source.explorer.cia.naraNote",
+                            defaultValue: "CIA accession records are not publicly available in the NARA Catalog."))
+                    .font(.callout).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
         case .foreignGovernmentArchive:
@@ -453,10 +473,17 @@ struct MacSourceExplorerView: View {
         hasAPIKey = await client.hasAPIKey()
 
         switch note {
-        case .lotFile(let lotNumber, _):
+        case .lotFile(let rg, let lotNumber, _):
             manualQuery = "State Department Lot File \(lotNumber)"
             guard hasAPIKey else { return }
-            await fetchResult { try await client.resolveLotFile(lotNumber: lotNumber) }
+            await fetchResult { try await client.searchByLotFile(recordGroup: rg ?? "59", lotNumber: lotNumber) }
+
+        case .naraCollection(let rg, let series, let lot, _):
+            let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
+            manualQuery = "RG \(rg) \(keywords)"
+            guard hasAPIKey else { return }
+            let results = try? await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 1)
+            if let first = results?.first { await MainActor.run { catalogResult = first } }
 
         case .presidentialLibrary(let library, let collection, _):
             manualQuery = "\(library) \(collection)"
