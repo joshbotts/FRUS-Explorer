@@ -365,6 +365,81 @@ public actor CrossReferenceStore {
         return try collectEdges(stmt)
     }
 
+    // MARK: - Archival provenance queries
+
+    /// Returns the lot file citation for a document, if one was recorded during indexing.
+    ///
+    /// Queries `document_sources` for the `lot_file` and `repository` fields stored by
+    /// `IndexingPipeline.storeIndexData()`. Returns `nil` when the document has not been
+    /// indexed, has no recognizable source note, or has a source note that doesn't include
+    /// a lot file number (e.g. decimal-file era notes, "previously published" citations).
+    public func lotFileCitation(
+        forVolumeId volumeId: String,
+        documentId: String
+    ) throws -> (repository: String?, lotFile: String, recordGroup: String?)? {
+        let sql = """
+            SELECT repository, lot_file, record_group
+            FROM document_sources
+            WHERE volume_id = ? AND document_id = ? AND lot_file IS NOT NULL
+            LIMIT 1
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId,   -1, SQLITE_TRANSIENT_CR)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_CR)
+        guard sqlite3_step(stmt) == SQLITE_ROW,
+              let lot = columnString(stmt, 1), !lot.isEmpty else { return nil }
+        return (
+            repository:   columnString(stmt, 0),
+            lotFile:      lot,
+            recordGroup:  columnString(stmt, 2)
+        )
+    }
+
+    /// Returns all distinct FRUS documents that share the same archival lot file as the
+    /// given document. Documents are ordered by volume then document ID.
+    ///
+    /// This enables "archival discovery" — finding other FRUS documents drawn from the
+    /// same box or series without following editorial cross-references. Results exclude
+    /// the querying document itself.
+    ///
+    /// - Parameters:
+    ///   - lotFile: The lot file number to search for (e.g. `"64 D 199"`).
+    ///   - excludingVolumeId: Volume ID to exclude the querying document.
+    ///   - excludingDocumentId: Document ID to exclude.
+    /// - Returns: Array of `(volumeId, documentId, repository, header)` tuples.
+    ///   `header` comes from `document_cache` and may be nil for unindexed docs.
+    public func documentsFromSameLotFile(
+        lotFile: String,
+        excludingVolumeId: String,
+        excludingDocumentId: String
+    ) throws -> [(volumeId: String, documentId: String, repository: String?, header: String?)] {
+        let sql = """
+            SELECT ds.volume_id, ds.document_id, ds.repository, dc.header
+            FROM document_sources ds
+            LEFT JOIN document_cache dc
+                   ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE ds.lot_file = ?
+              AND NOT (ds.volume_id = ? AND ds.document_id = ?)
+            ORDER BY ds.volume_id, ds.document_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, lotFile,             -1, SQLITE_TRANSIENT_CR)
+        sqlite3_bind_text(stmt, 2, excludingVolumeId,   -1, SQLITE_TRANSIENT_CR)
+        sqlite3_bind_text(stmt, 3, excludingDocumentId, -1, SQLITE_TRANSIENT_CR)
+        var results: [(volumeId: String, documentId: String, repository: String?, header: String?)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            results.append((
+                volumeId:   columnString(stmt, 0) ?? "",
+                documentId: columnString(stmt, 1) ?? "",
+                repository: columnString(stmt, 2),
+                header:     columnString(stmt, 3)
+            ))
+        }
+        return results
+    }
+
     /// Returns cross-volume reference counts, aggregated by (sourceVolumeId, targetVolumeId).
     ///
     /// Only cross-volume edges are returned — same-volume references (stored with NULL

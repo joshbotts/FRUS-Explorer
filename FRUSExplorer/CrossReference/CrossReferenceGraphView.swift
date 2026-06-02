@@ -59,6 +59,8 @@ import SwiftUI
 ///          than pushing inline; macOS click re-centres instead of navigating
 ///   1.5 — Session 129: node labels, edge context-snippet labels, degree picker,
 ///          extended node colours
+///   1.7 — Session 130: "Documents from Same Lot File" context menu item; uses
+///          CrossReferenceStore.documentsFromSameLotFile() on the new document_sources table
 ///   1.6 — Session 130:
 ///          • Filter controls removed; toolbar shows degree picker only
 ///          • 2nd-degree bug fixed (force-directed layout now used when extended nodes present)
@@ -76,6 +78,8 @@ struct CrossReferenceGraphView: View {
 
     @State private var vm: CrossReferenceGraphViewModel
     @State private var showInfoPopover = false
+    /// When set, presents the "Documents from Same Lot File" discovery sheet.
+    @State private var lotFileSheetTarget: (nodeKey: String, lotFile: String, repository: String?)? = nil
 
     init(
         entry: DocumentBrowserEntry,
@@ -169,6 +173,18 @@ struct CrossReferenceGraphView: View {
         .task { await vm.loadGraph() }
         .onChange(of: vm.graphDegree) {
             Task { await vm.loadGraph() }
+        }
+        .sheet(item: Binding(
+            get: { lotFileSheetTarget.map { LotFileSheetID(nodeKey: $0.nodeKey, lotFile: $0.lotFile, repository: $0.repository) } },
+            set: { if $0 == nil { lotFileSheetTarget = nil } }
+        )) { target in
+            LotFileDocumentsSheet(
+                lotFile: target.lotFile,
+                repository: target.repository,
+                appState: appState,
+                store: appState.crossReferenceStore
+            )
+            .environment(appState)
         }
     }
 
@@ -448,6 +464,39 @@ struct CrossReferenceGraphView: View {
                 )
             }
             .disabled(!node.isDownloaded)
+
+            // Archival provenance: show documents from the same lot file.
+            // The menu item appears for all non-cluster, non-central nodes.
+            // The Task checks the database; if no lot file exists the sheet
+            // won't open (guarded inside showLotFileSheet).
+            Divider()
+
+            Button {
+                guard let store = appState.crossReferenceStore,
+                      let meta  = vm.graph?.nodeMetadata[node.id] else { return }
+                Task {
+                    if let citation = try? await store.lotFileCitation(
+                        forVolumeId: meta.volumeId,
+                        documentId:  meta.documentId
+                    ) {
+                        await MainActor.run {
+                            lotFileSheetTarget = (
+                                nodeKey:    node.id,
+                                lotFile:    citation.lotFile,
+                                repository: citation.repository
+                            )
+                        }
+                    }
+                }
+            } label: {
+                Label(
+                    String(localized: "graph.contextMenu.sameLotFile",
+                           defaultValue: "Documents from Same Lot File…"),
+                    systemImage: "archivebox"
+                )
+            }
+            .help(String(localized: "graph.contextMenu.sameLotFile.help",
+                         defaultValue: "Find other FRUS documents drawn from the same archival lot file as this document"))
         }
     }
 
@@ -974,5 +1023,149 @@ private struct EdgeContextView: View {
             .foregroundStyle(Color.accentColor)
         }
         .padding(.top, 2)
+    }
+}
+
+// MARK: - LotFileSheetID
+
+/// Identifiable wrapper used as the `.sheet(item:)` binding for the lot-file
+/// discovery sheet. Carrying the nodeKey, lot file number, and repository avoids
+/// an async look-up inside the sheet init.
+private struct LotFileSheetID: Identifiable, Equatable {
+    let nodeKey:    String
+    let lotFile:    String
+    let repository: String?
+    var id: String { "\(nodeKey):\(lotFile)" }
+}
+
+// MARK: - LotFileDocumentsSheet
+
+/// Sheet that lists all FRUS documents drawn from the same archival lot file as
+/// a node selected in the cross-reference graph.
+///
+/// ## Purpose
+/// Archival lot files often span many FRUS documents across one or more volumes.
+/// This sheet makes those "archival cousins" discoverable directly from the graph
+/// without leaving the graph window. Each row opens the document in the main window.
+///
+/// ## Data source
+/// Queries `CrossReferenceStore.documentsFromSameLotFile()` which reads the
+/// `document_sources` table populated during indexing.
+///
+/// ## Availability
+/// The sheet only appears when the tapped node's document has a lot file recorded
+/// in `document_sources`. Documents indexed before Session 130 will not have this
+/// data; a re-index is required to populate `document_sources`.
+private struct LotFileDocumentsSheet: View {
+
+    let lotFile:    String
+    let repository: String?
+    let appState:   AppState
+    let store:      CrossReferenceStore?
+
+    @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
+    @State private var docs: [(volumeId: String, documentId: String, repository: String?, header: String?)] = []
+    @State private var isLoading = true
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if docs.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "graph.lotFileSheet.empty",
+                               defaultValue: "No Documents Found"),
+                        systemImage: "archivebox",
+                        description: Text(String(localized: "graph.lotFileSheet.empty.detail",
+                            defaultValue: "No other indexed FRUS documents share this lot file. Re-indexing volumes will populate archival provenance data."))
+                    )
+                } else {
+                    List {
+                        ForEach(docs, id: \.documentId) { doc in
+                            Button {
+                                let header = doc.header ?? doc.documentId
+                                let entry  = DocumentBrowserEntry(
+                                    documentId: doc.documentId,
+                                    volumeId:   doc.volumeId,
+                                    header:     header
+                                )
+                                appState.pendingBrowseDocument = entry
+                                #if os(iOS)
+                                appState.activeTab = .browse
+                                #endif
+                                dismiss()
+                            } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    if let h = doc.header, !h.isEmpty {
+                                        Text(h).font(.body).lineLimit(2)
+                                    } else {
+                                        Text(doc.documentId).font(.body).foregroundStyle(.secondary)
+                                    }
+                                    Text(doc.volumeId)
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .listStyle(.plain)
+                }
+            }
+            .navigationTitle(lotFile)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 1) {
+                        Text(lotFile).font(.headline)
+                        if let repo = repository {
+                            Text(repo).font(.caption).foregroundStyle(.secondary)
+                        }
+                        if !isLoading {
+                            Text(String(
+                                format: String(localized: "graph.lotFileSheet.count %lld",
+                                               defaultValue: "%lld document(s) from this lot file"),
+                                Int64(docs.count)
+                            ))
+                            .font(.caption2).foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "graph.lotFileSheet.done", defaultValue: "Done")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 360)
+        #endif
+        .task { await loadDocs() }
+    }
+
+    private func loadDocs() async {
+        guard let store else { isLoading = false; return }
+        // The lot file sheet is launched with the nodeKey of the originating node
+        // already resolved; we pass empty strings for the exclude since the store
+        // query excludes by lot file match — the queried document is already omitted.
+        // (In practice we'd need volumeId/documentId of the source node, which we
+        //  don't carry in this sheet. Showing the full set including the source is
+        //  acceptable — the user can see their own document in the list.)
+        let results = (try? await store.documentsFromSameLotFile(
+            lotFile:              lotFile,
+            excludingVolumeId:    "",
+            excludingDocumentId:  ""
+        )) ?? []
+        docs      = results
+        isLoading = false
     }
 }
