@@ -766,11 +766,15 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
         // MARK: Inline links
         case "persName":
-            let ref = attributes["ref"]
+            // FRUS TEI uses "corresp" in document body (e.g. corresp="#p_AH1").
+            // Fall back to "ref" for volumes that use the alternative attribute.
+            let ref = attributes["corresp"] ?? attributes["ref"]
             return .persName(ref: ref, children: children)
 
         case "gloss":
-            let ref = attributes["ref"]
+            // FRUS TEI uses "target" for gloss links (e.g. target="#t_NSC1").
+            // Fall back to "ref" for volumes that use the alternative attribute.
+            let ref = attributes["target"] ?? attributes["ref"]
             return .gloss(ref: ref, children: children)
 
         case "ref":
@@ -978,9 +982,17 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private var personsSectionDepth = -1
 
     /// Returns `true` when the given element starts a persons section.
+    ///
+    /// FRUS TEI marks the persons section with `xml:id="persons"` on a
+    /// `<div type="section">` element — NOT with `type="persons"`. Both
+    /// patterns are accepted for forward compatibility.
     private static func isPersonsSection(elementName: String, attributes: [String: String]) -> Bool {
         if elementName == "listPerson" { return true }
         if elementName == "div" {
+            // Primary pattern (all modern FRUS volumes): xml:id identifies the section.
+            let xmlId = attributes["xml:id"]?.lowercased() ?? ""
+            if xmlId == "persons" || xmlId == "persname" || xmlId == "listofpersons" { return true }
+            // Secondary pattern (some older or non-standard volumes): type attribute.
             let type = attributes["type"]?.lowercased() ?? ""
             return type == "persons" || type == "persname" || type == "listofpersons"
         }
@@ -998,11 +1010,24 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             personsSectionDepth = elementDepth
         }
         guard inPersonsSection else { return }
+
         if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0) {
             inPersonElement = true
+            // In FRUS TEI the item's xml:id is on the nested <persName>, not the <item>
+            // itself. We initialise currentId to nil here and capture it in the
+            // persName handler below; the <item>-level xml:id is also accepted as a
+            // fallback for <listPerson> structures.
             currentId = attributeDict["xml:id"] ?? attributeDict["id"]
             currentName = nil
             textBuffer = ""
+        }
+
+        // FRUS TEI places the person xml:id on <persName> inside <item>:
+        // <item><persName xml:id="p_AH1">Alphand, Herve</persName>,</hi> ...</item>
+        if inPersonElement && elementName == "persName" {
+            if let id = attributeDict["xml:id"] ?? attributeDict["id"] {
+                currentId = id          // takes priority over any item-level id
+            }
         }
     }
 
@@ -1076,25 +1101,41 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
                 qualifiedName qName: String?,
                 attributes attributeDict: [String: String] = [:]) {
         elementDepth += 1
-        // Accept "terms", "abbreviations", and "listofabbreviations" — FRUS uses
-        // different type values across volume eras.
+        // FRUS TEI marks the terms/abbreviations section with xml:id="terms" on a
+        // <div type="section"> — NOT with type="terms". Both patterns accepted.
         if elementName == "div" {
-            let type = attributeDict["type"]?.lowercased() ?? ""
-            if type == "terms" || type == "abbreviations" || type == "listofabbreviations" {
+            // Primary pattern (all modern FRUS volumes): xml:id identifies the section.
+            let xmlId = attributeDict["xml:id"]?.lowercased() ?? ""
+            if xmlId == "terms" || xmlId == "abbreviations" || xmlId == "listofabbreviations" {
                 inTermsSection = true
                 termsSectionDepth = elementDepth
+            } else {
+                // Secondary pattern: type attribute (older/non-standard volumes).
+                let type = attributeDict["type"]?.lowercased() ?? ""
+                if type == "terms" || type == "abbreviations" || type == "listofabbreviations" {
+                    inTermsSection = true
+                    termsSectionDepth = elementDepth
+                }
             }
         } else if elementName == "listBibl" && !inTermsSection {
-            // Some volumes use <listBibl> for abbreviations.
             inTermsSection = true
             termsSectionDepth = elementDepth
         }
         guard inTermsSection else { return }
         if elementName == "item" {
             inItem = true
+            // In FRUS TEI the term xml:id is on the nested <term> element, not <item>.
+            // Initialise to nil here; it is captured below in the <term> handler.
             currentId = attributeDict["xml:id"] ?? attributeDict["id"]
             currentTerm = nil
             textBuffer = ""
+        }
+        // FRUS TEI: <item><term xml:id="t_A1">A</term>, airgram</item>
+        // Capture the xml:id from <term> inside an item — this is the canonical id.
+        if inItem && elementName == "term" {
+            if let id = attributeDict["xml:id"] ?? attributeDict["id"] {
+                currentId = id
+            }
         }
     }
 
