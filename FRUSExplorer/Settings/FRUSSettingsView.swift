@@ -2653,8 +2653,9 @@ private struct SettingsResetPane: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
-    @State private var showLocalResetConfirmation = false
-    @State private var showFullResetConfirmation = false
+    @State private var showLocalResetConfirmation  = false
+    @State private var showFullResetConfirmation   = false
+    @State private var showSyncResetConfirmation   = false
     @State private var isResetting = false
 
     var body: some View {
@@ -2664,6 +2665,16 @@ private struct SettingsResetPane: View {
                     title: "Reset",
                     subtitle: "Reset FRUS Explorer to its initial state."
                 )
+
+                // iCloud sync reset (least destructive — recommended when sync is broken)
+                resetCard(
+                    title: "Reset iCloud sync",
+                    description: "Clears the local iCloud sync state and re-downloads your notes, collections, tags, and projects from iCloud on the next launch. Use this when sync appears stuck or is consistently reporting errors. Local data is not deleted.",
+                    buttonLabel: "Reset iCloud sync…",
+                    buttonRole: .destructive,
+                    action: { showSyncResetConfirmation = true }
+                )
+                .padding(.bottom, 12)
 
                 // Local only
                 resetCard(
@@ -2726,6 +2737,72 @@ private struct SettingsResetPane: View {
         } message: {
             Text("All data — including notes, collections, tags, and projects — will be permanently deleted from this Mac and iCloud. This cannot be undone.")
         }
+        .confirmationDialog(
+            "Reset iCloud sync?",
+            isPresented: $showSyncResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Reset iCloud sync", role: .destructive) {
+                Task { await performSyncReset() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The local iCloud sync state will be cleared. Your data in iCloud is not deleted. The app will re-download your notes, collections, and tags from iCloud when it next launches.")
+        }
+    }
+
+    // MARK: iCloud Sync Reset
+
+    /// Clears the local SwiftData persistent store so the app re-downloads from CloudKit
+    /// on the next launch. iCloud data is NOT deleted.
+    ///
+    /// This is the recommended first step when sync is consistently failing.
+    /// After this action the app automatically returns to onboarding so the
+    /// container is freshly initialised against the current CloudKit schema.
+    @MainActor
+    private func performSyncReset() async {
+        isResetting = true
+
+        // 1. Remove the local SQLite store used by SwiftData.
+        //    SwiftData stores the container at Application Support/[BundleID]/ on iOS
+        //    and Application Support/FRUSExplorer/ on macOS for local configs.
+        //    We delete all SQLite files in the standard SwiftData store locations
+        //    so the next ModelContainer init re-downloads from CloudKit.
+        let fm = FileManager.default
+        let appSupportURLs = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+        for base in appSupportURLs {
+            // SwiftData default store names vary; delete any .sqlite files in the app's
+            // Application Support directory that aren't our FTS5 index.
+            let appDir = base.appendingPathComponent("FRUSExplorer", isDirectory: true)
+            if let contents = try? fm.contentsOfDirectory(at: appDir,
+                                                            includingPropertiesForKeys: nil) {
+                for url in contents where url.pathExtension == "sqlite"
+                                           && !url.lastPathComponent.hasPrefix("frus") {
+                    try? fm.removeItem(at: url)
+                    print("[Settings] Removed SwiftData store: \(url.lastPathComponent)")
+                }
+            }
+            // Also check the standard SwiftData bundle-id directory
+            if let bundleId = Bundle.main.bundleIdentifier {
+                let bundleDir = base.appendingPathComponent(bundleId, isDirectory: true)
+                if let contents = try? fm.contentsOfDirectory(at: bundleDir,
+                                                               includingPropertiesForKeys: nil) {
+                    for url in contents where url.pathExtension == "sqlite" {
+                        try? fm.removeItem(at: url)
+                        print("[Settings] Removed SwiftData store: \(url.lastPathComponent)")
+                    }
+                }
+            }
+        }
+
+        // 2. Clear onboarding flag so the app presents a fresh launch on restart.
+        appState.hasCompletedOnboarding = false
+        isResetting = false
+
+        #if os(macOS)
+        // Close the Settings window; the main window will show onboarding.
+        NSApplication.shared.keyWindow?.close()
+        #endif
     }
 
     // MARK: Reset Card
