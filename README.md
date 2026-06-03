@@ -7,31 +7,33 @@ series more effectively.
 ## Features
 
 - Full-text search and filtering across the FRUS corpus (FTS5, English stemming, BM25 ranking)
+- **WKWebView document renderer** (Sessions 140–147): documents rendered as HTML via `FRUSRenderNodeHTMLSerializer` inside `FRUSDocumentWebView`; native HTML Popover API for footnotes; CSS Custom Highlight API for passage highlights visible inline without entering a special mode
 - TEI-rendered document view faithful to history.state.gov content and annotation
 - Structured date indexing from TEI `<date>` attributes; accurate date-range filtering
 - Editorial note distinction: index and filter primary documents vs. editorial notes separately
 - Person mention indexing: cross-volume search by person reference with mention counts
 - Persons and terms glossaries persisted to SQLite; live autocomplete person picker
 - Accurate footnote numbers from TEI `@n` attributes (matching printed volume numbering)
-- Cross-reference graph with node and edge labels, hover/click edge-context disclosure, 1°/2°/3° neighbourhood expansion, node context menu (Recenter Graph / Open in Main Window), page-based reference resolution, and an info popover explaining the graph
-- Document-level research notes and user tagging
-- **Research window / tab**: browse all annotated documents organized by user tag (document count descending); opens documents in the main window; macOS `⌘⌥R` shortcut; iOS Research tab (third tab)
+- Cross-reference graph with node and edge labels, hover/click edge-context disclosure, 1°/2°/3° neighbourhood expansion, node context menu (Recenter Graph / Open in Main Window / Documents from Same Lot File), page-based reference resolution, and an info popover explaining the graph
+- Document-level research notes, user tagging, and **inline text highlights** (CSS Custom Highlight API; four colors; stored offsets survive document re-renders via rendering-version hash; visible without a separate highlight mode)
+- **Research window / tab**: browse all annotated documents organized by user tag (document count descending) with highlight excerpts shown inline as colored strips; macOS `⌘⌥R` shortcut; iOS Research tab (third tab); "By Highlight Color" sidebar section for color-coded research workflows
 - AI summarization via Apple Intelligence (FoundationModels framework)
 - User-configurable summarization prompts with structured output support
 - Citation formatter (history.state.gov recommended style)
 - Citation lookup: resolve citations encountered in publications to FRUS documents (⌘⇧F on macOS, Find by Citation button in the macOS search window)
-- NARA Source Explorer: link document source notes to NARA Catalog records
+- **NARA Source Explorer** (Sessions 23, 130, 150): structured source note parsing with `SourceNoteParser`; lot files resolved via `variantControlNumber_is` NARA Catalog API query; State Dept. decimal files routed to period-specific NARA finding-aid pages (1910–1963, 7 periods); presidential library citations route to institution-specific finding-aid sites on zero API results; CIA records linked to CIA CREST database; no API key required for central-file and decimal-file resolution
 - Composable document collections with PDF, HTML, and DOCX export; document header (from indexed TEI `document_cache`) shown per row; per-entry delete, multi-note attachment, and inline date sort; configurable table-of-contents label style and per-document body/note inclusion
 - Corpus Analytics: corpus-wide term frequency histograms (Swift Charts) with Decade / Year / Month / Day / Subseries granularity, optional linear regression fit line, year-range filter, and metric explanation popover
-- CloudKit-synced user data (notes, tags, collections, projects) with live sync monitoring: macOS status bar and iOS Settings surface "Syncing…", "Synced", or "Sync Error" (with error detail) in real time via `NSPersistentCloudKitContainer.eventChangedNotification`
+- CloudKit-synced user data (notes, tags, collections, projects, highlights) with live sync monitoring and proactive health checks: account status and private zone verification at launch and on foreground; macOS status bar surfaces zone-missing and not-signed-in warnings alongside the existing "Syncing…/Synced/Sync Error" states; iOS Settings shows the same diagnostics in the iCloud Sync section
 - Offline functionality with download queue; volumes indexed automatically after download
 - Live indexing progress (stage, document count, throughput) in the volume browser; document list loads automatically on completion without navigating away; macOS status bar shows a tappable queue popover with per-volume progress, combined ETA, and pending-volume list for multi-volume batches
-- macOS Settings → Storage: per-category usage breakdown (volume XML / search index / AI summaries / total); indexing controls (Index Remaining, Reindex All, Delete & Rebuild) positioned above the volume list for immediate access; per-volume reindex and remove controls
+- macOS Settings → Storage: per-category usage breakdown (volume XML / search index / AI summaries / total); indexing controls (Index Remaining, Reindex All, Delete & Rebuild) positioned above the volume list; per-volume reindex and remove controls; storage limit with pre-download gate and Manage Storage sheet showing LRU removal candidates
 - Breadcrumb navigation trail in the volume browser
 - Front matter sections (preface, introduction, errata) browsable directly from the corpus
 - Accurate subseries grouping in the volume browser and manifest diff
 - **iOS/iPadOS**: five-tab navigation — Browse, Search, Research, Collections, Settings
-- **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons throughout the app
+- **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons; save/load searches in the macOS search window
+- **Save & load searches**: bookmark any query + filters in the macOS search window; saved searches also drive smart collections that auto-populate at export time
 
 ## Requirements
 
@@ -68,7 +70,7 @@ FRUSExplorer/
 │   ├── Distribution/             Direct-distribution-only code (SparkleUpdater)
 │   ├── Resources/                Bundled data (manifest, taxonomy, subject tags)
 │   └── Localizable.strings       English base localisation
-├── FRUSExplorerTests/            Unit tests (517 tests, all passing)
+├── FRUSExplorerTests/            Unit tests (600+ tests, all passing)
 ├── FRUSExplorerUITests/          UI tests
 ├── ManifestGenerator/            SPM tool: generates manifest.json from FRUS GitHub
 ├── TaxonomyGenerator/            SPM tool: generates volume-tag-taxonomy.json
@@ -269,8 +271,12 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 │                  │    Document Cache)             │
 ├──────────────────┴───────────────────────────────┤
 │           TEI Rendering Pipeline                  │
-│    (XML Parser → Swift AST → SwiftUI)             │
-│    AST nodes: date, persName, footnote(@n), …     │
+│  XML → FRUSDocumentParser → FRUSASTNode            │
+│  → ASTToRenderNodeConverter → FRUSRenderNode tree  │
+│  → FRUSRenderNodeHTMLSerializer → HTML             │
+│  → WKWebView (Sessions 140–147)                    │
+│  Footnotes: HTML Popover API (no JS required)      │
+│  Highlights: CSS Custom Highlight API              │
 ├──────────────────────────────────────────────────┤
 │           Network & Storage Layer                 │
 │  (GitHub API, NARA API, Volume Files,             │

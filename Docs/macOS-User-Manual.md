@@ -48,7 +48,7 @@ All research data (notes, tags, collections, highlights) syncs automatically acr
 
 ### System Requirements
 
-FRUS Explorer requires macOS 15 Sequoia or later. Full-text search and document rendering work on all supported Macs; AI summarization (Section 11) additionally requires an Apple Silicon Mac with Apple Intelligence enabled.
+FRUS Explorer requires macOS 26 or later. Full-text search and document rendering work on all supported Macs; AI summarization (Section 11) additionally requires an Apple Silicon Mac with Apple Intelligence enabled.
 
 ### Installation
 
@@ -123,7 +123,7 @@ When a document is open, its title and the name of the volume it belongs to appe
 Directly below the toolbar, the research strip is always visible when a document is open. It provides quick access to the annotation tools most researchers use on every document:
 
 - **Add / Edit Note** — Open the note editor for this document.
-- **Highlight** — After selecting text in the document body, click here to anchor a highlight and optionally attach a note.
+- **Highlight** — Enabled when you have selected text in the document body. Click to save the selected passage as a colored highlight. The button is grayed out when no text is selected.
 - **Citation** — Open the citation popover.
 - **Tags** — Apply or remove user tags.
 
@@ -142,7 +142,9 @@ Documents are rendered from TEI XML into native SwiftUI, matching the typography
 The status bar at the bottom of the main window provides at-a-glance information about background tasks:
 
 - **Indexing progress** — Volume name and percentage complete during initial indexing.
-- **iCloud sync** — Current CloudKit sync state (idle, syncing, error with detail).
+- **iCloud sync** — Current CloudKit sync state: idle (checkmark), syncing (spinner), succeeded, or sync error with full error detail in a tooltip. Two additional warnings may appear:
+  - **Zone Missing** (red) — the iCloud private sync zone is absent; records cannot upload or download. Force-quit and relaunch to trigger zone recreation, or use Reset iCloud Sync in Settings.
+  - **Not Signed In** (orange) — iCloud account is unavailable; data will not sync until you sign in via System Settings → Apple ID.
 - **iCloud Keychain** — Availability of NARA API key sync across devices.
 
 `[SCREENSHOT: Status bar detail showing indexing progress indicator]`
@@ -325,11 +327,21 @@ Notes are associated with the active project (see Section 14). If another projec
 
 ### 7.2 Highlights
 
-Select any text in the document body, then click **Highlight** in the research strip. The selected passage is saved as a highlight. You can attach a note to each highlight.
+Select any text in the document body. When a selection is active, the **Highlight** button in the research strip becomes enabled. Click it to open the color picker.
 
-`[SCREENSHOT: Text selected in a document with the Highlight button visible in the research strip]`
+`[SCREENSHOT: Text selected in a document with the Highlight button enabled in the research strip and a color picker popover showing four color options]`
 
-All highlights for a document are listed in the note editor. Click any highlight entry to jump to that location in the document.
+**To create a highlight:**
+1. Select the passage you want to highlight (click and drag or double-click a word).
+2. Click **Highlight** in the research strip (the paintbrush icon becomes active when text is selected).
+3. Choose a color: Yellow, Green, Blue, or Pink.
+4. The highlight appears immediately as a colored background over the selected text.
+
+Highlights appear as colored background fills directly in the document body — no special mode is required to see them. The **Add Note** button in the research strip becomes active immediately after creating a highlight, allowing you to attach a note to the passage.
+
+**Managing highlights:** All highlights for a document are visible in the document view itself. A **stale highlight** warning banner appears at the top of the document if any highlights were created from an older version of the document's content — this can happen if the underlying TEI source has been updated. Stale highlights are shown in amber; you can delete them from the Research window.
+
+**Research window integration:** Highlights appear in the Research window (⌘⌥R) as colored strip excerpts beneath the document header, showing the verbatim highlighted text. The sidebar includes a "By Highlight Color" section grouping documents by which colors you have used — useful when you use different colors to mark different thematic categories.
 
 ### 7.3 User Tags
 
@@ -554,18 +566,29 @@ Click the source note at the top of any open document to open the Source Explore
 
 ### 12.1 Resolution by Provenance Type
 
-| Provenance | Resolution |
-|-----------|-----------|
-| State Dept. central files (RG-59) | Direct link to NARA Catalog RG-59 landing page (no API key needed) |
-| Lot file | Queries NARA Catalog API for the file series description |
-| Presidential library | Queries NARA Catalog API for the file series |
-| Foreign archive | Displays parsed text |
-| Previously published | Displays parsed citation |
-| Unrecognized | Shows raw text with an explanation |
+Source Explorer classifies each source note and applies the most precise resolution strategy available for that type. The guiding principle is honest navigation: if a type cannot be resolved to a specific catalog record, Source Explorer links directly to the correct finding-aid page rather than showing a generic error or a blank state.
+
+| Provenance | Resolution | API key needed? |
+|-----------|-----------|:---:|
+| **State Dept. decimal files (1910–1963)** | Period-specific NARA finding-aid page based on the document year. Seven periods (1910–1929 through 1960–Jan 1963) each have their own box lists, purport indexes, and filing manuals | No |
+| **State Dept. central files (post-1963)** | NARA Catalog search pre-scoped to the RG-59 parent description; subject-numeric code (e.g. `POL 27 VIET S`) used as the query | No |
+| **Lot files** | NARA Catalog API `variantControlNumber_is` query with three normalised forms of the lot number (e.g. `63D135`, `63 D 135`, `63 D135`), constrained to Record Group 59 | Yes |
+| **Other NARA record groups** (RG 218, 306, 330, 84) | NARA Catalog API search with record group number constraint | Yes |
+| **Presidential library** | NARA Catalog keyword search combining library name and collection keywords; up to 3 candidates shown; zero-result path links to the institution's own finding-aid portal (e.g. jfklibrary.org, lbjlibrary.org, nixonlibrary.gov) | Yes |
+| **CIA records** | CIA CREST database link with job number pre-populated when available | No |
+| **Foreign archive** | Displays parsed text | — |
+| **Previously published** | Displays parsed citation | — |
+| **Unrecognized** | Shows raw text with a general NARA Catalog search link | No |
+
+When the API returns multiple candidates (up to 5 for lot files and 3 for presidential libraries), they are displayed as a ranked list. Click any candidate to open its NARA Catalog record in your browser. When zero results are returned, a manual-search button appears pre-scoped to the correct record group or institution.
+
+`[SCREENSHOT: Source Explorer showing a resolved State Dept. lot file with multiple NARA Catalog candidates listed]`
+
+`[SCREENSHOT: Source Explorer showing a decimal file citation with the matched 1945–1949 period finding-aid link and a brief explanation of the filing system]`
 
 ### 12.2 NARA API Key
 
-Lot file and presidential library lookups require a free NARA Catalog API key. Enter your key once in **Settings → Advanced → NARA API**; it is stored in iCloud Keychain and syncs automatically to all your devices.
+Lot file and presidential library lookups require a free NARA Catalog API key. Enter your key once in **Settings → Advanced → NARA API**; it is stored in iCloud Keychain and syncs automatically to all your devices. Central file, decimal file, and CIA resolution work without a key.
 
 `[SCREENSHOT: Settings pane for NARA API key entry with a "Need a Key?" link]`
 
@@ -670,10 +693,11 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 
 | Option | Effect |
 |--------|--------|
-| **Reset Local Data** | Deletes all local app data; iCloud-synced records (notes, tags, collections) are preserved and re-download on next launch |
+| **Reset Local Data** | Deletes all local app data; iCloud-synced records (notes, tags, collections, highlights) are preserved and re-download on next launch |
+| **Reset iCloud Sync** | Clears the CloudKit change token so the container performs a full re-sync from the server on next launch. Use when the sync indicator shows a persistent error that does not resolve on its own |
 | **Reset Everything** | Deletes all local data and initiates deletion of all iCloud records |
 
-Both reset options require confirmation.
+All reset options require confirmation.
 
 ---
 

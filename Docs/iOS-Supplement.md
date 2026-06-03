@@ -124,18 +124,18 @@ When you open a document on iPhone, a toolbar appears below the navigation bar. 
 
 ### 3.2 Text Highlighting
 
-Highlighting is a fully touch-native feature on iOS. To highlight and annotate a passage:
+Highlighting works the same way on all platforms. To highlight a passage:
 
 1. **Long-press** a word to begin a text selection.
 2. Drag the selection handles to cover the passage you want.
-3. In the context menu that appears, tap **Highlight**.
-4. An optional note field appears — add a note or leave it blank and tap **Save**.
+3. Tap the **paintbrush** button in the document toolbar (it activates when text is selected).
+4. Choose a color: Yellow, Green, Blue, or Pink.
 
-`[SCREENSHOT: Text selection on iPhone with the "Highlight" option visible in the context menu]`
+`[SCREENSHOT: Text selected in a document on iPhone with the paintbrush highlight button active in the toolbar]`
 
-Highlights appear in the document as colored underlines. Tap any highlight to view or edit its note.
+Highlights appear as colored backgrounds directly in the document body — no special mode is required to see them. After creating a highlight, the **Add Note to Highlight** button also activates in the toolbar, letting you attach a note to the passage immediately.
 
-> **Mac note:** Text highlighting in the same form is not available on macOS. On the Mac, you select text and click Highlight in the research strip; this anchors the selection and links it to a note, but the visual highlight overlay in the document is an iOS-only feature.
+> **Same on Mac:** Text highlighting works identically on macOS — select text in the document, click Highlight in the research strip, choose a color. Both platforms render highlights inline using the same CSS Custom Highlight API.
 
 ### 3.3 Summary Strip
 
@@ -238,6 +238,7 @@ With an external keyboard or the Magic Keyboard folio, most macOS keyboard short
 | Long-press | Document list row | Context menu (Open, Edit Note, Add to Collection, etc.) |
 | Swipe left | Document list row | Quick-delete user tag or remove from collection |
 | Long-press | Document body text | Begin text selection (then drag handles to extend) |
+| Tap paintbrush button | Toolbar (when text selected) | Open color picker to create a highlight |
 | Tap highlighted text | Document body | View / edit highlight note |
 | Tap persName / gloss / ref | Document body | Open linked entry as sheet |
 | Swipe right from left edge | Research tab | Reveal tag sidebar |
@@ -258,7 +259,7 @@ This table summarizes every significant difference between the macOS and iOS ver
 |---------|-------|--------------|
 | **Navigation structure** | Multiple windows | Tab bar; each tab has its own navigation stack |
 | **Document reading area** | Dedicated main window | Pushes into the active tab's stack |
-| **Text highlights** | Research strip button; no visual overlay | Long-press → select → Highlight; colored underline overlay in document |
+| **Text highlights** | Select text → click Highlight in research strip → choose color; colored background overlay in document | Select text → tap paintbrush button in toolbar → choose color; same colored background overlay; identical behavior on both platforms |
 | **Analytics** | Separate persistent window | Sheet from Browse tab toolbar |
 | **Citation Lookup** | Separate window (⌘⇧F) | Sheet from Search tab toolbar |
 | **Research notes panel** | Always-visible research strip + note editor | Toolbar button; inline editor on iPhone, inspector panel on iPad |
@@ -271,7 +272,8 @@ This table summarizes every significant difference between the macOS and iOS ver
 | **Multi-window documents** | Standard macOS multi-window | iPad Stage Manager: long-press → Open in New Window |
 | **Keyboard shortcuts** | Full macOS shortcut set | Subset available with external keyboard on iPad |
 | **AI Summarization** | Apple Silicon Mac required | iPhone 16 Pro / iPad with Apple Intelligence required |
-| **iCloud sync** | Automatic | Automatic — same iCloud account shares all data |
+| **iCloud sync** | Automatic; status bar shows zone-missing and not-signed-in warnings | Automatic; iCloud Sync section in Settings tab shows same diagnostic states |
+| **Source Explorer** | Full resolution: decimal file period routing, lot file API queries, presidential library fallbacks, CIA CREST links | Identical resolution on iOS; sheet presentation instead of window |
 
 ---
 
