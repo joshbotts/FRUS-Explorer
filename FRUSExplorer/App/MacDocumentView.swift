@@ -61,6 +61,8 @@ struct MacDocumentView: View {
     @State private var nextEntry: DocumentBrowserEntry? = nil
     @State private var showPersonNotFound = false
     @State private var showGlossNotFound  = false
+    /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
+    @State private var highlightToDelete: (Int, Int)? = nil
 
     @Query private var highlights: [DocumentHighlight]
 
@@ -163,6 +165,31 @@ struct MacDocumentView: View {
             Text(String(localized: "glossNotFound.detail",
                         defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes."))
         }
+        .alert(
+            String(localized: "highlight.delete.title",
+                   defaultValue: "Remove Highlight"),
+            isPresented: Binding(
+                get:  { highlightToDelete != nil },
+                set:  { if !$0 { highlightToDelete = nil } }
+            )
+        ) {
+            Button(
+                String(localized: "highlight.delete.confirm", defaultValue: "Remove"),
+                role: .destructive
+            ) {
+                if let (start, end) = highlightToDelete {
+                    deleteHighlight(startOffset: start, endOffset: end)
+                }
+                highlightToDelete = nil
+            }
+            Button(String(localized: "highlight.delete.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {
+                highlightToDelete = nil
+            }
+        } message: {
+            Text(String(localized: "highlight.delete.message",
+                        defaultValue: "This highlight will be permanently removed."))
+        }
     }
 
     // MARK: - WebKit document view (Session 142+)
@@ -218,6 +245,9 @@ struct MacDocumentView: View {
             .onSelectionCleared {
                 highlightCoordinator.webKitSelectionRange = nil
             }
+            .onHighlightTapped { start, end in
+                highlightToDelete = (start, end)
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // AI summarization strip — restored from normalModeScrollView (Session 147 TODO)
@@ -252,6 +282,29 @@ struct MacDocumentView: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.orange.opacity(0.08))
+    }
+
+    // MARK: - Highlight Deletion
+
+    /// Finds the `DocumentHighlight` matching the given flat-text offsets and
+    /// deletes it from SwiftData. Called after the user confirms deletion via
+    /// the tap-on-highlight context alert.
+    @MainActor
+    private func deleteHighlight(startOffset: Int, endOffset: Int) {
+        // Match by volume + document + offsets — the combination is unique per highlight.
+        let vid = entry.volumeId
+        let did = entry.documentId
+        let predicate = #Predicate<DocumentHighlight> { h in
+            h.volumeId == vid && h.documentId == did
+                && h.startOffset == startOffset && h.endOffset == endOffset
+        }
+        guard let hl = try? modelContext.fetch(FetchDescriptor(predicate: predicate)).first else {
+            return
+        }
+        modelContext.delete(hl)
+        #if DEBUG
+        print("[MacDocumentView] Deleted highlight [\(startOffset)–\(endOffset)] from \(did)")
+        #endif
     }
 
     // MARK: - Highlight Actions (WebKit path)

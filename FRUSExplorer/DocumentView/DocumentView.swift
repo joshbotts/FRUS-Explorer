@@ -156,6 +156,8 @@ struct DocumentView: View {
     /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
     /// Set by `onSelectionChanged` from `FRUSDocumentWebView`.
     @State private var webKitSelectionRange: (Int, Int)? = nil
+    /// Offsets of a tapped highlight pending the user's delete confirmation.
+    @State private var highlightToDelete: (Int, Int)? = nil
     /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
     /// that sets this is hidden, keeping the panel closed).
     @State private var showNotesPanel = false
@@ -373,6 +375,31 @@ struct DocumentView: View {
         }
         .sheet(isPresented: $showHighlightColorPicker) {
             highlightColorPickerSheet
+        }
+        .confirmationDialog(
+            String(localized: "highlight.delete.title", defaultValue: "Remove Highlight"),
+            isPresented: Binding(
+                get:  { highlightToDelete != nil },
+                set:  { if !$0 { highlightToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(
+                String(localized: "highlight.delete.confirm", defaultValue: "Remove"),
+                role: .destructive
+            ) {
+                if let (start, end) = highlightToDelete {
+                    deleteHighlight(startOffset: start, endOffset: end)
+                }
+                highlightToDelete = nil
+            }
+            Button(String(localized: "highlight.delete.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {
+                highlightToDelete = nil
+            }
+        } message: {
+            Text(String(localized: "highlight.delete.message",
+                        defaultValue: "This highlight will be permanently removed."))
         }
         // Trailing inspector panel for research notes (iPad).
         // On iPhone the toggle button is hidden, so showNotesPanel stays false.
@@ -891,6 +918,7 @@ struct DocumentView: View {
             .highlights(highlights)
             .onSelectionChanged { start, end in webKitSelectionRange = (start, end) }
             .onSelectionCleared { webKitSelectionRange = nil }
+            .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // TODO(Session 147): integrate DocumentTagSection and volume navigation
         }
@@ -898,6 +926,24 @@ struct DocumentView: View {
     }
 
     // MARK: - Highlight Actions
+
+    /// Deletes the `DocumentHighlight` matching `startOffset`/`endOffset` from SwiftData.
+    @MainActor
+    private func deleteHighlight(startOffset: Int, endOffset: Int) {
+        let vid = entry.volumeId
+        let did = entry.documentId
+        let predicate = #Predicate<DocumentHighlight> { h in
+            h.volumeId == vid && h.documentId == did
+                && h.startOffset == startOffset && h.endOffset == endOffset
+        }
+        guard let hl = try? modelContext.fetch(FetchDescriptor(predicate: predicate)).first else {
+            return
+        }
+        modelContext.delete(hl)
+        #if DEBUG
+        print("[DocumentView] Deleted highlight [\(startOffset)–\(endOffset)] from \(did)")
+        #endif
+    }
 
     @MainActor
     private func createHighlight(color: DocumentHighlight.Color) {

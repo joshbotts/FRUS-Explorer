@@ -66,6 +66,7 @@ extension WKWebViewConfiguration {
             forMainFrameOnly: true
         ))
         ucc.add(messageHandler, name: "selectionChanged")
+        ucc.add(messageHandler, name: "highlightTapped")
 
         return config
     }
@@ -125,10 +126,16 @@ function buildRanges(start, end) {
   range.setEnd(endEntry.node, endEntry.localOffset + 1);
   return [range];
 }
+
 window.FRUSHighlights = {
+  // All currently rendered highlights, stored so the click handler can
+  // identify which highlight (if any) a tap falls within.
+  currentHighlights: [],
+
   render(highlights) {
     if (typeof CSS === 'undefined' || !CSS.highlights) return;
     CSS.highlights.clear();
+    window.FRUSHighlights.currentHighlights = highlights || [];
     if (!highlights || !highlights.length) return;
     const groups = {};
     for (const h of highlights) {
@@ -143,6 +150,53 @@ window.FRUSHighlights = {
     }
   }
 };
+
+// Click listener: detect taps within a rendered highlight range and notify Swift.
+// Uses document.caretRangeFromPoint (WebKit) to map the tap point to a character
+// offset, then checks whether that offset falls inside any current highlight.
+// Posts { startOffset, endOffset, color } to the highlightTapped handler.
+document.addEventListener('click', (e) => {
+  // Skip if user is making a text selection (mousedown dragged)
+  const sel = window.getSelection();
+  if (sel && !sel.isCollapsed) return;
+
+  if (!window.FRUSOffsets || !window.FRUSHighlights.currentHighlights.length) return;
+
+  // Resolve the tap point to a DOM caret position
+  const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+  if (!caretRange) return;
+
+  // Convert caret position to flat-text offset using the existing reverse-map
+  const map = window.FRUSOffsets.charToNode;
+  const node = caretRange.startContainer;
+  const localOff = caretRange.startOffset;
+  let tapOffset = -1;
+  for (let i = 0; i < map.length; i++) {
+    if (map[i].node === node && map[i].localOffset === localOff) { tapOffset = i; break; }
+  }
+  // Fallback: if exact localOffset not found, search for the node at any offset
+  if (tapOffset < 0) {
+    for (let i = 0; i < map.length; i++) {
+      if (map[i].node === node) { tapOffset = i; break; }
+    }
+  }
+  if (tapOffset < 0) return;
+
+  // Find the first non-stale highlight whose range contains the tap offset
+  const hl = window.FRUSHighlights.currentHighlights.find(
+    h => !h.isStale && tapOffset >= h.startOffset && tapOffset < h.endOffset
+  );
+  if (!hl) return;
+
+  try {
+    webkit.messageHandlers.highlightTapped.postMessage({
+      startOffset: hl.startOffset,
+      endOffset:   hl.endOffset,
+      color:       hl.color
+    });
+    e.stopPropagation();
+  } catch (_) {}
+});
 """
 
 /// Text-selection → flat-text offset bridge, embedded as a Swift string constant.

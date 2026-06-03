@@ -86,6 +86,11 @@ public struct FRUSDocumentWebView: View {
     /// Called when the selection is collapsed or cleared.
     var onSelectionCleared: (() -> Void)? = nil
 
+    /// Called when the user taps within a non-stale highlight range.
+    /// `(startOffset, endOffset)` uniquely identifies the highlight so the
+    /// caller can look it up in SwiftData and offer to delete it.
+    var onHighlightTapped: ((Int, Int) -> Void)? = nil
+
     /// Stored highlights to render via the CSS Custom Highlight API after each
     /// page load. Updated highlights are re-rendered without a full HTML reload.
     var highlights: [DocumentHighlight] = []
@@ -108,7 +113,8 @@ public struct FRUSDocumentWebView: View {
             onGlossTap:         onGlossTap,
             onCrossRefTap:      onCrossRefTap,
             onSelectionChanged: onSelectionChanged,
-            onSelectionCleared: onSelectionCleared
+            onSelectionCleared: onSelectionCleared,
+            onHighlightTapped:  onHighlightTapped
         )
         #else
         _FRUSDocumentWebViewiOS(
@@ -120,7 +126,8 @@ public struct FRUSDocumentWebView: View {
             onGlossTap:         onGlossTap,
             onCrossRefTap:      onCrossRefTap,
             onSelectionChanged: onSelectionChanged,
-            onSelectionCleared: onSelectionCleared
+            onSelectionCleared: onSelectionCleared,
+            onHighlightTapped:  onHighlightTapped
         )
         #endif
     }
@@ -144,6 +151,13 @@ extension FRUSDocumentWebView {
     /// Registers a callback for when the selection is collapsed or cleared.
     func onSelectionCleared(_ handler: @escaping () -> Void) -> FRUSDocumentWebView {
         var copy = self; copy.onSelectionCleared = handler; return copy
+    }
+
+    /// Registers a callback fired when the user taps inside a rendered highlight.
+    /// `(startOffset, endOffset)` matches `DocumentHighlight.startOffset`/`endOffset`
+    /// so the caller can fetch and delete the record from SwiftData.
+    func onHighlightTapped(_ handler: @escaping (Int, Int) -> Void) -> FRUSDocumentWebView {
+        var copy = self; copy.onHighlightTapped = handler; return copy
     }
 }
 
@@ -203,6 +217,8 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
     var onSelectionChanged: ((Int, Int) -> Void)?
     /// Fired when JS reports the selection was cleared (`{start: -1, end: -1}`).
     var onSelectionCleared: (() -> Void)?
+    /// Fired when the user taps inside a rendered highlight range.
+    var onHighlightTapped: ((Int, Int) -> Void)?
 
     // MARK: WKScriptMessageHandler
 
@@ -215,16 +231,25 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
     ) {
-        guard message.name == "selectionChanged",
-              let body  = message.body as? [String: Any],
-              let start = body["start"] as? Int,
-              let end   = body["end"]   as? Int
-        else { return }
+        guard let body = message.body as? [String: Any] else { return }
 
-        if start < 0 {
-            onSelectionCleared?()
-        } else if end > start {
-            onSelectionChanged?(start, end)
+        switch message.name {
+        case "selectionChanged":
+            guard let start = body["start"] as? Int,
+                  let end   = body["end"]   as? Int else { return }
+            if start < 0 {
+                onSelectionCleared?()
+            } else if end > start {
+                onSelectionChanged?(start, end)
+            }
+
+        case "highlightTapped":
+            guard let start = body["startOffset"] as? Int,
+                  let end   = body["endOffset"]   as? Int else { return }
+            onHighlightTapped?(start, end)
+
+        default:
+            break
         }
     }
 
@@ -306,6 +331,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     var onCrossRefTap:      ((String, String?) -> Void)?
     var onSelectionChanged: ((Int, Int) -> Void)?
     var onSelectionCleared: (() -> Void)?
+    var onHighlightTapped:  ((Int, Int) -> Void)?
 
     // MARK: NSViewRepresentable
 
@@ -344,6 +370,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
         // Always sync selection callbacks (lightweight — just closure assignments)
         context.coordinator.onSelectionChanged = onSelectionChanged
         context.coordinator.onSelectionCleared = onSelectionCleared
+        context.coordinator.onHighlightTapped  = onHighlightTapped
 
         if context.coordinator.lastSignature != sig {
             context.coordinator.lastSignature = sig
@@ -379,6 +406,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var onCrossRefTap:      ((String, String?) -> Void)?
     var onSelectionChanged: ((Int, Int) -> Void)?
     var onSelectionCleared: (() -> Void)?
+    var onHighlightTapped:  ((Int, Int) -> Void)?
 
     // MARK: UIViewRepresentable
 
@@ -416,6 +444,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         )
         context.coordinator.onSelectionChanged = onSelectionChanged
         context.coordinator.onSelectionCleared = onSelectionCleared
+        context.coordinator.onHighlightTapped  = onHighlightTapped
 
         if context.coordinator.lastSignature != sig {
             context.coordinator.lastSignature = sig
