@@ -219,7 +219,14 @@ struct MacDocumentView: View {
                 highlightCoordinator.webKitSelectionRange = nil
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // TODO(Session 147): integrate SummaryBlockView into WebKit path
+
+            // AI summarization strip — restored from normalModeScrollView (Session 147 TODO)
+            if appState.summarizationService != nil {
+                Divider()
+                SummaryBlockView(vm: vm)
+                    .padding(.horizontal, 48)
+                    .padding(.vertical, 12)
+            }
 
             Divider()
 

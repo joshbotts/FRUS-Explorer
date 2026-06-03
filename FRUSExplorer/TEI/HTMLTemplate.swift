@@ -107,9 +107,10 @@ enum HTMLTemplate {
     }
 
     /* ─── Document wrapper ──────────────────────────────────────────────────── */
+    /* No max-width: the WKWebView fills the window and the user can resize freely.
+       Horizontal padding provides the breathing room that max-width provided before. */
     .frus-document {
-      max-width: 760px;
-      padding: 24px 48px 72px;
+      padding: 24px 48px 48px;
     }
 
     /* ─── Heading ───────────────────────────────────────────────────────────── */
@@ -280,6 +281,44 @@ enum HTMLTemplate {
 
     /* ─── Unknown passthrough elements ─────────────────────────────────────── */
     span.unknown { /* renders as inline span; no decoration */ }
+
+    /* ─── Visible footnote section (below body, outside .frus-document) ────── */
+    .footnotes-section {
+      padding: 0 48px 48px;
+    }
+
+    hr.fn-rule {
+      border: none;
+      border-top: 1px solid var(--color-table-border);
+      margin: 0 0 1.25em;
+    }
+
+    h2.fn-section-heading {
+      font-size: calc(var(--font-size-body) * 0.9);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--color-secondary);
+      margin: 0 0 0.75em;
+    }
+
+    .fn-list {
+      padding-left: 1.5em;
+      font-size: var(--font-size-footnote);
+      color: var(--color-secondary);
+    }
+
+    .fn-list-item {
+      margin-bottom: 0.5em;
+      line-height: 1.55;
+    }
+
+    .fn-list-label {
+      /* hidden — the <ol> counter provides the visual number */
+      display: none;
+    }
+
+    .fn-list-item p.body { margin: 0; display: inline; }
 
     /* ─── CSS Custom Highlight API — document highlights (Session 144) ──────── */
     /* Color names map 1:1 to DocumentHighlight.Color raw values.                */

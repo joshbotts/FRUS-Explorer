@@ -66,8 +66,26 @@ public struct FRUSRenderNodeHTMLSerializer {
 
     /// Serialises `model` to an HTML fragment string.
     ///
-    /// The returned string is a `<div class="frus-document">` element containing
-    /// the document body followed by all footnote `<aside popover>` elements.
+    /// The returned string is a `<div class="frus-document">` element followed
+    /// by an optional `<section class="footnotes-section">` for visible footnote
+    /// display.
+    ///
+    /// ## Footnote rendering (dual representation)
+    /// Footnotes are rendered in two complementary ways:
+    ///
+    /// 1. **Popover** (`<aside popover data-skip="1">`) — emitted inside
+    ///    `.frus-document`. Browser-native: clicking the `<button popovertarget>`
+    ///    marker shows a floating card near the insertion point. Has `data-skip="1"`
+    ///    so the JS offset engine excludes its text from the character count.
+    ///
+    /// 2. **Visible section** (`<section class="footnotes-section">`) — emitted
+    ///    *outside* `.frus-document` as a traditional numbered list visible at
+    ///    the bottom of the document. Because it is outside the DFS root, the JS
+    ///    flat-text offset engine does not walk it and the character offsets are
+    ///    unaffected.
+    ///
+    /// Both representations exist simultaneously. Users can click a marker for the
+    /// inline popup view or scroll to the section for reading in context.
     public func serialize(_ model: FRUSDocumentRenderModel) -> String {
         // IMPORTANT: no whitespace is added between elements. Any inter-element
         // newline or space creates a DOM text node that the JS flat-text DFS
@@ -79,11 +97,35 @@ public struct FRUSRenderNodeHTMLSerializer {
         for node in model.bodyNodes {
             html += nodeToHTML(node)
         }
+        // Footnote popovers (inline popup behavior) — inside .frus-document,
+        // marked data-skip="1" so the offset engine skips them.
         for footnote in model.footnotes {
             html += footnoteAsideHTML(footnote)
         }
 
         html += "</div>"
+
+        // Visible footnote section — outside .frus-document so it is invisible
+        // to the JS offset engine. Rendered as a traditional numbered list.
+        if !model.footnotes.isEmpty {
+            html += footnoteSectionHTML(model.footnotes)
+        }
+
+        return html
+    }
+
+    /// Renders a traditional numbered footnote section for visible display below
+    /// the document body. This section is outside `.frus-document` and therefore
+    /// excluded from the JS flat-text offset engine.
+    private func footnoteSectionHTML(_ footnotes: [FRUSRenderNode]) -> String {
+        var html = "<section class=\"footnotes-section\"><hr class=\"fn-rule\"><h2 class=\"fn-section-heading\">Footnotes</h2><ol class=\"fn-list\">"
+        for footnote in footnotes {
+            guard case .footnoteBody(_, _, _, _, let label, let children) = footnote else { continue }
+            html += "<li class=\"fn-list-item\" id=\"fnote-\(escaped(label))\"><span class=\"fn-list-label\">\(escaped(label))</span>"
+            html += block(children)
+            html += "</li>"
+        }
+        html += "</ol></section>"
         return html
     }
 
