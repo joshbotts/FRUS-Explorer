@@ -59,6 +59,8 @@ struct MacDocumentView: View {
     @State private var vm: DocumentViewModel
     @State private var prevEntry: DocumentBrowserEntry? = nil
     @State private var nextEntry: DocumentBrowserEntry? = nil
+    @State private var showPersonNotFound = false
+    @State private var showGlossNotFound  = false
 
     @Query private var highlights: [DocumentHighlight]
 
@@ -134,6 +136,26 @@ struct MacDocumentView: View {
         .sheet(item: $vm.selectedGloss) { gloss in
             GlossDetailSheet(gloss: gloss)
         }
+        .alert(
+            String(localized: "personNotFound.title",
+                   defaultValue: "Person Information Unavailable"),
+            isPresented: $showPersonNotFound
+        ) {
+            Button(String(localized: "personNotFound.dismiss", defaultValue: "OK")) {}
+        } message: {
+            Text(String(localized: "personNotFound.detail",
+                        defaultValue: "Detailed information about this person isn't available for this volume. To populate person data, re-index the volume in Settings → Volumes."))
+        }
+        .alert(
+            String(localized: "glossNotFound.title",
+                   defaultValue: "Term Definition Unavailable"),
+            isPresented: $showGlossNotFound
+        ) {
+            Button(String(localized: "glossNotFound.dismiss", defaultValue: "OK")) {}
+        } message: {
+            Text(String(localized: "glossNotFound.detail",
+                        defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes."))
+        }
     }
 
     // MARK: - WebKit document view (Session 142+)
@@ -165,10 +187,18 @@ struct MacDocumentView: View {
                 model: renderModel,
                 onPersonTap: { person in
                     vm.selectedPerson = person
-                    if let person { handlePersonTap(person) }
+                    if let person {
+                        handlePersonTap(person)
+                    } else {
+                        showPersonNotFound = true
+                    }
                 },
                 onGlossTap: { entry in
-                    if let entry { handleGlossTap(entry) }
+                    if let entry {
+                        handleGlossTap(entry)
+                    } else {
+                        showGlossNotFound = true
+                    }
                 },
                 onCrossRefTap: { target, volumeId in
                     handleCrossRefTap(target: target, volumeId: volumeId)

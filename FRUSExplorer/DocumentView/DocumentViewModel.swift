@@ -38,6 +38,9 @@ import SwiftData
 ///   1.1 — Session 20: add documentPlainText, isSummarizing, showSummarizeSheet, generateSummary
 ///   1.2 — Session 40: personMentionStore dependency; selectedPersonMentionCount; loadPersonMentionCount
 ///   1.3 — Session 41: persons/terms resolved from SQLite first; XML parse kept as fallback
+///   1.4 — Session 149: `DocumentSheet.personNotFound`/`glossNotFound` cases added; both iOS
+///          and macOS document views now surface a user-facing message when the person/gloss
+///          lookup returns nil, instead of silently doing nothing
 ///   1.4 — Session 66: `documentTitle` stored property added; set from first `<head>` element
 ///          after load so cross-reference targets (created with `header: ""`) can supply
 ///          a meaningful navigation title once the document has been parsed

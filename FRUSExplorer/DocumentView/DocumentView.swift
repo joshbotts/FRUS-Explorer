@@ -40,6 +40,11 @@ enum DocumentSheet: Identifiable {
     /// Collection picker — lets the user add this document to an existing collection
     /// or create a new one directly from the document view.
     case addToCollection
+    /// Person link was tapped but the lookup returned nil — volume not indexed or
+    /// persons list not yet available for this volume.
+    case personNotFound
+    /// Gloss link was tapped but the lookup returned nil.
+    case glossNotFound
 
     var id: String {
         switch self {
@@ -54,6 +59,8 @@ enum DocumentSheet: Identifiable {
         case .editNote(let note):              return "editNote-\(note.id)"
         case .tagPicker:                       return "tagPicker"
         case .addToCollection:                 return "addToCollection"
+        case .personNotFound:                  return "personNotFound"
+        case .glossNotFound:                   return "glossNotFound"
         }
     }
 }
@@ -348,6 +355,10 @@ struct DocumentView: View {
                 )
             case .addToCollection:
                 CollectionPickerSheetView(entry: entry)
+            case .personNotFound:
+                personNotFoundSheet
+            case .glossNotFound:
+                glossNotFoundSheet
             }
         }
         .sheet(isPresented: $showHighlightColorPicker) {
@@ -719,6 +730,78 @@ struct DocumentView: View {
         .background(.orange.opacity(0.08))
     }
 
+    // MARK: - Person / Gloss Not Found Sheets
+
+    /// Shown when a persName link is tapped but the person data isn't in the index.
+    /// This happens when a volume hasn't been indexed yet, or when the index was built
+    /// before the Session 130 parser fix that correctly reads `xml:id` from persons lists.
+    /// The sheet provides actionable guidance (re-index the volume) rather than silently
+    /// doing nothing.
+    private var personNotFoundSheet: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                Image(systemName: "person.crop.circle.badge.questionmark")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                Text(String(localized: "personNotFound.title",
+                            defaultValue: "Person Information Unavailable"))
+                    .font(.headline)
+                Text(String(localized: "personNotFound.detail",
+                            defaultValue: "Detailed information about this person isn't available for this volume. To populate person data, re-index the volume in Settings → Volumes."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            .padding()
+            .navigationTitle(String(localized: "personNotFound.navTitle",
+                                    defaultValue: "Person"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "personNotFound.dismiss",
+                                  defaultValue: "Done")) {
+                        activeSheet = nil
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    /// Shown when a gloss link is tapped but the term data isn't in the index.
+    private var glossNotFoundSheet: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                Image(systemName: "text.book.closed")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                Text(String(localized: "glossNotFound.title",
+                            defaultValue: "Term Definition Unavailable"))
+                    .font(.headline)
+                Text(String(localized: "glossNotFound.detail",
+                            defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            .padding()
+            .navigationTitle(String(localized: "glossNotFound.navTitle",
+                                    defaultValue: "Term"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "glossNotFound.dismiss",
+                                  defaultValue: "Done")) {
+                        activeSheet = nil
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
     // MARK: - WebKit document content (Session 142+)
 
     /// Document view for the WebKit rendering path (`FeatureFlags.useWebKitRenderer == true`).
@@ -759,10 +842,20 @@ struct DocumentView: View {
                 model: model,
                 onPersonTap: { person in
                     vm.selectedPerson = person
-                    if let person { activeSheet = .personDetail(person) }
+                    if let person {
+                        activeSheet = .personDetail(person)
+                    } else {
+                        // Lookup failed — persons not yet indexed for this volume,
+                        // or the person ref doesn't match any entry in the index.
+                        activeSheet = .personNotFound
+                    }
                 },
                 onGlossTap: { entry in
-                    if let entry { activeSheet = .glossDetail(entry) }
+                    if let entry {
+                        activeSheet = .glossDetail(entry)
+                    } else {
+                        activeSheet = .glossNotFound
+                    }
                 },
                 onCrossRefTap: { target, targetVolumeId in
                     handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
