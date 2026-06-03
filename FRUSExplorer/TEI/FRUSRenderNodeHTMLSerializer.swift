@@ -217,7 +217,8 @@ public struct FRUSRenderNodeHTMLSerializer {
 
         case .footnoteMarker(_, let label):
             // data-skip="1" — marker text is excluded from flat-text offset count.
-            return "<button class=\"fn-marker\" data-skip=\"1\" popovertarget=\"fn-\(escaped(label))\">\(escaped(label))</button>"
+            // aria-label provides a meaningful VoiceOver announcement ("Footnote 1").
+            return "<button class=\"fn-marker\" data-skip=\"1\" popovertarget=\"fn-\(escaped(label))\" aria-label=\"Footnote \(escaped(label))\">\(escaped(label))</button>"
 
         case .footnoteBody:
             // Footnote bodies appear in model.footnotes, not model.bodyNodes.

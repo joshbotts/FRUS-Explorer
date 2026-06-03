@@ -21,12 +21,16 @@ import SwiftData
 /// selection and SwiftData insertion). Resetting on document navigation is handled
 /// by `MainWindowView.onChange(of: currentEntry)`.
 @Observable
+/// Shared observable state for the document highlight workflow on macOS.
+///
+/// Owned by `MainWindowView` and passed by reference to both `ResearchStripView`
+/// (which hosts the toolbar buttons) and `MacDocumentView` (which performs text
+/// selection and SwiftData insertion). Resetting on document navigation is handled
+/// by `MainWindowView.onChange(of: currentEntry)`.
+///
+/// Session 147: removed `showHighlightMode`, `highlightTextSelection`, and
+/// `createHighlightAction` — the WebKit renderer uses `webKitSelectionRange` instead.
 final class HighlightCoordinator {
-    var showHighlightMode = false
-    var highlightTextSelection: NSRange? = nil
-    var pendingHighlightLink: UUID? = nil
-    /// Registered by `MacDocumentView` in its `.task` once the document has loaded.
-    var createHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
 
     /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
     /// Non-nil when the user has an active selection in `FRUSDocumentWebView`.
@@ -37,18 +41,14 @@ final class HighlightCoordinator {
     /// WebKit selection range and colour chosen in `highlightColorPicker`.
     var createWebKitHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
 
-    func reset() {
-        showHighlightMode = false
-        highlightTextSelection = nil
-        pendingHighlightLink = nil
-        createHighlightAction = nil
-    }
+    /// The `DocumentHighlight.id` of the most recently created highlight.
+    /// Non-nil while the "Add Note to Highlight" button should be enabled.
+    var pendingHighlightLink: UUID? = nil
 
-    func exitHighlightMode() {
-        showHighlightMode = false
-        highlightTextSelection = nil
-        pendingHighlightLink = nil
+    func reset() {
         webKitSelectionRange = nil
+        pendingHighlightLink = nil
+        createWebKitHighlightAction = nil
     }
 }
 
@@ -84,12 +84,7 @@ struct ResearchStripView: View {
 
     private var isDisabled: Bool { entry == nil }
     private var canCreateHighlight: Bool {
-        if FeatureFlags.useWebKitRenderer {
-            return highlightCoordinator.webKitSelectionRange != nil
-        } else {
-            return highlightCoordinator.showHighlightMode &&
-                   (highlightCoordinator.highlightTextSelection?.length ?? 0) > 0
-        }
+        highlightCoordinator.webKitSelectionRange != nil
     }
 
     var body: some View {
@@ -162,83 +157,33 @@ struct ResearchStripView: View {
                 ))
             }
 
-            if FeatureFlags.useWebKitRenderer {
-                // WebKit path: no "mode" — the user selects text inline.
-                // Show Create Highlight button (enabled when text is selected).
+            // Highlight — enabled when the user has an active text selection.
+            ResearchStripButton(
+                title: "Highlight",
+                systemImage: "paintbrush.pointed",
+                isDisabled: !canCreateHighlight
+            ) {
+                showHighlightColorPicker = true
+            }
+            .help(String(
+                localized: "researchStrip.createHighlight.help",
+                defaultValue: "Save the current selection as a coloured highlight"
+            ))
+            .popover(isPresented: $showHighlightColorPicker) {
+                highlightColorPicker
+            }
+
+            // Add Note to Highlight — enabled after a highlight is created
+            if highlightCoordinator.pendingHighlightLink != nil {
                 ResearchStripButton(
-                    title: "Highlight",
-                    systemImage: "paintbrush.pointed",
-                    isDisabled: !canCreateHighlight
-                ) {
-                    showHighlightColorPicker = true
-                }
+                    title: "Add Note",
+                    systemImage: "note.text.badge.plus",
+                    isDisabled: false
+                ) { showHighlightNoteEditor = true }
                 .help(String(
-                    localized: "researchStrip.createHighlight.help",
-                    defaultValue: "Save the current selection as a coloured highlight"
+                    localized: "researchStrip.highlightNote.help",
+                    defaultValue: "Attach a research note to the highlight you just created"
                 ))
-                .popover(isPresented: $showHighlightColorPicker) {
-                    highlightColorPicker
-                }
-
-                // Add Note to Highlight — enabled after a highlight is created
-                if highlightCoordinator.pendingHighlightLink != nil {
-                    ResearchStripButton(
-                        title: "Add Note",
-                        systemImage: "note.text.badge.plus",
-                        isDisabled: false
-                    ) { showHighlightNoteEditor = true }
-                    .help(String(
-                        localized: "researchStrip.highlightNote.help",
-                        defaultValue: "Attach a research note to the highlight you just created"
-                    ))
-                }
-            } else {
-                // Legacy path: explicit mode toggle + create button.
-                ResearchStripButton(
-                    title: highlightCoordinator.showHighlightMode ? "Exit Highlights" : "Highlight",
-                    systemImage: highlightCoordinator.showHighlightMode
-                        ? "pencil.tip.crop.circle.fill"
-                        : "pencil.tip.crop.circle",
-                    isDisabled: isDisabled
-                ) {
-                    if highlightCoordinator.showHighlightMode {
-                        highlightCoordinator.exitHighlightMode()
-                    } else {
-                        highlightCoordinator.showHighlightMode = true
-                    }
-                }
-                .help(highlightCoordinator.showHighlightMode
-                      ? String(localized: "researchStrip.highlight.exit.help",
-                               defaultValue: "Exit highlight mode and return to normal reading")
-                      : String(localized: "researchStrip.highlight.enter.help",
-                               defaultValue: "Enter highlight mode — select text to create coloured highlights"))
-
-                if highlightCoordinator.showHighlightMode {
-                    ResearchStripButton(
-                        title: "Create Highlight",
-                        systemImage: "paintbrush.pointed",
-                        isDisabled: !canCreateHighlight
-                    ) {
-                        showHighlightColorPicker = true
-                    }
-                    .help(String(
-                        localized: "researchStrip.createHighlight.help",
-                        defaultValue: "Save the current selection as a coloured highlight"
-                    ))
-                    .popover(isPresented: $showHighlightColorPicker) {
-                        highlightColorPicker
-                    }
-
-                    ResearchStripButton(
-                        title: "Add Note",
-                        systemImage: "note.text.badge.plus",
-                        isDisabled: highlightCoordinator.pendingHighlightLink == nil
-                    ) { showHighlightNoteEditor = true }
-                    .help(String(
-                        localized: "researchStrip.highlightNote.help",
-                        defaultValue: "Attach a research note to the highlight you just created"
-                    ))
-                }
             }
 
             // Cite — opens citation popover
@@ -319,11 +264,7 @@ struct ResearchStripView: View {
             HStack(spacing: 10) {
                 ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
                     Button {
-                        if FeatureFlags.useWebKitRenderer {
-                            highlightCoordinator.createWebKitHighlightAction?(color)
-                        } else {
-                            highlightCoordinator.createHighlightAction?(color)
-                        }
+                        highlightCoordinator.createWebKitHighlightAction?(color)
                         showHighlightColorPicker = false
                     } label: {
                         ZStack {
@@ -762,76 +703,8 @@ struct SummaryBlockView: View {
     }
 }
 
-// MARK: - FootnoteSectionView
-
-/// Renders the footnote block at the bottom of a document.
-///
-/// Each footnote is rendered with its display label and body content.
-/// Cross-reference links within footnotes are tappable.
-/// The `activeFootnoteLabel` binding highlights a footnote in response
-/// to a superscript tap in the document body.
-///
-/// Version history:
-///   1.0 — New UI scaffolding
-struct FootnoteSectionView: View {
-    let footnotes: [FRUSRenderNode]
-    @Binding var activeFootnoteLabel: String?
-    let onCrossRefTap: (String, String?) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Divider()
-
-            Text("Footnotes")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
-                .kerning(0.7)
-                .padding(.bottom, 2)
-
-            ForEach(Array(footnotes.enumerated()), id: \.offset) { _, node in
-                if case .footnoteBody(_, _, _, _, let label, let children) = node {
-                    // Strip leading/trailing lineBreak and pageBreak nodes that would
-                    // otherwise add blank lines at the top and bottom of each footnote.
-                    let filteredChildren = children.filter {
-                        if case .lineBreak = $0 { return false }
-                        if case .pageBreak = $0 { return false }
-                        return true
-                    }
-                    HStack(alignment: .top, spacing: 10) {
-                        Text(label)
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.accentColor)
-                            .frame(minWidth: 18, alignment: .trailing)
-                            .padding(.top, 1)
-
-                        FRUSDocumentRenderer(
-                            nodes: filteredChildren,
-                            onFootnoteTap: { _ in },
-                            onPersonTap: { _ in },
-                            onGlossTap: { _ in },
-                            onCrossRefTap: onCrossRefTap,
-                            // Tighter spacing: footnote paragraphs should
-                            // not appear double-spaced like body paragraphs.
-                            blockSpacing: 2
-                        )
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(
-                        activeFootnoteLabel == label
-                            ? Color.accentColor.opacity(0.06)
-                            : Color.clear
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-            }
-        }
-        .padding(.top, 8)
-    }
-}
+// FootnoteSectionView removed in Session 147.
+// Footnotes are now rendered inline via the HTML Popover API in FRUSDocumentWebView.
 
 // MARK: - StatusBarView
 

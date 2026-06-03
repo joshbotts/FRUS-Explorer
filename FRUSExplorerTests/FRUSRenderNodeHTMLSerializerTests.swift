@@ -208,13 +208,16 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("<figure data-skip=\"1\"></figure>"))
     }
 
-    @Test("Footnote marker emits button.fn-marker with data-skip=1 and popovertarget")
+    @Test("Footnote marker emits button.fn-marker with data-skip=1, popovertarget, and aria-label")
     func footnoteMarker() {
         let out = html([.paragraph([
             .plainText("Text"),
             .footnoteMarker(id: nil, displayLabel: "1")
         ])])
-        #expect(out.contains("<button class=\"fn-marker\" data-skip=\"1\" popovertarget=\"fn-1\">1</button>"))
+        #expect(out.contains("class=\"fn-marker\""))
+        #expect(out.contains("data-skip=\"1\""))
+        #expect(out.contains("popovertarget=\"fn-1\""))
+        #expect(out.contains("aria-label=\"Footnote 1\""))
     }
 
     // MARK: - Footnote body (aside popover)

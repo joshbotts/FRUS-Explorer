@@ -1146,37 +1146,6 @@ struct FootnoteNumberTests {
                 "Body text has spurious leading/trailing whitespace: \"\(body)\"")
     }
 
-    // MARK: - Session 54: Cross-Ref AttributedString Rendering
-
-    @Test("Paragraph with crossRefLink renders AttributedString with frusexplorer:// link")
-    @MainActor
-    func crossRefLinkAttributedStringContainsURL() throws {
-        // Build a minimal render model containing a crossRefLink node.
-        let nodes: [FRUSRenderNode] = [
-            .plainText("See "),
-            .crossRefLink(target: "#d185", volumeId: "frus1989-92v31",
-                          children: [.plainText("Document 185")]),
-            .plainText(".")
-        ]
-        let renderer = FRUSDocumentRenderer(
-            model: FRUSDocumentRenderModel(documentId: "d186", bodyNodes: [], footnotes: [])
-        )
-
-        // Access the AttributedString via the internal helper.
-        // We test the public observable effect: containsCrossRef must return true
-        // and the attributed string must carry a .link attribute on the cross-ref run.
-        let attrStr = renderer.testInlineAttributedString(nodes)
-        var foundLink = false
-        for run in attrStr.runs {
-            if let url = run.link, url.scheme == "frusexplorer" {
-                foundLink = true
-                #expect(url.absoluteString.contains("d185"), "URL should encode target doc ID")
-                #expect(url.absoluteString.contains("frus1989-92v31"), "URL should encode volume ID")
-            }
-        }
-        #expect(foundLink, "No frusexplorer:// link found in AttributedString runs")
-    }
-
     // MARK: - Session 79: Converter test (uses private parseFixture)
 
     @Test("Converter: .titlePage converts to .titlePageBlock render node")

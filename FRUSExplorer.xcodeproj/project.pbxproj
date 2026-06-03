@@ -63,8 +63,6 @@
 		AA06BB02CC03DD04EE060028 /* FRUSRenderNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */; };
 		AA06BB02CC03DD04EE060029 /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */; };
 		AA06BB02CC03DD04EE060030 /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */; };
-		AA06BB02CC03DD04EE060031 /* FRUSDocumentRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */; };
-		AA06BB02CC03DD04EE060032 /* FRUSDocumentRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */; };
 		AA06BB02CC03DD04EE060033 /* TEIParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */; };
 		AA14BB02CC03DD04EE140001 /* FRUSRenderNodeHTMLSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */; };
 		AA14BB02CC03DD04EE140002 /* FRUSRenderNodeHTMLSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */; };
@@ -77,8 +75,6 @@
 		AA14BB02CC03DD04EE14000F /* HTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140011 /* HTMLTemplate.swift */; };
 		AA14BB02CC03DD04EE140012 /* FRUSURLSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140015 /* FRUSURLSchemeHandler.swift */; };
 		AA14BB02CC03DD04EE140013 /* FRUSURLSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140015 /* FRUSURLSchemeHandler.swift */; };
-		AA14BB02CC03DD04EE140016 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140019 /* FeatureFlags.swift */; };
-		AA14BB02CC03DD04EE140017 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140019 /* FeatureFlags.swift */; };
 		AA14BB02CC03DD04EE14001A /* FRUSOffsetEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE14001D /* FRUSOffsetEngineTests.swift */; };
 		AA06BB02CC03DD04EE060034 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		AA06BB02CC03DD04EE060035 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
@@ -256,8 +252,6 @@
 		AA22BB01CC03DD04EE2254 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */; };
 		AA88BB01CC03DD04EE8802 /* DocumentTagAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA88BB01CC03DD04EE8801 /* DocumentTagAssignment.swift */; };
 		AA88BB01CC03DD04EE8803 /* DocumentTagAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA88BB01CC03DD04EE8801 /* DocumentTagAssignment.swift */; };
-		AA22BB01CC03DD04EE2256 /* DocumentHighlightTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */; };
-		AA22BB01CC03DD04EE2257 /* DocumentHighlightTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */; };
 		AA23BB01CC03DD04EE2301 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */; };
 		AA23BB01CC03DD04EE2302 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */; };
 		AA23BB01CC03DD04EE2304 /* NARACatalogClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */; };
@@ -385,7 +379,6 @@
 		AA06BB02CC03DD04EE060003 /* TEIRenderingConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TEIRenderingConfig.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSRenderNode.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ASTToRenderNodeConverter.swift; sourceTree = "<group>"; };
-		AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSDocumentRenderer.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TEIParserTests.swift; sourceTree = "<group>"; };
 		AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSRenderNodeHTMLSerializer.swift; sourceTree = "<group>"; };
 		AA14BB02CC03DD04EE140005 /* FRUSRenderNodeHTMLSerializerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSRenderNodeHTMLSerializerTests.swift; sourceTree = "<group>"; };
@@ -393,7 +386,6 @@
 		AA14BB02CC03DD04EE14000D /* FRUSWebViewConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSWebViewConfiguration.swift; sourceTree = "<group>"; };
 		AA14BB02CC03DD04EE140011 /* HTMLTemplate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLTemplate.swift; sourceTree = "<group>"; };
 		AA14BB02CC03DD04EE140015 /* FRUSURLSchemeHandler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSURLSchemeHandler.swift; sourceTree = "<group>"; };
-		AA14BB02CC03DD04EE140019 /* FeatureFlags.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
 		AA14BB02CC03DD04EE14001D /* FRUSOffsetEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSOffsetEngineTests.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "tei-rendering-config.json"; sourceTree = "<group>"; };
 		AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSParserSession07Tests.swift; sourceTree = "<group>"; };
@@ -491,7 +483,6 @@
 		AA22BB01CC03DD04EE2249 /* SessionLogView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionLogView.swift; sourceTree = "<group>"; };
 		AA22BB01CC03DD04EE2252 /* DocumentHighlight.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentHighlight.swift; sourceTree = "<group>"; };
 		AA88BB01CC03DD04EE8801 /* DocumentTagAssignment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentTagAssignment.swift; sourceTree = "<group>"; };
-		AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentHighlightTextView.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARACatalogClient.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceExplorerView.swift; sourceTree = "<group>"; };
@@ -568,7 +559,6 @@
 				7AC6E32C07F04830ADA268CC /* DocumentWindowID.swift */,
 				B9B3538710154855A5E7E7D7 /* ContentView.swift */,
 				EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */,
-				AA14BB02CC03DD04EE140019 /* FeatureFlags.swift */,
 				AA22BB01CC03DD04EE2230 /* IndexingBannerView.swift */,
 				AA70BB01CC03DD04EE7001 /* IndexingContextCard.swift */,
 				AA70BB01CC03DD04EE7010 /* IndexingQueueBannerView.swift */,
@@ -678,8 +668,6 @@
 				AA06BB02CC03DD04EE060003 /* TEIRenderingConfig.swift */,
 				AA06BB02CC03DD04EE060004 /* FRUSRenderNode.swift */,
 				AA06BB02CC03DD04EE060005 /* ASTToRenderNodeConverter.swift */,
-				AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */,
-				AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */,
 				AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */,
 				AA14BB02CC03DD04EE140009 /* FRUSDocumentWebView.swift */,
 				AA14BB02CC03DD04EE14000D /* FRUSWebViewConfiguration.swift */,
@@ -1145,7 +1133,6 @@
 				AA22BB01CC03DD04EE2250 /* SessionLogView.swift in Sources */,
 				AA22BB01CC03DD04EE2253 /* DocumentHighlight.swift in Sources */,
 				AA88BB01CC03DD04EE8802 /* DocumentTagAssignment.swift in Sources */,
-				AA22BB01CC03DD04EE2256 /* DocumentHighlightTextView.swift in Sources */,
 				96D3EA2639884EDD9E2065AF /* MainTabView.swift in Sources */,
 				6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */,
 				79425B089B74B72978721CBB /* ManifestStore.swift in Sources */,
@@ -1250,13 +1237,11 @@
 				AA06BB02CC03DD04EE060026 /* TEIRenderingConfig.swift in Sources */,
 				AA06BB02CC03DD04EE060028 /* FRUSRenderNode.swift in Sources */,
 				AA06BB02CC03DD04EE060030 /* ASTToRenderNodeConverter.swift in Sources */,
-				AA06BB02CC03DD04EE060032 /* FRUSDocumentRenderer.swift in Sources */,
 				AA14BB02CC03DD04EE140002 /* FRUSRenderNodeHTMLSerializer.swift in Sources */,
 				AA14BB02CC03DD04EE140007 /* FRUSDocumentWebView.swift in Sources */,
 				AA14BB02CC03DD04EE14000B /* FRUSWebViewConfiguration.swift in Sources */,
 				AA14BB02CC03DD04EE14000F /* HTMLTemplate.swift in Sources */,
 				AA14BB02CC03DD04EE140013 /* FRUSURLSchemeHandler.swift in Sources */,
-				AA14BB02CC03DD04EE140017 /* FeatureFlags.swift in Sources */,
 				AA39BB01CC03DD04EE3902 /* PersonMentionStore.swift in Sources */,
 				661144C718F8B46603056272 /* MainWindowView.swift in Sources */,
 				623128B598B5F7C4F62DDC12 /* MacDocumentView.swift in Sources */,
@@ -1287,7 +1272,6 @@
 				AA22BB01CC03DD04EE2251 /* SessionLogView.swift in Sources */,
 				AA22BB01CC03DD04EE2254 /* DocumentHighlight.swift in Sources */,
 				AA88BB01CC03DD04EE8803 /* DocumentTagAssignment.swift in Sources */,
-				AA22BB01CC03DD04EE2257 /* DocumentHighlightTextView.swift in Sources */,
 				1D450CCEF5BF408FB3368C6E /* MainTabView.swift in Sources */,
 				AA6374BFBF221CAC0DBEF4E0 /* ManifestModels.swift in Sources */,
 				E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */,
@@ -1392,13 +1376,11 @@
 				AA06BB02CC03DD04EE060025 /* TEIRenderingConfig.swift in Sources */,
 				AA06BB02CC03DD04EE060027 /* FRUSRenderNode.swift in Sources */,
 				AA06BB02CC03DD04EE060029 /* ASTToRenderNodeConverter.swift in Sources */,
-				AA06BB02CC03DD04EE060031 /* FRUSDocumentRenderer.swift in Sources */,
 				AA14BB02CC03DD04EE140001 /* FRUSRenderNodeHTMLSerializer.swift in Sources */,
 				AA14BB02CC03DD04EE140006 /* FRUSDocumentWebView.swift in Sources */,
 				AA14BB02CC03DD04EE14000A /* FRUSWebViewConfiguration.swift in Sources */,
 				AA14BB02CC03DD04EE14000E /* HTMLTemplate.swift in Sources */,
 				AA14BB02CC03DD04EE140012 /* FRUSURLSchemeHandler.swift in Sources */,
-				AA14BB02CC03DD04EE140016 /* FeatureFlags.swift in Sources */,
 				AA39BB01CC03DD04EE3903 /* PersonMentionStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

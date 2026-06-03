@@ -141,9 +141,7 @@ struct DocumentView: View {
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
     @State private var activeSheet: DocumentSheet?
 
-    // MARK: Highlight Mode
-    @State private var showHighlightMode = false
-    @State private var highlightTextSelection: NSRange? = nil
+    // MARK: Highlight state
     @State private var showHighlightColorPicker = false
     /// The `DocumentHighlight.id` of the most recently created highlight.
     /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
@@ -284,135 +282,8 @@ struct DocumentView: View {
 
     @ViewBuilder
     private func documentContent(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
-        @Bindable var vm = vm
-        Group {
-            if !FeatureFlags.useWebKitRenderer && showHighlightMode {
-                // Legacy DocumentHighlightTextView path (disabled when WebKit renderer is active).
-                let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
-                let hasStale = highlights.contains { $0.renderingVersion != currentVersion }
-                VStack(spacing: 0) {
-                    if hasStale { staleHighlightBanner }
-                    DocumentHighlightTextView(
-                        renderModel: model,
-                        highlights: highlights,
-                        selectionRange: $highlightTextSelection
-                    )
-                }
-            } else if FeatureFlags.useWebKitRenderer {
-                // WebKit path (Session 142+): WKWebView handles all document
-                // content including footnotes (HTML Popover API).
-                // Highlight mode always uses DocumentHighlightTextView until
-                // Session 145 migrates it to the JS selection API.
-                webKitDocumentContent(vm: vm, model: model)
-            } else {
-                // Legacy SwiftUI renderer — retained until Session 147.
-                ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                // Summary strip
-                if let summary = vm.activeSummary {
-                    SummaryStripView(
-                        vm: vm,
-                        summary: summary,
-                        totalCount: vm.summaries.count
-                    )
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.top, 12)
-                    Divider()
-                }
-
-                // Editorial note badge
-                if entry.isEditorialNote {
-                    EditorialNoteBadge()
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        .padding(.top, 12)
-                }
-
-                // Highlights banner (Option A)
-                if !highlights.isEmpty {
-                    Button {
-                        toggleHighlightMode()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "highlighter")
-                                .font(.caption)
-                            Text(highlights.count == 1
-                                 ? String(localized: "document.highlightsBanner.one",
-                                          defaultValue: "1 highlight — tap to view")
-                                 : String(format: String(localized: "document.highlightsBanner.many",
-                                                         defaultValue: "%lld highlights — tap to view"),
-                                          Int64(highlights.count)))
-                                .font(.caption)
-                            Spacer()
-                            HStack(spacing: 3) {
-                                ForEach(
-                                    Array(Dictionary(grouping: highlights, by: { $0.color }).keys)
-                                        .sorted(by: { $0.rawValue < $1.rawValue }),
-                                    id: \.self
-                                ) { color in
-                                    Circle()
-                                        .fill(color.swiftUIColor.opacity(0.75))
-                                        .frame(width: 8, height: 8)
-                                }
-                            }
-                            Image(systemName: "chevron.right")
-                                .font(.caption2)
-                        }
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        .padding(.vertical, 7)
-                        .background(Color.secondary.opacity(0.07))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(String(
-                        localized: "document.highlightsBanner.a11y",
-                        defaultValue: "View document highlights"
-                    ))
-                }
-
-                FRUSDocumentRenderer(
-                    model: model,
-                    embedInScrollView: false,
-                    onPersNameTap: { person in
-                        vm.selectedPerson = person
-                        if let person { activeSheet = .personDetail(person) }
-                    },
-                    onGlossTap: { entry in
-                        if let entry { activeSheet = .glossDetail(entry) }
-                    },
-                    onCrossRefTap: { target, targetVolumeId in
-                        handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
-                    }
-                )
-
-                Divider().padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-
-                // Tag chips
-                DocumentTagSection(vm: vm)
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.bottom, 8)
-
-                // Cross-project note indicator
-                if !vm.crossProjectNotes.isEmpty {
-                    CrossProjectNoteIndicator(
-                        notes: vm.crossProjectNotes,
-                        activeProjectId: appState.activeProjectId,
-                        onPromote: { note in
-                            guard let pid = appState.activeProjectId else { return }
-                            note.projectIds = note.projectIds + [pid]
-                            vm.refreshCrossProjectNoteCount(
-                                activeProjectId: appState.activeProjectId,
-                                context: modelContext
-                            )
-                        }
-                    )
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.bottom, 12)
-                }
-            }
-            } // end legacy ScrollView
-            } // end Group
-        }
-        .toolbar { documentToolbar(vm: vm) }
+        webKitDocumentContent(vm: vm, model: model)
+            .toolbar { documentToolbar(vm: vm) }
         // Single consolidated sheet driven by the DocumentSheet enum (F-024).
         // One .sheet modifier is cheaper than 7 and makes the "only one sheet at a
         // time" constraint explicit in the type system.
@@ -631,116 +502,68 @@ struct DocumentView: View {
     ///    small screens while every action remains reachable in one extra tap.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
-        if showHighlightMode {
-            ToolbarItem(placement: .cancellationAction) {
-                Button(String(localized: "document.toolbar.highlightDone",
-                              defaultValue: "Done")) {
-                    toggleHighlightMode()
-                }
+        ToolbarItemGroup(placement: .primaryAction) {
+
+            // 1. Add research note
+            Button {
+                activeSheet = .noteEditor
+            } label: {
+                Label(
+                    String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
+                    systemImage: "note.text.badge.plus"
+                )
             }
-            ToolbarItem(placement: .primaryAction) {
+            .accessibilityLabel(
+                String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
+            )
+
+            // 2. Tag document
+            Button {
+                activeSheet = .tagPicker
+            } label: {
+                Label(
+                    String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
+                    systemImage: "tag"
+                )
+            }
+            .accessibilityLabel(
+                String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
+            )
+
+            // 3. Create highlight — enabled when text is selected in the web view
+            Button {
+                showHighlightColorPicker = true
+            } label: {
+                Image(systemName: "paintbrush.pointed")
+            }
+            .disabled(webKitSelectionRange == nil)
+            .accessibilityLabel(
+                String(localized: "document.toolbar.createHighlight.a11y",
+                       defaultValue: "Create highlight")
+            )
+            .sheet(isPresented: $showHighlightColorPicker) {
+                highlightColorPickerSheet
+            }
+
+            // 4. More — overflow menu
+            moreMenu(vm: vm)
+        }
+        // Notes panel toggle — leading nav bar position on iPad
+        if sizeClass == .regular {
+            ToolbarItem(placement: .topBarLeading) {
                 Button {
-                    showHighlightColorPicker = true
+                    showNotesPanel.toggle()
                 } label: {
-                    Image(systemName: "paintbrush.pointed")
+                    Image(systemName: "note.text")
+                        .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
                 }
                 .accessibilityLabel(
-                    String(localized: "document.toolbar.createHighlight.a11y",
-                           defaultValue: "Create highlight")
+                    showNotesPanel
+                        ? String(localized: "document.toolbar.notesPanel.hide.a11y",
+                                 defaultValue: "Hide notes panel")
+                        : String(localized: "document.toolbar.notesPanel.show.a11y",
+                                 defaultValue: "Show notes panel")
                 )
-                .disabled((highlightTextSelection?.length ?? 0) == 0)
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    if let hlId = pendingHighlightLink {
-                        activeSheet = .noteEditorForHighlight(hlId)
-                        pendingHighlightLink = nil
-                    }
-                } label: {
-                    Image(systemName: "note.text.badge.plus")
-                }
-                .accessibilityLabel(
-                    String(localized: "document.toolbar.addNoteToHighlight.a11y",
-                           defaultValue: "Add note to highlight")
-                )
-                .disabled(pendingHighlightLink == nil)
-            }
-        } else {
-            ToolbarItemGroup(placement: .primaryAction) {
-
-                // 1. Add research note (direct — high frequency)
-                Button {
-                    activeSheet = .noteEditor
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
-                        systemImage: "note.text.badge.plus"
-                    )
-                }
-                .accessibilityLabel(
-                    String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
-                )
-
-                // 2. Tag document (direct — fast single-tap)
-                Button {
-                    activeSheet = .tagPicker
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
-                        systemImage: "tag"
-                    )
-                }
-                .accessibilityLabel(
-                    String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
-                )
-
-                // 3. Highlight button
-                if FeatureFlags.useWebKitRenderer {
-                    // WebKit path: one-tap create highlight when text is selected.
-                    Button {
-                        showHighlightColorPicker = true
-                    } label: {
-                        Image(systemName: "paintbrush.pointed")
-                    }
-                    .disabled(webKitSelectionRange == nil)
-                    .accessibilityLabel(
-                        String(localized: "document.toolbar.createHighlight.a11y",
-                               defaultValue: "Create highlight")
-                    )
-                    .sheet(isPresented: $showHighlightColorPicker) {
-                        highlightColorPickerSheet
-                    }
-                } else {
-                    // Legacy path: enter/exit highlight mode.
-                    Button { toggleHighlightMode() } label: {
-                        Image(systemName: "pencil.tip.crop.circle")
-                    }
-                    .accessibilityLabel(
-                        String(localized: "document.toolbar.highlightMode.a11y",
-                               defaultValue: "Highlight mode")
-                    )
-                }
-
-                // 4. More — overflow menu containing all secondary actions
-                moreMenu(vm: vm)
-            }
-            // Notes panel toggle — leading nav bar position on iPad, hidden on iPhone
-            if sizeClass == .regular {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showNotesPanel.toggle()
-                    } label: {
-                        Image(systemName: "note.text")
-                            .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
-                    }
-                    .accessibilityLabel(
-                        showNotesPanel
-                            ? String(localized: "document.toolbar.notesPanel.hide.a11y",
-                                     defaultValue: "Hide notes panel")
-                            : String(localized: "document.toolbar.notesPanel.show.a11y",
-                                     defaultValue: "Show notes panel")
-                    )
-                }
             }
         }
     }
@@ -924,44 +747,7 @@ struct DocumentView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 4)
             }
-            if !highlights.isEmpty {
-                Button { toggleHighlightMode() } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "highlighter").font(.caption)
-                        Text(highlights.count == 1
-                             ? String(localized: "document.highlightsBanner.one",
-                                      defaultValue: "1 highlight — tap to view")
-                             : String(format: String(localized: "document.highlightsBanner.many",
-                                                     defaultValue: "%lld highlights — tap to view"),
-                                      Int64(highlights.count)))
-                            .font(.caption)
-                        Spacer()
-                        HStack(spacing: 3) {
-                            ForEach(
-                                Array(Dictionary(grouping: highlights, by: { $0.color }).keys)
-                                    .sorted(by: { $0.rawValue < $1.rawValue }),
-                                id: \.self
-                            ) { color in
-                                Circle()
-                                    .fill(color.swiftUIColor.opacity(0.75))
-                                    .frame(width: 8, height: 8)
-                            }
-                        }
-                        Image(systemName: "chevron.right").font(.caption2)
-                    }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.vertical, 7)
-                    .background(Color.secondary.opacity(0.07))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(
-                    localized: "document.highlightsBanner.a11y",
-                    defaultValue: "View document highlights"
-                ))
-            }
-
-            // Stale highlight banner (WebKit path) — shown when any stored highlight's
+            // Stale highlight banner — shown when any stored highlight's
             // renderingVersion doesn't match the current document version.
             let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
             if highlights.contains(where: { $0.renderingVersion != renderingVersion }) {
@@ -993,63 +779,30 @@ struct DocumentView: View {
 
     // MARK: - Highlight Actions
 
-    private func toggleHighlightMode() {
-        showHighlightMode.toggle()
-        if showHighlightMode {
-            // Close the notes panel so the text view gets the full available width
-            // for precise character-level selection.
-            showNotesPanel = false
-        } else {
-            highlightTextSelection = nil
-            showHighlightColorPicker = false
-            pendingHighlightLink = nil
-        }
-    }
-
     @MainActor
     private func createHighlight(color: DocumentHighlight.Color) {
-        guard let model = vm?.renderModel else { return }
+        guard let range = webKitSelectionRange,
+              let model = vm?.renderModel else { return }
         let rv = ASTToRenderNodeConverter.renderingVersion(for: model)
-
-        if FeatureFlags.useWebKitRenderer {
-            // WebKit path: use flat-text offsets from JS selectionchange.
-            guard let range = webKitSelectionRange else { return }
-            let flat = buildFlatText(from: model)
-            let selectedText: String
-            if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
-                selectedText = String(flat[r])
-            } else {
-                selectedText = ""
-            }
-            let highlight = DocumentHighlight(
-                volumeId:         entry.volumeId,
-                documentId:       entry.documentId,
-                startOffset:      range.0,
-                endOffset:        range.1,
-                colorTag:         color.rawValue,
-                selectedText:     selectedText,
-                renderingVersion: rv
-            )
-            modelContext.insert(highlight)
-            webKitSelectionRange = nil
-            pendingHighlightLink = highlight.id
+        let flat = buildFlatText(from: model)
+        let selectedText: String
+        if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
+            selectedText = String(flat[r])
         } else {
-            // Legacy path: use NSRange from DocumentHighlightTextView.
-            guard let range = highlightTextSelection else { return }
-            let selected = extractHighlightText(from: model, nsRange: range)
-            let highlight = DocumentHighlight(
-                volumeId:         entry.volumeId,
-                documentId:       entry.documentId,
-                startOffset:      range.location,
-                endOffset:        range.location + range.length,
-                colorTag:         color.rawValue,
-                selectedText:     selected,
-                renderingVersion: rv
-            )
-            modelContext.insert(highlight)
-            highlightTextSelection = nil
-            pendingHighlightLink = highlight.id
+            selectedText = ""
         }
+        let highlight = DocumentHighlight(
+            volumeId:         entry.volumeId,
+            documentId:       entry.documentId,
+            startOffset:      range.0,
+            endOffset:        range.1,
+            colorTag:         color.rawValue,
+            selectedText:     selectedText,
+            renderingVersion: rv
+        )
+        modelContext.insert(highlight)
+        webKitSelectionRange = nil
+        pendingHighlightLink = highlight.id
     }
 
     private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {

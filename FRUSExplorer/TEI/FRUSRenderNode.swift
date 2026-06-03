@@ -196,7 +196,7 @@ public struct TableCell: Sendable {
 
 /// The fully converted render model for a single FRUS document.
 ///
-/// Produced by `ASTToRenderNodeConverter.convert(_:)`. Consumed by `FRUSDocumentRenderer`.
+/// Produced by `ASTToRenderNodeConverter.convert(_:)`. Consumed by `FRUSDocumentWebView`.
 ///
 /// The `footnotes` array is separated from `bodyNodes` so the renderer can place footnote
 /// bodies at the bottom of the document independent of where the markers appear in the body.
@@ -213,4 +213,64 @@ public struct FRUSDocumentRenderModel: Sendable {
 
     /// Footnote bodies in sequential display order (1-based numbering).
     public let footnotes: [FRUSRenderNode]
+}
+
+// MARK: - Flat-text extraction
+
+/// Builds the flat-text string from `model.bodyNodes` using the deterministic DFS
+/// defined in `Planning/102-DocumentHighlight-Architecture.md §1`.
+///
+/// Only `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes contribute
+/// characters. All container nodes recurse in array order. `.pageBreak`,
+/// `.footnoteMarker`, and `.figureBlock` are skipped. This matches the character
+/// positions stored in `DocumentHighlight.startOffset`/`endOffset`, and exactly
+/// mirrors the `window.FRUSOffsets.flatText` produced by `frus-offset-engine.js`.
+///
+/// Used by `FRUSOffsetEngineTests` (equivalence tests), `DocumentView`, and
+/// `MacDocumentView` when creating highlights from WebKit selections.
+///
+/// Version history:
+///   1.0 — Session 143: initial implementation in `DocumentHighlightTextView.swift`
+///   1.1 — Session 147: moved here after `DocumentHighlightTextView.swift` deleted
+public func buildFlatText(from model: FRUSDocumentRenderModel) -> String {
+    var flat = ""
+    appendFlatText(from: model.bodyNodes, into: &flat)
+    return flat
+}
+
+private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout String) {
+    for node in nodes {
+        switch node {
+        case .plainText(let s), .formulaText(let s):
+            flat += s
+        case .lineBreak:
+            flat += "\n"
+        case .tableBlock(let rows):
+            for row in rows {
+                for cell in row { appendFlatText(from: cell.children, into: &flat) }
+            }
+        case .listBlock(_, let items):
+            for item in items { appendFlatText(from: item, into: &flat) }
+        case .heading(let cs), .dateline(let cs), .letterOpener(let cs),
+             .letterCloser(let cs), .salutation(let cs), .paragraph(let cs),
+             .boldText(let cs), .italicText(let cs), .smallCapsText(let cs),
+             .underlineText(let cs), .termText(let cs), .suppliedText(let cs),
+             .sicText(let cs), .corrText(let cs), .editorialNoteBlock(let cs),
+             .titlePageBlock(let cs), .attachmentHeading(let cs):
+            appendFlatText(from: cs, into: &flat)
+        case .persNameLink(_, let cs, _):
+            appendFlatText(from: cs, into: &flat)
+        case .glossLink(_, let cs, _):
+            appendFlatText(from: cs, into: &flat)
+        case .crossRefLink(_, _, let cs):
+            appendFlatText(from: cs, into: &flat)
+        case .attachmentBlock(_, let cs), .unknown(_, let cs):
+            appendFlatText(from: cs, into: &flat)
+        case .footnoteBody(_, _, _, _, _, let cs):
+            appendFlatText(from: cs, into: &flat)
+        default:
+            // .pageBreak, .footnoteMarker, .figureBlock — contribute no characters
+            break
+        }
+    }
 }
