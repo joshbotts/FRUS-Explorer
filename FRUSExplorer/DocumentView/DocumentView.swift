@@ -160,9 +160,9 @@ struct DocumentView: View {
     @State private var highlightToDelete: (Int, Int)? = nil
     /// Research panel accordion state (persisted; shared with macOS via AppStorage).
     @AppStorage("frus.document.researchPanel.visible")  private var panelVisible    = true
+    @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = true
     @AppStorage("frus.document.researchPanel.notes")    private var notesExpanded   = true
     @AppStorage("frus.document.researchPanel.tags")     private var tagsExpanded    = false
-    @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = false
     /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
     /// that sets this is hidden, keeping the panel closed).
     @State private var showNotesPanel = false
@@ -962,6 +962,32 @@ struct DocumentView: View {
     private func iOSResearchPanel(vm: DocumentViewModel) -> some View {
         @Bindable var vm = vm
         VStack(spacing: 0) {
+            // ── Summary ────────────────────────────────────────────────────────
+            if appState.summarizationService != nil || vm.activeSummary != nil {
+                iOSPanelSectionHeader(
+                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
+                    badge: nil,
+                    isExpanded: $summaryExpanded
+                )
+                if summaryExpanded, let summary = vm.activeSummary {
+                    Divider()
+                    SummaryStripView(vm: vm, summary: summary, totalCount: vm.summaries.count)
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                        .padding(.vertical, 8)
+                } else if summaryExpanded {
+                    Divider()
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles").foregroundStyle(.tertiary)
+                        Text(String(localized: "panel.summary.empty",
+                                    defaultValue: "No summary yet — tap More → Summarize with AI."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                }
+                Divider()
+            }
+
             // ── Notes ─────────────────────────────────────────────────────────
             iOSPanelSectionHeader(
                 title: String(localized: "panel.notes.title", defaultValue: "Notes"),
@@ -1050,31 +1076,6 @@ struct DocumentView: View {
                         }
                     }
                     .padding(.vertical, 10)
-                }
-            }
-
-            // ── Summary ────────────────────────────────────────────────────────
-            if appState.summarizationService != nil || vm.activeSummary != nil {
-                Divider()
-                iOSPanelSectionHeader(
-                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
-                    badge: nil,
-                    isExpanded: $summaryExpanded
-                )
-                if summaryExpanded, let summary = vm.activeSummary {
-                    Divider()
-                    SummaryStripView(vm: vm, summary: summary, totalCount: vm.summaries.count)
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        .padding(.vertical, 8)
-                } else if summaryExpanded {
-                    HStack(spacing: 8) {
-                        Image(systemName: "sparkles").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.summary.empty",
-                                    defaultValue: "No summary yet — tap More → Summarize with AI."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(16)
                 }
             }
         }

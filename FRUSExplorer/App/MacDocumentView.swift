@@ -71,9 +71,9 @@ struct MacDocumentView: View {
 
     // Research panel: persisted accordion state (shared with ResearchStripView)
     @AppStorage("frus.document.researchPanel.visible")   private var panelVisible    = true
+    @AppStorage("frus.document.researchPanel.summary")   private var summaryExpanded = true
     @AppStorage("frus.document.researchPanel.notes")     private var notesExpanded   = true
     @AppStorage("frus.document.researchPanel.tags")      private var tagsExpanded    = false
-    @AppStorage("frus.document.researchPanel.summary")   private var summaryExpanded = false
 
     // MARK: - Init
 
@@ -311,6 +311,26 @@ struct MacDocumentView: View {
     @ViewBuilder
     private func macResearchPanel(vm: DocumentViewModel) -> some View {
         VStack(spacing: 0) {
+            // ── Summary ───────────────────────────────────────────────────────
+            if appState.summarizationService != nil || vm.activeSummary != nil {
+                let summaryPreview = vm.activeSummary.map { s in
+                    String(s.responseText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+                }
+                panelSectionHeader(
+                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
+                    badge: nil,
+                    isExpanded: $summaryExpanded,
+                    preview: summaryPreview
+                )
+                if summaryExpanded {
+                    Divider()
+                    SummaryBlockView(vm: vm)
+                        .padding(.horizontal, 48)
+                        .padding(.vertical, 8)
+                }
+                Divider()
+            }
+
             // ── Notes ────────────────────────────────────────────────────────
             panelSectionHeader(
                 title: String(localized: "panel.notes.title", defaultValue: "Notes"),
@@ -396,26 +416,6 @@ struct MacDocumentView: View {
                         }
                     }
                     .padding(.vertical, 10)
-                }
-            }
-
-            // ── Summary ───────────────────────────────────────────────────────
-            if appState.summarizationService != nil || vm.activeSummary != nil {
-                Divider()
-                let summaryPreview = vm.activeSummary.map { s in
-                    String(s.responseText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
-                }
-                panelSectionHeader(
-                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
-                    badge: vm.activeSummary != nil ? nil : nil,  // no count for summary
-                    isExpanded: $summaryExpanded,
-                    preview: summaryPreview
-                )
-                if summaryExpanded {
-                    Divider()
-                    SummaryBlockView(vm: vm)
-                        .padding(.horizontal, 48)
-                        .padding(.vertical, 8)
                 }
             }
         }
