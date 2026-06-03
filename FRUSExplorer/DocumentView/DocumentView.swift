@@ -294,7 +294,14 @@ struct DocumentView: View {
                         selectionRange: $highlightTextSelection
                     )
                 }
+            } else if FeatureFlags.useWebKitRenderer {
+                // WebKit path (Session 142+): WKWebView handles all document
+                // content including footnotes (HTML Popover API).
+                // Highlight mode always uses DocumentHighlightTextView until
+                // Session 145 migrates it to the JS selection API.
+                webKitDocumentContent(vm: vm, model: model)
             } else {
+                // Legacy SwiftUI renderer — retained until Session 147.
                 ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 // Summary strip
@@ -309,18 +316,14 @@ struct DocumentView: View {
                     Divider()
                 }
 
-                // Editorial note badge — matches the identity line pattern on macOS.
-                // Shown once at the top of the document body so readers know immediately
-                // that this entry is an editorial note, not a primary source document.
+                // Editorial note badge
                 if entry.isEditorialNote {
                     EditorialNoteBadge()
                         .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                         .padding(.top, 12)
                 }
 
-                // Highlights banner — Option A: passive indicator so researchers
-                // know this document has saved highlights without requiring
-                // highlight mode to be active during normal reading.
+                // Highlights banner (Option A)
                 if !highlights.isEmpty {
                     Button {
                         toggleHighlightMode()
@@ -336,7 +339,6 @@ struct DocumentView: View {
                                           Int64(highlights.count)))
                                 .font(.caption)
                             Spacer()
-                            // Color dots for quick visual summary
                             HStack(spacing: 3) {
                                 ForEach(
                                     Array(Dictionary(grouping: highlights, by: { $0.color }).keys)
@@ -363,15 +365,11 @@ struct DocumentView: View {
                     ))
                 }
 
-                // Document body — embedInScrollView: false because this LazyVStack
-                // is already inside DocumentView's own ScrollView.  Nested ScrollViews
-                // capture all scroll and click events on macOS, which breaks link taps
-                // and prevents scrolling back to the top of a long document.
                 FRUSDocumentRenderer(
                     model: model,
                     embedInScrollView: false,
                     onPersNameTap: { person in
-                        vm.selectedPerson = person   // retained so .task(id:) fires for mention loading
+                        vm.selectedPerson = person
                         if let person { activeSheet = .personDetail(person) }
                     },
                     onGlossTap: { entry in
@@ -407,7 +405,7 @@ struct DocumentView: View {
                     .padding(.bottom, 12)
                 }
             }
-            } // end ScrollView
+            } // end legacy ScrollView
             } // end Group
         }
         .toolbar { documentToolbar(vm: vm) }
@@ -876,6 +874,91 @@ struct DocumentView: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.orange.opacity(0.08))
+    }
+
+    // MARK: - WebKit document content (Session 142+)
+
+    /// Document view for the WebKit rendering path (`FeatureFlags.useWebKitRenderer == true`).
+    ///
+    /// `WKWebView` handles all scrolling and footnote display (HTML Popover API).
+    /// Header items (summary strip, editorial badge, highlights banner) are pinned
+    /// above the web view. `DocumentTagSection` and volume navigation are omitted
+    /// from this path until Session 147 finalises the WebKit migration.
+    @ViewBuilder
+    private func webKitDocumentContent(
+        vm: DocumentViewModel,
+        model: FRUSDocumentRenderModel
+    ) -> some View {
+        @Bindable var vm = vm
+        VStack(spacing: 0) {
+            // Non-scrollable header
+            if let summary = vm.activeSummary {
+                SummaryStripView(vm: vm, summary: summary, totalCount: vm.summaries.count)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.top, 12)
+                Divider()
+            }
+            if entry.isEditorialNote {
+                EditorialNoteBadge()
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+            }
+            if !highlights.isEmpty {
+                Button { toggleHighlightMode() } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "highlighter").font(.caption)
+                        Text(highlights.count == 1
+                             ? String(localized: "document.highlightsBanner.one",
+                                      defaultValue: "1 highlight — tap to view")
+                             : String(format: String(localized: "document.highlightsBanner.many",
+                                                     defaultValue: "%lld highlights — tap to view"),
+                                      Int64(highlights.count)))
+                            .font(.caption)
+                        Spacer()
+                        HStack(spacing: 3) {
+                            ForEach(
+                                Array(Dictionary(grouping: highlights, by: { $0.color }).keys)
+                                    .sorted(by: { $0.rawValue < $1.rawValue }),
+                                id: \.self
+                            ) { color in
+                                Circle()
+                                    .fill(color.swiftUIColor.opacity(0.75))
+                                    .frame(width: 8, height: 8)
+                            }
+                        }
+                        Image(systemName: "chevron.right").font(.caption2)
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.vertical, 7)
+                    .background(Color.secondary.opacity(0.07))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(
+                    localized: "document.highlightsBanner.a11y",
+                    defaultValue: "View document highlights"
+                ))
+            }
+
+            // Document body — WKWebView handles scrolling and footnote popovers
+            FRUSDocumentWebView(
+                model: model,
+                onPersonTap: { person in
+                    vm.selectedPerson = person
+                    if let person { activeSheet = .personDetail(person) }
+                },
+                onGlossTap: { entry in
+                    if let entry { activeSheet = .glossDetail(entry) }
+                },
+                onCrossRefTap: { target, targetVolumeId in
+                    handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
+                }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // TODO(Session 147): integrate DocumentTagSection and volume navigation
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Highlight Actions

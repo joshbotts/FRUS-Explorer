@@ -373,7 +373,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("href=\"frusexplorer://gloss/t_NSC1\""))
     }
 
-    @Test("crossRefLink with volumeId emits frusexplorer://doc/vol/docId")
+    @Test("crossRefLink with volumeId emits frusexplorer://doc/docId/vol (target first)")
     func crossRefLinkWithVolume() {
         let out = html([.crossRefLink(
             target: "d42",
@@ -381,7 +381,8 @@ struct FRUSRenderNodeHTMLSerializerTests {
             children: [.plainText("Doc 42")]
         )])
         #expect(out.contains("class=\"cross-ref\""))
-        #expect(out.contains("href=\"frusexplorer://doc/frus1969-76v02/d42\""))
+        // Target is first so FRUSURLSchemeHandler can extract it as pathComponents[0].
+        #expect(out.contains("href=\"frusexplorer://doc/d42/frus1969-76v02\""))
     }
 
     @Test("crossRefLink without volumeId emits frusexplorer://doc/docId")

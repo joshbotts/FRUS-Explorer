@@ -223,9 +223,11 @@ public struct FRUSRenderNodeHTMLSerializer {
             return "<a class=\"gloss\" href=\"\(href)\">\(inline(children))</a>"
 
         case .crossRefLink(let target, let volumeId, let children):
+            // URL: frusexplorer://doc/{target}/{volumeId} (target first so
+            // FRUSURLSchemeHandler can extract it as pathComponents[0]).
             let path: String
             if let vol = volumeId, !vol.isEmpty {
-                path = "\(urlEncoded(vol))/\(urlEncoded(target))"
+                path = "\(urlEncoded(target))/\(urlEncoded(vol))"
             } else {
                 path = urlEncoded(target)
             }

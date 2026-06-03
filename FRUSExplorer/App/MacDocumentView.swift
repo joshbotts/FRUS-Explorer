@@ -94,7 +94,12 @@ struct MacDocumentView: View {
     var body: some View {
         Group {
             if highlightCoordinator.showHighlightMode {
+                // Highlight mode always uses DocumentHighlightTextView until
+                // Session 145 migrates highlight creation to the JS selection API.
                 highlightModeContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if FeatureFlags.useWebKitRenderer, let renderModel = vm.renderModel {
+                webKitDocumentView(renderModel: renderModel)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 normalModeScrollView
@@ -125,6 +130,89 @@ struct MacDocumentView: View {
         }
         .sheet(item: $vm.selectedGloss) { gloss in
             GlossDetailSheet(gloss: gloss)
+        }
+    }
+
+    // MARK: - WebKit document view (Session 142+)
+
+    /// Document view for the WebKit rendering path.
+    ///
+    /// `WKWebView` handles all scrolling, typography, and footnote display (HTML
+    /// Popover API).  The document identity line and highlights banner are pinned
+    /// above the web view; volume navigation is fixed below. `SummaryBlockView`
+    /// is omitted from this path until Session 147 finalises the WebKit migration.
+    private func webKitDocumentView(renderModel: FRUSDocumentRenderModel) -> some View {
+        VStack(spacing: 0) {
+            // Identity + highlights banner (non-scrollable header)
+            documentIdentityView
+                .padding(.horizontal, 48)
+                .padding(.top, 18)
+                .padding(.bottom, 10)
+
+            if !highlights.isEmpty {
+                Button {
+                    highlightCoordinator.showHighlightMode = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "highlighter").font(.system(size: 11))
+                        Text(highlights.count == 1
+                             ? String(localized: "document.mac.highlightsBanner.one",
+                                      defaultValue: "1 highlight — click to view")
+                             : String(format: String(localized: "document.mac.highlightsBanner.many",
+                                                     defaultValue: "%lld highlights — click to view"),
+                                      Int64(highlights.count)))
+                            .font(.system(size: 11))
+                        Spacer()
+                        HStack(spacing: 3) {
+                            ForEach(
+                                Array(Dictionary(grouping: highlights, by: { $0.color }).keys)
+                                    .sorted(by: { $0.rawValue < $1.rawValue }),
+                                id: \.self
+                            ) { color in
+                                Circle()
+                                    .fill(color.swiftUIColor.opacity(0.75))
+                                    .frame(width: 8, height: 8)
+                            }
+                        }
+                        Image(systemName: "chevron.right").font(.system(size: 10))
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 48)
+                    .padding(.vertical, 6)
+                    .background(Color.secondary.opacity(0.06))
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "document.mac.highlightsBanner.help",
+                             defaultValue: "Enter highlight mode to view and create highlights"))
+                .accessibilityLabel(String(localized: "document.mac.highlightsBanner.a11y",
+                                           defaultValue: "View document highlights"))
+            }
+
+            Divider()
+
+            // Document body — WKWebView handles scrolling, tables, footnote popovers
+            FRUSDocumentWebView(
+                model: renderModel,
+                onPersonTap: { person in
+                    vm.selectedPerson = person
+                    if let person { handlePersonTap(person) }
+                },
+                onGlossTap: { entry in
+                    if let entry { handleGlossTap(entry) }
+                },
+                onCrossRefTap: { target, volumeId in
+                    handleCrossRefTap(target: target, volumeId: volumeId)
+                }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // TODO(Session 147): integrate SummaryBlockView into WebKit path
+
+            Divider()
+
+            volumeNavigationView
+                .padding(.horizontal, 48)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
         }
     }
 
