@@ -33,11 +33,59 @@ extension WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(schemeHandler, forURLScheme: "frusexplorer")
 
-        // JavaScript disabled until Session 143 injects user scripts.
+        // JavaScript required for the offset engine (Session 143+).
         let prefs = WKWebpagePreferences()
-        prefs.allowsContentJavaScript = false
+        prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
+
+        // Inject the flat-text offset engine at document-end so it runs after
+        // the full DOM is available. The engine sets window.FRUSOffsets which
+        // Sessions 144–145 read to render and create highlights.
+        let offsetScript = WKUserScript(
+            source: kOffsetEngineJS,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        )
+        config.userContentController.addUserScript(offsetScript)
 
         return config
     }
 }
+
+// MARK: - Embedded JS source
+
+/// Flat-text offset engine, embedded as a Swift string constant so the script
+/// is available in both the app bundle and the unit-test host without any
+/// `Bundle.main` lookup.
+///
+/// Canonical source: `FRUSExplorer/Resources/frus-offset-engine.js`
+/// Keep this constant in sync with that file when making edits.
+private let kOffsetEngineJS = """
+window.FRUSOffsets = (() => {
+  'use strict';
+  const root = document.querySelector('.frus-document');
+  if (!root) return null;
+  const charToNode = [];
+  let flatText = '';
+  function walk(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const val = node.nodeValue;
+      for (let i = 0; i < val.length; i++) {
+        charToNode.push({ node: node, localOffset: i });
+      }
+      flatText += val;
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    if (node.dataset && node.dataset.skip === '1') return;
+    if (node.tagName === 'BR') {
+      charToNode.push({ node: node, localOffset: 0 });
+      flatText += '\\n';
+      return;
+    }
+    for (const child of node.childNodes) { walk(child); }
+  }
+  walk(root);
+  return Object.freeze({ flatText, charToNode });
+})();
+"""

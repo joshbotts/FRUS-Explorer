@@ -48,7 +48,8 @@ struct FRUSRenderNodeHTMLSerializerTests {
     func documentWrapper() {
         let out = html([.plainText("hello")])
         #expect(out.hasPrefix("<div class=\"frus-document\">"))
-        #expect(out.hasSuffix("</div>\n"))
+        // No trailing newline — compact HTML to avoid spurious DOM text nodes
+        #expect(out.hasSuffix("</div>"))
     }
 
     // MARK: - Block elements
@@ -483,7 +484,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
     @Test("Empty body nodes produces minimal wrapper")
     func emptyBody() {
         let out = s.serialize(model(body: [], footnotes: []))
-        #expect(out == "<div class=\"frus-document\">\n</div>\n")
+        #expect(out == "<div class=\"frus-document\"></div>")
     }
 
     // MARK: - Page number formats

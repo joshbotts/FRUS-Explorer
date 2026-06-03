@@ -8,7 +8,23 @@
 
 import Foundation
 
-// MARK: - Flat-text extraction (platform-independent)
+// MARK: - Flat-text utilities (platform-independent)
+
+/// Builds the full flat-text string from `model.bodyNodes` using the same
+/// deterministic DFS defined in `Planning/102-DocumentHighlight-Architecture.md §1`.
+///
+/// This is the Swift-side canonical source of truth for character offsets.
+/// The JS equivalent is `window.FRUSOffsets.flatText` produced by
+/// `frus-offset-engine.js`. `FRUSOffsetEngineTests` asserts equality between
+/// the two representations for a range of document types.
+///
+/// - Note: Only `model.bodyNodes` is traversed — `model.footnotes` is excluded
+///   per the offset-space specification.
+public func buildFlatText(from model: FRUSDocumentRenderModel) -> String {
+    var flat = ""
+    appendFlatText(from: model.bodyNodes, into: &flat)
+    return flat
+}
 
 /// Extracts the verbatim text at `nsRange` from the flat-text representation
 /// of `model.bodyNodes`, using the same deterministic DFS defined in

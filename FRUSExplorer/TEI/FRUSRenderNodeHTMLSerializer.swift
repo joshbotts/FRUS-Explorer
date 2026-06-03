@@ -69,19 +69,21 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// The returned string is a `<div class="frus-document">` element containing
     /// the document body followed by all footnote `<aside popover>` elements.
     public func serialize(_ model: FRUSDocumentRenderModel) -> String {
-        var html = "<div class=\"frus-document\">\n"
+        // IMPORTANT: no whitespace is added between elements. Any inter-element
+        // newline or space creates a DOM text node that the JS flat-text DFS
+        // (frus-offset-engine.js) would count as a character, breaking the
+        // Swift–JS offset equivalence. All formatting whitespace is deliberately
+        // omitted to keep the DOM clean.
+        var html = "<div class=\"frus-document\">"
 
-        // Body nodes
         for node in model.bodyNodes {
             html += nodeToHTML(node)
         }
-
-        // Footnote aside elements (rendered at the end so popovertarget refs resolve)
         for footnote in model.footnotes {
             html += footnoteAsideHTML(footnote)
         }
 
-        html += "</div>\n"
+        html += "</div>"
         return html
     }
 
@@ -89,58 +91,66 @@ public struct FRUSRenderNodeHTMLSerializer {
 
     /// Recursively converts a single `FRUSRenderNode` to an HTML string.
     ///
-    /// Block-level nodes append a trailing newline for readability. Inline
-    /// nodes do not. This method handles both contexts uniformly; the caller
-    /// is responsible for the surrounding block/inline structure.
+    /// ## Whitespace policy
+    /// No formatting whitespace (newlines, indentation) is inserted between or
+    /// around elements. Every inter-element `\n` or space would create a DOM text
+    /// node that `frus-offset-engine.js` counts as a character, breaking the
+    /// Swift–JS offset equivalence. All HTML is deliberately compact.
+    ///
+    /// The only `\n` characters in the output are those explicitly contributed by
+    /// `.lineBreak` nodes (via `<br>` elements) — exactly matching the Swift DFS
+    /// which appends `"\n"` only for `.lineBreak`.
     private func nodeToHTML(_ node: FRUSRenderNode) -> String {
         switch node {
 
-        // MARK: Block elements
+        // MARK: Block elements — no trailing newline (whitespace = spurious text node)
 
         case .heading(let children):
-            return "<h2 class=\"doc-heading\">\(inline(children))</h2>\n"
+            return "<h2 class=\"doc-heading\">\(inline(children))</h2>"
 
         case .dateline(let children):
-            return "<p class=\"dateline\">\(inline(children))</p>\n"
+            return "<p class=\"dateline\">\(inline(children))</p>"
 
         case .paragraph(let children):
-            return "<p class=\"body\">\(inline(children))</p>\n"
+            return "<p class=\"body\">\(inline(children))</p>"
 
         case .letterOpener(let children):
-            return "<div class=\"letter-opener\">\(inline(children))</div>\n"
+            return "<div class=\"letter-opener\">\(inline(children))</div>"
 
         case .letterCloser(let children):
-            return "<div class=\"letter-closer\">\(inline(children))</div>\n"
+            return "<div class=\"letter-closer\">\(inline(children))</div>"
 
         case .salutation(let children):
-            return "<p class=\"salutation\">\(inline(children))</p>\n"
+            return "<p class=\"salutation\">\(inline(children))</p>"
 
         case .editorialNoteBlock(let children):
-            return "<div class=\"editorial-note\" role=\"note\">\(block(children))</div>\n"
+            return "<div class=\"editorial-note\" role=\"note\">\(block(children))</div>"
 
         case .titlePageBlock(let children):
-            return "<div class=\"title-page\">\(block(children))</div>\n"
+            return "<div class=\"title-page\">\(block(children))</div>"
 
         case .attachmentBlock(let n, let children):
             let attr = n.map { " data-n=\"\(escaped($0))\"" } ?? ""
-            return "<section class=\"attachment\"\(attr)>\n\(block(children))</section>\n"
+            return "<section class=\"attachment\"\(attr)>\(block(children))</section>"
 
         case .attachmentHeading(let children):
-            return "<h3 class=\"attachment-heading\">\(inline(children))</h3>\n"
+            return "<h3 class=\"attachment-heading\">\(inline(children))</h3>"
 
         case .tableBlock(let rows):
-            var t = "<table class=\"frus-table\">\n"
+            // No whitespace between table elements — every character inside
+            // <table> that is not inside a <td> is a spurious text node.
+            var t = "<table class=\"frus-table\">"
             for row in rows {
-                t += "  <tr>"
+                t += "<tr>"
                 for cell in row {
                     var attrs = " class=\"frus-cell\""
                     if cell.rowSpan > 1 { attrs += " rowspan=\"\(cell.rowSpan)\"" }
                     if cell.colSpan > 1 { attrs += " colspan=\"\(cell.colSpan)\"" }
                     t += "<td\(attrs)>\(inline(cell.children))</td>"
                 }
-                t += "</tr>\n"
+                t += "</tr>"
             }
-            t += "</table>\n"
+            t += "</table>"
             return t
 
         case .listBlock(let type, let items):
@@ -151,8 +161,9 @@ public struct FRUSRenderNodeHTMLSerializer {
             case "simple":   tag = "ul"; extraClass = " simple"
             default:         tag = "ul"; extraClass = ""
             }
-            let inner = items.map { "  <li>\(inline($0))</li>\n" }.joined()
-            return "<\(tag) class=\"frus-list\(extraClass)\">\n\(inner)</\(tag)>\n"
+            // No whitespace between <ul>/<ol> and <li> elements.
+            let inner = items.map { "<li>\(inline($0))</li>" }.joined()
+            return "<\(tag) class=\"frus-list\(extraClass)\">\(inner)</\(tag)>"
 
         // MARK: Inline elements
 
@@ -187,8 +198,9 @@ public struct FRUSRenderNodeHTMLSerializer {
             return "<em class=\"formula\">\(escaped(text))</em>"
 
         case .lineBreak:
-            // Contributes "\n" to flat text — no data-skip.
-            return "<br>\n"
+            // <br> contributes "\n" to flat text — the JS walker handles
+            // <br> specially, emitting "\n". No trailing whitespace here.
+            return "<br>"
 
         // MARK: Offset-invisible leaf elements (data-skip="1")
 
@@ -198,9 +210,9 @@ public struct FRUSRenderNodeHTMLSerializer {
 
         case .figureBlock(let altText):
             if let alt = altText, !alt.isEmpty {
-                return "<figure data-skip=\"1\"><figcaption>\(escaped(alt))</figcaption></figure>\n"
+                return "<figure data-skip=\"1\"><figcaption>\(escaped(alt))</figcaption></figure>"
             } else {
-                return "<figure data-skip=\"1\"></figure>\n"
+                return "<figure data-skip=\"1\"></figure>"
             }
 
         case .footnoteMarker(_, let label):
@@ -251,10 +263,10 @@ public struct FRUSRenderNodeHTMLSerializer {
             return ""
         }
         let typeClass = footnoteTypeClass(type)
-        var html = "<aside class=\"footnote \(typeClass)\" id=\"fn-\(escaped(label))\" popover data-skip=\"1\">\n"
-        html += block(children)
-        html += "</aside>\n"
-        return html
+        // No whitespace inside or after the aside — it has data-skip="1" so the
+        // JS walker skips the element, but sibling text nodes (e.g. "\n" after
+        // </aside>) ARE visible to the walker and would cause mismatches.
+        return "<aside class=\"footnote \(typeClass)\" id=\"fn-\(escaped(label))\" popover data-skip=\"1\">\(block(children))</aside>"
     }
 
     // MARK: - Aggregation Helpers
@@ -264,7 +276,7 @@ public struct FRUSRenderNodeHTMLSerializer {
         nodes.map { nodeToHTML($0) }.joined()
     }
 
-    /// Renders an array of nodes separated by newlines (block context).
+    /// Renders an array of nodes as concatenated HTML (block context, no separator).
     private func block(_ nodes: [FRUSRenderNode]) -> String {
         nodes.map { nodeToHTML($0) }.joined()
     }
