@@ -282,6 +282,13 @@ struct DocumentView: View {
             )
         } else if let model = vm.renderModel {
             documentContent(vm: vm, model: model)
+        } else {
+            // No model yet and no error — volume may not be downloaded, or the
+            // initial render frame before bootstrapViewModel() fires. Show a spinner
+            // so the view never appears completely blank to the user.
+            ProgressView(String(localized: "document.initializing",
+                                defaultValue: "Opening document…"))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

@@ -108,6 +108,13 @@ struct MacDocumentView: View {
                     description: Text(error.localizedDescription)
                 )
                 .padding(.top, 40)
+            } else {
+                // Pre-load state: .task hasn't fired yet, or downloadManager wasn't
+                // ready. Never show a blank view — show a spinner so the user sees
+                // the document area is active.
+                ProgressView()
+                    .padding(.top, 40)
+                    .frame(maxWidth: .infinity)
             }
         }
         .task {
@@ -354,6 +361,14 @@ struct MacDocumentView: View {
 
     @MainActor
     private func loadDocument() async {
+        // Wait for the download manager to be bootstrapped if it isn't yet.
+        // This can happen when a document is opened very early in the app lifecycle
+        // (e.g. from a URL handler or Handoff) before bootApp() completes.
+        var attempts = 0
+        while appState.downloadManager == nil, attempts < 20 {
+            try? await Task.sleep(for: .milliseconds(100))
+            attempts += 1
+        }
         guard let dm = appState.downloadManager else { return }
         let volumeURL = dm.volumeURL(for: entry.volumeId)
 
