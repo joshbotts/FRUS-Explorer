@@ -236,8 +236,8 @@ struct ResearchStripView: View {
                 }
             } label: {
                 Image(systemName: researchPanelVisible
-                      ? "rectangle.bottomhalf.inset.filled"
-                      : "rectangle.bottomhalf.inset")
+                      ? "tray.2.fill"
+                      : "tray.2")
                     .font(.system(size: 12))
                     .foregroundStyle(researchPanelVisible ? Color.accentColor : Color.secondary)
             }

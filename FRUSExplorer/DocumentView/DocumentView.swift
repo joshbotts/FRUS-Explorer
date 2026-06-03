@@ -626,8 +626,8 @@ struct DocumentView: View {
                 withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
             } label: {
                 Image(systemName: panelVisible
-                      ? "rectangle.bottomhalf.inset.filled"
-                      : "rectangle.bottomhalf.inset")
+                      ? "tray.2.fill"
+                      : "tray.2")
                     .foregroundStyle(panelVisible ? Color.accentColor : Color.secondary)
             }
             .accessibilityLabel(panelVisible
