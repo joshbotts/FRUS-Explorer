@@ -82,6 +82,9 @@ struct ResearchStripView: View {
     @State private var showHighlightColorPicker: Bool = false
     @State private var showHighlightNoteEditor: Bool = false
 
+    /// Persisted preference shared with MacDocumentView via AppStorage.
+    @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
+
     private var isDisabled: Bool { entry == nil }
     private var canCreateHighlight: Bool {
         highlightCoordinator.webKitSelectionRange != nil
@@ -141,29 +144,28 @@ struct ResearchStripView: View {
                 defaultValue: "Show this document's cross-reference graph (inbound and outbound references)"
             ))
 
-            // Sources — only shown when the current document has a source note
-            if let note = entry?.sourceNote, !note.isEmpty {
-                ResearchStripButton(
-                    title: "Sources",
-                    systemImage: "archivebox",
-                    isDisabled: false
-                ) {
-                    appState.currentSourceNote = note
-                    // Extract document year from dateline for decimal-file period routing
-                    if let dl = entry?.dateline,
-                       let m = dl.range(of: #"\b(19[0-9]{2}|20[0-2][0-9])\b"#,
-                                        options: .regularExpression) {
-                        appState.currentSourceNoteYear = Int(dl[m])
-                    } else {
-                        appState.currentSourceNoteYear = nil
-                    }
-                    openWindow(id: "frus.sourceExplorer")
+            // Sources — always available for all documents.
+            // Source Explorer shows a "no source note" informative state when the
+            // document has no source note rather than hiding the button entirely.
+            ResearchStripButton(
+                title: "Sources",
+                systemImage: "archivebox",
+                isDisabled: isDisabled
+            ) {
+                appState.currentSourceNote = entry?.sourceNote ?? ""
+                if let dl = entry?.dateline,
+                   let m = dl.range(of: #"\b(19[0-9]{2}|20[0-2][0-9])\b"#,
+                                    options: .regularExpression) {
+                    appState.currentSourceNoteYear = Int(dl[m])
+                } else {
+                    appState.currentSourceNoteYear = nil
                 }
-                .help(String(
-                    localized: "researchStrip.sources.help",
-                    defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"
-                ))
+                openWindow(id: "frus.sourceExplorer")
             }
+            .help(String(
+                localized: "researchStrip.sources.help",
+                defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"
+            ))
 
             // Highlight — enabled when the user has an active text selection.
             ResearchStripButton(
@@ -224,6 +226,28 @@ struct ResearchStripView: View {
             }
 
             Spacer()
+
+            // Research panel toggle — collapses/expands the Notes · Tags · Summary
+            // accordion below the document body. Persisted via AppStorage so the
+            // preference survives navigation between documents.
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    researchPanelVisible.toggle()
+                }
+            } label: {
+                Image(systemName: researchPanelVisible
+                      ? "rectangle.bottomhalf.inset.filled"
+                      : "rectangle.bottomhalf.inset")
+                    .font(.system(size: 12))
+                    .foregroundStyle(researchPanelVisible ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 8)
+            .help(researchPanelVisible
+                  ? String(localized: "researchStrip.panel.hide.help",
+                           defaultValue: "Hide the Notes, Tags, and Summary panel")
+                  : String(localized: "researchStrip.panel.show.help",
+                           defaultValue: "Show the Notes, Tags, and Summary panel"))
         }
         .frame(height: 32)
         .background(.bar)

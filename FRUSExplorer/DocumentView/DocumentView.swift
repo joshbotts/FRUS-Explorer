@@ -158,6 +158,11 @@ struct DocumentView: View {
     @State private var webKitSelectionRange: (Int, Int)? = nil
     /// Offsets of a tapped highlight pending the user's delete confirmation.
     @State private var highlightToDelete: (Int, Int)? = nil
+    /// Research panel accordion state (persisted; shared with macOS via AppStorage).
+    @AppStorage("frus.document.researchPanel.visible")  private var panelVisible    = true
+    @AppStorage("frus.document.researchPanel.notes")    private var notesExpanded   = true
+    @AppStorage("frus.document.researchPanel.tags")     private var tagsExpanded    = false
+    @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = false
     /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
     /// that sets this is hidden, keeping the panel closed).
     @State private var showNotesPanel = false
@@ -165,8 +170,10 @@ struct DocumentView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
 
-    @Query private var highlights: [DocumentHighlight]
-    @Query private var documentNotes: [ResearchNote]
+    @Query private var highlights:             [DocumentHighlight]
+    @Query private var documentNotes:          [ResearchNote]
+    @Query private var documentTagAssignments: [DocumentTagAssignment]
+    @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
 
     // MARK: - Init
 
@@ -186,6 +193,11 @@ struct DocumentView: View {
             },
             sort: \ResearchNote.lastModified,
             order: .reverse
+        )
+        self._documentTagAssignments = Query(
+            filter: #Predicate<DocumentTagAssignment> { a in
+                a.volumeId == vId && a.documentId == dId
+            }
         )
     }
 
@@ -609,7 +621,22 @@ struct DocumentView: View {
                 highlightColorPickerSheet
             }
 
-            // 4. More — overflow menu
+            // 4. Research panel toggle
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
+            } label: {
+                Image(systemName: panelVisible
+                      ? "rectangle.bottomhalf.inset.filled"
+                      : "rectangle.bottomhalf.inset")
+                    .foregroundStyle(panelVisible ? Color.accentColor : Color.secondary)
+            }
+            .accessibilityLabel(panelVisible
+                ? String(localized: "document.toolbar.panel.hide.a11y",
+                         defaultValue: "Hide research panel")
+                : String(localized: "document.toolbar.panel.show.a11y",
+                         defaultValue: "Show research panel"))
+
+            // 5. More — overflow menu
             moreMenu(vm: vm)
         }
         // Notes panel toggle — leading nav bar position on iPad
@@ -694,25 +721,24 @@ struct DocumentView: View {
                 )
             }
 
-            // Source Explorer — only when a source note is present.
+            // Source Explorer — always available for all documents.
             // On iPad (regular width) opens in a new Stage Manager window;
             // on iPhone falls back to a sheet.
-            if let sourceNote = vm.sourceNote {
-                Button {
-                    if sizeClass == .regular {
-                        appState.currentSourceNote = sourceNote
-                        appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
-                        openWindow(id: "frus.sourceExplorer.ios")
-                    } else {
-                        activeSheet = .sourceExplorer(sourceNote)
-                    }
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.sourceExplorer",
-                               defaultValue: "Source Explorer"),
-                        systemImage: "archivebox"
-                    )
+            Button {
+                let note = vm.sourceNote ?? ""
+                if sizeClass == .regular {
+                    appState.currentSourceNote = note
+                    appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
+                    openWindow(id: "frus.sourceExplorer.ios")
+                } else {
+                    activeSheet = .sourceExplorer(note)
                 }
+            } label: {
+                Label(
+                    String(localized: "document.toolbar.sourceExplorer",
+                           defaultValue: "Source Explorer"),
+                    systemImage: "archivebox"
+                )
             }
 
             // Open in New Window — iPad Stage Manager only
@@ -920,9 +946,172 @@ struct DocumentView: View {
             .onSelectionCleared { webKitSelectionRange = nil }
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // TODO(Session 147): integrate DocumentTagSection and volume navigation
+
+            // Research panel — accordion of Notes, Tags, Summary
+            if panelVisible {
+                Divider()
+                iOSResearchPanel(vm: vm)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - iOS Research Panel
+
+    @ViewBuilder
+    private func iOSResearchPanel(vm: DocumentViewModel) -> some View {
+        @Bindable var vm = vm
+        VStack(spacing: 0) {
+            // ── Notes ─────────────────────────────────────────────────────────
+            iOSPanelSectionHeader(
+                title: String(localized: "panel.notes.title", defaultValue: "Notes"),
+                badge: documentNotes.isEmpty ? nil : "\(documentNotes.count)",
+                isExpanded: $notesExpanded
+            )
+            if notesExpanded {
+                Divider()
+                if documentNotes.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "note.text").foregroundStyle(.tertiary)
+                        Text(String(localized: "panel.notes.empty",
+                                    defaultValue: "No notes yet — tap the Note button in the toolbar."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(documentNotes) { note in
+                            Button { activeSheet = .editNote(note) } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(note.bodyText.isEmpty
+                                         ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
+                                         : note.bodyText)
+                                        .font(.callout)
+                                        .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
+                                        .lineLimit(3)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(note.lastModified ?? .now, style: .relative)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                                .padding(.vertical, 8)
+                            }
+                            .buttonStyle(.plain)
+                            if note.id != documentNotes.last?.id { Divider() }
+                        }
+                    }
+                }
+            }
+            Divider()
+
+            // ── Tags ───────────────────────────────────────────────────────────
+            let userTagNames = documentTagAssignments
+                .compactMap { a in allUserTags.first(where: { $0.id == a.tagId })?.name }
+                .sorted()
+            iOSPanelSectionHeader(
+                title: String(localized: "panel.tags.title", defaultValue: "Tags"),
+                badge: userTagNames.isEmpty ? nil : "\(userTagNames.count)",
+                isExpanded: $tagsExpanded
+            )
+            if tagsExpanded {
+                Divider()
+                if userTagNames.isEmpty && vm.subjectTags.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "tag").foregroundStyle(.tertiary)
+                        Text(String(localized: "panel.tags.empty",
+                                    defaultValue: "No tags applied — tap Tag in the toolbar."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !userTagNames.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(userTagNames, id: \.self) { name in
+                                        FRUSTagChip(label: name, style: .user)
+                                    }
+                                }
+                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                            }
+                        }
+                        if !vm.subjectTags.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(vm.subjectTags) { tag in
+                                        FRUSTagChip(label: tag.displayName, style: .system)
+                                    }
+                                }
+                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 10)
+                }
+            }
+
+            // ── Summary ────────────────────────────────────────────────────────
+            if appState.summarizationService != nil || vm.activeSummary != nil {
+                Divider()
+                iOSPanelSectionHeader(
+                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
+                    badge: nil,
+                    isExpanded: $summaryExpanded
+                )
+                if summaryExpanded, let summary = vm.activeSummary {
+                    Divider()
+                    SummaryStripView(vm: vm, summary: summary, totalCount: vm.summaries.count)
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                        .padding(.vertical, 8)
+                } else if summaryExpanded {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles").foregroundStyle(.tertiary)
+                        Text(String(localized: "panel.summary.empty",
+                                    defaultValue: "No summary yet — tap More → Summarize with AI."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                }
+            }
+        }
+    }
+
+    private func iOSPanelSectionHeader(
+        title: String,
+        badge: String?,
+        isExpanded: Binding<Bool>
+    ) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) { isExpanded.wrappedValue.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .textCase(.uppercase)
+                    .kerning(0.6)
+                    .foregroundStyle(.secondary)
+                if let badge {
+                    Text(badge)
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+                Spacer()
+                Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+            .padding(.vertical, 8)
+            .background(Color.secondary.opacity(0.04))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Highlight Actions

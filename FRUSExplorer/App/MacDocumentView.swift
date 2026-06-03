@@ -64,7 +64,16 @@ struct MacDocumentView: View {
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
 
-    @Query private var highlights: [DocumentHighlight]
+    @Query private var highlights:              [DocumentHighlight]
+    @Query private var documentNotes:           [ResearchNote]
+    @Query private var documentTagAssignments:  [DocumentTagAssignment]
+    @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
+
+    // Research panel: persisted accordion state (shared with ResearchStripView)
+    @AppStorage("frus.document.researchPanel.visible")   private var panelVisible    = true
+    @AppStorage("frus.document.researchPanel.notes")     private var notesExpanded   = true
+    @AppStorage("frus.document.researchPanel.tags")      private var tagsExpanded    = false
+    @AppStorage("frus.document.researchPanel.summary")   private var summaryExpanded = false
 
     // MARK: - Init
 
@@ -89,6 +98,18 @@ struct MacDocumentView: View {
                 h.volumeId == vId && h.documentId == dId
             },
             sort: \DocumentHighlight.createdAt
+        )
+        self._documentNotes = Query(
+            filter: #Predicate<ResearchNote> { n in
+                n.volumeId == vId && n.documentId == dId
+            },
+            sort: \ResearchNote.lastModified,
+            order: .reverse
+        )
+        self._documentTagAssignments = Query(
+            filter: #Predicate<DocumentTagAssignment> { a in
+                a.volumeId == vId && a.documentId == dId
+            }
         )
     }
 
@@ -250,12 +271,10 @@ struct MacDocumentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // AI summarization strip — restored from normalModeScrollView (Session 147 TODO)
-            if appState.summarizationService != nil {
+            // Research panel — accordion of Notes, Tags, Summary
+            if panelVisible {
                 Divider()
-                SummaryBlockView(vm: vm)
-                    .padding(.horizontal, 48)
-                    .padding(.vertical, 12)
+                macResearchPanel(vm: vm)
             }
 
             Divider()
@@ -282,6 +301,166 @@ struct MacDocumentView: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.orange.opacity(0.08))
+    }
+
+    // MARK: - Research Panel (accordion below document body)
+
+    /// Accordion panel with three independently expandable sections:
+    /// Notes · Tags · Summary. Visibility and per-section expansion are
+    /// persisted via AppStorage so the state survives document navigation.
+    @ViewBuilder
+    private func macResearchPanel(vm: DocumentViewModel) -> some View {
+        VStack(spacing: 0) {
+            // ── Notes ────────────────────────────────────────────────────────
+            panelSectionHeader(
+                title: String(localized: "panel.notes.title", defaultValue: "Notes"),
+                badge: documentNotes.isEmpty ? nil : "\(documentNotes.count)",
+                isExpanded: $notesExpanded
+            )
+            if notesExpanded {
+                Divider()
+                if documentNotes.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "note.text").foregroundStyle(.tertiary)
+                        Text(String(localized: "panel.notes.empty",
+                                    defaultValue: "No notes yet — click Add note in the research strip to create one."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 48)
+                    .padding(.vertical, 12)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(documentNotes) { note in
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(note.bodyText.isEmpty
+                                     ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
+                                     : note.bodyText)
+                                    .font(.callout)
+                                    .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
+                                    .lineLimit(3)
+                                Text(note.lastModified ?? .now, style: .relative)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.horizontal, 48)
+                            .padding(.vertical, 8)
+                            if note.id != documentNotes.last?.id { Divider() }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            Divider()
+
+            // ── Tags ─────────────────────────────────────────────────────────
+            let userTagNames = documentTagAssignments
+                .compactMap { a in allUserTags.first(where: { $0.id == a.tagId })?.name }
+                .sorted()
+            panelSectionHeader(
+                title: String(localized: "panel.tags.title", defaultValue: "Tags"),
+                badge: userTagNames.isEmpty ? nil : "\(userTagNames.count)",
+                isExpanded: $tagsExpanded
+            )
+            if tagsExpanded {
+                Divider()
+                if userTagNames.isEmpty && vm.subjectTags.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "tag").foregroundStyle(.tertiary)
+                        Text(String(localized: "panel.tags.empty",
+                                    defaultValue: "No tags applied — click Tag in the research strip to add one."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 48)
+                    .padding(.vertical, 12)
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !userTagNames.isEmpty {
+                            HStack(spacing: 6) {
+                                ForEach(userTagNames, id: \.self) { name in
+                                    FRUSTagChip(label: name, style: .user)
+                                }
+                            }
+                            .padding(.horizontal, 48)
+                        }
+                        if !vm.subjectTags.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(vm.subjectTags) { tag in
+                                        FRUSTagChip(label: tag.displayName, style: .system)
+                                    }
+                                }
+                                .padding(.horizontal, 48)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 10)
+                }
+            }
+
+            // ── Summary ───────────────────────────────────────────────────────
+            if appState.summarizationService != nil || vm.activeSummary != nil {
+                Divider()
+                let summaryPreview = vm.activeSummary.map { s in
+                    String(s.responseText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+                }
+                panelSectionHeader(
+                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
+                    badge: vm.activeSummary != nil ? nil : nil,  // no count for summary
+                    isExpanded: $summaryExpanded,
+                    preview: summaryPreview
+                )
+                if summaryExpanded {
+                    Divider()
+                    SummaryBlockView(vm: vm)
+                        .padding(.horizontal, 48)
+                        .padding(.vertical, 8)
+                }
+            }
+        }
+    }
+
+    /// Reusable accordion section header: label + optional badge + chevron.
+    private func panelSectionHeader(
+        title: String,
+        badge: String?,
+        isExpanded: Binding<Bool>,
+        preview: String? = nil
+    ) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) { isExpanded.wrappedValue.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold))
+                    .textCase(.uppercase)
+                    .kerning(0.7)
+                    .foregroundStyle(.secondary)
+                if let badge {
+                    Text(badge)
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+                if let preview, !isExpanded.wrappedValue {
+                    Text(preview + "…")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 48)
+            .padding(.vertical, 7)
+            .background(Color.secondary.opacity(0.04))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Highlight Deletion
