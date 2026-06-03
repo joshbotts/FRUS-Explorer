@@ -558,6 +558,30 @@ struct FRUSExplorerApp: App {
             }
         }
 
+        // Proactively check iCloud account status and private zone existence.
+        // The eventChanged notification only fires when NSPersistentCloudKitContainer
+        // actually attempts an operation — silent failures (not signed in, zone deleted,
+        // change token expired) never trigger it and are invisible without this check.
+        appState.checkCloudKitHealth()
+
+        // Re-check whenever the app returns to the foreground so the status bar
+        // reflects sign-in/sign-out changes made in Settings while the app was suspended.
+        let foregroundNotification: Notification.Name
+        #if os(iOS)
+        foregroundNotification = UIApplication.willEnterForegroundNotification
+        #else
+        foregroundNotification = NSApplication.willBecomeActiveNotification
+        #endif
+        NotificationCenter.default.addObserver(
+            forName: foregroundNotification,
+            object: nil,
+            queue: .main
+        ) { [appState] _ in
+            Task { @MainActor in
+                appState.checkCloudKitHealth()
+            }
+        }
+
         // Sync DocumentTagAssignment records from SwiftData into document_cache (FTS5)
         // so search tag-filtering reflects the CloudKit-synced state. Also runs the
         // one-time migration that promotes legacy document_cache.user_tag_ids values

@@ -10,6 +10,7 @@ import Foundation
 import Network
 import Observation
 import SwiftData
+import CloudKit
 
 /// AppState is the root observable state object for FRUS Explorer.
 ///
@@ -196,6 +197,96 @@ final class AppState {
     /// state surfaces the error message in the macOS status bar and iOS Settings so
     /// developers and users can see exactly what is preventing data from syncing.
     var cloudKitSyncState: CloudKitSyncState = .unknown
+
+    /// Whether the iCloud private zone required for CloudKit sync exists on the server.
+    ///
+    /// `nil` = not yet verified; `true` = zone found and sync should work;
+    /// `false` = zone missing — records cannot be uploaded or downloaded until
+    /// NSPersistentCloudKitContainer recreates it (typically on next cold launch).
+    ///
+    /// Set by `checkCloudKitHealth()`, called at launch and on every foreground transition.
+    var cloudKitZoneVerified: Bool? = nil
+
+    /// The current iCloud account status.
+    ///
+    /// `nil` = not yet checked. `.available` = signed in and sync enabled.
+    /// Any other value means data will not sync (not signed in, restricted, etc.).
+    var cloudKitAccountStatus: CKAccountStatus? = nil
+
+    // MARK: - CloudKit health check
+
+    private static let ckContainerIdentifier = "iCloud.bottsywattsy.FRUS-Explorer"
+    /// The zone name created by NSPersistentCloudKitContainer for the private database.
+    private static let ckZoneName = "com.apple.coredata.cloudkit.zone"
+
+    /// Checks iCloud account status and private zone existence, then updates
+    /// `cloudKitAccountStatus`, `cloudKitZoneVerified`, and (on failure) `cloudKitSyncState`.
+    ///
+    /// Safe to call repeatedly — idempotent apart from logging. Call at launch
+    /// (from `FRUSExplorerApp.bootApp()`) and on every foreground transition so
+    /// the status bar/settings reflect fresh state after the user signs in or out.
+    ///
+    /// - Note: No-op when `cloudKitSyncEnabled == false` (container fell back to local).
+    @MainActor
+    func checkCloudKitHealth() {
+        guard cloudKitSyncEnabled else { return }
+        Task { @MainActor in
+            let container = CKContainer(identifier: Self.ckContainerIdentifier)
+
+            // ── Account status ──────────────────────────────────────────────────
+            do {
+                let status = try await container.accountStatus()
+                cloudKitAccountStatus = status
+                if status != .available {
+                    let msg = Self.accountStatusDescription(status)
+                    cloudKitSyncState = .failed(msg)
+                    print("[CloudKit] ⚠️ Account status: \(msg)")
+                }
+            } catch {
+                print("[CloudKit] ⚠️ Account status check failed: \(error.localizedDescription)")
+            }
+
+            // ── Private zone verification ────────────────────────────────────────
+            do {
+                let zones = try await container.privateCloudDatabase.allRecordZones()
+                cloudKitZoneVerified = zones.contains { $0.zoneID.zoneName == Self.ckZoneName }
+                if cloudKitZoneVerified == false {
+                    print("[CloudKit] ⚠️ Private zone '\(Self.ckZoneName)' not found — "
+                          + "records will not sync until the zone is recreated.")
+                } else {
+                    #if DEBUG
+                    print("[CloudKit] ✓ Private zone verified (\(zones.count) zone(s) found)")
+                    #endif
+                }
+            } catch {
+                cloudKitZoneVerified = false
+                print("[CloudKit] ⚠️ Zone verification failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Human-readable description of a `CKAccountStatus` value for display and logging.
+    static func accountStatusDescription(_ status: CKAccountStatus) -> String {
+        switch status {
+        case .available:
+            return "Available"
+        case .noAccount:
+            return String(localized: "cloudkit.account.noAccount",
+                          defaultValue: "Not signed in to iCloud — notes, highlights, and collections won't sync. Sign in via Settings → Apple ID.")
+        case .restricted:
+            return String(localized: "cloudkit.account.restricted",
+                          defaultValue: "iCloud access is restricted on this device (parental controls or MDM policy).")
+        case .couldNotDetermine:
+            return String(localized: "cloudkit.account.couldNotDetermine",
+                          defaultValue: "Could not determine iCloud account status. Check your network connection and try again.")
+        case .temporarilyUnavailable:
+            return String(localized: "cloudkit.account.temporarilyUnavailable",
+                          defaultValue: "iCloud is temporarily unavailable. Data will sync when it comes back online.")
+        @unknown default:
+            return String(localized: "cloudkit.account.unknown",
+                          defaultValue: "iCloud account status unknown.")
+        }
+    }
 
     // MARK: - Network State
 

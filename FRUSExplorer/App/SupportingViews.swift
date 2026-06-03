@@ -970,6 +970,31 @@ struct StatusBarView: View {
                 .foregroundStyle(.orange)
                 .help(message)
             }
+
+            // Zone-missing warning — overlaid when zone verification has completed
+            // and the private zone is absent. This is separate from sync-event failures
+            // because zone deletion is a silent failure the event system never reports.
+            if appState.cloudKitZoneVerified == false {
+                Label(
+                    String(localized: "statusBar.sync.zoneMissing", defaultValue: "Zone Missing"),
+                    systemImage: "exclamationmark.icloud.fill"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(.red)
+                .help(String(localized: "statusBar.sync.zoneMissing.help",
+                             defaultValue: "The iCloud sync zone is missing — data cannot upload or download. Force-quit the app and relaunch to trigger zone recreation, or reset iCloud sync in Settings → Danger Zone."))
+            }
+
+            // Account warning — shown when health check detected a non-available status
+            if let status = appState.cloudKitAccountStatus, status != .available {
+                Label(
+                    String(localized: "statusBar.sync.accountIssue", defaultValue: "Not Signed In"),
+                    systemImage: "person.crop.circle.badge.exclamationmark"
+                )
+                .font(.system(size: 11))
+                .foregroundStyle(.orange)
+                .help(AppState.accountStatusDescription(status))
+            }
         }
     }
 

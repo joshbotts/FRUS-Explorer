@@ -250,6 +250,39 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+
+            // Zone-missing warning (silent failure — never reported by sync events)
+            if appState.cloudKitZoneVerified == false {
+                LabeledContent(
+                    String(localized: "settings.icloud.zone", defaultValue: "Private Zone")
+                ) {
+                    Label(
+                        String(localized: "settings.icloud.zoneMissing", defaultValue: "Missing"),
+                        systemImage: "exclamationmark.icloud.fill"
+                    )
+                    .foregroundStyle(.red)
+                }
+                Text(String(localized: "settings.icloud.zoneMissing.detail",
+                            defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or tap Reset iCloud Sync below."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            // Account status issues
+            if let status = appState.cloudKitAccountStatus, status != .available {
+                LabeledContent(
+                    String(localized: "settings.icloud.account", defaultValue: "Account")
+                ) {
+                    Label(
+                        String(localized: "settings.icloud.accountIssue", defaultValue: "Issue Detected"),
+                        systemImage: "person.crop.circle.badge.exclamationmark"
+                    )
+                    .foregroundStyle(.orange)
+                }
+                Text(AppState.accountStatusDescription(status))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }
