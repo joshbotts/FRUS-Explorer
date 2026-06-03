@@ -69,6 +69,12 @@
 		AA14BB02CC03DD04EE140001 /* FRUSRenderNodeHTMLSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */; };
 		AA14BB02CC03DD04EE140002 /* FRUSRenderNodeHTMLSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */; };
 		AA14BB02CC03DD04EE140003 /* FRUSRenderNodeHTMLSerializerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140005 /* FRUSRenderNodeHTMLSerializerTests.swift */; };
+		AA14BB02CC03DD04EE140006 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140009 /* FRUSDocumentWebView.swift */; };
+		AA14BB02CC03DD04EE140007 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140009 /* FRUSDocumentWebView.swift */; };
+		AA14BB02CC03DD04EE14000A /* FRUSWebViewConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE14000D /* FRUSWebViewConfiguration.swift */; };
+		AA14BB02CC03DD04EE14000B /* FRUSWebViewConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE14000D /* FRUSWebViewConfiguration.swift */; };
+		AA14BB02CC03DD04EE14000E /* HTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140011 /* HTMLTemplate.swift */; };
+		AA14BB02CC03DD04EE14000F /* HTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA14BB02CC03DD04EE140011 /* HTMLTemplate.swift */; };
 		AA06BB02CC03DD04EE060034 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		AA06BB02CC03DD04EE060035 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */; };
 		AA07BB02CC03DD04EE070001 /* FRUSParserSession07Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */; };
@@ -378,6 +384,9 @@
 		AA06BB02CC03DD04EE060007 /* TEIParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TEIParserTests.swift; sourceTree = "<group>"; };
 		AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSRenderNodeHTMLSerializer.swift; sourceTree = "<group>"; };
 		AA14BB02CC03DD04EE140005 /* FRUSRenderNodeHTMLSerializerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSRenderNodeHTMLSerializerTests.swift; sourceTree = "<group>"; };
+		AA14BB02CC03DD04EE140009 /* FRUSDocumentWebView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSDocumentWebView.swift; sourceTree = "<group>"; };
+		AA14BB02CC03DD04EE14000D /* FRUSWebViewConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSWebViewConfiguration.swift; sourceTree = "<group>"; };
+		AA14BB02CC03DD04EE140011 /* HTMLTemplate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HTMLTemplate.swift; sourceTree = "<group>"; };
 		AA06BB02CC03DD04EE060008 /* tei-rendering-config.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "tei-rendering-config.json"; sourceTree = "<group>"; };
 		AA07BB02CC03DD04EE070002 /* FRUSParserSession07Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FRUSParserSession07Tests.swift; sourceTree = "<group>"; };
 		AA08BB02CC03DD04EE080003 /* SubjectTagStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubjectTagStore.swift; sourceTree = "<group>"; };
@@ -662,6 +671,9 @@
 				AA06BB02CC03DD04EE060006 /* FRUSDocumentRenderer.swift */,
 				AA22BB01CC03DD04EE2255 /* DocumentHighlightTextView.swift */,
 				AA14BB02CC03DD04EE140004 /* FRUSRenderNodeHTMLSerializer.swift */,
+				AA14BB02CC03DD04EE140009 /* FRUSDocumentWebView.swift */,
+				AA14BB02CC03DD04EE14000D /* FRUSWebViewConfiguration.swift */,
+				AA14BB02CC03DD04EE140011 /* HTMLTemplate.swift */,
 			);
 			path = TEI;
 			sourceTree = "<group>";
@@ -1229,6 +1241,9 @@
 				AA06BB02CC03DD04EE060030 /* ASTToRenderNodeConverter.swift in Sources */,
 				AA06BB02CC03DD04EE060032 /* FRUSDocumentRenderer.swift in Sources */,
 				AA14BB02CC03DD04EE140002 /* FRUSRenderNodeHTMLSerializer.swift in Sources */,
+				AA14BB02CC03DD04EE140007 /* FRUSDocumentWebView.swift in Sources */,
+				AA14BB02CC03DD04EE14000B /* FRUSWebViewConfiguration.swift in Sources */,
+				AA14BB02CC03DD04EE14000F /* HTMLTemplate.swift in Sources */,
 				AA39BB01CC03DD04EE3902 /* PersonMentionStore.swift in Sources */,
 				661144C718F8B46603056272 /* MainWindowView.swift in Sources */,
 				623128B598B5F7C4F62DDC12 /* MacDocumentView.swift in Sources */,
@@ -1366,6 +1381,9 @@
 				AA06BB02CC03DD04EE060029 /* ASTToRenderNodeConverter.swift in Sources */,
 				AA06BB02CC03DD04EE060031 /* FRUSDocumentRenderer.swift in Sources */,
 				AA14BB02CC03DD04EE140001 /* FRUSRenderNodeHTMLSerializer.swift in Sources */,
+				AA14BB02CC03DD04EE140006 /* FRUSDocumentWebView.swift in Sources */,
+				AA14BB02CC03DD04EE14000A /* FRUSWebViewConfiguration.swift in Sources */,
+				AA14BB02CC03DD04EE14000E /* HTMLTemplate.swift in Sources */,
 				AA39BB01CC03DD04EE3903 /* PersonMentionStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
