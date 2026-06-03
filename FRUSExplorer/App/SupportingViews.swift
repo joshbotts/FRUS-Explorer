@@ -236,8 +236,8 @@ struct ResearchStripView: View {
                 }
             } label: {
                 Image(systemName: researchPanelVisible
-                      ? "tray.2.fill"
-                      : "tray.2")
+                      ? "pencil.and.scribble"
+                      : "book.fill")
                     .font(.system(size: 12))
                     .foregroundStyle(researchPanelVisible ? Color.accentColor : Color.secondary)
             }

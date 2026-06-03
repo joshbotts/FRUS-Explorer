@@ -626,8 +626,8 @@ struct DocumentView: View {
                 withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
             } label: {
                 Image(systemName: panelVisible
-                      ? "tray.2.fill"
-                      : "tray.2")
+                      ? "pencil.and.scribble"
+                      : "book.fill")
                     .foregroundStyle(panelVisible ? Color.accentColor : Color.secondary)
             }
             .accessibilityLabel(panelVisible
