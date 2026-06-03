@@ -347,7 +347,10 @@ struct DocumentView: View {
                     activeProjectId: appState.activeProjectId
                 )
             case .sourceExplorer(let note):
-                SourceExplorerView(rawSourceNote: note)
+                SourceExplorerView(
+                    rawSourceNote: note,
+                    documentYear: Self.extractYear(from: entry.dateline)
+                )
             case .tagPicker:
                 TagPickerSheetView(
                     entry: entry,
@@ -435,6 +438,22 @@ struct DocumentView: View {
         guard let dm = appState.downloadManager else { return [] }
         let known = appState.manifestStore.diffResult?.known ?? []
         return Set(known.compactMap { dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil })
+    }
+
+    // MARK: - Document Year Extraction
+
+    /// Extracts a 4-digit year from a dateline string such as
+    /// "Washington, January 15, 1946" or "Moscow, April 3, 1963".
+    /// Returns `nil` when no plausible year is found.
+    static func extractYear(from dateline: String?) -> Int? {
+        guard let dl = dateline else { return nil }
+        let pattern = #"\b(19[0-9]{2}|20[0-2][0-9])\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(
+                  in: dl, range: NSRange(dl.startIndex..., in: dl)),
+              let range = Range(match.range(at: 1), in: dl)
+        else { return nil }
+        return Int(dl[range])
     }
 
     // MARK: - Cross-Reference Navigation
@@ -648,6 +667,7 @@ struct DocumentView: View {
                 Button {
                     if sizeClass == .regular {
                         appState.currentSourceNote = sourceNote
+                        appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
                         openWindow(id: "frus.sourceExplorer.ios")
                     } else {
                         activeSheet = .sourceExplorer(sourceNote)

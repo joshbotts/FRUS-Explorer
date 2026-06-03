@@ -39,15 +39,25 @@ public enum NARACatalogError: Error, LocalizedError {
     case networkError(underlying: Error)
     case unexpectedResponse(statusCode: Int)
     case decodingError
+    /// HTTP 429 — API rate limit reached.
+    case rateLimited
+    /// HTTP 403 — API key is present but rejected by NARA.
+    case apiKeyRejected
 
     public var errorDescription: String? {
         switch self {
         case .missingAPIKey:
             return String(localized: "nara.error.missingKey",
-                          defaultValue: "No NARA Catalog API key is stored. Add one in Settings.")
-        case .networkError(let e):
+                          defaultValue: "A NARA Catalog API key is required to search for lot files and Presidential Library records. Add your key in Settings → NARA API.")
+        case .networkError:
             return String(localized: "nara.error.network",
-                          defaultValue: "Network error: \(e.localizedDescription)")
+                          defaultValue: "Network unavailable. Connect to look up this source in the NARA Catalog.")
+        case .rateLimited:
+            return String(localized: "nara.error.rateLimited",
+                          defaultValue: "NARA Catalog API rate limit reached. Try again later, or use the manual search link below.")
+        case .apiKeyRejected:
+            return String(localized: "nara.error.keyRejected",
+                          defaultValue: "NARA Catalog API key was rejected (HTTP 403). Check the key in Settings → NARA API.")
         case .unexpectedResponse(let code):
             return String(localized: "nara.error.response",
                           defaultValue: "Unexpected response from NARA Catalog (HTTP \(code)).")
@@ -91,6 +101,9 @@ public enum NARACatalogError: Error, LocalizedError {
 ///   1.1 — Session 94: recordAPICall() called after each successful NARA API response
 ///   1.2 — Session 130: v2 API support; structured RG queries; new method overloads
 ///          matching the expanded ParsedSourceNote cases
+///   1.3 — Session 150: `variantControlNumber_is` lot file resolution; static URL helpers
+///          for decimal file period routing, presidential library fallbacks, and CIA CREST;
+///          specific error cases for rate limiting (429) and key rejection (403)
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
@@ -130,6 +143,96 @@ public actor NARACatalogClient {
             URLQueryItem(name: "f.parentDescriptionNaId", value: Self.rg59NaId),
         ]
         return components.url ?? URL(string: "\(Self.catalogBase)/search?q=\(fileIdentifier)")!
+    }
+
+    // MARK: - Decimal File Period Routing (static URLs — no API call)
+
+    /// Returns the NARA finding-aid page URL for the State Dept. decimal file
+    /// period that covers the given document year.
+    ///
+    /// NARA publishes seven period-specific research pages for the 1910–1963
+    /// central decimal files, each with box lists, purport indexes, and the
+    /// applicable filing manual. No API key is required.
+    ///
+    /// - Parameter year: The year the document was created (from the dateline).
+    /// - Returns: URL to the appropriate NARA decimal-files research page.
+    public nonisolated func decimalFilePeriodURL(year: Int) -> URL {
+        let slug: String
+        switch year {
+        case ..<1930:     slug = "1910-1929"
+        case 1930...1939: slug = "1930-1939"
+        case 1940...1944: slug = "1940-1944"
+        case 1945...1949: slug = "1945-1949"
+        case 1950...1954: slug = "1950-1954"
+        case 1955...1959: slug = "1955-1959"
+        default:          slug = "1960-1963"   // 1960–Jan 1963
+        }
+        return URL(string: "https://www.archives.gov/research/foreign-policy/"
+                   + "state-dept/rg-59-central-files/1910-1963/\(slug)")!
+    }
+
+    /// Human-readable label for the decimal-file period covering `year`.
+    public nonisolated func decimalFilePeriodLabel(year: Int) -> String {
+        switch year {
+        case ..<1930:     return "1910–1929"
+        case 1930...1939: return "1930–1939"
+        case 1940...1944: return "1940–1944"
+        case 1945...1949: return "1945–1949"
+        case 1950...1954: return "1950–1954"
+        case 1955...1959: return "1955–1959"
+        default:          return "1960–January 1963"
+        }
+    }
+
+    // MARK: - Presidential Library Fallback URLs (static — no API call)
+
+    /// Returns the institution-specific finding-aid URL for the given library name.
+    ///
+    /// Used as a fallback when the NARA Catalog API returns zero results for a
+    /// presidential library query. Never returns a generic NARA search link —
+    /// each library has its own online finding-aid portal.
+    public nonisolated func libraryFallbackURL(libraryName: String) -> URL {
+        let lc = libraryName.lowercased()
+        switch lc {
+        case _ where lc.contains("kennedy") || lc.contains("jfk"):
+            return URL(string: "https://www.jfklibrary.org/archives/finding-aids")!
+        case _ where lc.contains("johnson") || lc.contains("lbj"):
+            return URL(string: "https://www.lbjlibrary.org/research/research-resources")!
+        case _ where lc.contains("nixon"):
+            return URL(string: "https://www.nixonlibrary.gov/research/finding-aids")!
+        case _ where lc.contains("ford"):
+            return URL(string: "https://www.fordlibrarymuseum.gov/library/finding-aids.asp")!
+        case _ where lc.contains("carter"):
+            return URL(string: "https://www.jimmycarterlibrary.gov/research/finding-aids")!
+        case _ where lc.contains("reagan"):
+            return URL(string: "https://www.reaganlibrary.gov/research")!
+        case _ where lc.contains("bush"):
+            return URL(string: "https://www.bush41library.tamu.edu/research")!
+        case _ where lc.contains("eisenhower") || lc.contains("ddel"):
+            return URL(string: "https://www.eisenhowerlibrary.gov/research/finding-aids")!
+        case _ where lc.contains("truman") || lc.contains("hstl"):
+            return URL(string: "https://www.trumanlibrary.gov/research/finding-aids")!
+        case _ where lc.contains("roosevelt") || lc.contains("fdrl"):
+            return URL(string: "https://www.fdrlibrary.org/finding-aids")!
+        default:
+            return URL(string: "https://www.archives.gov/presidential-libraries")!
+        }
+    }
+
+    // MARK: - CIA Research URL (static — no API call)
+
+    /// Returns the CIA CREST database URL for the given job number, or the
+    /// general CIA reading-room URL when no job number is available.
+    ///
+    /// CIA records are not indexed in the NARA Catalog. CREST is the
+    /// appropriate resource for CIA operational records and historical files.
+    public nonisolated func ciaResearchURL(jobNumber: String? = nil) -> URL {
+        if let job = jobNumber, !job.isEmpty {
+            let encoded = job.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? job
+            return URL(string: "https://www.cia.gov/readingroom/search/site/\(encoded)")
+                ?? URL(string: "https://www.cia.gov/readingroom/")!
+        }
+        return URL(string: "https://www.cia.gov/readingroom/")!
     }
 
     // MARK: - Structured Queries (v2 API)
@@ -187,6 +290,101 @@ public actor NARACatalogClient {
     /// - Parameter lotNumber: e.g. `"61-D 146"`.
     public func resolveLotFile(lotNumber: String) async throws -> NARACatalogResult? {
         try await searchByLotFile(recordGroup: "59", lotNumber: lotNumber)
+    }
+
+    /// Resolves a State Dept. lot file using the `variantControlNumber_is` field
+    /// query in the NARA Catalog v2 API, which matches against NARA's indexed lot
+    /// numbers rather than performing free-text search.
+    ///
+    /// ## Normalization strategy
+    /// FRUS citations use compact form almost exclusively (`63D135`, `72D316`).
+    /// NARA may index them with spaces (`63 D 135`) or without. Three variants
+    /// are tried in sequence; the first non-empty result wins:
+    ///   1. Compact:  `"63D135"`
+    ///   2. Spaced:   `"63 D 135"`
+    ///   3. Mixed:    `"63 D135"`
+    ///
+    /// If all three `variantControlNumber_is` queries return zero results, falls
+    /// back to the free-text `searchByLotFile` phrase query as a safety net.
+    ///
+    /// - Parameter lotNumber: Raw lot number from the source note. May include
+    ///   "Lot " prefix, spaces, dashes, or similar noise.
+    /// - Returns: Up to 5 matching series descriptions, newest first.
+    public func resolveLotFileVariants(lotNumber: String) async throws -> [NARACatalogResult] {
+        let variants = Self.lotNumberVariants(from: lotNumber)
+
+        for variant in variants {
+            let results = try await searchByVariantControlNumber(variant, recordGroup: "59")
+            if !results.isEmpty {
+                #if DEBUG
+                print("[SourceExplorer] Lot file '\(variant)' matched \(results.count) result(s)")
+                #endif
+                return results
+            }
+        }
+
+        // All variantControlNumber_is attempts returned zero — fall back to phrase query.
+        #if DEBUG
+        print("[SourceExplorer] variantControlNumber_is found nothing for '\(lotNumber)'; "
+              + "falling back to phrase query")
+        #endif
+        if let fallback = try? await searchByLotFile(recordGroup: "59", lotNumber: lotNumber) {
+            return [fallback]
+        }
+        return []
+    }
+
+    /// Generates up to three normalised lot number variants from a raw string.
+    ///
+    /// Strips "Lot " prefix, dashes, and excess whitespace, then produces:
+    /// compact (`63D135`), spaced (`63 D 135`), and mixed (`63 D135`) forms.
+    nonisolated static func lotNumberVariants(from raw: String) -> [String] {
+        // 1. Strip leading "Lot " prefix (case insensitive), dashes, collapse spaces.
+        var stripped = raw
+            .replacingOccurrences(of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: " ", with: "")
+
+        // 2. Match the canonical NNxNNN pattern (2-3 digits, one letter, 1+ digits).
+        let pattern = #"^(\d{2,3})([A-Za-z])(\d+)$"#
+        guard let regex  = try? NSRegularExpression(pattern: pattern),
+              let match  = regex.firstMatch(in: stripped,
+                                            range: NSRange(stripped.startIndex..., in: stripped)),
+              let r1     = Range(match.range(at: 1), in: stripped),
+              let r2     = Range(match.range(at: 2), in: stripped),
+              let r3     = Range(match.range(at: 3), in: stripped)
+        else {
+            // Unusual format — try the stripped form as-is.
+            return [stripped]
+        }
+
+        let d1 = String(stripped[r1])
+        let lt = String(stripped[r2]).uppercased()
+        let d2 = String(stripped[r3])
+
+        return [
+            "\(d1)\(lt)\(d2)",      // compact:  63D135
+            "\(d1) \(lt) \(d2)",    // spaced:   63 D 135
+            "\(d1) \(lt)\(d2)",     // mixed:    63 D135
+        ]
+    }
+
+    /// Queries the v2 API using `variantControlNumber_is` for an exact lot number match.
+    private func searchByVariantControlNumber(
+        _ lotNumber: String,
+        recordGroup: String
+    ) async throws -> [NARACatalogResult] {
+        let apiKey = try await fetchAPIKey()
+        var components = URLComponents(string: "\(Self.apiV2Base)/records/search")!
+        components.queryItems = [
+            URLQueryItem(name: "variantControlNumber_is",        value: lotNumber),
+            URLQueryItem(name: "description.recordGroupNumber",  value: recordGroup),
+            URLQueryItem(name: "resultType",                     value: "description"),
+            URLQueryItem(name: "rows",                           value: "5"),
+        ]
+        guard let url = components.url else { throw NARACatalogError.decodingError }
+        return try await executeSearch(url: url, apiKey: apiKey)
     }
 
     /// Searches for Presidential Library materials using library name and collection keywords.
@@ -262,7 +460,11 @@ public actor NARACatalogClient {
 
         if let httpResponse = response as? HTTPURLResponse,
            !(200..<300).contains(httpResponse.statusCode) {
-            throw NARACatalogError.unexpectedResponse(statusCode: httpResponse.statusCode)
+            switch httpResponse.statusCode {
+            case 403: throw NARACatalogError.apiKeyRejected
+            case 429: throw NARACatalogError.rateLimited
+            default:  throw NARACatalogError.unexpectedResponse(statusCode: httpResponse.statusCode)
+            }
         }
 
         // Record successful API hit for 30-day usage tracking displayed in Settings.

@@ -40,12 +40,21 @@ import SwiftUI
 ///   1.2 — Session 118: `centralFilesPanel` button label changes to "Browse RG-59 in NARA
 ///          Catalog" when `fileIdentifier` is nil, avoiding the misleading "for This File"
 ///          label that appeared for narrative central-file notes with no extractable identifier
+///   1.3 — Session 150: `variantControlNumber_is` lot file resolution; date-routed decimal
+///          file period URLs; presidential library fallback URLs; CIA CREST link; multi-result
+///          display (up to 5 candidates); specific error messages for 403/429/missing key;
+///          manual-search fallback link when zero results
 struct SourceExplorerView: View {
 
     // MARK: - Input
 
     /// Raw plain-text source note extracted from the TEI document.
     let rawSourceNote: String
+
+    /// The year the FRUS document was created, used to route decimal-file and central-file
+    /// citations to the correct NARA period-specific finding-aid page. When `nil`, the period
+    /// table is shown without highlighting a specific period.
+    var documentYear: Int? = nil
 
     // MARK: - Dependencies
 
@@ -55,7 +64,8 @@ struct SourceExplorerView: View {
     // MARK: - State
 
     @State private var parsed: ParsedSourceNote? = nil
-    @State private var catalogResult: NARACatalogResult? = nil
+    /// Up to 5 NARA Catalog results; replaces the old single-result `catalogResult`.
+    @State private var catalogResults: [NARACatalogResult] = []
     @State private var isLoading = false
     @State private var loadError: String? = nil
     @State private var hasAPIKey: Bool = false
@@ -157,7 +167,8 @@ struct SourceExplorerView: View {
             if let lotFile  { LabeledContent(String(localized: "source.explorer.nara.lot", defaultValue: "Lot File"), value: lotFile) }
             if let box     { LabeledContent(String(localized: "source.explorer.nara.box", defaultValue: "Box"), value: box) }
         }
-        naraResultSection(requiresKey: true)
+        let fb = client.resolveRG59CentralFiles(fileIdentifier: [series, lotFile].compactMap { $0 }.joined(separator: " "))
+        naraResultSection(requiresKey: true, fallbackURL: fb)
     }
 
     // MARK: - CIA Panel (new case)
@@ -172,9 +183,21 @@ struct SourceExplorerView: View {
             if let jobNumber { LabeledContent(String(localized: "source.explorer.cia.job", defaultValue: "Job/Accession No."), value: jobNumber) }
             if let box       { LabeledContent(String(localized: "source.explorer.cia.box", defaultValue: "Box"), value: box) }
         }
-        Section {
+        Section(String(localized: "source.explorer.cia.header", defaultValue: "CIA Research")) {
+            Button {
+                openURL(client.ciaResearchURL(jobNumber: jobNumber))
+            } label: {
+                Label(
+                    jobNumber != nil
+                        ? String(localized: "source.explorer.cia.crestLink",
+                                 defaultValue: "Search CIA CREST for This Job Number")
+                        : String(localized: "source.explorer.cia.crestLinkGeneral",
+                                 defaultValue: "Browse CIA CREST Database"),
+                    systemImage: "arrow.up.right.square"
+                )
+            }
             Text(String(localized: "source.explorer.cia.note",
-                        defaultValue: "CIA accession records are not publicly available in the NARA Catalog. Use the description above to request records through FOIA or the CIA Historical Collections."))
+                        defaultValue: "CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents including operational files and historical collections."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -187,10 +210,9 @@ struct SourceExplorerView: View {
         Section(String(localized: "source.explorer.provenance.header",
                        defaultValue: "Provenance")) {
             LabeledContent(
-                String(localized: "source.explorer.centralFiles.type",
-                       defaultValue: "Type"),
+                String(localized: "source.explorer.centralFiles.type", defaultValue: "Type"),
                 value: String(localized: "source.explorer.centralFiles.typeValue",
-                              defaultValue: "State Dept. Central Files (\(recordGroup))")
+                              defaultValue: "State Dept. Central Files (RG \(recordGroup))")
             )
             if let fileIdentifier {
                 LabeledContent(
@@ -201,15 +223,16 @@ struct SourceExplorerView: View {
             }
         }
 
-        Section(String(localized: "source.explorer.nara.header",
-                       defaultValue: "NARA Catalog")) {
+        // Date-routed period section — only for RG-59 (decimal files and central files)
+        if recordGroup == "59" {
+            centralFilesPeriodSection(fileIdentifier: fileIdentifier)
+        }
+
+        Section(String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")) {
             Button {
                 let url = client.resolveRG59CentralFiles(fileIdentifier: fileIdentifier ?? "")
                 openURL(url)
             } label: {
-                // When a specific file identifier was parsed, label the action as a targeted
-                // search. When nil (narrative note with no extractable ID), use a general
-                // browse label so the user is not misled into thinking a file was found.
                 if fileIdentifier != nil {
                     Label(
                         String(localized: "source.explorer.centralFiles.naraLink",
@@ -224,15 +247,67 @@ struct SourceExplorerView: View {
                     )
                 }
             }
-            .accessibilityLabel(
-                String(localized: "source.explorer.centralFiles.naraLink.accessibility",
-                       defaultValue: "Open NARA Catalog search in browser")
-            )
-
             Text(String(localized: "source.explorer.centralFiles.noKeyNote",
                         defaultValue: "Central file searches open directly in your browser — no API key required."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Period-specific finding-aid section for RG-59 decimal and central files.
+    ///
+    /// When `documentYear` is available, highlights the matching period and links
+    /// to the NARA finding-aid page for that period. When unavailable, shows the
+    /// full period table so the researcher can locate the right page manually.
+    @ViewBuilder
+    private func centralFilesPeriodSection(fileIdentifier: String?) -> some View {
+        Section(String(localized: "source.explorer.decimalPeriod.header",
+                       defaultValue: "NARA Finding Aids by Period")) {
+            if let year = documentYear {
+                // Resolved period
+                let periodLabel = client.decimalFilePeriodLabel(year: year)
+                let periodURL   = client.decimalFilePeriodURL(year: year)
+                LabeledContent(
+                    String(localized: "source.explorer.decimalPeriod.matched",
+                           defaultValue: "Filing Period"),
+                    value: periodLabel
+                )
+                Button {
+                    openURL(periodURL)
+                } label: {
+                    Label(
+                        String(localized: "source.explorer.decimalPeriod.link",
+                               defaultValue: "Open NARA Finding Aids for This Period"),
+                        systemImage: "arrow.up.right.square"
+                    )
+                }
+                Text(String(localized: "source.explorer.decimalPeriod.hint",
+                            defaultValue: "Box lists, purport indexes, and the filing manual for this period are available on the linked NARA page."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                // No year available — show the full period table
+                Text(String(localized: "source.explorer.decimalPeriod.noYear",
+                            defaultValue: "Select the filing period that matches the document date:"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach([
+                    ("1910–1929", "1910-1929"),
+                    ("1930–1939", "1930-1939"),
+                    ("1940–1944", "1940-1944"),
+                    ("1945–1949", "1945-1949"),
+                    ("1950–1954", "1950-1954"),
+                    ("1955–1959", "1955-1959"),
+                    ("1960–Jan 1963", "1960-1963"),
+                ], id: \.1) { label, slug in
+                    Button(label) {
+                        let url = URL(string: "https://www.archives.gov/research/foreign-policy/"
+                                     + "state-dept/rg-59-central-files/1910-1963/\(slug)")!
+                        openURL(url)
+                    }
+                    .font(.callout)
+                }
+            }
         }
     }
 
@@ -266,7 +341,10 @@ struct SourceExplorerView: View {
             }
         }
 
-        naraResultSection(requiresKey: true)
+        // Fallback: pre-scoped NARA Catalog search for the lot number
+        let rg = "59"
+        let fb = client.resolveRG59CentralFiles(fileIdentifier: "Lot \(lotNumber)")
+        naraResultSection(requiresKey: true, fallbackURL: fb)
     }
 
     // MARK: - Presidential Library Panel
@@ -304,7 +382,9 @@ struct SourceExplorerView: View {
             }
         }
 
-        naraResultSection(requiresKey: true)
+        // Fallback: institution-specific finding-aid URL when API returns zero results
+        let fallback = client.libraryFallbackURL(libraryName: library)
+        naraResultSection(requiresKey: true, fallbackURL: fallback)
     }
 
     // MARK: - Foreign Archive Panel
@@ -380,31 +460,74 @@ struct SourceExplorerView: View {
 
     // MARK: - NARA Result Section (API-dependent)
 
+    /// Renders the NARA Catalog API result area.
+    ///
+    /// - Parameters:
+    ///   - requiresKey: Whether an API key is needed for this citation type.
+    ///   - fallbackURL: Shown as a manual-search link when results are empty.
+    ///                  Typically a pre-scoped NARA Catalog search URL or an
+    ///                  institution-specific finding-aid URL.
     @ViewBuilder
-    private func naraResultSection(requiresKey: Bool) -> some View {
-        Section(String(localized: "source.explorer.nara.header",
-                       defaultValue: "NARA Catalog")) {
+    private func naraResultSection(
+        requiresKey: Bool,
+        fallbackURL: URL? = nil
+    ) -> some View {
+        Section(String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")) {
             if requiresKey && !hasAPIKey {
                 noAPIKeyPrompt
             } else if isLoading {
                 HStack {
-                    ProgressView()
-                        .padding(.trailing, 8)
+                    ProgressView().padding(.trailing, 8)
                     Text(String(localized: "source.explorer.nara.loading",
                                 defaultValue: "Searching NARA Catalog…"))
                         .foregroundStyle(.secondary)
                 }
             } else if let error = loadError {
-                Label(error, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
-                    .font(.callout)
-            } else if let result = catalogResult {
-                catalogResultRow(result: result)
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
+                        .font(.callout)
+                    if let fb = fallbackURL {
+                        Button {
+                            openURL(fb)
+                        } label: {
+                            Label(
+                                String(localized: "source.explorer.nara.searchManually",
+                                       defaultValue: "Search NARA Catalog Manually"),
+                                systemImage: "arrow.up.right.square"
+                            )
+                            .font(.callout)
+                        }
+                    }
+                }
+            } else if !catalogResults.isEmpty {
+                // Up to 5 ranked candidates
+                ForEach(catalogResults.prefix(5), id: \.naId) { result in
+                    catalogResultRow(result: result)
+                    if result.naId != catalogResults.prefix(5).last?.naId {
+                        Divider()
+                    }
+                }
             } else {
-                Text(String(localized: "source.explorer.nara.noResult",
-                            defaultValue: "No matching record found in the NARA Catalog."))
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
+                // Zero results — show an honest message and a manual-search fallback
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(String(localized: "source.explorer.nara.noResult",
+                                defaultValue: "No matching record found in the NARA Catalog."))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                    if let fb = fallbackURL {
+                        Button {
+                            openURL(fb)
+                        } label: {
+                            Label(
+                                String(localized: "source.explorer.nara.searchManually",
+                                       defaultValue: "Search NARA Catalog Manually"),
+                                systemImage: "arrow.up.right.square"
+                            )
+                            .font(.callout)
+                        }
+                    }
+                }
             }
         }
     }
@@ -417,18 +540,10 @@ struct SourceExplorerView: View {
                 systemImage: "key"
             )
             .font(.callout.weight(.medium))
-
             Text(String(localized: "source.explorer.noKey.explanation",
-                        defaultValue: "A free NARA Catalog API key is needed to search for lot file and Presidential Library records. Add your key in Settings."))
+                        defaultValue: "A free NARA Catalog API key is required to search for lot file and Presidential Library records. Add your key in Settings → NARA API."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
-            Text(String(
-                localized: "source.explorer.noKey.instruction",
-                defaultValue: "Open the Settings tab, then NARA Catalog API Key."
-            ))
-            .font(.callout)
-            .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
     }
@@ -438,14 +553,17 @@ struct SourceExplorerView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(result.title)
                 .font(.callout.weight(.medium))
-
             if let scope = result.scopeNote {
                 Text(scope)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(4)
             }
-
+            if let dateRange = result.dateRange {
+                Text(dateRange)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
             Button {
                 openURL(result.catalogURL)
             } label: {
@@ -456,7 +574,7 @@ struct SourceExplorerView: View {
                 )
                 .font(.callout)
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
         }
         .padding(.vertical, 4)
     }
@@ -468,24 +586,26 @@ struct SourceExplorerView: View {
         parsed = note
 
         hasAPIKey = await client.hasAPIKey()
+        guard hasAPIKey else { return }
 
-        // Only hit the API for provenance types that need it
         switch note {
+
         case .lotFile(let rg, let lotNumber, _):
-            guard hasAPIKey else { return }
+            // Use variantControlNumber_is with three normalised lot number forms,
+            // falling back to a phrase query if all variants return zero results.
             let rgToUse = rg ?? "59"
-            await fetchResult { try await client.searchByLotFile(recordGroup: rgToUse, lotNumber: lotNumber) }
+            _ = rgToUse   // rg is used only for non-59 fallback path
+            await fetchResults { try await client.resolveLotFileVariants(lotNumber: lotNumber) }
 
         case .naraCollection(let rg, let series, let lot, _):
-            guard hasAPIKey else { return }
             let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
-            let results  = try? await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 1)
-            if let first = results?.first { await MainActor.run { catalogResult = first } }
+            await fetchResults { try await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 5) }
 
         case .presidentialLibrary(let library, let collection, _):
-            guard hasAPIKey else { return }
-            await fetchResult {
-                try await client.resolvePresidentialLibrary(library: library, collection: collection)
+            await fetchResults {
+                try await client.searchByPresidentialMaterials(
+                    library: library, collection: collection, maxResults: 3
+                )
             }
 
         default:
@@ -493,11 +613,13 @@ struct SourceExplorerView: View {
         }
     }
 
-    private func fetchResult(_ operation: @Sendable () async throws -> NARACatalogResult?) async {
+    /// Executes an API operation and stores the results (or an error message).
+    private func fetchResults(_ operation: @Sendable () async throws -> [NARACatalogResult]) async {
         isLoading = true
         loadError = nil
         do {
-            catalogResult = try await operation()
+            let results = try await operation()
+            catalogResults = results
         } catch {
             loadError = error.localizedDescription
         }

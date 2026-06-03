@@ -143,7 +143,10 @@ struct FRUSExplorerApp: App {
             Group {
                 if let sourceNote = appState.currentSourceNote {
                     NavigationStack {
-                        SourceExplorerView(rawSourceNote: sourceNote)
+                        SourceExplorerView(
+                            rawSourceNote: sourceNote,
+                            documentYear: appState.currentSourceNoteYear
+                        )
                     }
                 } else {
                     ContentUnavailableView(

@@ -165,6 +165,117 @@ struct SourceExplorerTests {
         let url = await client.resolveRG59CentralFiles(fileIdentifier: "711.94/3-251")
         #expect(url.absoluteString.contains("parentDescriptionNaId"))
     }
+
+    // MARK: - LotNumberNormalisationTest
+
+    @Test("LotNorm: compact 63D135 produces three variants including spaced form")
+    func compactLotNumberProducesVariants() {
+        let variants = NARACatalogClient.lotNumberVariants(from: "63D135")
+        #expect(variants.count == 3)
+        #expect(variants[0] == "63D135")     // compact
+        #expect(variants[1] == "63 D 135")   // spaced
+        #expect(variants[2] == "63 D135")    // mixed
+    }
+
+    @Test("LotNorm: 'Lot 72D316' strips prefix and produces correct variants")
+    func lotPrefixStripped() {
+        let variants = NARACatalogClient.lotNumberVariants(from: "Lot 72D316")
+        #expect(variants.contains("72D316"))
+        #expect(variants.contains("72 D 316"))
+    }
+
+    @Test("LotNorm: spaced input 63 D 135 normalises to compact form first")
+    func spacedLotNumberNormalisesToCompact() {
+        let variants = NARACatalogClient.lotNumberVariants(from: "63 D 135")
+        #expect(variants[0] == "63D135")
+    }
+
+    @Test("LotNorm: dashed input 63-D-135 normalises to compact form first")
+    func dashedLotNumberNormalisesToCompact() {
+        let variants = NARACatalogClient.lotNumberVariants(from: "63-D-135")
+        #expect(variants[0] == "63D135")
+    }
+
+    @Test("LotNorm: 3-digit prefix 123D4567 preserved in all variants")
+    func threeDigitPrefixPreserved() {
+        let variants = NARACatalogClient.lotNumberVariants(from: "123D4567")
+        #expect(variants[0] == "123D4567")
+        #expect(variants[1] == "123 D 4567")
+    }
+
+    // MARK: - DecimalFilePeriodTest
+
+    @Test("DecimalPeriod: year 1946 routes to 1945-1949 NARA page")
+    func year1946RoutesToCorrectPeriod() async {
+        let client = NARACatalogClient()
+        let url = client.decimalFilePeriodURL(year: 1946)
+        #expect(url.absoluteString.contains("1945-1949"))
+        let label = client.decimalFilePeriodLabel(year: 1946)
+        #expect(label == "1945–1949")
+    }
+
+    @Test("DecimalPeriod: year 1912 routes to 1910-1929 NARA page")
+    func year1912RoutesToCorrectPeriod() async {
+        let client = NARACatalogClient()
+        let url = client.decimalFilePeriodURL(year: 1912)
+        #expect(url.absoluteString.contains("1910-1929"))
+    }
+
+    @Test("DecimalPeriod: year 1961 routes to 1960-1963 NARA page")
+    func year1961RoutesToCorrectPeriod() async {
+        let client = NARACatalogClient()
+        let url = client.decimalFilePeriodURL(year: 1961)
+        #expect(url.absoluteString.contains("1960-1963"))
+    }
+
+    @Test("DecimalPeriod: all 7 periods return archives.gov URLs")
+    func allPeriodsReturnArchivesGovURLs() async {
+        let client = NARACatalogClient()
+        for year in [1915, 1935, 1942, 1947, 1952, 1957, 1961] {
+            let url = client.decimalFilePeriodURL(year: year)
+            #expect(url.absoluteString.contains("archives.gov"))
+        }
+    }
+
+    // MARK: - LibraryFallbackTest
+
+    @Test("LibraryFallback: Kennedy Library routes to jfklibrary.org")
+    func kennedyFallbackURL() async {
+        let client = NARACatalogClient()
+        let url = client.libraryFallbackURL(libraryName: "Kennedy Library")
+        #expect(url.absoluteString.contains("jfklibrary.org"))
+    }
+
+    @Test("LibraryFallback: Nixon Materials routes to nixonlibrary.gov")
+    func nixonFallbackURL() async {
+        let client = NARACatalogClient()
+        let url = client.libraryFallbackURL(libraryName: "Nixon Presidential Materials")
+        #expect(url.absoluteString.contains("nixonlibrary.gov"))
+    }
+
+    @Test("LibraryFallback: unknown library routes to archives.gov/presidential-libraries")
+    func unknownLibraryDefaultURL() async {
+        let client = NARACatalogClient()
+        let url = client.libraryFallbackURL(libraryName: "Unknown Institute")
+        #expect(url.absoluteString.contains("archives.gov/presidential-libraries"))
+    }
+
+    // MARK: - CIAResearchURLTest
+
+    @Test("CIA: job number pre-populated in CREST search URL")
+    func ciaJobNumberInURL() async {
+        let client = NARACatalogClient()
+        let url = client.ciaResearchURL(jobNumber: "80B01285A")
+        #expect(url.absoluteString.contains("cia.gov/readingroom"))
+        #expect(url.absoluteString.contains("80B01285A"))
+    }
+
+    @Test("CIA: nil job number returns general reading room URL")
+    func ciaNoJobReturnsReadingRoom() async {
+        let client = NARACatalogClient()
+        let url = client.ciaResearchURL(jobNumber: nil)
+        #expect(url.absoluteString == "https://www.cia.gov/readingroom/")
+    }
 }
 
 // MARK: - SourceNoteExtractionTests

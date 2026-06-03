@@ -149,6 +149,14 @@ struct ResearchStripView: View {
                     isDisabled: false
                 ) {
                     appState.currentSourceNote = note
+                    // Extract document year from dateline for decimal-file period routing
+                    if let dl = entry?.dateline,
+                       let m = dl.range(of: #"\b(19[0-9]{2}|20[0-2][0-9])\b"#,
+                                        options: .regularExpression) {
+                        appState.currentSourceNoteYear = Int(dl[m])
+                    } else {
+                        appState.currentSourceNoteYear = nil
+                    }
                     openWindow(id: "frus.sourceExplorer")
                 }
                 .help(String(

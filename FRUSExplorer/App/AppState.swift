@@ -437,6 +437,9 @@ final class AppState {
     /// Set by `MainWindowView` immediately before `openWindow(id: "frus.sourceExplorer")`
     /// is called. `SourceExplorerWindowView` passes this to `MacSourceExplorerView`.
     var currentSourceNote: String? = nil
+    /// Year of the FRUS document whose source note is currently displayed in Source Explorer.
+    /// Used to route decimal-file citations to the correct NARA period finding-aid page.
+    var currentSourceNoteYear: Int? = nil
 
     /// Incremented each time the full-text index is completely cleared (app reset).
     ///

@@ -41,6 +41,8 @@ import AppKit
 ///          NSPasteboard copy; load() pre-fills manualQuery from parsed provenance
 ///   1.3 — Session 118: `naraBox` RG-59 button label changes to "Browse RG-59 in NARA
 ///          Catalog" when `fileId` is nil, matching the iOS fix for the misleading label
+///   1.4 — Session 150: `load()` uses `resolveLotFileVariants` (variantControlNumber_is);
+///          `resolvePresidentialLibrary` returns up to 3 results; specific error messages
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -474,22 +476,31 @@ struct MacSourceExplorerView: View {
 
         switch note {
         case .lotFile(let rg, let lotNumber, _):
-            manualQuery = "State Department Lot File \(lotNumber)"
+            // Pre-fill manual query with the lot number (without decorative prefix).
+            manualQuery = lotNumber
             guard hasAPIKey else { return }
-            await fetchResult { try await client.searchByLotFile(recordGroup: rg ?? "59", lotNumber: lotNumber) }
+            // Use variantControlNumber_is with three normalised forms; falls back to
+            // phrase query if all variants return zero results.
+            await fetchResult {
+                let results = try await client.resolveLotFileVariants(lotNumber: lotNumber)
+                return results.first
+            }
 
         case .naraCollection(let rg, let series, let lot, _):
             let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
             manualQuery = "RG \(rg) \(keywords)"
             guard hasAPIKey else { return }
-            let results = try? await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 1)
+            let results = try? await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 3)
             if let first = results?.first { await MainActor.run { catalogResult = first } }
 
         case .presidentialLibrary(let library, let collection, _):
             manualQuery = "\(library) \(collection)"
             guard hasAPIKey else { return }
+            // Return up to 3 candidates; display the first in the single-result macOS layout.
             await fetchResult {
-                try await client.resolvePresidentialLibrary(library: library, collection: collection)
+                try await client.searchByPresidentialMaterials(
+                    library: library, collection: collection, maxResults: 3
+                ).first
             }
 
         default:
