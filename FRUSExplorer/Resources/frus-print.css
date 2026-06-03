@@ -1,0 +1,41 @@
+/**
+ * frus-print.css
+ * Print-specific CSS overrides for FRUS Explorer collection exports.
+ *
+ * Included in the HTMLCollectionExporter output after frus-document.css.
+ * The Swift source of truth is the printCSS constant in HTMLCollectionExporter.swift.
+ *
+ * Session history:
+ *   1.0 — Session 146: initial implementation
+ */
+
+@media print {
+  /* Each .frus-document div starts a new page in multi-document exports */
+  .frus-document { page-break-after: always; }
+
+  /* Footnote popover triggers are meaningless on paper — hide them */
+  .fn-marker { display: none; }
+
+  /* Re-show footnote <aside popover> elements inline since popover API
+     is invisible in print — override the UA popover display:none */
+  .footnote {
+    display: block !important;
+    font-size: 0.85em;
+    margin-top: 1em;
+    border: 1px solid #ccc;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0.5em 0.75em;
+  }
+
+  /* Table of contents entries: title left, page number right */
+  .toc-entry {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Remove screen-only decorations */
+  body { max-width: 100%; padding: 0; }
+  nav { break-after: page; }
+  section { break-inside: avoid; }
+}
