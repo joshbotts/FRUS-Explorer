@@ -148,6 +148,9 @@ struct DocumentView: View {
     /// The `DocumentHighlight.id` of the most recently created highlight.
     /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
     @State private var pendingHighlightLink: UUID? = nil
+    /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
+    /// Set by `onSelectionChanged` from `FRUSDocumentWebView`.
+    @State private var webKitSelectionRange: (Int, Int)? = nil
     /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
     /// that sets this is hidden, keeping the panel closed).
     @State private var showNotesPanel = false
@@ -283,7 +286,8 @@ struct DocumentView: View {
     private func documentContent(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
         @Bindable var vm = vm
         Group {
-            if showHighlightMode {
+            if !FeatureFlags.useWebKitRenderer && showHighlightMode {
+                // Legacy DocumentHighlightTextView path (disabled when WebKit renderer is active).
                 let currentVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
                 let hasStale = highlights.contains { $0.renderingVersion != currentVersion }
                 VStack(spacing: 0) {
@@ -690,16 +694,32 @@ struct DocumentView: View {
                     String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
                 )
 
-                // 3. Highlight mode toggle
-                Button {
-                    toggleHighlightMode()
-                } label: {
-                    Image(systemName: "pencil.tip.crop.circle")
+                // 3. Highlight button
+                if FeatureFlags.useWebKitRenderer {
+                    // WebKit path: one-tap create highlight when text is selected.
+                    Button {
+                        showHighlightColorPicker = true
+                    } label: {
+                        Image(systemName: "paintbrush.pointed")
+                    }
+                    .disabled(webKitSelectionRange == nil)
+                    .accessibilityLabel(
+                        String(localized: "document.toolbar.createHighlight.a11y",
+                               defaultValue: "Create highlight")
+                    )
+                    .sheet(isPresented: $showHighlightColorPicker) {
+                        highlightColorPickerSheet
+                    }
+                } else {
+                    // Legacy path: enter/exit highlight mode.
+                    Button { toggleHighlightMode() } label: {
+                        Image(systemName: "pencil.tip.crop.circle")
+                    }
+                    .accessibilityLabel(
+                        String(localized: "document.toolbar.highlightMode.a11y",
+                               defaultValue: "Highlight mode")
+                    )
                 }
-                .accessibilityLabel(
-                    String(localized: "document.toolbar.highlightMode.a11y",
-                           defaultValue: "Highlight mode")
-                )
 
                 // 4. More — overflow menu containing all secondary actions
                 moreMenu(vm: vm)
@@ -963,6 +983,8 @@ struct DocumentView: View {
                 }
             )
             .highlights(highlights)
+            .onSelectionChanged { start, end in webKitSelectionRange = (start, end) }
+            .onSelectionCleared { webKitSelectionRange = nil }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // TODO(Session 147): integrate DocumentTagSection and volume navigation
         }
@@ -986,21 +1008,48 @@ struct DocumentView: View {
 
     @MainActor
     private func createHighlight(color: DocumentHighlight.Color) {
-        guard let range = highlightTextSelection,
-              let model = vm?.renderModel else { return }
-        let selected = extractHighlightText(from: model, nsRange: range)
-        let highlight = DocumentHighlight(
-            volumeId: entry.volumeId,
-            documentId: entry.documentId,
-            startOffset: range.location,
-            endOffset: range.location + range.length,
-            colorTag: color.rawValue,
-            selectedText: selected,
-            renderingVersion: ASTToRenderNodeConverter.renderingVersion(for: model)
-        )
-        modelContext.insert(highlight)
-        highlightTextSelection = nil
-        pendingHighlightLink = highlight.id
+        guard let model = vm?.renderModel else { return }
+        let rv = ASTToRenderNodeConverter.renderingVersion(for: model)
+
+        if FeatureFlags.useWebKitRenderer {
+            // WebKit path: use flat-text offsets from JS selectionchange.
+            guard let range = webKitSelectionRange else { return }
+            let flat = buildFlatText(from: model)
+            let selectedText: String
+            if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
+                selectedText = String(flat[r])
+            } else {
+                selectedText = ""
+            }
+            let highlight = DocumentHighlight(
+                volumeId:         entry.volumeId,
+                documentId:       entry.documentId,
+                startOffset:      range.0,
+                endOffset:        range.1,
+                colorTag:         color.rawValue,
+                selectedText:     selectedText,
+                renderingVersion: rv
+            )
+            modelContext.insert(highlight)
+            webKitSelectionRange = nil
+            pendingHighlightLink = highlight.id
+        } else {
+            // Legacy path: use NSRange from DocumentHighlightTextView.
+            guard let range = highlightTextSelection else { return }
+            let selected = extractHighlightText(from: model, nsRange: range)
+            let highlight = DocumentHighlight(
+                volumeId:         entry.volumeId,
+                documentId:       entry.documentId,
+                startOffset:      range.location,
+                endOffset:        range.location + range.length,
+                colorTag:         color.rawValue,
+                selectedText:     selected,
+                renderingVersion: rv
+            )
+            modelContext.insert(highlight)
+            highlightTextSelection = nil
+            pendingHighlightLink = highlight.id
+        }
     }
 
     private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {

@@ -358,8 +358,12 @@ private final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
     private var loadContinuation: CheckedContinuation<Void, Error>?
 
     override init() {
+        // The test harness doesn't need real selection callbacks;
+        // a no-op coordinator satisfies the messageHandler requirement.
+        let stubCoordinator = _FRUSWebViewCoordinator()
         let config = WKWebViewConfiguration.frusExplorerConfiguration(
-            schemeHandler: FRUSURLSchemeHandler()
+            schemeHandler:  FRUSURLSchemeHandler(),
+            messageHandler: stubCoordinator
         )
         // Give the web view a concrete frame so WebKit allocates a proper
         // rendering surface for script execution.

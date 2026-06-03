@@ -27,34 +27,45 @@ extension WKWebViewConfiguration {
     /// - **Session 144**: `frus-highlights.js` injected.
     /// - **Session 145**: `frus-selection.js` injected; `selectionChanged` message
     ///   handler registered.
+    /// - Parameters:
+    ///   - schemeHandler:   Per-view `FRUSURLSchemeHandler` for `frusexplorer://` dispatch.
+    ///   - messageHandler:  Receives `selectionChanged` messages from the selection JS.
+    ///                      Typically `_FRUSWebViewCoordinator` which conforms to
+    ///                      `WKScriptMessageHandler`.
     static func frusExplorerConfiguration(
-        schemeHandler: FRUSURLSchemeHandler
+        schemeHandler:  FRUSURLSchemeHandler,
+        messageHandler: any WKScriptMessageHandler
     ) -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(schemeHandler, forURLScheme: "frusexplorer")
 
-        // JavaScript required for the offset engine (Session 143+).
         let prefs = WKWebpagePreferences()
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
 
-        // Inject the flat-text offset engine first so window.FRUSOffsets is
-        // available when the highlights renderer is initialised.
-        let offsetScript = WKUserScript(
+        let ucc = config.userContentController
+
+        // 1. Offset engine — sets window.FRUSOffsets.{flatText, charToNode}
+        ucc.addUserScript(WKUserScript(
             source: kOffsetEngineJS,
             injectionTime: .atDocumentEnd,
             forMainFrameOnly: true
-        )
-        config.userContentController.addUserScript(offsetScript)
+        ))
 
-        // Inject the CSS Custom Highlight API renderer (Session 144+).
-        // Must come after the offset engine because buildRanges() reads charToNode.
-        let highlightsScript = WKUserScript(
+        // 2. Highlights renderer — defines window.FRUSHighlights.render(highlights)
+        ucc.addUserScript(WKUserScript(
             source: kHighlightsJS,
             injectionTime: .atDocumentEnd,
             forMainFrameOnly: true
-        )
-        config.userContentController.addUserScript(highlightsScript)
+        ))
+
+        // 3. Selection listener — posts selectionChanged messages to Swift
+        ucc.addUserScript(WKUserScript(
+            source: kSelectionJS,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        ))
+        ucc.add(messageHandler, name: "selectionChanged")
 
         return config
     }
@@ -132,4 +143,35 @@ window.FRUSHighlights = {
     }
   }
 };
+"""
+
+/// Text-selection → flat-text offset bridge, embedded as a Swift string constant.
+/// Canonical source: `FRUSExplorer/Resources/frus-selection.js`
+/// Keep this constant in sync with that file when making edits.
+private let kSelectionJS = """
+function rangeEndpointToOffset(node, localOffset) {
+  if (!window.FRUSOffsets) return -1;
+  const map = window.FRUSOffsets.charToNode;
+  for (let i = 0; i < map.length; i++) {
+    if (map[i].node === node && map[i].localOffset === localOffset) return i;
+  }
+  return -1;
+}
+function postCleared() {
+  try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1 }); }
+  catch (_) {}
+}
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !window.FRUSOffsets) { postCleared(); return; }
+  const range = sel.getRangeAt(0);
+  const start = rangeEndpointToOffset(range.startContainer, range.startOffset);
+  const end   = rangeEndpointToOffset(range.endContainer,   range.endOffset);
+  if (start >= 0 && end > start) {
+    try { webkit.messageHandlers.selectionChanged.postMessage({ start, end }); }
+    catch (_) {}
+  } else {
+    postCleared();
+  }
+});
 """

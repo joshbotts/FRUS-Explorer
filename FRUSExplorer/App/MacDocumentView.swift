@@ -93,9 +93,8 @@ struct MacDocumentView: View {
 
     var body: some View {
         Group {
-            if highlightCoordinator.showHighlightMode {
-                // Highlight mode always uses DocumentHighlightTextView until
-                // Session 145 migrates highlight creation to the JS selection API.
+            if !FeatureFlags.useWebKitRenderer && highlightCoordinator.showHighlightMode {
+                // Legacy DocumentHighlightTextView path (disabled when WebKit renderer is active).
                 highlightModeContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if FeatureFlags.useWebKitRenderer, let renderModel = vm.renderModel {
@@ -108,6 +107,7 @@ struct MacDocumentView: View {
         .task {
             await loadDocument()
             highlightCoordinator.createHighlightAction = createHighlight(color:)
+            highlightCoordinator.createWebKitHighlightAction = createWebKitHighlight(color:)
             appState.logEvent(.documentOpen(
                 volumeId: entry.volumeId,
                 documentId: entry.documentId,
@@ -211,6 +211,12 @@ struct MacDocumentView: View {
                 }
             )
             .highlights(highlights)
+            .onSelectionChanged { start, end in
+                highlightCoordinator.webKitSelectionRange = (start, end)
+            }
+            .onSelectionCleared {
+                highlightCoordinator.webKitSelectionRange = nil
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // TODO(Session 147): integrate SummaryBlockView into WebKit path
 
@@ -406,6 +412,38 @@ struct MacDocumentView: View {
         )
         modelContext.insert(highlight)
         highlightCoordinator.highlightTextSelection = nil
+        highlightCoordinator.pendingHighlightLink = highlight.id
+    }
+
+    /// Creates a `DocumentHighlight` from the WebKit flat-text selection range.
+    ///
+    /// Called by `HighlightCoordinator.createWebKitHighlightAction` (registered in `.task`)
+    /// when the user taps "Highlight" in `ResearchStripView` while a selection is active.
+    @MainActor
+    private func createWebKitHighlight(color: DocumentHighlight.Color) {
+        guard let range = highlightCoordinator.webKitSelectionRange,
+              let model = vm.renderModel else { return }
+        let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+        // Extract the selected text from the flat-text representation so it's
+        // available for display in the Research window without re-parsing.
+        let flat = buildFlatText(from: model)
+        let selectedText: String
+        if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
+            selectedText = String(flat[r])
+        } else {
+            selectedText = ""
+        }
+        let highlight = DocumentHighlight(
+            volumeId:         entry.volumeId,
+            documentId:       entry.documentId,
+            startOffset:      range.0,
+            endOffset:        range.1,
+            colorTag:         color.rawValue,
+            selectedText:     selectedText,
+            renderingVersion: renderingVersion
+        )
+        modelContext.insert(highlight)
+        highlightCoordinator.webKitSelectionRange = nil
         highlightCoordinator.pendingHighlightLink = highlight.id
     }
 

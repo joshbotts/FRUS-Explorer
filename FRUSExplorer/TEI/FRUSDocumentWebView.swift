@@ -76,6 +76,16 @@ public struct FRUSDocumentWebView: View {
     /// Called with the target document ID and optional source volume ID.
     public var onCrossRefTap: ((String, String?) -> Void)? = nil
 
+    // MARK: Selection callbacks (Session 145)
+
+    /// Called with `(start, end)` Unicode-scalar offsets when the user selects
+    /// text in the WKWebView.  Both offsets are inclusive-start / exclusive-end
+    /// and index into `buildFlatText(from: model)`.
+    var onSelectionChanged: ((Int, Int) -> Void)? = nil
+
+    /// Called when the selection is collapsed or cleared.
+    var onSelectionCleared: (() -> Void)? = nil
+
     /// Stored highlights to render via the CSS Custom Highlight API after each
     /// page load. Updated highlights are re-rendered without a full HTML reload.
     var highlights: [DocumentHighlight] = []
@@ -90,23 +100,27 @@ public struct FRUSDocumentWebView: View {
     public var body: some View {
         #if os(macOS)
         _FRUSDocumentWebViewMac(
-            model:          model,
-            colorScheme:    colorScheme,
-            textSize:       textSize,
-            highlights:     highlights,
-            onPersonTap:    onPersonTap,
-            onGlossTap:     onGlossTap,
-            onCrossRefTap:  onCrossRefTap
+            model:              model,
+            colorScheme:        colorScheme,
+            textSize:           textSize,
+            highlights:         highlights,
+            onPersonTap:        onPersonTap,
+            onGlossTap:         onGlossTap,
+            onCrossRefTap:      onCrossRefTap,
+            onSelectionChanged: onSelectionChanged,
+            onSelectionCleared: onSelectionCleared
         )
         #else
         _FRUSDocumentWebViewiOS(
-            model:          model,
-            colorScheme:    colorScheme,
-            textSize:       textSize,
-            highlights:     highlights,
-            onPersonTap:    onPersonTap,
-            onGlossTap:     onGlossTap,
-            onCrossRefTap:  onCrossRefTap
+            model:              model,
+            colorScheme:        colorScheme,
+            textSize:           textSize,
+            highlights:         highlights,
+            onPersonTap:        onPersonTap,
+            onGlossTap:         onGlossTap,
+            onCrossRefTap:      onCrossRefTap,
+            onSelectionChanged: onSelectionChanged,
+            onSelectionCleared: onSelectionCleared
         )
         #endif
     }
@@ -117,16 +131,19 @@ public struct FRUSDocumentWebView: View {
 extension FRUSDocumentWebView {
 
     /// Supplies the stored highlights to render via the CSS Custom Highlight API.
-    ///
-    /// Use this modifier at the call site so the view composes cleanly:
-    /// ```swift
-    /// FRUSDocumentWebView(model: model, onPersonTap: ..., ...)
-    ///     .highlights(highlights)
-    /// ```
     func highlights(_ newHighlights: [DocumentHighlight]) -> FRUSDocumentWebView {
-        var copy = self
-        copy.highlights = newHighlights
-        return copy
+        var copy = self; copy.highlights = newHighlights; return copy
+    }
+
+    /// Registers a callback for when the user makes a text selection in the web view.
+    /// `start` and `end` are Unicode-scalar offsets into `buildFlatText(from: model)`.
+    func onSelectionChanged(_ handler: @escaping (Int, Int) -> Void) -> FRUSDocumentWebView {
+        var copy = self; copy.onSelectionChanged = handler; return copy
+    }
+
+    /// Registers a callback for when the selection is collapsed or cleared.
+    func onSelectionCleared(_ handler: @escaping () -> Void) -> FRUSDocumentWebView {
+        var copy = self; copy.onSelectionCleared = handler; return copy
     }
 }
 
@@ -156,7 +173,7 @@ struct WebViewSignature: Equatable {
 /// - Holds a reference to the `FRUSURLSchemeHandler`.
 /// - Stores pending highlights and calls `renderHighlights(on:)` after each
 ///   page load and whenever highlights change without a full HTML reload.
-final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate {
+final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, @unchecked Sendable {
 
     /// Signature of the most-recently loaded content. Initialized to `.empty` so
     /// the first real document always triggers a load.
@@ -179,6 +196,37 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate {
     /// IDs of the last highlights passed to `updateNSView`/`updateUIView`, used to
     /// detect changes that require a `renderHighlights` call without a full reload.
     var lastHighlightIds: [UUID] = []
+
+    // MARK: Selection state (Session 145)
+
+    /// Fired when JS reports a valid text selection `{start, end}`.
+    var onSelectionChanged: ((Int, Int) -> Void)?
+    /// Fired when JS reports the selection was cleared (`{start: -1, end: -1}`).
+    var onSelectionCleared: (() -> Void)?
+
+    // MARK: WKScriptMessageHandler
+
+    /// Receives `selectionChanged` messages from `frus-selection.js`.
+    ///
+    /// Message body is a `[String: Int]` dictionary with keys `"start"` and `"end"`.
+    /// `start == -1` signals selection cleared; `start >= 0 && end > start` is a
+    /// valid selection range in flat-text Unicode-scalar offsets.
+    func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        guard message.name == "selectionChanged",
+              let body  = message.body as? [String: Any],
+              let start = body["start"] as? Int,
+              let end   = body["end"]   as? Int
+        else { return }
+
+        if start < 0 {
+            onSelectionCleared?()
+        } else if end > start {
+            onSelectionChanged?(start, end)
+        }
+    }
 
     // MARK: CSS Custom Highlight API
 
@@ -253,25 +301,27 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     let highlights:     [DocumentHighlight]
-    var onPersonTap:    ((PersonEntry?) -> Void)?
-    var onGlossTap:     ((GlossEntry?) -> Void)?
-    var onCrossRefTap:  ((String, String?) -> Void)?
+    var onPersonTap:        ((PersonEntry?) -> Void)?
+    var onGlossTap:         ((GlossEntry?) -> Void)?
+    var onCrossRefTap:      ((String, String?) -> Void)?
+    var onSelectionChanged: ((Int, Int) -> Void)?
+    var onSelectionCleared: (() -> Void)?
 
     // MARK: NSViewRepresentable
 
     func makeNSView(context: Context) -> WKWebView {
-        // Create a per-view scheme handler so its lookup tables are scoped to this
-        // document instance. Store on the coordinator so updateNSView can update it.
         let handler = FRUSURLSchemeHandler()
         context.coordinator.schemeHandler = handler
 
         let webView = WKWebView(
             frame: .zero,
-            configuration: WKWebViewConfiguration.frusExplorerConfiguration(schemeHandler: handler)
+            configuration: WKWebViewConfiguration.frusExplorerConfiguration(
+                schemeHandler:  handler,
+                messageHandler: context.coordinator
+            )
         )
         webView.navigationDelegate = context.coordinator
         webView.autoresizingMask   = [.width, .height]
-        // Transparent until HTML loads — avoids a white-background flash.
         webView.setValue(false, forKey: "drawsBackground")
         return webView
     }
@@ -291,6 +341,10 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
             colorScheme: colorScheme,
             textSize:    textSize
         )
+        // Always sync selection callbacks (lightweight — just closure assignments)
+        context.coordinator.onSelectionChanged = onSelectionChanged
+        context.coordinator.onSelectionCleared = onSelectionCleared
+
         if context.coordinator.lastSignature != sig {
             context.coordinator.lastSignature = sig
             context.coordinator.schemeHandler?.register(model: model)
@@ -299,9 +353,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
             context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
             let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
             webView.loadHTMLString(html, baseURL: nil)
-            // renderHighlights called from didFinish after the new page loads.
         } else if highlightsChanged {
-            // Only highlights changed — re-render CSS highlights without reloading HTML.
             Task { @MainActor in
                 await context.coordinator.renderHighlights(on: webView)
             }
@@ -322,9 +374,11 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     let highlights:     [DocumentHighlight]
-    var onPersonTap:    ((PersonEntry?) -> Void)?
-    var onGlossTap:     ((GlossEntry?) -> Void)?
-    var onCrossRefTap:  ((String, String?) -> Void)?
+    var onPersonTap:        ((PersonEntry?) -> Void)?
+    var onGlossTap:         ((GlossEntry?) -> Void)?
+    var onCrossRefTap:      ((String, String?) -> Void)?
+    var onSelectionChanged: ((Int, Int) -> Void)?
+    var onSelectionCleared: (() -> Void)?
 
     // MARK: UIViewRepresentable
 
@@ -334,7 +388,10 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
 
         let webView = WKWebView(
             frame: .zero,
-            configuration: WKWebViewConfiguration.frusExplorerConfiguration(schemeHandler: handler)
+            configuration: WKWebViewConfiguration.frusExplorerConfiguration(
+                schemeHandler:  handler,
+                messageHandler: context.coordinator
+            )
         )
         webView.navigationDelegate = context.coordinator
         webView.isOpaque                     = false
@@ -357,6 +414,9 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
             colorScheme: colorScheme,
             textSize:    textSize
         )
+        context.coordinator.onSelectionChanged = onSelectionChanged
+        context.coordinator.onSelectionCleared = onSelectionCleared
+
         if context.coordinator.lastSignature != sig {
             context.coordinator.lastSignature = sig
             context.coordinator.schemeHandler?.register(model: model)

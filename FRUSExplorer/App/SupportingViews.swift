@@ -28,6 +28,15 @@ final class HighlightCoordinator {
     /// Registered by `MacDocumentView` in its `.task` once the document has loaded.
     var createHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
 
+    /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
+    /// Non-nil when the user has an active selection in `FRUSDocumentWebView`.
+    /// Cleared after a highlight is created or the selection is collapsed.
+    var webKitSelectionRange: (Int, Int)? = nil
+
+    /// Called by `MacDocumentView` to create a `DocumentHighlight` from the
+    /// WebKit selection range and colour chosen in `highlightColorPicker`.
+    var createWebKitHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
+
     func reset() {
         showHighlightMode = false
         highlightTextSelection = nil
@@ -39,6 +48,7 @@ final class HighlightCoordinator {
         showHighlightMode = false
         highlightTextSelection = nil
         pendingHighlightLink = nil
+        webKitSelectionRange = nil
     }
 }
 
@@ -74,8 +84,12 @@ struct ResearchStripView: View {
 
     private var isDisabled: Bool { entry == nil }
     private var canCreateHighlight: Bool {
-        highlightCoordinator.showHighlightMode &&
-        (highlightCoordinator.highlightTextSelection?.length ?? 0) > 0
+        if FeatureFlags.useWebKitRenderer {
+            return highlightCoordinator.webKitSelectionRange != nil
+        } else {
+            return highlightCoordinator.showHighlightMode &&
+                   (highlightCoordinator.highlightTextSelection?.length ?? 0) > 0
+        }
     }
 
     var body: some View {
@@ -148,30 +162,11 @@ struct ResearchStripView: View {
                 ))
             }
 
-            // Highlight Mode toggle
-            ResearchStripButton(
-                title: highlightCoordinator.showHighlightMode ? "Exit Highlights" : "Highlight",
-                systemImage: highlightCoordinator.showHighlightMode
-                    ? "pencil.tip.crop.circle.fill"
-                    : "pencil.tip.crop.circle",
-                isDisabled: isDisabled
-            ) {
-                if highlightCoordinator.showHighlightMode {
-                    highlightCoordinator.exitHighlightMode()
-                } else {
-                    highlightCoordinator.showHighlightMode = true
-                }
-            }
-            .help(highlightCoordinator.showHighlightMode
-                  ? String(localized: "researchStrip.highlight.exit.help",
-                           defaultValue: "Exit highlight mode and return to normal reading")
-                  : String(localized: "researchStrip.highlight.enter.help",
-                           defaultValue: "Enter highlight mode — select text to create coloured highlights"))
-
-            // Create Highlight — visible only in highlight mode
-            if highlightCoordinator.showHighlightMode {
+            if FeatureFlags.useWebKitRenderer {
+                // WebKit path: no "mode" — the user selects text inline.
+                // Show Create Highlight button (enabled when text is selected).
                 ResearchStripButton(
-                    title: "Create Highlight",
+                    title: "Highlight",
                     systemImage: "paintbrush.pointed",
                     isDisabled: !canCreateHighlight
                 ) {
@@ -186,17 +181,64 @@ struct ResearchStripView: View {
                 }
 
                 // Add Note to Highlight — enabled after a highlight is created
-                ResearchStripButton(
-                    title: "Add Note",
-                    systemImage: "note.text.badge.plus",
-                    isDisabled: highlightCoordinator.pendingHighlightLink == nil
-                ) {
-                    showHighlightNoteEditor = true
+                if highlightCoordinator.pendingHighlightLink != nil {
+                    ResearchStripButton(
+                        title: "Add Note",
+                        systemImage: "note.text.badge.plus",
+                        isDisabled: false
+                    ) { showHighlightNoteEditor = true }
+                    .help(String(
+                        localized: "researchStrip.highlightNote.help",
+                        defaultValue: "Attach a research note to the highlight you just created"
+                    ))
                 }
-                .help(String(
-                    localized: "researchStrip.highlightNote.help",
-                    defaultValue: "Attach a research note to the highlight you just created"
-                ))
+            } else {
+                // Legacy path: explicit mode toggle + create button.
+                ResearchStripButton(
+                    title: highlightCoordinator.showHighlightMode ? "Exit Highlights" : "Highlight",
+                    systemImage: highlightCoordinator.showHighlightMode
+                        ? "pencil.tip.crop.circle.fill"
+                        : "pencil.tip.crop.circle",
+                    isDisabled: isDisabled
+                ) {
+                    if highlightCoordinator.showHighlightMode {
+                        highlightCoordinator.exitHighlightMode()
+                    } else {
+                        highlightCoordinator.showHighlightMode = true
+                    }
+                }
+                .help(highlightCoordinator.showHighlightMode
+                      ? String(localized: "researchStrip.highlight.exit.help",
+                               defaultValue: "Exit highlight mode and return to normal reading")
+                      : String(localized: "researchStrip.highlight.enter.help",
+                               defaultValue: "Enter highlight mode — select text to create coloured highlights"))
+
+                if highlightCoordinator.showHighlightMode {
+                    ResearchStripButton(
+                        title: "Create Highlight",
+                        systemImage: "paintbrush.pointed",
+                        isDisabled: !canCreateHighlight
+                    ) {
+                        showHighlightColorPicker = true
+                    }
+                    .help(String(
+                        localized: "researchStrip.createHighlight.help",
+                        defaultValue: "Save the current selection as a coloured highlight"
+                    ))
+                    .popover(isPresented: $showHighlightColorPicker) {
+                        highlightColorPicker
+                    }
+
+                    ResearchStripButton(
+                        title: "Add Note",
+                        systemImage: "note.text.badge.plus",
+                        isDisabled: highlightCoordinator.pendingHighlightLink == nil
+                    ) { showHighlightNoteEditor = true }
+                    .help(String(
+                        localized: "researchStrip.highlightNote.help",
+                        defaultValue: "Attach a research note to the highlight you just created"
+                    ))
+                }
             }
 
             // Cite — opens citation popover
@@ -277,7 +319,11 @@ struct ResearchStripView: View {
             HStack(spacing: 10) {
                 ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
                     Button {
-                        highlightCoordinator.createHighlightAction?(color)
+                        if FeatureFlags.useWebKitRenderer {
+                            highlightCoordinator.createWebKitHighlightAction?(color)
+                        } else {
+                            highlightCoordinator.createHighlightAction?(color)
+                        }
                         showHighlightColorPicker = false
                     } label: {
                         ZStack {
