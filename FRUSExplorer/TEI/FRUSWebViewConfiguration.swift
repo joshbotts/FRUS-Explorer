@@ -38,15 +38,23 @@ extension WKWebViewConfiguration {
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
 
-        // Inject the flat-text offset engine at document-end so it runs after
-        // the full DOM is available. The engine sets window.FRUSOffsets which
-        // Sessions 144–145 read to render and create highlights.
+        // Inject the flat-text offset engine first so window.FRUSOffsets is
+        // available when the highlights renderer is initialised.
         let offsetScript = WKUserScript(
             source: kOffsetEngineJS,
             injectionTime: .atDocumentEnd,
             forMainFrameOnly: true
         )
         config.userContentController.addUserScript(offsetScript)
+
+        // Inject the CSS Custom Highlight API renderer (Session 144+).
+        // Must come after the offset engine because buildRanges() reads charToNode.
+        let highlightsScript = WKUserScript(
+            source: kHighlightsJS,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        )
+        config.userContentController.addUserScript(highlightsScript)
 
         return config
     }
@@ -88,4 +96,40 @@ window.FRUSOffsets = (() => {
   walk(root);
   return Object.freeze({ flatText, charToNode });
 })();
+"""
+
+/// CSS Custom Highlight API renderer, embedded as a Swift string constant.
+/// Canonical source: `FRUSExplorer/Resources/frus-highlights.js`
+/// Keep this constant in sync with that file when making edits.
+/// Must be injected AFTER `kOffsetEngineJS` because `buildRanges()` reads
+/// `window.FRUSOffsets.charToNode`.
+private let kHighlightsJS = """
+function buildRanges(start, end) {
+  if (!window.FRUSOffsets) return [];
+  const map = window.FRUSOffsets.charToNode;
+  if (start >= map.length || end > map.length || start >= end) return [];
+  const range = new Range();
+  range.setStart(map[start].node, map[start].localOffset);
+  const endEntry = map[end - 1];
+  range.setEnd(endEntry.node, endEntry.localOffset + 1);
+  return [range];
+}
+window.FRUSHighlights = {
+  render(highlights) {
+    if (typeof CSS === 'undefined' || !CSS.highlights) return;
+    CSS.highlights.clear();
+    if (!highlights || !highlights.length) return;
+    const groups = {};
+    for (const h of highlights) {
+      const ranges = buildRanges(h.startOffset, h.endOffset);
+      if (!ranges.length) continue;
+      const key = h.isStale ? 'frus-stale' : ('frus-' + h.color);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(...ranges);
+    }
+    for (const [name, ranges] of Object.entries(groups)) {
+      CSS.highlights.set(name, new Highlight(...ranges));
+    }
+  }
+};
 """

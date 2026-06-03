@@ -941,7 +941,14 @@ struct DocumentView: View {
                 ))
             }
 
-            // Document body — WKWebView handles scrolling and footnote popovers
+            // Stale highlight banner (WebKit path) — shown when any stored highlight's
+            // renderingVersion doesn't match the current document version.
+            let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+            if highlights.contains(where: { $0.renderingVersion != renderingVersion }) {
+                staleHighlightBanner
+            }
+
+            // Document body — WKWebView handles scrolling, footnotes, and highlights.
             FRUSDocumentWebView(
                 model: model,
                 onPersonTap: { person in
@@ -955,6 +962,7 @@ struct DocumentView: View {
                     handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
                 }
             )
+            .highlights(highlights)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // TODO(Session 147): integrate DocumentTagSection and volume navigation
         }

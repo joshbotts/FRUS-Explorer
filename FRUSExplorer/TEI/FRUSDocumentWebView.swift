@@ -76,6 +76,10 @@ public struct FRUSDocumentWebView: View {
     /// Called with the target document ID and optional source volume ID.
     public var onCrossRefTap: ((String, String?) -> Void)? = nil
 
+    /// Stored highlights to render via the CSS Custom Highlight API after each
+    /// page load. Updated highlights are re-rendered without a full HTML reload.
+    var highlights: [DocumentHighlight] = []
+
     // MARK: Environment
 
     @Environment(\.colorScheme) private var colorScheme
@@ -89,6 +93,7 @@ public struct FRUSDocumentWebView: View {
             model:          model,
             colorScheme:    colorScheme,
             textSize:       textSize,
+            highlights:     highlights,
             onPersonTap:    onPersonTap,
             onGlossTap:     onGlossTap,
             onCrossRefTap:  onCrossRefTap
@@ -98,11 +103,30 @@ public struct FRUSDocumentWebView: View {
             model:          model,
             colorScheme:    colorScheme,
             textSize:       textSize,
+            highlights:     highlights,
             onPersonTap:    onPersonTap,
             onGlossTap:     onGlossTap,
             onCrossRefTap:  onCrossRefTap
         )
         #endif
+    }
+}
+
+// MARK: - View modifier extensions
+
+extension FRUSDocumentWebView {
+
+    /// Supplies the stored highlights to render via the CSS Custom Highlight API.
+    ///
+    /// Use this modifier at the call site so the view composes cleanly:
+    /// ```swift
+    /// FRUSDocumentWebView(model: model, onPersonTap: ..., ...)
+    ///     .highlights(highlights)
+    /// ```
+    func highlights(_ newHighlights: [DocumentHighlight]) -> FRUSDocumentWebView {
+        var copy = self
+        copy.highlights = newHighlights
+        return copy
     }
 }
 
@@ -129,8 +153,9 @@ struct WebViewSignature: Equatable {
 ///
 /// Responsibilities:
 /// - Tracks the last-rendered `WebViewSignature` to suppress no-op reloads.
-/// - Holds a reference to the `FRUSURLSchemeHandler` so `updateNSView`/`updateUIView`
-///   can update its callbacks and model lookups without recreating the web view.
+/// - Holds a reference to the `FRUSURLSchemeHandler`.
+/// - Stores pending highlights and calls `renderHighlights(on:)` after each
+///   page load and whenever highlights change without a full HTML reload.
 final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate {
 
     /// Signature of the most-recently loaded content. Initialized to `.empty` so
@@ -141,12 +166,55 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate {
     /// Set by `makeNSView`/`makeUIView`; updated (not replaced) on each `update` call.
     var schemeHandler: FRUSURLSchemeHandler?
 
+    // MARK: Highlight state
+
+    /// Most-recently supplied highlights; rendered after every page load and on
+    /// direct update when only highlights changed (no full HTML reload needed).
+    var pendingHighlights: [DocumentHighlight] = []
+
+    /// The `renderingVersion` for the currently loaded document; used to compute
+    /// `HighlightDTO.isStale`.
+    var currentRenderingVersion: String = ""
+
+    /// IDs of the last highlights passed to `updateNSView`/`updateUIView`, used to
+    /// detect changes that require a `renderHighlights` call without a full reload.
+    var lastHighlightIds: [UUID] = []
+
+    // MARK: CSS Custom Highlight API
+
+    /// Serialises `pendingHighlights` to JSON and calls
+    /// `window.FRUSHighlights.render(...)` on the given web view.
+    ///
+    /// Safe to call with an empty array — `FRUSHighlights.render([])` just calls
+    /// `CSS.highlights.clear()`, which removes any stale paints from a prior page.
+    func renderHighlights(on webView: WKWebView) async {
+        let dtos = pendingHighlights.map { h in
+            DocumentHighlight.HighlightDTO(h, currentVersion: currentRenderingVersion)
+        }
+        guard let json = try? JSONEncoder().encode(dtos),
+              let jsonStr = String(data: json, encoding: .utf8) else { return }
+        let script = "if(window.FRUSHighlights){window.FRUSHighlights.render(\(jsonStr))}"
+        try? await webView.evaluateJavaScript(script)
+
+        #if DEBUG
+        let staleCount = dtos.filter { $0.isStale }.count
+        if staleCount > 0 {
+            print("[FRUSDocumentWebView] renderHighlights: \(dtos.count) highlights, "
+                  + "\(staleCount) stale")
+        }
+        #endif
+    }
+
     // MARK: WKNavigationDelegate
 
+    /// After each successful page load, paint any pending highlights.
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        Task { @MainActor in
+            await renderHighlights(on: webView)
+        }
+    }
+
     /// Allows the initial HTML load and blocks all external navigations.
-    /// `frusexplorer://` navigations are intercepted by `FRUSURLSchemeHandler`
-    /// before the navigation policy delegate is consulted, so they never reach
-    /// this method in practice. The check is kept as a belt-and-suspenders guard.
     func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction
@@ -184,6 +252,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     let model:          FRUSDocumentRenderModel
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
+    let highlights:     [DocumentHighlight]
     var onPersonTap:    ((PersonEntry?) -> Void)?
     var onGlossTap:     ((GlossEntry?) -> Void)?
     var onCrossRefTap:  ((String, String?) -> Void)?
@@ -208,23 +277,35 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
+        let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+        let newHighlightIds  = highlights.map(\.id)
+        let highlightsChanged = newHighlightIds != context.coordinator.lastHighlightIds
+
+        // Always sync highlight state before any reload/render decision.
+        context.coordinator.pendingHighlights        = highlights
+        context.coordinator.currentRenderingVersion  = renderingVersion
+        context.coordinator.lastHighlightIds         = newHighlightIds
+
         let sig = WebViewSignature(
             documentId:  model.documentId,
             colorScheme: colorScheme,
             textSize:    textSize
         )
-        guard context.coordinator.lastSignature != sig else { return }
-        context.coordinator.lastSignature = sig
-
-        // Update scheme handler lookups and callbacks before reloading so
-        // any link tapped on the new page resolves to the correct entries.
-        context.coordinator.schemeHandler?.register(model: model)
-        context.coordinator.schemeHandler?.onPersonTap   = onPersonTap
-        context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
-        context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
-
-        let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
-        webView.loadHTMLString(html, baseURL: nil)
+        if context.coordinator.lastSignature != sig {
+            context.coordinator.lastSignature = sig
+            context.coordinator.schemeHandler?.register(model: model)
+            context.coordinator.schemeHandler?.onPersonTap   = onPersonTap
+            context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
+            context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
+            let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
+            webView.loadHTMLString(html, baseURL: nil)
+            // renderHighlights called from didFinish after the new page loads.
+        } else if highlightsChanged {
+            // Only highlights changed — re-render CSS highlights without reloading HTML.
+            Task { @MainActor in
+                await context.coordinator.renderHighlights(on: webView)
+            }
+        }
     }
 
     func makeCoordinator() -> _FRUSWebViewCoordinator { _FRUSWebViewCoordinator() }
@@ -240,6 +321,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     let model:          FRUSDocumentRenderModel
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
+    let highlights:     [DocumentHighlight]
     var onPersonTap:    ((PersonEntry?) -> Void)?
     var onGlossTap:     ((GlossEntry?) -> Void)?
     var onCrossRefTap:  ((String, String?) -> Void)?
@@ -262,21 +344,32 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+        let newHighlightIds  = highlights.map(\.id)
+        let highlightsChanged = newHighlightIds != context.coordinator.lastHighlightIds
+
+        context.coordinator.pendingHighlights        = highlights
+        context.coordinator.currentRenderingVersion  = renderingVersion
+        context.coordinator.lastHighlightIds         = newHighlightIds
+
         let sig = WebViewSignature(
             documentId:  model.documentId,
             colorScheme: colorScheme,
             textSize:    textSize
         )
-        guard context.coordinator.lastSignature != sig else { return }
-        context.coordinator.lastSignature = sig
-
-        context.coordinator.schemeHandler?.register(model: model)
-        context.coordinator.schemeHandler?.onPersonTap   = onPersonTap
-        context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
-        context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
-
-        let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
-        webView.loadHTMLString(html, baseURL: nil)
+        if context.coordinator.lastSignature != sig {
+            context.coordinator.lastSignature = sig
+            context.coordinator.schemeHandler?.register(model: model)
+            context.coordinator.schemeHandler?.onPersonTap   = onPersonTap
+            context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
+            context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
+            let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
+            webView.loadHTMLString(html, baseURL: nil)
+        } else if highlightsChanged {
+            Task { @MainActor in
+                await context.coordinator.renderHighlights(on: webView)
+            }
+        }
     }
 
     func makeCoordinator() -> _FRUSWebViewCoordinator { _FRUSWebViewCoordinator() }

@@ -190,7 +190,13 @@ struct MacDocumentView: View {
 
             Divider()
 
-            // Document body — WKWebView handles scrolling, tables, footnote popovers
+            // Stale highlight banner (WebKit path)
+            let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: renderModel)
+            if highlights.contains(where: { $0.renderingVersion != renderingVersion }) {
+                staleHighlightBanner
+            }
+
+            // Document body — WKWebView handles scrolling, tables, footnotes, and highlights.
             FRUSDocumentWebView(
                 model: renderModel,
                 onPersonTap: { person in
@@ -204,6 +210,7 @@ struct MacDocumentView: View {
                     handleCrossRefTap(target: target, volumeId: volumeId)
                 }
             )
+            .highlights(highlights)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // TODO(Session 147): integrate SummaryBlockView into WebKit path
 

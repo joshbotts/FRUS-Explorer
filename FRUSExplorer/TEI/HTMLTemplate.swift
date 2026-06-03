@@ -280,5 +280,13 @@ enum HTMLTemplate {
 
     /* ─── Unknown passthrough elements ─────────────────────────────────────── */
     span.unknown { /* renders as inline span; no decoration */ }
+
+    /* ─── CSS Custom Highlight API — document highlights (Session 144) ──────── */
+    /* Color names map 1:1 to DocumentHighlight.Color raw values.                */
+    ::highlight(frus-yellow) { background-color: rgba(255, 214,   0, 0.40); }
+    ::highlight(frus-green)  { background-color: rgba(  0, 200,  83, 0.40); }
+    ::highlight(frus-blue)   { background-color: rgba(  0, 122, 255, 0.40); }
+    ::highlight(frus-pink)   { background-color: rgba(255,  45,  85, 0.40); }
+    ::highlight(frus-stale)  { background-color: rgba(255, 149,   0, 0.30); }
     """
 }

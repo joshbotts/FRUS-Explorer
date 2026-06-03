@@ -140,6 +140,42 @@ extension DocumentHighlight {
     var color: Color { Color(rawValue: colorTag) ?? .yellow }
 }
 
+// MARK: - Highlight DTO
+
+extension DocumentHighlight {
+
+    /// Serialisable snapshot of a single highlight, injected into `WKWebView` as JSON
+    /// so the CSS Custom Highlight API renderer (`frus-highlights.js`) can paint
+    /// highlight ranges using the `FRUSOffsets.charToNode` map.
+    ///
+    /// `isStale` is computed at call time from the `renderingVersion` mismatch so the
+    /// web layer doesn't need to know the current document version.
+    struct HighlightDTO: Encodable {
+        /// Unicode scalar start offset, matching `DocumentHighlight.startOffset`.
+        let startOffset: Int
+        /// Unicode scalar end offset (exclusive), matching `DocumentHighlight.endOffset`.
+        let endOffset: Int
+        /// Highlight color name — one of `"yellow"`, `"green"`, `"blue"`, `"pink"`.
+        let color: String
+        /// `true` when the stored `renderingVersion` does not match the document's
+        /// current version. Stale highlights are rendered in amber by `::highlight(frus-stale)`.
+        let isStale: Bool
+
+        /// Convenience initialiser that computes `isStale` automatically.
+        ///
+        /// - Parameters:
+        ///   - highlight:       The `DocumentHighlight` to convert.
+        ///   - currentVersion:  The rendering version for the currently displayed document,
+        ///                      from `ASTToRenderNodeConverter.renderingVersion(for:)`.
+        init(_ highlight: DocumentHighlight, currentVersion: String) {
+            startOffset = highlight.startOffset
+            endOffset   = highlight.endOffset
+            color       = highlight.colorTag
+            isStale     = highlight.renderingVersion != currentVersion
+        }
+    }
+}
+
 // MARK: - Color display helpers
 
 extension DocumentHighlight.Color {
