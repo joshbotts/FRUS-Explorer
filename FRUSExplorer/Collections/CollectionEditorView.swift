@@ -956,6 +956,156 @@ struct ExportSheetView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        macExportBody
+        #else
+        iOSExportBody
+        #endif
+    }
+
+    // MARK: - macOS body
+
+    /// macOS-native export dialog.
+    ///
+    /// Replaces the `NavigationStack { Form }` pattern used on iOS, which adds
+    /// an unwanted navigation bar on macOS. Changes from the iOS layout:
+    /// - Title row + Divider + content area + Divider + button bar
+    /// - Format uses `.pickerStyle(.radioGroup)` — the HIG-correct control for
+    ///   2–5 mutually exclusive options in a dialog body (segmented is correct
+    ///   for toolbars/control strips, not dialog content areas)
+    /// - Contents List uses a `LabeledContent` row with `.pickerStyle(.menu)`
+    /// - Progress spinner sits inline in the button bar next to Export
+    /// - Error message appears above the button bar, not in a Form section
+    /// - Export is the default action (↩) via `.keyboardShortcut(.defaultAction)`
+    #if os(macOS)
+    private var macExportBody: some View {
+        VStack(spacing: 0) {
+
+            // Title
+            Text(String(localized: "export.nav.title", defaultValue: "Export Collection"))
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 12)
+
+            Divider()
+
+            // Options
+            VStack(alignment: .leading, spacing: 18) {
+
+                // Format — radio buttons (HIG: mutually exclusive choices in a dialog)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(String(localized: "export.format.header", defaultValue: "Format"))
+                        .font(.callout.weight(.medium))
+                    Picker(
+                        String(localized: "export.format.picker", defaultValue: "Format"),
+                        selection: $selectedFormat
+                    ) {
+                        ForEach(ExportFormat.allCases) { fmt in
+                            Text(fmt.displayName).tag(fmt)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
+                }
+
+                // Contents List — menu picker with explanatory caption
+                VStack(alignment: .leading, spacing: 4) {
+                    LabeledContent(
+                        String(localized: "export.tocStyle.header", defaultValue: "Contents List")
+                    ) {
+                        Picker(
+                            String(localized: "export.tocStyle.picker", defaultValue: "Show"),
+                            selection: $tocStyle
+                        ) {
+                            ForEach(CollectionToCStyle.allCases) { style in
+                                Text(style.displayName).tag(style)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .fixedSize()
+                    }
+                    Text(String(localized: "export.tocStyle.hint",
+                                defaultValue: "\"Header & Dateline\" shows the document heading and date extracted from the text; requires the volume to be downloaded."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+
+            // Inline error — shown above the button bar when present
+            if let error = exportError {
+                Divider()
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                    .font(.callout)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+            }
+
+            Divider()
+
+            // Button bar
+            HStack(spacing: 12) {
+                Button(String(localized: "export.close", defaultValue: "Close")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                // Progress feedback — inline in the button bar when busy
+                if let msg = preparingMessage {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(msg).font(.callout).foregroundStyle(.secondary)
+                    }
+                } else if isExporting {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(String(localized: "export.progress.label",
+                                    defaultValue: "Exporting…"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Button {
+                    Task { await runExport() }
+                } label: {
+                    Label(
+                        String(localized: "export.button.label", defaultValue: "Export"),
+                        systemImage: "square.and.arrow.up"
+                    )
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(isExporting
+                          || preparingMessage != nil
+                          || (entries.isEmpty && collection.savedSearchId == nil))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .frame(minWidth: 380, idealWidth: 420, minHeight: 260)
+        .sheet(item: $exportedURL) { url in
+            MacExportCompleteView(url: url)
+        }
+    }
+    #endif
+
+    // MARK: - iOS body
+
+    /// iOS/iPadOS export sheet.
+    ///
+    /// Retains `NavigationStack { Form }` which is the correct pattern on iOS:
+    /// the navigation bar provides title and Cancel/Close button placement,
+    /// and the Form renders correctly as an inset-grouped table.
+    #if os(iOS)
+    private var iOSExportBody: some View {
         NavigationStack {
             Form {
                 Section(String(localized: "export.format.header", defaultValue: "Format")) {
@@ -989,15 +1139,12 @@ struct ExportSheetView: View {
                 Section {
                     if let msg = preparingMessage {
                         HStack {
-                            ProgressView()
-                                .padding(.trailing, 8)
-                            Text(msg)
-                                .foregroundStyle(.secondary)
+                            ProgressView().padding(.trailing, 8)
+                            Text(msg).foregroundStyle(.secondary)
                         }
                     } else if isExporting {
                         HStack {
-                            ProgressView()
-                                .padding(.trailing, 8)
+                            ProgressView().padding(.trailing, 8)
                             Text(String(localized: "export.progress.label",
                                         defaultValue: "Exporting…"))
                                 .foregroundStyle(.secondary)
@@ -1011,7 +1158,6 @@ struct ExportSheetView: View {
                                 systemImage: "square.and.arrow.up"
                             )
                         }
-                        // Smart collections resolve docs at export time — allow even when entries is empty.
                         .disabled(entries.isEmpty && collection.savedSearchId == nil)
                     }
                 }
@@ -1025,9 +1171,7 @@ struct ExportSheetView: View {
                 }
             }
             .navigationTitle(String(localized: "export.nav.title", defaultValue: "Export Collection"))
-            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "export.close", defaultValue: "Close")) {
@@ -1036,15 +1180,12 @@ struct ExportSheetView: View {
                 }
             }
             .sheet(item: $exportedURL) { url in
-                #if os(iOS)
                 ShareSheet(url: url)
                     .ignoresSafeArea()
-                #else
-                MacExportCompleteView(url: url)
-                #endif
             }
         }
     }
+    #endif // os(iOS)
 
     private func runExport() async {
         exportError = nil
@@ -1461,20 +1602,39 @@ struct MacExportCompleteView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 52))
-                .foregroundStyle(.green)
+        VStack(spacing: 0) {
+            // Success content
+            VStack(spacing: 16) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.green)
 
-            Text(String(localized: "export.mac.success.title",
-                        defaultValue: "Export Complete"))
-                .font(.headline)
+                Text(String(localized: "export.mac.success.title",
+                            defaultValue: "Export Complete"))
+                    .font(.headline)
 
-            Text(url.lastPathComponent)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text(url.lastPathComponent)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
 
-            HStack(spacing: 12) {
+            Divider()
+
+            // Button bar — Done (left, Escape), Reveal in Finder (secondary),
+            // Save To… (primary, Return). Standard macOS success dialog layout.
+            HStack(spacing: 8) {
+                Button(String(localized: "export.mac.done",
+                              defaultValue: "Done")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
                 Button(String(localized: "export.mac.reveal",
                               defaultValue: "Reveal in Finder")) {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
@@ -1485,7 +1645,6 @@ struct MacExportCompleteView: View {
                               defaultValue: "Save To\u{2026}")) {
                     let panel = NSSavePanel()
                     panel.nameFieldStringValue = url.lastPathComponent
-                    // Allow the OS to infer the content type from the extension.
                     panel.canCreateDirectories = true
                     if panel.runModal() == .OK, let dest = panel.url {
                         try? FileManager.default.removeItem(at: dest)
@@ -1494,10 +1653,12 @@ struct MacExportCompleteView: View {
                     }
                     dismiss()
                 }
+                .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding(28)
         .frame(minWidth: 340)
     }
 }
