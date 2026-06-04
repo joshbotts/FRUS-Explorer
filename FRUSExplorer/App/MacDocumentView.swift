@@ -286,6 +286,20 @@ struct MacDocumentView: View {
         }
     }
 
+    // MARK: - Document Year Extraction
+
+    /// Extracts a 4-digit year from a dateline string.
+    /// Duplicated from DocumentView; kept here so MacDocumentView has no cross-file dependency.
+    static func extractYear(from dateline: String?) -> Int? {
+        guard let dl = dateline else { return nil }
+        let pattern = #"\b(19[0-9]{2}|20[0-2][0-9])\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: dl, range: NSRange(dl.startIndex..., in: dl)),
+              let range = Range(match.range(at: 1), in: dl)
+        else { return nil }
+        return Int(dl[range])
+    }
+
     // MARK: - Stale Highlight Banner
 
     private var staleHighlightBanner: some View {
@@ -600,6 +614,11 @@ struct MacDocumentView: View {
 
     @MainActor
     private func loadDocument() async {
+        // Clear the pre-populated source note so the Sources button can't show
+        // stale data from the previous document while the new one is loading.
+        appState.currentSourceNote = nil
+        appState.currentSourceNoteYear = nil
+
         // Wait for the download manager to be bootstrapped if it isn't yet.
         // This can happen when a document is opened very early in the app lifecycle
         // (e.g. from a URL handler or Handoff) before bootApp() completes.
@@ -621,6 +640,20 @@ struct MacDocumentView: View {
         )
 
         await vm.load(volumeURL: volumeURL)
+
+        // Pre-populate appState.currentSourceNote from the live-parsed source note so
+        // ResearchStripView's Sources button always works, even when the DocumentBrowserEntry
+        // was created via a cross-reference tap (which sets sourceNote: nil).
+        // This ensures the macOS source explorer uses the same data source as iOS.
+        if let liveNote = vm.sourceNote {
+            appState.currentSourceNote = liveNote
+            appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
+        } else if let entryNote = entry.sourceNote {
+            // Fallback: entry had sourceNote from the corpus browser path.
+            appState.currentSourceNote = entryNote
+            appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
+        }
+
         vm.recordReadingHistory(projectId: appState.activeProjectId, in: modelContext)
         vm.loadSummaries(context: modelContext)
         vm.refreshCrossProjectNoteCount(

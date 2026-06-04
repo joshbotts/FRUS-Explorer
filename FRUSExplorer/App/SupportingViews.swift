@@ -145,20 +145,26 @@ struct ResearchStripView: View {
             ))
 
             // Sources — always available for all documents.
-            // Source Explorer shows a "no source note" informative state when the
-            // document has no source note rather than hiding the button entirely.
+            // appState.currentSourceNote is pre-set by MacDocumentView.loadDocument()
+            // from vm.sourceNote (live XML parse) after each document loads, so the
+            // Source Explorer always has the correct value regardless of how the
+            // DocumentBrowserEntry was created (corpus browser vs cross-reference tap).
+            // entry?.sourceNote is only populated when navigating via the corpus browser;
+            // cross-reference navigation creates entries without sourceNote.
             ResearchStripButton(
                 title: "Sources",
                 systemImage: "archivebox",
                 isDisabled: isDisabled
             ) {
-                appState.currentSourceNote = entry?.sourceNote ?? ""
-                if let dl = entry?.dateline,
-                   let m = dl.range(of: #"\b(19[0-9]{2}|20[0-2][0-9])\b"#,
-                                    options: .regularExpression) {
-                    appState.currentSourceNoteYear = Int(dl[m])
-                } else {
-                    appState.currentSourceNoteYear = nil
+                // Only override if currentSourceNote wasn't set by the load path
+                // (safety fallback for edge cases where loadDocument hasn't run yet).
+                if appState.currentSourceNote == nil {
+                    appState.currentSourceNote = entry?.sourceNote ?? ""
+                    if let dl = entry?.dateline,
+                       let m = dl.range(of: #"\b(19[0-9]{2}|20[0-2][0-9])\b"#,
+                                        options: .regularExpression) {
+                        appState.currentSourceNoteYear = Int(dl[m])
+                    }
                 }
                 openWindow(id: "frus.sourceExplorer")
             }
