@@ -50,6 +50,10 @@ struct MacSourceExplorerView: View {
     /// Raw plain-text source note extracted from the TEI document.
     let rawSourceNote: String
 
+    /// The year the FRUS document was created, used for period-based central-file
+    /// routing. Mirrors the same parameter on `SourceExplorerView`.
+    var documentYear: Int? = nil
+
     /// The indexing pipeline used for same-collection document discovery.
     /// When `nil` the related documents box is not shown.
     var indexingPipeline: IndexingPipeline? = nil
@@ -344,36 +348,11 @@ struct MacSourceExplorerView: View {
 
         switch parsed {
 
-        case .centralFiles(_, let fileId):
+        case .centralFiles:
+            // Period-based routing replaces the old resolveRG59CentralFiles catalog-search
+            // URL, which returned empty results for decimal file numbers.
             GroupBox(header) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Button {
-                        openURL(client.resolveRG59CentralFiles(fileIdentifier: fileId ?? ""))
-                    } label: {
-                        // When a specific file identifier was parsed, label the action as a
-                        // targeted search. When nil (narrative note with no extractable ID),
-                        // use a general browse label so the user is not misled.
-                        if fileId != nil {
-                            Label(String(localized: "source.explorer.centralFiles.naraLink",
-                                         defaultValue: "Search NARA Catalog for This File"),
-                                  systemImage: "arrow.up.right.square")
-                        } else {
-                            Label(String(localized: "source.explorer.centralFiles.naraLinkGeneral",
-                                         defaultValue: "Browse RG-59 in NARA Catalog"),
-                                  systemImage: "arrow.up.right.square")
-                        }
-                    }
-                    .help(fileId != nil
-                          ? String(localized: "source.explorer.centralFiles.naraLink.help",
-                                   defaultValue: "Open archives.gov with this exact decimal-file identifier")
-                          : String(localized: "source.explorer.centralFiles.naraLinkGeneral.help",
-                                   defaultValue: "Open the RG-59 Central Files browse page on archives.gov"))
-                    Text(String(localized: "source.explorer.centralFiles.noKeyNote",
-                                defaultValue: "Central file searches open directly in your browser — no API key required."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                centralFilesPeriodBox
             }
 
         case .ciaCollection:
@@ -621,6 +600,74 @@ struct MacSourceExplorerView: View {
             guard response == .OK, let url = panel.url else { return }
             try? naraExportText(result).write(to: url, atomically: true, encoding: .utf8)
         }
+    }
+
+    // MARK: - Central Files Period Box
+
+    /// Period-based NARA finding-aid routing for `.centralFiles` notes.
+    ///
+    /// Mirrors `SourceExplorerView.centralFilesPeriodSection`:
+    /// - When `documentYear` is known: links directly to the period-specific
+    ///   `archives.gov/research/…` page plus the filing manual PDF if applicable.
+    /// - When unknown: shows a compact table of all filing periods so the
+    ///   researcher can navigate to the right one manually.
+    ///
+    /// `resolveRG59CentralFiles` is intentionally not used here because
+    /// `catalog.archives.gov/search?q=…&f.parentDescriptionNaId=302028`
+    /// returns no useful results for decimal file identifiers.
+    @ViewBuilder
+    private var centralFilesPeriodBox: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let year = documentYear {
+                // Resolved period
+                let label  = client.decimalFilePeriodLabel(year: year)
+                let url    = client.decimalFilePeriodURL(year: year)
+                HStack {
+                    Text(String(localized: "source.explorer.decimalPeriod.matched",
+                                defaultValue: "Filing Period"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .trailing)
+                    Text(label).font(.callout).textSelection(.enabled)
+                }
+                Button {
+                    openURL(url)
+                } label: {
+                    Label(String(localized: "source.explorer.decimalPeriod.link",
+                                 defaultValue: "Open NARA Finding Aids for This Period"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+                if let manualURL = client.filingManualURL(year: year) {
+                    Button {
+                        openURL(manualURL)
+                    } label: {
+                        Label(String(localized: "source.explorer.decimalPeriod.manualLink",
+                                     defaultValue: "Filing Manual for This Period (PDF)"),
+                              systemImage: "doc.fill")
+                    }
+                    .buttonStyle(.link)
+                }
+                Text(String(localized: "source.explorer.decimalPeriod.hint",
+                            defaultValue: "Box lists, purport indexes, and the filing manual for this period are available on the linked NARA page."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                // No year — show the full period table
+                Text(String(localized: "source.explorer.decimalPeriod.noYear",
+                            defaultValue: "Select the filing period that matches the document date:"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(SourceExplorerView.allFilingPeriods, id: \.id) { period in
+                    Button(period.label) {
+                        openURL(period.url)
+                    }
+                    .buttonStyle(.link)
+                    .font(.callout)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func naraExportText(_ result: NARACatalogResult) -> String {

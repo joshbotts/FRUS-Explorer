@@ -303,34 +303,14 @@ struct SourceExplorerView: View {
             }
         }
 
-        // Date-routed period section — only for RG-59 (decimal files and central files)
-        if recordGroup == "59" {
+        // Period-specific NARA finding-aid routing — the primary resource for
+        // State Dept. central files. Routes to archives.gov research pages for the
+        // correct filing era (1789–1906, 1906–1910, decimal 1910–1963, or 1963–1973)
+        // and links to the applicable filing manual PDF when one exists.
+        // The old resolveRG59CentralFiles catalog-search URL is not used here because
+        // catalog.archives.gov/search returns no useful results for decimal file numbers.
+        if recordGroup == "RG-59" || recordGroup == "59" {
             centralFilesPeriodSection(fileIdentifier: fileIdentifier)
-        }
-
-        Section(String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")) {
-            Button {
-                let url = client.resolveRG59CentralFiles(fileIdentifier: fileIdentifier ?? "")
-                openURL(url)
-            } label: {
-                if fileIdentifier != nil {
-                    Label(
-                        String(localized: "source.explorer.centralFiles.naraLink",
-                               defaultValue: "Search NARA Catalog for This File"),
-                        systemImage: "arrow.up.right.square"
-                    )
-                } else {
-                    Label(
-                        String(localized: "source.explorer.centralFiles.naraLinkGeneral",
-                               defaultValue: "Browse RG-59 in NARA Catalog"),
-                        systemImage: "arrow.up.right.square"
-                    )
-                }
-            }
-            Text(String(localized: "source.explorer.centralFiles.noKeyNote",
-                        defaultValue: "Central file searches open directly in your browser — no API key required."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -393,7 +373,8 @@ struct SourceExplorerView: View {
     }
 
     /// All State Dept. central-file filing periods, shown when document year is unknown.
-    private static let allFilingPeriods: [FilingPeriod] = [
+    /// Internal (not private) so `MacSourceExplorerView` can reference the same list.
+    static let allFilingPeriods: [FilingPeriod] = [
         FilingPeriod(
             id: "1789-1906", label: "1789–1906",
             url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1789-1906")!
@@ -875,7 +856,7 @@ struct SourceExplorerView: View {
 
 /// A named NARA filing period for State Dept. central files, used in the
 /// period-selection table shown when document year is unknown.
-private struct FilingPeriod: Sendable {
+struct FilingPeriod: Sendable {
     let id: String
     let label: String
     let url: URL

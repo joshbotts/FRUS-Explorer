@@ -69,6 +69,9 @@ struct NARACatalogLookupView: View {
         #endif
     }
 
+    /// True when the selected strategy serves period links rather than API results.
+    private var showsPeriodLinks: Bool { strategy == .centralURL }
+
     // MARK: - macOS body
 
     #if os(macOS)
@@ -90,7 +93,12 @@ struct NARACatalogLookupView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     queryFieldSection
                     strategySection
-                    if hasSearched { resultSection }
+                    if showsPeriodLinks {
+                        // Period links appear immediately — no API call needed
+                        periodLinksSection
+                    } else if hasSearched {
+                        resultSection
+                    }
                 }
                 .padding(20)
             }
@@ -110,14 +118,7 @@ struct NARACatalogLookupView: View {
                     ProgressView().controlSize(.small).padding(.trailing, 4)
                 }
 
-                if strategy == .centralURL {
-                    Button(String(localized: "nara.lookup.openInBrowser",
-                                  defaultValue: "Open in Browser")) {
-                        openURL(client.resolveRG59CentralFiles(fileIdentifier: queryText))
-                    }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(queryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                } else {
+                if !showsPeriodLinks {
                     Button(String(localized: "nara.lookup.search", defaultValue: "Search")) {
                         Task { await runSearch() }
                     }
@@ -125,8 +126,9 @@ struct NARACatalogLookupView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(isSearching
                               || queryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                              || (!hasAPIKey))
+                              || !hasAPIKey)
                 }
+                // centralURL: period links are shown inline — no button needed
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -143,7 +145,11 @@ struct NARACatalogLookupView: View {
             Form {
                 queryFieldSection
                 strategySection
-                if hasSearched { resultSection }
+                if showsPeriodLinks {
+                    periodLinksSection
+                } else if hasSearched {
+                    resultSection
+                }
             }
             .navigationTitle(
                 String(localized: "nara.lookup.title", defaultValue: "Look Up in NARA Catalog"))
@@ -157,13 +163,7 @@ struct NARACatalogLookupView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if strategy == .centralURL {
-                        Button(String(localized: "nara.lookup.openInBrowser",
-                                      defaultValue: "Open")) {
-                            openURL(client.resolveRG59CentralFiles(fileIdentifier: queryText))
-                        }
-                        .disabled(queryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    } else {
+                        if !showsPeriodLinks {
                         Button(String(localized: "nara.lookup.search", defaultValue: "Search")) {
                             Task { await runSearch() }
                         }
@@ -239,6 +239,27 @@ struct NARACatalogLookupView: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.orange)
+            }
+        }
+    }
+
+    /// Period links section — shown instead of API results when `centralURL` is selected.
+    ///
+    /// Uses the same period table as `SourceExplorerView.centralFilesPeriodSection`
+    /// to route the researcher to the correct `archives.gov/research/…` page.
+    @ViewBuilder
+    private var periodLinksSection: some View {
+        Section(String(localized: "nara.lookup.periodLinks.header",
+                       defaultValue: "NARA Finding Aids by Period")) {
+            Text(String(localized: "nara.lookup.periodLinks.intro",
+                        defaultValue: "Select the filing period that matches the document date. Each link goes directly to the NARA research page for that period — no API key required."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(SourceExplorerView.allFilingPeriods, id: \.id) { period in
+                Button(period.label) {
+                    openURL(period.url)
+                }
+                .font(.callout)
             }
         }
     }

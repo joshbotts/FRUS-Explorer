@@ -3077,6 +3077,7 @@ struct SourceExplorerWindowView: View {
         if let note = appState.currentSourceNote {
             MacSourceExplorerView(
                 rawSourceNote: note,
+                documentYear: appState.currentSourceNoteYear,
                 indexingPipeline: appState.indexingPipeline,
                 onRelatedDocumentTapped: { vid, did in
                     let entry = DocumentBrowserEntry(
