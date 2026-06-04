@@ -22,6 +22,10 @@ public enum SummarizationScope: Sendable, Equatable {
     /// `documentKeys` is a pre-computed set of `"volumeId/documentId"` strings
     /// built by the settings view from `DocumentTagAssignment` records.
     case userTag(documentKeys: Set<String>)
+    /// All documents returned by a saved search query.
+    /// `documentKeys` is a pre-computed set of `"volumeId/documentId"` strings
+    /// built by the settings view by executing the saved search before starting.
+    case savedSearch(documentKeys: Set<String>)
     /// All documents whose volume date range overlaps [earliest, latest] (ISO 8601 strings).
     case dateRange(earliest: String, latest: String)
 }
@@ -191,7 +195,7 @@ public actor BackgroundSummarizationService {
             candidates = manifestEntries
                 .filter { $0.subseries == sub }
                 .map(\.volumeId)
-        case .userTag:
+        case .userTag, .savedSearch:
             // All downloaded volumes — document filtering happens per-document
             // using the pre-computed documentKeys set
             candidates = Array(downloadedVolumeIds)
@@ -255,9 +259,13 @@ public actor BackgroundSummarizationService {
                 let docs = try await parser.parse(volumeURL: url)
                 for doc in docs {
                     guard !Task.isCancelled else { break }
-                    // For userTag scope, only include documents in the pre-computed key set
-                    if case .userTag(let keys) = scope {
+                    // For userTag / savedSearch scope, only include documents in the
+                    // pre-computed key set
+                    switch scope {
+                    case .userTag(let keys), .savedSearch(let keys):
                         guard keys.contains("\(volumeId)/\(doc.documentId)") else { continue }
+                    default:
+                        break
                     }
                     let text = doc.nodes
                         .map(\.plainText)

@@ -32,6 +32,7 @@ struct BackgroundSummarizationSettingsView: View {
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
     @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
     @Query private var allTagAssignments: [DocumentTagAssignment]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
 
     // MARK: - Scope State
 
@@ -39,6 +40,7 @@ struct BackgroundSummarizationSettingsView: View {
     @State private var selectedVolumeId: String = ""
     @State private var selectedSubseries: String = ""
     @State private var selectedUserTagId: UUID? = nil
+    @State private var selectedSavedSearchId: UUID? = nil
     @State private var dateRangeEarliest: String = ""
     @State private var dateRangeLatest: String = ""
 
@@ -83,6 +85,8 @@ struct BackgroundSummarizationSettingsView: View {
                 subsiesPicker
             case .userTag:
                 userTagPicker
+            case .savedSearch:
+                savedSearchPicker
             case .dateRange:
                 dateRangePickers
             }
@@ -165,6 +169,42 @@ struct BackgroundSummarizationSettingsView: View {
                 if selectedUserTagId == nil, let first = allUserTags.first {
                     selectedUserTagId = first.id
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var savedSearchPicker: some View {
+        if allSavedSearches.isEmpty {
+            Text(String(localized: "bg.summarizer.scope.savedSearch.empty",
+                        defaultValue: "No saved searches yet. Save a search first using the bookmark button in Search."))
+                .foregroundStyle(.secondary)
+                .font(.callout)
+        } else {
+            Picker(
+                String(localized: "bg.summarizer.scope.savedSearch.picker",
+                       defaultValue: "Search"),
+                selection: $selectedSavedSearchId
+            ) {
+                Text(String(localized: "bg.summarizer.scope.savedSearch.none",
+                            defaultValue: "Select a saved search…"))
+                    .tag(UUID?.none)
+                ForEach(allSavedSearches) { search in
+                    Text(search.name).tag(UUID?.some(search.id))
+                }
+            }
+            .onAppear {
+                if selectedSavedSearchId == nil, let first = allSavedSearches.first {
+                    selectedSavedSearchId = first.id
+                }
+            }
+            if let id = selectedSavedSearchId,
+               let search = allSavedSearches.first(where: { $0.id == id }),
+               let kw = search.searchParameters.keywords, !kw.isEmpty {
+                Text(kw)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
         }
     }
@@ -333,10 +373,11 @@ struct BackgroundSummarizationSettingsView: View {
     private var canStart: Bool {
         guard !allPrompts.isEmpty, selectedPromptId != nil else { return false }
         switch scopeType {
-        case .volume:    return !selectedVolumeId.isEmpty
-        case .subseries: return !selectedSubseries.isEmpty
-        case .userTag:   return selectedUserTagId != nil && !allUserTags.isEmpty
-        case .dateRange: return !dateRangeEarliest.isEmpty && !dateRangeLatest.isEmpty
+        case .volume:       return !selectedVolumeId.isEmpty
+        case .subseries:    return !selectedSubseries.isEmpty
+        case .userTag:      return selectedUserTagId != nil && !allUserTags.isEmpty
+        case .savedSearch:  return selectedSavedSearchId != nil && !allSavedSearches.isEmpty
+        case .dateRange:    return !dateRangeEarliest.isEmpty && !dateRangeLatest.isEmpty
         }
     }
 
@@ -358,7 +399,6 @@ struct BackgroundSummarizationSettingsView: View {
               let prompt = allPrompts.first(where: { $0.id == promptId }),
               let dm = appState.downloadManager else { return }
 
-        let scope = buildScope()
         let all = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
         var urls: [String: URL] = [:]
@@ -368,6 +408,9 @@ struct BackgroundSummarizationSettingsView: View {
 
         let promptSnapshot = SummarizationPromptSnapshot(from: prompt)
         Task {
+            // buildScope() is async because .savedSearch must execute the search
+            // service to enumerate matching documents before the run starts.
+            let scope = await buildScope()
             await service.start(
                 scope: scope,
                 promptSnapshot: promptSnapshot,
@@ -385,13 +428,12 @@ struct BackgroundSummarizationSettingsView: View {
         Task { await service.stop() }
     }
 
-    private func buildScope() -> SummarizationScope {
+    private func buildScope() async -> SummarizationScope {
         switch scopeType {
         case .volume:    return .volume(volumeId: selectedVolumeId)
         case .subseries: return .subseries(subseries: selectedSubseries)
         case .userTag:
-            // Pre-compute the "volumeId/documentId" keys for documents tagged with
-            // the selected user tag. The service uses this set to filter per-document.
+            // Pre-compute "volumeId/documentId" keys from DocumentTagAssignment records.
             let keys: Set<String>
             if let tagId = selectedUserTagId {
                 keys = Set(allTagAssignments
@@ -401,6 +443,21 @@ struct BackgroundSummarizationSettingsView: View {
                 keys = []
             }
             return .userTag(documentKeys: keys)
+        case .savedSearch:
+            // Execute the saved search now to enumerate matching documents.
+            // This is the async step: the search service queries the FTS5 index.
+            guard let searchId = selectedSavedSearchId,
+                  let savedSearch = allSavedSearches.first(where: { $0.id == searchId }),
+                  let searchService = appState.searchService else {
+                return .savedSearch(documentKeys: [])
+            }
+            let results = (try? await searchService.search(
+                parameters: savedSearch.searchParameters)) ?? []
+            let keys = Set(results.map { "\($0.volumeId)/\($0.documentId)" })
+            #if DEBUG
+            print("[BgSummarizer] Saved search '\(savedSearch.name)' resolved \(keys.count) documents")
+            #endif
+            return .savedSearch(documentKeys: keys)
         case .dateRange: return .dateRange(earliest: dateRangeEarliest, latest: dateRangeLatest)
         }
     }
@@ -408,14 +465,15 @@ struct BackgroundSummarizationSettingsView: View {
     // MARK: - ScopeType
 
     private enum ScopeType: String, CaseIterable, Identifiable {
-        case volume, subseries, userTag, dateRange
+        case volume, subseries, userTag, savedSearch, dateRange
         var id: String { rawValue }
         var displayName: String {
             switch self {
-            case .volume:    return String(localized: "bg.summarizer.scope.type.volume",    defaultValue: "Volume")
-            case .subseries: return String(localized: "bg.summarizer.scope.type.subseries", defaultValue: "Subseries")
-            case .userTag:   return String(localized: "bg.summarizer.scope.type.userTag",   defaultValue: "User Tag")
-            case .dateRange: return String(localized: "bg.summarizer.scope.type.dateRange", defaultValue: "Date Range")
+            case .volume:       return String(localized: "bg.summarizer.scope.type.volume",      defaultValue: "Volume")
+            case .subseries:    return String(localized: "bg.summarizer.scope.type.subseries",   defaultValue: "Subseries")
+            case .userTag:      return String(localized: "bg.summarizer.scope.type.userTag",     defaultValue: "User Tag")
+            case .savedSearch:  return String(localized: "bg.summarizer.scope.type.savedSearch", defaultValue: "Saved Search")
+            case .dateRange:    return String(localized: "bg.summarizer.scope.type.dateRange",   defaultValue: "Date Range")
             }
         }
     }
