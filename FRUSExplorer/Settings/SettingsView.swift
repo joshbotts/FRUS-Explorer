@@ -177,23 +177,21 @@ struct SettingsView: View {
     }
 
     // MARK: - iCloud Sync Status Row
+    //
+    // Each status case collapses the indicator + detail into a single Form row
+    // (VStack inside one cell) to avoid the tall multi-row layout that appeared
+    // when the status label and its explanation text occupied separate cells.
 
     @ViewBuilder
     private var iCloudSyncStatusRow: some View {
         if !appState.cloudKitSyncEnabled {
-            LabeledContent(
-                String(localized: "settings.icloud.status", defaultValue: "Status")
-            ) {
-                Label(
-                    String(localized: "settings.icloud.localOnly", defaultValue: "Local Only"),
-                    systemImage: "icloud.slash"
-                )
-                .foregroundStyle(.orange)
-            }
-            Text(String(localized: "settings.icloud.localOnly.detail",
-                        defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access."))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            iCloudStatusCell(
+                label: String(localized: "settings.icloud.localOnly", defaultValue: "Local Only"),
+                systemImage: "icloud.slash",
+                color: .orange,
+                detail: String(localized: "settings.icloud.localOnly.detail",
+                               defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.")
+            )
         } else {
             switch appState.cloudKitSyncState {
             case .unknown:
@@ -222,66 +220,67 @@ struct SettingsView: View {
                 LabeledContent(
                     String(localized: "settings.icloud.status", defaultValue: "Status")
                 ) {
-                    Label(
-                        String(localized: "settings.icloud.synced", defaultValue: "Synced"),
-                        systemImage: "checkmark.icloud"
-                    )
-                    .foregroundStyle(.green)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Label(
+                            String(localized: "settings.icloud.synced", defaultValue: "Synced"),
+                            systemImage: "checkmark.icloud"
+                        )
+                        .foregroundStyle(.green)
+                        Text(date, style: .relative)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                LabeledContent(
-                    String(localized: "settings.icloud.lastSync", defaultValue: "Last Sync")
-                ) {
-                    Text(date, style: .relative)   // already emits "5 minutes ago" etc.
-                }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
 
             case .failed(let message):
-                LabeledContent(
-                    String(localized: "settings.icloud.status", defaultValue: "Status")
-                ) {
-                    Label(
-                        String(localized: "settings.icloud.error", defaultValue: "Sync Error"),
-                        systemImage: "exclamationmark.icloud"
-                    )
-                    .foregroundStyle(.orange)
-                }
-                Text(message)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                iCloudStatusCell(
+                    label: String(localized: "settings.icloud.error", defaultValue: "Sync Error"),
+                    systemImage: "exclamationmark.icloud",
+                    color: .orange,
+                    detail: message
+                )
             }
 
             // Zone-missing warning (silent failure — never reported by sync events)
             if appState.cloudKitZoneVerified == false {
-                LabeledContent(
-                    String(localized: "settings.icloud.zone", defaultValue: "Private Zone")
-                ) {
-                    Label(
-                        String(localized: "settings.icloud.zoneMissing", defaultValue: "Missing"),
-                        systemImage: "exclamationmark.icloud.fill"
-                    )
-                    .foregroundStyle(.red)
-                }
-                Text(String(localized: "settings.icloud.zoneMissing.detail",
-                            defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or tap Reset iCloud Sync below."))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                iCloudStatusCell(
+                    label: String(localized: "settings.icloud.zoneMissing", defaultValue: "Private Zone Missing"),
+                    systemImage: "exclamationmark.icloud.fill",
+                    color: .red,
+                    detail: String(localized: "settings.icloud.zoneMissing.detail",
+                                   defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or tap Reset iCloud Sync below.")
+                )
             }
 
             // Account status issues
             if let status = appState.cloudKitAccountStatus, status != .available {
-                LabeledContent(
-                    String(localized: "settings.icloud.account", defaultValue: "Account")
-                ) {
-                    Label(
-                        String(localized: "settings.icloud.accountIssue", defaultValue: "Issue Detected"),
-                        systemImage: "person.crop.circle.badge.exclamationmark"
-                    )
-                    .foregroundStyle(.orange)
-                }
-                Text(AppState.accountStatusDescription(status))
+                iCloudStatusCell(
+                    label: String(localized: "settings.icloud.accountIssue", defaultValue: "Account Issue"),
+                    systemImage: "person.crop.circle.badge.exclamationmark",
+                    color: .orange,
+                    detail: AppState.accountStatusDescription(status)
+                )
+            }
+        }
+    }
+
+    /// Compact single-row iCloud status indicator with a status label and inline detail text.
+    private func iCloudStatusCell(
+        label: String,
+        systemImage: String,
+        color: Color,
+        detail: String
+    ) -> some View {
+        LabeledContent(
+            String(localized: "settings.icloud.status", defaultValue: "Status")
+        ) {
+            VStack(alignment: .trailing, spacing: 2) {
+                Label(label, systemImage: systemImage)
+                    .foregroundStyle(color)
+                Text(detail)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
             }
         }
     }
@@ -2041,6 +2040,27 @@ private struct NARAKeyView: View {
                             defaultValue: "A free API key from the National Archives Catalog is required to search for lot file and Presidential Library records in the Source Explorer. The key is stored securely in iCloud Keychain and synced across your devices."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
+
+                if let url = URL(string: "https://www.archives.gov/research/catalog/help/api") {
+                    Link(destination: url) {
+                        HStack {
+                            Label(
+                                String(localized: "settings.naraKey.apiLink",
+                                       defaultValue: "NARA Catalog API — get a free key"),
+                                systemImage: "key"
+                            )
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityLabel(
+                        String(localized: "settings.naraKey.apiLink.a11y",
+                               defaultValue: "NARA Catalog API help page — request a free API key")
+                    )
+                    .accessibilityAddTraits(.isLink)
+                }
             }
 
             Section(String(localized: "settings.naraKey.entry.header",
