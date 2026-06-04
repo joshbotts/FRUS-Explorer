@@ -2981,7 +2981,17 @@ struct SourceExplorerWindowView: View {
 
     var body: some View {
         if let note = appState.currentSourceNote {
-            MacSourceExplorerView(rawSourceNote: note)
+            MacSourceExplorerView(
+                rawSourceNote: note,
+                indexingPipeline: appState.indexingPipeline,
+                onRelatedDocumentTapped: { vid, did in
+                    let entry = DocumentBrowserEntry(
+                        documentId: did, volumeId: vid,
+                        documentNumber: nil, header: did, dateline: nil, sourceNote: nil
+                    )
+                    appState.pendingBrowseDocument = entry
+                }
+            )
         } else {
             ContentUnavailableView(
                 "No Document Selected",

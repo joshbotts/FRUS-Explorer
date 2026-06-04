@@ -50,6 +50,14 @@ struct MacSourceExplorerView: View {
     /// Raw plain-text source note extracted from the TEI document.
     let rawSourceNote: String
 
+    /// The indexing pipeline used for same-collection document discovery.
+    /// When `nil` the related documents box is not shown.
+    var indexingPipeline: IndexingPipeline? = nil
+
+    /// Called when the user double-clicks (or activates) a related document row.
+    /// Passes `(volumeId, documentId)`.
+    var onRelatedDocumentTapped: ((String, String) -> Void)? = nil
+
     // MARK: - Dependencies
 
     private let client = NARACatalogClient()
@@ -62,6 +70,12 @@ struct MacSourceExplorerView: View {
     @State private var loadError: String? = nil
     @State private var hasAPIKey: Bool = false
     @State private var manualQuery: String = ""
+    /// Same-collection document discovery results.
+    @State private var relatedDocs: [IndexingPipeline.RelatedDocument] = []
+    /// Total count of matches in the index (may exceed the displayed slice).
+    @State private var relatedTotalCount: Int = 0
+    /// True while the related-documents query is running.
+    @State private var relatedLoading: Bool = false
 
     @Environment(\.openURL)  private var openURL
 
@@ -160,6 +174,9 @@ struct MacSourceExplorerView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(40)
+                }
+                if indexingPipeline != nil {
+                    relatedDocumentsBox
                 }
             }
             .padding(16)
@@ -545,6 +562,24 @@ struct MacSourceExplorerView: View {
         default:
             break
         }
+
+        // Same-collection discovery (parallel with NARA Catalog query)
+        await loadRelatedDocuments(for: note)
+    }
+
+    private func loadRelatedDocuments(for note: ParsedSourceNote) async {
+        guard let pipeline = indexingPipeline else { return }
+        relatedLoading = true
+        do {
+            let result = try await pipeline.relatedDocuments(for: note, limit: 30)
+            relatedDocs       = result.documents
+            relatedTotalCount = result.totalCount
+        } catch {
+            #if DEBUG
+            print("[SourceExplorer] Related documents query failed: \(error)")
+            #endif
+        }
+        relatedLoading = false
     }
 
     private func fetchResult(_ operation: @Sendable () async throws -> NARACatalogResult?) async {
@@ -602,6 +637,96 @@ struct MacSourceExplorerView: View {
         lines.append("")
         lines.append("URL: \(result.catalogURL.absoluteString)")
         return lines.joined(separator: "\n")
+    }
+
+    // MARK: - Related Documents Box
+
+    /// GroupBox listing documents from the same archival collection.
+    ///
+    /// Shown only when `indexingPipeline` is non-nil. An empty result is hidden
+    /// so the box does not take up space when no related documents are indexed.
+    @ViewBuilder
+    private var relatedDocumentsBox: some View {
+        if relatedLoading {
+            GroupBox(String(localized: "source.explorer.related.header",
+                            defaultValue: "Documents from This Collection")) {
+                HStack {
+                    ProgressView().controlSize(.small).padding(.trailing, 6)
+                    Text(String(localized: "source.explorer.related.loading",
+                                defaultValue: "Searching indexed volumes…"))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else if !relatedDocs.isEmpty {
+            GroupBox {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(relatedDocs, id: \.documentId) { doc in
+                        Button {
+                            onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
+                        } label: {
+                            macRelatedDocumentRow(doc)
+                        }
+                        .buttonStyle(.plain)
+                        if doc.documentId != relatedDocs.last?.documentId {
+                            Divider().padding(.leading, 8)
+                        }
+                    }
+                    if relatedTotalCount > relatedDocs.count {
+                        Text(String(localized: "source.explorer.related.overflow",
+                                    defaultValue: "\(relatedTotalCount - relatedDocs.count) more documents not shown"))
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 6)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } label: {
+                HStack {
+                    Text(String(localized: "source.explorer.related.header",
+                                defaultValue: "Documents from This Collection"))
+                        .font(.headline.weight(.semibold))
+                    Spacer()
+                    Text("\(relatedTotalCount)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.quaternary, in: Capsule())
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func macRelatedDocumentRow(_ doc: IndexingPipeline.RelatedDocument) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            if let num = doc.documentNumber {
+                Text(num)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, alignment: .trailing)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(doc.header.isEmpty ? doc.documentId : doc.header)
+                    .font(.callout)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                HStack(spacing: 6) {
+                    Text(doc.volumeId)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    if let dateline = doc.dateline {
+                        Text(dateline)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 5)
+        .contentShape(Rectangle())
     }
 }
 

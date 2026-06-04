@@ -1804,6 +1804,9 @@ public actor IndexingPipeline {
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_rg ON document_sources(record_group)")
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_repo ON document_sources(repository)")
+        // Session 152: indexes for same-collection discovery queries
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot ON document_sources(lot_file)")
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_era_series ON document_sources(citation_era, series_name)")
 
         try exec("""
             CREATE TABLE IF NOT EXISTS volume_sources (
@@ -2238,6 +2241,259 @@ public actor IndexingPipeline {
     /// `document_dates` composite primary key so SQLite performs index point-lookups
     /// instead of a full table scan. Each chunk of 400 pairs binds 800 parameters
     /// (well within the 999-parameter limit).
+    // MARK: - Same-Collection Discovery (Session 152)
+
+    /// Lightweight description of an indexed FRUS document returned by
+    /// `relatedDocuments(for:limit:)`.
+    public struct RelatedDocument: Sendable {
+        /// FRUS volume identifier (e.g. `"frus1964-68v27"`).
+        public let volumeId: String
+        /// Document identifier within the volume (e.g. `"d42"`).
+        public let documentId: String
+        /// Document header / title from the indexed cache.
+        public let header: String
+        /// Dateline (location + date) if available.
+        public let dateline: String?
+        /// Document number string (e.g. `"42"`) if available.
+        public let documentNumber: String?
+        /// True when this is an editorial note rather than a primary document.
+        public let isEditorialNote: Bool
+    }
+
+    /// Returns documents from the same archival collection as `parsed`.
+    ///
+    /// ## Matching strategy
+    ///
+    /// | ParsedSourceNote case | Match key | Index used |
+    /// |---|---|---|
+    /// | `.lotFile` | Normalized lot number (4 whitespace variants) | `idx_doc_src_lot` |
+    /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot` |
+    /// | `.centralFiles` with decimal ID | Base number before `/` | `idx_doc_src_era_series` |
+    /// | `.presidentialLibrary` | Library keyword + collection prefix | `idx_doc_src_repo` |
+    /// | All other cases | Returns empty result | — |
+    ///
+    /// Only documents from already-indexed volumes appear. The result is ordered
+    /// by volume identifier then document identifier.
+    ///
+    /// - Parameters:
+    ///   - parsed: The parsed source note driving the query.
+    ///   - limit: Maximum results to return. Default 30.
+    /// - Returns: A tuple of matched documents (≤ `limit`) and the total count of
+    ///   all matches in the index (may be larger than the returned slice).
+    public func relatedDocuments(
+        for parsed: ParsedSourceNote,
+        limit: Int = 30
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        switch parsed {
+
+        case .lotFile(_, let lotNumber, _):
+            return try relatedByLotFile(lotNumber, limit: limit)
+
+        case .naraCollection(_, _, let lot, _) where lot != nil:
+            return try relatedByLotFile(lot!, limit: limit)
+
+        case .centralFiles(_, let fileId?) where fileId.contains("."):
+            // Only attempt decimal-base matching when the identifier contains a period
+            // (distinguishes "862S.01/10-1646" from bare File No. values like "3767/5")
+            let base = fileId.components(separatedBy: "/").first?
+                .trimmingCharacters(in: .whitespaces) ?? fileId
+            return try relatedByDecimalBase(base, limit: limit)
+
+        case .presidentialLibrary(let library, let collection, _):
+            return try relatedByPresidentialLibrary(library: library,
+                                                    collection: collection,
+                                                    limit: limit)
+
+        default:
+            return ([], 0)
+        }
+    }
+
+    // MARK: - Related Document Helpers
+
+    /// Returns documents indexed with any normalized form of the given lot number.
+    ///
+    /// Queries `document_sources.lot_file` against four variants so that
+    /// compact (`"63D135"`), spaced (`"63 D 135"`), mixed (`"63 D135"`), and
+    /// raw-with-dashes (`"61-D 146"`) stored forms all match.
+    private func relatedByLotFile(
+        _ rawLot: String,
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        let variants = Self.lotVariantsForQuery(rawLot)
+        guard !variants.isEmpty else { return ([], 0) }
+
+        let placeholders = variants.map { _ in "?" }.joined(separator: ", ")
+        let whereClause = "ds.lot_file IN (\(placeholders))"
+
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: variants, selectParams: variants,
+            limit: limit
+        )
+    }
+
+    /// Returns documents indexed with the same decimal file base number.
+    ///
+    /// The `base` is everything before the first `/` in the decimal file identifier.
+    /// For `"862S.01/10-1646"` the base is `"862S.01"`. Matches stored series_names
+    /// of the form `"base"` (exact) or `"base/…"` (date suffix present).
+    private func relatedByDecimalBase(
+        _ base: String,
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        guard !base.isEmpty else { return ([], 0) }
+        let likePrefix = base + "/%"
+        let whereClause = """
+            ds.citation_era = 'decimal'
+            AND (ds.series_name = ? OR ds.series_name LIKE ?)
+            """
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: [base, likePrefix],
+            selectParams: [base, likePrefix],
+            limit: limit
+        )
+    }
+
+    /// Returns documents from the same presidential library collection.
+    ///
+    /// Uses a LIKE match on `repository` (e.g. `%KENNEDY%`) and a prefix match on
+    /// `series_name` (first 50 characters of the collection name).
+    private func relatedByPresidentialLibrary(
+        library: String,
+        collection: String,
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        // Extract a short keyword from the library name for the LIKE query
+        let keyword = Self.libraryKeyword(from: library)
+        guard !keyword.isEmpty else { return ([], 0) }
+        let repoLike = "%\(keyword)%"
+
+        // Use a prefix of the collection name (up to 50 chars) for series matching
+        let collectionPrefix = String(collection.prefix(50))
+        let collectionLike = collectionPrefix.isEmpty ? "%" : collectionPrefix + "%"
+
+        let whereClause = """
+            UPPER(ds.repository) LIKE UPPER(?)
+            AND UPPER(ds.series_name) LIKE UPPER(?)
+            """
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: [repoLike, collectionLike],
+            selectParams: [repoLike, collectionLike],
+            limit: limit
+        )
+    }
+
+    /// Shared executor for COUNT + SELECT related-document queries.
+    private func runRelatedQuery(
+        countSQL: String,
+        selectSQL: String,
+        countParams: [String],
+        selectParams: [String],
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        // 1. Count
+        let totalCount: Int
+        let countStmt = try auxPrepare(countSQL)
+        defer { sqlite3_finalize(countStmt) }
+        for (i, p) in countParams.enumerated() {
+            sqlite3_bind_text(countStmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
+        }
+        if sqlite3_step(countStmt) == SQLITE_ROW {
+            totalCount = Int(sqlite3_column_int64(countStmt, 0))
+        } else {
+            totalCount = 0
+        }
+        guard totalCount > 0 else { return ([], 0) }
+
+        // 2. Fetch
+        var docs: [RelatedDocument] = []
+        let selectStmt = try auxPrepare(selectSQL)
+        defer { sqlite3_finalize(selectStmt) }
+        for (i, p) in selectParams.enumerated() {
+            sqlite3_bind_text(selectStmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
+        }
+        sqlite3_bind_int64(selectStmt, Int32(selectParams.count + 1), Int64(limit))
+        while sqlite3_step(selectStmt) == SQLITE_ROW {
+            let vid   = auxColumnString(selectStmt, 0) ?? ""
+            let did   = auxColumnString(selectStmt, 1) ?? ""
+            let head  = auxColumnString(selectStmt, 2) ?? did
+            let date  = auxColumnString(selectStmt, 3)
+            let docNo = auxColumnString(selectStmt, 4)
+            let isEd  = sqlite3_column_int(selectStmt, 5) != 0
+            guard !vid.isEmpty, !did.isEmpty else { continue }
+            docs.append(RelatedDocument(
+                volumeId: vid, documentId: did,
+                header: head, dateline: date,
+                documentNumber: docNo, isEditorialNote: isEd
+            ))
+        }
+        return (docs, totalCount)
+    }
+
+    /// Generates normalized lot number variants for a database query.
+    ///
+    /// Returns the 3 standard forms (compact, spaced, mixed) from
+    /// `NARACatalogClient.lotNumberVariants(from:)` plus the raw
+    /// stripped form to cover lot numbers with dashes (e.g. `"61-D 146"`).
+    private static func lotVariantsForQuery(_ raw: String) -> [String] {
+        let variants = NARACatalogClient.lotNumberVariants(from: raw)
+        let rawStripped = raw
+            .replacingOccurrences(of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
+            .trimmingCharacters(in: .whitespaces)
+        var all = variants
+        if !all.contains(rawStripped) { all.append(rawStripped) }
+        // Deduplicate while preserving order
+        var seen = Set<String>()
+        return all.filter { seen.insert($0).inserted }
+    }
+
+    /// Extracts a short keyword from a presidential library name for LIKE queries.
+    ///
+    /// Example: `"Kennedy Library"` → `"Kennedy"`, `"LBJ Library"` → `"LBJ"`
+    private static func libraryKeyword(from name: String) -> String {
+        let parts = name.components(separatedBy: " ")
+        // Skip "Library", "Presidential", "Institution" suffixes
+        let skip: Set<String> = ["Library", "Presidential", "Institution", "The"]
+        let meaningful = parts.filter { !skip.contains($0) && $0.count > 2 }
+        return meaningful.first ?? (parts.first ?? "")
+    }
+
     ///
     /// Documents not present in `document_dates` (e.g. genuinely undated, or
     /// volumes not yet indexed) are absent from the returned dictionary —

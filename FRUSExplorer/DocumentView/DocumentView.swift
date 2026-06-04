@@ -370,7 +370,11 @@ struct DocumentView: View {
             case .sourceExplorer(let note):
                 SourceExplorerView(
                     rawSourceNote: note,
-                    documentYear: Self.extractYear(from: entry.dateline)
+                    documentYear: Self.extractYear(from: entry.dateline),
+                    indexingPipeline: appState.indexingPipeline,
+                    onRelatedDocumentTapped: { [self] vid, did in
+                        handleCrossRefTap(target: did, targetVolumeId: vid)
+                    }
                 )
             case .tagPicker:
                 TagPickerSheetView(

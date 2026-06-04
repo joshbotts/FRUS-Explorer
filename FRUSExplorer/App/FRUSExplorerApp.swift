@@ -145,7 +145,15 @@ struct FRUSExplorerApp: App {
                     NavigationStack {
                         SourceExplorerView(
                             rawSourceNote: sourceNote,
-                            documentYear: appState.currentSourceNoteYear
+                            documentYear: appState.currentSourceNoteYear,
+                            indexingPipeline: appState.indexingPipeline,
+                            onRelatedDocumentTapped: { vid, did in
+                                let entry = DocumentBrowserEntry(
+                                    documentId: did, volumeId: vid,
+                                    documentNumber: nil, header: did, dateline: nil, sourceNote: nil
+                                )
+                                appState.pendingBrowseDocument = entry
+                            }
                         )
                     }
                 } else {

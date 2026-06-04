@@ -61,6 +61,14 @@ struct SourceExplorerView: View {
     /// table is shown without highlighting a specific period.
     var documentYear: Int? = nil
 
+    /// The indexing pipeline used for same-collection document discovery.
+    /// When `nil` the related documents section is not shown.
+    var indexingPipeline: IndexingPipeline? = nil
+
+    /// Called when the user taps a related document entry. Passes `(volumeId, documentId)`.
+    /// The sheet dismisses itself before calling this closure.
+    var onRelatedDocumentTapped: ((String, String) -> Void)? = nil
+
     // MARK: - Dependencies
 
     private let parser = SourceNoteParser()
@@ -74,6 +82,12 @@ struct SourceExplorerView: View {
     @State private var isLoading = false
     @State private var loadError: String? = nil
     @State private var hasAPIKey: Bool = false
+    /// Same-collection document discovery results.
+    @State private var relatedDocs: [IndexingPipeline.RelatedDocument] = []
+    /// Total count of collection matches (may exceed the displayed slice).
+    @State private var relatedTotalCount: Int = 0
+    /// True while the related-documents query is running.
+    @State private var relatedLoading: Bool = false
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -87,6 +101,10 @@ struct SourceExplorerView: View {
 
                 if let parsed {
                     provenanceSection(parsed: parsed)
+                }
+
+                if indexingPipeline != nil {
+                    relatedDocumentsSection
                 }
             }
             .navigationTitle(String(localized: "source.explorer.title",
@@ -731,6 +749,25 @@ struct SourceExplorerView: View {
         default:
             break
         }
+
+        // Same-collection discovery — runs in parallel with the NARA Catalog query
+        await loadRelatedDocuments(for: note)
+    }
+
+    /// Queries the local index for documents from the same archival collection.
+    private func loadRelatedDocuments(for note: ParsedSourceNote) async {
+        guard let pipeline = indexingPipeline else { return }
+        relatedLoading = true
+        do {
+            let result = try await pipeline.relatedDocuments(for: note, limit: 30)
+            relatedDocs       = result.documents
+            relatedTotalCount = result.totalCount
+        } catch {
+            #if DEBUG
+            print("[SourceExplorer] Related documents query failed: \(error)")
+            #endif
+        }
+        relatedLoading = false
     }
 
     /// Executes an API operation and stores the results (or an error message).
@@ -744,6 +781,91 @@ struct SourceExplorerView: View {
             loadError = error.localizedDescription
         }
         isLoading = false
+    }
+
+    // MARK: - Related Documents Section
+
+    /// Section displaying documents from the same archival collection or file series.
+    ///
+    /// Shown only when `indexingPipeline` is non-nil. Loading happens asynchronously;
+    /// a spinner is shown while the query runs. An empty result is hidden silently.
+    @ViewBuilder
+    private var relatedDocumentsSection: some View {
+        if relatedLoading {
+            Section(String(localized: "source.explorer.related.header",
+                           defaultValue: "Documents from This Collection")) {
+                HStack {
+                    ProgressView().padding(.trailing, 8)
+                    Text(String(localized: "source.explorer.related.loading",
+                                defaultValue: "Searching indexed volumes…"))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                }
+            }
+        } else if !relatedDocs.isEmpty {
+            Section {
+                ForEach(relatedDocs, id: \.documentId) { doc in
+                    Button {
+                        dismiss()
+                        onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
+                    } label: {
+                        relatedDocumentRow(doc)
+                    }
+                    .buttonStyle(.plain)
+                }
+                if relatedTotalCount > relatedDocs.count {
+                    Text(String(localized: "source.explorer.related.overflow",
+                                defaultValue: "\(relatedTotalCount - relatedDocs.count) more documents not shown"))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 2)
+                }
+            } header: {
+                HStack {
+                    Text(String(localized: "source.explorer.related.header",
+                                defaultValue: "Documents from This Collection"))
+                    Spacer()
+                    Text("\(relatedTotalCount)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        // When relatedDocs is empty and not loading: show nothing (clean UX for
+        // documents from volumes not yet indexed or without collection matches)
+    }
+
+    @ViewBuilder
+    private func relatedDocumentRow(_ doc: IndexingPipeline.RelatedDocument) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .top) {
+                if let num = doc.documentNumber {
+                    Text(num)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 28, alignment: .trailing)
+                        .padding(.trailing, 2)
+                }
+                Text(doc.header.isEmpty ? doc.documentId : doc.header)
+                    .font(.callout)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
+            HStack(spacing: 8) {
+                Text(doc.volumeId)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                if let dateline = doc.dateline {
+                    Text(dateline)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
     }
 }
 
