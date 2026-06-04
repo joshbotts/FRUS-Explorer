@@ -261,12 +261,17 @@ struct MacDocumentView: View {
             )
             .highlights(highlights)
             .onSelectionChanged { start, end, text in
-                highlightCoordinator.webKitSelectionRange = (start, end)
-                highlightCoordinator.webKitSelectedText   = text.isEmpty ? nil : text
+                if start >= 0 {
+                    highlightCoordinator.webKitSelectionRange = (start, end)
+                } else {
+                    // Footnote selection: text available but no valid offset range.
+                    highlightCoordinator.webKitSelectionRange = nil
+                }
+                highlightCoordinator.webKitSelectedText = text.isEmpty ? nil : text
             }
             .onSelectionCleared {
                 highlightCoordinator.webKitSelectionRange = nil
-                highlightCoordinator.webKitSelectedText   = nil
+                // webKitSelectedText intentionally preserved for NARA lookup.
             }
             .onHighlightTapped { start, end in
                 highlightToDelete = (start, end)

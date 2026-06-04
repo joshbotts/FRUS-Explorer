@@ -238,10 +238,17 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         case "selectionChanged":
             guard let start = body["start"] as? Int,
                   let end   = body["end"]   as? Int else { return }
+            let text = (body["text"] as? String) ?? ""
             if start < 0 {
-                onSelectionCleared?()
+                if text.isEmpty {
+                    // True clear — no selection anywhere in the document.
+                    onSelectionCleared?()
+                } else {
+                    // Text-only selection in a footnote or other out-of-document area.
+                    // Offsets are sentinel (-1,-1); NARA lookup is still available.
+                    onSelectionChanged?(-1, -1, text)
+                }
             } else if end > start {
-                let text = (body["text"] as? String) ?? ""
                 onSelectionChanged?(start, end, text)
             }
 

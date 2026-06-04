@@ -210,17 +210,20 @@ struct ResearchStripView: View {
                 ))
             }
 
-            // NARA Catalog Lookup — enabled when the user has text selected.
-            // Complements Source Explorer: queries NARA using user-selected archival
-            // citation text (lot numbers, decimal file IDs, keywords) with a
-            // chosen strategy rather than relying solely on source note parsing.
-            if canCreateHighlight, let onLookup = onNARALookup {
+            // NARA Catalog Lookup — enabled when text is selected anywhere in the
+            // document, including footnotes (webKitSelectedText != nil). Also shows
+            // after the selection is released if the More-menu blur cleared the range
+            // but the text was preserved for lookup.
+            let hasLookupText = highlightCoordinator.webKitSelectedText != nil
+            if hasLookupText, let onLookup = onNARALookup {
                 ResearchStripButton(
                     title: "NARA Lookup",
                     systemImage: "magnifyingglass.circle",
                     isDisabled: false
                 ) {
-                    onLookup(highlightCoordinator.webKitSelectedText ?? "")
+                    let text = highlightCoordinator.webKitSelectedText ?? ""
+                    highlightCoordinator.webKitSelectedText = nil  // clear after capture
+                    onLookup(text)
                 }
                 .help(String(
                     localized: "researchStrip.naraLookup.help",

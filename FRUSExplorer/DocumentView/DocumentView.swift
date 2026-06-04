@@ -745,12 +745,15 @@ struct DocumentView: View {
                 )
             }
 
-            // NARA Catalog Lookup — available when text is selected in the document.
-            // Lets the user query the NARA Catalog using selected archival citation
-            // text with a chosen strategy (lot file, central files, keyword, etc.).
-            if webKitSelectionRange != nil {
+            // NARA Catalog Lookup — available when text is selected anywhere in the
+            // document (body or footnotes). Shown when webKitSelectedText is non-nil;
+            // this persists after the More-menu blur event so the selected text is
+            // still accessible when the user taps the menu item.
+            if webKitSelectedText != nil {
                 Button {
-                    activeSheet = .naraLookup(text: webKitSelectedText ?? "")
+                    let text = webKitSelectedText ?? ""
+                    webKitSelectedText = nil   // clear after capturing so button goes away
+                    activeSheet = .naraLookup(text: text)
                 } label: {
                     Label(
                         String(localized: "document.toolbar.naraLookup",
@@ -982,12 +985,24 @@ struct DocumentView: View {
             )
             .highlights(highlights)
             .onSelectionChanged { start, end, text in
-                webKitSelectionRange = (start, end)
-                webKitSelectedText   = text.isEmpty ? nil : text
+                if start >= 0 {
+                    // In-document selection with valid offsets — enables highlights + lookup.
+                    webKitSelectionRange = (start, end)
+                } else {
+                    // Footnote / out-of-document selection — text only, no valid offsets.
+                    // Clear the range so highlight creation is not offered, but keep the
+                    // text so NARA lookup remains available.
+                    webKitSelectionRange = nil
+                }
+                webKitSelectedText = text.isEmpty ? nil : text
             }
             .onSelectionCleared {
+                // Only clear the offset range. webKitSelectedText is intentionally
+                // preserved so the NARA lookup button stays available after the selection
+                // is released (e.g. when the user opens the More menu on iOS, which causes
+                // the WebView to blur and fire a false selectioncleared event).
+                // webKitSelectedText is cleared when the NARA lookup button is tapped.
                 webKitSelectionRange = nil
-                webKitSelectedText   = nil
             }
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

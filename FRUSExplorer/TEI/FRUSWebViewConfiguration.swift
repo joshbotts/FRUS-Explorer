@@ -222,13 +222,23 @@ document.addEventListener('selectionchange', () => {
   const start = rangeEndpointToOffset(range.startContainer, range.startOffset);
   const end   = rangeEndpointToOffset(range.endContainer,   range.endOffset);
   if (start >= 0 && end > start) {
-    // Include the raw selected text so Swift can pre-populate the NARA lookup field
-    // without needing to reconstruct it from character offsets.
+    // In-document selection: valid flat-text offsets + raw text.
     const text = sel.toString();
     try { webkit.messageHandlers.selectionChanged.postMessage({ start, end, text }); }
     catch (_) {}
   } else {
-    postCleared();
+    // At least one endpoint is outside .frus-document — footnote popover or
+    // footnote section. The offset engine can't map these nodes, so we send
+    // sentinel offsets (-1) but still include the selected text. Swift will
+    // treat this as a text-only selection: NARA lookup is available but
+    // highlight creation is not (which requires valid offsets).
+    const text = sel.toString();
+    if (text) {
+      try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1, text }); }
+      catch (_) {}
+    } else {
+      postCleared();
+    }
   }
 });
 """
