@@ -258,6 +258,8 @@
 		AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */; };
 		AA23BB01CC03DD04EE2307 /* SourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */; };
 		AA23BB01CC03DD04EE2308 /* SourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */; };
+		AA61CC02DD04EE05FF1101 /* NARACatalogLookupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA61CC02DD04EE05FF1100 /* NARACatalogLookupView.swift */; };
+		AA61CC02DD04EE05FF1102 /* NARACatalogLookupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA61CC02DD04EE05FF1100 /* NARACatalogLookupView.swift */; };
 		AA23BB01CC03DD04EE2310 /* SourceExplorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA23BB01CC03DD04EE2309 /* SourceExplorerTests.swift */; };
 		AA24BB01CC03DD04EE2401 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA24BB01CC03DD04EE2400 /* SettingsView.swift */; };
 		AA24BB01CC03DD04EE2402 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA24BB01CC03DD04EE2400 /* SettingsView.swift */; };
@@ -486,6 +488,7 @@
 		AA23BB01CC03DD04EE2300 /* SourceNoteParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2303 /* NARACatalogClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARACatalogClient.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceExplorerView.swift; sourceTree = "<group>"; };
+		AA61CC02DD04EE05FF1100 /* NARACatalogLookupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NARACatalogLookupView.swift; sourceTree = "<group>"; };
 		AA23BB01CC03DD04EE2309 /* SourceExplorerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SourceExplorerTests.swift; sourceTree = "<group>"; };
 		AA24BB01CC03DD04EE2400 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AA24BB01CC03DD04EE2403 /* SettingsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsTests.swift; sourceTree = "<group>"; };
@@ -852,6 +855,7 @@
 				AA50BB01CC03DD04EE5001 /* NARAAPIKeyStore.swift */,
 				AA23BB01CC03DD04EE2306 /* SourceExplorerView.swift */,
 				AA60BB01CC03DD04EE6001 /* MacSourceExplorerView.swift */,
+				AA61CC02DD04EE05FF1100 /* NARACatalogLookupView.swift */,
 			);
 			path = SourceExplorer;
 			sourceTree = "<group>";
@@ -1246,6 +1250,7 @@
 				661144C718F8B46603056272 /* MainWindowView.swift in Sources */,
 				623128B598B5F7C4F62DDC12 /* MacDocumentView.swift in Sources */,
 				AA60BB01CC03DD04EE6002 /* MacSourceExplorerView.swift in Sources */,
+				AA61CC02DD04EE05FF1102 /* NARACatalogLookupView.swift in Sources */,
 				89311F4C843EFBE0C952701C /* SupportingViews.swift in Sources */,
 				D6A96B97B02F339F85D5B651 /* SearchSheet.swift in Sources */,
 				7ADB6C509D4867C93A789162 /* MacSearchViewModel.swift in Sources */,
@@ -1366,6 +1371,7 @@
 				AA23BB01CC03DD04EE2305 /* NARACatalogClient.swift in Sources */,
 				AA50BB01CC03DD04EE5012 /* NARAAPIKeyStore.swift in Sources */,
 				AA23BB01CC03DD04EE2308 /* SourceExplorerView.swift in Sources */,
+				AA61CC02DD04EE05FF1101 /* NARACatalogLookupView.swift in Sources */,
 				AA24BB01CC03DD04EE2402 /* SettingsView.swift in Sources */,
 				AA51BB01CC03DD04EE5112 /* FRUSSettingsView.swift in Sources */,
 				AA25BB01CC03DD04EE2502 /* GlobalContextViewModel.swift in Sources */,

@@ -59,6 +59,10 @@ struct MainWindowView: View {
     /// Whether the citation popover is showing.
     @State private var showCitationPopover: Bool = false
 
+    /// NARA Catalog Lookup sheet — presented when the user taps "NARA Lookup" in the research strip.
+    @State private var showNARALookup: Bool = false
+    @State private var naraLookupText: String = ""
+
     /// Shared highlight state passed to ResearchStripView (buttons) and MacDocumentView (text selection / SwiftData insertion).
     @State private var highlightCoordinator = HighlightCoordinator()
 
@@ -79,8 +83,15 @@ struct MainWindowView: View {
             ResearchStripView(
                 entry: currentEntry,
                 showCitationPopover: $showCitationPopover,
-                highlightCoordinator: highlightCoordinator
+                highlightCoordinator: highlightCoordinator,
+                onNARALookup: { text in
+                    naraLookupText  = text
+                    showNARALookup  = true
+                }
             )
+            .sheet(isPresented: $showNARALookup) {
+                NARACatalogLookupView(initialText: naraLookupText)
+            }
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {

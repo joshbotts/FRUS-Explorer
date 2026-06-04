@@ -260,11 +260,13 @@ struct MacDocumentView: View {
                 }
             )
             .highlights(highlights)
-            .onSelectionChanged { start, end in
+            .onSelectionChanged { start, end, text in
                 highlightCoordinator.webKitSelectionRange = (start, end)
+                highlightCoordinator.webKitSelectedText   = text.isEmpty ? nil : text
             }
             .onSelectionCleared {
                 highlightCoordinator.webKitSelectionRange = nil
+                highlightCoordinator.webKitSelectedText   = nil
             }
             .onHighlightTapped { start, end in
                 highlightToDelete = (start, end)

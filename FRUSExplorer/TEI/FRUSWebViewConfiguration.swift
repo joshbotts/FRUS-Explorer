@@ -222,7 +222,10 @@ document.addEventListener('selectionchange', () => {
   const start = rangeEndpointToOffset(range.startContainer, range.startOffset);
   const end   = rangeEndpointToOffset(range.endContainer,   range.endOffset);
   if (start >= 0 && end > start) {
-    try { webkit.messageHandlers.selectionChanged.postMessage({ start, end }); }
+    // Include the raw selected text so Swift can pre-populate the NARA lookup field
+    // without needing to reconstruct it from character offsets.
+    const text = sel.toString();
+    try { webkit.messageHandlers.selectionChanged.postMessage({ start, end, text }); }
     catch (_) {}
   } else {
     postCleared();

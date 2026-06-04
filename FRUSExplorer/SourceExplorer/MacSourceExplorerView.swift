@@ -528,6 +528,10 @@ struct MacSourceExplorerView: View {
         parsed = note
         hasAPIKey = await client.hasAPIKey()
 
+        // Local related-documents query — runs unconditionally; no API key needed.
+        // Must be called before the per-case hasAPIKey guards that return early.
+        await loadRelatedDocuments(for: note)
+
         switch note {
         case .lotFile(let rg, let lotNumber, _):
             // Pre-fill manual query with the lot number (without decorative prefix).
@@ -562,9 +566,6 @@ struct MacSourceExplorerView: View {
         default:
             break
         }
-
-        // Same-collection discovery (parallel with NARA Catalog query)
-        await loadRelatedDocuments(for: note)
     }
 
     private func loadRelatedDocuments(for note: ParsedSourceNote) async {

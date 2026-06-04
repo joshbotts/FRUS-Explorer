@@ -78,10 +78,11 @@ public struct FRUSDocumentWebView: View {
 
     // MARK: Selection callbacks (Session 145)
 
-    /// Called with `(start, end)` Unicode-scalar offsets when the user selects
-    /// text in the WKWebView.  Both offsets are inclusive-start / exclusive-end
-    /// and index into `buildFlatText(from: model)`.
-    var onSelectionChanged: ((Int, Int) -> Void)? = nil
+    /// Called with `(start, end, text)` when the user selects text in the WKWebView.
+    /// `start` and `end` are Unicode-scalar offsets into `buildFlatText(from: model)`.
+    /// `text` is the raw selected string from `window.getSelection().toString()`,
+    /// suitable for pre-populating the NARA Catalog lookup field.
+    var onSelectionChanged: ((Int, Int, String) -> Void)? = nil
 
     /// Called when the selection is collapsed or cleared.
     var onSelectionCleared: (() -> Void)? = nil
@@ -143,8 +144,8 @@ extension FRUSDocumentWebView {
     }
 
     /// Registers a callback for when the user makes a text selection in the web view.
-    /// `start` and `end` are Unicode-scalar offsets into `buildFlatText(from: model)`.
-    func onSelectionChanged(_ handler: @escaping (Int, Int) -> Void) -> FRUSDocumentWebView {
+    /// `start` and `end` are Unicode-scalar offsets; `text` is the raw selected string.
+    func onSelectionChanged(_ handler: @escaping (Int, Int, String) -> Void) -> FRUSDocumentWebView {
         var copy = self; copy.onSelectionChanged = handler; return copy
     }
 
@@ -213,8 +214,8 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 
     // MARK: Selection state (Session 145)
 
-    /// Fired when JS reports a valid text selection `{start, end}`.
-    var onSelectionChanged: ((Int, Int) -> Void)?
+    /// Fired when JS reports a valid text selection `{start, end, text}`.
+    var onSelectionChanged: ((Int, Int, String) -> Void)?
     /// Fired when JS reports the selection was cleared (`{start: -1, end: -1}`).
     var onSelectionCleared: (() -> Void)?
     /// Fired when the user taps inside a rendered highlight range.
@@ -240,7 +241,8 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
             if start < 0 {
                 onSelectionCleared?()
             } else if end > start {
-                onSelectionChanged?(start, end)
+                let text = (body["text"] as? String) ?? ""
+                onSelectionChanged?(start, end, text)
             }
 
         case "highlightTapped":
@@ -329,7 +331,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
-    var onSelectionChanged: ((Int, Int) -> Void)?
+    var onSelectionChanged: ((Int, Int, String) -> Void)?
     var onSelectionCleared: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
 
@@ -404,7 +406,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
-    var onSelectionChanged: ((Int, Int) -> Void)?
+    var onSelectionChanged: ((Int, Int, String) -> Void)?
     var onSelectionCleared: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
 

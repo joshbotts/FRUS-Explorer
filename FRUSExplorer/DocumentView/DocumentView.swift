@@ -45,6 +45,8 @@ enum DocumentSheet: Identifiable {
     case personNotFound
     /// Gloss link was tapped but the lookup returned nil.
     case glossNotFound
+    /// User selected text in the document and chose "Look Up in NARA Catalog".
+    case naraLookup(text: String)
 
     var id: String {
         switch self {
@@ -61,6 +63,7 @@ enum DocumentSheet: Identifiable {
         case .addToCollection:                 return "addToCollection"
         case .personNotFound:                  return "personNotFound"
         case .glossNotFound:                   return "glossNotFound"
+        case .naraLookup:                      return "naraLookup"
         }
     }
 }
@@ -156,6 +159,8 @@ struct DocumentView: View {
     /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
     /// Set by `onSelectionChanged` from `FRUSDocumentWebView`.
     @State private var webKitSelectionRange: (Int, Int)? = nil
+    /// Raw selected text from the WebKit renderer. Pre-populates the NARA lookup field.
+    @State private var webKitSelectedText: String? = nil
     /// Offsets of a tapped highlight pending the user's delete confirmation.
     @State private var highlightToDelete: (Int, Int)? = nil
     /// Research panel accordion state (persisted; shared with macOS via AppStorage).
@@ -387,6 +392,8 @@ struct DocumentView: View {
                 personNotFoundSheet
             case .glossNotFound:
                 glossNotFoundSheet
+            case .naraLookup(let text):
+                NARACatalogLookupView(initialText: text)
             }
         }
         .sheet(isPresented: $showHighlightColorPicker) {
@@ -738,6 +745,21 @@ struct DocumentView: View {
                 )
             }
 
+            // NARA Catalog Lookup — available when text is selected in the document.
+            // Lets the user query the NARA Catalog using selected archival citation
+            // text with a chosen strategy (lot file, central files, keyword, etc.).
+            if webKitSelectionRange != nil {
+                Button {
+                    activeSheet = .naraLookup(text: webKitSelectedText ?? "")
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.naraLookup",
+                               defaultValue: "Look Up in NARA Catalog"),
+                        systemImage: "magnifyingglass.circle"
+                    )
+                }
+            }
+
             // Source Explorer — always available for all documents.
             // On iPad (regular width) opens in a new Stage Manager window;
             // on iPhone falls back to a sheet.
@@ -959,8 +981,14 @@ struct DocumentView: View {
                 }
             )
             .highlights(highlights)
-            .onSelectionChanged { start, end in webKitSelectionRange = (start, end) }
-            .onSelectionCleared { webKitSelectionRange = nil }
+            .onSelectionChanged { start, end, text in
+                webKitSelectionRange = (start, end)
+                webKitSelectedText   = text.isEmpty ? nil : text
+            }
+            .onSelectionCleared {
+                webKitSelectionRange = nil
+                webKitSelectedText   = nil
+            }
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 

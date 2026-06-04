@@ -723,6 +723,11 @@ struct SourceExplorerView: View {
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
 
+        // Local related-documents query — runs unconditionally; no API key needed.
+        // Must be called before the hasAPIKey guard so it runs even for users
+        // who have not configured a NARA Catalog API key.
+        await loadRelatedDocuments(for: note)
+
         hasAPIKey = await client.hasAPIKey()
         guard hasAPIKey else { return }
 
@@ -749,9 +754,6 @@ struct SourceExplorerView: View {
         default:
             break
         }
-
-        // Same-collection discovery — runs in parallel with the NARA Catalog query
-        await loadRelatedDocuments(for: note)
     }
 
     /// Queries the local index for documents from the same archival collection.

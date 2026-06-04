@@ -37,6 +37,10 @@ final class HighlightCoordinator {
     /// Cleared after a highlight is created or the selection is collapsed.
     var webKitSelectionRange: (Int, Int)? = nil
 
+    /// The raw text of the current WebKit selection, as reported by
+    /// `window.getSelection().toString()`. Pre-populates the NARA Catalog lookup field.
+    var webKitSelectedText: String? = nil
+
     /// Called by `MacDocumentView` to create a `DocumentHighlight` from the
     /// WebKit selection range and colour chosen in `highlightColorPicker`.
     var createWebKitHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
@@ -47,6 +51,7 @@ final class HighlightCoordinator {
 
     func reset() {
         webKitSelectionRange = nil
+        webKitSelectedText   = nil
         pendingHighlightLink = nil
         createWebKitHighlightAction = nil
     }
@@ -72,6 +77,9 @@ struct ResearchStripView: View {
     let entry: DocumentBrowserEntry?
     @Binding var showCitationPopover: Bool
     let highlightCoordinator: HighlightCoordinator
+    /// Called when the user taps "Look Up in NARA Catalog" with text selected.
+    /// The argument is the selected text string from the WebKit renderer.
+    var onNARALookup: ((String) -> Void)? = nil
 
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
@@ -199,6 +207,24 @@ struct ResearchStripView: View {
                 .help(String(
                     localized: "researchStrip.highlightNote.help",
                     defaultValue: "Attach a research note to the highlight you just created"
+                ))
+            }
+
+            // NARA Catalog Lookup — enabled when the user has text selected.
+            // Complements Source Explorer: queries NARA using user-selected archival
+            // citation text (lot numbers, decimal file IDs, keywords) with a
+            // chosen strategy rather than relying solely on source note parsing.
+            if canCreateHighlight, let onLookup = onNARALookup {
+                ResearchStripButton(
+                    title: "NARA Lookup",
+                    systemImage: "magnifyingglass.circle",
+                    isDisabled: false
+                ) {
+                    onLookup(highlightCoordinator.webKitSelectedText ?? "")
+                }
+                .help(String(
+                    localized: "researchStrip.naraLookup.help",
+                    defaultValue: "Query the NARA Catalog using the selected text"
                 ))
             }
 
