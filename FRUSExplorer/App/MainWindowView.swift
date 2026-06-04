@@ -145,7 +145,7 @@ struct MainWindowView: View {
     // MARK: - Document Title (principal toolbar item)
 
     private var documentTitle: some View {
-        VStack(spacing: 1) {
+        VStack(spacing: 2) {
             if let entry = currentEntry {
                 Text(entry.header.isEmpty ? entry.documentId : entry.header)
                     .font(.system(size: 13, weight: .medium))

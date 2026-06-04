@@ -1279,7 +1279,8 @@ private struct MacIndexingQueuePanel: View {
                 }
             }
         }
-        .padding(14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(width: 300)
     }
 
@@ -1484,7 +1485,8 @@ struct CitationPopoverView: View {
             }
 
         }
-        .padding(14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(width: 440)
         // Load the publication year from the volume's own TEI header when available.
         // The bundled manifest may have a coverage range in publicationDate rather than

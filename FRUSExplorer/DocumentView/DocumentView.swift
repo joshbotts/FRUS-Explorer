@@ -1108,7 +1108,7 @@ struct DocumentView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .textCase(.uppercase)
                     .kerning(0.6)
                     .foregroundStyle(.secondary)

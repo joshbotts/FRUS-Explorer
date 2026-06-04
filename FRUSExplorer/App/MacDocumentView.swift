@@ -447,9 +447,9 @@ struct MacDocumentView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .textCase(.uppercase)
-                    .kerning(0.7)
+                    .kerning(0.6)
                     .foregroundStyle(.secondary)
                 if let badge {
                     Text(badge)
@@ -466,11 +466,11 @@ struct MacDocumentView: View {
                 }
                 Spacer()
                 Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 10))
+                    .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 48)
-            .padding(.vertical, 7)
+            .padding(.vertical, 8)
             .background(Color.secondary.opacity(0.04))
             .contentShape(Rectangle())
         }
