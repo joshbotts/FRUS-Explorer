@@ -50,6 +50,88 @@ struct SavedSearchesView: View {
     // MARK: - Body
 
     var body: some View {
+        Group {
+            #if os(macOS)
+            macBody
+            #else
+            iOSBody
+            #endif
+        }
+        .alert(
+            String(localized: "savedSearches.rename.title", defaultValue: "Rename"),
+            isPresented: Binding(
+                get: { renaming != nil },
+                set: { if !$0 { renaming = nil } }
+            )
+        ) {
+            TextField(
+                String(localized: "savedSearches.rename.placeholder",
+                       defaultValue: "Name"),
+                text: $renameText
+            )
+            Button(String(localized: "savedSearches.rename.save",
+                          defaultValue: "Save")) {
+                renaming?.name = renameText
+                renaming = nil
+            }
+            Button(String(localized: "savedSearches.rename.cancel",
+                          defaultValue: "Cancel"),
+                   role: .cancel) {
+                renaming = nil
+            }
+        }
+    }
+
+    // MARK: - macOS body
+
+    #if os(macOS)
+    /// macOS-native layout: title row + list + Done button bar (no NavigationStack chrome).
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            Text(String(localized: "savedSearches.title", defaultValue: "Saved Searches"))
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+            Divider()
+
+            Group {
+                if savedSearches.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "savedSearches.empty.title",
+                               defaultValue: "No Saved Searches"),
+                        systemImage: "bookmark",
+                        description: Text(
+                            String(localized: "savedSearches.empty.detail",
+                                   defaultValue: "Tap the bookmark button in Search to save a search for quick access later.")
+                        )
+                    )
+                } else {
+                    list
+                }
+            }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(String(localized: "savedSearches.done", defaultValue: "Done")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .frame(minWidth: 400, minHeight: 300)
+    }
+    #endif
+
+    // MARK: - iOS body
+
+    #if os(iOS)
+    private var iOSBody: some View {
         NavigationStack {
             Group {
                 if savedSearches.isEmpty {
@@ -68,9 +150,7 @@ struct SavedSearchesView: View {
             }
             .navigationTitle(String(localized: "savedSearches.title",
                                     defaultValue: "Saved Searches"))
-            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "savedSearches.done",
@@ -79,34 +159,9 @@ struct SavedSearchesView: View {
                     }
                 }
             }
-            .alert(
-                String(localized: "savedSearches.rename.title", defaultValue: "Rename"),
-                isPresented: Binding(
-                    get: { renaming != nil },
-                    set: { if !$0 { renaming = nil } }
-                )
-            ) {
-                TextField(
-                    String(localized: "savedSearches.rename.placeholder",
-                           defaultValue: "Name"),
-                    text: $renameText
-                )
-                Button(String(localized: "savedSearches.rename.save",
-                              defaultValue: "Save")) {
-                    renaming?.name = renameText
-                    renaming = nil
-                }
-                Button(String(localized: "savedSearches.rename.cancel",
-                              defaultValue: "Cancel"),
-                       role: .cancel) {
-                    renaming = nil
-                }
-            }
         }
-        #if os(macOS)
-        .frame(minWidth: 400, minHeight: 300)
-        #endif
     }
+    #endif // os(iOS)
 
     // MARK: - List
 

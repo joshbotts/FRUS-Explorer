@@ -254,7 +254,13 @@ struct PromptEditorView: View {
                             defaultValue: "Structured (fields)"))
                     .tag(true)
             }
+            // .radioGroup on macOS is the HIG-correct control for mutually exclusive
+            // dialog choices; .segmented is correct for toolbars and control strips.
+            #if os(macOS)
+            .pickerStyle(.radioGroup)
+            #else
             .pickerStyle(.segmented)
+            #endif
         }
     }
 
@@ -389,11 +395,74 @@ struct TemplatePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        #if os(iOS)
+        iOSBody
+        #else
+        macBody
+        #endif
+    }
+
+    // MARK: - macOS body
+
+    #if os(macOS)
+    /// macOS-native layout: header row + list + no NavigationStack chrome.
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "prompt.template.picker.title",
+                            defaultValue: "Choose a Template"))
+                    .font(.headline)
+                Spacer()
+                Button(String(localized: "prompt.template.picker.cancel",
+                              defaultValue: "Cancel")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            List {
+                Section(String(localized: "prompt.template.picker.section.templates",
+                               defaultValue: "Templates")) {
+                    ForEach(SummarizationPromptSeeder.standardTemplates.dropFirst()) { template in
+                        Button {
+                            onSelect(template)
+                            dismiss()
+                        } label: {
+                            TemplateRow(template: template)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Section {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Label(
+                            String(localized: "prompt.template.picker.scratch",
+                                   defaultValue: "Start from Scratch"),
+                            systemImage: "square.and.pencil"
+                        )
+                    }
+                }
+            }
+            .listStyle(.plain)
+        }
+        .frame(minWidth: 420, minHeight: 340)
+    }
+    #endif
+
+    // MARK: - iOS body
+
+    #if os(iOS)
+    private var iOSBody: some View {
         NavigationStack {
             List {
                 Section(String(localized: "prompt.template.picker.section.templates",
                                defaultValue: "Templates")) {
-                    // Skip the first template (Standard Summary = general; not a structured template to copy from)
                     ForEach(SummarizationPromptSeeder.standardTemplates.dropFirst()) { template in
                         Button {
                             onSelect(template)
@@ -420,9 +489,7 @@ struct TemplatePickerSheet: View {
                 String(localized: "prompt.template.picker.title",
                        defaultValue: "Choose a Template")
             )
-            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "prompt.template.picker.cancel",
@@ -432,12 +499,9 @@ struct TemplatePickerSheet: View {
                 }
             }
         }
-        #if os(iOS)
         .presentationDetents([.medium, .large])
-        #else
-        .frame(minWidth: 420, minHeight: 340)
-        #endif
     }
+    #endif
 }
 
 // MARK: - TemplateRow

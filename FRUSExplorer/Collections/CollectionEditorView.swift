@@ -112,6 +112,31 @@ struct CollectionEditorView: View {
             #endif
         }
         .sheet(isPresented: $showTimeline) {
+            #if os(macOS)
+            // macOS: plain content + bottom button bar (no NavigationStack chrome)
+            VStack(spacing: 0) {
+                DocumentTimelineView(
+                    items: sortedEntries.map {
+                        DocumentTimelineView.Item(
+                            volumeId: $0.volumeId,
+                            documentId: $0.documentId,
+                            header: $0.documentId
+                        )
+                    }
+                )
+                Divider()
+                HStack {
+                    Spacer()
+                    Button(String(localized: "common.done", defaultValue: "Done")) {
+                        showTimeline = false
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+            .frame(minWidth: 480, minHeight: 440)
+            #else
             NavigationStack {
                 DocumentTimelineView(
                     items: sortedEntries.map {
@@ -125,9 +150,7 @@ struct CollectionEditorView: View {
                 .navigationTitle(
                     String(localized: "timeline.sheet.title", defaultValue: "Timeline")
                 )
-                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
-                #endif
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(String(localized: "common.done", defaultValue: "Done")) {
@@ -136,8 +159,6 @@ struct CollectionEditorView: View {
                     }
                 }
             }
-            #if os(macOS)
-            .frame(minWidth: 480, minHeight: 440)
             #endif
         }
     }

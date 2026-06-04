@@ -2310,15 +2310,18 @@ struct CorpusBrowserWindowView: View {
         }
         .frame(minWidth: 540, minHeight: 440)
         .sheet(isPresented: $showPeopleSheet) {
-            NavigationStack {
+            VStack(spacing: 0) {
                 PersonIndexView()
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button(String(localized: "common.done", defaultValue: "Done")) {
-                                showPeopleSheet = false
-                            }
-                        }
+                Divider()
+                HStack {
+                    Spacer()
+                    Button(String(localized: "common.done", defaultValue: "Done")) {
+                        showPeopleSheet = false
                     }
+                    .keyboardShortcut(.defaultAction)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
             .frame(minWidth: 480, minHeight: 520)
         }
@@ -2410,25 +2413,23 @@ private struct SubseriesVolumeListView: View {
             case .detail(let vol):
                 CorpusVolumeDetailSheet(volume: vol)
             case .graph(let vol):
-                NavigationStack {
+                // macOS: remove NavigationStack chrome; Done button in bottom bar
+                VStack(spacing: 0) {
                     VolumeConnectionGraphView(volumeId: vol.volumeId)
                         .environment(appState)
-                        .navigationTitle(vol.title)
-                        #if os(iOS)
-                        .navigationBarTitleDisplayMode(.inline)
-                        #endif
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button(String(localized: "corpus.graph.done",
-                                              defaultValue: "Done")) {
-                                    sheetContent = nil
-                                }
-                            }
+                    Divider()
+                    HStack {
+                        Spacer()
+                        Button(String(localized: "corpus.graph.done",
+                                      defaultValue: "Done")) {
+                            sheetContent = nil
                         }
+                        .keyboardShortcut(.defaultAction)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                 }
-                #if os(macOS)
                 .frame(minWidth: 680, minHeight: 520)
-                #endif
             }
         }
     }
@@ -2524,14 +2525,23 @@ private struct CorpusVolumeDetailSheet: View {
     private let parser = FRUSDocumentParser()
 
     var body: some View {
-        NavigationStack {
+        // macOS-native layout: title + Close button in header row, content below.
+        // NavigationStack is not appropriate inside a sheet on macOS.
+        VStack(spacing: 0) {
+            HStack(alignment: .center) {
+                Text(volume.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button("Close") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            Divider()
+
             phaseContent
-                .navigationTitle(volume.title)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { dismiss() }
-                    }
-                }
         }
         .frame(minWidth: 500, minHeight: 440)
         .task { await determinePhase() }
@@ -2967,7 +2977,17 @@ private struct CorpusSectionDocumentListView: View {
     @State private var isLoading = true
 
     var body: some View {
-        NavigationStack {
+        // macOS-native layout: section title row + content + Done button bar.
+        // NavigationStack is not appropriate inside a sheet on macOS.
+        VStack(spacing: 0) {
+            Text(section.title)
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+            Divider()
+
             Group {
                 if isLoading {
                     ProgressView("Loading…")
@@ -2987,25 +3007,29 @@ private struct CorpusSectionDocumentListView: View {
                             DocumentRowLabel(doc: doc)
                         }
                         .buttonStyle(.plain)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        .contextMenu {
                             Button {
                                 appState.currentGraphEntry = doc
                                 openWindow(id: "frus.crossReferenceGraph")
                             } label: {
-                                Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
+                                Label("Show Cross-Reference Graph",
+                                      systemImage: "point.3.connected.trianglepath.dotted")
                             }
-                            .tint(.indigo)
                         }
                     }
                     .listStyle(.inset)
                 }
             }
-            .navigationTitle(section.title)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
         .frame(minWidth: 460, minHeight: 400)
         .task { await loadDocuments() }
