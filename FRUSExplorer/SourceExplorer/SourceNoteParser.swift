@@ -13,20 +13,23 @@ import Foundation
 /// The result of parsing a FRUS source note string.
 ///
 /// Cases map to the full range of archival citation patterns observed across the
-/// FRUS corpus from 1905 to the present (~265,000 source notes analysed).
+/// FRUS corpus from 1905 to the present (~322,000 source notes analysed).
 ///
 /// ## Era map
 /// | Era | Volume range | Format | Example |
 /// |-----|-------------|--------|---------|
 /// | File No. | 1907–1920s | `File No. 3767/5.` | State Dept. bare file number |
-/// | Decimal | 1910–1950s | `740.001121/10-1646` | Central decimal file |
+/// | Decimal | 1910–early 1950s | `740.001121/10-1646` | Central decimal file |
+/// | Subject-numeric | 1963–1973 | `Source: …, Central Files 1963–66, POL 14` | Subject-numeric files |
+/// | CFPF | 1973–1979 | `Source: …, Central Foreign Policy File, P840114–1808` | P/D/N-Reel |
 /// | Narrative | 1950s–present | `Source: REPO, RG N, …` | Fully structured |
 ///
 /// ## NARA queryability
 /// - `.naraCollection` — queryable by `description.recordGroupNumber` + lot/series
-/// - `.lotFile` — queryable by free-text lot number search
+/// - `.lotFile` — queryable by free-text lot number search (RG 59 or RG 84)
 /// - `.presidentialLibrary` — queryable by library name + collection keywords
-/// - `.centralFiles` / `.stateDepartmentFile` — use static URL path (no API key needed)
+/// - `.centralFiles` — use static URL path (no API key needed)
+/// - `.cfpfFile` — link to CFPF FAQ PDF + AAD Electronic Telegrams database
 /// - `.ciaCollection` — not in NARA catalog
 /// - `.previouslyPublished`, `.foreignGovernmentArchive`, `.unrecognized` — no query
 ///
@@ -36,15 +39,23 @@ import Foundation
 ///   1.2 — Session 130: added `.naraCollection`, `.ciaCollection`; enriched `.lotFile`
 ///          with `recordGroup`; fixed era-1/2/3 pattern gaps; RG extraction from all
 ///          narrative notes; front-matter support via `ParsedVolumeSources`
+///   1.3 — Session 151: added `.cfpfFile`; fixed lot file regex to handle F-designator
+///          (RG 84 post records); expanded period routing to pre-1906, 1906–1910,
+///          1963–1973; added AAD Electronic Telegrams detection
 public enum ParsedSourceNote: Sendable, Equatable {
 
     /// State Department central files identified by a decimal file number
     /// (e.g. `740.001121/10-1646`) or a bare "File No." number.
-    /// Used in volumes from 1910–early 1950s.
+    /// Used in volumes from 1789–early 1963.
     case centralFiles(recordGroup: String, fileIdentifier: String?)
 
-    /// State Department lot file. Includes the RG number when it can be extracted
-    /// (always RG 59 for State Dept. lot files).
+    /// State Department Central Foreign Policy Files (CFPF), 1973–1979.
+    /// Records are on P-Reels, D-Reels, and N-Reels, and in the AAD
+    /// Electronic Telegrams database.
+    case cfpfFile(fileIdentifier: String?)
+
+    /// State Department lot file. Includes the RG number when it can be extracted.
+    /// D-designator lot files belong to RG 59; F-designator lot files belong to RG 84.
     case lotFile(recordGroup: String?, lotNumber: String, fileIdentifier: String?)
 
     /// Presidential library collection (Kennedy, Johnson, Nixon, Ford, Carter,
@@ -125,24 +136,36 @@ public struct ArchiveCitation: Sendable {
 /// 1. `File No.` variants (era 1) — bare inline file number → `.centralFiles`
 /// 2. Inline lot file (`XYZ Files: Lot …`) → `.lotFile`
 /// 3. Decimal file number (`862S.01/10-1646`) → `.centralFiles`
-/// 4. Full narrative (`Source: …`) → repository-based dispatch:
-///    - National Archives + RG number → `.naraCollection`
+/// 4. Bare file number variant (`5727/248.`) → `.centralFiles`
+/// 5. AAD Electronic Telegrams reference → `.cfpfFile`
+/// 6. Full narrative beginning with "Source:":
 ///    - CIA Job number → `.ciaCollection`
+///    - CFPF / P-Reel / D-Reel / N-Reel → `.cfpfFile`
+///    - National Archives + RG number → `.naraCollection`
 ///    - Lot file phrase → `.lotFile`
 ///    - Presidential library name → `.presidentialLibrary`
 ///    - State Dept. central files → `.centralFiles`
 ///    - Foreign archive → `.foreignGovernmentArchive`
 ///    - Previously published → `.previouslyPublished`
-/// 5. Fallback → `.unrecognized`
+/// 7. Fallback → `.unrecognized`
 ///
 /// ## Footnote citation extraction
 /// `extractCitations(from:)` finds embedded archival citations in editorial note prose.
+///
+/// ## Lot file designators
+/// - **D-designator** (e.g. `63D135`, `68 D 277`): RG 59 — State Dept. lot files
+/// - **F-designator** (e.g. `55F44`, `56 F 28`): RG 84 — diplomatic post records
 ///
 /// Version history:
 ///   1.0 — Session 23: initial implementation
 ///   1.1 — Session 118: `tryDecimalFile()` extracts only regex-matched range
 ///   1.2 — Session 130: added NARA/CIA cases; fixed era-1/2/3 patterns; RG extraction;
 ///          added `extractCitations(from:)` for footnote prose
+///   1.3 — Session 151: fixed `lotFileRegex` to handle F-designator (RG 84);
+///          added `lotFileRecordGroup(_:)` helper; added `.cfpfFile` routing for
+///          Central Foreign Policy Files and AAD Electronic Telegrams;
+///          moved CFPF check before tryNARACollection so CFPF notes are correctly
+///          classified rather than falling into `.naraCollection`
 public struct SourceNoteParser {
 
     public init() {}
@@ -169,6 +192,9 @@ public struct SourceNoteParser {
 
         // Era 1 variant — bare "File N/N" or bare decimal without letters
         if let result = tryBareFileNumber(trimmed) { return result }
+
+        // AAD Electronic Telegrams reference (does not start with "Source:")
+        if let result = tryAADTelegrams(trimmed) { return result }
 
         // Full narrative beginning with "Source:"
         if trimmed.hasPrefix("Source:") {
@@ -271,7 +297,8 @@ public struct SourceNoteParser {
         let afterLot = String(text[lotRange.upperBound...]).trimmingCharacters(in: .whitespaces)
         let (lotNumber, box) = splitLotAndBox(afterLot)
         guard !lotNumber.isEmpty else { return nil }
-        return .lotFile(recordGroup: "RG-59", lotNumber: lotNumber, fileIdentifier: box)
+        let rg = lotFileRecordGroup(lotNumber)
+        return .lotFile(recordGroup: rg, lotNumber: lotNumber, fileIdentifier: box)
     }
 
     // MARK: - Era 2: Decimal File
@@ -307,6 +334,22 @@ public struct SourceNoteParser {
         return .centralFiles(recordGroup: "RG-59", fileIdentifier: String(text[r]))
     }
 
+    // MARK: - AAD Electronic Telegrams (CFPF)
+
+    /// Handles source notes referencing the Access to Archival Databases (AAD)
+    /// Electronic Telegrams database, which covers CFPF records from 1973–1979.
+    /// These notes do not start with "Source:" and would otherwise fall through
+    /// to `.unrecognized`.
+    ///
+    /// Examples:
+    /// - "Part of the on-line Access to Archival Databases: Electronic Telegrams, P-Reel I…"
+    /// - "Part of the on-line Access to Archive Databases (http://aad.archives.gov): …"
+    private func tryAADTelegrams(_ text: String) -> ParsedSourceNote? {
+        guard text.range(of: "Access to Archiv", options: .caseInsensitive) != nil
+                || text.contains("aad.archives.gov") else { return nil }
+        return .cfpfFile(fileIdentifier: extractCFPFIdentifier(from: text))
+    }
+
     // MARK: - Full Narrative (Era 3c / Era 4)
 
     private static let rgRegex: NSRegularExpression? = try? NSRegularExpression(
@@ -314,8 +357,13 @@ public struct SourceNoteParser {
         options: .caseInsensitive
     )
 
+    /// Matches lot file numbers with D- or F-designator across all whitespace variants.
+    ///
+    /// Handles:
+    /// - D-designator (RG 59): `63D135`, `68 D 277`, `72D316`
+    /// - F-designator (RG 84): `55F44`, `56 F 28`, `53 F 11`, `56F 158`
     private static let lotFileRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bLot\s+([\w\s\-]+?D\s*\d+)\b"#,
+        pattern: #"\bLot\s+(\d{2,3}\s*[A-Za-z]\s*\d+)\b"#,
         options: .caseInsensitive
     )
 
@@ -354,6 +402,31 @@ public struct SourceNoteParser {
         return String(text[r])
     }
 
+    /// Extracts a CFPF record identifier (P/D/N reel number) from text.
+    ///
+    /// Examples: `P840114–1808`, `D740218–0840`, `N760031–0012`
+    private func extractCFPFIdentifier(from text: String) -> String? {
+        let pattern = #"\b([PDN]\d{6}[–\-]\d{4})\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let r = Range(match.range(at: 1), in: text) else { return nil }
+        return String(text[r])
+    }
+
+    /// Determines the record group for a lot file based on its letter designator.
+    ///
+    /// - D-designator → RG 59 (State Dept. central files lot series)
+    /// - F-designator → RG 84 (State Dept. diplomatic post records)
+    /// - Other → RG 59 (conservative default)
+    private func lotFileRecordGroup(_ lotNumber: String) -> String {
+        // Look for a pattern like: digits + optional space + F + optional space + digits
+        let fPattern = #"\d\s*[Ff]\s*\d"#
+        if lotNumber.range(of: fPattern, options: .regularExpression) != nil {
+            return "RG-84"
+        }
+        return "RG-59"
+    }
+
     private func parseNarrative(_ text: String) -> ParsedSourceNote {
         let body = String(text.dropFirst("Source:".count))
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -365,6 +438,11 @@ public struct SourceNoteParser {
 
         // CIA Job number → .ciaCollection
         if let jobResult = tryCIACollection(body) { return jobResult }
+
+        // Central Foreign Policy Files / P-Reel / D-Reel / N-Reel → .cfpfFile
+        // (checked BEFORE tryNARACollection because CFPF notes include "RG 59"
+        //  and would otherwise be misclassified as .naraCollection)
+        if let cfpfResult = tryCFPFCollection(body) { return cfpfResult }
 
         // National Archives or WNRC with an RG number → .naraCollection
         if let naraResult = tryNARACollection(body) { return naraResult }
@@ -445,6 +523,36 @@ public struct SourceNoteParser {
         return .ciaCollection(jobNumber: jobNumber, box: box, description: body)
     }
 
+    // MARK: - CFPF (Central Foreign Policy Files 1973–1979)
+
+    /// Returns true when the body contains CFPF-specific identifiers.
+    ///
+    /// Patterns detected:
+    /// - "Central Foreign Policy File" — literal series name used in FRUS citations
+    /// - P-Reel / D-Reel / N-Reel — microfilm reel designations
+    /// - P######–#### / D######–#### / N######–#### — specific reel record identifiers
+    private func matchesCFPF(_ body: String) -> Bool {
+        let literalPatterns = [
+            "Central Foreign Policy File",
+            "P-Reel",
+            "D-Reel",
+            "N-Reel",
+        ]
+        for pat in literalPatterns {
+            if body.range(of: pat, options: .caseInsensitive) != nil { return true }
+        }
+        // Reel identifier: letter + 6 digits + en-dash or hyphen + 4 digits
+        if body.range(of: #"\b[PDN]\d{6}[–\-]\d{4}\b"#, options: .regularExpression) != nil {
+            return true
+        }
+        return false
+    }
+
+    private func tryCFPFCollection(_ body: String) -> ParsedSourceNote? {
+        guard matchesCFPF(body) else { return nil }
+        return .cfpfFile(fileIdentifier: extractCFPFIdentifier(from: body))
+    }
+
     // MARK: - Lot File (narrative)
 
     private func tryNarrativeLotFile(_ body: String) -> ParsedSourceNote? {
@@ -452,9 +560,10 @@ public struct SourceNoteParser {
         let afterLot = String(body[lotKeyRange.upperBound...])
         let (lotNumber, box) = splitLotAndBox(afterLot)
         guard !lotNumber.isEmpty else { return nil }
-        // Always RG 59 for State Dept. lot files; other RG lot files would have been
-        // caught by tryNARACollection() already (they include an explicit RG number).
-        return .lotFile(recordGroup: "RG-59", lotNumber: lotNumber, fileIdentifier: box)
+        // Determine RG from lot file letter designator:
+        // F-designator → RG 84 (post records); D-designator and others → RG 59
+        let rg = lotFileRecordGroup(lotNumber)
+        return .lotFile(recordGroup: rg, lotNumber: lotNumber, fileIdentifier: box)
     }
 
     // MARK: - Presidential Library

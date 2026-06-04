@@ -20,8 +20,16 @@ struct SourceExplorerTests {
 
     @Test("ParserTest: each provenance type is correctly identified from representative source notes")
     func parserRecognizesAllProvenanceTypes() {
-        // Era 4 — State Dept. central files (full narrative)
-        let centralNarrative = "Source: Department of State, Central Foreign Policy File, Electronic Telegrams, D891080-0768. Secret; Exdis. Sent Immediate."
+        // CFPF — Central Foreign Policy File with reel identifier
+        let cfpfNarrative = "Source: Department of State, Central Foreign Policy File, Electronic Telegrams, D891080-0768. Secret; Exdis. Sent Immediate."
+        if case .cfpfFile(_) = parser.parse(cfpfNarrative) {
+            // pass — correctly classified as CFPF
+        } else {
+            Issue.record("Expected .cfpfFile for CFPF narrative, got \(parser.parse(cfpfNarrative))")
+        }
+
+        // Era 4 — State Dept. central files (non-CFPF full narrative)
+        let centralNarrative = "Source: Department of State, Central Files 1967-69, POL 7 VIET S. Confidential."
         if case .centralFiles(let rg, _) = parser.parse(centralNarrative) {
             #expect(rg == "RG-59")
         } else {
@@ -84,7 +92,8 @@ struct SourceExplorerTests {
             // Simply verify no crash and result is a valid case
             switch result {
             case .centralFiles, .lotFile, .presidentialLibrary, .foreignGovernmentArchive,
-                    .previouslyPublished, .unrecognized, .naraCollection, .ciaCollection:
+                    .previouslyPublished, .unrecognized, .naraCollection, .ciaCollection,
+                    .cfpfFile:
                 break // any structured result is acceptable
             }
             _ = era // suppress unused warning
@@ -203,7 +212,147 @@ struct SourceExplorerTests {
         #expect(variants[1] == "123 D 4567")
     }
 
+    // MARK: - CFPFTest
+
+    @Test("CFPF: 'Central Foreign Policy File' narrative parses as .cfpfFile")
+    func cfpfNarrativeParsesCFPF() {
+        let note = "Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Secret."
+        let result = parser.parse(note)
+        guard case .cfpfFile(let fid) = result else {
+            Issue.record("Expected .cfpfFile, got \(result)")
+            return
+        }
+        #expect(fid == "P840114–1808")
+    }
+
+    @Test("CFPF: D-Reel identifier parses as .cfpfFile")
+    func cfpfDReelParsesCFPF() {
+        let note = "Source: National Archives, RG 59, Central Foreign Policy File, D740218–0840. Confidential."
+        guard case .cfpfFile(let fid) = parser.parse(note) else {
+            Issue.record("Expected .cfpfFile for D-Reel note")
+            return
+        }
+        #expect(fid == "D740218–0840")
+    }
+
+    @Test("CFPF: AAD Electronic Telegrams reference parses as .cfpfFile")
+    func aadTelegramParsesCFPF() {
+        let note = "Part of the on-line Access to Archival Databases: Electronic Telegrams, P-Reel I."
+        guard case .cfpfFile(_) = parser.parse(note) else {
+            Issue.record("Expected .cfpfFile for AAD telegram note, got \(parser.parse(note))")
+            return
+        }
+    }
+
+    @Test("CFPF: 'Central Foreign Policy Files' (plural) also parses as .cfpfFile")
+    func cfpfPluralParsesCFPF() {
+        let note = "Source: National Archives, RG 59, Central Foreign Policy Files. Secret; Exdis."
+        guard case .cfpfFile(_) = parser.parse(note) else {
+            Issue.record("Expected .cfpfFile for CFPF plural note, got \(parser.parse(note))")
+            return
+        }
+    }
+
+    // MARK: - LotFileDesignatorTest
+
+    @Test("LotFile: F-designator lot file returns RG-84")
+    func fDesignatorLotFileIsRG84() {
+        let note = "Cairo Legation Files: Lot 52F34"
+        guard case .lotFile(let rg, let lot, _) = parser.parse(note) else {
+            Issue.record("Expected .lotFile for F-designator note, got \(parser.parse(note))")
+            return
+        }
+        #expect(rg == "RG-84")
+        #expect(lot.contains("52F34") || lot.contains("52 F 34"))
+    }
+
+    @Test("LotFile: F-designator with spaces returns RG-84")
+    func fDesignatorWithSpacesIsRG84() {
+        let note = "Moscow Embassy Files: Lot 53 F 11"
+        guard case .lotFile(let rg, _, _) = parser.parse(note) else {
+            Issue.record("Expected .lotFile, got \(parser.parse(note))")
+            return
+        }
+        #expect(rg == "RG-84")
+    }
+
+    @Test("LotFile: D-designator lot file returns RG-59")
+    func dDesignatorLotFileIsRG59() {
+        let note = "SPA Files: Lot 63D135, Box 12"
+        guard case .lotFile(let rg, _, _) = parser.parse(note) else {
+            Issue.record("Expected .lotFile for D-designator note, got \(parser.parse(note))")
+            return
+        }
+        #expect(rg == "RG-59")
+    }
+
     // MARK: - DecimalFilePeriodTest
+
+    @Test("DecimalPeriod: pre-1906 year routes to 1789-1906 NARA page")
+    func pre1906RoutesTo1789Period() async {
+        let client = NARACatalogClient()
+        let url = client.decimalFilePeriodURL(year: 1898)
+        #expect(url.absoluteString.contains("1789-1906"))
+        let label = client.decimalFilePeriodLabel(year: 1898)
+        #expect(label == "1789–1906")
+    }
+
+    @Test("DecimalPeriod: year 1908 routes to 1906-1910 NARA page")
+    func year1908RoutesTo1906Period() async {
+        let client = NARACatalogClient()
+        let url = client.decimalFilePeriodURL(year: 1908)
+        #expect(url.absoluteString.contains("1906-1910"))
+        let label = client.decimalFilePeriodLabel(year: 1908)
+        #expect(label == "1906–1910")
+    }
+
+    @Test("DecimalPeriod: year 1965 routes to 1963-1973 NARA page")
+    func year1965RoutesTo1963Period() async {
+        let client = NARACatalogClient()
+        let url = client.decimalFilePeriodURL(year: 1965)
+        #expect(url.absoluteString.contains("1963-1973"))
+        let label = client.decimalFilePeriodLabel(year: 1965)
+        #expect(label == "1963–1973")
+    }
+
+    @Test("DecimalPeriod: filing manual for 1947 returns 1910-49 PDF")
+    func filingManual1947Returns191049PDF() async {
+        let client = NARACatalogClient()
+        let url = client.filingManualURL(year: 1947)
+        #expect(url != nil)
+        #expect(url!.absoluteString.contains("manual-1910-49.pdf"))
+    }
+
+    @Test("DecimalPeriod: filing manual for 1963 returns 1963 classification handbook")
+    func filingManual1963Returns1963Handbook() async {
+        let client = NARACatalogClient()
+        let url = client.filingManualURL(year: 1963)
+        #expect(url != nil)
+        #expect(url!.absoluteString.contains("1963.pdf"))
+    }
+
+    @Test("DecimalPeriod: filing manual for 1970 returns 1965-1973 handbook")
+    func filingManual1970Returns19651973Handbook() async {
+        let client = NARACatalogClient()
+        let url = client.filingManualURL(year: 1970)
+        #expect(url != nil)
+        #expect(url!.absoluteString.contains("1965-1973.pdf"))
+    }
+
+    @Test("DecimalPeriod: filing manual for 1800 returns nil")
+    func filingManual1800ReturnsNil() async {
+        let client = NARACatalogClient()
+        let url = client.filingManualURL(year: 1800)
+        #expect(url == nil)
+    }
+
+    @Test("DecimalPeriod: CFPF FAQ and AAD URLs are archives.gov and aad.archives.gov")
+    func cfpfURLsAreCorrect() async {
+        let client = NARACatalogClient()
+        #expect(client.cfpfFAQURL.absoluteString.contains("archives.gov"))
+        #expect(client.cfpfFAQURL.absoluteString.contains("cfpf-faqs.pdf"))
+        #expect(client.cfpfAADURL.absoluteString.contains("aad.archives.gov"))
+    }
 
     @Test("DecimalPeriod: year 1946 routes to 1945-1949 NARA page")
     func year1946RoutesToCorrectPeriod() async {

@@ -283,6 +283,18 @@ struct MacSourceExplorerView: View {
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
 
+                case .cfpfFile(let fileId):
+                    provenanceRow(label: String(localized: "source.explorer.cfpf.type",
+                                               defaultValue: "Type"),
+                                  value: String(localized: "source.explorer.cfpf.typeValue",
+                                               defaultValue: "State Dept. Central Foreign Policy File (1973–1979)"))
+                    provenanceRow(label: "Record Group", value: "RG 59")
+                    if let fid = fileId {
+                        provenanceRow(label: String(localized: "source.explorer.cfpf.fileId",
+                                                   defaultValue: "File Identifier"),
+                                      value: fid)
+                    }
+
                 case .unrecognized:
                     provenanceRow(label: String(localized: "source.explorer.unrecognized.type",
                                                defaultValue: "Type"),
@@ -371,6 +383,31 @@ struct MacSourceExplorerView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+        case .cfpfFile:
+            GroupBox(header) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Button {
+                        openURL(client.cfpfFAQURL)
+                    } label: {
+                        Label(String(localized: "source.explorer.cfpf.faqLink",
+                                     defaultValue: "CFPF Research Guide (PDF)"),
+                              systemImage: "doc.fill")
+                    }
+                    Button {
+                        openURL(client.cfpfAADURL)
+                    } label: {
+                        Label(String(localized: "source.explorer.cfpf.aadLink",
+                                     defaultValue: "Search AAD Electronic Telegrams Database"),
+                              systemImage: "arrow.up.right.square")
+                    }
+                    Text(String(localized: "source.explorer.cfpf.note",
+                                defaultValue: "CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) at NARA and as electronic telegrams in the AAD database. No API key is required for either resource."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
         case .unrecognized:
@@ -480,9 +517,11 @@ struct MacSourceExplorerView: View {
             manualQuery = lotNumber
             guard hasAPIKey else { return }
             // Use variantControlNumber_is with three normalised forms; falls back to
-            // phrase query if all variants return zero results.
+            // phrase query if all variants return zero results. Pass the actual RG so
+            // F-designator lot files (RG 84 post records) are queried correctly.
+            let rgToUse = (rg ?? "RG-59").replacingOccurrences(of: "RG-", with: "")
             await fetchResult {
-                let results = try await client.resolveLotFileVariants(lotNumber: lotNumber)
+                let results = try await client.resolveLotFileVariants(lotNumber: lotNumber, recordGroup: rgToUse)
                 return results.first
             }
 

@@ -104,6 +104,10 @@ public enum NARACatalogError: Error, LocalizedError {
 ///   1.3 — Session 150: `variantControlNumber_is` lot file resolution; static URL helpers
 ///          for decimal file period routing, presidential library fallbacks, and CIA CREST;
 ///          specific error cases for rate limiting (429) and key rejection (403)
+///   1.4 — Session 151: expanded `decimalFilePeriodURL/Label` to cover 1789–1906, 1906–1910,
+///          and 1963–1973 periods; added `filingManualURL(year:)` for per-period PDF filing
+///          manuals; added `cfpfFAQURL`, `cfpfAADURL`, `resolveRG84LotFile(lotNumber:)`;
+///          added `recordGroup` parameter to `resolveLotFileVariants`
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
@@ -147,40 +151,89 @@ public actor NARACatalogClient {
 
     // MARK: - Decimal File Period Routing (static URLs — no API call)
 
-    /// Returns the NARA finding-aid page URL for the State Dept. decimal file
+    /// Returns the NARA finding-aid page URL for the State Dept. central file
     /// period that covers the given document year.
     ///
-    /// NARA publishes seven period-specific research pages for the 1910–1963
-    /// central decimal files, each with box lists, purport indexes, and the
-    /// applicable filing manual. No API key is required.
+    /// NARA publishes period-specific research pages for the State Dept. central
+    /// files spanning 1789–1973. No API key is required.
+    ///
+    /// ## Period coverage
+    /// | Years | Filing system | NARA page |
+    /// |---|---|---|
+    /// | 1789–1906 | Numerical/register | `rg-59-central-files/1789-1906` |
+    /// | 1906–1910 | Numerical (transitional) | `rg-59-central-files/1906-1910` |
+    /// | 1910–1963 | Central decimal files | `rg-59-central-files/1910-1963/<period>` |
+    /// | 1963–1973 | Subject-numeric files | `rg-59-central-files/1963-1973` |
     ///
     /// - Parameter year: The year the document was created (from the dateline).
-    /// - Returns: URL to the appropriate NARA decimal-files research page.
+    /// - Returns: URL to the appropriate NARA research page.
     public nonisolated func decimalFilePeriodURL(year: Int) -> URL {
-        let slug: String
+        let base = "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files"
         switch year {
-        case ..<1930:     slug = "1910-1929"
-        case 1930...1939: slug = "1930-1939"
-        case 1940...1944: slug = "1940-1944"
-        case 1945...1949: slug = "1945-1949"
-        case 1950...1954: slug = "1950-1954"
-        case 1955...1959: slug = "1955-1959"
-        default:          slug = "1960-1963"   // 1960–Jan 1963
+        case ..<1906:
+            return URL(string: "\(base)/1789-1906")!
+        case 1906...1909:
+            return URL(string: "\(base)/1906-1910")!
+        case 1910...1929:
+            return URL(string: "\(base)/1910-1963/1910-1929")!
+        case 1930...1939:
+            return URL(string: "\(base)/1910-1963/1930-1939")!
+        case 1940...1944:
+            return URL(string: "\(base)/1910-1963/1940-1944")!
+        case 1945...1949:
+            return URL(string: "\(base)/1910-1963/1945-1949")!
+        case 1950...1954:
+            return URL(string: "\(base)/1910-1963/1950-1954")!
+        case 1955...1959:
+            return URL(string: "\(base)/1910-1963/1955-1959")!
+        case 1960...1962:
+            return URL(string: "\(base)/1910-1963/1960-1963")!
+        default:   // 1963–1973 subject-numeric
+            return URL(string: "\(base)/1963-1973")!
         }
-        return URL(string: "https://www.archives.gov/research/foreign-policy/"
-                   + "state-dept/rg-59-central-files/1910-1963/\(slug)")!
     }
 
-    /// Human-readable label for the decimal-file period covering `year`.
+    /// Human-readable label for the central-file period covering `year`.
     public nonisolated func decimalFilePeriodLabel(year: Int) -> String {
         switch year {
-        case ..<1930:     return "1910–1929"
+        case ..<1906:     return "1789–1906"
+        case 1906...1909: return "1906–1910"
+        case 1910...1929: return "1910–1929"
         case 1930...1939: return "1930–1939"
         case 1940...1944: return "1940–1944"
         case 1945...1949: return "1945–1949"
         case 1950...1954: return "1950–1954"
         case 1955...1959: return "1955–1959"
-        default:          return "1960–January 1963"
+        case 1960...1962: return "1960–January 1963"
+        default:          return "1963–1973"
+        }
+    }
+
+    /// Returns the NARA filing manual PDF URL for the given document year, or
+    /// `nil` when no filing manual applies (e.g. pre-1910 or post-1973).
+    ///
+    /// NARA publishes scanned filing manuals for each filing system. These
+    /// PDFs explain how records are classified and organized within each period.
+    ///
+    /// - Parameter year: Document year.
+    /// - Returns: URL to the filing manual PDF, or `nil`.
+    public nonisolated func filingManualURL(year: Int) -> URL? {
+        let base = "https://www.archives.gov/files/research/foreign-policy/state-dept/finding-aids"
+        switch year {
+        case 1910...1949:
+            return URL(string: "\(base)/manual-1910-49.pdf")
+        case 1950...1954:
+            return URL(string: "\(base)/manual-1950-59.pdf")
+        case 1955...1959:
+            return URL(string: "\(base)/manual-1955.pdf")
+        case 1960...1962:
+            return URL(string: "\(base)/manual-1960-63.pdf")
+        case 1963:
+            return URL(string: "\(base)/records-classification-handbook-1963.pdf")
+        case 1964...1972:
+            return URL(string: "\(base)/dos-records-classification-handbook-1965-1973.pdf")
+        default:
+            return nil
         }
     }
 
@@ -217,6 +270,38 @@ public actor NARACatalogClient {
         default:
             return URL(string: "https://www.archives.gov/presidential-libraries")!
         }
+    }
+
+    // MARK: - CFPF Static URLs (static — no API call)
+
+    /// URL to the NARA CFPF research guide PDF.
+    ///
+    /// Covers the Central Foreign Policy Files (1973–1979) on P-Reels, D-Reels,
+    /// and N-Reels. No API key required.
+    public nonisolated var cfpfFAQURL: URL {
+        URL(string: "https://www.archives.gov/files/research/foreign-policy/"
+            + "state-dept/rg-59-central-files/cfpf-faqs.pdf")!
+    }
+
+    /// URL to the NARA Access to Archival Databases (AAD) Electronic Telegrams series list.
+    ///
+    /// The AAD database contains the electronic telegrams component of the CFPF.
+    /// No API key required.
+    public nonisolated var cfpfAADURL: URL {
+        URL(string: "https://aad.archives.gov/aad/series-list.jsp?cat=WR43")!
+    }
+
+    /// Returns a NARA Catalog search URL pre-scoped to RG 84 for a given lot number.
+    ///
+    /// Used as the fallback URL for F-designator lot files (RG 84 diplomatic
+    /// post records) when the `variantControlNumber_is` query returns zero results.
+    public nonisolated func resolveRG84LotFile(lotNumber: String) -> URL {
+        var components = URLComponents(string: "\(Self.catalogBase)/search")!
+        components.queryItems = [
+            URLQueryItem(name: "q",                              value: "Lot \(lotNumber)"),
+            URLQueryItem(name: "description.recordGroupNumber",  value: "84"),
+        ]
+        return components.url ?? URL(string: "\(Self.catalogBase)/search")!
     }
 
     // MARK: - CIA Research URL (static — no API call)
@@ -307,17 +392,24 @@ public actor NARACatalogClient {
     /// If all three `variantControlNumber_is` queries return zero results, falls
     /// back to the free-text `searchByLotFile` phrase query as a safety net.
     ///
-    /// - Parameter lotNumber: Raw lot number from the source note. May include
-    ///   "Lot " prefix, spaces, dashes, or similar noise.
+    /// - Parameters:
+    ///   - lotNumber: Raw lot number from the source note. May include "Lot " prefix,
+    ///     spaces, dashes, or similar noise.
+    ///   - recordGroup: NARA record group number. `"59"` for D-designator lot files
+    ///     (State Dept. central files); `"84"` for F-designator lot files (post records).
+    ///     Defaults to `"59"`.
     /// - Returns: Up to 5 matching series descriptions, newest first.
-    public func resolveLotFileVariants(lotNumber: String) async throws -> [NARACatalogResult] {
+    public func resolveLotFileVariants(
+        lotNumber: String,
+        recordGroup: String = "59"
+    ) async throws -> [NARACatalogResult] {
         let variants = Self.lotNumberVariants(from: lotNumber)
 
         for variant in variants {
-            let results = try await searchByVariantControlNumber(variant, recordGroup: "59")
+            let results = try await searchByVariantControlNumber(variant, recordGroup: recordGroup)
             if !results.isEmpty {
                 #if DEBUG
-                print("[SourceExplorer] Lot file '\(variant)' matched \(results.count) result(s)")
+                print("[SourceExplorer] Lot file '\(variant)' (RG \(recordGroup)) matched \(results.count) result(s)")
                 #endif
                 return results
             }
@@ -325,10 +417,10 @@ public actor NARACatalogClient {
 
         // All variantControlNumber_is attempts returned zero — fall back to phrase query.
         #if DEBUG
-        print("[SourceExplorer] variantControlNumber_is found nothing for '\(lotNumber)'; "
-              + "falling back to phrase query")
+        print("[SourceExplorer] variantControlNumber_is found nothing for '\(lotNumber)' "
+              + "(RG \(recordGroup)); falling back to phrase query")
         #endif
-        if let fallback = try? await searchByLotFile(recordGroup: "59", lotNumber: lotNumber) {
+        if let fallback = try? await searchByLotFile(recordGroup: recordGroup, lotNumber: lotNumber) {
             return [fallback]
         }
         return []

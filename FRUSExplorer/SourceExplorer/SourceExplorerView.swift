@@ -44,6 +44,11 @@ import SwiftUI
 ///          file period URLs; presidential library fallback URLs; CIA CREST link; multi-result
 ///          display (up to 5 candidates); specific error messages for 403/429/missing key;
 ///          manual-search fallback link when zero results
+///   1.4 — Session 151: added `.cfpfFile` panel (CFPF FAQ PDF + AAD Electronic Telegrams);
+///          expanded period table in `centralFilesPeriodSection` to include 1789–1906,
+///          1906–1910, and 1963–1973; added per-period filing manual PDF links; fixed
+///          `lotFilePanel` fallback URL for RG 84 F-designator lot files; fixed `load()`
+///          to pass actual record group to `resolveLotFileVariants`
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -127,6 +132,9 @@ struct SourceExplorerView: View {
         case .centralFiles(let rg, let fileId):
             centralFilesPanel(recordGroup: rg, fileIdentifier: fileId)
 
+        case .cfpfFile(let fileId):
+            cfpfPanel(fileIdentifier: fileId)
+
         case .lotFile(let rg, let lotNumber, let fileId):
             lotFilePanel(recordGroup: rg, lotNumber: lotNumber, fileIdentifier: fileId)
 
@@ -203,6 +211,60 @@ struct SourceExplorerView: View {
         }
     }
 
+    // MARK: - CFPF Panel (Central Foreign Policy Files 1973–1979)
+
+    /// Panel for documents sourced from the State Dept. Central Foreign Policy Files (CFPF).
+    ///
+    /// CFPF records are on P-Reels, D-Reels, and N-Reels at NARA, and the electronic
+    /// telegrams subset is searchable via the AAD database. No API key is required.
+    @ViewBuilder
+    private func cfpfPanel(fileIdentifier: String?) -> some View {
+        Section(String(localized: "source.explorer.provenance.header",
+                       defaultValue: "Provenance")) {
+            LabeledContent(
+                String(localized: "source.explorer.cfpf.type", defaultValue: "Type"),
+                value: String(localized: "source.explorer.cfpf.typeValue",
+                              defaultValue: "State Dept. Central Foreign Policy File (1973–1979)")
+            )
+            LabeledContent(
+                String(localized: "source.explorer.cfpf.rg", defaultValue: "Record Group"),
+                value: "RG 59"
+            )
+            if let fileIdentifier {
+                LabeledContent(
+                    String(localized: "source.explorer.cfpf.fileId",
+                           defaultValue: "File Identifier"),
+                    value: fileIdentifier
+                )
+            }
+        }
+        Section(String(localized: "source.explorer.cfpf.resources.header",
+                       defaultValue: "Research Resources")) {
+            Button {
+                openURL(client.cfpfFAQURL)
+            } label: {
+                Label(
+                    String(localized: "source.explorer.cfpf.faqLink",
+                           defaultValue: "CFPF Research Guide (PDF)"),
+                    systemImage: "doc.fill"
+                )
+            }
+            Button {
+                openURL(client.cfpfAADURL)
+            } label: {
+                Label(
+                    String(localized: "source.explorer.cfpf.aadLink",
+                           defaultValue: "Search AAD Electronic Telegrams Database"),
+                    systemImage: "arrow.up.right.square"
+                )
+            }
+            Text(String(localized: "source.explorer.cfpf.note",
+                        defaultValue: "CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) at NARA and as electronic telegrams in the AAD database. No API key is required for either resource."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     // MARK: - Central Files Panel
 
     @ViewBuilder
@@ -254,11 +316,11 @@ struct SourceExplorerView: View {
         }
     }
 
-    /// Period-specific finding-aid section for RG-59 decimal and central files.
+    /// Period-specific finding-aid section for RG-59 central files (1789–1973).
     ///
-    /// When `documentYear` is available, highlights the matching period and links
-    /// to the NARA finding-aid page for that period. When unavailable, shows the
-    /// full period table so the researcher can locate the right page manually.
+    /// When `documentYear` is available, shows the matching filing period, a link
+    /// to the NARA finding-aid page, and (when applicable) a link to the filing
+    /// manual PDF for that period. When unavailable, shows the full period table.
     @ViewBuilder
     private func centralFilesPeriodSection(fileIdentifier: String?) -> some View {
         Section(String(localized: "source.explorer.decimalPeriod.header",
@@ -281,6 +343,17 @@ struct SourceExplorerView: View {
                         systemImage: "arrow.up.right.square"
                     )
                 }
+                if let manualURL = client.filingManualURL(year: year) {
+                    Button {
+                        openURL(manualURL)
+                    } label: {
+                        Label(
+                            String(localized: "source.explorer.decimalPeriod.manualLink",
+                                   defaultValue: "Filing Manual for This Period (PDF)"),
+                            systemImage: "doc.fill"
+                        )
+                    }
+                }
                 Text(String(localized: "source.explorer.decimalPeriod.hint",
                             defaultValue: "Box lists, purport indexes, and the filing manual for this period are available on the linked NARA page."))
                     .font(.caption)
@@ -291,25 +364,59 @@ struct SourceExplorerView: View {
                             defaultValue: "Select the filing period that matches the document date:"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                ForEach([
-                    ("1910–1929", "1910-1929"),
-                    ("1930–1939", "1930-1939"),
-                    ("1940–1944", "1940-1944"),
-                    ("1945–1949", "1945-1949"),
-                    ("1950–1954", "1950-1954"),
-                    ("1955–1959", "1955-1959"),
-                    ("1960–Jan 1963", "1960-1963"),
-                ], id: \.1) { label, slug in
-                    Button(label) {
-                        let url = URL(string: "https://www.archives.gov/research/foreign-policy/"
-                                     + "state-dept/rg-59-central-files/1910-1963/\(slug)")!
-                        openURL(url)
+                ForEach(Self.allFilingPeriods, id: \.id) { period in
+                    Button(period.label) {
+                        openURL(period.url)
                     }
                     .font(.callout)
                 }
             }
         }
     }
+
+    /// All State Dept. central-file filing periods, shown when document year is unknown.
+    private static let allFilingPeriods: [FilingPeriod] = [
+        FilingPeriod(
+            id: "1789-1906", label: "1789–1906",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1789-1906")!
+        ),
+        FilingPeriod(
+            id: "1906-1910", label: "1906–1910",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1906-1910")!
+        ),
+        FilingPeriod(
+            id: "1910-1929", label: "1910–1929 (decimal files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1910-1929")!
+        ),
+        FilingPeriod(
+            id: "1930-1939", label: "1930–1939 (decimal files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1930-1939")!
+        ),
+        FilingPeriod(
+            id: "1940-1944", label: "1940–1944 (decimal files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1940-1944")!
+        ),
+        FilingPeriod(
+            id: "1945-1949", label: "1945–1949 (decimal files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1945-1949")!
+        ),
+        FilingPeriod(
+            id: "1950-1954", label: "1950–1954 (decimal files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1950-1954")!
+        ),
+        FilingPeriod(
+            id: "1955-1959", label: "1955–1959 (decimal files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1955-1959")!
+        ),
+        FilingPeriod(
+            id: "1960-1963", label: "1960–January 1963 (decimal files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1960-1963")!
+        ),
+        FilingPeriod(
+            id: "1963-1973", label: "1963–1973 (subject-numeric files)",
+            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1963-1973")!
+        ),
+    ]
 
     // MARK: - Lot File Panel
 
@@ -319,13 +426,20 @@ struct SourceExplorerView: View {
                        defaultValue: "Provenance")) {
             LabeledContent(
                 String(localized: "source.explorer.lotFile.type", defaultValue: "Type"),
-                value: String(localized: "source.explorer.lotFile.typeValue",
-                              defaultValue: "State Dept. Lot File")
+                value: {
+                    let rg = recordGroup ?? "RG-59"
+                    if rg == "RG-84" {
+                        return String(localized: "source.explorer.lotFile.typeValueRG84",
+                                      defaultValue: "State Dept. Post Records Lot File (RG 84)")
+                    }
+                    return String(localized: "source.explorer.lotFile.typeValue",
+                                  defaultValue: "State Dept. Lot File")
+                }()
             )
             if let rg = recordGroup {
                 LabeledContent(
                     String(localized: "source.explorer.lotFile.rg", defaultValue: "Record Group"),
-                    value: "RG \(rg)"
+                    value: rg.replacingOccurrences(of: "RG-", with: "RG ")
                 )
             }
             LabeledContent(
@@ -341,9 +455,15 @@ struct SourceExplorerView: View {
             }
         }
 
-        // Fallback: pre-scoped NARA Catalog search for the lot number
-        let rg = "59"
-        let fb = client.resolveRG59CentralFiles(fileIdentifier: "Lot \(lotNumber)")
+        // Fallback: pre-scoped NARA Catalog search for the lot number.
+        // Use RG 84 fallback URL for F-designator (post record) lot files.
+        let fb: URL = {
+            let rg = recordGroup ?? "RG-59"
+            if rg == "RG-84" {
+                return client.resolveRG84LotFile(lotNumber: lotNumber)
+            }
+            return client.resolveRG59CentralFiles(fileIdentifier: "Lot \(lotNumber)")
+        }()
         naraResultSection(requiresKey: true, fallbackURL: fb)
     }
 
@@ -593,9 +713,9 @@ struct SourceExplorerView: View {
         case .lotFile(let rg, let lotNumber, _):
             // Use variantControlNumber_is with three normalised lot number forms,
             // falling back to a phrase query if all variants return zero results.
-            let rgToUse = rg ?? "59"
-            _ = rgToUse   // rg is used only for non-59 fallback path
-            await fetchResults { try await client.resolveLotFileVariants(lotNumber: lotNumber) }
+            // Strip the "RG-" prefix to get the bare record group number for the API.
+            let rgToUse = (rg ?? "RG-59").replacingOccurrences(of: "RG-", with: "")
+            await fetchResults { try await client.resolveLotFileVariants(lotNumber: lotNumber, recordGroup: rgToUse) }
 
         case .naraCollection(let rg, let series, let lot, _):
             let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
@@ -625,4 +745,14 @@ struct SourceExplorerView: View {
         }
         isLoading = false
     }
+}
+
+// MARK: - FilingPeriod
+
+/// A named NARA filing period for State Dept. central files, used in the
+/// period-selection table shown when document year is unknown.
+private struct FilingPeriod: Sendable {
+    let id: String
+    let label: String
+    let url: URL
 }

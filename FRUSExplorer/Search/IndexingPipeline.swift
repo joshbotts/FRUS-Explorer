@@ -2063,6 +2063,10 @@ public actor IndexingPipeline {
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
                 lotFile: nil, seriesName: nil, citationEra: "published", rawText: rawText)
+        case .cfpfFile(let fid):
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: "Department of State", recordGroup: "59",
+                lotFile: nil, seriesName: fid.map { "CFPF \($0)" } ?? "CFPF", citationEra: "cfpf", rawText: rawText)
         case .unrecognized:
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
