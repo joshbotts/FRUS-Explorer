@@ -1712,6 +1712,83 @@ private struct MergeTagSheet: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS body
+
+    #if os(macOS)
+    /// macOS-native layout: title row + tag list + explanation + Cancel/Merge button bar.
+    /// `SettingsView` can be presented on macOS (it has a `#if !os(iOS)` dismiss environment),
+    /// so this sheet must render correctly on both platforms.
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            Text(String(localized: "settings.tags.merge.title", defaultValue: "Merge Tag"))
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(String(localized: "settings.tags.merge.source.header",
+                                defaultValue: "Merge '\(sourceTag.name)' into:"))
+                        .font(.callout.weight(.medium))
+
+                    ForEach(allTags) { tag in
+                        mergeTagRow(tag: tag)
+                    }
+
+                    Divider()
+
+                    Text(String(localized: "settings.tags.merge.explanation",
+                                defaultValue: "All notes tagged '\(sourceTag.name)' will be re-tagged with the selected tag. '\(sourceTag.name)' will be deleted."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(16)
+            }
+
+            Divider()
+
+            HStack {
+                Button(String(localized: "settings.tags.merge.cancel",
+                              defaultValue: "Cancel")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button(String(localized: "settings.tags.merge.confirm",
+                              defaultValue: "Merge")) {
+                    if let id = selectedTagId,
+                       let target = allTags.first(where: { $0.id == id }) {
+                        onMerge(target)
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(selectedTagId == nil)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .frame(minWidth: 380, minHeight: 260)
+    }
+    #endif
+
+    // MARK: - iOS body
+
+    #if os(iOS)
+    private var iOSBody: some View {
         NavigationStack {
             Form {
                 Section(String(localized: "settings.tags.merge.source.header",
@@ -1728,9 +1805,7 @@ private struct MergeTagSheet: View {
             }
             .navigationTitle(String(localized: "settings.tags.merge.title",
                                     defaultValue: "Merge Tag"))
-            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "settings.tags.merge.cancel",
@@ -1750,13 +1825,9 @@ private struct MergeTagSheet: View {
                 }
             }
         }
-        #if os(iOS)
         .presentationDetents([.medium, .large])
-        #endif
-        #if os(macOS)
-        .frame(minWidth: 380, minHeight: 260)
-        #endif
     }
+    #endif
 }
 
 // MARK: - SummarizationPromptsSettingsView
