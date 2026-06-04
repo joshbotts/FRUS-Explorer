@@ -225,7 +225,7 @@ struct MacDocumentView: View {
         VStack(spacing: 0) {
             // Identity + highlights banner (non-scrollable header)
             documentIdentityView
-                .padding(.horizontal, 48)
+                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                 .padding(.top, 18)
                 .padding(.bottom, 10)
 
@@ -280,7 +280,7 @@ struct MacDocumentView: View {
             Divider()
 
             volumeNavigationView
-                .padding(.horizontal, 48)
+                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                 .padding(.top, 12)
                 .padding(.bottom, 20)
         }
@@ -339,7 +339,7 @@ struct MacDocumentView: View {
                 if summaryExpanded {
                     Divider()
                     SummaryBlockView(vm: vm)
-                        .padding(.horizontal, 48)
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                         .padding(.vertical, 8)
                 }
                 Divider()
@@ -361,7 +361,7 @@ struct MacDocumentView: View {
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 48)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.vertical, 12)
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
@@ -377,7 +377,7 @@ struct MacDocumentView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                             }
-                            .padding(.horizontal, 48)
+                            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                             .padding(.vertical, 8)
                             if note.id != documentNotes.last?.id { Divider() }
                         }
@@ -406,7 +406,7 @@ struct MacDocumentView: View {
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 48)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.vertical, 12)
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
@@ -416,7 +416,7 @@ struct MacDocumentView: View {
                                     FRUSTagChip(label: name, style: .user)
                                 }
                             }
-                            .padding(.horizontal, 48)
+                            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                         }
                         if !vm.subjectTags.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -425,7 +425,7 @@ struct MacDocumentView: View {
                                         FRUSTagChip(label: tag.displayName, style: .system)
                                     }
                                 }
-                                .padding(.horizontal, 48)
+                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                             }
                         }
                     }
@@ -469,7 +469,7 @@ struct MacDocumentView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 48)
+            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
             .padding(.vertical, 8)
             .background(Color.secondary.opacity(0.04))
             .contentShape(Rectangle())

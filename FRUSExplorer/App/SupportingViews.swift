@@ -1994,7 +1994,33 @@ struct SummaryPromptPickerView: View {
     @State private var showNewPromptEditor = false
 
     var body: some View {
-        NavigationStack {
+        // macOS popovers should not contain NavigationStack chrome. The native
+        // pattern is a title row + action button at the top, list below.
+        VStack(spacing: 0) {
+            // Header row: title left, "New Prompt…" button right
+            HStack {
+                Text(String(localized: "document.summarize.picker.title",
+                            defaultValue: "Choose a Prompt"))
+                    .font(.headline)
+                Spacer()
+                Button {
+                    showNewPromptEditor = true
+                } label: {
+                    Label(
+                        String(localized: "document.summarize.picker.newPrompt",
+                               defaultValue: "New Prompt…"),
+                        systemImage: "plus"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            // Prompt list
             List {
                 ForEach(allPrompts) { prompt in
                     Button {
@@ -2015,23 +2041,7 @@ struct SummaryPromptPickerView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .navigationTitle(
-                String(localized: "document.summarize.picker.title",
-                       defaultValue: "Choose a Prompt")
-            )
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showNewPromptEditor = true
-                    } label: {
-                        Label(
-                            String(localized: "document.summarize.picker.newPrompt",
-                                   defaultValue: "New Prompt…"),
-                            systemImage: "plus"
-                        )
-                    }
-                }
-            }
+            .listStyle(.plain)
             .overlay {
                 if allPrompts.isEmpty {
                     ContentUnavailableView(
@@ -2046,7 +2056,7 @@ struct SummaryPromptPickerView: View {
                 }
             }
         }
-        .frame(minWidth: 360, minHeight: 300)
+        .frame(minWidth: 340, minHeight: 280)
         .sheet(isPresented: $showNewPromptEditor) {
             PromptEditorView(promptToEdit: nil)
         }
@@ -2109,15 +2119,24 @@ struct PersonDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Text(person.name).font(.headline)
+        // Native macOS sheet layout: content area + Divider + bottom button bar.
+        // NavigationStack inside a sheet adds unwanted nav-bar chrome on macOS.
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(person.name)
+                        .font(.headline)
                     if let desc = person.description {
-                        Text(desc).font(.body).foregroundStyle(.secondary)
+                        Text(desc)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
                     }
-                }
-                Section {
+                    Divider()
+                        .padding(.vertical, 4)
+                    Text("In Indexed Documents")
+                        .font(.footnote.weight(.semibold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(.secondary)
                     if mentionCount > 0 {
                         Label(
                             "Mentioned in \(mentionCount) indexed \(mentionCount == 1 ? "document" : "documents")",
@@ -2136,19 +2155,22 @@ struct PersonDetailSheet: View {
                             .foregroundStyle(.secondary)
                             .font(.subheadline)
                     }
-                } header: {
-                    Text("In Indexed Documents")
                 }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .listStyle(.inset)
-            .navigationTitle("List of Persons")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .frame(minWidth: 400, minHeight: 300)
+        .frame(minWidth: 400, minHeight: 260)
     }
 }
 
@@ -2159,24 +2181,33 @@ struct GlossDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Text(gloss.term).font(.headline)
+        // Native macOS sheet layout: content area + Divider + bottom button bar.
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(gloss.term)
+                        .font(.headline)
                     if let def = gloss.definition {
-                        Text(def).font(.body).foregroundStyle(.secondary)
+                        Text(def)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
                     }
                 }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .listStyle(.inset)
-            .navigationTitle("Glossary")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .frame(minWidth: 360, minHeight: 240)
+        .frame(minWidth: 360, minHeight: 200)
     }
 }
 
@@ -2246,19 +2277,19 @@ struct CorpusBrowserWindowView: View {
             .navigationTitle("Corpus Browser")
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .automatic) {
                     Button { showPeopleSheet = true } label: {
                         Image(systemName: "person.2")
                     }
                     .help("Browse people mentioned in indexed volumes")
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .automatic) {
                     Button { sortDescending.toggle() } label: {
                         Image(systemName: sortDescending ? "arrow.down" : "arrow.up")
                     }
                     .help(sortDescending ? "Sort oldest first" : "Sort newest first")
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .automatic) {
                     Button { filterDownloaded.toggle() } label: {
                         Image(systemName: filterDownloaded
                               ? "arrow.down.circle.fill" : "arrow.down.circle")

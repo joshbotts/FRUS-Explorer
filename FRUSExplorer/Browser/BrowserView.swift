@@ -179,9 +179,10 @@ struct BrowserView: View {
                             showProjectContext = true
                         }
                     }
-                    // Search, Citation Lookup, and Collections toggle grouped as
-                    // primary actions; each opens or closes the inspector panel.
-                    ToolbarItemGroup(placement: .primaryAction) {
+                    // Search, Citation Lookup, and Collections toggle grouped in the
+                    // trailing toolbar area. .automatic is the correct macOS placement;
+                    // .primaryAction is an iOS concept.
+                    ToolbarItemGroup(placement: .automatic) {
                         Button {
                             activePanel = (activePanel == .search) ? nil : .search
                         } label: {

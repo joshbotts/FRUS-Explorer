@@ -137,7 +137,9 @@ struct MainWindowView: View {
         }
 
         // Trailing: tool launchers
-        ToolbarItemGroup(placement: .primaryAction) {
+        // .automatic is the correct macOS placement — .primaryAction is an iOS concept
+        // that maps to the same position on macOS but carries incorrect semantics.
+        ToolbarItemGroup(placement: .automatic) {
             trailingTools
         }
     }

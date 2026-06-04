@@ -390,7 +390,13 @@ private struct SearchResultRow: View {
                         .foregroundStyle(.secondary)
                 }
                 Text(result.header)
+                    // .headline (17pt semibold) is correct for iOS list rows; on macOS
+                    // in the inspector panel .body is more appropriate for the density.
+                    #if os(macOS)
+                    .font(.body)
+                    #else
                     .font(.headline)
+                    #endif
                     .lineLimit(2)
             }
 
