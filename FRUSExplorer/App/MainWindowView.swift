@@ -59,9 +59,14 @@ struct MainWindowView: View {
     /// Whether the citation popover is showing.
     @State private var showCitationPopover: Bool = false
 
-    /// NARA Catalog Lookup sheet — presented when the user taps "NARA Lookup" in the research strip.
-    @State private var showNARALookup: Bool = false
-    @State private var naraLookupText: String = ""
+    /// NARA Catalog Lookup sheet item.
+    ///
+    /// Using `.sheet(item:)` rather than `.sheet(isPresented:)` ensures SwiftUI creates
+    /// a fresh `NARACatalogLookupView` on every open. With `.sheet(isPresented:)` SwiftUI
+    /// can reuse the cached view between sessions, causing `@State(initialValue:)` to be
+    /// ignored and leaving the query field empty or stale. Each `NARACatalogLookupItem`
+    /// carries a unique `UUID` so the view identity changes on every call.
+    @State private var naraLookupItem: NARACatalogLookupItem? = nil
 
     /// Shared highlight state passed to ResearchStripView (buttons) and MacDocumentView (text selection / SwiftData insertion).
     @State private var highlightCoordinator = HighlightCoordinator()
@@ -85,12 +90,13 @@ struct MainWindowView: View {
                 showCitationPopover: $showCitationPopover,
                 highlightCoordinator: highlightCoordinator,
                 onNARALookup: { text in
-                    naraLookupText  = text
-                    showNARALookup  = true
+                    // New UUID every time → SwiftUI treats it as a new view identity
+                    // → @State(initialValue:) is honoured → query field shows the text.
+                    naraLookupItem = NARACatalogLookupItem(text: text)
                 }
             )
-            .sheet(isPresented: $showNARALookup) {
-                NARACatalogLookupView(initialText: naraLookupText)
+            .sheet(item: $naraLookupItem) { item in
+                NARACatalogLookupView(initialText: item.text)
             }
 
             // Document body — NavigationStack owns the back/forward history.
@@ -304,6 +310,19 @@ private struct DocumentPlaceholderView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
+
+// MARK: - NARACatalogLookupItem
+
+/// Thin `Identifiable` wrapper used by `MainWindowView` to drive the NARA Catalog Lookup
+/// sheet via `.sheet(item:)`.
+///
+/// Each lookup creates a new instance with a fresh `UUID`. SwiftUI sees a new item
+/// identity each time and creates a brand-new `NARACatalogLookupView`, ensuring that
+/// `@State(initialValue:)` is honoured and the query field shows the newly selected text.
+struct NARACatalogLookupItem: Identifiable {
+    let id  = UUID()
+    let text: String
 }
 
 #endif // os(macOS)
