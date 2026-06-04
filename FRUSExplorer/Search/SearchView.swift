@@ -349,10 +349,6 @@ struct SearchView: View {
                 } label: {
                     SearchResultRow(
                         result: result,
-                        onSubjectTagTap: { tagId in
-                            vm.selectedSubjectTagIds.insert(tagId)
-                            Task { await vm.search() }
-                        },
                         onUserTagTap: { tagId in
                             if let uuid = UUID(uuidString: tagId) {
                                 vm.selectedUserTagIds.insert(uuid)
@@ -377,7 +373,6 @@ struct SearchView: View {
 
 private struct SearchResultRow: View {
     let result: SearchResult
-    let onSubjectTagTap: (String) -> Void
     let onUserTagTap: (String) -> Void
 
     var body: some View {
@@ -419,15 +414,6 @@ private struct SearchResultRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
                     .padding(.top, 1)
-            }
-
-            // Subject tag chips
-            if !result.subjectTagIds.isEmpty {
-                SearchTagChipsRow(
-                    tagIds: result.subjectTagIds,
-                    systemImage: "tag",
-                    onTap: onSubjectTagTap
-                )
             }
 
             // User tag chips

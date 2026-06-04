@@ -18,8 +18,10 @@ public enum SummarizationScope: Sendable, Equatable {
     case volume(volumeId: String)
     /// All documents in all volumes that share the given subseries identifier.
     case subseries(subseries: String)
-    /// All documents that carry the given subject tag (across all downloaded volumes).
-    case subjectTag(subjectId: String)
+    /// All documents that have the given user tag applied.
+    /// `documentKeys` is a pre-computed set of `"volumeId/documentId"` strings
+    /// built by the settings view from `DocumentTagAssignment` records.
+    case userTag(documentKeys: Set<String>)
     /// All documents whose volume date range overlaps [earliest, latest] (ISO 8601 strings).
     case dateRange(earliest: String, latest: String)
 }
@@ -140,7 +142,6 @@ public actor BackgroundSummarizationService {
         concurrencyLimit: Int,
         downloadedVolumeURLs: [String: URL],
         manifestEntries: [VolumeManifestEntry],
-        subjectTagStore: SubjectTagStore,
         activeProjectId: UUID?
     ) async {
         // Cancel any existing run
@@ -158,7 +159,6 @@ public actor BackgroundSummarizationService {
                 concurrencyLimit: max(1, concurrencyLimit),
                 downloadedVolumeURLs: downloadedVolumeURLs,
                 manifestEntries: manifestEntries,
-                subjectTagStore: subjectTagStore,
                 activeProjectId: activeProjectId
             )
         }
@@ -191,8 +191,9 @@ public actor BackgroundSummarizationService {
             candidates = manifestEntries
                 .filter { $0.subseries == sub }
                 .map(\.volumeId)
-        case .subjectTag:
+        case .userTag:
             // All downloaded volumes — document filtering happens per-document
+            // using the pre-computed documentKeys set
             candidates = Array(downloadedVolumeIds)
         case .dateRange(let earliest, let latest):
             candidates = manifestEntries
@@ -223,7 +224,6 @@ public actor BackgroundSummarizationService {
         concurrencyLimit: Int,
         downloadedVolumeURLs: [String: URL],
         manifestEntries: [VolumeManifestEntry],
-        subjectTagStore: SubjectTagStore,
         activeProjectId: UUID?
     ) async {
         guard !Task.isCancelled else { return }
@@ -255,10 +255,9 @@ public actor BackgroundSummarizationService {
                 let docs = try await parser.parse(volumeURL: url)
                 for doc in docs {
                     guard !Task.isCancelled else { break }
-                    // For subjectTag scope, only include documents that have the tag
-                    if case .subjectTag(let subjectId) = scope {
-                        let docIds = await subjectTagStore.documents(forSubjectId: subjectId)
-                        guard docIds.contains(doc.documentId) else { continue }
+                    // For userTag scope, only include documents in the pre-computed key set
+                    if case .userTag(let keys) = scope {
+                        guard keys.contains("\(volumeId)/\(doc.documentId)") else { continue }
                     }
                     let text = doc.nodes
                         .map(\.plainText)

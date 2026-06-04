@@ -219,7 +219,6 @@ struct BackgroundSummarizationTests {
             concurrencyLimit: 1,
             downloadedVolumeURLs: [:],
             manifestEntries: [],
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             activeProjectId: nil
         )
 

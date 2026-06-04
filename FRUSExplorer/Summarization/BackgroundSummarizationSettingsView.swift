@@ -30,13 +30,15 @@ struct BackgroundSummarizationSettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
+    @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
+    @Query private var allTagAssignments: [DocumentTagAssignment]
 
     // MARK: - Scope State
 
     @State private var scopeType: ScopeType = .volume
     @State private var selectedVolumeId: String = ""
     @State private var selectedSubseries: String = ""
-    @State private var selectedSubjectId: String = ""
+    @State private var selectedUserTagId: UUID? = nil
     @State private var dateRangeEarliest: String = ""
     @State private var dateRangeLatest: String = ""
 
@@ -79,8 +81,8 @@ struct BackgroundSummarizationSettingsView: View {
                 volumePicker
             case .subseries:
                 subsiesPicker
-            case .subjectTag:
-                subjectTagPicker
+            case .userTag:
+                userTagPicker
             case .dateRange:
                 dateRangePickers
             }
@@ -140,16 +142,31 @@ struct BackgroundSummarizationSettingsView: View {
     }
 
     @ViewBuilder
-    private var subjectTagPicker: some View {
-        TextField(
-            String(localized: "bg.summarizer.scope.tag.placeholder",
-                   defaultValue: "Subject ID (e.g. s_berlin_crisis)"),
-            text: $selectedSubjectId
-        )
-        .autocorrectionDisabled()
-        #if os(iOS)
-        .textInputAutocapitalization(.never)
-        #endif
+    private var userTagPicker: some View {
+        if allUserTags.isEmpty {
+            Text(String(localized: "bg.summarizer.scope.userTag.empty",
+                        defaultValue: "No user tags created yet. Add tags to documents first."))
+                .foregroundStyle(.secondary)
+                .font(.callout)
+        } else {
+            Picker(
+                String(localized: "bg.summarizer.scope.userTag.picker",
+                       defaultValue: "Tag"),
+                selection: $selectedUserTagId
+            ) {
+                Text(String(localized: "bg.summarizer.scope.userTag.none",
+                            defaultValue: "Select a tag…"))
+                    .tag(UUID?.none)
+                ForEach(allUserTags) { tag in
+                    Text(tag.name).tag(UUID?.some(tag.id))
+                }
+            }
+            .onAppear {
+                if selectedUserTagId == nil, let first = allUserTags.first {
+                    selectedUserTagId = first.id
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -316,10 +333,10 @@ struct BackgroundSummarizationSettingsView: View {
     private var canStart: Bool {
         guard !allPrompts.isEmpty, selectedPromptId != nil else { return false }
         switch scopeType {
-        case .volume:      return !selectedVolumeId.isEmpty
-        case .subseries:   return !selectedSubseries.isEmpty
-        case .subjectTag:  return !selectedSubjectId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .dateRange:   return !dateRangeEarliest.isEmpty && !dateRangeLatest.isEmpty
+        case .volume:    return !selectedVolumeId.isEmpty
+        case .subseries: return !selectedSubseries.isEmpty
+        case .userTag:   return selectedUserTagId != nil && !allUserTags.isEmpty
+        case .dateRange: return !dateRangeEarliest.isEmpty && !dateRangeLatest.isEmpty
         }
     }
 
@@ -358,7 +375,6 @@ struct BackgroundSummarizationSettingsView: View {
                 concurrencyLimit: concurrencyLimit,
                 downloadedVolumeURLs: urls,
                 manifestEntries: all,
-                subjectTagStore: appState.subjectTagStore,
                 activeProjectId: appState.activeProjectId
             )
         }
@@ -373,7 +389,18 @@ struct BackgroundSummarizationSettingsView: View {
         switch scopeType {
         case .volume:    return .volume(volumeId: selectedVolumeId)
         case .subseries: return .subseries(subseries: selectedSubseries)
-        case .subjectTag: return .subjectTag(subjectId: selectedSubjectId.trimmingCharacters(in: .whitespacesAndNewlines))
+        case .userTag:
+            // Pre-compute the "volumeId/documentId" keys for documents tagged with
+            // the selected user tag. The service uses this set to filter per-document.
+            let keys: Set<String>
+            if let tagId = selectedUserTagId {
+                keys = Set(allTagAssignments
+                    .filter { $0.tagId == tagId }
+                    .map { "\($0.volumeId)/\($0.documentId)" })
+            } else {
+                keys = []
+            }
+            return .userTag(documentKeys: keys)
         case .dateRange: return .dateRange(earliest: dateRangeEarliest, latest: dateRangeLatest)
         }
     }
@@ -381,14 +408,14 @@ struct BackgroundSummarizationSettingsView: View {
     // MARK: - ScopeType
 
     private enum ScopeType: String, CaseIterable, Identifiable {
-        case volume, subseries, subjectTag, dateRange
+        case volume, subseries, userTag, dateRange
         var id: String { rawValue }
         var displayName: String {
             switch self {
-            case .volume:     return String(localized: "bg.summarizer.scope.type.volume",     defaultValue: "Volume")
-            case .subseries:  return String(localized: "bg.summarizer.scope.type.subseries",  defaultValue: "Subseries")
-            case .subjectTag: return String(localized: "bg.summarizer.scope.type.tag",        defaultValue: "Subject Tag")
-            case .dateRange:  return String(localized: "bg.summarizer.scope.type.dateRange",  defaultValue: "Date Range")
+            case .volume:    return String(localized: "bg.summarizer.scope.type.volume",    defaultValue: "Volume")
+            case .subseries: return String(localized: "bg.summarizer.scope.type.subseries", defaultValue: "Subseries")
+            case .userTag:   return String(localized: "bg.summarizer.scope.type.userTag",   defaultValue: "User Tag")
+            case .dateRange: return String(localized: "bg.summarizer.scope.type.dateRange", defaultValue: "Date Range")
             }
         }
     }

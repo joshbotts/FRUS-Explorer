@@ -398,7 +398,7 @@ struct MacDocumentView: View {
             )
             if tagsExpanded {
                 Divider()
-                if userTagNames.isEmpty && vm.subjectTags.isEmpty {
+                if userTagNames.isEmpty {
                     HStack(spacing: 8) {
                         Image(systemName: "tag").foregroundStyle(.tertiary)
                         Text(String(localized: "panel.tags.empty",
@@ -409,26 +409,12 @@ struct MacDocumentView: View {
                     .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.vertical, 12)
                 } else {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if !userTagNames.isEmpty {
-                            HStack(spacing: 6) {
-                                ForEach(userTagNames, id: \.self) { name in
-                                    FRUSTagChip(label: name, style: .user)
-                                }
-                            }
-                            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        }
-                        if !vm.subjectTags.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    ForEach(vm.subjectTags) { tag in
-                                        FRUSTagChip(label: tag.displayName, style: .system)
-                                    }
-                                }
-                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                            }
+                    HStack(spacing: 6) {
+                        ForEach(userTagNames, id: \.self) { name in
+                            FRUSTagChip(label: name, style: .user)
                         }
                     }
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     .padding(.vertical, 10)
                 }
             }
@@ -722,30 +708,7 @@ struct MacDocumentView: View {
 
 }
 
-// MARK: - TagRowView
-
-/// Displays system subject tags and user-defined tags for a document.
-struct TagRowView: View {
-    let systemTags: [SubjectTag]
-    let userTags: [UserTag]
-
-    var body: some View {
-        if systemTags.isEmpty && userTags.isEmpty { return AnyView(EmptyView()) }
-
-        return AnyView(
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(systemTags) { tag in
-                        FRUSTagChip(label: tag.displayName, style: .system)
-                    }
-                    ForEach(userTags) { tag in
-                        FRUSTagChip(label: "◆ \(tag.name)", style: .user)
-                    }
-                }
-            }
-        )
-    }
-}
+// TagRowView removed — document-level subject tags are no longer shown in the UI.
 
 // MARK: - TrailingIconLabelStyle
 

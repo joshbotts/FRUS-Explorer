@@ -1060,7 +1060,7 @@ struct DocumentView: View {
             )
             if tagsExpanded {
                 Divider()
-                if userTagNames.isEmpty && vm.subjectTags.isEmpty {
+                if userTagNames.isEmpty {
                     HStack(spacing: 8) {
                         Image(systemName: "tag").foregroundStyle(.tertiary)
                         Text(String(localized: "panel.tags.empty",
@@ -1070,27 +1070,13 @@ struct DocumentView: View {
                     }
                     .padding(16)
                 } else {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if !userTagNames.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    ForEach(userTagNames, id: \.self) { name in
-                                        FRUSTagChip(label: name, style: .user)
-                                    }
-                                }
-                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(userTagNames, id: \.self) { name in
+                                FRUSTagChip(label: name, style: .user)
                             }
                         }
-                        if !vm.subjectTags.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    ForEach(vm.subjectTags) { tag in
-                                        FRUSTagChip(label: tag.displayName, style: .system)
-                                    }
-                                }
-                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                            }
-                        }
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                     }
                     .padding(.vertical, 10)
                 }
@@ -1518,85 +1504,9 @@ private struct PromptPickerRow: View {
     }
 }
 
-// MARK: - DocumentTagSection
-
-private struct DocumentTagSection: View {
-    let vm: DocumentViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !vm.subjectTags.isEmpty {
-                subjectTagChips
-            }
-        }
-        .padding(.top, 12)
-    }
-
-    @ViewBuilder
-    private var subjectTagChips: some View {
-        Text(String(localized: "document.tags.subject.header", defaultValue: "Subject Tags"))
-            .font(.system(size: FRUSTheme.sectionLabelSize, weight: FRUSTheme.sectionLabelWeight))
-            .kerning(FRUSTheme.sectionLabelKerning)
-            .textCase(.uppercase)
-            .foregroundStyle(.secondary)
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: FRUSTheme.tagChipSpacing) {
-                ForEach(vm.subjectTags) { tag in
-                    DocumentTagChip(tag: tag)
-                }
-            }
-            .padding(.vertical, 2)
-        }
-    }
-}
-
-// MARK: - DocumentTagChip
-
-private struct DocumentTagChip: View {
-    let tag: SubjectTag
-
-    var body: some View {
-        Button {
-            // Wired in Session 16 (Search View) — tap navigates to search filtered by tag
-        } label: {
-            HStack(spacing: 4) {
-                Text(tag.displayName)
-                    .font(.caption)
-                // Q5: non-color distinction between curated (checkmark) and string-match (question mark)
-                if tag.confidence == .curated {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.tint)
-                } else {
-                    Image(systemName: "questionmark.circle")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(tagBackground)
-            .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        // Q1: "<name>, subject tag" — .isButton trait appends "button" in VoiceOver announcement
-        // Q5: label distinguishes confidence tier for low-sighted users
-        .accessibilityLabel(tag.confidence == .curated
-            ? "\(tag.displayName), subject tag"
-            : "\(tag.displayName), approximate subject tag match")
-        .accessibilityHint(String(localized: "document.tag.chip.hint",
-                                  defaultValue: "Filters search results by this tag"))
-        .accessibilityAddTraits(.isButton)
-    }
-
-    private var tagBackground: Color {
-        switch tag.category {
-        case .people: return Color.blue.opacity(0.12)
-        case .places: return Color.green.opacity(0.12)
-        case .topics: return Color.orange.opacity(0.12)
-        }
-    }
-}
+// DocumentTagSection and DocumentTagChip removed — document-level subject tags
+// are no longer shown in the UI. The SubjectTagStore and DocumentViewModel.subjectTags
+// remain populated for potential future use; only the display layer is removed.
 
 // MARK: - CrossProjectNoteIndicator
 

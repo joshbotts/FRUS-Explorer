@@ -680,6 +680,48 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         return lead + collapsed + trail
     }
 
+    /// Strips leading whitespace from the first text child and trailing whitespace
+    /// from the last text child of an inline element's children array.
+    ///
+    /// `normalizedText` intentionally preserves a single " " at the boundary of a text
+    /// run when the raw XML had whitespace there (so "Secretary " + link text + " said"
+    /// renders with correct inter-word spacing). For inline links like `<persName>` the
+    /// element's OWN content should not carry boundary spaces — those come from the
+    /// surrounding text nodes. Stripping here prevents a `<persName>` that wraps its
+    /// content onto a separate XML line from contributing an extra space to the flat text
+    /// and shifting highlight character offsets.
+    private func trimInlineTextBoundaries(_ nodes: [FRUSASTNode]) -> [FRUSASTNode] {
+        guard !nodes.isEmpty else { return nodes }
+        var result = nodes
+
+        // Trim leading whitespace from first text node
+        if case .text(let s) = result[0] {
+            let trimmed = s.drop(while: { $0 == " " || $0 == "\t" })
+            if trimmed.isEmpty {
+                result.removeFirst()
+            } else if trimmed.count != s.count {
+                result[0] = .text(String(trimmed))
+            }
+        }
+
+        // Trim trailing whitespace from last text node (after possible removeFirst above)
+        if !result.isEmpty, case .text(let s) = result[result.count - 1] {
+            var end = s.endIndex
+            while end > s.startIndex {
+                let prev = s.index(before: end)
+                if s[prev] == " " || s[prev] == "\t" { end = prev } else { break }
+            }
+            let trimmed = String(s[s.startIndex..<end])
+            if trimmed.isEmpty {
+                result.removeLast()
+            } else if trimmed.count != s.count {
+                result[result.count - 1] = .text(trimmed)
+            }
+        }
+
+        return result
+    }
+
     // MARK: - Transparent Elements
 
     /// Returns `true` for elements whose children should be passed directly to the
@@ -769,7 +811,12 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // FRUS TEI uses "corresp" in document body (e.g. corresp="#p_AH1").
             // Fall back to "ref" for volumes that use the alternative attribute.
             let ref = attributes["corresp"] ?? attributes["ref"]
-            return .persName(ref: ref, children: children)
+            // Strip boundary whitespace from the first and last text children.
+            // normalizedText preserves a leading/trailing " " when the raw XML has
+            // whitespace at the element boundary (e.g. when persName content is on its
+            // own line). For inline links this spurious space shifts flat-text offsets
+            // and can produce a visible extra space in the rendered link.
+            return .persName(ref: ref, children: trimInlineTextBoundaries(children))
 
         case "gloss":
             // FRUS TEI uses "target" for gloss links (e.g. target="#t_NSC1").
@@ -1043,7 +1090,14 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         defer { elementDepth -= 1 }
         guard inPersonsSection else { return }
         if elementName == "persName" && currentName == nil {
-            currentName = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Collapse interior whitespace (e.g. "Kissinger,\n  Henry A." → "Kissinger, Henry A.")
+            // in addition to trimming edges. XML formatting wraps name content across lines in
+            // some FRUS volumes; trimmingCharacters alone leaves embedded newlines/spaces in the
+            // stored person name.
+            currentName = textBuffer
+                .components(separatedBy: .whitespacesAndNewlines)
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
             textBuffer = ""
         }
         if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0) {
