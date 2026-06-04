@@ -266,7 +266,7 @@ struct ResearchStripView: View {
                   : String(localized: "researchStrip.panel.show.help",
                            defaultValue: "Open the Notes, Tags, and Summary panel"))
         }
-        .frame(height: 32)
+        .frame(minHeight: 32)
         .background(.bar)
         .overlay(alignment: .bottom) { Divider() }
         .sheet(isPresented: $showAddToCollection) {
