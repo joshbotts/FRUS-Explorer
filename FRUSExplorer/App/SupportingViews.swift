@@ -233,27 +233,38 @@ struct ResearchStripView: View {
 
             Spacer()
 
-            // Research panel toggle — collapses/expands the Notes · Tags · Summary
-            // accordion below the document body. Persisted via AppStorage so the
-            // preference survives navigation between documents.
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    researchPanelVisible.toggle()
-                }
-            } label: {
-                Image(systemName: researchPanelVisible
-                      ? "pencil.and.scribble"
-                      : "book.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(researchPanelVisible ? Color.accentColor : Color.secondary)
+            // Research panel toggle — segmented Read / Research picker.
+            // Persisted via AppStorage so the preference survives document navigation.
+            Picker(
+                String(localized: "researchStrip.panelMode",
+                       defaultValue: "View mode"),
+                selection: Binding(
+                    get: { researchPanelVisible },
+                    set: { newVal in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            researchPanelVisible = newVal
+                        }
+                    }
+                )
+            ) {
+                Text(String(localized: "researchStrip.panelMode.read",
+                            defaultValue: "Read"))
+                    .tag(false)
+                Text(String(localized: "researchStrip.panelMode.research",
+                            defaultValue: "Research"))
+                    .tag(true)
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 8)
+            .pickerStyle(.segmented)
+            .fixedSize()
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
+            .padding(.horizontal, 6)
             .help(researchPanelVisible
                   ? String(localized: "researchStrip.panel.hide.help",
-                           defaultValue: "Hide the Notes, Tags, and Summary panel")
+                           defaultValue: "Switch to focused reading view")
                   : String(localized: "researchStrip.panel.show.help",
-                           defaultValue: "Show the Notes, Tags, and Summary panel"))
+                           defaultValue: "Open the Notes, Tags, and Summary panel"))
         }
         .frame(height: 32)
         .background(.bar)

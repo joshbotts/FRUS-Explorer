@@ -625,20 +625,33 @@ struct DocumentView: View {
                 highlightColorPickerSheet
             }
 
-            // 4. Research panel toggle
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
-            } label: {
-                Image(systemName: panelVisible
-                      ? "pencil.and.scribble"
-                      : "book.fill")
-                    .foregroundStyle(panelVisible ? Color.accentColor : Color.secondary)
+            // 4. Research panel toggle — segmented Read / Research picker.
+            // Binding wraps the AppStorage Bool so the layout transition can be
+            // animated; the segmented control's own selection animation handles the
+            // visual state change without an additional withAnimation call.
+            Picker(
+                String(localized: "document.toolbar.panelMode",
+                       defaultValue: "View mode"),
+                selection: Binding(
+                    get: { panelVisible },
+                    set: { newVal in
+                        withAnimation(.easeInOut(duration: 0.2)) { panelVisible = newVal }
+                    }
+                )
+            ) {
+                Text(String(localized: "document.toolbar.panelMode.read",
+                            defaultValue: "Read"))
+                    .tag(false)
+                Text(String(localized: "document.toolbar.panelMode.research",
+                            defaultValue: "Research"))
+                    .tag(true)
             }
-            .accessibilityLabel(panelVisible
-                ? String(localized: "document.toolbar.panel.hide.a11y",
-                         defaultValue: "Hide research panel")
-                : String(localized: "document.toolbar.panel.show.a11y",
-                         defaultValue: "Show research panel"))
+            .pickerStyle(.segmented)
+            .fixedSize()
+            .accessibilityLabel(
+                String(localized: "document.toolbar.panelMode.a11y",
+                       defaultValue: "Toggle reading or research view")
+            )
 
             // 5. More — overflow menu
             moreMenu(vm: vm)
