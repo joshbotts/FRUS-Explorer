@@ -353,6 +353,7 @@ private struct SettingsProjectsPane: View {
     @State private var projectToEdit: Project? = nil
     @State private var projectToDelete: Project? = nil
     @State private var showDeleteConfirmation = false
+    @State private var projectToMerge: Project? = nil
 
     var body: some View {
         ScrollView {
@@ -401,6 +402,16 @@ private struct SettingsProjectsPane: View {
         .sheet(isPresented: $showEditor) {
             ProjectEditorView(projectToEdit: projectToEdit)
         }
+        .sheet(item: $projectToMerge) { sourceProject in
+            MergeProjectSheet(
+                sourceProject: sourceProject,
+                allProjects: projects.filter { $0.id != sourceProject.id },
+                onMerge: { targetProject in
+                    mergeProject(source: sourceProject, into: targetProject)
+                    projectToMerge = nil
+                }
+            )
+        }
         .confirmationDialog(
             "Delete Project?",
             isPresented: $showDeleteConfirmation,
@@ -416,6 +427,34 @@ private struct SettingsProjectsPane: View {
         } message: {
             Text("Activity records are kept but unlinked from this project.")
         }
+    }
+
+    private func mergeProject(source: Project, into target: Project) {
+        let sourceId = source.id
+        let targetId = target.id
+
+        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
+        for note in allNotes where note.projectIds.contains(sourceId) {
+            var ids = note.projectIds.filter { $0 != sourceId }
+            if !ids.contains(targetId) { ids.append(targetId) }
+            note.projectIds = ids
+        }
+        let allCollections = (try? modelContext.fetch(FetchDescriptor<Collection>())) ?? []
+        for collection in allCollections where collection.projectIds.contains(sourceId) {
+            var ids = collection.projectIds.filter { $0 != sourceId }
+            if !ids.contains(targetId) { ids.append(targetId) }
+            collection.projectIds = ids
+        }
+        let allSummaries = (try? modelContext.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
+        for summary in allSummaries where summary.projectId == sourceId {
+            summary.projectId = targetId
+        }
+        let allHistory = (try? modelContext.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? []
+        for entry in allHistory where entry.projectId == sourceId {
+            entry.projectId = targetId
+        }
+        if appState.activeProjectId == sourceId { appState.activeProjectId = targetId }
+        modelContext.delete(source)
     }
 
     private var activeContextRow: some View {
@@ -478,6 +517,12 @@ private struct SettingsProjectsPane: View {
                 } label: {
                     Label("Edit", systemImage: "pencil")
                 }
+                Button {
+                    projectToMerge = project
+                } label: {
+                    Label("Merge into…", systemImage: "arrow.triangle.merge")
+                }
+                .disabled(projects.count < 2)
                 Divider()
                 Button(role: .destructive) {
                     projectToDelete = project

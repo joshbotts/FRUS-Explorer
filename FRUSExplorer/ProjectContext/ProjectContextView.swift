@@ -46,6 +46,7 @@ struct ProjectContextView: View {
     #endif
 
     @State private var vm = ProjectContextViewModel()
+    @State private var mergingProject: Project? = nil
 
     var body: some View {
         @Bindable var vm = vm
@@ -122,7 +123,78 @@ struct ProjectContextView: View {
                             defaultValue: "Activity records are kept but unlinked from this project."))
             }
         }
+        .sheet(item: $mergingProject) { sourceProject in
+            MergeProjectSheet(
+                sourceProject: sourceProject,
+                allProjects: vm.projects.filter { $0.id != sourceProject.id },
+                onMerge: { targetProject in
+                    mergeProject(source: sourceProject, into: targetProject)
+                    mergingProject = nil
+                }
+            )
+        }
         .onAppear { vm.load(context: modelContext) }
+    }
+
+    // MARK: - Merge Project
+
+    /// Re-assigns all activity records that reference `source` to reference `target`,
+    /// then deletes `source`. Mirrors the tag-merge pattern:
+    /// - Uses in-memory fetch+filter for array columns ([UUID]) to avoid the
+    ///   #Predicate transformable-array crash.
+    /// - Handles scalar projectId columns with direct iteration.
+    private func mergeProject(source: Project, into target: Project) {
+        let sourceId = source.id
+        let targetId = target.id
+
+        // 1. ResearchNote.projectIds ([UUID] array)
+        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
+        var noteCount = 0
+        for note in allNotes where note.projectIds.contains(sourceId) {
+            var ids = note.projectIds.filter { $0 != sourceId }
+            if !ids.contains(targetId) { ids.append(targetId) }
+            note.projectIds = ids
+            noteCount += 1
+        }
+
+        // 2. Collection.projectIds ([UUID] array)
+        let allCollections = (try? modelContext.fetch(FetchDescriptor<Collection>())) ?? []
+        var collectionCount = 0
+        for collection in allCollections where collection.projectIds.contains(sourceId) {
+            var ids = collection.projectIds.filter { $0 != sourceId }
+            if !ids.contains(targetId) { ids.append(targetId) }
+            collection.projectIds = ids
+            collectionCount += 1
+        }
+
+        // 3. GeneratedSummary.projectId (UUID?)
+        let allSummaries = (try? modelContext.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
+        var summaryCount = 0
+        for summary in allSummaries where summary.projectId == sourceId {
+            summary.projectId = targetId
+            summaryCount += 1
+        }
+
+        // 4. ReadingHistoryEntry.projectId (UUID?)
+        let allHistory = (try? modelContext.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? []
+        var historyCount = 0
+        for entry in allHistory where entry.projectId == sourceId {
+            entry.projectId = targetId
+            historyCount += 1
+        }
+
+        // 5. Redirect active project context
+        if appState.activeProjectId == sourceId {
+            appState.activeProjectId = targetId
+        }
+
+        modelContext.delete(source)
+
+        #if DEBUG
+        print("[Projects] Merged '\(source.name)' → '\(target.name)': "
+              + "\(noteCount) notes, \(collectionCount) collections, "
+              + "\(summaryCount) summaries, \(historyCount) history entries")
+        #endif
     }
 
     // MARK: - Projects Section
@@ -161,8 +233,10 @@ struct ProjectContextView: View {
                 ProjectRowView(
                     project: project,
                     isActive: appState.activeProjectId == project.id,
+                    canMerge: vm.projects.count >= 2,
                     onActivate: { appState.activeProjectId = project.id },
                     onEdit: { vm.openEdit(project) },
+                    onMerge: { mergingProject = project },
                     onDelete: { vm.requestDelete(project) }
                 )
             }
@@ -252,8 +326,10 @@ struct ProjectContextView: View {
 private struct ProjectRowView: View {
     let project: Project
     let isActive: Bool
+    let canMerge: Bool
     let onActivate: () -> Void
     let onEdit: () -> Void
+    let onMerge: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
@@ -286,6 +362,17 @@ private struct ProjectRowView: View {
                         systemImage: "pencil"
                     )
                 }
+                Button {
+                    onMerge()
+                } label: {
+                    Label(
+                        String(localized: "project.row.merge",
+                               defaultValue: "Merge into…"),
+                        systemImage: "arrow.triangle.merge"
+                    )
+                }
+                .disabled(!canMerge)
+                Divider()
                 Button(role: .destructive) {
                     onDelete()
                 } label: {
@@ -520,5 +607,159 @@ private struct CollectionsListView: View {
         }
         modelContext.insert(newCollection)
         collectionToCreate = newCollection
+    }
+}
+
+
+// MARK: - MergeProjectSheet
+
+/// Sheet that lets the user choose a target project to merge the source project into.
+///
+/// Presented by `ProjectContextView` and `SettingsProjectsPane` when the user taps
+/// "Merge into…" on a project row. All activity records referencing the source project
+/// are re-assigned to the target before the source is deleted.
+///
+/// ## Platform layout
+/// Follows the same `#if os(macOS) macBody #else iOSBody #endif` pattern as
+/// `MergeTagSheet` so the sheet uses native macOS or iOS chrome on each platform.
+struct MergeProjectSheet: View {
+    let sourceProject: Project
+    let allProjects: [Project]
+    let onMerge: (Project) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedProjectId: UUID? = nil
+
+    var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS body
+
+    #if os(macOS)
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            Text(String(localized: "project.merge.title", defaultValue: "Merge Project"))
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(String(localized: "project.merge.source.header",
+                                defaultValue: "Merge \"\(sourceProject.name)\" into:"))
+                        .font(.callout.weight(.medium))
+
+                    ForEach(allProjects) { project in
+                        mergeProjectRow(project: project)
+                    }
+
+                    Divider()
+
+                    Text(String(localized: "project.merge.explanation",
+                                defaultValue: "All notes, collections, summaries, and reading history assigned to \"\(sourceProject.name)\" will be re-assigned to the selected project. \"\(sourceProject.name)\" will be deleted."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(16)
+            }
+
+            Divider()
+
+            HStack {
+                Button(String(localized: "project.merge.cancel", defaultValue: "Cancel")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button(String(localized: "project.merge.confirm", defaultValue: "Merge")) {
+                    if let id = selectedProjectId,
+                       let target = allProjects.first(where: { $0.id == id }) {
+                        onMerge(target)
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(selectedProjectId == nil)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .frame(minWidth: 400, minHeight: 280)
+    }
+    #endif
+
+    // MARK: - iOS body
+
+    #if os(iOS)
+    private var iOSBody: some View {
+        NavigationStack {
+            Form {
+                Section(String(localized: "project.merge.source.header",
+                               defaultValue: "Merge \"\(sourceProject.name)\" into:")) {
+                    ForEach(allProjects) { project in
+                        mergeProjectRow(project: project)
+                    }
+                }
+
+                Text(String(localized: "project.merge.explanation",
+                            defaultValue: "All notes, collections, summaries, and reading history assigned to \"\(sourceProject.name)\" will be re-assigned to the selected project. \"\(sourceProject.name)\" will be deleted."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .navigationTitle(String(localized: "project.merge.title",
+                                    defaultValue: "Merge Project"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "project.merge.cancel",
+                                  defaultValue: "Cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "project.merge.confirm",
+                                  defaultValue: "Merge")) {
+                        if let id = selectedProjectId,
+                           let target = allProjects.first(where: { $0.id == id }) {
+                            onMerge(target)
+                        }
+                    }
+                    .disabled(selectedProjectId == nil)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+    #endif
+
+    // MARK: - Shared row
+
+    private func mergeProjectRow(project: Project) -> some View {
+        let isSelected = selectedProjectId == project.id
+        return HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(project.name)
+                if let q = project.researchQuestion, !q.isEmpty {
+                    Text(q).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            Spacer()
+            if isSelected {
+                Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { selectedProjectId = project.id }
+        .accessibilityLabel(project.name)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
