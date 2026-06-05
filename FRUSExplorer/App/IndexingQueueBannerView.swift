@@ -58,6 +58,8 @@ struct IndexingQueueBannerView: View {
     var averageDocumentCount: Int = 600
 
     @State private var isExpanded = false
+    @State private var showWhileIndexing = false
+    @AppStorage("frus.education.hasSeen") private var hasSeen = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -76,6 +78,18 @@ struct IndexingQueueBannerView: View {
             .background(.bar)
         }
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
+        .sheet(isPresented: $showWhileIndexing) {
+            WhileIndexingSheet()
+        }
+        .onAppear {
+            // Auto-open the educational sheet the first time a bulk index starts.
+            if !hasSeen {
+                hasSeen = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    showWhileIndexing = true
+                }
+            }
+        }
     }
 
     // MARK: - Rows
@@ -164,6 +178,21 @@ struct IndexingQueueBannerView: View {
                         .lineLimit(1)
                 }
             }
+            // "Learn while you wait" — opens the educational flow.
+            // Re-openable even after the first auto-show.
+            Button {
+                showWhileIndexing = true
+            } label: {
+                Label(
+                    String(localized: "indexing.learnWhileWaiting",
+                           defaultValue: "Learn about FRUS while you wait →"),
+                    systemImage: "book.pages"
+                )
+                .font(.system(size: FRUSTheme.captionSmallSize))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .padding(.top, 3)
         }
         .padding(.top, 2)
         .transition(.move(edge: .bottom).combined(with: .opacity))

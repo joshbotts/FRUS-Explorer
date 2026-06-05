@@ -109,6 +109,10 @@
 		AA10BB01CC03DD04EE100006 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100004 /* OnboardingView.swift */; };
 		AA10BB01CC03DD04EE100008 /* OnboardingIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */; };
 		AA10BB01CC03DD04EE100009 /* OnboardingIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */; };
+		BB10CC02DD04EE05FF2201 /* IndexingEducationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB10CC02DD04EE05FF2200 /* IndexingEducationView.swift */; };
+		BB10CC02DD04EE05FF2202 /* IndexingEducationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB10CC02DD04EE05FF2200 /* IndexingEducationView.swift */; };
+		BB10CC02DD04EE05FF2204 /* IndexingSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB10CC02DD04EE05FF2203 /* IndexingSetupWizardView.swift */; };
+		BB10CC02DD04EE05FF2205 /* IndexingSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB10CC02DD04EE05FF2203 /* IndexingSetupWizardView.swift */; };
 		AA10BB01CC03DD04EE100011 /* OnboardingVolumePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */; };
 		AA10BB01CC03DD04EE100012 /* OnboardingVolumePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */; };
 		AA10BB01CC03DD04EE100014 /* OnboardingDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10BB01CC03DD04EE100013 /* OnboardingDownloadView.swift */; };
@@ -407,6 +411,8 @@
 		AA10BB01CC03DD04EE100001 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		AA10BB01CC03DD04EE100004 /* OnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIntroView.swift; sourceTree = "<group>"; };
+		BB10CC02DD04EE05FF2200 /* IndexingEducationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingEducationView.swift; sourceTree = "<group>"; };
+		BB10CC02DD04EE05FF2203 /* IndexingSetupWizardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IndexingSetupWizardView.swift; sourceTree = "<group>"; };
 		AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingVolumePickerView.swift; sourceTree = "<group>"; };
 		AA10BB01CC03DD04EE100013 /* OnboardingDownloadView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingDownloadView.swift; sourceTree = "<group>"; };
 		AA10BB01CC03DD04EE100016 /* OnboardingProjectSetupView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingProjectSetupView.swift; sourceTree = "<group>"; };
@@ -715,6 +721,8 @@
 				AA10BB01CC03DD04EE100001 /* OnboardingViewModel.swift */,
 				AA10BB01CC03DD04EE100004 /* OnboardingView.swift */,
 				AA10BB01CC03DD04EE100007 /* OnboardingIntroView.swift */,
+				BB10CC02DD04EE05FF2200 /* IndexingEducationView.swift */,
+				BB10CC02DD04EE05FF2203 /* IndexingSetupWizardView.swift */,
 				AA10BB01CC03DD04EE100010 /* OnboardingVolumePickerView.swift */,
 				AA10BB01CC03DD04EE100013 /* OnboardingDownloadView.swift */,
 				AA10BB01CC03DD04EE100016 /* OnboardingProjectSetupView.swift */,
@@ -1168,6 +1176,8 @@
 				AA10BB01CC03DD04EE100002 /* OnboardingViewModel.swift in Sources */,
 				AA10BB01CC03DD04EE100005 /* OnboardingView.swift in Sources */,
 				AA10BB01CC03DD04EE100008 /* OnboardingIntroView.swift in Sources */,
+				BB10CC02DD04EE05FF2201 /* IndexingEducationView.swift in Sources */,
+				BB10CC02DD04EE05FF2204 /* IndexingSetupWizardView.swift in Sources */,
 				AA10BB01CC03DD04EE100011 /* OnboardingVolumePickerView.swift in Sources */,
 				AA10BB01CC03DD04EE100014 /* OnboardingDownloadView.swift in Sources */,
 				AA10BB01CC03DD04EE100017 /* OnboardingProjectSetupView.swift in Sources */,
@@ -1308,6 +1318,8 @@
 				AA10BB01CC03DD04EE100003 /* OnboardingViewModel.swift in Sources */,
 				AA10BB01CC03DD04EE100006 /* OnboardingView.swift in Sources */,
 				AA10BB01CC03DD04EE100009 /* OnboardingIntroView.swift in Sources */,
+				BB10CC02DD04EE05FF2202 /* IndexingEducationView.swift in Sources */,
+				BB10CC02DD04EE05FF2205 /* IndexingSetupWizardView.swift in Sources */,
 				AA10BB01CC03DD04EE100012 /* OnboardingVolumePickerView.swift in Sources */,
 				AA10BB01CC03DD04EE100015 /* OnboardingDownloadView.swift in Sources */,
 				AA10BB01CC03DD04EE100018 /* OnboardingProjectSetupView.swift in Sources */,
