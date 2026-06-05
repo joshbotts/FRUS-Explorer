@@ -12,31 +12,173 @@ import SwiftUI
 
 /// Multipage educational view shown while the index builds.
 ///
-/// Four pages introduce FRUS and the app, then transition to
+/// Five pages introduce FRUS and the app, then transition to
 /// `IndexingSetupWizardView` so researchers can configure their context
 /// before the first documents finish indexing.
+///
+/// ## Platform layouts
+/// - **macOS**: Two-column document-browser layout. Left sidebar shows numbered
+///   chapter titles for direct navigation; right column is a scrollable content
+///   area. Navigation buttons sit below the content column.
+/// - **iOS/iPadOS**: Tab-paged layout with swipe gesture, page dots, and
+///   bottom navigation bar.
 ///
 /// ## Content status
 /// All page text is AI-generated placeholder content, clearly labelled
 /// at the top and bottom of each page, pending editorial review.
 ///
 /// Version history:
-///   1.0 — Session 155: initial implementation
+///   1.0 — Session 155: initial iOS implementation (4 pages)
+///   1.1 — Session 155: added page 5 (App Feature Walkthrough);
+///          macOS redesigned as two-column document browser
 struct IndexingEducationView: View {
-
-    // MARK: - State
 
     @State private var pageIndex: Int = 0
     var onComplete: () -> Void = {}
 
-    // MARK: - Body
-
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    // MARK: - macOS: two-column document browser
+
+    #if os(macOS)
+    private var macBody: some View {
+        HStack(spacing: 0) {
+
+            // ── Left sidebar: chapter list ─────────────────────────────────
+            VStack(spacing: 0) {
+                List(selection: Binding(
+                    get: { pageIndex },
+                    set: { pageIndex = $0 }
+                )) {
+                    ForEach(Array(EducationPage.all.enumerated()), id: \.offset) { idx, page in
+                        MacSidebarRow(number: idx + 1, title: page.title, isSelected: idx == pageIndex)
+                            .tag(idx)
+                    }
+                }
+                .listStyle(.sidebar)
+                .frame(width: 190)
+            }
+
+            Divider()
+
+            // ── Right content column ───────────────────────────────────────
+            VStack(spacing: 0) {
+                macContentArea
+                Divider()
+                macNavigationBar
+            }
+        }
+        .frame(minWidth: 760, minHeight: 520)
+    }
+
+    private var macContentArea: some View {
+        let page = EducationPage.all[pageIndex]
+        return ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 0) {
+
+                // Top placeholder
+                macPlaceholderBanner
+
+                // Header
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(page.title)
+                        .font(.title3.bold())
+                    if let subtitle = page.subtitle {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 20)
+                .padding(.bottom, 14)
+
+                Divider()
+
+                // Sections
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(page.sections) { section in
+                        MacSectionView(section: section)
+                    }
+                }
+                .padding(28)
+
+                // Bottom placeholder
+                macPlaceholderBanner
+                    .padding(.bottom, 16)
+            }
+        }
+        .id(pageIndex) // reset scroll position when page changes
+        .animation(.easeInOut(duration: 0.15), value: pageIndex)
+    }
+
+    private var macNavigationBar: some View {
+        HStack {
+            // Back
+            if pageIndex > 0 {
+                Button(String(localized: "education.nav.back", defaultValue: "Back")) {
+                    withAnimation(.easeInOut(duration: 0.15)) { pageIndex -= 1 }
+                }
+                .keyboardShortcut(.cancelAction)
+            } else {
+                // Invisible spacer to keep layout stable
+                Button("Back") {}.opacity(0)
+            }
+
+            Spacer()
+
+            // Page indicator
+            Text("\(pageIndex + 1) of \(EducationPage.all.count)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+
+            Spacer()
+
+            // Next / Complete
+            if pageIndex < EducationPage.all.count - 1 {
+                Button(String(localized: "education.nav.next", defaultValue: "Next")) {
+                    withAnimation(.easeInOut(duration: 0.15)) { pageIndex += 1 }
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button(String(localized: "education.nav.setup",
+                              defaultValue: "Set Up My Research →")) {
+                    onComplete()
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+
+    private var macPlaceholderBanner: some View {
+        Text(String(localized: "education.placeholder.label",
+                    defaultValue: "AI Generated Placeholder"))
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 5)
+            .background(Color.yellow.opacity(0.15))
+    }
+    #endif
+
+    // MARK: - iOS: tab-paged layout
+
+    private var iOSBody: some View {
         VStack(spacing: 0) {
-            // Page content
             TabView(selection: $pageIndex) {
                 ForEach(Array(EducationPage.all.enumerated()), id: \.offset) { idx, page in
-                    EducationPageView(page: page)
+                    iOSPageView(page: page)
                         .tag(idx)
                 }
             }
@@ -45,19 +187,12 @@ struct IndexingEducationView: View {
             #endif
             .animation(.easeInOut, value: pageIndex)
 
-            // Navigation controls
-            navigationBar
+            iOSNavigationBar
         }
-        #if os(macOS)
-        .frame(minWidth: 580, minHeight: 540)
-        #endif
     }
 
-    // MARK: - Navigation bar
-
-    private var navigationBar: some View {
+    private var iOSNavigationBar: some View {
         VStack(spacing: 8) {
-            // Page dots
             HStack(spacing: 6) {
                 ForEach(0..<EducationPage.all.count, id: \.self) { idx in
                     Circle()
@@ -66,8 +201,6 @@ struct IndexingEducationView: View {
                         .animation(.easeInOut, value: pageIndex)
                 }
             }
-
-            // Prev / Next
             HStack {
                 if pageIndex > 0 {
                     Button(String(localized: "education.nav.back", defaultValue: "Back")) {
@@ -82,18 +215,12 @@ struct IndexingEducationView: View {
                         withAnimation { pageIndex += 1 }
                     }
                     .buttonStyle(.borderedProminent)
-                    #if os(macOS)
-                    .controlSize(.regular)
-                    #endif
                 } else {
                     Button(String(localized: "education.nav.setup",
                                   defaultValue: "Set Up My Research →")) {
                         onComplete()
                     }
                     .buttonStyle(.borderedProminent)
-                    #if os(macOS)
-                    .controlSize(.regular)
-                    #endif
                 }
             }
             .padding(.horizontal, 24)
@@ -104,22 +231,75 @@ struct IndexingEducationView: View {
     }
 }
 
-// MARK: - EducationPageView
+// MARK: - macOS sidebar row
 
-/// A single page: placeholder watermark at top and bottom, scrollable content in between.
-private struct EducationPageView: View {
+#if os(macOS)
+private struct MacSidebarRow: View {
+    let number: Int
+    let title: String
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(number)")
+                .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                .frame(width: 16, alignment: .trailing)
+                .padding(.top, 1)
+            Text(title)
+                .font(.system(size: 13))
+                .lineLimit(3)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(.vertical, 3)
+    }
+}
+
+// MARK: - macOS section view
+
+private struct MacSectionView: View {
+
+    let section: EducationSection
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            if let heading = section.heading {
+                Text(heading)
+                    .font(.headline)
+            }
+            ForEach(section.paragraphs, id: \.self) { para in
+                Text(para)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let bullets = section.bullets {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(bullets, id: \.self) { bullet in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text("•").foregroundStyle(.secondary)
+                            Text(bullet).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .font(.body)
+                .padding(.leading, 4)
+            }
+        }
+    }
+}
+#endif
+
+// MARK: - iOS page view
+
+private struct iOSPageView: View {
 
     let page: EducationPage
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
+                iOSPlaceholderBanner
 
-                // ── Top placeholder marker ─────────────────────────────────
-                placeholderBanner
-
-                // ── Page header ────────────────────────────────────────────
                 VStack(alignment: .leading, spacing: 6) {
                     Text(page.title)
                         .font(.title2.bold())
@@ -135,22 +315,20 @@ private struct EducationPageView: View {
 
                 Divider()
 
-                // ── Page sections ──────────────────────────────────────────
                 VStack(alignment: .leading, spacing: 20) {
                     ForEach(page.sections) { section in
-                        EducationSectionView(section: section, openURL: openURL)
+                        iOSSectionView(section: section)
                     }
                 }
                 .padding(24)
 
-                // ── Bottom placeholder marker ──────────────────────────────
-                placeholderBanner
+                iOSPlaceholderBanner
                     .padding(.bottom, 12)
             }
         }
     }
 
-    private var placeholderBanner: some View {
+    private var iOSPlaceholderBanner: some View {
         Text(String(localized: "education.placeholder.label",
                     defaultValue: "AI Generated Placeholder"))
             .font(.caption.weight(.semibold))
@@ -161,23 +339,17 @@ private struct EducationPageView: View {
     }
 }
 
-// MARK: - EducationSectionView
-
-private struct EducationSectionView: View {
+private struct iOSSectionView: View {
 
     let section: EducationSection
-    let openURL: OpenURLAction
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let heading = section.heading {
-                Text(heading)
-                    .font(.headline)
+                Text(heading).font(.headline)
             }
             ForEach(section.paragraphs, id: \.self) { para in
-                Text(para)
-                    .font(.body)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(para).font(.body).fixedSize(horizontal: false, vertical: true)
             }
             if let bullets = section.bullets {
                 VStack(alignment: .leading, spacing: 4) {
@@ -203,7 +375,7 @@ struct EducationPage: Identifiable {
     let subtitle: String?
     let sections: [EducationSection]
 
-    static let all: [EducationPage] = [page1, page2, page3, page4]
+    static let all: [EducationPage] = [page1, page2, page3, page4, page5]
 }
 
 struct EducationSection: Identifiable {
@@ -432,6 +604,74 @@ private extension EducationPage {
                 heading: "Understand What You're Not Reading",
                 paragraphs: [
                     "FRUS documents the American side of foreign policy. The counterpart cable from a foreign ministry, the intelligence report the American delegation didn't know about, the domestic political pressures driving a foreign leader — these are absent. FRUS is indispensable but never sufficient. Treat it as your entry point to a policy question, not its answer."
+                ]
+            ),
+        ]
+    )
+}
+
+// MARK: - Page 5: App Feature Walkthrough
+
+private extension EducationPage {
+    static let page5 = EducationPage(
+        id: "app-features",
+        title: "What This App Can Do",
+        subtitle: "Key features and how to use them",
+        sections: [
+            EducationSection(
+                id: "search",
+                heading: "Full-Text Search",
+                paragraphs: [
+                    "Search the full text of all downloaded and indexed volumes simultaneously. Results are ranked by relevance using the BM25 algorithm with English stemming — searching \"negotiation\" will also return documents containing \"negotiate,\" \"negotiated,\" and \"negotiations.\" Narrow results further by date range, person name, or document type. The search filters to documents from indexed volumes only; downloading and indexing more volumes expands your search corpus."
+                ]
+            ),
+            EducationSection(
+                id: "document",
+                heading: "Document View",
+                paragraphs: [
+                    "Each document is rendered from its original TEI-encoded XML, preserving structure: headings, datelines, footnote markers, tables, and emphasis as they appear in the published volume. Footnote markers open inline popups; person names are highlighted and link to the volume's biographical glossary. You can create color-coded text highlights that persist across sessions and attach research notes to specific passages."
+                ]
+            ),
+            EducationSection(
+                id: "source-explorer",
+                heading: "Source Explorer",
+                paragraphs: [
+                    "The Source Explorer, accessible from any document, reads the archival source note and connects it to NARA's finding aids — routing you to the correct period-specific research page, filing manual PDFs, and related collections. When the index is complete, it also surfaces other documents in your indexed volumes that came from the same archival collection."
+                ]
+            ),
+            EducationSection(
+                id: "nara-lookup",
+                heading: "NARA Catalog Lookup",
+                paragraphs: [
+                    "Select any text in a document — a lot file number, a decimal file identifier, a collection name — and use the NARA Catalog Lookup tool (in the toolbar's More menu, or the research strip on Mac) to query the NARA Catalog directly. Choose from several strategies: lot file search, keyword search within a specific record group, or central-files period routing. No API key is required for period routing; other strategies require a free NARA Catalog API key, available from Settings."
+                ]
+            ),
+            EducationSection(
+                id: "collections",
+                heading: "Collections",
+                paragraphs: [
+                    "Collections are curated document sets you assemble for a purpose. Add documents from any volume, attach research notes to individual entries, and export the finished collection as a PDF, HTML file, or Word document. Export options include body depth (full text, AI summary only, or index only), footnote inclusion, highlight annotation, and whether to include research notes. Collections are the right way to build a teaching reader, policy brief, or research chapter from FRUS materials."
+                ]
+            ),
+            EducationSection(
+                id: "research-tools",
+                heading: "Research Notes, Tags, and Projects",
+                paragraphs: [
+                    "Annotate documents with free-text research notes that are stored in iCloud and synced across your devices. Apply user tags to group documents by theme, actor, or analytical category. Organize everything under named research projects — a project is an activity lens that tags your notes, collections, and reading history so you can keep multiple research threads separate. All annotation data is yours and travels with your account."
+                ]
+            ),
+            EducationSection(
+                id: "ai",
+                heading: "AI Summaries",
+                paragraphs: [
+                    "When Apple Intelligence is available on your device, you can generate AI summaries of individual documents using customizable prompt templates. Summaries are stored locally and can be exported alongside documents in collections. The app provides standard prompt templates for different research purposes (analytical, chronological, actors-focused) and lets you create your own. Summaries are tools for orientation — always read the primary document for your actual research."
+                ]
+            ),
+            EducationSection(
+                id: "analytics",
+                heading: "Corpus Analytics",
+                paragraphs: [
+                    "The Analytics window charts how often a term or phrase appears across the indexed corpus over time, broken down by decade, year, or month. Use it to identify when a topic first appears in the diplomatic record, how coverage of a country or issue changed across administrations, or which volumes are most relevant to a specific keyword. Analytics operates entirely on the local index — no network connection required."
                 ]
             ),
         ]
