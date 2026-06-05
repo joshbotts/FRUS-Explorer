@@ -808,6 +808,8 @@ struct SummaryBlockView: View {
 struct StatusBarView: View {
     @Environment(AppState.self) private var appState
     @State private var showQueuePopover = false
+    @State private var showWhileIndexing = false
+    @AppStorage("frus.education.hasSeen") private var hasSeen = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -849,6 +851,18 @@ struct StatusBarView: View {
         // Close the queue popover when indexing finishes.
         .onChange(of: appState.currentIndexingProgress) { _, progress in
             if progress == nil { showQueuePopover = false }
+        }
+        // Auto-open the educational sheet the first time a bulk index starts on macOS.
+        // Observe .current (Int?) rather than the full tuple, which is not Equatable.
+        .onChange(of: appState.indexingQueuePosition?.current) { _, current in
+            guard current != nil, !hasSeen else { return }
+            hasSeen = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                showWhileIndexing = true
+            }
+        }
+        .sheet(isPresented: $showWhileIndexing) {
+            WhileIndexingSheet()
         }
     }
 
@@ -1096,7 +1110,13 @@ struct StatusBarView: View {
                     queuePosition: appState.indexingQueuePosition!,
                     volumeTitles: appState.indexingQueueVolumeTitles,
                     averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
-                    averageDocumentCount: appState.indexingQueueAverageDocumentCount
+                    averageDocumentCount: appState.indexingQueueAverageDocumentCount,
+                    onLearnTapped: {
+                        showQueuePopover = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            showWhileIndexing = true
+                        }
+                    }
                 )
             }
         } else {
@@ -1167,6 +1187,9 @@ private struct MacIndexingQueuePanel: View {
     var averageDocsPerSecond: Double = 0
     /// Rolling average document count from completed volumes; falls back to 600.
     var averageDocumentCount: Int = 600
+    /// Called when the user taps "Learn about FRUS while you wait". The popover
+    /// dismisses itself before calling this so the sheet can open cleanly.
+    var onLearnTapped: (() -> Void)? = nil
 
     @State private var isExpanded = false
 
@@ -1306,6 +1329,23 @@ private struct MacIndexingQueuePanel: View {
                     .padding(.leading, 2)
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
+            }
+
+            // "Learn while you wait" — opens the educational flow from StatusBarView.
+            if let onLearn = onLearnTapped {
+                Divider()
+                Button {
+                    onLearn()
+                } label: {
+                    Label(
+                        String(localized: "indexing.learnWhileWaiting",
+                               defaultValue: "Learn about FRUS while you wait →"),
+                        systemImage: "book.pages"
+                    )
+                    .font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
             }
         }
         .padding(.horizontal, 16)
