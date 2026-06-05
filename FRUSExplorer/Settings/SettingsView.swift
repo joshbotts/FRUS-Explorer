@@ -1661,31 +1661,44 @@ private struct UserTagsView: View {
         renameText = ""
     }
 
-    private func mergeTag(source: UserTag, into target: UserTag) {
-        // Update all notes that reference the source tag to reference the target tag instead
+    func mergeTag(source: UserTag, into target: UserTag) {
+        // Capture IDs before any modification.
         let sourceId = source.id
         let targetId = target.id
-        var descriptor = FetchDescriptor<ResearchNote>(
-            predicate: #Predicate { note in note.userTagIds.contains(sourceId) }
-        )
-        descriptor.fetchLimit = 500
-        let affected = (try? modelContext.fetch(descriptor)) ?? []
-        for note in affected {
+
+        // 1. Re-tag ResearchNotes.
+        // Using a #Predicate with array.contains on a transformable [UUID] column
+        // crashes on SwiftData — fetch all notes and filter in memory instead.
+        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
+        var noteCount = 0
+        for note in allNotes where note.userTagIds.contains(sourceId) {
             var ids = note.userTagIds.filter { $0 != sourceId }
             if !ids.contains(targetId) { ids.append(targetId) }
             note.userTagIds = ids
+            noteCount += 1
         }
+
+        // 2. Re-tag DocumentTagAssignments (previously omitted — caused orphaned assignments).
+        let allAssignments = (try? modelContext.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
+        var assignmentCount = 0
+        for assignment in allAssignments where assignment.tagId == sourceId {
+            assignment.tagId = targetId
+            assignmentCount += 1
+        }
+
+        // 3. Delete the source tag last, after all references have been updated.
         modelContext.delete(source)
 
         #if DEBUG
-        print("[Settings] Merged tag \(source.name) into \(target.name); updated \(affected.count) notes")
+        print("[Settings] Merged '\(source.name)' → '\(target.name)': "
+              + "\(noteCount) notes, \(assignmentCount) assignments updated")
         #endif
     }
 }
 
 // MARK: - MergeTagSheet
 
-private struct MergeTagSheet: View {
+struct MergeTagSheet: View {
     let sourceTag: UserTag
     let allTags: [UserTag]
     let onMerge: (UserTag) -> Void

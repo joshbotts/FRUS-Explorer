@@ -510,6 +510,7 @@ private struct SettingsTagsPane: View {
     @State private var tagToRename: UserTag? = nil
     @State private var tagToDelete: UserTag? = nil
     @State private var showDeleteConfirmation = false
+    @State private var tagToMerge: UserTag? = nil
 
     var body: some View {
         ScrollView {
@@ -562,6 +563,16 @@ private struct SettingsTagsPane: View {
         .sheet(item: $tagToRename) { tag in
             TagRenameSheet(tag: tag)
         }
+        .sheet(item: $tagToMerge) { sourceTag in
+            MergeTagSheet(
+                sourceTag: sourceTag,
+                allTags: tags.filter { $0.id != sourceTag.id },
+                onMerge: { targetTag in
+                    mergeTag(source: sourceTag, into: targetTag)
+                    tagToMerge = nil
+                }
+            )
+        }
         .confirmationDialog(
             "Delete Tag?",
             isPresented: $showDeleteConfirmation,
@@ -591,6 +602,12 @@ private struct SettingsTagsPane: View {
                 } label: {
                     Label("Rename", systemImage: "pencil")
                 }
+                Button {
+                    tagToMerge = tag
+                } label: {
+                    Label("Merge into…", systemImage: "arrow.triangle.merge")
+                }
+                .disabled(tags.count < 2)
                 Divider()
                 Button(role: .destructive) {
                     tagToDelete = tag
@@ -627,6 +644,36 @@ private struct SettingsTagsPane: View {
         let tag = UserTag(name: name)
         modelContext.insert(tag)
         newTagName = ""
+    }
+
+    private func mergeTag(source: UserTag, into target: UserTag) {
+        let sourceId = source.id
+        let targetId = target.id
+
+        // Re-tag ResearchNotes (fetch all; #Predicate with array.contains crashes on transformable columns).
+        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
+        var noteCount = 0
+        for note in allNotes where note.userTagIds.contains(sourceId) {
+            var ids = note.userTagIds.filter { $0 != sourceId }
+            if !ids.contains(targetId) { ids.append(targetId) }
+            note.userTagIds = ids
+            noteCount += 1
+        }
+
+        // Re-tag DocumentTagAssignments.
+        let allAssignments = (try? modelContext.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
+        var assignmentCount = 0
+        for assignment in allAssignments where assignment.tagId == sourceId {
+            assignment.tagId = targetId
+            assignmentCount += 1
+        }
+
+        modelContext.delete(source)
+
+        #if DEBUG
+        print("[macSettings] Merged '\(source.name)' → '\(target.name)': "
+              + "\(noteCount) notes, \(assignmentCount) assignments updated")
+        #endif
     }
 }
 
