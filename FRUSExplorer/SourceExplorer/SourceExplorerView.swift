@@ -357,65 +357,99 @@ struct SourceExplorerView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                // No year available — show the full period table
+                // No year available — show the full period table with filing manuals
                 Text(String(localized: "source.explorer.decimalPeriod.noYear",
                             defaultValue: "Select the filing period that matches the document date:"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 ForEach(Self.allFilingPeriods, id: \.id) { period in
-                    Button(period.label) {
-                        openURL(period.url)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Button(period.label) {
+                            openURL(period.url)
+                        }
+                        .font(.callout)
+                        ForEach(period.filingManuals, id: \.url) { manual in
+                            Button {
+                                openURL(manual.url)
+                            } label: {
+                                Label(manual.label, systemImage: "doc.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
-                    .font(.callout)
+                    .padding(.vertical, 1)
                 }
             }
         }
     }
 
     /// All State Dept. central-file filing periods, shown when document year is unknown.
-    /// Internal (not private) so `MacSourceExplorerView` can reference the same list.
-    static let allFilingPeriods: [FilingPeriod] = [
-        FilingPeriod(
-            id: "1789-1906", label: "1789–1906",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1789-1906")!
-        ),
-        FilingPeriod(
-            id: "1906-1910", label: "1906–1910",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1906-1910")!
-        ),
-        FilingPeriod(
-            id: "1910-1929", label: "1910–1929 (decimal files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1910-1929")!
-        ),
-        FilingPeriod(
-            id: "1930-1939", label: "1930–1939 (decimal files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1930-1939")!
-        ),
-        FilingPeriod(
-            id: "1940-1944", label: "1940–1944 (decimal files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1940-1944")!
-        ),
-        FilingPeriod(
-            id: "1945-1949", label: "1945–1949 (decimal files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1945-1949")!
-        ),
-        FilingPeriod(
-            id: "1950-1954", label: "1950–1954 (decimal files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1950-1954")!
-        ),
-        FilingPeriod(
-            id: "1955-1959", label: "1955–1959 (decimal files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1955-1959")!
-        ),
-        FilingPeriod(
-            id: "1960-1963", label: "1960–January 1963 (decimal files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1910-1963/1960-1963")!
-        ),
-        FilingPeriod(
-            id: "1963-1973", label: "1963–1973 (subject-numeric files)",
-            url: URL(string: "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1963-1973")!
-        ),
-    ]
+    /// Internal (not private) so `MacSourceExplorerView` and `NARACatalogLookupView` can reference the same list.
+    ///
+    /// ## URL notes (verified 2026-06-04)
+    /// - The seven 1910-1963 sub-period pages (`/1910-1963/1910-1929` etc.) all return 404.
+    ///   NARA consolidated them onto one parent page; all seven now link to `/1910-1963`.
+    /// - The 1789-1906 and 1906-1910 pages load correctly.
+    /// - The 1963-1973 page loads correctly.
+    /// - All filing manual PDFs are verified present.
+    static let allFilingPeriods: [FilingPeriod] = {
+        let base     = "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files"
+        let manBase  = "https://www.archives.gov/files/research/foreign-policy/state-dept/finding-aids"
+        let parent   = "\(base)/1910-1963"  // sub-period pages 404; parent is canonical
+
+        func man(_ file: String, _ label: String) -> FilingManualLink {
+            FilingManualLink(url: URL(string: "\(manBase)/\(file)")!, label: label)
+        }
+        let m1910 = man("manual-1910-49.pdf",                         "Filing Manual 1910–49 (PDF)")
+        let m1950 = man("manual-1950-59.pdf",                         "Filing Manual 1950–59 (PDF)")
+        let m1955 = man("manual-1955.pdf",                            "Filing Manual 1955 (PDF)")
+        let m1960 = man("manual-1960-63.pdf",                         "Filing Manual 1960–63 (PDF)")
+        let m1963 = man("records-classification-handbook-1963.pdf",   "Classification Handbook 1963 (PDF)")
+        let m1965 = man("dos-records-classification-handbook-1965-1973.pdf",
+                                                                      "Classification Handbook 1965–73 (PDF)")
+
+        return [
+            FilingPeriod(id: "1789-1906", label: "1789–1906",
+                         url: URL(string: "\(base)/1789-1906")!),
+
+            FilingPeriod(id: "1906-1910", label: "1906–1910",
+                         url: URL(string: "\(base)/1906-1910")!),
+
+            FilingPeriod(id: "1910-1929", label: "1910–1929 (decimal files)",
+                         url: URL(string: parent)!,
+                         filingManuals: [m1910]),
+
+            FilingPeriod(id: "1930-1939", label: "1930–1939 (decimal files)",
+                         url: URL(string: parent)!,
+                         filingManuals: [m1910]),
+
+            FilingPeriod(id: "1940-1944", label: "1940–1944 (decimal files)",
+                         url: URL(string: parent)!,
+                         filingManuals: [m1910]),
+
+            FilingPeriod(id: "1945-1949", label: "1945–1949 (decimal files)",
+                         url: URL(string: parent)!,
+                         filingManuals: [m1910]),
+
+            FilingPeriod(id: "1950-1954", label: "1950–1954 (decimal files)",
+                         url: URL(string: parent)!,
+                         filingManuals: [m1950]),
+
+            FilingPeriod(id: "1955-1959", label: "1955–1959 (decimal files)",
+                         url: URL(string: parent)!,
+                         filingManuals: [m1955]),
+
+            FilingPeriod(id: "1960-1963", label: "1960–January 1963 (decimal files)",
+                         url: URL(string: parent)!,
+                         filingManuals: [m1960]),
+
+            // 1963-1973: two filing manuals because the period spans two classification systems.
+            FilingPeriod(id: "1963-1973", label: "1963–1973 (subject-numeric files)",
+                         url: URL(string: "\(base)/1963-1973")!,
+                         filingManuals: [m1963, m1965]),
+        ]
+    }()
 
     // MARK: - Lot File Panel
 
@@ -852,6 +886,14 @@ struct SourceExplorerView: View {
     }
 }
 
+// MARK: - FilingManualLink
+
+/// A NARA filing manual PDF paired with a display label.
+struct FilingManualLink: Sendable {
+    let url: URL
+    let label: String
+}
+
 // MARK: - FilingPeriod
 
 /// A named NARA filing period for State Dept. central files, used in the
@@ -860,4 +902,14 @@ struct FilingPeriod: Sendable {
     let id: String
     let label: String
     let url: URL
+    /// Filing manual PDFs that apply to this period. Empty for pre-1910 periods
+    /// and other periods where NARA has not published a relevant manual.
+    let filingManuals: [FilingManualLink]
+
+    init(id: String, label: String, url: URL, filingManuals: [FilingManualLink] = []) {
+        self.id = id
+        self.label = label
+        self.url = url
+        self.filingManuals = filingManuals
+    }
 }

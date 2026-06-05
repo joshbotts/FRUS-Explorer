@@ -653,17 +653,29 @@ struct MacSourceExplorerView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                // No year — show the full period table
+                // No year — show the full period table with filing manuals
                 Text(String(localized: "source.explorer.decimalPeriod.noYear",
                             defaultValue: "Select the filing period that matches the document date:"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 ForEach(SourceExplorerView.allFilingPeriods, id: \.id) { period in
-                    Button(period.label) {
-                        openURL(period.url)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Button(period.label) {
+                            openURL(period.url)
+                        }
+                        .buttonStyle(.link)
+                        .font(.callout)
+                        ForEach(period.filingManuals, id: \.url) { manual in
+                            Button {
+                                openURL(manual.url)
+                            } label: {
+                                Label(manual.label, systemImage: "doc.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.link)
+                        }
                     }
-                    .buttonStyle(.link)
-                    .font(.callout)
                 }
             }
         }

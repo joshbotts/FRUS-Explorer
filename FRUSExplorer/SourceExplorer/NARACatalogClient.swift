@@ -174,20 +174,11 @@ public actor NARACatalogClient {
             return URL(string: "\(base)/1789-1906")!
         case 1906...1909:
             return URL(string: "\(base)/1906-1910")!
-        case 1910...1929:
-            return URL(string: "\(base)/1910-1963/1910-1929")!
-        case 1930...1939:
-            return URL(string: "\(base)/1910-1963/1930-1939")!
-        case 1940...1944:
-            return URL(string: "\(base)/1910-1963/1940-1944")!
-        case 1945...1949:
-            return URL(string: "\(base)/1910-1963/1945-1949")!
-        case 1950...1954:
-            return URL(string: "\(base)/1910-1963/1950-1954")!
-        case 1955...1959:
-            return URL(string: "\(base)/1910-1963/1955-1959")!
-        case 1960...1962:
-            return URL(string: "\(base)/1910-1963/1960-1963")!
+        case 1910...1962:
+            // NARA consolidated all seven decimal-file sub-period pages onto one
+            // parent page. The individual sub-period URLs (/1910-1963/1910-1929 etc.)
+            // all return HTTP 404 (verified 2026-06-04). Use the parent page.
+            return URL(string: "\(base)/1910-1963")!
         default:   // 1963–1973 subject-numeric
             return URL(string: "\(base)/1963-1973")!
         }
