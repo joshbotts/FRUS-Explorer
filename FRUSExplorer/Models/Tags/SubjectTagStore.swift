@@ -72,6 +72,25 @@ public actor SubjectTagStore {
         resolve(byDocumentId[documentId] ?? [])
     }
 
+    /// Returns a space-joined subject-ID string for each document that has at least
+    /// one tag. Documents with no tags are absent from the result dictionary.
+    ///
+    /// Resolves all lookups in one actor call, replacing the N sequential
+    /// `tags(forDocumentId:)` calls that `IndexingPipeline.parseAndExtract` previously
+    /// made inside its per-document loop (300 actor hops → 1 for a 300-doc volume).
+    public func tagsStringMap(forDocumentIds documentIds: [String]) -> [String: String] {
+        var result: [String: String] = [:]
+        result.reserveCapacity(documentIds.count / 4)   // most docs have no tags
+        for documentId in documentIds {
+            guard let appearances = byDocumentId[documentId], !appearances.isEmpty else { continue }
+            let tags = resolve(appearances)
+            if !tags.isEmpty {
+                result[documentId] = tags.map(\.subjectId).joined(separator: " ")
+            }
+        }
+        return result
+    }
+
     /// Returns subject tags assigned to the given document filtered to the given confidence tier.
     public func tags(forDocumentId documentId: String, confidence: SubjectTagConfidence) -> [SubjectTag] {
         let filtered = (byDocumentId[documentId] ?? []).filter { $0.confidence == confidence }

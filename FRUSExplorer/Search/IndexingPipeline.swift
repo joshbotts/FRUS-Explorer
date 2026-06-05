@@ -260,6 +260,12 @@ public actor IndexingPipeline {
     // MARK: - Auxiliary SQLite connection
 
     nonisolated(unsafe) private var auxDb: OpaquePointer?
+
+    /// Pre-prepared INSERT statement for `document_cache` — the hottest write
+    /// path (called once per document in the co-batch loop). Prepared once after
+    /// schema setup and reused across all volumes, avoiding `sqlite3_prepare_v2`
+    /// overhead on every `storeIndexData` call (#7).
+    nonisolated(unsafe) private var preparedCacheInsert: OpaquePointer? = nil
     private let databaseURL: URL
 
     // MARK: - Progress stream (volume-level, consumed by ReindexView)
@@ -361,6 +367,19 @@ public actor IndexingPipeline {
         try Self.setupDatabase(h)
         auxDb = h
 
+        // Pre-prepare the document_cache INSERT once after schema setup so every
+        // call to auxInsertDocumentCache reuses the compiled statement (#7).
+        let cacheSQL = """
+            INSERT OR REPLACE INTO document_cache
+            (volume_id, document_id, document_number, header, dateline, source_note, body_text,
+             subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+        var cacheStmt: OpaquePointer?
+        if sqlite3_prepare_v2(h, cacheSQL, -1, &cacheStmt, nil) == SQLITE_OK {
+            preparedCacheInsert = cacheStmt
+        }
+
         // Register for iOS memory-pressure notifications so we can reduce batch size
         // before the OS terminates the process. The observer fires on the main thread;
         // we hop to the actor via an unstructured Task so isolation is maintained.
@@ -382,6 +401,7 @@ public actor IndexingPipeline {
         progressContinuation.finish()
         progressUpdateContinuation.finish()
         metadataContinuation.finish()
+        if let stmt = preparedCacheInsert { sqlite3_finalize(stmt) }
         if let db = auxDb { sqlite3_close_v2(db) }
     }
 
@@ -994,6 +1014,12 @@ public actor IndexingPipeline {
         var cacheRows: [DocumentCacheRow] = []
         var personMentionRows: [PersonMentionRow] = []
 
+        // One actor hop to resolve subject tags for all documents in this volume (#3).
+        // Previously: N sequential `await subjectTagStore.tags(forDocumentId:)` calls.
+        let subjectTagStrings = await subjectTagStore.tagsStringMap(
+            forDocumentIds: astDocs.map(\.documentId)
+        )
+
         for astDoc in astDocs {
             let did = astDoc.documentId
             let header     = Self.extractHeader(from: astDoc.nodes)
@@ -1007,8 +1033,7 @@ public actor IndexingPipeline {
                 return true
             }()
 
-            let subjectTags   = await subjectTagStore.tags(forDocumentId: did)
-            let subjectTagStr = subjectTags.isEmpty ? nil : subjectTags.map(\.subjectId).joined(separator: " ")
+            let subjectTagStr = subjectTagStrings[did]
 
             fts5Docs.append(FTS5Document(
                 id: did, volumeId: volumeId, documentNumber: docNumber,
@@ -1018,10 +1043,25 @@ public actor IndexingPipeline {
                 isEditorialNote: isEditorialNote
             ))
 
-            crossRefs.append(contentsOf: Self.extractCrossReferences(
-                from: astDoc.nodes, sourceVolumeId: volumeId, sourceDocumentId: did))
-            pageRangeRows.append(contentsOf: Self.extractPageRanges(
-                from: astDoc.nodes, volumeId: volumeId, documentId: did))
+            // Single recursive walk collects cross-refs, person refs, and page ranges
+            // simultaneously (#4 — replaces 3 separate full-tree traversals per doc).
+            var docCrossRefs: [CrossReferenceRow] = []
+            var docPersonRefs: Set<String> = []
+            var docPageRanges: [PageRangeRow] = []
+            Self.collectDocumentRefs(
+                from: astDoc.nodes,
+                volumeId: volumeId, documentId: did,
+                crossRefs: &docCrossRefs,
+                personRefs: &docPersonRefs,
+                pageRanges: &docPageRanges
+            )
+            crossRefs.append(contentsOf: docCrossRefs)
+            pageRangeRows.append(contentsOf: docPageRanges)
+            for ref in docPersonRefs {
+                personMentionRows.append(PersonMentionRow(
+                    volumeId: volumeId, documentId: did, personRef: ref))
+            }
+
             let (dateMin, dateMax) = Self.extractDateRange(
                 from: astDoc.nodes,
                 dateTimeMin: astDoc.dateTimeMin,
@@ -1038,13 +1078,6 @@ public actor IndexingPipeline {
                 userTagIds: nil, summaryText: nil, noteText: nil,
                 isEditorialNote: isEditorialNote
             ))
-
-            let personRefs = Self.extractPersonRefs(from: astDoc.nodes)
-            for ref in personRefs {
-                personMentionRows.append(PersonMentionRow(
-                    volumeId: volumeId, documentId: did, personRef: ref
-                ))
-            }
         }
 
         // Persons and terms were extracted in the same single-pass parse above.
@@ -1158,29 +1191,34 @@ public actor IndexingPipeline {
             await Task.yield()
         }
 
-        // --- Remaining auxiliary tables ---
+        // --- All remaining auxiliary tables in a single transaction ---
         //
-        // `cross_references`, `person_mentions`, and `page_ranges` all use plain INSERT
-        // (no UNIQUE constraint or ON CONFLICT clause). Without pre-deletion, re-indexing
-        // a volume accumulates duplicate rows — doubling page-range rows on every re-index
-        // corrupts citation lookup silently. Delete existing rows before inserting.
-        // `document_dates` uses INSERT OR REPLACE (safe), but is also pre-deleted so
-        // that stale rows for documents removed from the XML are cleaned up.
-        try auxDeleteCrossReferences(forVolumeId: data.volumeId)
-        try auxDeletePersonMentions(forVolumeId: data.volumeId)
-        try auxDeletePageRanges(forVolumeId: data.volumeId)
+        // Previously 11 separate transactions (3 autocommit DELETEs + 8 explicit
+        // BEGIN/COMMIT INSERT blocks), each triggering its own WAL flush. For a
+        // 552-volume corpus re-index that was ~6,000 unnecessary WAL commits.
+        // One outer BEGIN/COMMIT reduces aux-table I/O by ~10×.
+        //
+        // `inExternalTransaction: true` on each auxInsert* suppresses the inner
+        // BEGIN so the outer transaction does not see a nested-BEGIN SQLite error.
+        //
+        // `resolvePageBasedCrossReferences` UPDATE loop also runs inside the
+        // transaction, fixing the previous bug where each UPDATE was an implicit
+        // autocommit (one WAL flush per resolved page reference).
+        try inTransaction {
+            try auxDeleteCrossReferences(forVolumeId: data.volumeId)
+            try auxDeletePersonMentions(forVolumeId: data.volumeId)
+            try auxDeletePageRanges(forVolumeId: data.volumeId)
 
-        try auxInsertCrossReferences(data.crossReferences)
-        try auxInsertPageRanges(data.pageRanges)
-        // Resolve page-based cross-references (e.g. <ref target="#p42">) now that
-        // both cross_references and page_ranges are populated for this volume.
-        try resolvePageBasedCrossReferences(volumeId: data.volumeId)
-        try auxInsertDocumentDates(data.documentDates)
-        try auxInsertPersonMentions(data.personMentions)
-        try auxInsertPersons(data.persons)
-        try auxInsertTerms(data.terms)
-        try auxInsertDocumentSources(data.documentSources)
-        try auxInsertVolumeSources(data.volumeSources)
+            try auxInsertCrossReferences(data.crossReferences, inExternalTransaction: true)
+            try auxInsertPageRanges(data.pageRanges, inExternalTransaction: true)
+            try resolvePageBasedCrossReferences(volumeId: data.volumeId)
+            try auxInsertDocumentDates(data.documentDates, inExternalTransaction: true)
+            try auxInsertPersonMentions(data.personMentions, inExternalTransaction: true)
+            try auxInsertPersons(data.persons, inExternalTransaction: true)
+            try auxInsertTerms(data.terms, inExternalTransaction: true)
+            try auxInsertDocumentSources(data.documentSources, inExternalTransaction: true)
+            try auxInsertVolumeSources(data.volumeSources, inExternalTransaction: true)
+        }
     }
 
     // MARK: - Progress
@@ -1272,6 +1310,103 @@ public actor IndexingPipeline {
             }
         }
         return nil
+    }
+
+    // MARK: - Unified 3-way AST traversal (#4)
+
+    /// Collects cross-references, person-name refs, and page ranges in a single
+    /// recursive AST walk, replacing the three separate full-tree traversals that
+    /// `extractCrossReferences`, `extractPersonRefs`, and `extractPageRanges` each
+    /// performed independently.
+    ///
+    /// The existing `extract*` functions are kept for external callers (tests etc.);
+    /// `parseAndExtract` uses this unified variant for indexing throughput.
+    nonisolated static func collectDocumentRefs(
+        from nodes: [FRUSASTNode],
+        volumeId: String,
+        documentId: String,
+        parentReferenceType: String? = nil,
+        enclosingText: String? = nil,
+        crossRefs: inout [CrossReferenceRow],
+        personRefs: inout Set<String>,
+        pageRanges: inout [PageRangeRow]
+    ) {
+        for node in nodes {
+            switch node {
+
+            // ── Cross-references ───────────────────────────────────────────────
+            case .crossReference(let target, let targetVolumeId, let children):
+                let targetDocId = target.hasPrefix("#")
+                    ? String(target.dropFirst())
+                    : (target.components(separatedBy: "#").last ?? target)
+                if !targetDocId.isEmpty {
+                    crossRefs.append(CrossReferenceRow(
+                        sourceVolumeId: volumeId, sourceDocumentId: documentId,
+                        targetVolumeId: targetVolumeId, targetDocumentId: targetDocId,
+                        referenceType: parentReferenceType ?? "footnote",
+                        context: enclosingText
+                    ))
+                }
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+
+            // ── Person-name links ──────────────────────────────────────────────
+            case .persName(let ref, let children):
+                if let ref, !ref.isEmpty {
+                    let normalised = ref.hasPrefix("#") ? String(ref.dropFirst()) : ref
+                    personRefs.insert(normalised)
+                }
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+
+            // ── Page breaks ────────────────────────────────────────────────────
+            case .pageBreak(let pageNumber):
+                let type: String; let intVal: Int?; let raw: String
+                switch pageNumber {
+                case .arabic(let n):      (type, intVal, raw) = ("arabic", n, "\(n)")
+                case .roman(let n):       (type, intVal, raw) = ("roman", n, "\(n)")
+                case .prefixed(let s):    (type, intVal, raw) = ("prefixed", nil, s)
+                case .unparseable(let s): (type, intVal, raw) = ("unparseable", nil, s)
+                }
+                pageRanges.append(PageRangeRow(
+                    volumeId: volumeId, documentId: documentId, sectionId: documentId,
+                    pageNumberType: type, pageNumberInt: intVal, pageNumberRaw: raw
+                ))
+
+            // ── Footnote — captures enclosing text for cross-ref context ───────
+            case .footnote(_, let type, _, let children):
+                let refType: String
+                switch type {
+                case .editorial: refType = "editorialNote"
+                default:         refType = "footnote"
+                }
+                let noteText = truncateContext(
+                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                )
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: refType,
+                    enclosingText: noteText.isEmpty ? nil : noteText,
+                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+
+            // ── Editorial notes — captures enclosing text ──────────────────────
+            case .editorialNote(let children):
+                let editorialText = truncateContext(
+                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                )
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: "editorialNote",
+                    enclosingText: editorialText.isEmpty ? nil : editorialText,
+                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+
+            // ── All other nodes — recurse into children ────────────────────────
+            default:
+                collectDocumentRefs(from: node.children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+            }
+        }
     }
 
     /// Recursively extracts `<ref>` cross-references from an AST node array.
@@ -1606,15 +1741,19 @@ public actor IndexingPipeline {
         }
     }
 
+    /// Gregorian calendar instance shared across all `lastDayOfMonth` calls.
+    /// Using a static constant avoids allocating ~83,000 Calendar instances during
+    /// a full-corpus re-index (#8).
+    nonisolated private static let gregorianCalendar = Calendar(identifier: .gregorian)
+
     /// Returns the last calendar day of `month` in `year` (Gregorian).
     nonisolated private static func lastDayOfMonth(year: Int, month: Int) -> Int {
         var comps = DateComponents()
         comps.year  = year
         comps.month = month + 1
         comps.day   = 0  // Day 0 of the following month = last day of this month.
-        let cal = Calendar(identifier: .gregorian)
-        guard let date = cal.date(from: comps) else { return 30 }
-        return cal.component(.day, from: date)
+        guard let date = gregorianCalendar.date(from: comps) else { return 30 }
+        return gregorianCalendar.component(.day, from: date)
     }
 
     /// Best-effort ISO 8601 date extraction from a dateline string.
@@ -1762,7 +1901,8 @@ public actor IndexingPipeline {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 volume_id TEXT NOT NULL,
                 document_id TEXT NOT NULL,
-                person_ref TEXT NOT NULL
+                person_ref TEXT NOT NULL,
+                UNIQUE(volume_id, document_id, person_ref) ON CONFLICT REPLACE
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_ref ON person_mentions(person_ref)")
@@ -1825,7 +1965,7 @@ public actor IndexingPipeline {
 
     // MARK: - Auxiliary Table DML
 
-    private func auxInsertCrossReferences(_ rows: [CrossReferenceRow]) throws {
+    private func auxInsertCrossReferences(_ rows: [CrossReferenceRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT INTO cross_references
@@ -1833,7 +1973,7 @@ public actor IndexingPipeline {
              reference_type, context)
             VALUES (?, ?, ?, ?, ?, ?)
             """
-        try inTransaction {
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -1849,10 +1989,10 @@ public actor IndexingPipeline {
         }
     }
 
-    private func auxInsertPageRanges(_ rows: [PageRangeRow]) throws {
+    private func auxInsertPageRanges(_ rows: [PageRangeRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = "INSERT INTO page_ranges (volume_id, document_id, section_id, page_number_type, page_number_int, page_number_raw) VALUES (?, ?, ?, ?, ?, ?)"
-        try inTransaction {
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -1869,14 +2009,14 @@ public actor IndexingPipeline {
         }
     }
 
-    private func auxInsertDocumentDates(_ rows: [DocumentDateRow]) throws {
+    private func auxInsertDocumentDates(_ rows: [DocumentDateRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO document_dates
             (volume_id, document_id, date_iso, date_iso_max)
             VALUES (?, ?, ?, ?)
             """
-        try inTransaction {
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -1892,15 +2032,25 @@ public actor IndexingPipeline {
 
     private func auxInsertDocumentCache(_ rows: [DocumentCacheRow]) throws {
         guard !rows.isEmpty else { return }
-        let sql = """
-            INSERT OR REPLACE INTO document_cache
-            (volume_id, document_id, document_number, header, dateline, source_note, body_text,
-             subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
+        // Use the pre-prepared statement when available (#7); fall back to
+        // re-preparing if it was never initialised (e.g. in tests).
+        let stmt: OpaquePointer
+        var localStmt: OpaquePointer? = nil
+        if let prepared = preparedCacheInsert {
+            stmt = prepared
+        } else {
+            let sql = """
+                INSERT OR REPLACE INTO document_cache
+                (volume_id, document_id, document_number, header, dateline, source_note, body_text,
+                 subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """
+            localStmt = try auxPrepare(sql)
+            stmt = localStmt!
+        }
+        defer { if let s = localStmt { sqlite3_finalize(s) } }
+
         try inTransaction {
-            let stmt = try auxPrepare(sql)
-            defer { sqlite3_finalize(stmt) }
             for row in rows {
                 sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
@@ -1920,10 +2070,10 @@ public actor IndexingPipeline {
         }
     }
 
-    private func auxInsertPersonMentions(_ rows: [PersonMentionRow]) throws {
+    private func auxInsertPersonMentions(_ rows: [PersonMentionRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
-        let sql = "INSERT INTO person_mentions (volume_id, document_id, person_ref) VALUES (?, ?, ?)"
-        try inTransaction {
+        let sql = "INSERT OR REPLACE INTO person_mentions (volume_id, document_id, person_ref) VALUES (?, ?, ?)"
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -1936,13 +2086,13 @@ public actor IndexingPipeline {
         }
     }
 
-    private func auxInsertPersons(_ rows: [PersonRow]) throws {
+    private func auxInsertPersons(_ rows: [PersonRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO persons (volume_id, ref, name, description)
             VALUES (?, ?, ?, ?)
             """
-        try inTransaction {
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -1958,13 +2108,13 @@ public actor IndexingPipeline {
         logger.debug("Inserted \(rows.count, privacy: .public) persons for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
-    private func auxInsertTerms(_ rows: [TermRow]) throws {
+    private func auxInsertTerms(_ rows: [TermRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO terms (volume_id, ref, term, definition)
             VALUES (?, ?, ?, ?)
             """
-        try inTransaction {
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -1980,14 +2130,14 @@ public actor IndexingPipeline {
         logger.debug("Inserted \(rows.count, privacy: .public) terms for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
-    private func auxInsertDocumentSources(_ rows: [DocumentSourceRow]) throws {
+    private func auxInsertDocumentSources(_ rows: [DocumentSourceRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO document_sources
             (volume_id, document_id, repository, record_group, lot_file, series_name, citation_era, raw_text)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """
-        try inTransaction {
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -2006,14 +2156,14 @@ public actor IndexingPipeline {
         logger.debug("Inserted \(rows.count, privacy: .public) document_sources for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
-    private func auxInsertVolumeSources(_ rows: [VolumeSourceRow]) throws {
+    private func auxInsertVolumeSources(_ rows: [VolumeSourceRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO volume_sources
             (volume_id, repository, record_group, lot_file, series_name, entry_text, sort_order)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """
-        try inTransaction {
+        try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
@@ -2731,6 +2881,18 @@ public actor IndexingPipeline {
             try? auxExec("ROLLBACK")
             throw error
         }
+    }
+
+    /// Runs `body` inside a `BEGIN`/`COMMIT` unless `externalTx` is `true`,
+    /// in which case the caller is responsible for the surrounding transaction.
+    ///
+    /// Used by `auxInsert*` helpers so they can be called both standalone (with
+    /// their own transaction) and from within the single outer transaction in
+    /// `storeIndexData` without nesting `BEGIN` inside an active `BEGIN`.
+    @inline(__always)
+    private func withTransactionIfNeeded(_ externalTx: Bool, body: () throws -> Void) throws {
+        if externalTx { try body() }
+        else          { try inTransaction(body) }
     }
 
     private func auxExec(_ sql: String) throws {
