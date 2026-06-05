@@ -2067,8 +2067,16 @@ public actor IndexingPipeline {
         }
         defer { if let s = localStmt { sqlite3_finalize(s) } }
 
+        // Defensive reset: if a previous call left the shared statement in a
+        // stepped-but-not-reset state due to an error, clear it before use.
+        // Without this, sqlite3_bind_* returns SQLITE_MISUSE, the bind values
+        // are silently discarded, and auxStep fails with MISUSE too — triggering
+        // a cascade where every subsequent volume fails the same way.
+        sqlite3_reset(stmt)
+
         try inTransaction {
             for row in rows {
+                defer { sqlite3_reset(stmt) }   // always reset, even when auxStep throws
                 sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 3, row.documentNumber)
@@ -2082,7 +2090,6 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 11, row.noteText)
                 sqlite3_bind_int(stmt, 12, row.isEditorialNote ? 1 : 0)
                 try auxStep(stmt)
-                sqlite3_reset(stmt)
             }
         }
     }
