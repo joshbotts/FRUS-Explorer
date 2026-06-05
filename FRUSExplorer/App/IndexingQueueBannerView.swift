@@ -59,7 +59,7 @@ struct IndexingQueueBannerView: View {
 
     @State private var isExpanded = false
     @State private var showWhileIndexing = false
-    @AppStorage("frus.education.hasSeen") private var hasSeen = false
+    @State private var hasShownThisSession = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -82,12 +82,12 @@ struct IndexingQueueBannerView: View {
             WhileIndexingSheet()
         }
         .onAppear {
-            // Auto-open the educational sheet the first time a bulk index starts.
-            if !hasSeen {
-                hasSeen = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    showWhileIndexing = true
-                }
+            // Auto-open the educational sheet the first time this banner appears
+            // in the current app session.
+            guard !hasShownThisSession else { return }
+            hasShownThisSession = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                showWhileIndexing = true
             }
         }
     }

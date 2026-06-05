@@ -809,7 +809,10 @@ struct StatusBarView: View {
     @Environment(AppState.self) private var appState
     @State private var showQueuePopover = false
     @State private var showWhileIndexing = false
-    @AppStorage("frus.education.hasSeen") private var hasSeen = false
+    /// Reset each app session so a deliberate rebuild always shows the sheet.
+    /// `hasSeen` (AppStorage) is not used here because it persists across launches
+    /// and silently blocked the sheet after the first install.
+    @State private var hasShownThisSession = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -829,6 +832,23 @@ struct StatusBarView: View {
             // MacIndexingQueuePanel with full queue detail.
             if let task = activeTask {
                 activeTaskView(task)
+            }
+
+            // "Learn" button — always visible while any indexing is active,
+            // giving persistent access to the educational sheet even when the
+            // queue panel (which also has the button) isn't open.
+            if appState.currentIndexingProgress != nil {
+                Button {
+                    showWhileIndexing = true
+                } label: {
+                    Label(String(localized: "statusbar.learn.label", defaultValue: "Learn"),
+                          systemImage: "book.pages")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+                .help(String(localized: "statusbar.learn.help",
+                             defaultValue: "Learn about FRUS and set up your research context"))
             }
 
             Spacer()
@@ -852,11 +872,13 @@ struct StatusBarView: View {
         .onChange(of: appState.currentIndexingProgress) { _, progress in
             if progress == nil { showQueuePopover = false }
         }
-        // Auto-open the educational sheet the first time a bulk index starts on macOS.
-        // Observe .current (Int?) rather than the full tuple, which is not Equatable.
-        .onChange(of: appState.indexingQueuePosition?.current) { _, current in
-            guard current != nil, !hasSeen else { return }
-            hasSeen = true
+        // Auto-open the educational sheet the first time any indexing starts this session.
+        // Uses currentIndexingProgress (set for ALL indexing paths including manual rebuild)
+        // rather than indexingQueuePosition (nil for rebuild — only set by download-triggered indexing).
+        // hasShownThisSession resets on each app launch so a deliberate rebuild sees the sheet.
+        .onChange(of: appState.currentIndexingProgress != nil) { _, isActive in
+            guard isActive, !hasShownThisSession else { return }
+            hasShownThisSession = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 showWhileIndexing = true
             }
