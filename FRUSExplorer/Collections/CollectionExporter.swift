@@ -34,13 +34,104 @@ enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
 
 // MARK: - CollectionExportOptions
 
+// MARK: - CollectionBodyDepth
+
+/// Controls how much of each document's body appears in a collection export.
+///
+/// Version history:
+///   1.0 — Session 153: introduced alongside `CollectionFootnoteStyle`
+enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
+    /// Full document body — current default. Respects the document as written.
+    case full
+    /// Replace the body with an AI-generated summary. Requires Apple Intelligence.
+    /// Summaries are generated on demand during export if none already exist for
+    /// the selected prompt. Export fails with an error if generation fails.
+    case summaryOnly
+    /// No body text — citation, date, and research notes only. Produces a compact
+    /// reference list or briefing outline.
+    case index
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .full:        return String(localized: "export.bodyDepth.full",
+                                         defaultValue: "Full document")
+        case .summaryOnly: return String(localized: "export.bodyDepth.summaryOnly",
+                                         defaultValue: "Summary only")
+        case .index:       return String(localized: "export.bodyDepth.index",
+                                         defaultValue: "Index / outline")
+        }
+    }
+}
+
+// MARK: - CollectionFootnoteStyle
+
+/// Controls which footnotes are included in each exported document.
+///
+/// Version history:
+///   1.0 — Session 153: initial implementation
+enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
+    /// No footnotes — body text only.
+    case none
+    /// Archival source note only — strips editorial/explanatory footnotes but
+    /// appends a "Source:" block showing the document's archival provenance.
+    case sourceNoteOnly
+    /// All footnotes — current default behavior.
+    case all
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .none:           return String(localized: "export.footnoteStyle.none",
+                                            defaultValue: "None")
+        case .sourceNoteOnly: return String(localized: "export.footnoteStyle.sourceNoteOnly",
+                                            defaultValue: "Source note only")
+        case .all:            return String(localized: "export.footnoteStyle.all",
+                                            defaultValue: "All footnotes")
+        }
+    }
+}
+
+// MARK: - ExportHighlight
+
+/// A snapshot of one `DocumentHighlight` used by exporters to annotate the
+/// document body. Carries flat-text character offsets (same coordinate space as
+/// `DocumentHighlight.startOffset`/`endOffset`) and the highlight colour.
+///
+/// Version history:
+///   1.0 — Session 153: initial implementation
+struct ExportHighlight: Sendable {
+    let startOffset: Int
+    let endOffset:   Int
+    let color:       DocumentHighlight.Color
+}
+
+// MARK: - CollectionExportOptions
+
 /// Rendering options passed to every exporter.
 ///
 /// Version history:
 ///   1.0 — Session 128: initial implementation
+///   1.1 — Session 153: added `bodyDepth`, `footnoteStyle`, `applyHighlights`,
+///          `includeNotes`, and `summaryPromptId`
 struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     var tocStyle: CollectionToCStyle = .citation
+    /// How much of each document body to render.
+    var bodyDepth: CollectionBodyDepth = .full
+    /// Which footnotes to include per document.
+    var footnoteStyle: CollectionFootnoteStyle = .all
+    /// When `true`, inline user highlights are annotated in the document body.
+    /// Currently implemented for HTML; PDF and DOCX follow in a future session.
+    var applyHighlights: Bool = false
+    /// When `true`, attached research notes appear below each document body.
+    /// Default `true`; set `false` for a clean primary-source reader.
+    var includeNotes: Bool = true
+    /// The `SummarizationPrompt.id` to use when `bodyDepth == .summaryOnly`.
+    /// Summaries are generated on demand if none exist for this prompt.
+    var summaryPromptId: UUID? = nil
 }
 
 // MARK: - ExportFormat
@@ -112,8 +203,6 @@ struct CollectionExportDocument: Sendable {
     let date: String?
     /// Plain-text body of the document. Preserved as fallback when `renderModel` is nil.
     let bodyText: String
-    /// Whether the exporter should include the full document body for this entry.
-    let includeDocumentBody: Bool
     /// Research note texts linked to this entry (one per linked `ResearchNote`).
     let noteTexts: [String]
     /// Formatted citation string (history.state.gov style).
@@ -124,12 +213,20 @@ struct CollectionExportDocument: Sendable {
     /// Non-nil when the volume XML was successfully parsed during collection assembly.
     let renderModel: FRUSDocumentRenderModel?
     /// The document heading extracted from the TEI body (e.g. `"1. Memorandum From…"`).
-    /// Used when `tocStyle == .headerAndDateline`.
     let header: String
-    /// The dateline extracted from the TEI body. Used with `header` for the headerAndDateline ToC style.
+    /// The dateline extracted from the TEI body.
     let dateline: String?
+    /// AI-generated summary text for this document. Populated when
+    /// `options.bodyDepth == .summaryOnly`; `nil` otherwise.
+    let summaryText: String?
+    /// User highlights to annotate inline in the body. Populated when
+    /// `options.applyHighlights == true`; empty otherwise.
+    let highlights: [ExportHighlight]
+    /// Raw archival source note text. Populated when
+    /// `options.footnoteStyle == .sourceNoteOnly`; `nil` otherwise.
+    let sourceNoteText: String?
 
-    /// Backward-compatible single-note accessor. Returns the first note text, or `nil` when empty.
+    /// Backward-compatible single-note accessor.
     var noteText: String? { noteTexts.first }
 
     /// Returns the ToC label appropriate for the given display style.
@@ -151,14 +248,16 @@ struct CollectionExportDocument: Sendable {
         title: String,
         date: String? = nil,
         bodyText: String,
-        includeDocumentBody: Bool = true,
         noteText: String? = nil,
         noteTexts: [String]? = nil,
         citation: String = "",
         historyStateGovURL: String = "",
         renderModel: FRUSDocumentRenderModel? = nil,
         header: String = "",
-        dateline: String? = nil
+        dateline: String? = nil,
+        summaryText: String? = nil,
+        highlights: [ExportHighlight] = [],
+        sourceNoteText: String? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -166,7 +265,6 @@ struct CollectionExportDocument: Sendable {
         self.title = title
         self.date = date
         self.bodyText = bodyText
-        self.includeDocumentBody = includeDocumentBody
         if let noteTexts {
             self.noteTexts = noteTexts
         } else if let noteText {
@@ -179,6 +277,9 @@ struct CollectionExportDocument: Sendable {
         self.renderModel = renderModel
         self.header = header
         self.dateline = dateline
+        self.summaryText = summaryText
+        self.highlights = highlights
+        self.sourceNoteText = sourceNoteText
     }
 }
 

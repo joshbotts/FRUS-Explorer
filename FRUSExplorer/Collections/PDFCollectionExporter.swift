@@ -94,7 +94,7 @@ final class PDFCollectionExporter: CollectionExporter {
 
         // Document pages
         for doc in documents {
-            drawDocumentSection(ctx: ctx, doc: doc, pageNumber: &pageNumber)
+            drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
         }
 
         ctx.closePDF()
@@ -161,9 +161,10 @@ final class PDFCollectionExporter: CollectionExporter {
     private func drawDocumentSection(
         ctx: CGContext,
         doc: CollectionExportDocument,
+        options: CollectionExportOptions,
         pageNumber: inout Int
     ) {
-        let H = Self.pageHeight, M = Self.margin, cw = Self.contentWidth
+        let H = Self.pageHeight, W = Self.pageWidth, M = Self.margin, cw = Self.contentWidth
 
         // ── First page of document ──────────────────────────────────────────
         ctx.beginPDFPage(nil)
@@ -188,10 +189,10 @@ final class PDFCollectionExporter: CollectionExporter {
         drawHRule(ctx: ctx, y: y, gray: 0.6, thickness: 0.3)
         y -= 12
 
-        // Body text — rich rendering when available, else plain-text fallback;
-        // skipped entirely when includeDocumentBody is false.
-        if doc.includeDocumentBody {
-            let bodyAttrStr: NSAttributedString
+        // Body — controlled by options.bodyDepth.
+        let bodyAttrStr: NSAttributedString
+        switch options.bodyDepth {
+        case .full:
             if let model = doc.renderModel {
                 bodyAttrStr = renderModelToAttributedString(model)
             } else if !doc.bodyText.isEmpty {
@@ -200,8 +201,32 @@ final class PDFCollectionExporter: CollectionExporter {
             } else {
                 bodyAttrStr = NSAttributedString()
             }
-            if bodyAttrStr.length > 0 {
-                let framesetter = CTFramesetterCreateWithAttributedString(bodyAttrStr)
+        case .summaryOnly:
+            if let summary = doc.summaryText, !summary.isEmpty {
+                bodyAttrStr = NSAttributedString(string: summary,
+                                                 attributes: makeAttrs(fontSize: 10, bold: false))
+            } else {
+                bodyAttrStr = NSAttributedString()
+            }
+        case .index:
+            bodyAttrStr = NSAttributedString()
+        }
+
+        // Source note (footnoteStyle == .sourceNoteOnly)
+        if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
+            drawHRule(ctx: ctx, y: y, gray: 0.75, thickness: 0.25)
+            y -= 10
+            let snText = "Source: \(sourceNote)"
+            // Approximate height: one line at 9pt
+            let snH: CGFloat = 14
+            draw(snText, in: ctx,
+                 rect: CGRect(x: M, y: y - snH, width: cw, height: snH),
+                 fontSize: 9, bold: false, gray: 0.45)
+            y -= snH + 6
+        }
+
+        if bodyAttrStr.length > 0 {
+            let framesetter = CTFramesetterCreateWithAttributedString(bodyAttrStr)
                 var charOffset = 0
                 let totalChars = bodyAttrStr.length
 
@@ -238,14 +263,14 @@ final class PDFCollectionExporter: CollectionExporter {
                         y = M + 20
                     }
                 }
-            }
         }
 
         drawPageNumber(ctx: ctx, number: pageNumber)
         ctx.endPDFPage()
         pageNumber += 1
 
-        // ── Research note pages (one per note) ─────────────────────────────
+        // ── Research note pages (one per note, respects options.includeNotes) ─
+        guard options.includeNotes else { return }
         for note in doc.noteTexts where !note.isEmpty {
             ctx.beginPDFPage(nil)
             var ny = H - M

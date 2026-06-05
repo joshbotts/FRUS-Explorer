@@ -756,18 +756,6 @@ private struct EntryRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            // Include body toggle
-            Toggle(
-                String(localized: "collection.entry.includeBody.label",
-                       defaultValue: "Include document body"),
-                isOn: Binding(
-                    get: { entry.includeDocumentBody },
-                    set: { entry.includeDocumentBody = $0 }
-                )
-            )
-            .font(.caption)
-            .toggleStyle(.switch)
-
             // Per-note selection (multi-select)
             if !availableNotes.isEmpty {
                 Text(String(localized: "collection.entry.notes.header",
@@ -958,13 +946,22 @@ struct ExportSheetView: View {
     let allNotes: [ResearchNote]
     let appState: AppState
 
+    @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
+
     @State private var selectedFormat: ExportFormat = .pdf
     @State private var tocStyle: CollectionToCStyle = .citation
+    @State private var bodyDepth: CollectionBodyDepth = .full
+    @State private var footnoteStyle: CollectionFootnoteStyle = .all
+    @State private var applyHighlights: Bool = false
+    @State private var includeNotes: Bool = true
+    @State private var selectedPromptId: UUID? = nil
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
     @State private var exportError: String? = nil
     /// Non-nil while volumes need to be downloaded/indexed before export can proceed.
     @State private var preparingMessage: String? = nil
+    /// Non-nil while summaries are being generated on demand.
+    @State private var summaryGeneratingMessage: String? = nil
 
     // MARK: - Ephemeral document reference (smart collection path)
 
@@ -1031,28 +1028,69 @@ struct ExportSheetView: View {
                     .labelsHidden()
                 }
 
-                // Contents List — menu picker with explanatory caption
+                // Document body depth
                 VStack(alignment: .leading, spacing: 4) {
-                    LabeledContent(
-                        String(localized: "export.tocStyle.header", defaultValue: "Contents List")
-                    ) {
-                        Picker(
-                            String(localized: "export.tocStyle.picker", defaultValue: "Show"),
-                            selection: $tocStyle
-                        ) {
-                            ForEach(CollectionToCStyle.allCases) { style in
-                                Text(style.displayName).tag(style)
-                            }
+                    Text(String(localized: "export.bodyDepth.header", defaultValue: "Document body"))
+                        .font(.callout.weight(.medium))
+                    Picker("", selection: $bodyDepth) {
+                        ForEach(availableBodyDepths) { depth in
+                            Text(depth.displayName).tag(depth)
                         }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
-                        .fixedSize()
                     }
-                    Text(String(localized: "export.tocStyle.hint",
-                                defaultValue: "\"Header & Dateline\" shows the document heading and date extracted from the text; requires the volume to be downloaded."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    .pickerStyle(.radioGroup).labelsHidden()
+                    .onChange(of: bodyDepth) { _, new in
+                        if new == .summaryOnly, selectedPromptId == nil {
+                            selectedPromptId = allPrompts.first?.id
+                        }
+                    }
+                    if bodyDepth == .summaryOnly {
+                        LabeledContent(String(localized: "export.summaryPrompt.label",
+                                             defaultValue: "Prompt")) {
+                            Picker("", selection: $selectedPromptId) {
+                                Text(String(localized: "export.summaryPrompt.none",
+                                            defaultValue: "Select…")).tag(UUID?.none)
+                                ForEach(allPrompts) { p in
+                                    Text(p.name).tag(UUID?.some(p.id))
+                                }
+                            }
+                            .pickerStyle(.menu).labelsHidden().fixedSize()
+                        }
+                        Text(String(localized: "export.summaryPrompt.hint",
+                                    defaultValue: "Summaries will be generated for documents that don't already have one for this prompt. Requires Apple Intelligence."))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
+
+                Divider()
+
+                // Contents section
+                Text(String(localized: "export.contents.header", defaultValue: "Contents"))
+                    .font(.callout.weight(.medium))
+
+                LabeledContent(String(localized: "export.tocStyle.header",
+                                     defaultValue: "Contents list")) {
+                    Picker("", selection: $tocStyle) {
+                        ForEach(CollectionToCStyle.allCases) { s in Text(s.displayName).tag(s) }
+                    }
+                    .pickerStyle(.menu).labelsHidden().fixedSize()
+                }
+
+                LabeledContent(String(localized: "export.footnoteStyle.header",
+                                     defaultValue: "Footnotes")) {
+                    Picker("", selection: $footnoteStyle) {
+                        ForEach(CollectionFootnoteStyle.allCases) { s in Text(s.displayName).tag(s) }
+                    }
+                    .pickerStyle(.menu).labelsHidden().fixedSize()
+                }
+
+                Toggle(String(localized: "export.applyHighlights.label",
+                              defaultValue: "Apply user highlights to body"),
+                       isOn: $applyHighlights)
+                    .disabled(bodyDepth != .full)
+
+                Toggle(String(localized: "export.includeNotes.label",
+                              defaultValue: "Include research notes"),
+                       isOn: $includeNotes)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1079,7 +1117,7 @@ struct ExportSheetView: View {
                 Spacer()
 
                 // Progress feedback — inline in the button bar when busy
-                if let msg = preparingMessage {
+                if let msg = preparingMessage ?? summaryGeneratingMessage {
                     HStack(spacing: 6) {
                         ProgressView().controlSize(.small)
                         Text(msg).font(.callout).foregroundStyle(.secondary)
@@ -1130,35 +1168,57 @@ struct ExportSheetView: View {
         NavigationStack {
             Form {
                 Section(String(localized: "export.format.header", defaultValue: "Format")) {
-                    Picker(
-                        String(localized: "export.format.picker", defaultValue: "Format"),
-                        selection: $selectedFormat
-                    ) {
-                        ForEach(ExportFormat.allCases) { fmt in
-                            Text(fmt.displayName).tag(fmt)
-                        }
+                    Picker("", selection: $selectedFormat) {
+                        ForEach(ExportFormat.allCases) { fmt in Text(fmt.displayName).tag(fmt) }
                     }
                     .pickerStyle(.segmented)
                 }
 
-                Section(String(localized: "export.tocStyle.header", defaultValue: "Contents List")) {
-                    Picker(
-                        String(localized: "export.tocStyle.picker", defaultValue: "Show"),
-                        selection: $tocStyle
-                    ) {
-                        ForEach(CollectionToCStyle.allCases) { style in
-                            Text(style.displayName).tag(style)
+                Section(String(localized: "export.bodyDepth.header",
+                               defaultValue: "Document body")) {
+                    Picker("", selection: $bodyDepth) {
+                        ForEach(availableBodyDepths) { d in Text(d.displayName).tag(d) }
+                    }
+                    .pickerStyle(.inline).labelsHidden()
+                    .onChange(of: bodyDepth) { _, new in
+                        if new == .summaryOnly, selectedPromptId == nil {
+                            selectedPromptId = allPrompts.first?.id
                         }
                     }
-                    .pickerStyle(.menu)
-                    Text(String(localized: "export.tocStyle.hint",
-                                defaultValue: "\"Header & Dateline\" shows the document heading and date extracted from the text; requires the volume to be downloaded."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if bodyDepth == .summaryOnly {
+                        Picker(String(localized: "export.summaryPrompt.label",
+                                     defaultValue: "Prompt"),
+                               selection: $selectedPromptId) {
+                            Text(String(localized: "export.summaryPrompt.none",
+                                        defaultValue: "Select…")).tag(UUID?.none)
+                            ForEach(allPrompts) { p in Text(p.name).tag(UUID?.some(p.id)) }
+                        }
+                        Text(String(localized: "export.summaryPrompt.hint",
+                                    defaultValue: "Summaries will be generated for documents that don't already have one for this prompt. Requires Apple Intelligence."))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                Section(String(localized: "export.contents.header", defaultValue: "Contents")) {
+                    Picker(String(localized: "export.tocStyle.header",
+                                 defaultValue: "Contents list"), selection: $tocStyle) {
+                        ForEach(CollectionToCStyle.allCases) { s in Text(s.displayName).tag(s) }
+                    }
+                    Picker(String(localized: "export.footnoteStyle.header",
+                                 defaultValue: "Footnotes"), selection: $footnoteStyle) {
+                        ForEach(CollectionFootnoteStyle.allCases) { s in Text(s.displayName).tag(s) }
+                    }
+                    Toggle(String(localized: "export.applyHighlights.label",
+                                 defaultValue: "Apply user highlights to body"),
+                           isOn: $applyHighlights)
+                        .disabled(bodyDepth != .full)
+                    Toggle(String(localized: "export.includeNotes.label",
+                                 defaultValue: "Include research notes"),
+                           isOn: $includeNotes)
                 }
 
                 Section {
-                    if let msg = preparingMessage {
+                    if let msg = preparingMessage ?? summaryGeneratingMessage {
                         HStack {
                             ProgressView().padding(.trailing, 8)
                             Text(msg).foregroundStyle(.secondary)
@@ -1237,7 +1297,7 @@ struct ExportSheetView: View {
                 let docs = await resolveSmartDocuments(smartEntries)
                 let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
                 let exporter = selectedFormat.makeExporter()
-                let options = CollectionExportOptions(tocStyle: tocStyle)
+                let options = buildExportOptions()
                 let url = try await exporter.export(metadata: metadata, documents: docs, options: options)
                 exportedURL = url
                 appState.logEvent(.export(
@@ -1254,14 +1314,42 @@ struct ExportSheetView: View {
         // Phase 1: ensure every volume referenced by the collection is downloaded and indexed.
         await prepareVolumes()
 
-        // Phase 2: resolve document content (now that all volumes should be available).
+        // Phase 2: resolve document content.
         isExporting = true
         do {
-            let docs = await resolveDocuments()
+            var docs = try await resolveDocuments()
+            let opts = buildExportOptions()
+
+            // Phase 2b: generate summaries on demand when bodyDepth == .summaryOnly.
+            if opts.bodyDepth == .summaryOnly {
+                guard let promptId = opts.summaryPromptId else {
+                    exportError = String(localized: "export.summaryNoPrompt",
+                                        defaultValue: "Choose a summarization prompt to export as summaries.")
+                    isExporting = false
+                    return
+                }
+                let bodyTexts = Dictionary(uniqueKeysWithValues:
+                    docs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
+                let summaries = try await resolveSummaries(for: docs, promptId: promptId,
+                                                           bodyTexts: bodyTexts)
+                docs = docs.map { doc in
+                    let key = "\(doc.volumeId)/\(doc.documentId)"
+                    guard let text = summaries[key] else { return doc }
+                    return CollectionExportDocument(
+                        documentId: doc.documentId, volumeId: doc.volumeId,
+                        sortOrder: doc.sortOrder, title: doc.title, date: doc.date,
+                        bodyText: doc.bodyText, noteTexts: doc.noteTexts,
+                        citation: doc.citation, historyStateGovURL: doc.historyStateGovURL,
+                        renderModel: doc.renderModel, header: doc.header, dateline: doc.dateline,
+                        summaryText: text, highlights: doc.highlights,
+                        sourceNoteText: doc.sourceNoteText
+                    )
+                }
+            }
+
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
             let exporter = selectedFormat.makeExporter()
-            let options = CollectionExportOptions(tocStyle: tocStyle)
-            let url = try await exporter.export(metadata: metadata, documents: docs, options: options)
+            let url = try await exporter.export(metadata: metadata, documents: docs, options: opts)
             exportedURL = url
             appState.logEvent(.export(
                 format: selectedFormat.rawValue,
@@ -1271,6 +1359,28 @@ struct ExportSheetView: View {
             exportError = error.localizedDescription
         }
         isExporting = false
+        summaryGeneratingMessage = nil
+    }
+
+    /// Body depths available given the current device / AI configuration.
+    /// "Summary only" is gated on Apple Intelligence being available.
+    var availableBodyDepths: [CollectionBodyDepth] {
+        if AppleIntelligenceProvider.shared.isAvailable {
+            return CollectionBodyDepth.allCases
+        }
+        return CollectionBodyDepth.allCases.filter { $0 != .summaryOnly }
+    }
+
+    /// Assembles `CollectionExportOptions` from the current picker state.
+    private func buildExportOptions() -> CollectionExportOptions {
+        CollectionExportOptions(
+            tocStyle:        tocStyle,
+            bodyDepth:       bodyDepth,
+            footnoteStyle:   footnoteStyle,
+            applyHighlights: applyHighlights,
+            includeNotes:    includeNotes,
+            summaryPromptId: selectedPromptId
+        )
     }
 
     /// Downloads and indexes any volumes referenced by the collection that are not yet
@@ -1337,7 +1447,8 @@ struct ExportSheetView: View {
         preparingMessage = nil
     }
 
-    private func resolveDocuments() async -> [CollectionExportDocument] {
+    private func resolveDocuments() async throws -> [CollectionExportDocument] {
+        let opts    = buildExportOptions()
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
         let manifestMap = Dictionary(uniqueKeysWithValues: manifest.map { ($0.volumeId, $0) })
@@ -1433,6 +1544,29 @@ struct ExportSheetView: View {
                 resolvedNoteTexts = []
             }
 
+            // Highlights (when applyHighlights and body is full)
+            let resolvedHighlights: [ExportHighlight]
+            if opts.applyHighlights && opts.bodyDepth == .full {
+                let allHL = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>())) ?? []
+                resolvedHighlights = allHL
+                    .filter { $0.volumeId == entry.volumeId && $0.documentId == entry.documentId }
+                    .map { ExportHighlight(startOffset: $0.startOffset,
+                                          endOffset:   $0.endOffset,
+                                          color:       $0.color) }
+            } else {
+                resolvedHighlights = []
+            }
+
+            // Source note (footnoteStyle == .sourceNoteOnly)
+            let resolvedSourceNote: String?
+            if opts.footnoteStyle == .sourceNoteOnly {
+                resolvedSourceNote = try? appState.indexingPipeline?
+                    .fetchDocumentSourceNote(volumeId: entry.volumeId,
+                                             documentId: entry.documentId)
+            } else {
+                resolvedSourceNote = nil
+            }
+
             return CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
@@ -1440,15 +1574,82 @@ struct ExportSheetView: View {
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,
-                includeDocumentBody: entry.includeDocumentBody,
                 noteTexts: resolvedNoteTexts,
                 citation: citation,
                 historyStateGovURL: urlString,
                 renderModel: renderModel,
                 header: header,
-                dateline: dateline
+                dateline: dateline,
+                highlights: resolvedHighlights,
+                sourceNoteText: resolvedSourceNote
             )
         }
+    }
+
+    /// Generates or fetches summaries for all entries when bodyDepth == .summaryOnly.
+    /// Returns a [key: summaryText] map. Throws if any generation fails.
+    private func resolveSummaries(
+        for docs: [CollectionExportDocument],
+        promptId: UUID,
+        bodyTexts: [String: String]
+    ) async throws -> [String: String] {
+        guard AppleIntelligenceProvider.shared.isAvailable else {
+            throw ExportError.renderingFailed
+        }
+        guard let service = appState.summarizationService else {
+            throw ExportError.renderingFailed
+        }
+        guard let prompt = (try? modelContext.fetch(
+            FetchDescriptor<SummarizationPrompt>(
+                predicate: #Predicate { $0.id == promptId }
+            )))?.first else {
+            throw ExportError.renderingFailed
+        }
+        let snapshot = SummarizationPromptSnapshot(from: prompt)
+
+        var result: [String: String] = [:]
+        let total = docs.count
+
+        for (i, doc) in docs.enumerated() {
+            let key = "\(doc.volumeId)/\(doc.documentId)"
+            await MainActor.run {
+                summaryGeneratingMessage = String(
+                    localized: "export.summaryProgress",
+                    defaultValue: "Generating summaries (\(i + 1) of \(total))…")
+            }
+
+            // Check for existing summary first (capture scalars — #Predicate can't use struct fields).
+            let vid = doc.volumeId
+            let did = doc.documentId
+            let pid = promptId
+            let existingDesc = FetchDescriptor<GeneratedSummary>(
+                predicate: #Predicate<GeneratedSummary> { s in
+                    s.volumeId == vid && s.documentId == did && s.promptId == pid
+                }
+            )
+            if let existing = try? modelContext.fetch(existingDesc).first,
+               !existing.responseText.isEmpty {
+                result[key] = existing.responseText
+                continue
+            }
+
+            // Generate on demand.
+            let text = bodyTexts[key] ?? doc.bodyText
+            guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw ExportError.renderingFailed
+            }
+            let generated = try await service.summarize(
+                documentId:    doc.documentId,
+                volumeId:      doc.volumeId,
+                documentText:  text,
+                prompt:        snapshot,
+                provider:      AppleIntelligenceProvider.shared,
+                activeProjectId: appState.activeProjectId
+            )
+            result[key] = generated.responseText
+        }
+        await MainActor.run { summaryGeneratingMessage = nil }
+        return result
     }
 
     // MARK: - Render Model Extraction Helpers
@@ -1595,7 +1796,6 @@ struct ExportSheetView: View {
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,
-                includeDocumentBody: true,
                 citation: citation,
                 historyStateGovURL: urlString,
                 renderModel: renderModel,

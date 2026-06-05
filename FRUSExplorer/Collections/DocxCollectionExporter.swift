@@ -276,9 +276,9 @@ final class DocxCollectionExporter: CollectionExporter {
                 body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
             }
 
-            // Body: rich rendering from render model, else flat-text fallback;
-            // skipped when includeDocumentBody is false.
-            if doc.includeDocumentBody {
+            // Body — controlled by options.bodyDepth.
+            switch options.bodyDepth {
+            case .full:
                 if let model = doc.renderModel {
                     body += renderModelToDocxParagraphs(model, ctx: ctx)
                 } else {
@@ -286,15 +286,35 @@ final class DocxCollectionExporter: CollectionExporter {
                         .components(separatedBy: "\n\n")
                         .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
                     for para in paras {
-                        let text = para
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                            .replacingOccurrences(of: "\n", with: " ")
-                        body += styledPara(escaped(text), styleId: "Normal")
+                        body += styledPara(
+                            escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)
+                                       .replacingOccurrences(of: "\n", with: " ")),
+                            styleId: "Normal")
                     }
                 }
+            case .summaryOnly:
+                if let summary = doc.summaryText, !summary.isEmpty {
+                    body += styledPara("Summary", styleId: "Heading3")
+                    let summaryParas = summary
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in summaryParas {
+                        body += styledPara(
+                            escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
+                            styleId: "Normal")
+                    }
+                }
+            case .index:
+                break
             }
 
-            // Research notes — one block per note; markdownItalicRuns handles _text_.
+            // Source note (footnoteStyle == .sourceNoteOnly)
+            if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
+                body += styledPara("Source: \(escaped(sourceNote))", styleId: "DocURL")
+            }
+
+            // Research notes — respects options.includeNotes.
+            guard options.includeNotes else { continue }
             for note in doc.noteTexts where !note.isEmpty {
                 body += researchNoteHeadingPara()
                 let noteParagraphs = note

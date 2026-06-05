@@ -111,13 +111,16 @@ final class HTMLCollectionExporter: CollectionExporter {
                 body += "  <h2>\(markdownItalics(escaped(heading)))</h2>\n"
             }
 
-            // Body — rich rendering if available, else flat-text fallback; skipped when !includeDocumentBody.
-            if doc.includeDocumentBody {
+            // Body — controlled by options.bodyDepth.
+            switch options.bodyDepth {
+            case .full:
+                let includeFootnotes = (options.footnoteStyle == .all)
                 if let model = doc.renderModel {
-                    // Delegate to the shared serializer (Session 146).
-                    // Output is a <div class="frus-document"> fragment containing
-                    // body nodes + footnote <aside popover> elements.
-                    body += FRUSRenderNodeHTMLSerializer().serialize(model)
+                    body += FRUSRenderNodeHTMLSerializer().serialize(
+                        model,
+                        includeFootnotes: includeFootnotes,
+                        highlights: options.applyHighlights ? doc.highlights : []
+                    )
                 } else if !doc.bodyText.isEmpty {
                     let paragraphs = doc.bodyText
                         .components(separatedBy: "\n\n")
@@ -126,19 +129,40 @@ final class HTMLCollectionExporter: CollectionExporter {
                         body += "  <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
                     }
                 }
+            case .summaryOnly:
+                if let summary = doc.summaryText, !summary.isEmpty {
+                    body += "  <div class=\"summary-block\">\n"
+                    body += "    <p class=\"summary-label\">Summary</p>\n"
+                    let summaryParas = summary
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in summaryParas {
+                        body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+                    }
+                    body += "  </div>\n"
+                }
+            case .index:
+                break  // no body content
             }
 
-            // Research notes — one <aside> per note; markdownItalics applied to each paragraph.
-            for note in doc.noteTexts where !note.isEmpty {
-                body += "  <aside class=\"research-note\">\n"
-                body += "    <strong>Research Note</strong>\n"
-                let noteParagraphs = note
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in noteParagraphs {
-                    body += "    <p>\(markdownItalics(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines))))</p>\n"
+            // Source note (footnoteStyle == .sourceNoteOnly)
+            if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
+                body += "  <p class=\"source-note\"><strong>Source:</strong> \(escaped(sourceNote))</p>\n"
+            }
+
+            // Research notes — respects options.includeNotes.
+            if options.includeNotes {
+                for note in doc.noteTexts where !note.isEmpty {
+                    body += "  <aside class=\"research-note\">\n"
+                    body += "    <strong>Research Note</strong>\n"
+                    let noteParagraphs = note
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in noteParagraphs {
+                        body += "    <p>\(markdownItalics(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines))))</p>\n"
+                    }
+                    body += "  </aside>\n"
                 }
-                body += "  </aside>\n"
             }
 
             body += "</section>\n\n"
@@ -175,6 +199,7 @@ final class HTMLCollectionExporter: CollectionExporter {
         FRUSTheme.cssVariables(colorScheme: .light, textSize: .large)
         + "\n" + HTMLTemplate.documentCSS
         + "\n" + Self.collectionExportCSS
+        + "\n" + FRUSRenderNodeHTMLSerializer.highlightCSS
         + "\n" + Self.printCSS
     }
 
@@ -266,6 +291,32 @@ final class HTMLCollectionExporter: CollectionExporter {
       color: #7a5c00;
     }
     aside.research-note p { color: #444; }
+
+    /* ── Summary block (bodyDepth == summaryOnly) ──────────────────────────── */
+    .summary-block {
+      background: #f0f4ff;
+      border-left: 3px solid #3a6bc9;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      border-radius: 2px;
+    }
+    .summary-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #3a6bc9;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Source note (footnoteStyle == sourceNoteOnly) ─────────────────────── */
+    .source-note {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #555;
+      border-top: 1px solid #ddd;
+      padding-top: 0.6rem;
+    }
     """
 
     /// Print-specific overrides (Session 146).

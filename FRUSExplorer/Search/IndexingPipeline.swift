@@ -2494,6 +2494,26 @@ public actor IndexingPipeline {
         return meaningful.first ?? (parts.first ?? "")
     }
 
+    /// Returns the raw source-note text for a single document from `document_cache`.
+    ///
+    /// Used by `CollectionEditorView` when the export footnote style is `.sourceNoteOnly`
+    /// so the exporter can append the archival provenance note without emitting all
+    /// editorial/explanatory footnotes.
+    ///
+    /// - Returns: The source note string, or `nil` if the document is not indexed or has no note.
+    public func fetchDocumentSourceNote(volumeId: String, documentId: String) throws -> String? {
+        let sql = """
+            SELECT source_note FROM document_cache
+            WHERE volume_id = ? AND document_id = ?
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId,   -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return auxColumnString(stmt, 0)
+    }
+
     ///
     /// Documents not present in `document_dates` (e.g. genuinely undated, or
     /// volumes not yet indexed) are absent from the returned dictionary —

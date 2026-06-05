@@ -87,6 +87,24 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// Both representations exist simultaneously. Users can click a marker for the
     /// inline popup view or scroll to the section for reading in context.
     public func serialize(_ model: FRUSDocumentRenderModel) -> String {
+        serialize(model, includeFootnotes: true, highlights: [])
+    }
+
+    /// Serialises `model` with optional footnote suppression and inline highlight annotation.
+    ///
+    /// - Parameters:
+    ///   - model: The render model to serialise.
+    ///   - includeFootnotes: When `false`, all `<aside>` popover elements and the
+    ///     `<section class="footnotes-section">` are omitted from the output.
+    ///     Use `false` when the export handles footnotes separately (e.g. source-note-only mode).
+    ///   - highlights: Flat-text character ranges to annotate with `<mark>` elements.
+    ///     The serialiser injects highlight markup by post-processing the rendered HTML
+    ///     using the same flat-text coordinate space as the JS offset engine.
+    func serialize(
+        _ model: FRUSDocumentRenderModel,
+        includeFootnotes: Bool,
+        highlights: [ExportHighlight]
+    ) -> String {
         // IMPORTANT: no whitespace is added between elements. Any inter-element
         // newline or space creates a DOM text node that the JS flat-text DFS
         // (frus-offset-engine.js) would count as a character, breaking the
@@ -97,22 +115,137 @@ public struct FRUSRenderNodeHTMLSerializer {
         for node in model.bodyNodes {
             html += nodeToHTML(node)
         }
-        // Footnote popovers (inline popup behavior) — inside .frus-document,
-        // marked data-skip="1" so the offset engine skips them.
-        for footnote in model.footnotes {
-            html += footnoteAsideHTML(footnote)
+
+        if includeFootnotes {
+            // Footnote popovers (inline popup behavior) — inside .frus-document,
+            // marked data-skip="1" so the offset engine skips them.
+            for footnote in model.footnotes {
+                html += footnoteAsideHTML(footnote)
+            }
         }
 
         html += "</div>"
 
-        // Visible footnote section — outside .frus-document so it is invisible
-        // to the JS offset engine. Rendered as a traditional numbered list.
-        if !model.footnotes.isEmpty {
+        if includeFootnotes, !model.footnotes.isEmpty {
             html += footnoteSectionHTML(model.footnotes)
+        }
+
+        // Inject inline highlight annotations if any were requested.
+        if !highlights.isEmpty {
+            html = injectHighlights(into: html, highlights: highlights)
         }
 
         return html
     }
+
+    // MARK: - Highlight Injection
+
+    /// Injects `<mark class="hl-{color}">` elements into a serialised HTML string.
+    ///
+    /// The algorithm walks the HTML character by character, tracking a `flatPos`
+    /// counter that increments for each character that would appear in the JS offset
+    /// engine's flat text (i.e. real text characters; HTML tags and entities count as
+    /// zero or one respectively). At each highlight boundary the algorithm inserts
+    /// `<mark>` or `</mark>` tags.
+    ///
+    /// Limitations of the post-processing approach:
+    /// - A highlight that spans across an HTML element boundary (e.g. `<em>`) will
+    ///   have its mark split across the element, which is valid HTML.
+    /// - Overlapping highlights are handled by prioritising the one that opens first.
+    func injectHighlights(into html: String, highlights: [ExportHighlight]) -> String {
+        // Sort highlights by start offset ascending for clean insertion.
+        let sorted = highlights.sorted { $0.startOffset < $1.startOffset }
+        guard !sorted.isEmpty else { return html }
+
+        var result   = ""
+        var flatPos  = 0           // position in the flat-text coordinate space
+        var idx      = html.startIndex
+        var openIdx  = 0           // which highlight is currently open (-1 = none)
+        var openEnd  = -1
+        var openCSS  = ""
+
+        func cssClass(_ color: DocumentHighlight.Color) -> String {
+            "hl-\(color.rawValue)"
+        }
+
+        while idx < html.endIndex {
+            let ch = html[idx]
+
+            // ── Inside an HTML tag — copy verbatim, don't advance flatPos ──
+            if ch == "<" {
+                var tagEnd = idx
+                // Scan to closing `>`
+                while tagEnd < html.endIndex && html[tagEnd] != ">" {
+                    tagEnd = html.index(after: tagEnd)
+                }
+                if tagEnd < html.endIndex { tagEnd = html.index(after: tagEnd) }
+                result += html[idx..<tagEnd]
+                idx = tagEnd
+                continue
+            }
+
+            // ── HTML entity — counts as 1 flat-text character ──
+            if ch == "&" {
+                var entEnd = idx
+                while entEnd < html.endIndex && html[entEnd] != ";" {
+                    entEnd = html.index(after: entEnd)
+                }
+                if entEnd < html.endIndex { entEnd = html.index(after: entEnd) }
+                let entity = String(html[idx..<entEnd])
+
+                // Open highlights at this position if needed
+                if openEnd < 0 {
+                    for (i, hl) in sorted.enumerated() where hl.startOffset == flatPos {
+                        result += "<mark class=\"\(cssClass(hl.color))\">"
+                        openIdx = i; openEnd = hl.endOffset; openCSS = cssClass(hl.color)
+                        break
+                    }
+                }
+
+                result += entity
+                flatPos += 1
+                idx = entEnd
+
+                if openEnd == flatPos {
+                    result += "</mark>"; openEnd = -1; openCSS = ""
+                }
+                continue
+            }
+
+            // ── Regular text character ──
+            // Open a highlight if one starts here
+            if openEnd < 0 {
+                for (i, hl) in sorted.enumerated() where hl.startOffset == flatPos {
+                    result += "<mark class=\"\(cssClass(hl.color))\">"
+                    openIdx = i; openEnd = hl.endOffset; openCSS = cssClass(hl.color)
+                    break
+                }
+            }
+
+            result += String(ch)
+            flatPos += 1
+            idx = html.index(after: idx)
+
+            // Close a highlight if it ends here
+            if openEnd == flatPos {
+                result += "</mark>"; openEnd = -1; openCSS = ""
+            }
+        }
+
+        // Close any highlight still open at end of document
+        if openEnd >= 0 { result += "</mark>" }
+
+        return result
+    }
+
+    /// CSS for the five highlight colours. Embed in the export stylesheet.
+    public static let highlightCSS = """
+    mark.hl-yellow   { background: rgba(255,230, 50,0.45); color: inherit; }
+    mark.hl-green    { background: rgba( 80,200, 80,0.35); color: inherit; }
+    mark.hl-blue     { background: rgba( 80,150,240,0.35); color: inherit; }
+    mark.hl-pink     { background: rgba(240, 80,160,0.30); color: inherit; }
+    mark.hl-orange   { background: rgba(255,160, 30,0.40); color: inherit; }
+    """
 
     /// Renders a traditional numbered footnote section for visible display below
     /// the document body. This section is outside `.frus-document` and therefore
