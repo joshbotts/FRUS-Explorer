@@ -1191,34 +1191,51 @@ public actor IndexingPipeline {
             await Task.yield()
         }
 
-        // --- All remaining auxiliary tables in a single transaction ---
+        // --- Remaining auxiliary tables — separate transactions per operation ---
         //
-        // Previously 11 separate transactions (3 autocommit DELETEs + 8 explicit
-        // BEGIN/COMMIT INSERT blocks), each triggering its own WAL flush. For a
-        // 552-volume corpus re-index that was ~6,000 unnecessary WAL commits.
-        // One outer BEGIN/COMMIT reduces aux-table I/O by ~10×.
+        // IMPORTANT: do NOT combine these into a single monolithic transaction.
         //
-        // `inExternalTransaction: true` on each auxInsert* suppresses the inner
-        // BEGIN so the outer transaction does not see a nested-BEGIN SQLite error.
+        // `inTransaction` is entirely synchronous: it holds the IndexingPipeline
+        // actor's executor thread with zero `await` points from BEGIN through COMMIT.
+        // For a large compilation volume with thousands of cross-references, person
+        // mentions, and page ranges the combined transaction can hold the actor for
+        // 30–60+ seconds. During that window:
+        //   - Concurrent parse tasks (up to 4 on macOS) complete their work but
+        //     cannot deliver results; they queue on the actor and appear as
+        //     "blocked events" in Instruments.
+        //   - The SQLite write lock is held continuously, preventing WAL checkpoints
+        //     and blocking any other connection that needs to write.
+        //   - resolvePageBasedCrossReferences runs O(n) SELECT+UPDATE pairs inside
+        //     the long-running transaction, further extending the block.
         //
-        // `resolvePageBasedCrossReferences` UPDATE loop also runs inside the
-        // transaction, fixing the previous bug where each UPDATE was an implicit
-        // autocommit (one WAL flush per resolved page reference).
-        try inTransaction {
-            try auxDeleteCrossReferences(forVolumeId: data.volumeId)
-            try auxDeletePersonMentions(forVolumeId: data.volumeId)
-            try auxDeletePageRanges(forVolumeId: data.volumeId)
+        // The separate-transaction approach releases the write lock between each
+        // operation, allowing the cooperative scheduler to interleave work and
+        // keeping each individual lock window short (< 1 second per operation).
+        //
+        // The withTransactionIfNeeded helpers and inExternalTransaction parameters
+        // are retained on each auxInsert* in case a future caller needs to compose
+        // operations — just don't use them here.
 
-            try auxInsertCrossReferences(data.crossReferences, inExternalTransaction: true)
-            try auxInsertPageRanges(data.pageRanges, inExternalTransaction: true)
+        try auxDeleteCrossReferences(forVolumeId: data.volumeId)
+        try auxDeletePersonMentions(forVolumeId: data.volumeId)
+        try auxDeletePageRanges(forVolumeId: data.volumeId)
+
+        try auxInsertCrossReferences(data.crossReferences)
+        try auxInsertPageRanges(data.pageRanges)
+
+        // Wrap the page-reference UPDATE loop in its own transaction (#2 fix retained).
+        // The original code fired each UPDATE as an implicit autocommit — this keeps
+        // correctness (atomic resolution) without holding a long combined transaction.
+        try inTransaction {
             try resolvePageBasedCrossReferences(volumeId: data.volumeId)
-            try auxInsertDocumentDates(data.documentDates, inExternalTransaction: true)
-            try auxInsertPersonMentions(data.personMentions, inExternalTransaction: true)
-            try auxInsertPersons(data.persons, inExternalTransaction: true)
-            try auxInsertTerms(data.terms, inExternalTransaction: true)
-            try auxInsertDocumentSources(data.documentSources, inExternalTransaction: true)
-            try auxInsertVolumeSources(data.volumeSources, inExternalTransaction: true)
         }
+
+        try auxInsertDocumentDates(data.documentDates)
+        try auxInsertPersonMentions(data.personMentions)
+        try auxInsertPersons(data.persons)
+        try auxInsertTerms(data.terms)
+        try auxInsertDocumentSources(data.documentSources)
+        try auxInsertVolumeSources(data.volumeSources)
     }
 
     // MARK: - Progress
