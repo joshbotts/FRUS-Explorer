@@ -61,6 +61,8 @@ This is the Corpus Browser. The hierarchy — Corpus → Subseries → Volume �
 
 - On the Mac, Search lives in a persistent window alongside your document. On iPhone, opening a search result navigates into the document within the Search tab. Tap **Back** to return to results without losing them.
 - **Citation Lookup** (⌘⇧F on Mac) is accessed by tapping the **magnifying glass + quote** button in the Search tab toolbar. It opens as a sheet over the tab.
+- **On iPhone**, the four toolbar actions (Filters, Timeline, Save Search, Saved Searches) appear in the **bottom toolbar** rather than the navigation bar. This keeps the search field unobstructed and the controls always reachable even when the keyboard is active. On iPad these actions remain in the navigation bar.
+- The advanced filter sheet no longer includes a Subject Tags filter. The available filters are Date Range, User Tags, Summaries, Research Notes, and Document Type.
 
 `[SCREENSHOT: Citation Lookup sheet on iPhone showing the Paste Citation and Structured Entry tabs]`
 
@@ -186,6 +188,10 @@ On macOS, indexing progress is shown quietly in the status bar at the bottom of 
 
 The banners dismiss automatically when their state changes. You do not need to interact with them — all other tabs remain fully usable while indexing runs.
 
+On **iPhone models with Dynamic Island** (iPhone 14 Pro and later), indexing progress is also shown as a **Live Activity in the Dynamic Island** — a pill-shaped progress indicator above the status bar. The compact view shows a progress icon and percentage; expand it to see the volume name, a progress bar, and estimated time remaining. The Live Activity updates in real time and is visible even when you switch to other apps, so you can monitor indexing without returning to FRUS Explorer.
+
+`[SCREENSHOT: Dynamic Island on iPhone showing the compact indexing Live Activity with progress icon and percentage]`
+
 ---
 
 ## 5. iPad-Specific Features
@@ -266,7 +272,7 @@ This table summarizes every significant difference between the macOS and iOS ver
 | **Source Explorer** | Sheet in main window | Sheet over current tab |
 | **Reorder collection items** | Drag-and-drop directly | Tap Edit first, then drag reorder handles |
 | **Export share target** | NSSharingServicePicker + Reveal in Finder | iOS share sheet (Files, AirDrop, Print, Mail, etc.) |
-| **Indexing progress** | Quiet status bar indicator | Animated banner above tab bar |
+| **Indexing progress** | Quiet status bar indicator | Animated banner above tab bar; Dynamic Island Live Activity on iPhone 14 Pro and later |
 | **Settings access** | System Settings scene (⌘,) | Settings tab within the app |
 | **Inspector panel** | N/A | iPad landscape: right-side persistent panel |
 | **Multi-window documents** | Standard macOS multi-window | iPad Stage Manager: long-press → Open in New Window |

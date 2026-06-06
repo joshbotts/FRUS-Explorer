@@ -220,7 +220,6 @@ FRUS Explorer searches across:
 - Headings and source notes
 - Your research notes
 - Generated summaries
-- Subject tag names
 - User tag names
 
 ### 5.2 Query Syntax
@@ -247,7 +246,6 @@ Click **Filters** in the Search window to expand additional filter controls.
 | Filter | Description |
 |--------|-------------|
 | **Date Range** | Restrict results to documents dated within a range |
-| **Subject Tags** | Narrow to documents tagged with specific topics from the official taxonomy |
 | **User Tags** | Restrict to documents you have tagged yourself |
 | **Summaries** | *All*, *Specific prompt*, or *None* (documents with no generated summary) |
 | **Research Notes** | *All documents* or *Documents with notes only* |
@@ -315,13 +313,13 @@ Research notes are freeform text attached to a specific document. They sync acro
 
 **To add a note:**
 1. Open the document.
-2. Click **Add Note** in the research strip (or press ⌘⌥N).
-3. Type your note in the editor that appears below the research strip.
+2. Click **Add Note** in the research strip (or press ⌘⌥N), or click the **Add Note** button that appears inline at the bottom of the Notes section in the research panel.
+3. Type your note in the editor that appears.
 4. Click **Save**.
 
 `[SCREENSHOT: Research note editor open beneath the research strip with note text being entered]`
 
-**To edit an existing note:** Click the note text in the research strip or open the Research window (⌘⌥R) and double-click the document entry.
+**To edit an existing note:** Click any note row directly in the Notes section of the research panel — the note editor opens with the selected note pre-loaded. You can also click the note text in the research strip or open the Research window (⌘⌥R) and double-click the document entry.
 
 Notes are associated with the active project (see Section 14). If another project has notes for the same document, a disclosure indicator appears at the bottom of the note area — click it to reveal those notes and optionally promote them to the current project.
 
@@ -348,13 +346,13 @@ Highlights appear as colored background fills directly in the document body — 
 User tags are global labels you define. They are not the same as the official subject tags from the FRUS taxonomy.
 
 **To tag a document:**
-1. Click **Tags** in the research strip.
+1. Click **Tags** in the research strip, or click the **+ Add Tag** button that appears next to the existing tag chips in the Tags section of the research panel.
 2. Start typing to search existing tags or create a new one.
 3. Press Return to apply.
 
 `[SCREENSHOT: Tag picker popover showing existing tags and a text field for creating a new one]`
 
-Tags appear as chips at the bottom of the document view. Click a tag chip to run a search filtered to documents with that tag. Manage all your tags — rename, merge, delete — in **Settings → Research → Tags**.
+Tags appear as **removable chips** in the Tags section of the research panel. Each chip has an **×** button — click it to remove that tag directly without opening the tag picker. A **+** button next to the chips adds more tags. Click any tag chip (without the × button) to run a search filtered to documents with that tag. Manage all your tags — rename, merge, delete — in **Settings → Research → Tags**.
 
 ---
 
@@ -487,11 +485,16 @@ Click **Export** in the Collections window to generate a formatted document.
 | **HTML** | Web-based viewing, browser printing with custom CSS, embedding links |
 | **DOCX** | Microsoft Word format with styles, footnotes, and internal links |
 
-The export includes:
-- Collection title and note
-- A linked table of contents
-- Full rendered text of each document with footnotes
-- Any research note associated with each document
+The export sheet offers additional controls:
+
+| Control | Options |
+|---------|---------|
+| **Body depth** | *Full* (complete document body), *Summary only* (requires Apple Intelligence; generates summaries on demand), or *Index only* (citation, date, and notes — no body text) |
+| **Footnotes** | *All* (full footnotes), *Source note only*, or *None* |
+| **Inline highlights** | Toggle to include highlighted passages as `<mark>` annotations (HTML export) |
+| **Research notes** | Toggle to include or exclude attached research notes |
+
+The export always includes the collection title, a linked table of contents, and any research notes you have attached — unless the notes toggle is turned off.
 
 After exporting, a Finder reveal button opens the enclosing folder.
 
@@ -542,7 +545,7 @@ Documents that are too long for a single model call are automatically chunked at
 
 To summarize many documents at once, use the **Background Summarizer** in **Settings → Advanced → Summarization → Background Summarizer**.
 
-1. Choose a scope: an entire subseries, a single volume, a subject tag, or a date range.
+1. Choose a scope: an entire subseries, a single volume, a user tag, a saved search, or a date range.
 2. Set the concurrency limit (how many documents are summarized in parallel).
 3. Click **Run**.
 
@@ -570,7 +573,7 @@ Source Explorer classifies each source note and applies the most precise resolut
 
 | Provenance | Resolution | API key needed? |
 |-----------|-----------|:---:|
-| **State Dept. decimal files (1910–1963)** | Period-specific NARA finding-aid page based on the document year. Seven periods (1910–1929 through 1960–Jan 1963) each have their own box lists, purport indexes, and filing manuals | No |
+| **State Dept. decimal files (1910–1963)** | NARA finding-aid page for the 1910–1963 decimal file series. The Source Explorer also links to the relevant **filing manual** PDF for the document's period (where applicable), so you can understand how records were classified and organized | No |
 | **State Dept. central files (post-1963)** | NARA Catalog search pre-scoped to the RG-59 parent description; subject-numeric code (e.g. `POL 27 VIET S`) used as the query | No |
 | **Lot files** | NARA Catalog API `variantControlNumber_is` query with three normalised forms of the lot number (e.g. `63D135`, `63 D 135`, `63 D135`), constrained to Record Group 59 | Yes |
 | **Other NARA record groups** (RG 218, 306, 330, 84) | NARA Catalog API search with record group number constraint | Yes |
@@ -585,6 +588,14 @@ When the API returns multiple candidates (up to 5 for lot files and 3 for presid
 `[SCREENSHOT: Source Explorer showing a resolved State Dept. lot file with multiple NARA Catalog candidates listed]`
 
 `[SCREENSHOT: Source Explorer showing a decimal file citation with the matched 1945–1949 period finding-aid link and a brief explanation of the filing system]`
+
+### 12.1.1 Free-Text NARA Catalog Lookup
+
+You can also run a free-text NARA Catalog query using any text you select in a document body — useful when the automatic parser cannot identify the source type, or when you want to search with different keywords.
+
+Select the relevant text (a lot number, decimal file identifier, archival keyword, etc.) and choose **NARA Lookup** from the research strip (macOS) or **Look Up in NARA Catalog** from the **More (…)** overflow menu (iOS). A lookup sheet appears pre-populated with your selection. Choose a search strategy (lot file by record group, keyword search within RG 59 or RG 84, or general catalog search), edit the query if needed, and tap **Search**.
+
+`[SCREENSHOT: NARA Catalog Lookup sheet showing the pre-populated query field and strategy picker]`
 
 ### 12.2 NARA API Key
 
@@ -636,6 +647,10 @@ Open **Settings → Research → Projects** and click **+**. Give it a name, an 
 **Switching projects:**
 
 The active project is shown in the toolbar of the Corpus Browser. Click it to switch. The change is instant — all new annotations from that point forward belong to the newly selected project.
+
+**Merging projects:**
+
+In **Settings → Research → Projects**, click the ellipsis (…) button next to a project and choose **Merge into…**. Select the destination project from the list. All notes, highlights, summaries, and collections from the source project are unified under the destination project, and the source project is deleted. The active project switches to the destination automatically if the source was active.
 
 **Cross-project notes:**
 
