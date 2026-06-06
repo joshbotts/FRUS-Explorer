@@ -213,8 +213,7 @@ private struct SearchTabView: View {
     var body: some View {
         if let service = appState.searchService {
             SearchView(
-                searchService: service,
-                subjectTagStore: appState.subjectTagStore
+                searchService: service
             )
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {

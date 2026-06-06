@@ -17,6 +17,10 @@ import SwiftData
 import CoreData       // NSPersistentCloudKitContainer for sync-event monitoring
 import CloudKit       // CKError codes, CKPartialErrorsByItemIDKey for detailed diagnostics
 import CoreSpotlight
+#if os(iOS)
+import BackgroundTasks
+import os
+#endif
 
 /// Root entry point for FRUS Explorer.
 ///
@@ -97,6 +101,67 @@ struct FRUSExplorerApp: App {
     // compatibility with all existing `.modelContainer(modelContainer)` call sites.
     private let _containerSetup = ModelContainer.makeFRUSContainer()
     private var modelContainer: ModelContainer { _containerSetup.container }
+
+    // MARK: - Background Task Registration (iOS)
+
+    #if os(iOS)
+    /// Task identifier registered in BGTaskSchedulerPermittedIdentifiers (Info.plist).
+    private static let indexingBGTaskID = "bottsywattsy.FRUS-Explorer.indexing"
+
+    /// Registers the BGProcessingTask handler with the system.
+    ///
+    /// Must be called before the app finishes launching. `appState` is a reference-type
+    /// @Observable class; capturing it here is safe because the App struct is instantiated
+    /// exactly once per process lifetime and @State persists the same instance.
+    init() {
+        let state = appState
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: Self.indexingBGTaskID,
+            using: nil
+        ) { task in
+            guard let bgTask = task as? BGProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            // The expiration handler fires on a background thread while the @MainActor Task
+            // may be completing concurrently. Guard with a lock so setTaskCompleted is called
+            // at most once regardless of which side wins the race.
+            let completed = OSAllocatedUnfairLock(initialState: false)
+            let complete: @Sendable (Bool) -> Void = { success in
+                let first = completed.withLock { called -> Bool in
+                    guard !called else { return false }
+                    called = true
+                    return true
+                }
+                if first { bgTask.setTaskCompleted(success: success) }
+            }
+            // Run on MainActor so we can read @MainActor-isolated AppState properties.
+            let indexingTask = Task { @MainActor in
+                guard let pipeline = state.indexingPipeline else {
+                    complete(false)
+                    return
+                }
+                let volumesToIndex = Array(state.interruptedVolumeIds)
+                if volumesToIndex.isEmpty {
+                    // No specific interrupted volumes; index anything not yet done.
+                    try? await pipeline.indexAllVolumes()
+                } else {
+                    for volumeId in volumesToIndex {
+                        try? await pipeline.indexVolume(volumeId)
+                    }
+                }
+                complete(true)
+            }
+            // System calls this when budget expires. Cancel in-flight work; the
+            // IndexingStateTracker already marks any in-progress volume as interrupted.
+            bgTask.expirationHandler = {
+                indexingTask.cancel()
+                complete(false)
+            }
+        }
+    }
+
+    #endif
 
     var body: some Scene {
         mainWindowScene
@@ -342,6 +407,9 @@ struct FRUSExplorerApp: App {
            ) {
             appState.indexingPipeline = pipeline
             appState.connectIndexingProgress(pipeline: pipeline)
+            // Seed cached indexed-volume IDs so StatusBarView / MainTabView badges
+            // use O(1) Set lookup instead of per-volume SQLite queries in the render loop.
+            appState.seedIndexedVolumeIds(pipeline: pipeline)
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
             appState.personMentionStore = try? PersonMentionStore(databaseURL: dbURL)
             appState.searchService = SearchService(
@@ -592,6 +660,27 @@ struct FRUSExplorerApp: App {
                 appState.checkCloudKitHealth()
             }
         }
+
+        // When the app enters the background on iOS, submit a BGProcessingTask so
+        // in-progress or interrupted indexing can continue for up to 30 minutes.
+        #if os(iOS)
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [appState] _ in
+            Task { @MainActor in
+                guard appState.currentIndexingProgress != nil || !appState.interruptedVolumeIds.isEmpty else { return }
+                let request = BGProcessingTaskRequest(identifier: Self.indexingBGTaskID)
+                request.requiresNetworkConnectivity = false
+                request.requiresExternalPower = false
+                try? BGTaskScheduler.shared.submit(request)
+                #if DEBUG
+                print("[FRUSExplorer] BGProcessingTask scheduled on background entry.")
+                #endif
+            }
+        }
+        #endif
 
         // Sync DocumentTagAssignment records from SwiftData into document_cache (FTS5)
         // so search tag-filtering reflects the CloudKit-synced state. Also runs the

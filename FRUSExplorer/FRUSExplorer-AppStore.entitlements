@@ -44,6 +44,10 @@
     <key>com.apple.developer.ubiquity-kvstore-identifier</key>
     <string>$(TeamIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
 
+    <!-- Live Activities: required to start IndexingActivityAttributes Live Activities -->
+    <key>com.apple.developer.live-activities</key>
+    <true/>
+
     <!--
         Keychain access group for the NARA Catalog API key.
         Items stored in this group with kSecAttrSynchronizable=true sync via iCloud Keychain

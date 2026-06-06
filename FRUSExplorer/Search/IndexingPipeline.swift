@@ -284,8 +284,10 @@ public actor IndexingPipeline {
     /// Yields `IndexingProgressUpdate` events at each batch boundary and stage transition.
     ///
     /// Consumers receive per-document throughput and stage information suitable for
-    /// an inline progress capsule. The stream is unbuffered (`.bufferingNewest(1)`) so
-    /// a slow consumer never causes memory growth.
+    /// an inline progress capsule. The stream uses `.bufferingNewest(100)` so that fast
+    /// macOS indexing runs do not drop intermediate updates before the MainActor consumer
+    /// is scheduled. AppState applies a 100 ms clock-based throttle on the consumer side
+    /// to limit SwiftUI re-render frequency.
     public nonisolated var progressStream: AsyncStream<IndexingProgressUpdate> { _progressStream }
 
     // MARK: - Metadata discovery stream (one event per volume, after parse completes)
@@ -340,14 +342,14 @@ public actor IndexingPipeline {
 
         let (updateStream, updateContinuation) = AsyncStream.makeStream(
             of: IndexingProgressUpdate.self,
-            bufferingPolicy: .bufferingNewest(1)
+            bufferingPolicy: .bufferingNewest(100)
         )
         _progressStream = updateStream
         progressUpdateContinuation = updateContinuation
 
         let (metaStream, metaContinuation) = AsyncStream.makeStream(
             of: VolumeMetadataDiscovered.self,
-            bufferingPolicy: .bufferingNewest(1)
+            bufferingPolicy: .bufferingNewest(10)
         )
         _metadataStream = metaStream
         metadataContinuation = metaContinuation
@@ -869,6 +871,29 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(s) }
         sqlite3_bind_text(s, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         return sqlite3_step(s) == SQLITE_ROW
+    }
+
+    /// Returns the set of all volume IDs that have at least one row in `document_cache`.
+    ///
+    /// Used by `AppState` to seed `indexedVolumeIds` at boot so subsequent per-volume
+    /// checks can use an O(1) Set lookup rather than a per-call SQLite query.
+    /// nonisolated: accesses `auxDb` directly — safe as a read-only query.
+    public nonisolated func allIndexedVolumeIds() throws -> Set<String> {
+        let sql = "SELECT DISTINCT volume_id FROM document_cache"
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        var ids = Set<String>()
+        while sqlite3_step(s) == SQLITE_ROW {
+            if let cStr = sqlite3_column_text(s, 0) {
+                ids.insert(String(cString: cStr))
+            }
+        }
+        return ids
     }
 
     // MARK: - Date Range Query (used by SearchService)

@@ -110,7 +110,6 @@ struct BrowserView: View {
                 if let service = appState.searchService {
                     SearchView(
                         searchService: service,
-                        subjectTagStore: appState.subjectTagStore,
                         initialParameters: pendingSearchParams
                     )
                 } else {

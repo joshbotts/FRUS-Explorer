@@ -384,7 +384,8 @@ struct DocumentView: View {
             case .tagPicker:
                 TagPickerSheetView(
                     entry: entry,
-                    indexingPipeline: appState.indexingPipeline
+                    indexingPipeline: appState.indexingPipeline,
+                    initialTagIds: Set(documentTagAssignments.map(\.tagId))
                 )
             case .addToCollection:
                 CollectionPickerSheetView(entry: entry)
@@ -495,6 +496,31 @@ struct DocumentView: View {
         guard let dm = appState.downloadManager else { return [] }
         let known = appState.manifestStore.diffResult?.known ?? []
         return Set(known.compactMap { dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil })
+    }
+
+    // MARK: - Tag Helpers
+
+    private var appliedUserTags: [UserTag] {
+        let assignedIds = Set(documentTagAssignments.map(\.tagId))
+        return allUserTags.filter { assignedIds.contains($0.id) }
+    }
+
+    private func removeUserTag(_ tag: UserTag) {
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        // Capture remaining IDs before deleting so the FTS5 string is correct.
+        let remaining = documentTagAssignments
+            .filter { $0.tagId != tag.id }
+            .map { $0.tagId.uuidString }
+        let tagString: String? = remaining.isEmpty ? nil : remaining.joined(separator: " ")
+        for assignment in documentTagAssignments where assignment.tagId == tag.id {
+            modelContext.delete(assignment)
+        }
+        try? modelContext.save()
+        guard let pipeline = appState.indexingPipeline else { return }
+        Task.detached(priority: .utility) {
+            try? await pipeline.updateUserTagIds(volumeId: vId, documentId: dId, userTagIds: tagString)
+        }
     }
 
     // MARK: - Document Year Extraction
@@ -1056,73 +1082,83 @@ struct DocumentView: View {
             )
             if notesExpanded {
                 Divider()
-                if documentNotes.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "note.text").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.notes.empty",
-                                    defaultValue: "No notes yet — tap the Note button in the toolbar."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(16)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(documentNotes) { note in
-                            Button { activeSheet = .editNote(note) } label: {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(note.bodyText.isEmpty
-                                         ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
-                                         : note.bodyText)
-                                        .font(.callout)
-                                        .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
-                                        .lineLimit(3)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(note.lastModified ?? .now, style: .relative)
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                                .padding(.vertical, 8)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(documentNotes) { note in
+                        Button { activeSheet = .editNote(note) } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(note.bodyText.isEmpty
+                                     ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
+                                     : note.bodyText)
+                                    .font(.callout)
+                                    .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
+                                    .lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(note.lastModified ?? .now, style: .relative)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
                             }
-                            .buttonStyle(.plain)
-                            if note.id != documentNotes.last?.id { Divider() }
+                            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                            .padding(.vertical, 8)
                         }
+                        .buttonStyle(.plain)
+                        Divider()
                     }
+                    Button {
+                        activeSheet = .noteEditor
+                    } label: {
+                        Label(
+                            String(localized: "panel.notes.add", defaultValue: "Add Note"),
+                            systemImage: "plus.circle"
+                        )
+                        .font(.callout)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.vertical, 10)
                 }
             }
             Divider()
 
             // ── Tags ───────────────────────────────────────────────────────────
-            let userTagNames = documentTagAssignments
-                .compactMap { a in allUserTags.first(where: { $0.id == a.tagId })?.name }
-                .sorted()
+            let appliedTags = appliedUserTags
             iOSPanelSectionHeader(
                 title: String(localized: "panel.tags.title", defaultValue: "Tags"),
-                badge: userTagNames.isEmpty ? nil : "\(userTagNames.count)",
+                badge: appliedTags.isEmpty ? nil : "\(appliedTags.count)",
                 isExpanded: $tagsExpanded
             )
             if tagsExpanded {
                 Divider()
-                if userTagNames.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "tag").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.tags.empty",
-                                    defaultValue: "No tags applied — tap Tag in the toolbar."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(16)
-                } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            ForEach(userTagNames, id: \.self) { name in
-                                FRUSTagChip(label: name, style: .user)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(appliedTags) { tag in
+                            FRUSTagChip(label: tag.name, style: .user) {
+                                removeUserTag(tag)
                             }
                         }
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                        Button {
+                            activeSheet = .tagPicker
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "plus")
+                                if appliedTags.isEmpty {
+                                    Text(String(localized: "panel.tags.add",
+                                                defaultValue: "Add Tag"))
+                                }
+                            }
+                            .font(.system(size: FRUSTheme.captionSize, weight: .medium))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, FRUSTheme.tagPaddingV)
+                            .background(Color.accentColor.opacity(0.10))
+                            .foregroundStyle(Color.accentColor)
+                            .clipShape(RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                 }
+                .padding(.vertical, 10)
             }
         }
     }
@@ -1797,9 +1833,19 @@ private struct TagPickerSheetView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
-    @State private var selectedTagIds: Set<UUID> = []
+    @State private var selectedTagIds: Set<UUID>
     @State private var newTagName: String = ""
-    @State private var isSaving: Bool = false
+    /// Tags inserted during this session — deleted if the user cancels rather than
+    /// saves, preventing orphan UserTag records when Cancel is tapped.
+    @State private var newlyCreatedTags: [UserTag] = []
+
+    init(entry: DocumentBrowserEntry,
+         indexingPipeline: IndexingPipeline?,
+         initialTagIds: Set<UUID>) {
+        self.entry = entry
+        self.indexingPipeline = indexingPipeline
+        _selectedTagIds = State(initialValue: initialTagIds)
+    }
 
     var body: some View {
         NavigationStack {
@@ -1856,27 +1902,17 @@ private struct TagPickerSheetView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "document.tags.cancel",
-                                  defaultValue: "Cancel")) { dismiss() }
+                                  defaultValue: "Cancel")) { cancelAndDismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "document.tags.done",
                                   defaultValue: "Done")) {
                         saveAndDismiss()
                     }
-                    .disabled(isSaving)
                 }
             }
         }
         .presentationDetents([.medium, .large])
-        // Load existing tag associations when the sheet appears.
-        .task {
-            guard let pipeline = indexingPipeline else { return }
-            let ids = (try? await pipeline.currentUserTagIds(
-                volumeId: entry.volumeId,
-                documentId: entry.documentId
-            )) ?? []
-            selectedTagIds = Set(ids.compactMap { UUID(uuidString: $0) })
-        }
     }
 
     private func createTag() {
@@ -1884,33 +1920,34 @@ private struct TagPickerSheetView: View {
         guard !name.isEmpty else { return }
         let tag = UserTag(name: name)
         modelContext.insert(tag)
+        newlyCreatedTags.append(tag)
         selectedTagIds.insert(tag.id)
         newTagName = ""
     }
 
+    private func cancelAndDismiss() {
+        for tag in newlyCreatedTags { modelContext.delete(tag) }
+        dismiss()
+    }
+
     private func saveAndDismiss() {
-        guard let pipeline = indexingPipeline else {
-            syncAssignmentsToSwiftData()
-            dismiss()
-            return
-        }
-        isSaving = true
+        // SwiftData write and sheet dismissal happen immediately on the main thread.
+        // The FTS5 virtual table update (delete + full re-insert) can take 100–500 ms
+        // on iPhone storage; running it in the background eliminates the visible lag.
+        syncAssignmentsToSwiftData()
+        dismiss()
+        guard let pipeline = indexingPipeline else { return }
         let tagString = selectedTagIds.isEmpty
             ? nil
             : selectedTagIds.map(\.uuidString).joined(separator: " ")
         let vId = entry.volumeId
         let dId = entry.documentId
-        Task {
+        Task.detached(priority: .utility) {
             try? await pipeline.updateUserTagIds(
                 volumeId: vId,
                 documentId: dId,
                 userTagIds: tagString
             )
-            await MainActor.run {
-                syncAssignmentsToSwiftData()
-                isSaving = false
-                dismiss()
-            }
         }
     }
 

@@ -45,6 +45,9 @@ struct SearchView: View {
     #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
     #endif
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     @State private var vm: SearchViewModel
     @State private var showTimeline = false
@@ -55,13 +58,9 @@ struct SearchView: View {
 
     init(
         searchService: SearchService,
-        subjectTagStore: SubjectTagStore,
         initialParameters: SearchParameters? = nil
     ) {
-        _vm = State(initialValue: SearchViewModel(
-            searchService: searchService,
-            subjectTagStore: subjectTagStore
-        ))
+        _vm = State(initialValue: SearchViewModel(searchService: searchService))
         self.initialParameters = initialParameters
     }
 
@@ -104,7 +103,7 @@ struct SearchView: View {
                         }
                     }
                     #endif
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem(placement: toolbarActionPlacement) {
                         Button {
                             vm.showFilterPanel = true
                         } label: {
@@ -117,7 +116,7 @@ struct SearchView: View {
                                    defaultValue: "Toggle filters")
                         )
                     }
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem(placement: toolbarActionPlacement) {
                         Button {
                             showTimeline.toggle()
                         } label: {
@@ -132,7 +131,7 @@ struct SearchView: View {
                         )
                         .disabled(vm.results.isEmpty)
                     }
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem(placement: toolbarActionPlacement) {
                         Button {
                             saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
                             showSaveSearchSheet = true
@@ -145,7 +144,7 @@ struct SearchView: View {
                         )
                         .disabled(!vm.hasSearched)
                     }
-                    ToolbarItem(placement: .primaryAction) {
+                    ToolbarItem(placement: toolbarActionPlacement) {
                         Button {
                             showSavedSearches = true
                         } label: {
@@ -190,7 +189,6 @@ struct SearchView: View {
                 vm.applyParameters(params)
             }
             vm.appState = appState
-            await vm.loadAvailableSubjectTags()
             vm.loadAvailableUserTags(context: modelContext)
             if let pid = appState.activeProjectId {
                 let descriptor = FetchDescriptor<Project>(
@@ -200,6 +198,19 @@ struct SearchView: View {
                 vm.applyProjectDefaults(project)
             }
         }
+    }
+
+    // MARK: - Toolbar Placement
+
+    /// On iPhone (compact horizontal size class), toolbar actions move to the bottom bar so the
+    /// navigation bar stays clear for the `.searchable` field and its Cancel button.
+    /// On iPad and macOS, they remain in the trailing navigation bar area.
+    private var toolbarActionPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        return horizontalSizeClass == .compact ? .bottomBar : .primaryAction
+        #else
+        return .primaryAction
+        #endif
     }
 
     // MARK: - Results Section

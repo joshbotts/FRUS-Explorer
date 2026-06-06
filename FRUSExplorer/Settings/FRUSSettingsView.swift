@@ -1706,6 +1706,7 @@ private struct SettingsStoragePane: View {
         settingsBatch = .rebuildAll(total: total)
         do {
             try await pipeline.removeAllVolumesFromIndex()
+            appState.indexedVolumeIds = []
         } catch {
             // Wipe failed; abort rather than re-indexing on top of a partially-deleted
             // index. The error is visible in Console.app.
@@ -1729,6 +1730,7 @@ private struct SettingsStoragePane: View {
         guard let dm = appState.downloadManager,
               let pipeline = appState.indexingPipeline else { return }
         try? await pipeline.removeVolume(volumeId)
+        appState.indexedVolumeIds.remove(volumeId)
         try? await dm.deleteVolume(volumeId: volumeId)
         await loadReport()
     }
@@ -1950,6 +1952,7 @@ private struct ManageStorageSheet: View {
         for volumeId in selected {
             do {
                 try await pipeline.removeVolume(volumeId)
+                appState.indexedVolumeIds.remove(volumeId)
                 try await dm.deleteVolume(volumeId: volumeId)
             } catch {
                 removalError = "Failed to remove \(volumeId): \(error.localizedDescription)"
@@ -2957,6 +2960,7 @@ private struct SettingsResetPane: View {
         if let pipeline = appState.indexingPipeline {
             do {
                 try await pipeline.removeAllVolumesFromIndex()
+                appState.indexedVolumeIds = []
                 appState.indexGeneration += 1
             } catch {
                 #if DEBUG

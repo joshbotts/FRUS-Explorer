@@ -63,6 +63,9 @@ struct MacDocumentView: View {
     @State private var showGlossNotFound  = false
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
+    @State private var showTagPicker = false
+    @State private var showAddNote = false
+    @State private var noteToEdit: ResearchNote? = nil
 
     @Query private var highlights:              [DocumentHighlight]
     @Query private var documentNotes:           [ResearchNote]
@@ -153,6 +156,30 @@ struct MacDocumentView: View {
             activity.title = entry.header.isEmpty ? entry.documentId : entry.header
             activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
             activity.isEligibleForHandoff = true
+        }
+        .sheet(isPresented: $showTagPicker) {
+            MacTagPickerSheet(
+                entry: entry,
+                indexingPipeline: appState.indexingPipeline,
+                initialTagIds: Set(documentTagAssignments.map(\.tagId))
+            )
+        }
+        .sheet(isPresented: $showAddNote) {
+            ResearchNoteEditorView(
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                activeProjectId: appState.activeProjectId,
+                indexingPipeline: appState.indexingPipeline
+            )
+        }
+        .sheet(item: $noteToEdit) { note in
+            ResearchNoteEditorView(
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                activeProjectId: appState.activeProjectId,
+                noteToEdit: note,
+                indexingPipeline: appState.indexingPipeline
+            )
         }
         .sheet(item: $vm.selectedPerson) { person in
             PersonDetailSheet(
@@ -360,19 +387,9 @@ struct MacDocumentView: View {
             )
             if notesExpanded {
                 Divider()
-                if documentNotes.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "note.text").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.notes.empty",
-                                    defaultValue: "No notes yet — click Add note in the research strip to create one."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.vertical, 12)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(documentNotes) { note in
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(documentNotes) { note in
+                        Button { noteToEdit = note } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(note.bodyText.isEmpty
                                      ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
@@ -380,50 +397,73 @@ struct MacDocumentView: View {
                                     .font(.callout)
                                     .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
                                     .lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                 Text(note.lastModified ?? .now, style: .relative)
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                             }
                             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                             .padding(.vertical, 8)
-                            if note.id != documentNotes.last?.id { Divider() }
                         }
+                        .buttonStyle(.plain)
+                        Divider()
                     }
-                    .padding(.vertical, 4)
+                    Button {
+                        showAddNote = true
+                    } label: {
+                        Label(
+                            String(localized: "panel.notes.add", defaultValue: "Add Note"),
+                            systemImage: "plus.circle"
+                        )
+                        .font(.callout)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.vertical, 10)
                 }
             }
             Divider()
 
             // ── Tags ─────────────────────────────────────────────────────────
-            let userTagNames = documentTagAssignments
-                .compactMap { a in allUserTags.first(where: { $0.id == a.tagId })?.name }
-                .sorted()
+            let appliedTags = appliedUserTags
             panelSectionHeader(
                 title: String(localized: "panel.tags.title", defaultValue: "Tags"),
-                badge: userTagNames.isEmpty ? nil : "\(userTagNames.count)",
+                badge: appliedTags.isEmpty ? nil : "\(appliedTags.count)",
                 isExpanded: $tagsExpanded
             )
             if tagsExpanded {
                 Divider()
-                if userTagNames.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "tag").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.tags.empty",
-                                    defaultValue: "No tags applied — click Tag in the research strip to add one."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.vertical, 12)
-                } else {
+                ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
-                        ForEach(userTagNames, id: \.self) { name in
-                            FRUSTagChip(label: name, style: .user)
+                        ForEach(appliedTags) { tag in
+                            FRUSTagChip(label: tag.name, style: .user) {
+                                removeUserTag(tag)
+                            }
                         }
+                        Button {
+                            showTagPicker = true
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "plus")
+                                if appliedTags.isEmpty {
+                                    Text(String(localized: "panel.tags.add",
+                                                defaultValue: "Add Tag"))
+                                }
+                            }
+                            .font(.system(size: FRUSTheme.captionSize, weight: .medium))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, FRUSTheme.tagPaddingV)
+                            .background(Color.accentColor.opacity(0.10))
+                            .foregroundStyle(Color.accentColor)
+                            .clipShape(RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius))
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.vertical, 10)
                 }
+                .padding(.vertical, 10)
             }
         }
     }
@@ -468,6 +508,30 @@ struct MacDocumentView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Tag Helpers
+
+    private var appliedUserTags: [UserTag] {
+        let assignedIds = Set(documentTagAssignments.map(\.tagId))
+        return allUserTags.filter { assignedIds.contains($0.id) }
+    }
+
+    private func removeUserTag(_ tag: UserTag) {
+        let vId = entry.volumeId
+        let dId = entry.documentId
+        let remaining = documentTagAssignments
+            .filter { $0.tagId != tag.id }
+            .map { $0.tagId.uuidString }
+        let tagString: String? = remaining.isEmpty ? nil : remaining.joined(separator: " ")
+        for assignment in documentTagAssignments where assignment.tagId == tag.id {
+            modelContext.delete(assignment)
+        }
+        try? modelContext.save()
+        guard let pipeline = appState.indexingPipeline else { return }
+        Task.detached(priority: .utility) {
+            try? await pipeline.updateUserTagIds(volumeId: vId, documentId: dId, userTagIds: tagString)
+        }
     }
 
     // MARK: - Highlight Deletion

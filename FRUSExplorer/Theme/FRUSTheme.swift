@@ -183,21 +183,32 @@ struct FRUSTagChip: View {
     enum Style { case system, user }
     let label: String
     let style: Style
+    /// When non-nil, an × button appears inside the chip that calls this closure.
+    var onRemove: (() -> Void)? = nil
 
     var body: some View {
-        Text(label)
-            .font(.system(size: FRUSTheme.captionSize))
-            .padding(.horizontal, FRUSTheme.tagPaddingH)
-            .padding(.vertical, FRUSTheme.tagPaddingV)
-            .background(style == .user ? FRUSTheme.userTagBackground : FRUSTheme.systemTagBackground)
-            .foregroundStyle(style == .user ? FRUSTheme.userTagForeground : FRUSTheme.systemTagForeground)
-            .clipShape(RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius)
-                    .strokeBorder(
-                        style == .user ? FRUSTheme.userTagBorderColor : FRUSTheme.systemTagBorderColor,
-                        lineWidth: 0.5
-                    )
-            )
+        HStack(spacing: 3) {
+            Text(label)
+                .font(.system(size: FRUSTheme.captionSize))
+            if let onRemove {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: FRUSTheme.captionSize - 1, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, FRUSTheme.tagPaddingH)
+        .padding(.vertical, FRUSTheme.tagPaddingV)
+        .background(style == .user ? FRUSTheme.userTagBackground : FRUSTheme.systemTagBackground)
+        .foregroundStyle(style == .user ? FRUSTheme.userTagForeground : FRUSTheme.systemTagForeground)
+        .clipShape(RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius)
+                .strokeBorder(
+                    style == .user ? FRUSTheme.userTagBorderColor : FRUSTheme.systemTagBorderColor,
+                    lineWidth: 0.5
+                )
+        )
     }
 }

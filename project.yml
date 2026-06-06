@@ -54,6 +54,8 @@ targets:
     bundleId: bottsywattsy.FRUS-Explorer
     sources:
       - path: FRUSExplorer
+      # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
+      - path: FTS5Store
     # XcodeGen generates Info.plist at info.path and sets INFOPLIST_FILE accordingly.
     # Using an explicit info section (instead of GENERATE_INFOPLIST_FILE) allows
     # UIBackgroundModes, which is an array and cannot be set via INFOPLIST_KEY_*.
@@ -72,15 +74,26 @@ targets:
         #  'remote-notification' background mode in your info plist."
         UIBackgroundModes:
           - remote-notification
+          - background-processing
+        # Required by BGTaskScheduler: lists every task identifier this app may submit.
+        # The 'indexing' task sustains IndexingPipeline work when the user switches away.
+        BGTaskSchedulerPermittedIdentifiers:
+          - bottsywattsy.FRUS-Explorer.indexing
         # Required for Handoff to route NSUserActivity instances to this app.
         NSUserActivityTypes:
           - com.joshbotts.frus-explorer.document
+        # Required to call Activity.request() and start Live Activities.
+        NSSupportsLiveActivities: YES
+    dependencies:
+      # Embed the widget extension so it is installed alongside the app.
+      - target: FRUSExplorerWidgets
+        embed: true
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         TARGETED_DEVICE_FAMILY: "1,2"
-        CURRENT_PROJECT_VERSION: 14
+        CURRENT_PROJECT_VERSION: 15
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
 
@@ -96,6 +109,8 @@ targets:
     bundleId: bottsywattsy.FRUS-Explorer
     sources:
       - path: FRUSExplorer
+      # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
+      - path: FTS5Store
     dependencies:
       # Sparkle is always present as a package dependency; actual linkage is
       # governed by EXCLUDED_SOURCE_FILE_NAMES / OTHER_LDFLAGS in non-DirectDistribution
@@ -107,7 +122,7 @@ targets:
       base:
         PRODUCT_NAME: "FRUS Explorer"
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
-        CURRENT_PROJECT_VERSION: 14
+        CURRENT_PROJECT_VERSION: 15
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: "FRUS Explorer"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.reference"
@@ -126,6 +141,34 @@ targets:
           CODE_SIGN_IDENTITY: "Developer ID Application"
           OTHER_SWIFT_FLAGS: "-DDIRECT_DISTRIBUTION"
           INFOPLIST_KEY_SUFeedURL: "https://frusexplorer.example.com/appcast.xml"
+
+  # -------------------------------------------------------------------------
+  # Widget Extension
+  # Hosts the IndexingLiveActivity Live Activity (Dynamic Island + lock screen).
+  # The IndexingActivityAttributes file is compiled into both this target and the
+  # main app target — no shared framework is needed since the struct is small.
+  # -------------------------------------------------------------------------
+  FRUSExplorerWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    bundleId: bottsywattsy.FRUS-Explorer.widgets
+    sources:
+      - path: FRUSExplorerWidgets
+      # Shared activity attributes struct — compiled into both the app and widget targets.
+      - path: FRUSExplorer/Models/IndexingActivityAttributes.swift
+    info:
+      path: FRUSExplorerWidgets/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_NAME: FRUSExplorerWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer.widgets"
+        SWIFT_STRICT_CONCURRENCY: complete
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: "FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements"
 
   # -------------------------------------------------------------------------
   # Unit Tests

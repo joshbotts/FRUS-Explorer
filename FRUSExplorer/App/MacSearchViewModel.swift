@@ -143,7 +143,7 @@ final class MacSearchViewModel {
     // MARK: - Advanced Filter ViewModel
 
     /// Backing view model for `SearchFilterView` presented as a sheet.
-    /// Created lazily on the first call to `syncToFilterVM(searchService:subjectTagStore:)`.
+    /// Created lazily on the first call to `syncToFilterVM(searchService:)`.
     /// Nil until then (and nil if `searchService` is not yet available).
     var filterVM: SearchViewModel? = nil
 
@@ -301,9 +301,9 @@ final class MacSearchViewModel {
     /// Copies current `parameters` state into `filterVM` so the filter sheet
     /// shows the currently active values when presented. Creates `filterVM` on
     /// first call if `searchService` is available.
-    func syncToFilterVM(searchService: SearchService?, subjectTagStore: SubjectTagStore) {
+    func syncToFilterVM(searchService: SearchService?) {
         if filterVM == nil, let svc = searchService {
-            filterVM = SearchViewModel(searchService: svc, subjectTagStore: subjectTagStore)
+            filterVM = SearchViewModel(searchService: svc)
         }
         guard let filterVM else { return }
 

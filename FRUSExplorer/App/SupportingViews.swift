@@ -93,6 +93,27 @@ struct ResearchStripView: View {
     /// Persisted preference shared with MacDocumentView via AppStorage.
     @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
 
+    /// Current tag assignments for the visible document — used to pre-fill the tag
+    /// picker so it opens with the correct state instead of an empty list.
+    @Query private var currentDocumentAssignments: [DocumentTagAssignment]
+
+    init(entry: DocumentBrowserEntry?,
+         showCitationPopover: Binding<Bool>,
+         highlightCoordinator: HighlightCoordinator,
+         onNARALookup: ((String) -> Void)? = nil) {
+        self.entry = entry
+        self._showCitationPopover = showCitationPopover
+        self.highlightCoordinator = highlightCoordinator
+        self.onNARALookup = onNARALookup
+        let vId = entry?.volumeId ?? ""
+        let dId = entry?.documentId ?? ""
+        _currentDocumentAssignments = Query(
+            filter: #Predicate<DocumentTagAssignment> { a in
+                a.volumeId == vId && a.documentId == dId
+            }
+        )
+    }
+
     private var isDisabled: Bool { entry == nil }
     private var canCreateHighlight: Bool {
         highlightCoordinator.webKitSelectionRange != nil
@@ -315,7 +336,11 @@ struct ResearchStripView: View {
         }
         .sheet(isPresented: $showTagPicker) {
             if let entry {
-                MacTagPickerSheet(entry: entry, indexingPipeline: appState.indexingPipeline)
+                MacTagPickerSheet(
+                    entry: entry,
+                    indexingPipeline: appState.indexingPipeline,
+                    initialTagIds: Set(currentDocumentAssignments.map(\.tagId))
+                )
             }
         }
         .sheet(isPresented: $showHighlightNoteEditor, onDismiss: {
@@ -890,14 +915,17 @@ struct StatusBarView: View {
 
     // MARK: - Computed
 
+    /// Volumes that are both downloaded and present in the FTS5 index.
+    ///
+    /// Uses `appState.indexedVolumeIds` (Set, seeded at boot) for O(1) lookups instead
+    /// of per-volume SQLite queries. The previous implementation ran `isVolumeIndexed()`
+    /// (prepare/step/finalize) for every downloaded volume on every body re-evaluation.
+    /// Because StatusBarView observes `currentIndexingProgress` (updated ~10×/s), this
+    /// caused hundreds of SQLite calls per second on the main thread, making the education
+    /// sheet laggy when scrolling or advancing pages.
     private var indexedCount: Int {
-        guard let dm = appState.downloadManager,
-              let pipeline = appState.indexingPipeline else { return 0 }
-        let entries = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
-        return entries.filter {
-            dm.isVolumeDownloaded($0.volumeId) &&
-            (try? pipeline.isVolumeIndexed($0.volumeId)) == true
-        }.count
+        guard let dm = appState.downloadManager else { return 0 }
+        return appState.indexedVolumeIds.filter { dm.isVolumeDownloaded($0) }.count
     }
 
     private struct ActiveTask {
@@ -1851,9 +1879,19 @@ struct MacTagPickerSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
-    @State private var selectedTagIds: Set<UUID> = []
+    @State private var selectedTagIds: Set<UUID>
     @State private var newTagName: String = ""
-    @State private var isSaving: Bool = false
+    /// Tags inserted during this session — deleted if the user cancels rather than
+    /// saves, preventing orphan UserTag records when Cancel is tapped.
+    @State private var newlyCreatedTags: [UserTag] = []
+
+    init(entry: DocumentBrowserEntry,
+         indexingPipeline: IndexingPipeline?,
+         initialTagIds: Set<UUID>) {
+        self.entry = entry
+        self.indexingPipeline = indexingPipeline
+        _selectedTagIds = State(initialValue: initialTagIds)
+    }
 
     var body: some View {
         #if os(macOS)
@@ -1938,7 +1976,7 @@ struct MacTagPickerSheet: View {
             // Button bar
             HStack {
                 Button(String(localized: "tags.picker.cancel", defaultValue: "Cancel")) {
-                    dismiss()
+                    cancelAndDismiss()
                 }
                 .keyboardShortcut(.cancelAction)
 
@@ -1948,13 +1986,11 @@ struct MacTagPickerSheet: View {
                     saveAndDismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(isSaving)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
         }
         .frame(minWidth: 340, minHeight: 300)
-        .task { await loadExistingTags() }
     }
     #endif
 
@@ -1973,65 +2009,52 @@ struct MacTagPickerSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "tags.picker.cancel",
-                                  defaultValue: "Cancel")) { dismiss() }
+                                  defaultValue: "Cancel")) { cancelAndDismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "tags.picker.done",
                                   defaultValue: "Done")) { saveAndDismiss() }
-                        .disabled(isSaving)
                 }
             }
         }
-        .task { await loadExistingTags() }
     }
 
     // MARK: - Helpers
-
-    private func loadExistingTags() async {
-        guard let pipeline = indexingPipeline else { return }
-        let ids = (try? await pipeline.currentUserTagIds(
-            volumeId: entry.volumeId,
-            documentId: entry.documentId
-        )) ?? []
-        selectedTagIds = Set(ids.compactMap { UUID(uuidString: $0) })
-    }
 
     private func createTag() {
         let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         let tag = UserTag(name: name)
         modelContext.insert(tag)
+        newlyCreatedTags.append(tag)
         selectedTagIds.insert(tag.id)
         newTagName = ""
     }
 
+    private func cancelAndDismiss() {
+        for tag in newlyCreatedTags { modelContext.delete(tag) }
+        dismiss()
+    }
+
     private func saveAndDismiss() {
-        guard let pipeline = indexingPipeline else {
-            // No pipeline (unindexed doc): still write SwiftData assignments so the
-            // Research window reflects the selection via @Query.
-            syncAssignmentsToSwiftData()
-            dismiss()
-            return
-        }
-        isSaving = true
+        // SwiftData write and dismissal happen immediately on the main thread.
+        // The FTS5 virtual table update (delete + full re-insert) can take 100–500 ms
+        // on iPhone storage; running it in the background eliminates visible lag.
+        // For unindexed documents the FTS5 path is skipped entirely.
+        syncAssignmentsToSwiftData()
+        dismiss()
+        guard let pipeline = indexingPipeline else { return }
         let tagString = selectedTagIds.isEmpty
             ? nil
             : selectedTagIds.map(\.uuidString).joined(separator: " ")
         let vId = entry.volumeId
         let dId = entry.documentId
-        Task {
+        Task.detached(priority: .utility) {
             try? await pipeline.updateUserTagIds(
                 volumeId: vId,
                 documentId: dId,
                 userTagIds: tagString
             )
-            await MainActor.run {
-                // Write DocumentTagAssignment records to SwiftData so the selection
-                // syncs via CloudKit and is visible to @Query observers in ResearchView.
-                syncAssignmentsToSwiftData()
-                isSaving = false
-                dismiss()
-            }
         }
     }
 
