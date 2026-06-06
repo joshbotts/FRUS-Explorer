@@ -873,6 +873,29 @@ public actor IndexingPipeline {
         return sqlite3_step(s) == SQLITE_ROW
     }
 
+    /// Returns the set of all volume IDs that have at least one row in `document_cache`.
+    ///
+    /// Used by `AppState` to seed `indexedVolumeIds` at boot so subsequent per-volume
+    /// checks can use an O(1) Set lookup rather than a per-call SQLite query.
+    /// nonisolated: accesses `auxDb` directly — safe as a read-only query.
+    public nonisolated func allIndexedVolumeIds() throws -> Set<String> {
+        let sql = "SELECT DISTINCT volume_id FROM document_cache"
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        var ids = Set<String>()
+        while sqlite3_step(s) == SQLITE_ROW {
+            if let cStr = sqlite3_column_text(s, 0) {
+                ids.insert(String(cString: cStr))
+            }
+        }
+        return ids
+    }
+
     // MARK: - Date Range Query (used by SearchService)
 
     /// Returns a set of `"volumeId/documentId"` composite keys for documents whose

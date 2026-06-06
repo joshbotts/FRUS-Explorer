@@ -511,6 +511,17 @@ final class AppState {
     ///   1.0 — Session 115: initial implementation
     var interruptedVolumeIds: Set<String> = []
 
+    /// Cached set of volume IDs that are present in the FTS5 search index.
+    ///
+    /// Seeded at boot via `seedIndexedVolumeIds(pipeline:)` which runs a single
+    /// `SELECT DISTINCT volume_id FROM document_cache` query. Updated incrementally
+    /// in `connectIndexingProgress` when a volume's `.complete` event fires.
+    ///
+    /// Replaces per-call `IndexingPipeline.isVolumeIndexed()` lookups from view bodies
+    /// (which previously fired SQLite queries on every SwiftUI render pass — up to 10×/s
+    /// during indexing — saturating the main thread and making the education sheet laggy).
+    var indexedVolumeIds: Set<String> = []
+
     // MARK: - Live Activity (iOS only)
 
     #if os(iOS)
@@ -576,6 +587,18 @@ final class AppState {
         downloadQueue.map { manifestStore.entry(forVolumeId: $0)?.title ?? $0 }
     }
 
+    /// Populates `indexedVolumeIds` from the database in a background task.
+    ///
+    /// Runs a single `SELECT DISTINCT volume_id FROM document_cache` query so subsequent
+    /// per-volume checks use an O(1) Set lookup instead of per-call SQLite queries from
+    /// the SwiftUI render loop.  Called once at boot after the pipeline is created.
+    func seedIndexedVolumeIds(pipeline: IndexingPipeline) {
+        Task.detached(priority: .utility) { [weak self] in
+            let ids = (try? pipeline.allIndexedVolumeIds()) ?? []
+            await MainActor.run { [weak self] in self?.indexedVolumeIds = ids }
+        }
+    }
+
     /// Subscribes to `pipeline.progressStream` and `pipeline.metadataStream`, forwarding
     /// updates onto the main actor as `currentIndexingProgress`, `lastDiscoveredMetadata`,
     /// and `completedIndexingMetadata`.
@@ -594,6 +617,7 @@ final class AppState {
                     self.completedIndexingMetadata = self.lastDiscoveredMetadata
                     self.currentIndexingProgress = nil
                     self.interruptedVolumeIds.remove(update.volumeId)
+                    self.indexedVolumeIds.insert(update.volumeId)
                     self.lastIndexingCompletionTime = Date()
                     self.indexingBatchCompletedCount += 1
                     // Update rolling throughput average (Welford online mean).
@@ -744,18 +768,19 @@ final class AppState {
     /// Count of volumes that are downloaded but not yet present in the search index.
     ///
     /// Used to drive the Settings tab badge, prompting the user to run Reindex.
-    /// Returns 0 if `downloadManager` or `indexingPipeline` is nil (i.e. during boot).
-    /// Uses `try?` so an unexpected SQLite error conservatively returns 0 (no badge)
-    /// rather than crashing.
+    /// Returns 0 before `downloadManager` is available (i.e. during boot).
+    ///
+    /// Uses `indexedVolumeIds` (a cached Set seeded at boot) for O(1) per-volume
+    /// lookup instead of a live SQLite query, keeping the render loop free of I/O.
     ///
     /// Version history:
     ///   1.0 — Session 45: initial implementation
+    ///   1.1 — Session 131: switched to `indexedVolumeIds` cache; no SQLite in render loop
     var unindexedVolumeCount: Int {
-        guard let dm = downloadManager, let pipeline = indexingPipeline else { return 0 }
+        guard let dm = downloadManager else { return 0 }
         let all = manifestStore.diffResult?.known ?? manifestStore.bundledEntries
         return all.filter { entry in
-            dm.isVolumeDownloaded(entry.volumeId)
-            && (try? !pipeline.isVolumeIndexed(entry.volumeId)) == true
+            dm.isVolumeDownloaded(entry.volumeId) && !indexedVolumeIds.contains(entry.volumeId)
         }.count
     }
     #endif

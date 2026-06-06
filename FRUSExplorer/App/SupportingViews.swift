@@ -890,14 +890,17 @@ struct StatusBarView: View {
 
     // MARK: - Computed
 
+    /// Volumes that are both downloaded and present in the FTS5 index.
+    ///
+    /// Uses `appState.indexedVolumeIds` (Set, seeded at boot) for O(1) lookups instead
+    /// of per-volume SQLite queries. The previous implementation ran `isVolumeIndexed()`
+    /// (prepare/step/finalize) for every downloaded volume on every body re-evaluation.
+    /// Because StatusBarView observes `currentIndexingProgress` (updated ~10×/s), this
+    /// caused hundreds of SQLite calls per second on the main thread, making the education
+    /// sheet laggy when scrolling or advancing pages.
     private var indexedCount: Int {
-        guard let dm = appState.downloadManager,
-              let pipeline = appState.indexingPipeline else { return 0 }
-        let entries = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
-        return entries.filter {
-            dm.isVolumeDownloaded($0.volumeId) &&
-            (try? pipeline.isVolumeIndexed($0.volumeId)) == true
-        }.count
+        guard let dm = appState.downloadManager else { return 0 }
+        return appState.indexedVolumeIds.filter { dm.isVolumeDownloaded($0) }.count
     }
 
     private struct ActiveTask {

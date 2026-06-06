@@ -407,6 +407,9 @@ struct FRUSExplorerApp: App {
            ) {
             appState.indexingPipeline = pipeline
             appState.connectIndexingProgress(pipeline: pipeline)
+            // Seed cached indexed-volume IDs so StatusBarView / MainTabView badges
+            // use O(1) Set lookup instead of per-volume SQLite queries in the render loop.
+            appState.seedIndexedVolumeIds(pipeline: pipeline)
             appState.crossReferenceStore = try? CrossReferenceStore(databaseURL: dbURL)
             appState.personMentionStore = try? PersonMentionStore(databaseURL: dbURL)
             appState.searchService = SearchService(
