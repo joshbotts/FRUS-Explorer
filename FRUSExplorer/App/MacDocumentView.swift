@@ -64,6 +64,8 @@ struct MacDocumentView: View {
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
     @State private var showTagPicker = false
+    @State private var showAddNote = false
+    @State private var noteToEdit: ResearchNote? = nil
 
     @Query private var highlights:              [DocumentHighlight]
     @Query private var documentNotes:           [ResearchNote]
@@ -160,6 +162,23 @@ struct MacDocumentView: View {
                 entry: entry,
                 indexingPipeline: appState.indexingPipeline,
                 initialTagIds: Set(documentTagAssignments.map(\.tagId))
+            )
+        }
+        .sheet(isPresented: $showAddNote) {
+            ResearchNoteEditorView(
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                activeProjectId: appState.activeProjectId,
+                indexingPipeline: appState.indexingPipeline
+            )
+        }
+        .sheet(item: $noteToEdit) { note in
+            ResearchNoteEditorView(
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                activeProjectId: appState.activeProjectId,
+                noteToEdit: note,
+                indexingPipeline: appState.indexingPipeline
             )
         }
         .sheet(item: $vm.selectedPerson) { person in
@@ -368,19 +387,9 @@ struct MacDocumentView: View {
             )
             if notesExpanded {
                 Divider()
-                if documentNotes.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "note.text").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.notes.empty",
-                                    defaultValue: "No notes yet — click Add note in the research strip to create one."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.vertical, 12)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(documentNotes) { note in
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(documentNotes) { note in
+                        Button { noteToEdit = note } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(note.bodyText.isEmpty
                                      ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
@@ -388,16 +397,31 @@ struct MacDocumentView: View {
                                     .font(.callout)
                                     .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
                                     .lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                 Text(note.lastModified ?? .now, style: .relative)
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                             }
                             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                             .padding(.vertical, 8)
-                            if note.id != documentNotes.last?.id { Divider() }
                         }
+                        .buttonStyle(.plain)
+                        Divider()
                     }
-                    .padding(.vertical, 4)
+                    Button {
+                        showAddNote = true
+                    } label: {
+                        Label(
+                            String(localized: "panel.notes.add", defaultValue: "Add Note"),
+                            systemImage: "plus.circle"
+                        )
+                        .font(.callout)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.vertical, 10)
                 }
             }
             Divider()

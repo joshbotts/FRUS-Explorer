@@ -1082,38 +1082,41 @@ struct DocumentView: View {
             )
             if notesExpanded {
                 Divider()
-                if documentNotes.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "note.text").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.notes.empty",
-                                    defaultValue: "No notes yet — tap the Note button in the toolbar."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(16)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(documentNotes) { note in
-                            Button { activeSheet = .editNote(note) } label: {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(note.bodyText.isEmpty
-                                         ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
-                                         : note.bodyText)
-                                        .font(.callout)
-                                        .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
-                                        .lineLimit(3)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(note.lastModified ?? .now, style: .relative)
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                                .padding(.vertical, 8)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(documentNotes) { note in
+                        Button { activeSheet = .editNote(note) } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(note.bodyText.isEmpty
+                                     ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
+                                     : note.bodyText)
+                                    .font(.callout)
+                                    .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
+                                    .lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(note.lastModified ?? .now, style: .relative)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
                             }
-                            .buttonStyle(.plain)
-                            if note.id != documentNotes.last?.id { Divider() }
+                            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                            .padding(.vertical, 8)
                         }
+                        .buttonStyle(.plain)
+                        Divider()
                     }
+                    Button {
+                        activeSheet = .noteEditor
+                    } label: {
+                        Label(
+                            String(localized: "panel.notes.add", defaultValue: "Add Note"),
+                            systemImage: "plus.circle"
+                        )
+                        .font(.callout)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.vertical, 10)
                 }
             }
             Divider()
