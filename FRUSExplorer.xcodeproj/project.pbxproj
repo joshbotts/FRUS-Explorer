@@ -580,6 +580,7 @@
 		D707625BB386335733C8C9E5 /* FRUSExplorerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FRUSExplorerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D81475CA28849923822135AD /* BrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewModel.swift; sourceTree = "<group>"; };
 		D8EF6D3CD276F57B49D03422 /* SessionLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLogView.swift; sourceTree = "<group>"; };
+		DAAF5658EA508F2B59DBB168 /* FRUSExplorer-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-iOS.entitlements"; sourceTree = "<group>"; };
 		DD78F8E282DB8E257A3895F6 /* IndexingQueueBannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingQueueBannerTests.swift; sourceTree = "<group>"; };
 		DD986D77D815D9FA7DFFA769 /* FRUSWebViewConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSWebViewConfiguration.swift; sourceTree = "<group>"; };
 		DD989B380917D47B136A279E /* OpenAPIValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAPIValidationTests.swift; sourceTree = "<group>"; };
@@ -1007,6 +1008,7 @@
 				CD59C3744670B2576AB0D6C8 /* Theme */,
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
 				8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */,
+				DAAF5658EA508F2B59DBB168 /* FRUSExplorer-iOS.entitlements */,
 				9D097BA4D63BB3150BA0492E /* Info.plist */,
 				FF735149F415370F2B4A807F /* Localizable.strings */,
 			);
@@ -1957,7 +1959,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-AppStore.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 15;
@@ -1978,7 +1980,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-AppStore.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 15;
@@ -2017,7 +2019,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-AppStore.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 15;

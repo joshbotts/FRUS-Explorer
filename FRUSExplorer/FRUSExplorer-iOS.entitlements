@@ -2,11 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <!--
-    FRUS Explorer — App Store Entitlements (macOS)
-    Used by: macOS target (Debug + AppStore configs)
+    FRUS Explorer — iOS/iPadOS Entitlements
+    Used by: iOS/iPadOS target (all configs)
 
-    iOS/iPadOS uses FRUSExplorer-iOS.entitlements, which adds the Live Activities entitlement
-    that is not valid on macOS.
+    This file extends the shared entitlements in FRUSExplorer-AppStore.entitlements with
+    iOS-only entitlements. The macOS target uses FRUSExplorer-AppStore.entitlements directly
+    since Live Activities are not available on macOS.
 
     NARA API key storage note: items stored in the keychain with kSecAttrSynchronizable=true
     sync across the user's devices via iCloud Keychain automatically — no special entitlement
@@ -14,21 +15,8 @@
     group the NARA key is stored in; the iCloud sync is handled at the item level in code.
 -->
 <dict>
-    <!-- Sandbox: required for all Mac App Store submissions -->
-    <key>com.apple.security.app-sandbox</key>
-    <true/>
-
     <!-- Outbound network: GitHub API, NARA Catalog API -->
     <key>com.apple.security.network.client</key>
-    <true/>
-
-    <!--
-        Read/write access to files selected via NSSavePanel / NSOpenPanel.
-        Required for collection exports: MacExportCompleteView's "Save To…" button copies
-        the exported PDF/HTML from temporaryDirectory to the user-chosen destination.
-        Without this, FileManager.copyItem crashes under the app sandbox. (Session 74.)
-    -->
-    <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
 
     <!-- iCloud container for CloudKit (SwiftData sync) -->
@@ -46,6 +34,10 @@
     <!-- iCloud KV store for lightweight cross-device defaults (e.g., active project ID) -->
     <key>com.apple.developer.ubiquity-kvstore-identifier</key>
     <string>$(TeamIdentifierPrefix)bottsywattsy.FRUS-Explorer</string>
+
+    <!-- Live Activities: required to start IndexingActivityAttributes Live Activities (iOS only) -->
+    <key>com.apple.developer.live-activities</key>
+    <true/>
 
     <!--
         Keychain access group for the NARA Catalog API key.

@@ -95,7 +95,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         CURRENT_PROJECT_VERSION: 15
         CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
+        CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-iOS.entitlements"
 
   # -------------------------------------------------------------------------
   # macOS Application
@@ -184,6 +184,7 @@ targets:
     sources:
       - path: FRUSExplorerTests
     resources:
+      - path: FRUSExplorer/FRUSExplorer-iOS.entitlements
       - path: FRUSExplorer/FRUSExplorer-AppStore.entitlements
       - path: FRUSExplorer/FRUSExplorer-DirectDistribution.entitlements
     dependencies:
