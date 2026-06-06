@@ -36,6 +36,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
+    DEVELOPMENT_TEAM: 828S8SXVLC
 
 # ---------------------------------------------------------------------------
 # Targets
@@ -94,6 +95,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         TARGETED_DEVICE_FAMILY: "1,2"
         CURRENT_PROJECT_VERSION: 15
+        MARKETING_VERSION: "0.2"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-iOS.entitlements"
 
@@ -123,6 +125,7 @@ targets:
         PRODUCT_NAME: "FRUS Explorer"
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         CURRENT_PROJECT_VERSION: 15
+        MARKETING_VERSION: "0.2"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: "FRUS Explorer"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.reference"

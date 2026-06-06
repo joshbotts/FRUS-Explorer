@@ -17,9 +17,11 @@ xcodegen generate --spec project.yml
 > git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/
 > ```
 
-**Bumping the build number** — do NOT run `xcodegen generate`. Edit both files directly:
-1. `project.yml` — change `CURRENT_PROJECT_VERSION`
-2. `FRUSExplorer.xcodeproj/project.pbxproj` — replace all 6 occurrences of `CURRENT_PROJECT_VERSION = <old>;` with the new value (use `replace_all: true`)
+**Bumping the build number or version** — do NOT run `xcodegen generate`. Edit both files directly:
+- Build number: change `CURRENT_PROJECT_VERSION` in `project.yml`, then replace all occurrences in `project.pbxproj` (`replace_all: true`)
+- Version string: change `MARKETING_VERSION` the same way
+
+`DEVELOPMENT_TEAM` and `MARKETING_VERSION` are now declared in `project.yml` so they survive `xcodegen generate`. If Xcode ever sets additional build settings that need to persist, add them to `project.yml` before running xcodegen.
 
 ## Build & Test Commands
 

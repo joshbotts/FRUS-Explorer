@@ -1196,13 +1196,22 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					500BB0630C406B4B416A0344 = {
+						DevelopmentTeam = 828S8SXVLC;
 						TestTargetID = 9550E519E264B17E684E4D82;
 					};
 					65BAD94706A54367F9C6C528 = {
+						DevelopmentTeam = 828S8SXVLC;
 						ProvisioningStyle = Automatic;
 					};
+					907E5297F9410AF667F66CFD = {
+						DevelopmentTeam = 828S8SXVLC;
+					};
 					9550E519E264B17E684E4D82 = {
+						DevelopmentTeam = 828S8SXVLC;
 						ProvisioningStyle = Automatic;
+					};
+					D8DEAD52775A8E6176EF83CD = {
+						DevelopmentTeam = 828S8SXVLC;
 					};
 				};
 			};
@@ -1694,6 +1703,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = macosx;
@@ -1755,6 +1765,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 828S8SXVLC;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1853,6 +1864,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 828S8SXVLC;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1891,6 +1903,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = macosx;
@@ -1969,6 +1982,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = iphoneos;
@@ -1990,6 +2004,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = iphoneos;
@@ -2029,6 +2044,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = iphoneos;
@@ -2074,6 +2090,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.2;
 				OTHER_SWIFT_FLAGS = "-DDIRECT_DISTRIBUTION";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
@@ -2116,6 +2133,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 828S8SXVLC;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
