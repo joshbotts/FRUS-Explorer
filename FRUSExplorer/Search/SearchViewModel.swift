@@ -15,19 +15,17 @@ import Observation
 /// Manages state and business logic for the Search view.
 ///
 /// Holds the full set of search parameters and drives the results list.
-/// Binds directly to `SearchService` for FTS5 queries and `SubjectTagStore`
-/// for subject tag filter options.
+/// Binds directly to `SearchService` for FTS5 queries.
 ///
 /// ## Project Defaults
 /// Call `applyProjectDefaults(_:)` after init to pre-populate filters from
 /// the active project's default date range and subject tag IDs.
 ///
 /// ## Lifecycle
-/// 1. Init with `searchService` and `subjectTagStore`.
-/// 2. Call `loadAvailableSubjectTags()` to populate the subject tag picker.
-/// 3. Call `loadAvailableUserTags(context:)` to populate the user tag picker.
-/// 4. Optionally call `applyProjectDefaults(_:)` if a project is active.
-/// 5. Call `search()` when the user submits.
+/// 1. Init with `searchService`.
+/// 2. Call `loadAvailableUserTags(context:)` to populate the user tag picker.
+/// 3. Optionally call `applyProjectDefaults(_:)` if a project is active.
+/// 4. Call `search()` when the user submits.
 ///
 /// ## Suffix Wildcard Limitation
 /// Only prefix wildcards are supported by FTS5 (e.g. `negoti*`). The `*`
@@ -103,7 +101,6 @@ final class SearchViewModel {
 
     // MARK: - Available Filter Options
 
-    var availableSubjectTags: [SubjectTag] = []
     var availableUserTags: [UserTag] = []
 
     // MARK: - UI State
@@ -125,7 +122,6 @@ final class SearchViewModel {
     // MARK: - Dependencies
 
     private let searchService: SearchService
-    let subjectTagStore: SubjectTagStore
 
     /// Injected by `SearchView` after init so `search()` can fire `logEvent`.
     /// Optional: no-op if not set (e.g. in unit tests).
@@ -133,16 +129,11 @@ final class SearchViewModel {
 
     // MARK: - Initialisation
 
-    init(searchService: SearchService, subjectTagStore: SubjectTagStore) {
+    init(searchService: SearchService) {
         self.searchService = searchService
-        self.subjectTagStore = subjectTagStore
     }
 
     // MARK: - Setup
-
-    func loadAvailableSubjectTags() async {
-        availableSubjectTags = await subjectTagStore.allTags()
-    }
 
     func loadAvailableUserTags(context: ModelContext) {
         availableUserTags = (try? context.fetch(

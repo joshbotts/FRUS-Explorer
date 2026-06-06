@@ -83,7 +83,6 @@ struct SearchFilterView: View {
                 dateRangeSection
                 documentTypeSection
                 personSection
-                if !vm.availableSubjectTags.isEmpty { subjectTagsSection }
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
                 scopeSection
             }
@@ -114,7 +113,6 @@ struct SearchFilterView: View {
                 dateRangeSection
                 documentTypeSection
                 personSection
-                if !vm.availableSubjectTags.isEmpty { subjectTagsSection }
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
                 scopeSection
                 if vm.hasActiveFilters              { clearSection }
@@ -361,38 +359,6 @@ struct SearchFilterView: View {
         } header: {
             Text(String(localized: "search.section.personref",
                         defaultValue: "Person"))
-        }
-    }
-
-    // MARK: - Subject Tags
-
-    private var subjectTagsSection: some View {
-        Section {
-            ForEach(vm.availableSubjectTags) { tag in
-                Toggle(
-                    isOn: Binding(
-                        get: { vm.selectedSubjectTagIds.contains(tag.subjectId) },
-                        set: { on in
-                            if on { vm.selectedSubjectTagIds.insert(tag.subjectId) }
-                            else  { vm.selectedSubjectTagIds.remove(tag.subjectId) }
-                        }
-                    )
-                ) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(tag.displayName)
-                        Text(tag.category.rawValue.capitalized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .accessibilityLabel(
-                    String(localized: "search.subjecttag.a11y",
-                           defaultValue: "\(tag.displayName), \(tag.category.rawValue)")
-                )
-            }
-        } header: {
-            Text(String(localized: "search.section.subjecttags",
-                        defaultValue: "Subject Tags"))
         }
     }
 

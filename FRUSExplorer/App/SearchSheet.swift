@@ -414,7 +414,7 @@ struct MacSearchWindowView: View {
             Divider().frame(height: 16)
 
             Button {
-                searchVM.syncToFilterVM(searchService: appState.searchService, subjectTagStore: appState.subjectTagStore)
+                searchVM.syncToFilterVM(searchService: appState.searchService)
                 showAdvancedFilters = true
             } label: {
                 HStack(spacing: 3) {
