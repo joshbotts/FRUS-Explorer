@@ -11,6 +11,11 @@ import Network
 import Observation
 import SwiftData
 import CloudKit
+#if os(iOS)
+// @preconcurrency suppresses region-based sending errors for Activity<T>, whose async
+// methods (update/end) are nonisolated and have not yet been annotated for Swift 6.
+@preconcurrency import ActivityKit
+#endif
 
 /// AppState is the root observable state object for FRUS Explorer.
 ///
@@ -506,6 +511,17 @@ final class AppState {
     ///   1.0 — Session 115: initial implementation
     var interruptedVolumeIds: Set<String> = []
 
+    // MARK: - Live Activity (iOS only)
+
+    #if os(iOS)
+    /// The currently-running indexing Live Activity, or `nil` when idle.
+    ///
+    /// Started by `startIndexingLiveActivity` when indexing begins and ended by
+    /// `endIndexingLiveActivity` on `.complete`. Managed entirely within
+    /// `connectIndexingProgress` so the lifecycle mirrors the progress stream.
+    private var indexingActivity: Activity<IndexingActivityAttributes>?
+    #endif
+
     // MARK: - Queue tracking (Session 116)
 
     /// Number of volumes that have completed indexing in the current batch session.
@@ -568,6 +584,10 @@ final class AppState {
     /// (the prior Tasks are abandoned; streams are single-consumer by design).
     func connectIndexingProgress(pipeline: IndexingPipeline) {
         Task { @MainActor [weak self] in
+            // Clock-based throttle: forward at most ~10 UI updates per second.
+            // Stage transitions (.optimizing) and new-volume transitions always pass through
+            // immediately so the UI never shows stale volume context.
+            var lastForwardedAt = Date.distantPast
             for await update in pipeline.progressStream {
                 guard let self else { return }
                 if update.stage == .complete {
@@ -590,8 +610,16 @@ final class AppState {
                             (Double(meta.totalDocuments) - Double(self.indexingQueueAverageDocumentCount)) / n
                         )
                     }
+                    #if os(iOS)
+                    self.endIndexingLiveActivity()
+                    #endif
                 } else {
-                    if self.currentIndexingProgress?.volumeId != update.volumeId {
+                    let isNewVolume = self.currentIndexingProgress?.volumeId != update.volumeId
+                    let isStageTransition = update.stage == .optimizing
+                    let elapsed = Date().timeIntervalSince(lastForwardedAt)
+                    guard isNewVolume || isStageTransition || elapsed >= 0.1 else { continue }
+                    lastForwardedAt = Date()
+                    if isNewVolume {
                         self.lastDiscoveredMetadata = nil
                     }
                     if self.currentIndexingProgress == nil {
@@ -608,6 +636,9 @@ final class AppState {
                         }
                     }
                     self.currentIndexingProgress = update
+                    #if os(iOS)
+                    self.syncIndexingLiveActivity(update: update)
+                    #endif
                 }
             }
         }
@@ -618,6 +649,58 @@ final class AppState {
             }
         }
     }
+
+    // MARK: - Live Activity management (iOS only)
+
+    #if os(iOS)
+    /// Starts a new Live Activity or updates the running one to reflect `update`.
+    ///
+    /// Creates the activity on the first call when `indexingActivity == nil`.
+    /// Subsequent calls update the existing activity's `ContentState` in place so
+    /// the Dynamic Island does not flicker between volumes in a multi-volume batch.
+    private func syncIndexingLiveActivity(update: IndexingProgressUpdate) {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let title = manifestStore.entry(forVolumeId: update.volumeId)?.title ?? update.volumeId
+        let qp = indexingQueuePosition
+        let fraction: Double? = update.totalDocuments > 0
+            ? Double(update.completedDocuments) / Double(update.totalDocuments)
+            : nil
+        let eta: Int? = {
+            guard update.docsPerSecond > 0, update.totalDocuments > update.completedDocuments else { return nil }
+            return Int(Double(update.totalDocuments - update.completedDocuments) / update.docsPerSecond)
+        }()
+        let state = IndexingActivityAttributes.ContentState(
+            volumeTitle: title,
+            progressFraction: fraction,
+            etaSeconds: eta,
+            completedDocuments: update.completedDocuments,
+            totalDocuments: update.totalDocuments,
+            isOptimizing: update.stage == .optimizing,
+            queueCurrent: qp?.current,
+            queueTotal: qp?.total
+        )
+        if let running = indexingActivity {
+            Task { @MainActor in
+                await running.update(ActivityContent(state: state, staleDate: nil))
+            }
+        } else {
+            indexingActivity = try? Activity.request(
+                attributes: IndexingActivityAttributes(),
+                content: ActivityContent(state: state, staleDate: nil)
+            )
+        }
+    }
+
+    /// Ends the running Live Activity with a 3-second dismissal delay so the completion
+    /// state is visible on the Dynamic Island before it disappears.
+    private func endIndexingLiveActivity() {
+        guard let activity = indexingActivity else { return }
+        indexingActivity = nil
+        Task { @MainActor in
+            await activity.end(nil, dismissalPolicy: .after(.now + 3))
+        }
+    }
+    #endif
 
     #if os(iOS)
     /// The currently selected tab on iOS.

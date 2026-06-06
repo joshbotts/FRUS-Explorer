@@ -29,11 +29,11 @@ import SwiftUI
 /// above the system tab bar without a hardcoded height offset.
 ///
 /// ## ActivityKit
-/// A Live Activity / Dynamic Island integration was evaluated in Session 93 and
-/// deferred. The Widget Extension overhead (separate target, WidgetKit entitlements,
-/// shared `ActivityAttributes` framework) is not justified for the typically brief
-/// indexing window. The inline `IndexingCapsule` already covers the Browse tab;
-/// this banner covers the case where the user switches away during indexing.
+/// A Live Activity / Dynamic Island integration was implemented in `FRUSExplorerWidgets`
+/// (previously deferred in Session 93). `AppState.syncIndexingLiveActivity(_:)` manages
+/// the activity lifecycle; `IndexingLiveActivity` in the widget extension renders the
+/// compact, expanded, and lock-screen presentations. The inline `IndexingCapsule`
+/// continues to cover the Browse tab when the app is in the foreground.
 ///
 /// Version history:
 ///   1.0 — Session 93: initial implementation

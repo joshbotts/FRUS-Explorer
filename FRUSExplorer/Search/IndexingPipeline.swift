@@ -284,8 +284,10 @@ public actor IndexingPipeline {
     /// Yields `IndexingProgressUpdate` events at each batch boundary and stage transition.
     ///
     /// Consumers receive per-document throughput and stage information suitable for
-    /// an inline progress capsule. The stream is unbuffered (`.bufferingNewest(1)`) so
-    /// a slow consumer never causes memory growth.
+    /// an inline progress capsule. The stream uses `.bufferingNewest(100)` so that fast
+    /// macOS indexing runs do not drop intermediate updates before the MainActor consumer
+    /// is scheduled. AppState applies a 100 ms clock-based throttle on the consumer side
+    /// to limit SwiftUI re-render frequency.
     public nonisolated var progressStream: AsyncStream<IndexingProgressUpdate> { _progressStream }
 
     // MARK: - Metadata discovery stream (one event per volume, after parse completes)
@@ -340,14 +342,14 @@ public actor IndexingPipeline {
 
         let (updateStream, updateContinuation) = AsyncStream.makeStream(
             of: IndexingProgressUpdate.self,
-            bufferingPolicy: .bufferingNewest(1)
+            bufferingPolicy: .bufferingNewest(100)
         )
         _progressStream = updateStream
         progressUpdateContinuation = updateContinuation
 
         let (metaStream, metaContinuation) = AsyncStream.makeStream(
             of: VolumeMetadataDiscovered.self,
-            bufferingPolicy: .bufferingNewest(1)
+            bufferingPolicy: .bufferingNewest(10)
         )
         _metadataStream = metaStream
         metadataContinuation = metaContinuation

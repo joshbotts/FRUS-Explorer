@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+    FRUS Explorer Widgets — Entitlements
+    WidgetKit extension for the indexing Live Activity.
+    No special entitlements required beyond the sandbox default.
+-->
+<dict>
+</dict>
+</plist>
