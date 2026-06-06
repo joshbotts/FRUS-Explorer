@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1600"
+   LastUpgradeVersion = "2650"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
-      buildImplicitDependencies = "YES"
-      runPostActionsOnFailure = "NO">
+      buildImplicitDependencies = "YES">
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "NO"
@@ -16,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D8DEAD52775A8E6176EF83CD"
-               BuildableName = "FRUSExplorerMac.app"
+               BuildableName = "FRUS Explorer.app"
                BlueprintName = "FRUSExplorerMac"
                ReferencedContainer = "container:FRUSExplorer.xcodeproj">
             </BuildableReference>
@@ -28,20 +27,7 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
-      onlyGenerateCoverageForSpecifiedTargets = "NO">
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D8DEAD52775A8E6176EF83CD"
-            BuildableName = "FRUSExplorerMac.app"
-            BlueprintName = "FRUSExplorerMac"
-            ReferencedContainer = "container:FRUSExplorer.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
-      <Testables>
-      </Testables>
-      <CommandLineArguments>
-      </CommandLineArguments>
+      shouldAutocreateTestPlan = "YES">
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -58,13 +44,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D8DEAD52775A8E6176EF83CD"
-            BuildableName = "FRUSExplorerMac.app"
+            BuildableName = "FRUS Explorer.app"
             BlueprintName = "FRUSExplorerMac"
             ReferencedContainer = "container:FRUSExplorer.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "AppStore"
@@ -77,13 +61,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D8DEAD52775A8E6176EF83CD"
-            BuildableName = "FRUSExplorerMac.app"
+            BuildableName = "FRUS Explorer.app"
             BlueprintName = "FRUSExplorerMac"
             ReferencedContainer = "container:FRUSExplorer.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
