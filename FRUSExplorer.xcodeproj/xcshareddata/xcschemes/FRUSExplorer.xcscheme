@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "2650"
+   LastUpgradeVersion = "1600"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
-      buildImplicitDependencies = "YES">
+      buildImplicitDependencies = "YES"
+      runPostActionsOnFailure = "NO">
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -15,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "9550E519E264B17E684E4D82"
-               BuildableName = "FRUS Explorer.app"
+               BuildableName = "FRUSExplorer.app"
                BlueprintName = "FRUSExplorer"
                ReferencedContainer = "container:FRUSExplorer.xcodeproj">
             </BuildableReference>
@@ -29,7 +30,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D8DEAD52775A8E6176EF83CD"
-               BuildableName = "FRUS Explorer.app"
+               BuildableName = "FRUSExplorerMac.app"
                BlueprintName = "FRUSExplorerMac"
                ReferencedContainer = "container:FRUSExplorer.xcodeproj">
             </BuildableReference>
@@ -41,7 +42,16 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
-      shouldAutocreateTestPlan = "YES">
+      onlyGenerateCoverageForSpecifiedTargets = "NO">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "9550E519E264B17E684E4D82"
+            BuildableName = "FRUSExplorer.app"
+            BlueprintName = "FRUSExplorer"
+            ReferencedContainer = "container:FRUSExplorer.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <Testables>
          <TestableReference
             skipped = "NO"
@@ -55,7 +65,8 @@
             </BuildableReference>
          </TestableReference>
          <TestableReference
-            skipped = "NO">
+            skipped = "NO"
+            parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "500BB0630C406B4B416A0344"
@@ -65,6 +76,8 @@
             </BuildableReference>
          </TestableReference>
       </Testables>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -81,11 +94,13 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9550E519E264B17E684E4D82"
-            BuildableName = "FRUS Explorer.app"
+            BuildableName = "FRUSExplorer.app"
             BlueprintName = "FRUSExplorer"
             ReferencedContainer = "container:FRUSExplorer.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "AppStore"
@@ -98,11 +113,13 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9550E519E264B17E684E4D82"
-            BuildableName = "FRUS Explorer.app"
+            BuildableName = "FRUSExplorer.app"
             BlueprintName = "FRUSExplorer"
             ReferencedContainer = "container:FRUSExplorer.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
