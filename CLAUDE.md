@@ -12,6 +12,15 @@ The project uses **XcodeGen** — `project.yml` is the source of truth for the X
 xcodegen generate --spec project.yml
 ```
 
+> **Warning:** `xcodegen generate` deletes `xcshareddata/xcschemes/` and regenerates schemes from scratch with incorrect values. After any `xcodegen generate` run, always restore the scheme files:
+> ```bash
+> git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/
+> ```
+
+**Bumping the build number** — do NOT run `xcodegen generate`. Edit both files directly:
+1. `project.yml` — change `CURRENT_PROJECT_VERSION`
+2. `FRUSExplorer.xcodeproj/project.pbxproj` — replace all 6 occurrences of `CURRENT_PROJECT_VERSION = <old>;` with the new value (use `replace_all: true`)
+
 ## Build & Test Commands
 
 **Run all tests (iOS Simulator):**
