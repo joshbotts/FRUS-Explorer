@@ -166,3 +166,51 @@ targets:
       base:
         PRODUCT_NAME: FRUSExplorerUITests
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer.uitests"
+
+# ---------------------------------------------------------------------------
+# Shared Schemes
+# Explicit definitions so `xcodegen generate` produces xcshareddata/xcschemes
+# files instead of relying on Xcode's auto-generated (unshared) schemes.
+# ---------------------------------------------------------------------------
+schemes:
+  FRUSExplorer:
+    build:
+      targets:
+        FRUSExplorer: all
+        # Also builds FRUSExplorerMac for run/profile/analyze alongside the
+        # iOS target (matches the existing hand-crafted xcscheme).
+        FRUSExplorerMac:
+          - run
+          - profile
+          - analyze
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - FRUSExplorerTests
+        - FRUSExplorerUITests
+    profile:
+      config: AppStore
+    analyze:
+      config: Debug
+    archive:
+      config: AppStore
+  FRUSExplorerMac:
+    build:
+      targets:
+        FRUSExplorerMac:
+          - run
+          - profile
+          - archive
+          - analyze
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: AppStore
+    analyze:
+      config: Debug
+    archive:
+      config: AppStore
