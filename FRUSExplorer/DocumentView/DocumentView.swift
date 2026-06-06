@@ -1799,7 +1799,6 @@ private struct TagPickerSheetView: View {
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @State private var selectedTagIds: Set<UUID> = []
     @State private var newTagName: String = ""
-    @State private var isSaving: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -1863,7 +1862,6 @@ private struct TagPickerSheetView: View {
                                   defaultValue: "Done")) {
                         saveAndDismiss()
                     }
-                    .disabled(isSaving)
                 }
             }
         }
@@ -1889,28 +1887,23 @@ private struct TagPickerSheetView: View {
     }
 
     private func saveAndDismiss() {
-        guard let pipeline = indexingPipeline else {
-            syncAssignmentsToSwiftData()
-            dismiss()
-            return
-        }
-        isSaving = true
+        // SwiftData write and sheet dismissal happen immediately on the main thread.
+        // The FTS5 virtual table update (delete + full re-insert) can take 100–500 ms
+        // on iPhone storage; running it in the background eliminates the visible lag.
+        syncAssignmentsToSwiftData()
+        dismiss()
+        guard let pipeline = indexingPipeline else { return }
         let tagString = selectedTagIds.isEmpty
             ? nil
             : selectedTagIds.map(\.uuidString).joined(separator: " ")
         let vId = entry.volumeId
         let dId = entry.documentId
-        Task {
+        Task.detached(priority: .utility) {
             try? await pipeline.updateUserTagIds(
                 volumeId: vId,
                 documentId: dId,
                 userTagIds: tagString
             )
-            await MainActor.run {
-                syncAssignmentsToSwiftData()
-                isSaving = false
-                dismiss()
-            }
         }
     }
 

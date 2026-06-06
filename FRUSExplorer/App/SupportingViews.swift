@@ -1856,7 +1856,6 @@ struct MacTagPickerSheet: View {
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @State private var selectedTagIds: Set<UUID> = []
     @State private var newTagName: String = ""
-    @State private var isSaving: Bool = false
 
     var body: some View {
         #if os(macOS)
@@ -1951,7 +1950,6 @@ struct MacTagPickerSheet: View {
                     saveAndDismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(isSaving)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
@@ -1981,7 +1979,6 @@ struct MacTagPickerSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "tags.picker.done",
                                   defaultValue: "Done")) { saveAndDismiss() }
-                        .disabled(isSaving)
                 }
             }
         }
@@ -2009,32 +2006,24 @@ struct MacTagPickerSheet: View {
     }
 
     private func saveAndDismiss() {
-        guard let pipeline = indexingPipeline else {
-            // No pipeline (unindexed doc): still write SwiftData assignments so the
-            // Research window reflects the selection via @Query.
-            syncAssignmentsToSwiftData()
-            dismiss()
-            return
-        }
-        isSaving = true
+        // SwiftData write and dismissal happen immediately on the main thread.
+        // The FTS5 virtual table update (delete + full re-insert) can take 100–500 ms
+        // on iPhone storage; running it in the background eliminates visible lag.
+        // For unindexed documents the FTS5 path is skipped entirely.
+        syncAssignmentsToSwiftData()
+        dismiss()
+        guard let pipeline = indexingPipeline else { return }
         let tagString = selectedTagIds.isEmpty
             ? nil
             : selectedTagIds.map(\.uuidString).joined(separator: " ")
         let vId = entry.volumeId
         let dId = entry.documentId
-        Task {
+        Task.detached(priority: .utility) {
             try? await pipeline.updateUserTagIds(
                 volumeId: vId,
                 documentId: dId,
                 userTagIds: tagString
             )
-            await MainActor.run {
-                // Write DocumentTagAssignment records to SwiftData so the selection
-                // syncs via CloudKit and is visible to @Query observers in ResearchView.
-                syncAssignmentsToSwiftData()
-                isSaving = false
-                dismiss()
-            }
         }
     }
 
