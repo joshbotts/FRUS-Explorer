@@ -93,6 +93,27 @@ struct ResearchStripView: View {
     /// Persisted preference shared with MacDocumentView via AppStorage.
     @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
 
+    /// Current tag assignments for the visible document — used to pre-fill the tag
+    /// picker so it opens with the correct state instead of an empty list.
+    @Query private var currentDocumentAssignments: [DocumentTagAssignment]
+
+    init(entry: DocumentBrowserEntry?,
+         showCitationPopover: Binding<Bool>,
+         highlightCoordinator: HighlightCoordinator,
+         onNARALookup: ((String) -> Void)? = nil) {
+        self.entry = entry
+        self._showCitationPopover = showCitationPopover
+        self.highlightCoordinator = highlightCoordinator
+        self.onNARALookup = onNARALookup
+        let vId = entry?.volumeId ?? ""
+        let dId = entry?.documentId ?? ""
+        _currentDocumentAssignments = Query(
+            filter: #Predicate<DocumentTagAssignment> { a in
+                a.volumeId == vId && a.documentId == dId
+            }
+        )
+    }
+
     private var isDisabled: Bool { entry == nil }
     private var canCreateHighlight: Bool {
         highlightCoordinator.webKitSelectionRange != nil
@@ -315,7 +336,11 @@ struct ResearchStripView: View {
         }
         .sheet(isPresented: $showTagPicker) {
             if let entry {
-                MacTagPickerSheet(entry: entry, indexingPipeline: appState.indexingPipeline)
+                MacTagPickerSheet(
+                    entry: entry,
+                    indexingPipeline: appState.indexingPipeline,
+                    initialTagIds: Set(currentDocumentAssignments.map(\.tagId))
+                )
             }
         }
         .sheet(isPresented: $showHighlightNoteEditor, onDismiss: {
@@ -1854,8 +1879,19 @@ struct MacTagPickerSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
-    @State private var selectedTagIds: Set<UUID> = []
+    @State private var selectedTagIds: Set<UUID>
     @State private var newTagName: String = ""
+    /// Tags inserted during this session — deleted if the user cancels rather than
+    /// saves, preventing orphan UserTag records when Cancel is tapped.
+    @State private var newlyCreatedTags: [UserTag] = []
+
+    init(entry: DocumentBrowserEntry,
+         indexingPipeline: IndexingPipeline?,
+         initialTagIds: Set<UUID>) {
+        self.entry = entry
+        self.indexingPipeline = indexingPipeline
+        _selectedTagIds = State(initialValue: initialTagIds)
+    }
 
     var body: some View {
         #if os(macOS)
@@ -1940,7 +1976,7 @@ struct MacTagPickerSheet: View {
             // Button bar
             HStack {
                 Button(String(localized: "tags.picker.cancel", defaultValue: "Cancel")) {
-                    dismiss()
+                    cancelAndDismiss()
                 }
                 .keyboardShortcut(.cancelAction)
 
@@ -1955,7 +1991,6 @@ struct MacTagPickerSheet: View {
             .padding(.vertical, 14)
         }
         .frame(minWidth: 340, minHeight: 300)
-        .task { await loadExistingTags() }
     }
     #endif
 
@@ -1974,7 +2009,7 @@ struct MacTagPickerSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "tags.picker.cancel",
-                                  defaultValue: "Cancel")) { dismiss() }
+                                  defaultValue: "Cancel")) { cancelAndDismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "tags.picker.done",
@@ -1982,27 +2017,23 @@ struct MacTagPickerSheet: View {
                 }
             }
         }
-        .task { await loadExistingTags() }
     }
 
     // MARK: - Helpers
-
-    private func loadExistingTags() async {
-        guard let pipeline = indexingPipeline else { return }
-        let ids = (try? await pipeline.currentUserTagIds(
-            volumeId: entry.volumeId,
-            documentId: entry.documentId
-        )) ?? []
-        selectedTagIds = Set(ids.compactMap { UUID(uuidString: $0) })
-    }
 
     private func createTag() {
         let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         let tag = UserTag(name: name)
         modelContext.insert(tag)
+        newlyCreatedTags.append(tag)
         selectedTagIds.insert(tag.id)
         newTagName = ""
+    }
+
+    private func cancelAndDismiss() {
+        for tag in newlyCreatedTags { modelContext.delete(tag) }
+        dismiss()
     }
 
     private func saveAndDismiss() {
