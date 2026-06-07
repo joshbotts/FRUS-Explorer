@@ -165,16 +165,21 @@ struct MainTabView: View {
 /// Version history:
 ///   1.0 — Session 43: initial implementation
 ///   1.1 — Session 99: Analytics toolbar button; presents AnalyticsView as a sheet
+///   1.2 — Session 2026-06-07: observes `appState.pendingAnalytics` (Search's
+///          over-cap "Visualize in Corpus Analytics" handoff) and presents the
+///          sheet pre-seeded via `AnalyticsView(initialParameters:)`
 struct BrowserTabView: View {
 
     @Environment(AppState.self) private var appState
     @State private var showAnalytics = false
+    @State private var analyticsParameters: AnalyticsParameters? = nil
 
     var body: some View {
         BrowserView()
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
+                        analyticsParameters = nil
                         showAnalytics = true
                     } label: {
                         Image(systemName: "chart.bar.xaxis")
@@ -186,8 +191,19 @@ struct BrowserTabView: View {
                 }
             }
             .sheet(isPresented: $showAnalytics) {
-                AnalyticsView()
+                AnalyticsView(initialParameters: analyticsParameters)
                     .environment(appState)
+            }
+            // Search → Analytics handoff: a capped search offered to "Visualize
+            // in Corpus Analytics". Captured into local state before presenting —
+            // `AnalyticsView` reads it once at init (a fresh sheet instance is
+            // created each presentation) — then cleared on `AppState` so the
+            // observer doesn't refire on the next sheet dismissal.
+            .onChange(of: appState.pendingAnalytics) { _, params in
+                guard let params else { return }
+                analyticsParameters = params
+                appState.pendingAnalytics = nil
+                showAnalytics = true
             }
     }
 }

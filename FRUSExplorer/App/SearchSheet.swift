@@ -57,6 +57,9 @@ import SwiftUI
 ///   1.5 — Session 121: `.onSubmit` now calls `searchVM.submitSearch()` instead of
 ///          launching an independent Task; avoids parallel search tasks that caused
 ///          the "three result sets" cycling bug
+///   1.6 — Session 2026-06-07: over-cap advisory gains a "Visualize in Corpus
+///          Analytics" button — hands submittedQuery + active date filter off to
+///          `AnalyticsView` via `AppState.pendingAnalytics` (see `AnalyticsParameters`)
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -598,6 +601,21 @@ struct MacSearchWindowView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
+
+                // Search → Analytics handoff (Direction B): suggest visualising the
+                // distribution of matches over time so the user can pick a date
+                // range that narrows the result set, instead of guessing at terms.
+                Button {
+                    openOverCapResultsInAnalytics()
+                } label: {
+                    Label("Visualize in Corpus Analytics", systemImage: "chart.bar.xaxis")
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .buttonStyle(.borderless)
+                .help(String(
+                    localized: "search.capped.analytics.help",
+                    defaultValue: "Open Corpus Analytics charting how often these keywords appear over time, so you can pick a date range that narrows your results"
+                ))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -756,6 +774,30 @@ struct MacSearchWindowView: View {
     }
 
     // MARK: - Actions
+
+    /// Builds an `AnalyticsParameters` snapshot from the current over-cap search
+    /// and hands off to Corpus Analytics via `AppState.pendingAnalytics`.
+    ///
+    /// Carries `submittedQuery` as the chart term and — when `parameters.dateRange`
+    /// is set — its `earliest`/`latest` ISO years as the chart's year-range bounds,
+    /// so the chart opens already focused on the same window the search was scoped
+    /// to. `MainWindowView` observes `pendingAnalytics` and opens `frus.analytics`;
+    /// `AnalyticsView` applies the parameters and runs the chart query immediately.
+    private func openOverCapResultsInAnalytics() {
+        let term = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
+        guard !term.isEmpty else { return }
+        appState.pendingAnalytics = AnalyticsParameters(
+            term: term,
+            yearRangeStart: searchVM.parameters.dateRange?.earliest.flatMap(Self.isoYear),
+            yearRangeEnd: searchVM.parameters.dateRange?.latest.flatMap(Self.isoYear)
+        )
+    }
+
+    /// Extracts the four-digit year from an ISO `yyyy-MM-dd` date string, as
+    /// stored in `DateRange.earliest`/`latest`. Returns `nil` for malformed input.
+    private static func isoYear(_ isoDate: String) -> Int? {
+        Int(isoDate.prefix(4))
+    }
 
     private func navigateToResult(_ result: SearchResult) {
         appState.pendingBrowseDocument = DocumentBrowserEntry(

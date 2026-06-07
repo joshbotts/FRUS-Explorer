@@ -80,6 +80,8 @@ import CloudKit
 ///          SwiftData and sync via CloudKit
 ///          so CKError.partialFailure (code 2) surfaces actionable sub-error codes instead of
 ///          the useless "Some items failed." localizedDescription
+///   3.9 — Session 2026-06-07: pendingAnalytics (AnalyticsParameters) for two-way
+///          Search ↔ Corpus Analytics handoff
 
 // MARK: - CloudKitSyncState
 
@@ -423,6 +425,17 @@ final class AppState {
     /// Set by `PersonDetailSheet` "Find all mentions" to trigger search pre-filled
     /// with a `personRef` filter. `BrowserView` consumes this and clears it.
     var pendingSearch: SearchParameters? = nil
+
+    /// Cross-view handoff from Search to Corpus Analytics (and vice versa).
+    ///
+    /// Set by `SearchView` when the result count hits `SearchViewModel
+    /// .searchHardLimit` and the user chooses to "Visualize in Corpus Analytics" —
+    /// seeding the chart with the submitted keywords (and active date filter, if
+    /// any) so they can see the distribution over time and pick a narrower range.
+    /// `MainTabView` (iOS sheet) and `MainWindowView`/`AnalyticsView` (macOS
+    /// `frus.analytics` window) observe this via `.onChange`, apply it, and clear
+    /// it — mirroring the `pendingSearch` pattern.
+    var pendingAnalytics: AnalyticsParameters? = nil
 
     /// Set by cross-reference navigation to push a document into the Browse tab's
     /// NavigationStack/NavigationSplitView. `BrowserView` observes via `.onChange`

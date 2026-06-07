@@ -46,6 +46,9 @@ import SwiftUI
 ///   1.1 — Session 99: Analytics toolbar button; opens frus.analytics Window
 ///   1.2 — Session 120: CitationLookupView sheet wired to appState.showCitationLookup
 ///          so the menu command (⌘⇧F) and any code path that sets the flag works on macOS
+///   1.3 — Session 2026-06-07: opens frus.analytics on a `pendingAnalytics` handoff
+///          (Search's over-cap "Visualize in Corpus Analytics" suggestion); mirrors
+///          the existing `pendingSearch` → frus.search window-opening observer
 @MainActor
 struct MainWindowView: View {
 
@@ -131,6 +134,14 @@ struct MainWindowView: View {
         .onChange(of: appState.pendingSearch) { _, params in
             guard params != nil else { return }
             openWindow(id: "frus.search")
+        }
+        // Open the Corpus Analytics window when a cross-view pendingAnalytics
+        // arrives (Search's "Visualize in Corpus Analytics" over-cap suggestion).
+        // AnalyticsView itself observes pendingAnalytics, applies the parameters,
+        // and clears it — so both observers don't race (mirrors pendingSearch).
+        .onChange(of: appState.pendingAnalytics) { _, params in
+            guard params != nil else { return }
+            openWindow(id: "frus.analytics")
         }
         // Citation Lookup sheet — responds to both the menu command (⌘⇧F) and any
         // code that sets appState.showCitationLookup = true.

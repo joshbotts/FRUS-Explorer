@@ -38,6 +38,9 @@ import SwiftData
 ///   1.6 — Session 88: timeline toggle button; `DocumentTimelineView` replaces results list when active
 ///   1.7 — Session 96: Save Search toolbar button + name sheet; Saved Searches toolbar button + list sheet
 ///   1.8 — Session 100: vm.appState wired in .task for searchSubmit logging
+///   1.9 — Session 2026-06-07: over-cap "Visualize in Corpus Analytics" button in
+///          `resultCountHeader` — hands keywords + active date filter off to
+///          `AnalyticsView` via `AppState.pendingAnalytics` (see `AnalyticsParameters`)
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -294,10 +297,60 @@ struct SearchView: View {
                 ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+
+                // Search → Analytics handoff (Direction B): when the cap is hit,
+                // suggest visualising the result distribution over time so the
+                // user can pick a date range that narrows the match set, rather
+                // than guessing at extra keywords.
+                Button {
+                    openCappedResultsInAnalytics()
+                } label: {
+                    Label(
+                        String(localized: "search.capped.analytics.button",
+                               defaultValue: "Visualize in Corpus Analytics"),
+                        systemImage: "chart.bar.xaxis"
+                    )
+                    .font(.caption2.weight(.medium))
+                }
+                .buttonStyle(.borderless)
+                .padding(.top, 1)
+                .help(String(
+                    localized: "search.capped.analytics.help",
+                    defaultValue: "Open Corpus Analytics charting how often these keywords appear over time, so you can pick a date range that narrows your results"
+                ))
             }
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
+    }
+
+    /// Builds an `AnalyticsParameters` snapshot from the current (capped) search
+    /// and hands off to Corpus Analytics via `AppState.pendingAnalytics`.
+    ///
+    /// Carries the submitted keywords as the chart term, and — when an explicit
+    /// date filter is active — the filter's start/end years as the chart's
+    /// year-range bounds, so the chart opens already focused on the same window
+    /// the search was scoped to. `phrase`/`prefixWildcard` are intentionally not
+    /// folded in: `CorpusAnalyticsService` charts a single plain-text term, and
+    /// `keywords` is the field most search sessions actually populate.
+    private func openCappedResultsInAnalytics() {
+        let term = vm.keywords.trimmingCharacters(in: .whitespaces)
+        guard !term.isEmpty else { return }
+        var startYear: Int? = nil
+        var endYear: Int? = nil
+        if vm.dateRangeEnabled {
+            let cal = Calendar(identifier: .gregorian)
+            startYear = cal.component(.year, from: vm.dateRangeStart)
+            endYear   = cal.component(.year, from: vm.dateRangeEnd)
+        }
+        appState.pendingAnalytics = AnalyticsParameters(
+            term: term,
+            yearRangeStart: startYear,
+            yearRangeEnd: endYear
+        )
+        #if DEBUG
+        print("[SearchView] Over-cap handoff to Analytics — term: \"\(term)\", years: \(String(describing: startYear))–\(String(describing: endYear))")
+        #endif
     }
 
     // MARK: - Save Search Sheet

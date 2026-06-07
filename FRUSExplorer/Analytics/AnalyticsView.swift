@@ -83,6 +83,11 @@ enum AnalyticsChartAxis: String, CaseIterable {
 ///   1.2 — Session 121: by-decade / by-month / by-day granularity options; year
 ///          axis labels rendered without comma grouping; user-toggleable fit
 ///          line; info popover explaining metric semantics
+///   1.3 — Session 2026-06-07: two-way Search ↔ Analytics integration —
+///          `init(initialParameters:)` seeds and auto-runs from a `pendingAnalytics`
+///          handoff (Search's over-cap "Visualize in Corpus Analytics" suggestion);
+///          `searchHandoffBar` lets the user jump from a committed term/year-range
+///          straight to Search, pre-filled via `pendingSearch`
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -117,6 +122,27 @@ struct AnalyticsView: View {
 
     /// Drives the info popover next to the toolbar pickers.
     @State private var showInfoPopover: Bool = false
+
+    /// Parameters this view was opened with — e.g. from `SearchView`'s "Visualize
+    /// in Corpus Analytics" handoff when a search hits `searchHardLimit`. Applied
+    /// once on appearance via `seedFromInitialParameters()`. `nil` for the normal
+    /// toolbar-button / menu-command presentation paths.
+    private let initialParameters: AnalyticsParameters?
+
+    // MARK: - Initialisation
+
+    /// Creates the analytics view, optionally pre-seeded with a term and year
+    /// range carried over from another view (currently: Search's over-cap
+    /// handoff — see `AnalyticsParameters`).
+    ///
+    /// - Parameter initialParameters: When non-nil, `termInput`/`committedTerm`
+    ///   and the year-range bounds are seeded from it and a search is run
+    ///   automatically as soon as the view appears, so the chart is already
+    ///   populated — mirroring how `SearchView(initialParameters:)` immediately
+    ///   reflects a `pendingSearch` handoff.
+    init(initialParameters: AnalyticsParameters? = nil) {
+        self.initialParameters = initialParameters
+    }
 
     // MARK: - Derived Properties
 
@@ -183,6 +209,10 @@ struct AnalyticsView: View {
                             Divider()
                             yearRangeBar
                         }
+                        if !committedTerm.isEmpty {
+                            Divider()
+                            searchHandoffBar
+                        }
                         Divider()
                         contentArea
                     }
@@ -198,6 +228,66 @@ struct AnalyticsView: View {
         }
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 520)
+        #endif
+        // Seed from the constructor parameter (iOS sheet presentation — a fresh
+        // `AnalyticsView` instance is created each time the sheet opens).
+        .task { applyAnalyticsParameters(initialParameters) }
+        // Re-seed when a new handoff arrives while the view is already on screen
+        // (macOS `frus.analytics` Window — a long-lived instance reused across
+        // openWindow calls). `MainWindowView` opens the window; this clears the
+        // pending value once consumed, mirroring `MacSearchWindowView`'s
+        // `pendingSearch` handling.
+        .onChange(of: appState.pendingAnalytics) { _, params in
+            guard let params else { return }
+            applyAnalyticsParameters(params)
+            appState.pendingAnalytics = nil
+        }
+    }
+
+    // MARK: - Cross-View Handoff (Search ↔ Analytics)
+
+    /// Applies a `Search → Analytics` handoff: seeds the term and (if present)
+    /// the year-range bounds, then runs the chart query immediately so the user
+    /// lands on a populated chart rather than an empty "enter a term" prompt.
+    private func applyAnalyticsParameters(_ params: AnalyticsParameters?) {
+        guard let params else { return }
+        let term = params.term.trimmingCharacters(in: .whitespaces)
+        guard !term.isEmpty else { return }
+        termInput = term
+        if let start = params.yearRangeStart { yearRangeStart = start }
+        if let end = params.yearRangeEnd { yearRangeEnd = end }
+        runSearch()
+    }
+
+    /// Builds the `Analytics → Search` handoff parameters and switches to Search.
+    ///
+    /// Carries `committedTerm` over as `keywords` and — when the active axis is
+    /// date-based — the current year-range bounds as a `DateRange` (January 1st
+    /// of the start year through December 31st of the end year), so the search
+    /// results the user lands on are the same documents the chart visualised.
+    /// Mirrors the `pendingSearch` handoff used throughout the app (see
+    /// `PersonIndexView`, `IndexingSummaryCard`, `MacDocumentView`).
+    private func openMatchingDocumentsInSearch() {
+        let range: DateRange? = chartAxis.isDateBased
+            ? DateRange(
+                earliest: String(format: "%04d-01-01", yearRangeStart),
+                latest: String(format: "%04d-12-31", yearRangeEnd)
+              )
+            : nil
+        appState.pendingSearch = SearchParameters(keywords: committedTerm, dateRange: range)
+        #if DEBUG
+        print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range))")
+        #endif
+        #if os(iOS)
+        // iOS: Analytics is a sheet over the Browse tab — switch tabs and dismiss
+        // so the Search tab (now pre-filled via `pendingSearch`) is visible.
+        appState.activeTab = .search
+        dismiss()
+        #else
+        // macOS: Analytics is a standalone `frus.analytics` Window. Setting
+        // `pendingSearch` is enough — `MainWindowView`/`BrowserView` open the
+        // search window/inspector and apply the parameters; the analytics
+        // window stays open so the user can keep comparing views side by side.
         #endif
     }
 
@@ -251,6 +341,55 @@ struct AnalyticsView: View {
             }
 
             Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+    }
+
+    // MARK: - Search Handoff Bar
+
+    /// Direction-A handoff affordance: "Analytics → Search".
+    ///
+    /// Shown beneath the search/year-range bars whenever a term has been
+    /// committed. Lets the researcher jump straight from "how is this term
+    /// distributed across the corpus?" to "show me the matching documents" —
+    /// carrying the term and (for date-based axes) the current year-range filter
+    /// along as `pendingSearch` so Search lands pre-filled and ready to run.
+    private var searchHandoffBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+
+            Text(
+                chartAxis.isDateBased
+                    ? String(
+                        localized: "analytics.handoff.prompt.dated",
+                        defaultValue: "See the \(yearRangeStart)–\(yearRangeEnd) documents behind this chart"
+                      )
+                    : String(
+                        localized: "analytics.handoff.prompt.plain",
+                        defaultValue: "See the documents behind this chart"
+                      )
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            Button {
+                openMatchingDocumentsInSearch()
+            } label: {
+                Text(String(localized: "analytics.handoff.button",
+                            defaultValue: "View in Search"))
+                    .font(.caption.weight(.medium))
+            }
+            .buttonStyle(.borderless)
+            .help(String(
+                localized: "analytics.handoff.help",
+                defaultValue: "Switch to Search pre-filled with this term — and this year range, if a date-based view is active — to see the matching documents"
+            ))
         }
         .padding(.horizontal)
         .padding(.vertical, 6)

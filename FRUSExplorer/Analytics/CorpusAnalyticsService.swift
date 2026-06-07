@@ -92,6 +92,50 @@ struct DayFrequency: Sendable, Identifiable {
     var id: Date { date }
 }
 
+/// Snapshot of an `AnalyticsView` query, used to hand a term and date window
+/// off between Corpus Analytics and Search.
+///
+/// ## Cross-view handoff
+/// This struct mirrors the role `SearchParameters` plays for `pendingSearch`:
+/// a lightweight, `Sendable`/`Equatable` value placed on `AppState.pendingAnalytics`
+/// that the destination view observes, applies, and clears.
+///
+/// - `Search → Analytics` (Direction B): when a search hits `SearchViewModel
+///   .searchHardLimit`, `SearchView` offers to open Analytics seeded with the
+///   submitted keywords (and the active date filter, if any) so the user can
+///   visualize the result distribution over time and pick a narrower range.
+/// - `Analytics → Search` (Direction A): `AnalyticsView` offers to jump to
+///   Search pre-filled with `committedTerm` and the current year-range filter
+///   (via `SearchParameters`, not this type) so the user can see the matching
+///   documents directly.
+///
+/// `yearRangeStart`/`yearRangeEnd` are plain integer years — `AnalyticsView`
+/// stores its range that way — and are converted to `DateRange`'s ISO strings
+/// only when building `SearchParameters` for the reverse handoff.
+///
+/// Version history:
+///   1.0 — Session 2026-06-07: introduced for Search ↔ Analytics integration
+struct AnalyticsParameters: Sendable, Equatable {
+    /// The keyword term to chart. Required — `AnalyticsView.runSearch()` is a
+    /// no-op for an empty term.
+    var term: String
+
+    /// Optional lower bound for the chart's year-range filter. When `nil`,
+    /// `AnalyticsView` keeps its default (1861).
+    var yearRangeStart: Int?
+
+    /// Optional upper bound for the chart's year-range filter. When `nil`,
+    /// `AnalyticsView` keeps its default (current calendar year).
+    var yearRangeEnd: Int?
+
+    /// Creates a parameter snapshot to seed `AnalyticsView`.
+    init(term: String, yearRangeStart: Int? = nil, yearRangeEnd: Int? = nil) {
+        self.term = term
+        self.yearRangeStart = yearRangeStart
+        self.yearRangeEnd = yearRangeEnd
+    }
+}
+
 // MARK: - CorpusAnalyticsService
 
 /// Provides corpus-level frequency analytics over the FTS5 search index.
