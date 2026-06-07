@@ -1445,6 +1445,11 @@ private struct MacIndexingQueuePanel: View {
 /// Version history:
 ///   1.0 — New UI scaffolding
 ///   1.1 — Session 86: Export menu (Copy BibTeX, Copy RIS, Save as .bib)
+///   1.2 — Session 2026-06-07: Export menu gained "Share Citation…" — a
+///         `ShareLink` presenting the system share sheet with a message
+///         combining the formatted citation and its canonical
+///         history.state.gov URL (`shareableCitationMessage`), mirroring
+///         the new "Share Citation" toolbar item on iOS.
 struct CitationPopoverView: View {
     let entry: DocumentBrowserEntry
 
@@ -1590,6 +1595,14 @@ struct CitationPopoverView: View {
                     } label: {
                         Label("Save as .bib\u{2026}", systemImage: "square.and.arrow.down")
                     }
+                    Divider()
+                    ShareLink(item: shareableCitationMessage) {
+                        Label("Share Citation\u{2026}", systemImage: "square.and.arrow.up")
+                    }
+                    .help(String(
+                        localized: "citation.popover.shareCitation.help",
+                        defaultValue: "Share the formatted citation and its history.state.gov URL"
+                    ))
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up").font(.system(size: 11))
                 }
@@ -1803,6 +1816,16 @@ struct CitationPopoverView: View {
 
     private var canonicalURL: String? {
         "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
+    }
+
+    /// A formatted citation plus its canonical `history.state.gov` URL,
+    /// suitable for sharing via the system share sheet (Mail, Messages,
+    /// AirDrop, etc.). Falls back to the citation alone if no canonical URL
+    /// is available — mirrors `DocumentViewModel.shareableCitationMessage`
+    /// on iOS (Session 2026-06-07).
+    private var shareableCitationMessage: String {
+        guard let url = canonicalURL else { return formattedCitation }
+        return "\(formattedCitation)\n\n\(url)"
     }
 
     private var accessedDate: String {

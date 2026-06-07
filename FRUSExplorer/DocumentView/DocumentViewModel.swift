@@ -162,6 +162,25 @@ public final class DocumentViewModel {
         return HistoryAtStateCitationFormatter().format(document: docMeta, volume: volMeta)
     }
 
+    /// The canonical `history.state.gov` URL for this document.
+    ///
+    /// Shared by the citation share-sheet action and (in spirit) the same
+    /// `historicaldocuments/{volumeId}/{documentId}` convention used by the
+    /// macOS `CitationPopoverView`, `CollectionEditorView`, and the citation
+    /// exporters (BibTeX/RIS).
+    public var canonicalDocumentURL: URL? {
+        URL(string: "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)")
+    }
+
+    /// A formatted citation plus its canonical URL, suitable for sharing via
+    /// the system share sheet (Messages, Mail, etc.). `nil` until both the
+    /// citation and canonical URL are available.
+    public var shareableCitationMessage: String? {
+        guard let citation = formattedCitation,
+              let url = canonicalDocumentURL else { return nil }
+        return "\(citation)\n\n\(url.absoluteString)"
+    }
+
     /// Reads the volume's downloaded TEI XML and extracts the live publication
     /// year into `parsedPublicationYear`, so `formattedCitation` can prefer it
     /// over the manifest's (possibly coverage-range) `publicationDate`.

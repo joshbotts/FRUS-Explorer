@@ -158,6 +158,12 @@ enum DocumentSheet: Identifiable {
 ///          direct items in the single `ToolbarItemGroup(placement:
 ///          .primaryAction)`; the system overflow — when triggered — is the
 ///          one and only "···" menu and surfaces every tool in one tap.
+///   3.3 — Session 2026-06-07: added "Share Citation" to the document
+///          toolbar — a `ShareLink` presenting the system share sheet with a
+///          message combining the formatted citation and the document's
+///          canonical history.state.gov URL (`DocumentViewModel
+///          .shareableCitationMessage`), mirroring the new "Share Citation"
+///          item added to the macOS citation popover's Export menu.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -636,9 +642,9 @@ struct DocumentView: View {
     /// Document toolbar.
     ///
     /// ## Layout — single flat `ToolbarItemGroup`, no app-owned overflow menu
-    /// Every action (Add Note, Tag, Highlight, Read/Research toggle, Citation,
-    /// Add to Collection, Cross-References, NARA Lookup, Source Explorer, Open
-    /// in New Window, Summarize) is placed directly in one
+    /// Every action (Add Note, Tag, Highlight, Read/Research toggle, View/Copy/
+    /// Share Citation, Add to Collection, Cross-References, NARA Lookup, Source
+    /// Explorer, Open in New Window, Summarize) is placed directly in one
     /// `ToolbarItemGroup(placement: .primaryAction)`.
     ///
     /// On iPhone, when these don't all fit the navigation bar, UIKit/SwiftUI
@@ -649,6 +655,11 @@ struct DocumentView: View {
     /// produced a wasted, confusing extra hierarchy level. Removing the
     /// wrapper lets the system overflow serve as the one and only "···" menu
     /// (Session 2026-06-07).
+    ///
+    /// "Share Citation" (added Session 2026-06-07) presents the system share
+    /// sheet via `ShareLink` with a single message combining the formatted
+    /// citation and the document's canonical `history.state.gov` URL — see
+    /// `DocumentViewModel.shareableCitationMessage`.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
@@ -751,6 +762,16 @@ struct DocumentView: View {
                 )
             }
             .disabled(vm.formattedCitation == nil)
+
+            // 6b. Share Citation — system share sheet with the formatted citation
+            // and the canonical history.state.gov URL combined into one message.
+            ShareLink(item: vm.shareableCitationMessage ?? "") {
+                Label(
+                    String(localized: "document.toolbar.shareCitation", defaultValue: "Share Citation"),
+                    systemImage: "square.and.arrow.up"
+                )
+            }
+            .disabled(vm.shareableCitationMessage == nil)
 
             // 7. Add to Collection
             Button {
