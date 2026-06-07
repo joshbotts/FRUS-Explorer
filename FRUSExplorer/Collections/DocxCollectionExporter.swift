@@ -46,6 +46,16 @@ import Foundation
 ///          to inline italic Word runs; applied to citation headings, collection note,
 ///          and research note paragraphs; `options: CollectionExportOptions` controls ToC
 ///          label style; `noteTexts: [String]` and `includeDocumentBody` respected per entry
+///   1.3 — Future (unnumbered): inline highlight annotation. When
+///          `options.applyHighlights` is set and `doc.highlights` is non-empty, a
+///          `HighlightPaintTracker` is threaded through the body render-node walk
+///          (`renderModelToDocxParagraphs` → `blockNodeToDocxXML` →
+///          `inlineRunsXML`/`inlineNodeRunXML`); highlighted leaf text
+///          (`plainText`/`formulaText`/`lineBreak`) is split into separate `<w:r>`
+///          runs at highlight boundaries with `<w:highlight w:val="...">` applied
+///          via `runsXML(for:props:tracker:)`. Footnote rendering always passes
+///          `tracker: nil` — footnote bodies are outside the flat-text coordinate
+///          space (see `appendFlatText`), so highlight offsets never point into them.
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -280,7 +290,15 @@ final class DocxCollectionExporter: CollectionExporter {
             switch options.bodyDepth {
             case .full:
                 if let model = doc.renderModel {
-                    body += renderModelToDocxParagraphs(model, ctx: ctx)
+                    // Highlight offsets are flat-text positions over the render
+                    // model's body nodes (see `ExportHighlight`); the plain
+                    // `bodyText` paragraph-splitting fallback below uses a
+                    // different extraction path, so painting only applies here.
+                    let tracker: HighlightPaintTracker? =
+                        (options.applyHighlights && !doc.highlights.isEmpty)
+                            ? HighlightPaintTracker(doc.highlights)
+                            : nil
+                    body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker)
                 } else {
                     let paras = doc.bodyText
                         .components(separatedBy: "\n\n")
@@ -387,9 +405,16 @@ final class DocxCollectionExporter: CollectionExporter {
     /// Renders a `FRUSDocumentRenderModel` to Word paragraph XML.
     /// Pre-scans footnote labels to assign integer IDs, renders body nodes,
     /// then adds footnote bodies to `ctx`.
+    ///
+    /// - Parameter tracker: When non-`nil`, highlight ranges are painted onto
+    ///   body text via `<w:highlight>` runs as flat-text leaf content is emitted.
+    ///   Always passed as `nil` into footnote rendering — footnote bodies fall
+    ///   outside the flat-text coordinate space (`appendFlatText` only walks
+    ///   `model.bodyNodes`), so highlight offsets never point into them.
     private func renderModelToDocxParagraphs(
         _ model: FRUSDocumentRenderModel,
-        ctx: DocxRenderContext
+        ctx: DocxRenderContext,
+        tracker: HighlightPaintTracker? = nil
     ) -> String {
         // Pre-assign Word integer IDs to every footnote in this document
         var labelMap: [String: Int] = [:]
@@ -401,10 +426,10 @@ final class DocxCollectionExporter: CollectionExporter {
 
         // Render body paragraphs
         let bodyXML = model.bodyNodes
-            .map { blockNodeToDocxXML($0, labelMap: labelMap) }
+            .map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }
             .joined()
 
-        // Render footnote bodies and register with context
+        // Render footnote bodies and register with context — tracker: nil (see above).
         for note in model.footnotes {
             if case .footnoteBody(_, _, _, _, let label, let children) = note,
                let wordId = labelMap[label] {
@@ -417,39 +442,43 @@ final class DocxCollectionExporter: CollectionExporter {
     }
 
     /// Converts a block render node to one or more `<w:p>` XML strings.
-    private func blockNodeToDocxXML(_ node: FRUSRenderNode, labelMap: [String: Int]) -> String {
+    ///
+    /// - Parameter tracker: Threaded through to inline-run rendering so highlight
+    ///   spans can be painted onto leaf text. `nil` for footnote-body rendering.
+    private func blockNodeToDocxXML(_ node: FRUSRenderNode, labelMap: [String: Int],
+                                     tracker: HighlightPaintTracker? = nil) -> String {
         switch node {
         case .heading(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
                          styleId: "Heading3")
         case .dateline(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(italic: true), labelMap: labelMap),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(italic: true), labelMap: labelMap, tracker: tracker),
                          styleId: "Dateline")
         case .salutation(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
                          styleId: "Normal")
         case .paragraph(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
                          styleId: "Normal")
         case .letterOpener(let c), .letterCloser(let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap) }.joined()
+            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
         case .editorialNoteBlock(let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap) }.joined()
+            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
         case .attachmentBlock(_, let c):
             let sep = "    <w:p><w:pPr><w:pBdr><w:top w:val=\"single\" w:sz=\"6\" w:space=\"1\"/></w:pBdr></w:pPr></w:p>\n"
-            return sep + c.map { blockNodeToDocxXML($0, labelMap: labelMap) }.joined()
+            return sep + c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
         case .attachmentHeading(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap),
+            return wPara(runs: inlineRunsXML(c, props: RunProps(), labelMap: labelMap, tracker: tracker),
                          styleId: "AttachmentHeading")
         case .titlePageBlock(let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap) }.joined()
+            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
         case .tableBlock(let rows):
-            return tableToDocxXML(rows, labelMap: labelMap)
+            return tableToDocxXML(rows, labelMap: labelMap, tracker: tracker)
         case .listBlock(let type, let items):
             return items.enumerated().map { (i, item) in
                 let bullet = (type == "ordered") ? "\(i + 1). " : "• "
                 let bulletRun = "<w:r><w:t xml:space=\"preserve\">\(bullet)</w:t></w:r>"
-                let runs = inlineRunsXML(item, props: RunProps(), labelMap: labelMap)
+                let runs = inlineRunsXML(item, props: RunProps(), labelMap: labelMap, tracker: tracker)
                 return "    <w:p>\n"
                     + "      <w:pPr><w:pStyle w:val=\"Normal\"/><w:ind w:left=\"360\"/></w:pPr>\n"
                     + "      \(bulletRun)\(runs)\n"
@@ -464,45 +493,56 @@ final class DocxCollectionExporter: CollectionExporter {
         case .pageBreak:
             return "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
         case .unknown(_, let c):
-            return c.map { blockNodeToDocxXML($0, labelMap: labelMap) }.joined()
+            return c.map { blockNodeToDocxXML($0, labelMap: labelMap, tracker: tracker) }.joined()
         default:
             // Inline node at block level — wrap in Normal paragraph
-            return wPara(runs: inlineNodeRunXML(node, props: RunProps(), labelMap: labelMap),
+            return wPara(runs: inlineNodeRunXML(node, props: RunProps(), labelMap: labelMap, tracker: tracker),
                          styleId: "Normal")
         }
     }
 
     private func inlineRunsXML(_ nodes: [FRUSRenderNode], props: RunProps,
-                                labelMap: [String: Int]) -> String {
-        nodes.map { inlineNodeRunXML($0, props: props, labelMap: labelMap) }.joined()
+                                labelMap: [String: Int], tracker: HighlightPaintTracker? = nil) -> String {
+        nodes.map { inlineNodeRunXML($0, props: props, labelMap: labelMap, tracker: tracker) }.joined()
     }
 
+    /// Converts an inline render node to `<w:r>` run XML.
+    ///
+    /// - Parameter tracker: When non-`nil`, leaf content that contributes to the
+    ///   flat-text coordinate space (`.plainText`, `.formulaText`, `.lineBreak`)
+    ///   is split into separate runs at highlight boundaries via `runsXML(for:props:tracker:)`,
+    ///   each carrying a `<w:highlight w:val="...">` when it falls within a highlight.
+    ///   All other leaf/container cases simply thread `tracker` through unchanged.
     private func inlineNodeRunXML(_ node: FRUSRenderNode, props: RunProps,
-                                   labelMap: [String: Int]) -> String {
+                                   labelMap: [String: Int], tracker: HighlightPaintTracker? = nil) -> String {
         switch node {
         case .plainText(let s):
             guard !s.isEmpty else { return "" }
-            return "<w:r>\(props.rPrXML())<w:t xml:space=\"preserve\">\(xmlEscaped(s))</w:t></w:r>"
+            return runsXML(for: s, props: props, tracker: tracker)
         case .boldText(let c):
-            return inlineRunsXML(c, props: props.adding(bold: true), labelMap: labelMap)
+            return inlineRunsXML(c, props: props.adding(bold: true), labelMap: labelMap, tracker: tracker)
         case .italicText(let c):
-            return inlineRunsXML(c, props: props.adding(italic: true), labelMap: labelMap)
+            return inlineRunsXML(c, props: props.adding(italic: true), labelMap: labelMap, tracker: tracker)
         case .smallCapsText(let c):
-            return inlineRunsXML(c, props: props.adding(smallCaps: true), labelMap: labelMap)
+            return inlineRunsXML(c, props: props.adding(smallCaps: true), labelMap: labelMap, tracker: tracker)
         case .underlineText(let c):
-            return inlineRunsXML(c, props: props.adding(underline: true), labelMap: labelMap)
+            return inlineRunsXML(c, props: props.adding(underline: true), labelMap: labelMap, tracker: tracker)
         case .sicText(let c):
-            return inlineRunsXML(c, props: props.adding(strike: true), labelMap: labelMap)
+            return inlineRunsXML(c, props: props.adding(strike: true), labelMap: labelMap, tracker: tracker)
         case .suppliedText(let c):
             let rpr = props.rPrXML()
             let open  = "<w:r>\(rpr)<w:t>[</w:t></w:r>"
-            let inner = inlineRunsXML(c, props: props, labelMap: labelMap)
+            let inner = inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
             let close = "<w:r>\(rpr)<w:t>]</w:t></w:r>"
             return open + inner + close
         case .formulaText(let s):
             let ip = props.adding(italic: true)
-            return "<w:r>\(ip.rPrXML())<w:t xml:space=\"preserve\">\(xmlEscaped(s))</w:t></w:r>"
+            return runsXML(for: s, props: ip, tracker: tracker)
         case .lineBreak:
+            // Advance the flat-position counter (the HTML serializer counts "\n"
+            // for line breaks) without emitting a highlight — a bare <w:br/>
+            // cannot itself be shaded, so we just keep offsets aligned.
+            _ = tracker?.partition("\n")
             return "<w:r><w:br/></w:r>"
         case .footnoteMarker(_, let label):
             guard let wordId = labelMap[label] else {
@@ -513,19 +553,52 @@ final class DocxCollectionExporter: CollectionExporter {
             return "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr>"
                 + "<w:footnoteReference w:id=\"\(wordId)\"/></w:r>"
         case .termText(let c), .corrText(let c):
-            return inlineRunsXML(c, props: props, labelMap: labelMap)
+            return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
         case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, let c):
-            return inlineRunsXML(c, props: props, labelMap: labelMap)
+            return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
         case .pageBreak:
             return ""
         case .unknown(_, let c):
-            return inlineRunsXML(c, props: props, labelMap: labelMap)
+            return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
         default:
             return "" // Block nodes in inline context: not expected in FRUS inline runs
         }
     }
 
-    private func tableToDocxXML(_ rows: [[TableCell]], labelMap: [String: Int]) -> String {
+    /// Splits `text` into one or more `<w:r>` runs at highlight boundaries, applying
+    /// `<w:highlight w:val="...">` to spans that fall within an `ExportHighlight`.
+    /// When `tracker` is `nil` or inactive, emits a single run with no highlight markup
+    /// (preserving the exact prior output for non-highlighted exports).
+    private func runsXML(for text: String, props: RunProps, tracker: HighlightPaintTracker?) -> String {
+        guard !text.isEmpty else { return "" }
+        guard let tracker, tracker.isActive else {
+            return "<w:r>\(props.rPrXML())<w:t xml:space=\"preserve\">\(xmlEscaped(text))</w:t></w:r>"
+        }
+        var xml = ""
+        for (range, color) in tracker.partition(text) {
+            let chunk = String(text[range])
+            guard !chunk.isEmpty else { continue }
+            let rPr = highlightedRPrXML(props: props, color: color)
+            xml += "<w:r>\(rPr)<w:t xml:space=\"preserve\">\(xmlEscaped(chunk))</w:t></w:r>"
+        }
+        return xml
+    }
+
+    /// Builds `<w:rPr>` XML combining `props`' formatting flags with an optional
+    /// `<w:highlight w:val="...">` element for the given highlight color.
+    private func highlightedRPrXML(props: RunProps, color: DocumentHighlight.Color?) -> String {
+        var inner = ""
+        if props.bold      { inner += "<w:b/>" }
+        if props.italic    { inner += "<w:i/>" }
+        if props.smallCaps { inner += "<w:smallCaps/>" }
+        if props.underline { inner += "<w:u w:val=\"single\"/>" }
+        if props.strike    { inner += "<w:strike/>" }
+        if let color { inner += "<w:highlight w:val=\"\(color.ooxmlHighlightName)\"/>" }
+        return inner.isEmpty ? "" : "<w:rPr>\(inner)</w:rPr>"
+    }
+
+    private func tableToDocxXML(_ rows: [[TableCell]], labelMap: [String: Int],
+                                 tracker: HighlightPaintTracker? = nil) -> String {
         var xml = "    <w:tbl>\n"
         xml += "      <w:tblPr><w:tblBorders>"
         for side in ["top", "left", "bottom", "right", "insideH", "insideV"] {
@@ -538,7 +611,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 var tcPr = ""
                 if cell.colSpan > 1 { tcPr += "<w:gridSpan w:val=\"\(cell.colSpan)\"/>" }
                 let tcPrXML = tcPr.isEmpty ? "" : "<w:tcPr>\(tcPr)</w:tcPr>"
-                let runs = inlineRunsXML(cell.children, props: RunProps(), labelMap: labelMap)
+                let runs = inlineRunsXML(cell.children, props: RunProps(), labelMap: labelMap, tracker: tracker)
                 xml += "<w:tc>\(tcPrXML)<w:p>\(runs)</w:p></w:tc>"
             }
             xml += "</w:tr>\n"

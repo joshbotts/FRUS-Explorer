@@ -38,7 +38,24 @@ import CoreText
 ///          research note body text uses `noteAttributedString` for the same reason;
 ///          `options: CollectionExportOptions` controls ToC label style;
 ///          `noteTexts: [String]` and `includeDocumentBody` respected per entry
+///   1.6 — Future (unnumbered): inline highlight annotation. When
+///          `options.applyHighlights` is set and `doc.highlights` is non-empty,
+///          `highlightPaint` tracks flat-text position through
+///          `renderModelToAttributedString` and paints `.backgroundColor`-equivalent
+///          shading (a custom attribute key, since CoreText ignores
+///          `NSAttributedString.Key.backgroundColor`) over highlighted leaf text
+///          (`plainText`/`formulaText`/`lineBreak`); `drawFrameWithHighlights`
+///          manually fills rectangles behind highlighted glyph runs before
+///          `CTFrameDraw`. Table-cell rendering now preserves rich attributed
+///          strings (previously flattened to plain joined text) so highlights and
+///          inline formatting inside table cells survive export.
 final class PDFCollectionExporter: CollectionExporter {
+
+    /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
+    /// CoreText's `CTFrameDraw` does not render the Cocoa `NSAttributedString.Key
+    /// .backgroundColor` attribute (a higher-level text-system feature), so
+    /// highlight shading is painted manually — see `drawFrameWithHighlights`.
+    private static let highlightAttrKey = NSAttributedString.Key("FRUSHighlightBackgroundColor")
 
     // MARK: - Page geometry
 
@@ -49,6 +66,21 @@ final class PDFCollectionExporter: CollectionExporter {
     private static var pageRect: CGRect {
         CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
     }
+
+    // MARK: - Highlight Annotation State
+
+    /// Tracks flat-text position and highlight overlap while building the body
+    /// attributed string for the document currently being rendered. `nil` when
+    /// `options.applyHighlights` is off or the document has no highlights.
+    ///
+    /// Set by `drawDocumentSection` immediately before constructing `bodyAttrStr`
+    /// (and `nil`ed out again immediately after, including before the footnotes
+    /// section is appended — footnote bodies are not part of the flat text per
+    /// `appendFlatText`, so they must not be painted or advance the tracker).
+    /// Consulted only by `paintedString(_:attrs:)`, called at the same flat-text
+    /// leaf points (`plainText`/`formulaText`/`lineBreak`) that `appendFlatText`
+    /// counts, keeping painted ranges aligned with `ExportHighlight` offsets.
+    private var highlightPaint: HighlightPaintTracker?
 
     // MARK: - CollectionExporter
 
@@ -194,7 +226,15 @@ final class PDFCollectionExporter: CollectionExporter {
         switch options.bodyDepth {
         case .full:
             if let model = doc.renderModel {
+                // Highlight offsets are flat-text positions over the render model's
+                // body nodes (see `ExportHighlight`); the plain `bodyText` fallback
+                // below uses a different extraction path, so painting is only valid
+                // when a render model is present.
+                highlightPaint = (options.applyHighlights && !doc.highlights.isEmpty)
+                    ? HighlightPaintTracker(doc.highlights)
+                    : nil
                 bodyAttrStr = renderModelToAttributedString(model)
+                highlightPaint = nil
             } else if !doc.bodyText.isEmpty {
                 bodyAttrStr = NSAttributedString(string: doc.bodyText,
                                                  attributes: makeAttrs(fontSize: 10, bold: false))
@@ -246,7 +286,7 @@ final class PDFCollectionExporter: CollectionExporter {
                     let path = CGPath(rect: rect, transform: nil)
                     let cfRange = CFRangeMake(charOffset, 0)
                     let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
-                    CTFrameDraw(frame, ctx)
+                    drawFrameWithHighlights(frame, attrStr: bodyAttrStr, in: ctx)
 
                     let visible = CTFrameGetVisibleStringRange(frame)
                     if visible.length == 0 { break }
@@ -326,6 +366,11 @@ final class PDFCollectionExporter: CollectionExporter {
                 }
             }
         }
+        // Footnote bodies are not part of the flat-text traversal `appendFlatText`
+        // walks (only `model.bodyNodes` is counted), so highlight offsets never
+        // point into them — stop tracking/painting before appending this section.
+        highlightPaint = nil
+
         // Footnotes section
         if !model.footnotes.isEmpty {
             let ruleAttrs: [NSAttributedString.Key: Any] = makeAttrs(fontSize: 4, bold: false,
@@ -394,10 +439,20 @@ final class PDFCollectionExporter: CollectionExporter {
                                                  attributes: makeAttrs(fontSize: fontSize, bold: false)))
             }
         case .tableBlock(let rows):
+            // Preserve each cell's rich attributed string (rather than flattening
+            // to plain joined text) so highlight shading and inline formatting
+            // (bold/italic/etc.) inside cells survive export. " | " separators and
+            // the trailing "\n" are appended directly — `appendFlatText` does not
+            // count them, so they must bypass `paintedString`/`highlightPaint`.
             for row in rows {
-                let rowText = row.map { inlineAttributedString($0.children, fontSize: fontSize - 1).string }
-                              .joined(separator: " | ")
-                result.append(NSAttributedString(string: rowText + "\n",
+                for (i, cell) in row.enumerated() {
+                    if i > 0 {
+                        result.append(NSAttributedString(string: " | ",
+                                                         attributes: makeAttrs(fontSize: fontSize - 1, bold: false)))
+                    }
+                    result.append(inlineAttributedString(cell.children, fontSize: fontSize - 1))
+                }
+                result.append(NSAttributedString(string: "\n",
                                                  attributes: makeAttrs(fontSize: fontSize - 1, bold: false)))
             }
         case .figureBlock(let alt):
@@ -438,9 +493,8 @@ final class PDFCollectionExporter: CollectionExporter {
                                                italic: Bool = false) -> NSAttributedString {
         switch node {
         case .plainText(let s):
-            return NSAttributedString(string: s,
-                                      attributes: makeStyledAttrs(fontSize: fontSize,
-                                                                   bold: bold, italic: italic))
+            return paintedString(s, attrs: makeStyledAttrs(fontSize: fontSize,
+                                                            bold: bold, italic: italic))
         case .boldText(let c):
             return inlineAttributedString(c, fontSize: fontSize, bold: true, italic: italic)
         case .italicText(let c):
@@ -492,11 +546,9 @@ final class PDFCollectionExporter: CollectionExporter {
                            range: NSRange(location: 0, length: m.length))
             return m
         case .formulaText(let s):
-            return NSAttributedString(string: s,
-                                      attributes: makeStyledAttrs(fontSize: fontSize, bold: false, italic: true))
+            return paintedString(s, attrs: makeStyledAttrs(fontSize: fontSize, bold: false, italic: true))
         case .lineBreak:
-            return NSAttributedString(string: "\n",
-                                      attributes: makeAttrs(fontSize: fontSize, bold: false))
+            return paintedString("\n", attrs: makeAttrs(fontSize: fontSize, bold: false))
         case .footnoteMarker(_, let label):
             var attrs = makeAttrs(fontSize: max(fontSize - 3, 6), bold: false)
             attrs[NSAttributedString.Key(kCTSuperscriptAttributeName as String)] = 1 as CFNumber
@@ -510,6 +562,100 @@ final class PDFCollectionExporter: CollectionExporter {
         default:
             return blockNodeToAttributedString(node, fontSize: fontSize)
         }
+    }
+
+    // MARK: - Highlight Annotation
+
+    /// Plain-Swift wrapper around a highlight `CGColor`, stored as the value of
+    /// `Self.highlightAttrKey` attributes.
+    ///
+    /// `CGColor` is a Core Foundation type that is toll-free-bridged to
+    /// `AnyObject`; conditional casts from `Any` straight to `CGColor` are
+    /// statically flagged by the compiler as "always succeeds" (and rejected as an
+    /// error under this project's warnings-as-errors policy). Wrapping it in an
+    /// ordinary struct sidesteps that bridging quirk so the attribute value can be
+    /// safely round-tripped through `NSAttributedString` and recovered with a
+    /// normal `as?` conditional cast in `drawFrameWithHighlights`.
+    private struct HighlightColorBox {
+        let cgColor: CGColor
+    }
+
+    /// Builds an attributed string for one flat-text leaf chunk (`.plainText`,
+    /// `.formulaText`, or `.lineBreak` content), applying `Self.highlightAttrKey`
+    /// shading to any sub-ranges that `highlightPaint` reports as overlapping an
+    /// `ExportHighlight`, and advancing the tracker's flat-text position by
+    /// `text.count`.
+    ///
+    /// Must be called exactly once, in traversal order, for every chunk of text
+    /// that `appendFlatText` would count toward the document's flat text — see
+    /// `HighlightPaintTracker`'s usage contract. All other leaf-string construction
+    /// in this file (brackets around supplied text, footnote labels, figure
+    /// captions, table separators, etc.) intentionally bypasses this method so the
+    /// tracker's position counter stays aligned with stored highlight offsets.
+    private func paintedString(_ text: String,
+                               attrs: [NSAttributedString.Key: Any]) -> NSAttributedString {
+        guard let tracker = highlightPaint, tracker.isActive else {
+            return NSAttributedString(string: text, attributes: attrs)
+        }
+        let result = NSMutableAttributedString()
+        for (range, color) in tracker.partition(text) {
+            var spanAttrs = attrs
+            if let color { spanAttrs[Self.highlightAttrKey] = HighlightColorBox(cgColor: color.cgColor) }
+            result.append(NSAttributedString(string: String(text[range]), attributes: spanAttrs))
+        }
+        return result
+    }
+
+    /// Draws `frame`'s text, first manually painting filled rectangles behind any
+    /// glyph runs carrying `Self.highlightAttrKey` shading.
+    ///
+    /// CoreText's `CTFrameDraw` does not render the Cocoa `NSAttributedString.Key
+    /// .backgroundColor` attribute — that's a higher-level text-system feature not
+    /// implemented by bare CoreText frame drawing — so highlight backgrounds must
+    /// be painted as rectangles derived from each line's typographic bounds and
+    /// per-glyph string-index offsets, *before* the text itself is drawn on top.
+    ///
+    /// - Parameters:
+    ///   - frame: The CoreText frame about to be drawn.
+    ///   - attrStr: The full attributed string `frame` was created from — needed
+    ///     to look up `Self.highlightAttrKey` runs by string index, since `CTFrame`
+    ///     does not expose attributes directly.
+    ///   - ctx: The destination graphics context (PDF page context).
+    private func drawFrameWithHighlights(_ frame: CTFrame, attrStr: NSAttributedString, in ctx: CGContext) {
+        guard let lines = CTFrameGetLines(frame) as? [CTLine], !lines.isEmpty else {
+            CTFrameDraw(frame, ctx)
+            return
+        }
+
+        var origins = [CGPoint](repeating: .zero, count: lines.count)
+        CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), &origins)
+
+        ctx.saveGState()
+        for (i, line) in lines.enumerated() {
+            let lineRange = CTLineGetStringRange(line)
+            guard lineRange.length > 0 else { continue }
+            let nsLineRange = NSRange(location: lineRange.location, length: lineRange.length)
+            guard nsLineRange.location + nsLineRange.length <= attrStr.length else { continue }
+
+            var ascent: CGFloat = 0, descent: CGFloat = 0, leading: CGFloat = 0
+            _ = CTLineGetTypographicBounds(line, &ascent, &descent, &leading)
+            let origin = origins[i]
+
+            attrStr.enumerateAttribute(Self.highlightAttrKey, in: nsLineRange, options: []) { value, subRange, _ in
+                guard let box = value as? HighlightColorBox else { return }
+                let startX = CTLineGetOffsetForStringIndex(line, subRange.location, nil)
+                let endX   = CTLineGetOffsetForStringIndex(line, subRange.location + subRange.length, nil)
+                let rect = CGRect(x: origin.x + min(startX, endX),
+                                  y: origin.y - descent,
+                                  width: abs(endX - startX),
+                                  height: ascent + descent)
+                ctx.setFillColor(box.cgColor)
+                ctx.fill(rect)
+            }
+        }
+        ctx.restoreGState()
+
+        CTFrameDraw(frame, ctx)
     }
 
     // MARK: - Text Drawing

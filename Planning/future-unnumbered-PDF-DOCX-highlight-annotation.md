@@ -1,6 +1,6 @@
 # Future (Unnumbered): PDF and DOCX Inline Highlight Annotation
 
-**Status:** Planned — prerequisite work completed in Session 153  
+**Status:** Implemented (PDF + DOCX) — see "Implementation notes" below for deviations from the original plan; manual verification items in the testing checklist remain outstanding  
 **Label:** future unnumbered  
 **Priority:** Medium (completes the highlight annotation feature for all three export formats)
 
@@ -84,21 +84,68 @@ The DOCX renderer currently builds paragraphs by walking render nodes. A `curren
 
 ---
 
+## Implementation notes (deviations from the original plan)
+
+- **The "1-to-1 offset mapping" assumption above is incorrect.** Both
+  `renderModelToAttributedString` (PDF) and `renderModelToDocxParagraphs` (DOCX)
+  insert separator characters that `appendFlatText` does not count (list bullets,
+  table-cell `" | "` joins, footnote labels, supplied-text brackets, figure
+  captions, paragraph spacing). Naive character-index translation would misalign
+  highlights. Instead, a shared `HighlightPaintTracker` (in `CollectionExporter.swift`)
+  walks exported text in the same traversal order and at the same leaf points as
+  `appendFlatText` (`.plainText`, `.formulaText`, `.lineBreak`), partitioning each
+  chunk into highlighted/unhighlighted sub-spans as it goes.
+- **`DocumentHighlight.Color` has 4 cases, not 5** — there is no `.orange`. The
+  testing checklist below has been corrected accordingly; `mark.hl-orange` in
+  `FRUSRenderNodeHTMLSerializer.highlightCSS` is dead CSS referencing a
+  nonexistent case.
+- **PDF**: `CTFrameDraw` ignores `NSAttributedString.Key.backgroundColor` — it's a
+  Cocoa text-system attribute that bare CoreText doesn't render. Highlight
+  backgrounds are painted manually as filled rectangles (`drawFrameWithHighlights`)
+  using `CTFrameGetLines`/`CTLineGetStringRange`/`CTLineGetTypographicBounds`/
+  `CTLineGetOffsetForStringIndex`, drawn before `CTFrameDraw`. A custom attribute
+  key (`FRUSHighlightBackgroundColor`) carries a `HighlightColorBox` wrapper
+  struct around `CGColor` (a bare `as? CGColor` conditional cast is a compiler
+  error under this project's strict settings — "conditional downcast … will
+  always succeed").
+- **DOCX**: highlighted leaf text is split into separate `<w:r>` runs at
+  highlight boundaries, each carrying `<w:rPr><w:highlight w:val="…"/></w:rPr>`.
+  OOXML's named-highlight palette has no close blue/pink equivalents, so `.blue`
+  maps to `cyan` and `.pink` to `magenta` (see `DocumentHighlight.ooxmlHighlightName`).
+- **Footnote bodies are excluded from painting/tracking in both formats** —
+  `model.footnotes` falls outside the flat-text coordinate space that highlight
+  offsets are defined over (only `model.bodyNodes` is walked by `appendFlatText`),
+  so threading the tracker into footnote rendering would both misalign positions
+  and paint the wrong spans. PDF clears `highlightPaint = nil` before rendering
+  footnotes; DOCX always passes `tracker: nil` down the `inlineOrBlockRuns` path.
+
+---
+
 ## Testing checklist
 
-- [ ] Export a collection with yellow, green, blue, pink, and orange highlights to PDF — verify all five colours appear as background shading on the correct text spans
-- [ ] Export same collection to DOCX — open in Word/Pages and verify highlight colours are visible on the correct words
+- [ ] Export a collection with yellow, green, blue, and pink highlights to PDF — verify all four colours appear as background shading on the correct text spans
+- [ ] Export same collection to DOCX — open in Word/Pages and verify highlight colours are visible on the correct words (note: `.blue` renders as cyan and `.pink` as magenta — OOXML has no closer named equivalents)
 - [ ] Export a document with no highlights — verify `applyHighlights = true` produces no unexpected markup
 - [ ] Export with highlights that span element boundaries (e.g., across `<em>` or a footnote marker) — verify the export doesn't crash and the highlighted region is still visible
 - [ ] Verify stale highlights (where `startOffset` or `endOffset` exceeds the document length) are silently clamped without crashing
 
 ---
 
-## Files to modify
+## Files modified
 
-- `PDFCollectionExporter.swift` — `drawDocumentSection(ctx:doc:options:pageNumber:)`
-- `DocxCollectionExporter.swift` — `renderModelToDocxParagraphs(_:ctx:)` and the `DocxRenderContext` that tracks state
-- `CollectionExporter.swift` — no changes needed (data types already correct)
+- `PDFCollectionExporter.swift` — `drawDocumentSection`, `renderModelToAttributedString`,
+  `inlineNodeToAttributedString`, `blockNodeToAttributedString` (`.tableBlock` rewritten
+  to preserve attributed strings instead of flattening to plain text); new
+  `highlightPaint: HighlightPaintTracker?` instance property, `HighlightColorBox`,
+  `paintedString(_:attrs:)`, `drawFrameWithHighlights(_:attrStr:in:)`
+- `DocxCollectionExporter.swift` — `documentBodyXML`, `renderModelToDocxParagraphs`,
+  `blockNodeToDocxXML`, `inlineRunsXML`, `inlineNodeRunXML`, `tableToDocxXML` all gained
+  a threaded `tracker: HighlightPaintTracker?` parameter; new `runsXML(for:props:tracker:)`
+  and `highlightedRPrXML(props:color:)` helpers; `inlineOrBlockRuns` (footnote path)
+  always passes `tracker: nil`
+- `CollectionExporter.swift` — added `HighlightPaintTracker` (shared by both exporters)
+- `DocumentHighlight.swift` — added `cgColor: CGColor` (PDF) and
+  `ooxmlHighlightName: String` (DOCX) color-mapping helpers
 
 ---
 
@@ -106,4 +153,4 @@ The DOCX renderer currently builds paragraphs by walking render nodes. A `curren
 
 - Session 153: HTML highlight annotation implemented (`FRUSRenderNodeHTMLSerializer.injectHighlights`)
 - `DocumentHighlight.swift`: model definition, Color enum
-- `CollectionExporter.swift`: `ExportHighlight` struct
+- `CollectionExporter.swift`: `ExportHighlight` struct, `HighlightPaintTracker`

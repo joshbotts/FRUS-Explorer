@@ -108,6 +108,88 @@ struct ExportHighlight: Sendable {
     let color:       DocumentHighlight.Color
 }
 
+// MARK: - HighlightPaintTracker
+
+/// Walks exported text in flat-text traversal order, partitioning each chunk into
+/// maximal left-to-right sub-ranges that share the same overlapping `ExportHighlight`
+/// colour (or no highlight at all). Shared by `PDFCollectionExporter` and
+/// `DocxCollectionExporter` so both formats annotate inline highlights using the
+/// same flat-text coordinate space as `buildFlatText` and
+/// `FRUSRenderNodeHTMLSerializer.injectHighlights`.
+///
+/// ## Usage contract
+/// Callers must invoke `partition(_:)` exactly once, in left-to-right traversal
+/// order, for every chunk of text that contributes to the document's flat text —
+/// i.e. the same leaf content `appendFlatText` counts (`.plainText`, `.formulaText`,
+/// and `.lineBreak` content). Structural separators that `appendFlatText` does not
+/// count (list bullets, table-cell join strings, footnote labels, figure captions,
+/// paragraph spacing, etc.) must NOT be passed to `partition(_:)`, or the internal
+/// position counter will drift out of alignment with the stored offsets. Each call
+/// advances that counter by `text.count` (Unicode scalar count, matching
+/// `DocumentHighlight.startOffset`/`endOffset`).
+///
+/// Overlapping highlights are resolved by preferring the one that opens first,
+/// mirroring `FRUSRenderNodeHTMLSerializer.injectHighlights`.
+///
+/// Version history:
+///   1.0 — Future (unnumbered): PDF/DOCX inline highlight annotation
+final class HighlightPaintTracker {
+    private let sorted: [ExportHighlight]
+    private var flatPos = 0
+
+    init(_ highlights: [ExportHighlight]) {
+        sorted = highlights.sorted { $0.startOffset < $1.startOffset }
+    }
+
+    /// `true` when there is at least one highlight to annotate. Callers may use
+    /// this as a fast-path check to skip partitioning work entirely.
+    var isActive: Bool { !sorted.isEmpty }
+
+    /// Partitions `text` into maximal left-to-right sub-ranges sharing the same
+    /// highlight colour (`color == nil` means unhighlighted), and advances the
+    /// flat-text position counter by `text.count`.
+    ///
+    /// - Returns: An ordered, non-overlapping list of `(range, color)` pairs whose
+    ///   ranges concatenate to cover all of `text`. When inactive or `text` is
+    ///   empty, returns the whole string as a single unhighlighted span.
+    func partition(_ text: String) -> [(range: Range<String.Index>, color: DocumentHighlight.Color?)] {
+        let chunkStart = flatPos
+        let chunkLen = text.count
+        flatPos += chunkLen
+
+        guard isActive, chunkLen > 0 else {
+            return [(text.startIndex..<text.endIndex, nil)]
+        }
+
+        // Collect every highlight start/end boundary that falls strictly inside
+        // this chunk — those are the only points where the active colour can change.
+        var boundaries = Set<Int>([0, chunkLen])
+        for hl in sorted {
+            let s = hl.startOffset - chunkStart
+            let e = hl.endOffset - chunkStart
+            if s > 0, s < chunkLen { boundaries.insert(s) }
+            if e > 0, e < chunkLen { boundaries.insert(e) }
+        }
+        let cuts = boundaries.sorted()
+
+        var spans: [(Range<String.Index>, DocumentHighlight.Color?)] = []
+        spans.reserveCapacity(cuts.count - 1)
+        for i in 0..<(cuts.count - 1) {
+            let localStart = cuts[i], localEnd = cuts[i + 1]
+            guard localStart < localEnd,
+                  let startIdx = text.index(text.startIndex, offsetBy: localStart, limitedBy: text.endIndex),
+                  let endIdx = text.index(text.startIndex, offsetBy: localEnd, limitedBy: text.endIndex)
+            else { continue }
+            // Probe the midpoint-equivalent (the span start) to find the
+            // overlapping highlight, preferring the earliest-opening one.
+            let probe = chunkStart + localStart
+            let color = sorted.first { $0.startOffset <= probe && probe < $0.endOffset }?.color
+            spans.append((startIdx..<endIdx, color))
+        }
+        return spans
+    }
+}
+
 // MARK: - CollectionExportOptions
 
 /// Rendering options passed to every exporter.
@@ -124,7 +206,9 @@ struct CollectionExportOptions: Sendable {
     /// Which footnotes to include per document.
     var footnoteStyle: CollectionFootnoteStyle = .all
     /// When `true`, inline user highlights are annotated in the document body.
-    /// Currently implemented for HTML; PDF and DOCX follow in a future session.
+    /// Implemented for all three export formats: HTML (`FRUSRenderNodeHTMLSerializer.injectHighlights`),
+    /// PDF (`PDFCollectionExporter.drawFrameWithHighlights`), and DOCX
+    /// (`DocxCollectionExporter.runsXML(for:props:tracker:)`).
     var applyHighlights: Bool = false
     /// When `true`, attached research notes appear below each document body.
     /// Default `true`; set `false` for a clean primary-source reader.

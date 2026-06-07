@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CoreGraphics
 import Foundation
 import SwiftData
 import SwiftUI
@@ -202,4 +203,30 @@ extension DocumentHighlight.Color {
 
     /// SF Symbol name for use in the Research sidebar icon column.
     var symbolName: String { "highlighter" }
+
+    /// Translucent `CGColor` used to paint background highlight shading in PDF
+    /// export (`PDFCollectionExporter`). Matches the `rgba()` values in
+    /// `FRUSRenderNodeHTMLSerializer.highlightCSS` so highlight appearance is
+    /// visually consistent between the HTML and PDF export formats.
+    var cgColor: CGColor {
+        switch self {
+        case .yellow: return CGColor(red: 1.00, green: 0.90, blue: 0.20, alpha: 0.45)
+        case .green:  return CGColor(red: 0.31, green: 0.78, blue: 0.31, alpha: 0.35)
+        case .blue:   return CGColor(red: 0.31, green: 0.59, blue: 0.94, alpha: 0.35)
+        case .pink:   return CGColor(red: 0.94, green: 0.31, blue: 0.63, alpha: 0.30)
+        }
+    }
+
+    /// Closest match in the fixed OOXML `<w:highlight w:val="...">` palette, used
+    /// for DOCX export (`DocxCollectionExporter`). OOXML has no blue or pink/magenta
+    /// shades close to this app's palette; `cyan` and `magenta` are the nearest
+    /// available named colours.
+    var ooxmlHighlightName: String {
+        switch self {
+        case .yellow: return "yellow"
+        case .green:  return "green"
+        case .blue:   return "cyan"
+        case .pink:   return "magenta"
+        }
+    }
 }
