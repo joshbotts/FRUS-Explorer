@@ -10,6 +10,7 @@
 
 import Foundation
 import Observation
+import SwiftData
 
 // MARK: - SearchSortOrder
 
@@ -482,6 +483,41 @@ final class MacSearchViewModel {
             print("[MacSearchViewModel] Search failed: \(error)")
             #endif
         }
+    }
+
+    // MARK: - Search History
+
+    /// The most recently recorded search-history query text.
+    ///
+    /// Filter and scope changes bump `parametersVersion`, which re-runs
+    /// `performSearch` for the **same** `submittedQuery` — that should not
+    /// produce a new "search executed" history entry. Tracking the last
+    /// recorded query lets `recordSearchHistory` insert one entry per
+    /// distinct submitted query rather than one per re-run.
+    private var lastRecordedHistoryQuery: String?
+
+    /// Inserts a `SearchHistoryEntry` into the SwiftData context for the most
+    /// recently executed search.
+    ///
+    /// Call once after `performSearch` completes. No-ops when the query is
+    /// empty, the search produced an error, or the query text matches the
+    /// last-recorded entry (a filter/scope-only re-run of the same query —
+    /// see `lastRecordedHistoryQuery`). Mirrors `DocumentViewModel
+    /// .recordReadingHistory`.
+    func recordSearchHistory(projectId: UUID?, in context: ModelContext) {
+        let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, searchError == nil, query != lastRecordedHistoryQuery else { return }
+        lastRecordedHistoryQuery = query
+
+        let record = SearchHistoryEntry(
+            queryText: query,
+            resultCount: totalMatchCount,
+            projectId: projectId
+        )
+        context.insert(record)
+        #if DEBUG
+        print("[MacSearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(totalMatchCount)")
+        #endif
     }
 }
 

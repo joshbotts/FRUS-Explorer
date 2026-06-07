@@ -50,6 +50,7 @@ import os
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
+/// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
 ///
 /// Version history:
@@ -88,6 +89,9 @@ import os
 ///          by Research tab in MainTabView
 ///   3.7 — Session 130: boot-time DocumentTagAssignment→document_cache FTS5 sync;
 ///          one-time migration of legacy document_cache.user_tag_ids to DocumentTagAssignment
+///   3.8 — Session 2026-06-07: macOS "History" CommandMenu added (Documents Visited /
+///          Searches Executed submenus, last ten each, "Complete History…" item);
+///          frus.history Window scene added hosting the new HistoryWindowView
 @main
 struct FRUSExplorerApp: App {
 
@@ -296,6 +300,20 @@ struct FRUSExplorerApp: App {
         .defaultSize(width: 760, height: 600)
         .keyboardShortcut("k", modifiers: [.command, .shift])
 
+        // MARK: - Complete History Window
+        //
+        // Standalone combined reading + search history list with an optional
+        // project filter, reachable via the "History" menu's "Complete
+        // History…" item. The menu itself shows only the ten most-recent
+        // documents visited and searches executed.
+        Window(String(localized: "history.window.title", defaultValue: "History"),
+               id: "frus.history") {
+            HistoryWindowView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 640, height: 600)
+
         // MARK: - Settings
         Settings {
             FRUSSettingsView()
@@ -391,6 +409,17 @@ struct FRUSExplorerApp: App {
                     appState.showCitationLookup = true
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
+            }
+
+            // "History" menu — last ten documents visited and searches executed,
+            // plus a "Complete History…" item opening the combined, project-
+            // filterable HistoryWindowView (frus.history). appState/openWindow
+            // are passed as explicit init params (mirroring how the surrounding
+            // CommandGroup blocks capture them directly) rather than relying on
+            // @Environment propagation into .commands content.
+            CommandMenu(String(localized: "menu.history", defaultValue: "History")) {
+                HistoryMenuContent(appState: appState, openWindow: openWindow)
+                    .modelContainer(modelContainer)
             }
         }
         #endif

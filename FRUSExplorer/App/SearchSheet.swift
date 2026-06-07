@@ -60,6 +60,9 @@ import SwiftUI
 ///   1.6 — Session 2026-06-07: over-cap advisory gains a "Visualize in Corpus
 ///          Analytics" button — hands submittedQuery + active date filter off to
 ///          `AnalyticsView` via `AppState.pendingAnalytics` (see `AnalyticsParameters`)
+///   1.7 — Session 2026-06-07: each completed search now records a
+///          `SearchHistoryEntry` (`searchVM.recordSearchHistory`), surfaced in
+///          the new macOS "History" menu and "Complete History" window
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -122,6 +125,7 @@ struct MacSearchWindowView: View {
         .animation(.easeInOut(duration: 0.15), value: searchVM.showTips)
         .task(id: searchVM.searchTrigger) {
             await searchVM.performSearch(service: appState.searchService)
+            searchVM.recordSearchHistory(projectId: appState.activeProjectId, in: modelContext)
         }
         .onChange(of: appState.pendingSearch) { _, params in
             guard let params else { return }

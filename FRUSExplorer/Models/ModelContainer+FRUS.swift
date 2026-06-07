@@ -25,6 +25,9 @@ extension ModelContainer {
     ///   1.0 — Session 04: initial implementation
     ///   1.1 — Session 130: `makeFRUSContainer()` returns `(container:, cloudKitEnabled:)` tuple;
     ///          CloudKit error logging promoted from #if DEBUG to always-on for diagnostics
+    ///   1.2 — Session 2026-06-07: added `SearchHistoryEntry` (mirrors `ReadingHistoryEntry`
+    ///          for executed search queries) — backs the new macOS "History" menu and
+    ///          "Complete History" window
     private static var frusModelTypes: [any PersistentModel.Type] {
         [
             Project.self,
@@ -34,6 +37,7 @@ extension ModelContainer {
             Collection.self,
             CollectionEntry.self,
             ReadingHistoryEntry.self,
+            SearchHistoryEntry.self,
             SummarizationPrompt.self,
             SavedSearch.self,
             ResearchSession.self,
