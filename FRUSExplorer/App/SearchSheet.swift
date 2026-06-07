@@ -63,6 +63,10 @@ import SwiftUI
 ///   1.7 — Session 2026-06-07: each completed search now records a
 ///          `SearchHistoryEntry` (`searchVM.recordSearchHistory`), surfaced in
 ///          the new macOS "History" menu and "Complete History" window
+///   1.8 — Session 2026-06-07: timeline toggle added to the sort bar — swaps
+///          the results list/pagination for `DocumentTimelineView` (the same
+///          Swift Charts visualization already used on iOS Search and in the
+///          Collections editor), bringing chronological browsing to macOS
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -70,6 +74,7 @@ struct MacSearchWindowView: View {
 
     @State private var searchVM = MacSearchViewModel()
     @State private var showAdvancedFilters = false
+    @State private var showTimeline = false
     @State private var showCitationLookup = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
@@ -103,13 +108,17 @@ struct MacSearchWindowView: View {
 
             overCapAdvisory
 
-            resultsList
+            if showTimeline {
+                timelineView
+            } else {
+                resultsList
 
-            if searchVM.totalPages > 1 {
-                Divider()
-                paginationBar
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                if searchVM.totalPages > 1 {
+                    Divider()
+                    paginationBar
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                }
             }
 
             if searchVM.showTips {
@@ -504,6 +513,29 @@ struct MacSearchWindowView: View {
 
             Spacer()
 
+            // Timeline toggle — swaps the results list/pagination for a
+            // chronological Swift Charts visualization (DocumentTimelineView,
+            // shared with the iOS Search tab and Collections editor). Mirrors
+            // the toggle in SearchView.swift so the feature reaches macOS too.
+            Button {
+                showTimeline.toggle()
+            } label: {
+                Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.results.isEmpty)
+            .help(showTimeline
+                  ? String(localized: "search.timeline.hide.help",
+                           defaultValue: "Hide the chronological timeline and show the results list")
+                  : String(localized: "search.timeline.show.help",
+                           defaultValue: "Show these results as a chronological timeline"))
+            .accessibilityLabel(showTimeline
+                ? String(localized: "search.timeline.hide.a11y", defaultValue: "Hide timeline")
+                : String(localized: "search.timeline.show.a11y", defaultValue: "Show timeline"))
+
+            Divider().frame(height: 14)
+
             pageSizePicker
 
             Divider().frame(height: 14)
@@ -661,6 +693,31 @@ struct MacSearchWindowView: View {
     }
 
     // MARK: - Results List
+
+    /// Chronological visualization of the current result set, shown in place
+    /// of `resultsList`/`paginationBar` when `showTimeline` is enabled.
+    /// Reuses `DocumentTimelineView` (Search/DocumentTimelineView.swift) —
+    /// the same Swift Charts component already wired into the iOS Search tab
+    /// and the Collections editor — so chart/list display modes, year
+    /// grouping, and undated-document handling all come for free.
+    private var timelineView: some View {
+        DocumentTimelineView(
+            items: searchVM.results.map {
+                DocumentTimelineView.Item(
+                    volumeId: $0.volumeId,
+                    documentId: $0.documentId,
+                    header: $0.header
+                )
+            },
+            onSelect: { item in
+                if let result = searchVM.results.first(where: {
+                    $0.volumeId == item.volumeId && $0.documentId == item.documentId
+                }) {
+                    navigateToResult(result)
+                }
+            }
+        )
+    }
 
     private var resultsList: some View {
         List(searchVM.pagedResults, id: \.id) { result in
