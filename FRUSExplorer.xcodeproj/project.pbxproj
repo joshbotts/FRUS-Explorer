@@ -1713,6 +1713,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 15;
 				INFOPLIST_FILE = FRUSExplorerWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1720,6 +1721,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer.widgets";
 				PRODUCT_NAME = FRUSExplorerWidgets;
 				SDKROOT = iphoneos;
@@ -1915,6 +1917,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 15;
 				INFOPLIST_FILE = FRUSExplorerWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1922,6 +1925,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer.widgets";
 				PRODUCT_NAME = FRUSExplorerWidgets;
 				SDKROOT = iphoneos;
@@ -1954,6 +1958,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 15;
 				INFOPLIST_FILE = FRUSExplorerWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1961,6 +1966,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer.widgets";
 				PRODUCT_NAME = FRUSExplorerWidgets;
 				SDKROOT = iphoneos;

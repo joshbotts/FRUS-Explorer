@@ -67,6 +67,19 @@ targets:
       path: FRUSExplorer/Info.plist
       properties:
         CFBundleDisplayName: "FRUS Explorer"
+        # XcodeGen's generated Info.plist hardcodes CFBundleShortVersionString
+        # "1.0" / CFBundleVersion "1" by default (InfoPlistGenerator.swift) —
+        # these explicit $(...) substitutions override that, keeping this
+        # target's marketing version / build number tied to the single
+        # source of truth (MARKETING_VERSION / CURRENT_PROJECT_VERSION below)
+        # so they can never silently drift out of sync with the macOS target.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        # App Store category — kept in sync with the macOS target. (For iOS,
+        # App Store Connect's listing metadata is authoritative, but Xcode
+        # uses this key to pre-fill that field on first submission, and it
+        # keeps the Info.plist sources consistent across platforms.)
+        LSApplicationCategoryType: "public.app-category.reference"
         UIApplicationSupportsIndirectInputEvents: YES
         UILaunchScreen: {}
         # Required for Stage Manager multi-window support on M-chip iPads.
@@ -168,6 +181,14 @@ targets:
       properties:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        # App Store validation requires an embedded extension's marketing version
+        # and build number to match its host app's — override XcodeGen's
+        # hardcoded "1.0"/"1" Info.plist defaults the same way the FRUSExplorer
+        # iOS target does, tying both to MARKETING_VERSION/CURRENT_PROJECT_VERSION
+        # below (which mirror the host app's values; see CLAUDE.md's build-number
+        # bump procedure for keeping all three in lockstep).
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
     settings:
       base:
         PRODUCT_NAME: FRUSExplorerWidgets
@@ -175,6 +196,12 @@ targets:
         SWIFT_STRICT_CONCURRENCY: complete
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements"
+        # Must match the host FRUSExplorer app's values (see its target settings
+        # and CLAUDE.md's build-number bump procedure) — App Store validation
+        # rejects extensions whose CFBundleShortVersionString/CFBundleVersion
+        # don't match their containing app's.
+        CURRENT_PROJECT_VERSION: 15
+        MARKETING_VERSION: "0.2"
 
   # -------------------------------------------------------------------------
   # Unit Tests
