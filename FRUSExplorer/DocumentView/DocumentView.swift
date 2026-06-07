@@ -1519,14 +1519,31 @@ struct DocumentView: View {
 
 // MARK: - CitationSheetView
 
+/// Displays a formatted citation string in a sheet with Copy/Done actions.
+///
+/// `formattedCitation` wraps the FRUS series title in Markdown italic syntax
+/// (`_Foreign Relations of the United States_…`, see
+/// `HistoryAtStateCitationFormatter.italicizedTitle`). Plain `Text(String)`
+/// does not interpret Markdown for runtime strings, so the underscores would
+/// render literally; parsing into an `AttributedString` first renders the
+/// series title in actual italics — mirroring `CitationPopoverView` on macOS.
 private struct CitationSheetView: View {
     let citation: String
     @Environment(\.dismiss) private var dismiss
 
+    /// The citation parsed as inline Markdown so `_…_` renders as italics;
+    /// falls back to the raw string if parsing fails.
+    private var attributedCitation: AttributedString {
+        (try? AttributedString(
+            markdown: citation,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        )) ?? AttributedString(citation)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                Text(citation)
+                Text(attributedCitation)
                     .font(.body)
                     .textSelection(.enabled)
                     .padding()
