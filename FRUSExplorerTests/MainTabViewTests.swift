@@ -118,13 +118,11 @@ struct MainTabViewTests {
         #expect(state.pendingBrowseDocument == nil)
     }
 
-    // MARK: - showSearch / showCitationLookup
-
-    @Test("showSearchDefaultsFalse — fresh AppState has showSearch == false")
-    func showSearchDefaultsFalse() {
-        let state = AppState()
-        #expect(state.showSearch == false)
-    }
+    // MARK: - showCitationLookup
+    //
+    // showSearch was removed from AppState (Session 2026-06-07) — it was only ever
+    // set from a dead `#if os(macOS)` branch in BrowserView (unreachable since the
+    // file became iOS-only in Session 60) and never read or set to `true` anywhere.
 
     @Test("showCitationLookupDefaultsFalse — fresh AppState has showCitationLookup == false")
     func showCitationLookupDefaultsFalse() {

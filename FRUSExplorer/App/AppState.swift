@@ -55,6 +55,8 @@ import CloudKit
 ///   1.9 — Session 40: pendingSearch for cross-view person-mention navigation
 ///   2.0 — Session 43: AppTab enum; activeTab (iOS); pendingBrowseDocument;
 ///          showSearch and showCitationLookup promoted from BrowserView local state
+///          (showSearch removed in 4.0 — never set to `true` anywhere; the
+///          `#if os(macOS)` branch in BrowserView that owned it was dead code)
 ///   2.1 — Session 44: showSettingsSheet and pendingOnboardingAfterReset guarded to macOS
 ///   2.2 — Session 45: lastActivityTabVisit and unindexedVolumeCount (iOS)
 ///   2.3 — Session 46: showSettingsSheet and pendingOnboardingAfterReset removed;
@@ -82,6 +84,10 @@ import CloudKit
 ///          the useless "Some items failed." localizedDescription
 ///   3.9 — Session 2026-06-07: pendingAnalytics (AnalyticsParameters) for two-way
 ///          Search ↔ Corpus Analytics handoff
+///   4.0 — Session 2026-06-07: removed orphaned `showSearch` — it was only ever
+///          set from a dead `#if os(macOS)` branch in `BrowserView` (unreachable
+///          since the file became iOS-only in Session 60) and never read or set
+///          to `true` anywhere; `showCitationLookup` remains in active use
 
 // MARK: - CloudKitSyncState
 
@@ -480,13 +486,6 @@ final class AppState {
     /// `Window` scene — continues displaying stale rows even though the FTS5 table
     /// is empty, because its `searchTrigger` never changes and no re-query fires.
     var indexGeneration: Int = 0
-
-    /// Controls presentation of the full-text Search sheet.
-    ///
-    /// Promoted from `BrowserView` local `@State` to `AppState` so that macOS
-    /// menu commands and the iOS Search tab can trigger the sheet without a direct
-    /// view reference. Session 43.
-    var showSearch: Bool = false
 
     /// Controls presentation of the Citation Lookup sheet.
     ///

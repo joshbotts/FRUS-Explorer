@@ -55,17 +55,19 @@ import SwiftUI
 ///          been iOS-only (wrapped in a file-level `#if os(iOS)`) since Session 60's
 ///          `MainWindowView`/inspector-panel split, which made the nested macOS
 ///          `.inspector`/`MacPanel`/`showProjectContext`/toolbar code unreachable;
-///          `appState.showSearch` (only ever set from the removed branch) is now
-///          fully unused and a candidate for removal from `AppState`
+///          `appState.showSearch` (only ever set from the removed branch) was left
+///          fully unused — removed from `AppState` in 2.2
+///   2.2 — Session 2026-06-07: removed orphaned `appState.showSearch` (see 2.1);
+///          `showCitationLookup` remains in AppState for the Citation Lookup sheet
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
     @State private var viewModel: BrowserViewModel?
-    // showSearch and showCitationLookup live in AppState (promoted in Session 43)
-    // so that macOS menu commands and future iOS tab navigation can trigger them.
-    // On iOS, Search/Citation Lookup/Settings are persistent tabs (MainTabView) —
-    // BrowserView itself only reacts to ProjectPickerMenu taps (→ Research tab)
-    // and pendingBrowseDocument/filterDownloadedOnly below.
+    // showCitationLookup lives in AppState (promoted in Session 43) so that macOS
+    // menu commands and future iOS tab navigation can trigger it. On iOS, Search/
+    // Citation Lookup/Settings are persistent tabs (MainTabView) — BrowserView
+    // itself only reacts to ProjectPickerMenu taps (→ Research tab) and
+    // pendingBrowseDocument/filterDownloadedOnly below.
 
     @Environment(\.horizontalSizeClass) private var sizeClass
 
