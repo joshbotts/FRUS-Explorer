@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		008F58A3E3F01F014E1BBB2C /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF60752821D1C24BB478D600 /* DownloadManager.swift */; };
-		00ACD60C19CE6F6EAE15A9FD /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E206F9FF1E891682C975263 /* SparkleUpdater.swift */; };
 		00C0C596338F7F9609688A73 /* SubseriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373770EEFB83CBEE8238D8D2 /* SubseriesView.swift */; };
 		02C753517F051A2DF249EA95 /* InAppBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1569948F664B681C45828AD /* InAppBrowserView.swift */; };
 		02CFB3D51254CB1FA9A12543 /* UIObstructionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224A890D46A896064CB945BB /* UIObstructionTests.swift */; };
@@ -93,7 +92,6 @@
 		3EBC3C86A9B16D034068C835 /* SummarizationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9544B6BB2DA0B054DB1B10B0 /* SummarizationServiceTests.swift */; };
 		3F3F38656DA23D95673B117D /* MacDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC526B60C0D44514FDFC572 /* MacDocumentView.swift */; };
 		40D6C246CB8181B4C67AA895 /* volume-tag-taxonomy.json in Resources */ = {isa = PBXBuildFile; fileRef = F34208BE1028E5D565589526 /* volume-tag-taxonomy.json */; };
-		40FCDBF62C82994384DD19A1 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 68671750974A6214CB151B5C /* Sparkle */; };
 		416856D82FF1887F977836F8 /* FTS5Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0975FA5C560DCC925D601728 /* FTS5Connection.swift */; };
 		4168912A56749F9EAC797FD7 /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AD5E4C3F5410E494B55EEF /* NARAAPIKeyStore.swift */; };
 		43271775F9297C6E750B28AD /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */; };
@@ -291,7 +289,6 @@
 		CCBDEDE48E5D04BAE33C9945 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF60752821D1C24BB478D600 /* DownloadManager.swift */; };
 		CD059A377FC164AB840C4FCD /* frus-selection.js in Resources */ = {isa = PBXBuildFile; fileRef = 536A71597B7315E933F81136 /* frus-selection.js */; };
 		CEF50548C95D7CEEC8D3B861 /* ProjectPickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8B1348EC114EC90B45EAB1 /* ProjectPickerMenu.swift */; };
-		CFEA918D9A6A8082D7053AB5 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E206F9FF1E891682C975263 /* SparkleUpdater.swift */; };
 		CFFD15FDF28A52E8468E3252 /* VolumeConnectionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFFFF3C4599E5F0FCDEEB89 /* VolumeConnectionGraphView.swift */; };
 		D047A67881ABD663B619ED4B /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7C1F384F2AAF05C44D3D70 /* MainTabView.swift */; };
 		D04DE425EC9CFE49011EF558 /* StorageIndexViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D2B69CD9C8F98784E45944C /* StorageIndexViewTests.swift */; };
@@ -456,7 +453,6 @@
 		3C76858EB2BD9B44B3BF02F4 /* FRUSExplorer.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FRUSExplorer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3CFC1E7C3362A966E80CA3A6 /* IndexingActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingActivityAttributes.swift; sourceTree = "<group>"; };
 		3D9B404596114A62C4B89698 /* BackgroundSummarizationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationSettingsView.swift; sourceTree = "<group>"; };
-		3E206F9FF1E891682C975263 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		3EC00D2D14BDB0E3991932B3 /* ReadingHistoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingHistoryEntry.swift; sourceTree = "<group>"; };
 		3F3C065FBA889092972C1DBB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		423271170536DE4B8160B34A /* CollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionExporter.swift; sourceTree = "<group>"; };
@@ -632,17 +628,6 @@
 		FF735149F415370F2B4A807F /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFrameworksBuildPhase section */
-		728DE2A4556FE4DE4A01DD9F /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				40FCDBF62C82994384DD19A1 /* Sparkle in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
-
 /* Begin PBXGroup section */
 		04E12CC0CD61D1E5D0555FB3 /* Browser */ = {
 			isa = PBXGroup;
@@ -695,14 +680,6 @@
 				E636DD791BC3326FB4AFFCD8 /* SourceNoteParser.swift */,
 			);
 			path = SourceExplorer;
-			sourceTree = "<group>";
-		};
-		3C5CECAD282A2026024D2D98 /* Distribution */ = {
-			isa = PBXGroup;
-			children = (
-				3E206F9FF1E891682C975263 /* SparkleUpdater.swift */,
-			);
-			path = Distribution;
 			sourceTree = "<group>";
 		};
 		43C6B6A4D4DB3D19A6DBAF06 /* DocumentView */ = {
@@ -1009,7 +986,6 @@
 				51D9B1246B566EA12AC43169 /* Citation */,
 				FB48FD5C9BD51735574DACD9 /* Collections */,
 				45B579E740A88F19F474E356 /* CrossReference */,
-				3C5CECAD282A2026024D2D98 /* Distribution */,
 				43C6B6A4D4DB3D19A6DBAF06 /* DocumentView */,
 				FB4BCEDD61BCF39851A1FB44 /* Downloads */,
 				EB3D26757D1E60EB072F06EC /* Models */,
@@ -1191,7 +1167,6 @@
 			buildPhases = (
 				33CBDF404A34A25DEB0269F9 /* Sources */,
 				AF95BAA9FFD6BE962E659C6E /* Resources */,
-				728DE2A4556FE4DE4A01DD9F /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1199,7 +1174,6 @@
 			);
 			name = FRUSExplorerMac;
 			packageProductDependencies = (
-				68671750974A6214CB151B5C /* Sparkle */,
 			);
 			productName = FRUSExplorerMac;
 			productReference = A64B4DAD6C89EFA87310EC25 /* FRUSExplorerMac.app */;
@@ -1243,9 +1217,6 @@
 			);
 			mainGroup = DB950DA0730BD2427F10A285;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				BC5C588DC4471AD682801956 /* XCRemoteSwiftPackageReference "Sparkle" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 76BF97412B6E3EE7EBFDAD0C /* Products */;
 			projectDirPath = "";
@@ -1437,7 +1408,6 @@
 				99D0EF41B0EDD9F3D23D4D38 /* SettingsView.swift in Sources */,
 				5C8CD6B84599C407BA566403 /* SourceExplorerView.swift in Sources */,
 				F03AEF25BF978271CBE13E29 /* SourceNoteParser.swift in Sources */,
-				CFEA918D9A6A8082D7053AB5 /* SparkleUpdater.swift in Sources */,
 				B59875FEBCCA5ED5B64C80BF /* SubjectTagStore.swift in Sources */,
 				C1BC832019A8E5C2780B80A5 /* SubseriesView.swift in Sources */,
 				9AD3177CA22279E2D870013A /* SummarizationModels.swift in Sources */,
@@ -1585,7 +1555,6 @@
 				20FD93E148FBC9D2BA2F1C25 /* SettingsView.swift in Sources */,
 				AFF0ACE22C3666027285414C /* SourceExplorerView.swift in Sources */,
 				C3E3F94856F724B973554FD9 /* SourceNoteParser.swift in Sources */,
-				00ACD60C19CE6F6EAE15A9FD /* SparkleUpdater.swift in Sources */,
 				D82158288ECE31483FB364A9 /* SubjectTagStore.swift in Sources */,
 				00C0C596338F7F9609688A73 /* SubseriesView.swift in Sources */,
 				F347C81E72B07D808A8151FA /* SummarizationModels.swift in Sources */,
@@ -2121,14 +2090,12 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
 				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
-				INFOPLIST_KEY_SUFeedURL = "https://frusexplorer.example.com/appcast.xml";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.2;
-				OTHER_SWIFT_FLAGS = "-DDIRECT_DISTRIBUTION";
 				PRODUCT_BUNDLE_IDENTIFIER = "bottsywattsy.FRUS-Explorer";
 				PRODUCT_NAME = "FRUS Explorer";
 				SDKROOT = macosx;
@@ -2255,25 +2222,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		BC5C588DC4471AD682801956 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		68671750974A6214CB151B5C /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BC5C588DC4471AD682801956 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE51A6E8E079D586CF706A88 /* Project object */;
 }

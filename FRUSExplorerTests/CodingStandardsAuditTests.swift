@@ -193,14 +193,12 @@ struct CodingStandardsAuditTests {
     }
 
     // MARK: - Architecture
-
-    @Test("CodingStandardsAudit: SparkleUpdater is guarded by DIRECT_DISTRIBUTION compiler flag")
-    func sparkleUpdaterIsConditionallyCompiled() throws {
-        let url = Self.projectRoot.appendingPathComponent("FRUSExplorer/Distribution/SparkleUpdater.swift")
-        let content = try String(contentsOf: url, encoding: .utf8)
-        #expect(content.contains("#if os(macOS) && DIRECT_DISTRIBUTION"),
-                "SparkleUpdater must be guarded by #if os(macOS) && DIRECT_DISTRIBUTION")
-    }
+    //
+    // SparkleUpdater (and its "guarded by DIRECT_DISTRIBUTION compiler flag" audit
+    // test) was removed in Session 2026-06-07 — Apple rejects App Store/TestFlight
+    // submissions that bundle Sparkle.framework, since Xcode links package
+    // dependencies per-target rather than per-config (see project.yml `configs:`
+    // comment for the full rationale).
 
     @Test("CodingStandardsAudit: project.yml declares Manual signing for DirectDistribution")
     func projectYMLManualSigning() throws {

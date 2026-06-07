@@ -9,16 +9,20 @@
     so that the DirectDistribution build is sandbox-equivalent to the App Store build.
     The DistributionTests SandboxParityTest suite enforces this invariant.
 
-    Sparkle (automatic updates) is linked via OTHER_LDFLAGS in the DirectDistribution
-    build configuration and enabled at runtime via the -DDIRECT_DISTRIBUTION Swift flag;
-    it does not require additional entitlements.
+    Note: Sparkle (third-party auto-update) was evaluated for this configuration in
+    Session 128 but removed in Session 2026-06-07 — Apple rejects App Store/TestFlight
+    submissions that bundle Sparkle.framework, because its helper executables
+    (Autoupdate, Updater.app, InstallerLauncher.xpc) lack the app-sandbox entitlement,
+    and Xcode links package dependencies per-target rather than per-config, so Sparkle
+    could not be confined to this configuration alone without splitting FRUSExplorerMac
+    into two targets. See project.yml's `configs:` comment for the full rationale.
 -->
 <dict>
     <!-- Sandbox: enforced for Developer ID distribution to match App Store posture -->
     <key>com.apple.security.app-sandbox</key>
     <true/>
 
-    <!-- Outbound network: GitHub API, NARA Catalog API, Sparkle update checks -->
+    <!-- Outbound network: GitHub API, NARA Catalog API -->
     <key>com.apple.security.network.client</key>
     <true/>
 

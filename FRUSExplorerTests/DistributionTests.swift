@@ -16,8 +16,13 @@ import Foundation
 /// These tests verify:
 /// - Entitlement files for AppStore and DirectDistribution are present and parseable
 /// - Both entitlement files define an identical sandbox security posture (SandboxParityTest)
-/// - `project.yml` declares Sparkle as a package dependency for the macOS target (SparkleIntegrationTest)
 /// - `Scripts/notarize.sh` exists and contains the expected notarization workflow steps (NotarizationWorkflowTest)
+///
+/// Note: SparkleIntegrationTests (verifying Sparkle package linkage) was removed in
+/// Session 2026-06-07 along with Sparkle itself — Apple rejects App Store/TestFlight
+/// submissions that bundle Sparkle.framework, since its helper executables aren't
+/// sandboxed and Xcode links package dependencies per-target rather than per-config.
+/// See project.yml's `configs:` comment for the full rationale.
 struct DistributionTests {
 
     // MARK: - File URL Helpers
@@ -104,40 +109,7 @@ struct DistributionTests {
         #expect(direct.contains("<!DOCTYPE plist"))
     }
 
-    // MARK: - SparkleIntegrationTests
-
-    @Test("SparkleIntegrationTest: project.yml exists and declares Sparkle package")
-    func projectYMLDeclaresSparkle() throws {
-        let content = try String(contentsOf: Self.projectYMLURL, encoding: .utf8)
-        #expect(content.contains("Sparkle"),
-                "project.yml does not reference Sparkle package")
-        #expect(content.contains("sparkle-project/Sparkle"),
-                "project.yml does not reference Sparkle repository URL")
-    }
-
-    @Test("SparkleIntegrationTest: Sparkle is linked to FRUSExplorerMac target")
-    func sparkleLinkedToMacTarget() throws {
-        let content = try String(contentsOf: Self.projectYMLURL, encoding: .utf8)
-        // Verify Sparkle appears under the FRUSExplorerMac target's dependencies
-        // by checking proximity of "FRUSExplorerMac:" and "Sparkle" within 50 lines.
-        let lines = content.components(separatedBy: .newlines)
-        guard let macTargetLine = lines.firstIndex(where: { $0.contains("FRUSExplorerMac:") }) else {
-            Issue.record("FRUSExplorerMac target not found in project.yml")
-            return
-        }
-        let window = lines[macTargetLine..<min(macTargetLine + 50, lines.count)]
-        #expect(window.contains(where: { $0.contains("package: Sparkle") }),
-                "Sparkle is not listed as a dependency of FRUSExplorerMac in project.yml")
-    }
-
-    @Test("SparkleIntegrationTest: DirectDistribution config sets DIRECT_DISTRIBUTION compiler flag")
-    func directDistributionFlagDefined() throws {
-        let content = try String(contentsOf: Self.projectYMLURL, encoding: .utf8)
-        #expect(content.contains("DIRECT_DISTRIBUTION"),
-                "project.yml DirectDistribution config missing -DDIRECT_DISTRIBUTION flag")
-    }
-
-    @Test("SparkleIntegrationTest: DirectDistribution config uses Manual code signing")
+    @Test("DirectDistributionConfigTest: DirectDistribution config uses Manual code signing")
     func directDistributionUsesManualSigning() throws {
         let content = try String(contentsOf: Self.projectYMLURL, encoding: .utf8)
         // Find DirectDistribution block and check CODE_SIGN_STYLE: Manual
@@ -153,15 +125,6 @@ struct DistributionTests {
         let window = lines[ddLine..<min(ddLine + 20, lines.count)]
         #expect(window.contains(where: { $0.contains("CODE_SIGN_STYLE: Manual") }),
                 "DirectDistribution config should use CODE_SIGN_STYLE: Manual")
-    }
-
-    @Test("SparkleIntegrationTest: DirectDistribution config sets SUFeedURL")
-    func directDistributionSetsSUFeedURL() throws {
-        let content = try String(contentsOf: Self.projectYMLURL, encoding: .utf8)
-        #expect(content.contains("SUFeedURL"),
-                "project.yml DirectDistribution config missing SUFeedURL / INFOPLIST_KEY_SUFeedURL")
-        #expect(content.contains("appcast.xml"),
-                "SUFeedURL should reference an appcast.xml feed")
     }
 
     // MARK: - NotarizationWorkflowTests

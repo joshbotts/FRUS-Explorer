@@ -16,18 +16,21 @@ options:
 # Three build configurations:
 #   Debug              — development builds on all platforms
 #   AppStore           — App Store release (iOS/iPadOS + macOS)
-#   DirectDistribution — Developer ID release (macOS only; includes Sparkle)
+#   DirectDistribution — Developer ID release (macOS only)
+#
+# Note: Sparkle (third-party auto-update) was evaluated for DirectDistribution
+# in Session 128 but removed in Session 2026-06-07 — Apple rejects App Store/
+# TestFlight submissions that bundle Sparkle.framework because its helper
+# executables (Autoupdate, Updater.app, InstallerLauncher.xpc) lack the
+# com.apple.security.app-sandbox entitlement, and Xcode project dependencies
+# are linked per-*target* (not per-*config*), so Sparkle could not be limited
+# to the DirectDistribution config alone without splitting FRUSExplorerMac
+# into two targets. DirectDistribution users check for new releases manually
+# (GitHub / project website) until/unless that restructuring is undertaken.
 configs:
   Debug: debug
   AppStore: release
   DirectDistribution: release
-
-packages:
-  # Sparkle: automatic update delivery for the Direct Distribution macOS build.
-  # Linked only to FRUSExplorerMac target. iOS target does not link Sparkle.
-  Sparkle:
-    url: https://github.com/sparkle-project/Sparkle
-    minorVersion: "2.0.0"
 
 # ---------------------------------------------------------------------------
 # Global build settings inherited by all targets
@@ -110,7 +113,8 @@ targets:
   # -------------------------------------------------------------------------
   # macOS Application
   # Two release configs: AppStore and DirectDistribution.
-  # DirectDistribution links Sparkle and uses the Developer ID entitlement file.
+  # DirectDistribution uses the Developer ID entitlement file and Manual signing;
+  # see the `configs:` comment above re: why Sparkle auto-update isn't linked.
   # -------------------------------------------------------------------------
   FRUSExplorerMac:
     type: application
@@ -121,13 +125,6 @@ targets:
       - path: FRUSExplorer
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
-    dependencies:
-      # Sparkle is always present as a package dependency; actual linkage is
-      # governed by EXCLUDED_SOURCE_FILE_NAMES / OTHER_LDFLAGS in non-DirectDistribution
-      # configs. For now it is linked in all macOS configurations. In a future session,
-      # conditional linking can be refined if needed.
-      - package: Sparkle
-        product: Sparkle
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
@@ -150,8 +147,6 @@ targets:
           CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-DirectDistribution.entitlements"
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: "Developer ID Application"
-          OTHER_SWIFT_FLAGS: "-DDIRECT_DISTRIBUTION"
-          INFOPLIST_KEY_SUFeedURL: "https://frusexplorer.example.com/appcast.xml"
 
   # -------------------------------------------------------------------------
   # Widget Extension
