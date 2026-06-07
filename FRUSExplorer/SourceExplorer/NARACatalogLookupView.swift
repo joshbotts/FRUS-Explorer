@@ -51,6 +51,7 @@ struct NARACatalogLookupView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL)  private var openURL
+    @Environment(AppState.self) private var appState
 
     // MARK: - Init
 
@@ -79,12 +80,26 @@ struct NARACatalogLookupView: View {
         VStack(spacing: 0) {
 
             // Title
-            Text(String(localized: "nara.lookup.title", defaultValue: "Look Up in NARA Catalog"))
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
+            HStack {
+                Text(String(localized: "nara.lookup.title", defaultValue: "Look Up in NARA Catalog"))
+                    .font(.headline)
+                Spacer()
+                // Contextual deep link into the Research Guide's "App Feature
+                // Walkthrough" page, which documents NARA Catalog Lookup directly.
+                ResearchGuideLinkButton(
+                    pageId: "app-features",
+                    label: String(localized: "nara.lookup.learnMore",
+                                  defaultValue: "Learn About NARA Lookup")
+                )
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help(String(localized: "nara.lookup.learnMore",
+                             defaultValue: "Learn About NARA Lookup"))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
 
             Divider()
 
@@ -171,6 +186,15 @@ struct NARACatalogLookupView: View {
                                   || queryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                   || !hasAPIKey)
                     }
+                }
+                // Contextual deep link into the Research Guide's "App Feature
+                // Walkthrough" page, which documents NARA Catalog Lookup directly.
+                ToolbarItem(placement: .secondaryAction) {
+                    ResearchGuideLinkButton(
+                        pageId: "app-features",
+                        label: String(localized: "nara.lookup.learnMore",
+                                      defaultValue: "Learn About NARA Lookup")
+                    )
                 }
             }
             .task { hasAPIKey = await client.hasAPIKey() }

@@ -446,6 +446,20 @@ final class AppState {
     /// Used to route decimal-file citations to the correct NARA period finding-aid page.
     var currentSourceNoteYear: Int? = nil
 
+    /// `EducationPage.id` to open the Research Guide to directly, or `nil` to
+    /// open at the first page.
+    ///
+    /// Set by contextual entry points (e.g. an info button in the Source
+    /// Explorer or document footnote view) immediately before presenting the
+    /// guide — `openWindow(id: "frus.researchGuide")` on macOS, or navigating
+    /// to `ResearchGuideView` on iOS — so the guide opens pre-scrolled to the
+    /// topic the user asked about. `ResearchGuideView` reads and clears it.
+    var researchGuideInitialPageId: String? = nil
+
+    /// Controls presentation of the standalone "Research Guide" sheet on iOS,
+    /// reachable from Settings independently of the indexing flow.
+    var showResearchGuide: Bool = false
+
     /// Incremented each time the full-text index is completely cleared (app reset).
     ///
     /// Observed by `MacSearchWindowView` to discard cached result sets that were

@@ -8,6 +8,35 @@
 
 import SwiftUI
 
+// MARK: - AttributedString + Markdown body text
+
+extension AttributedString {
+    /// Builds an attributed string from `raw`, interpreting inline Markdown
+    /// formatting — `**bold**`, `*italic*`, and `[text](url)` links — while
+    /// gracefully falling back to verbatim plain text if parsing fails.
+    ///
+    /// FRUS Explorer's About, Onboarding, and Education content occasionally
+    /// embeds inline hyperlinks and emphasis directly in localized prose, e.g.
+    /// `[1991 federal statute](https://...)` or `**Foreign Relations of the
+    /// United States**`. Centralizing the parsing here ensures all three
+    /// contexts (About, Onboarding intro, Education pages) render such spans
+    /// identically, with tappable links and styled emphasis, without requiring
+    /// each call site to hand-build ranges.
+    ///
+    /// Version history:
+    ///   1.0 — Session 2026-06-06: introduced for revised static content
+    init(markdownBody raw: String) {
+        if let parsed = try? AttributedString(
+            markdown: raw,
+            options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
+            self = parsed
+        } else {
+            self = AttributedString(raw)
+        }
+    }
+}
+
 // MARK: - FRUSTheme
 
 /// Cross-platform design token namespace for FRUS Explorer.

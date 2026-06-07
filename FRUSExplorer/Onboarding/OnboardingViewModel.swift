@@ -235,11 +235,15 @@ final class OnboardingViewModel {
     // MARK: - Bundled Intro Text
 
     static let bundledIntroText: String = """
-        Foreign Relations of the United States (FRUS) is the official documentary record of U.S. foreign policy. Published by the Office of the Historian, U.S. Department of State, the series documents the major foreign policy decisions and diplomatic activity of the U.S. Government.
+        The Foreign Relations of the United States (FRUS) series is the official documentary record of U.S. foreign policy. The Department of State has published FRUS continuously since 1861. The series now comprises more than 550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
 
-        The FRUS series began in 1861 and now comprises more than 450 volumes covering U.S. foreign policy from 1776 through the 1980s. Each volume contains declassified State Department cables, presidential directives, memoranda of conversations, and other primary source materials selected to illuminate the historical record.
+        Today, the Office of the Historian at the Department of State produces the series under a [1991 federal statute](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351) that requires the series to provide a "thorough, accurate, and reliable documentary record of major United States foreign policy decisions and significant United States diplomatic activity." To fulfill this mandate, the historians who produce FRUS consult records from the White House, National Security Council, Departments of State and Defense, the CIA, other U.S. Government agencies, and sometimes even the private papers of key policymakers to identify the most critical documentation for editorial annotation, declassification, and publication.
 
-        FRUS Explorer provides full-text search, document browsing, AI-assisted summarization, and citation tools for the complete digital corpus, which is freely available at history.state.gov and in the HistoryAtState GitHub repository.
+        The statute requires that this work be guided by historical objectivity: records may not be altered without acknowledgment, no fact of major importance in reaching a decision should be omitted, and information should not be withheld to conceal a defect in policy. Volumes should be published within 30 years of the events they document.
+
+        While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
+
+        FRUS Explorer provides full-text search, document browsing, AI-assisted summarization, NARA Catalog integration, and a variety of other research and citation tools to researchers using all or part of the FRUS series corpus, which is freely available at [history.state.gov](https://history.state.gov/historicaldocuments/about-frus) and the [HistoryAtState](https://github.com/HistoryAtState/frus) GitHub repository.
         """
 
     // MARK: - Private Helpers

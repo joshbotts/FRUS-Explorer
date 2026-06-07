@@ -148,7 +148,7 @@ struct IndexingSetupWizardView: View {
             }
             Section {
                 Text(String(localized: "setup.project.explanation",
-                            defaultValue: "Projects are activity lenses — all notes, summaries, and reading history you create while a project is active are tagged with it. You can switch projects instantly, or work in the global context with no project selected."))
+                            defaultValue: "Projects offer users an activity lens on their research in FRUS Explorer. Every note, highlight, summary, and collection you create is tagged with the active project, making it easy to keep separate research threads distinct in the app. You can switch projects instantly, or work in the global context with no project selected."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -170,7 +170,7 @@ struct IndexingSetupWizardView: View {
             }
             Section {
                 Text(String(localized: "setup.collection.explanation",
-                            defaultValue: "A collection is a curated set of FRUS documents you assemble for a purpose — a teaching unit, a policy brief, a research chapter. You can add documents once indexing finishes. Use the note to capture your thinking now, while the purpose is clear."))
+                            defaultValue: "A collection is a curated set of FRUS documents you assemble for a purpose — a compilation of primary sources for students to discuss in class, a dossier to include in a policy brief, or a research workbook that can be easily integrated with other sources. You can add documents once indexing finishes. Jot down what kinds of documents you want to find in FRUS and how you intend to use them in the note to capture your thinking now, while your purpose is clear."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -186,7 +186,7 @@ struct IndexingSetupWizardView: View {
                 Text(String(localized: "setup.done.title", defaultValue: "You're set up"))
                     .font(.headline)
                 Text(String(localized: "setup.done.body",
-                            defaultValue: "Indexing is still running in the background. When it finishes, your full collection will be searchable. Come back to add documents to your collection anytime."))
+                            defaultValue: "Indexing is still running in the background. When it finishes, the volumes you have added will be searchable. Happy FRUSing!"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -220,7 +220,7 @@ struct IndexingSetupWizardView: View {
                     .lineLimit(3...5)
             }
             Text(String(localized: "setup.project.explanation",
-                        defaultValue: "Projects are activity lenses — all notes, summaries, and reading history you create while a project is active are tagged with it. You can switch projects instantly, or work in the global context with no project selected."))
+                        defaultValue: "Projects offer users an activity lens on their research in FRUS Explorer. Every note, highlight, summary, and collection you create is tagged with the active project, making it easy to keep separate research threads distinct in the app. You can switch projects instantly, or work in the global context with no project selected."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -248,7 +248,7 @@ struct IndexingSetupWizardView: View {
                     .lineLimit(4...8)
             }
             Text(String(localized: "setup.collection.explanation",
-                        defaultValue: "A collection is a curated set of FRUS documents you assemble for a purpose — a teaching unit, a policy brief, a research chapter. Use the note to capture your thinking now, while the purpose is clear. You can add documents once indexing finishes."))
+                        defaultValue: "A collection is a curated set of FRUS documents you assemble for a purpose — a compilation of primary sources for students to discuss in class, a dossier to include in a policy brief, or a research workbook that can be easily integrated with other sources. You can add documents once indexing finishes. Jot down what kinds of documents you want to find in FRUS and how you intend to use them in the note to capture your thinking now, while your purpose is clear."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -263,7 +263,7 @@ struct IndexingSetupWizardView: View {
             Text(String(localized: "setup.done.title", defaultValue: "You're set up"))
                 .font(.title2.bold())
             Text(String(localized: "setup.done.body",
-                        defaultValue: "Indexing is still running in the background. When it finishes, your full collection will be searchable. Come back to add documents to your collection anytime."))
+                        defaultValue: "Indexing is still running in the background. When it finishes, the volumes you have added will be searchable. Happy FRUSing!"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

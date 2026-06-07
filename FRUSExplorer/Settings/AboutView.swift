@@ -59,6 +59,14 @@ enum AboutLinks {
 ///          italicised via AttributedString.inlinePresentationIntent = .emphasized
 struct AboutView: View {
 
+    /// The link tapped most recently — presented in `InAppBrowserView`
+    /// rather than handed to the system browser, so following a Resources
+    /// or attribution link doesn't pull the user out of the app. Set by the
+    /// `\.openURL` override applied to `content` below; `URL` conforms to
+    /// `Identifiable` (see `CollectionEditorView`) so it can drive
+    /// `.sheet(item:)` directly.
+    @State private var inAppBrowserURL: URL?
+
     private var appIconImage: Image {
         #if os(macOS)
         Image(nsImage: NSApp.applicationIconImage)
@@ -127,6 +135,16 @@ struct AboutView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        // Route every link tap (the `Link` rows below and the inline
+        // Markdown links in `frusDescription`) into the in-app browser
+        // instead of the system browser.
+        .environment(\.openURL, OpenURLAction { url in
+            inAppBrowserURL = url
+            return .handled
+        })
+        .sheet(item: $inAppBrowserURL) { url in
+            InAppBrowserView(url: url)
+        }
     }
 
     // MARK: - App Header
@@ -174,36 +192,51 @@ struct AboutView: View {
         }
     }
 
-    private var frusDescription: AttributedString {
-        let raw = String(localized: "about.frus.description", defaultValue: """
-Foreign Relations of the United States (FRUS) is the official documentary \
-record of U.S. foreign policy, published by the Department of State \
-continuously since 1861. Prepared by the Office of the Historian under a \
-federal statute, the series is required to be a thorough, accurate, and \
-reliable record of major U.S. foreign policy decisions. Historians draw on \
-records from the White House, National Security Council, Departments of State \
-and Defense, the CIA, and other agencies, as well as the private papers of \
-individual policymakers, to document how decisions were made and what they \
-aimed to achieve.
+    /// Raw Markdown source for the "About FRUS" description, including the
+    /// inline `[1991 federal statute](...)` reference link.
+    ///
+    /// Exposed at `internal` access (rather than folded directly into
+    /// `frusDescription` as `private`) so `EmbeddedMarkdownLinkTests` can
+    /// validate the embedded link against the exact resolved string rendered
+    /// on screen, without duplicating this prose block — mirroring the
+    /// "Internal so they are testable" rationale documented on `AboutLinks`.
+    static var frusDescriptionRaw: String {
+        String(localized: "about.frus.description", defaultValue: """
+The **Foreign Relations of the United States** (FRUS) series is the official \
+documentary record of U.S. foreign policy. The Department of State has \
+published FRUS continuously since 1861. The series now comprises more than \
+550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
 
-The statute requires that editing be guided by historical objectivity: records \
-may not be altered without acknowledgment, no fact of major importance in \
-reaching a decision may be omitted, and nothing may be omitted to conceal a \
-defect in policy. Volumes must be published within 30 years of the events they \
-document.
+Today, the Office of the Historian at the Department of State produces the \
+series under a [1991 federal statute](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351) \
+that requires the series to provide a "thorough, accurate, and reliable \
+documentary record of major United States foreign policy decisions and \
+significant United States diplomatic activity." To fulfill this mandate, the \
+historians who produce FRUS consult records from the White House, National \
+Security Council, Departments of State and Defense, the CIA, other U.S. \
+Government agencies, and sometimes even the private papers of key \
+policymakers to identify the most critical documentation for editorial \
+annotation, declassification, and publication.
 
-FRUS covers U.S. bilateral and regional relations across the globe, as well as \
-global issues — terrorism, narcotics, health, the environment — and topics \
-including national security policy, foreign economic policy, and foreign policy \
-organization. It is an essential resource for scholars, policymakers, and \
-citizens seeking to understand the origins of contemporary challenges and the \
-United States' role in the world.
+The statute requires that this work be guided by historical objectivity: \
+records may not be altered without acknowledgment, no fact of major \
+importance in reaching a decision should be omitted, and information should \
+not be withheld to conceal a defect in policy. Volumes should be published \
+within 30 years of the events they document.
+
+While the content of the series has shifted over time, recent FRUS volumes \
+cover U.S. bilateral and regional relations across the globe; U.S. \
+policymakers' responses to unfolding crises; engagement with global issues \
+like human rights, terrorism, narcotics, health, and the environment; and \
+thematic topics including national security policy, foreign economic policy, \
+and foreign affairs organization and management. It is an essential resource \
+for scholars, policymakers, and citizens seeking to understand the origins of \
+contemporary challenges and the United States's role in the world.
 """)
-        var result = AttributedString(raw)
-        if let range = result.range(of: "Foreign Relations of the United States") {
-            result[range].inlinePresentationIntent = .emphasized
-        }
-        return result
+    }
+
+    private var frusDescription: AttributedString {
+        AttributedString(markdownBody: Self.frusDescriptionRaw)
     }
 
     // MARK: - Resources

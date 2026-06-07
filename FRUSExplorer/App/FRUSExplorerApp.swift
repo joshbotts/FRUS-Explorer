@@ -309,6 +309,21 @@ struct FRUSExplorerApp: App {
             AboutView()
         }
         .windowResizability(.contentSize)
+
+        // MARK: - Research Guide Window
+        //
+        // Standalone presentation of the educational pages normally shown
+        // while the first index builds. Reachable independently of indexing
+        // via the Help menu, for researchers who want to revisit the FRUS
+        // primer or jump straight to a specific topic (Source Explorer,
+        // research strategies, etc. open it pre-scrolled to the relevant
+        // page via `appState.researchGuideInitialPageId`).
+        Window(String(localized: "researchGuide.window.title", defaultValue: "FRUS Research Guide"),
+               id: "frus.researchGuide") {
+            ResearchGuideView()
+                .environment(appState)
+        }
+        .defaultSize(width: 880, height: 620)
         #endif
     }
 
@@ -355,6 +370,18 @@ struct FRUSExplorerApp: App {
                 }
             }
 
+            // Append a "FRUS Research Guide" item to the Help menu (after the
+            // system search field) so the standalone primer is reachable
+            // independently of the first-run indexing flow — mirroring the
+            // dedicated About Window pattern above, but surfaced from Help
+            // rather than the app menu since it's reference content, not
+            // settings or app metadata.
+            CommandGroup(after: .help) {
+                Button(String(localized: "menu.researchGuide",
+                              defaultValue: "FRUS Research Guide")) {
+                    openWindow(id: "frus.researchGuide")
+                }
+            }
 
             // Citation Lookup keyboard shortcut (⌘⇧F).
             // Search (⌘F) is handled by the "frus.search" Window scene shortcut.

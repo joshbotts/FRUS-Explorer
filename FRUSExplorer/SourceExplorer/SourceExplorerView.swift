@@ -91,6 +91,7 @@ struct SourceExplorerView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(AppState.self) private var appState
 
     // MARK: - Body
 
@@ -118,6 +119,16 @@ struct SourceExplorerView: View {
                                   defaultValue: "Done")) {
                         dismiss()
                     }
+                }
+                // Contextual deep link into the Research Guide's "Understanding
+                // What You're Reading" page — the source-note breakdown shown
+                // here is exactly what that page explains in depth.
+                ToolbarItem(placement: .secondaryAction) {
+                    ResearchGuideLinkButton(
+                        pageId: "understanding-documents",
+                        label: String(localized: "source.explorer.learnMore",
+                                      defaultValue: "Learn About Source Notes")
+                    )
                 }
             }
             .task {

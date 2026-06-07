@@ -74,6 +74,8 @@ struct SettingsView: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
+        @Bindable var appState = appState
+
         NavigationStack {
             Form {
                 // iCloud sync status — visible on iOS where there is no macOS status bar.
@@ -146,6 +148,10 @@ struct SettingsView: View {
 
                 #if os(iOS)
                 Section {
+                    Button(String(localized: "settings.row.researchGuide",
+                                  defaultValue: "FRUS Research Guide")) {
+                        appState.showResearchGuide = true
+                    }
                     NavigationLink(String(localized: "settings.row.about",
                                          defaultValue: "About FRUS Explorer")) {
                         AboutView()
@@ -168,6 +174,16 @@ struct SettingsView: View {
                 }
                 #endif
             }
+            #if os(iOS)
+            // Standalone "Research Guide" — the same five educational pages
+            // shown during first-index onboarding, reachable here on demand
+            // (presented as a sheet rather than pushed, since it manages its
+            // own paging/navigation chrome via `ResearchGuideView`).
+            .sheet(isPresented: $appState.showResearchGuide) {
+                ResearchGuideView()
+                    .environment(appState)
+            }
+            #endif
         }
         #if os(macOS)
         // Provides stable minimum dimensions for the settings sheet on macOS so that

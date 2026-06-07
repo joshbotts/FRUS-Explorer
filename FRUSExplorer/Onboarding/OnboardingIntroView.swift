@@ -27,6 +27,13 @@ struct OnboardingIntroView: View {
 
     @Bindable var viewModel: OnboardingViewModel
 
+    /// The link tapped most recently within `viewModel.introText` —
+    /// presented in `InAppBrowserView` instead of the system browser, so
+    /// a curious tap on a history.state.gov citation doesn't pull a
+    /// first-time user out of onboarding. `URL` conforms to `Identifiable`
+    /// (see `CollectionEditorView`), so it can drive `.sheet(item:)` directly.
+    @State private var inAppBrowserURL: URL?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -45,14 +52,14 @@ struct OnboardingIntroView: View {
                         .font(.largeTitle.bold())
 
                     Text(String(localized: "onboarding.intro.subtitle",
-                                defaultValue: "The complete Foreign Relations of the United States series, searchable on your device."))
+                                defaultValue: "The Foreign Relations of the United States series, searchable on your device."))
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }
 
                 Divider()
 
-                Text(viewModel.introText)
+                Text(AttributedString(markdownBody: viewModel.introText))
                     .font(.body)
                     .lineSpacing(4)
 
@@ -78,5 +85,14 @@ struct OnboardingIntroView: View {
         .frame(maxWidth: 640)
         .frame(maxWidth: .infinity)
         #endif
+        // Route inline Markdown link taps in `introText` into the in-app
+        // browser instead of the system browser.
+        .environment(\.openURL, OpenURLAction { url in
+            inAppBrowserURL = url
+            return .handled
+        })
+        .sheet(item: $inAppBrowserURL) { url in
+            InAppBrowserView(url: url)
+        }
     }
 }

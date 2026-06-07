@@ -82,6 +82,7 @@ struct MacSourceExplorerView: View {
     @State private var relatedLoading: Bool = false
 
     @Environment(\.openURL)  private var openURL
+    @Environment(AppState.self) private var appState
 
     // MARK: - Body
 
@@ -137,6 +138,16 @@ struct MacSourceExplorerView: View {
             .disabled(catalogResult == nil)
             .help(String(localized: "source.explorer.toolbar.export.tooltip",
                          defaultValue: "Save catalog result as a text file"))
+        }
+        ToolbarItem {
+            // Contextual deep link into the Research Guide's "Understanding
+            // What You're Reading" page — the source-note breakdown shown
+            // in the left column is exactly what that page explains in depth.
+            ResearchGuideLinkButton(
+                pageId: "understanding-documents",
+                label: String(localized: "source.explorer.learnMore",
+                              defaultValue: "Learn About Source Notes")
+            )
         }
     }
 
