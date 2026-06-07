@@ -92,6 +92,14 @@ targets:
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
+        # Swift derives the module name from PRODUCT_NAME by default,
+        # sanitizing the space to an underscore ("FRUS_Explorer") — but
+        # every test file does `@testable import FRUSExplorer` (no space,
+        # no underscore), matching the *target* name. Pin the module name
+        # explicitly so `@testable import FRUSExplorer` resolves; otherwise
+        # every test file fails to build with "unable to resolve module
+        # dependency: 'FRUSExplorer'".
+        PRODUCT_MODULE_NAME: FRUSExplorer
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         TARGETED_DEVICE_FAMILY: "1,2"
         CURRENT_PROJECT_VERSION: 15
@@ -196,6 +204,23 @@ targets:
       base:
         PRODUCT_NAME: FRUSExplorerTests
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer.tests"
+        # Required for code signing — without it, Xcode reports "Cannot code
+        # sign because the target does not have an Info.plist file and one
+        # is not being generated automatically." This was previously masked
+        # by the TEST_HOST failure above (a scheme-validation error that
+        # occurs before the build/codesign phase even starts).
+        GENERATE_INFOPLIST_FILE: YES
+        # Explicit TEST_HOST / BUNDLE_LOADER are required because the host
+        # app's PRODUCT_NAME ("FRUS Explorer", with a space — see the
+        # FRUSExplorer target above) differs from its target name
+        # ("FRUSExplorer"). XcodeGen/Xcode auto-derive TEST_HOST from the
+        # *target* name, producing "FRUSExplorer.app/FRUSExplorer" — a path
+        # that doesn't exist on disk (the real product is
+        # "FRUS Explorer.app/FRUS Explorer"). Without this override, every
+        # `xcodebuild test` invocation fails up front with "Could not find
+        # test host for FRUSExplorerTests" before any test code runs.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/FRUS Explorer.app/FRUS Explorer"
+        BUNDLE_LOADER: "$(TEST_HOST)"
 
   # -------------------------------------------------------------------------
   # UI Tests
@@ -213,3 +238,6 @@ targets:
       base:
         PRODUCT_NAME: FRUSExplorerUITests
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer.uitests"
+        # See FRUSExplorerTests above — same "Cannot code sign" failure
+        # without an Info.plist source.
+        GENERATE_INFOPLIST_FILE: YES

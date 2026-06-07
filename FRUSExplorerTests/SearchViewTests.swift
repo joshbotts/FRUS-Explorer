@@ -78,7 +78,7 @@ struct SearchViewTests {
         )
         try await pipeline.indexVolume("frus1969-76v01")
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         vm.keywords = "détente"
         await vm.search()
 
@@ -122,7 +122,7 @@ struct SearchViewTests {
         )
         try await pipeline.indexVolume("frus1969-76v01")
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         vm.phrase = "national security council"
         await vm.search()
 
@@ -154,7 +154,7 @@ struct SearchViewTests {
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         let start = Calendar.current.date(from: DateComponents(year: 1969, month: 1, day: 1))!
         let end   = Calendar.current.date(from: DateComponents(year: 1972, month: 12, day: 31))!
         vm.dateRangeEnabled = true
@@ -188,7 +188,7 @@ struct SearchViewTests {
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         vm.selectedSubjectTagIds = ["kissinger-henry-a", "soviet-union"]
 
         let params = vm.searchParameters
@@ -218,7 +218,7 @@ struct SearchViewTests {
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
 
         // Default: both included
         #expect(vm.searchParameters.includeSummaries)
@@ -268,7 +268,7 @@ struct SearchViewTests {
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         vm.applyProjectDefaults(project)
 
         #expect(vm.dateRangeEnabled)
@@ -303,7 +303,7 @@ struct PersonFilterTests {
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         vm.personRefText = "kissinger-henry-a"
         vm.keywords = "détente"
 
@@ -331,7 +331,7 @@ struct PersonFilterTests {
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         let params = SearchParameters(
             keywords: "détente",
             personRef: "kissinger-henry-a"
@@ -391,7 +391,7 @@ struct PersonFilterTests {
         )
         try await pipeline.indexVolume("frus1969-76v01")
 
-        let vm = SearchViewModel(searchService: service, subjectTagStore: subjectStore)
+        let vm = SearchViewModel(searchService: service)
         vm.keywords = "détente"
         await vm.search()
 

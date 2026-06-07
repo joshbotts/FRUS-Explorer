@@ -250,16 +250,19 @@ struct IndexingStageTests {
             try await Task.sleep(for: .milliseconds(50))
             collectTask.cancel()
 
-            // Verify no old stage names survive.
+            // Verify no old stage names survive. `.optimizing` is emitted by the
+            // bulk `indexAllVolumes` path (see `IndexingStage.optimizing` doc
+            // comment), not by the single-volume `indexVolume` exercised here,
+            // but the switch must remain exhaustive over `IndexingStage`.
             for update in box.updates {
                 switch update.stage {
-                case .reading, .storingBatch, .complete:
+                case .reading, .storingBatch, .optimizing, .complete:
                     break // expected
                 }
             }
 
             // Verify ordering: all .reading before any .storingBatch,
-            // all .storingBatch before .complete.
+            // all .storingBatch/.optimizing before .complete.
             var seenBatch = false
             var seenComplete = false
             for update in box.updates {
@@ -270,6 +273,8 @@ struct IndexingStageTests {
                 case .storingBatch:
                     seenBatch = true
                     #expect(!seenComplete, ".storingBatch must not appear after .complete")
+                case .optimizing:
+                    #expect(!seenComplete, ".optimizing must not appear after .complete")
                 case .complete:
                     seenComplete = true
                 }

@@ -71,7 +71,7 @@ final class UIObstructionTests: XCTestCase {
 
         // After scrolling, the last cell in the list should be fully visible and hittable.
         // XCTest's `isHittable` returns false when a view is clipped or covered.
-        let lastCell = app.cells.lastMatch
+        let lastCell = app.cells.element(boundBy: app.cells.count - 1)
         XCTAssertTrue(lastCell.exists, "Expected at least one cell to remain after scrolling")
         XCTAssertTrue(
             lastCell.isHittable,
