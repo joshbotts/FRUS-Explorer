@@ -148,6 +148,16 @@ enum DocumentSheet: Identifiable {
 ///          use) is never disrupted by inadvertent edge taps. Adjacent entries are
 ///          resolved by DocumentViewModel.loadAdjacentEntries, mirroring
 ///          MacDocumentView's existing prevEntry/nextEntry chevron buttons.
+///   3.2 — Session 2026-06-07: removed the app-owned "More" `Menu` wrapper
+///          (and its nested Citation sub-menu) from the iOS document toolbar.
+///          On iPhone the items overflowed into the system's own "···"
+///          button, which then contained our "More" — a wasted, confusing
+///          two-level "···" → "More" → tools hierarchy. All actions (Citation
+///          view/copy, Add to Collection, Cross-References, NARA Lookup,
+///          Source Explorer, Open in New Window, Summarize) now sit as flat,
+///          direct items in the single `ToolbarItemGroup(placement:
+///          .primaryAction)`; the system overflow — when triggered — is the
+///          one and only "···" menu and surfaces every tool in one tap.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -618,13 +628,20 @@ struct DocumentView: View {
 
     /// Document toolbar.
     ///
-    /// ## Layout (HIG: ≤ 4 toolbar items on iPhone)
-    /// 1. **Add Note** — direct button; most frequently used secondary action
-    /// 2. **Tag Document** — direct button; fast single-tap action
-    /// 3. **More ···** — overflow `Menu` containing all remaining actions:
-    ///    Citation sub-menu, Cross-References, Source Explorer (conditional),
-    ///    and Summarize (conditional). This keeps the toolbar uncluttered on
-    ///    small screens while every action remains reachable in one extra tap.
+    /// ## Layout — single flat `ToolbarItemGroup`, no app-owned overflow menu
+    /// Every action (Add Note, Tag, Highlight, Read/Research toggle, Citation,
+    /// Add to Collection, Cross-References, NARA Lookup, Source Explorer, Open
+    /// in New Window, Summarize) is placed directly in one
+    /// `ToolbarItemGroup(placement: .primaryAction)`.
+    ///
+    /// On iPhone, when these don't all fit the navigation bar, UIKit/SwiftUI
+    /// automatically collapses the overflow behind its own "···" button and
+    /// presents the remaining actions as a single flat list — one tap reveals
+    /// every tool. Previously the app *also* wrapped the long tail of actions
+    /// in its own "More" `Menu`, so the system's "···" → our "More" → tools
+    /// produced a wasted, confusing extra hierarchy level. Removing the
+    /// wrapper lets the system overflow serve as the one and only "···" menu
+    /// (Session 2026-06-07).
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
@@ -702,67 +719,33 @@ struct DocumentView: View {
                        defaultValue: "Read mode also enables edge-tap navigation to the previous and next document in this volume")
             )
 
-            // 5. More — overflow menu
-            moreMenu(vm: vm)
-        }
-        // Notes panel toggle — leading nav bar position on iPad
-        if sizeClass == .regular {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showNotesPanel.toggle()
-                } label: {
-                    Image(systemName: "note.text")
-                        .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
+            // 5. View Citation
+            Button {
+                if let citation = vm.formattedCitation {
+                    activeSheet = .citation(citation)
                 }
-                .accessibilityLabel(
-                    showNotesPanel
-                        ? String(localized: "document.toolbar.notesPanel.hide.a11y",
-                                 defaultValue: "Hide notes panel")
-                        : String(localized: "document.toolbar.notesPanel.show.a11y",
-                                 defaultValue: "Show notes panel")
-                )
-            }
-        }
-    }
-
-    /// Overflow "More" menu: Citation, Cross-References, Source Explorer (conditional),
-    /// Summarize (conditional). Keeps the toolbar at ≤ 3 items on all screen sizes.
-    @ViewBuilder
-    private func moreMenu(vm: DocumentViewModel) -> some View {
-        Menu {
-            // Citation sub-menu
-            Menu {
-                Button {
-                    if let citation = vm.formattedCitation {
-                        activeSheet = .citation(citation)
-                    }
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
-                        systemImage: "doc.text"
-                    )
-                }
-                .disabled(vm.formattedCitation == nil)
-
-                Button {
-                    if let citation = vm.formattedCitation {
-                        copyToPasteboard(citation)
-                    }
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
-                        systemImage: "doc.on.clipboard"
-                    )
-                }
-                .disabled(vm.formattedCitation == nil)
             } label: {
                 Label(
-                    String(localized: "document.toolbar.citation", defaultValue: "Citation"),
-                    systemImage: "quote.opening"
+                    String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
+                    systemImage: "doc.text"
                 )
             }
+            .disabled(vm.formattedCitation == nil)
 
-            // Add to Collection
+            // 6. Copy Citation
+            Button {
+                if let citation = vm.formattedCitation {
+                    copyToPasteboard(citation)
+                }
+            } label: {
+                Label(
+                    String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
+                    systemImage: "doc.on.clipboard"
+                )
+            }
+            .disabled(vm.formattedCitation == nil)
+
+            // 7. Add to Collection
             Button {
                 activeSheet = .addToCollection
             } label: {
@@ -777,7 +760,7 @@ struct DocumentView: View {
                        defaultValue: "Add document to a collection")
             )
 
-            // Cross-references
+            // 8. Cross-references
             Button {
                 activeSheet = .crossReferenceGraph
             } label: {
@@ -787,10 +770,10 @@ struct DocumentView: View {
                 )
             }
 
-            // NARA Catalog Lookup — available when text is selected anywhere in the
-            // document (body or footnotes). Shown when webKitSelectedText is non-nil;
-            // this persists after the More-menu blur event so the selected text is
-            // still accessible when the user taps the menu item.
+            // 9. NARA Catalog Lookup — available when text is selected anywhere in
+            // the document (body or footnotes). Shown when webKitSelectedText is
+            // non-nil; this persists after the overflow-menu blur event so the
+            // selected text is still accessible when the user taps the item.
             if webKitSelectedText != nil {
                 Button {
                     let text = webKitSelectedText ?? ""
@@ -805,7 +788,7 @@ struct DocumentView: View {
                 }
             }
 
-            // Source Explorer — always available for all documents.
+            // 10. Source Explorer — always available for all documents.
             // On iPad (regular width) opens in a new Stage Manager window;
             // on iPhone falls back to a sheet.
             Button {
@@ -825,9 +808,8 @@ struct DocumentView: View {
                 )
             }
 
-            // Open in New Window — iPad Stage Manager only
+            // 11. Open in New Window — iPad Stage Manager only
             if sizeClass == .regular {
-                Divider()
                 Button {
                     openWindow(value: DocumentWindowID(
                         volumeId: entry.volumeId,
@@ -843,10 +825,9 @@ struct DocumentView: View {
                 }
             }
 
-            // Summarize — only when Apple Intelligence is available
+            // 12. Summarize — only when Apple Intelligence is available
             if appState.summarizationService != nil
                 && AppleIntelligenceProvider.shared.isAvailable {
-                Divider()
                 Button {
                     activeSheet = .summarizePromptPicker
                 } label: {
@@ -866,15 +847,25 @@ struct DocumentView: View {
                 }
                 .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
             }
-        } label: {
-            Label(
-                String(localized: "document.toolbar.more", defaultValue: "More"),
-                systemImage: "ellipsis.circle"
-            )
         }
-        .accessibilityLabel(
-            String(localized: "document.toolbar.more.a11y", defaultValue: "More document actions")
-        )
+        // Notes panel toggle — leading nav bar position on iPad
+        if sizeClass == .regular {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showNotesPanel.toggle()
+                } label: {
+                    Image(systemName: "note.text")
+                        .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
+                }
+                .accessibilityLabel(
+                    showNotesPanel
+                        ? String(localized: "document.toolbar.notesPanel.hide.a11y",
+                                 defaultValue: "Hide notes panel")
+                        : String(localized: "document.toolbar.notesPanel.show.a11y",
+                                 defaultValue: "Show notes panel")
+                )
+            }
+        }
     }
 
     // MARK: - Stale Highlight Banner
