@@ -140,12 +140,78 @@ public final class DocumentViewModel {
 
     // MARK: - Citation
 
+    /// Publication year extracted live from the volume's TEI `<publicationStmt><date>`,
+    /// populated by `loadPublicationYear(from:)`. Preferred over the bundled
+    /// manifest's `publicationDate`, which may hold a coverage range (e.g.
+    /// "1969–1976") rather than the volume's actual print year — the same
+    /// "indexed coverage range as publication year" bug fixed for the macOS
+    /// citation popover in commit e67bed9 (Session 2026-06-07 port to iOS).
+    public var parsedPublicationYear: String? = nil
+
     /// The formatted citation string, available when a volume entry was supplied at init.
+    ///
+    /// Uses `parsedPublicationYear` (live-parsed from the volume XML) in place of
+    /// the manifest's `publicationDate` when available — see `loadPublicationYear(from:)`.
     public var formattedCitation: String? {
         guard let volumeEntry else { return nil }
         let docMeta = FRUSDocumentMetadata(entry)
-        let volMeta = FRUSVolumeMetadata(volumeEntry)
+        var volMeta = FRUSVolumeMetadata(volumeEntry)
+        if let liveYear = parsedPublicationYear {
+            volMeta = volMeta.overridingPublicationYear(liveYear)
+        }
         return HistoryAtStateCitationFormatter().format(document: docMeta, volume: volMeta)
+    }
+
+    /// Reads the volume's downloaded TEI XML and extracts the live publication
+    /// year into `parsedPublicationYear`, so `formattedCitation` can prefer it
+    /// over the manifest's (possibly coverage-range) `publicationDate`.
+    ///
+    /// Mirrors `CitationPopoverView.loadPublicationYear` on macOS (added in
+    /// commit e67bed9 to fix citations showing a document's coverage-range
+    /// start year, e.g. "1969", instead of the volume's actual print year,
+    /// e.g. "2010"). Idempotent — a no-op once a year has been parsed.
+    public func loadPublicationYear(from volumeURL: URL) async {
+        guard parsedPublicationYear == nil else { return }
+        parsedPublicationYear = await Self.extractPublicationYear(from: volumeURL)
+    }
+
+    /// Reads the first 8 KB of `url` (always covers the `teiHeader`) and
+    /// extracts the publication year from `<publicationStmt><date @when>` —
+    /// the authoritative ISO publication date — falling back to the element's
+    /// bare text content (e.g. `<date>2010</date>`).
+    private static func extractPublicationYear(from url: URL) async -> String? {
+        await Task.detached(priority: .utility) {
+            guard let stream = InputStream(url: url) else { return nil }
+            stream.open()
+            defer { stream.close() }
+            var buffer = [UInt8](repeating: 0, count: 8_192)
+            let n = stream.read(&buffer, maxLength: buffer.count)
+            guard n > 0,
+                  let text = String(bytes: Array(buffer[0..<n]), encoding: .utf8) else { return nil }
+
+            guard let blockStart = text.range(of: "<publicationStmt"),
+                  let blockEnd   = text.range(of: "</publicationStmt>"),
+                  blockStart.lowerBound < blockEnd.lowerBound else { return nil }
+            let block = String(text[blockStart.lowerBound..<blockEnd.upperBound])
+
+            // Prefer @when="YYYY" — most authoritative, always the actual publication year.
+            if let yr = regexFirstCapture(#"when="(\d{4})""#, in: block),
+               let y = Int(yr), y > 1750, y < 2100 { return yr }
+            // Fall back to bare year as text content, e.g. <date>2010</date>.
+            if let yr = regexFirstCapture(#">(\d{4})\s*<"#, in: block),
+               let y = Int(yr), y > 1750, y < 2100 { return yr }
+            return nil
+        }.value
+    }
+
+    /// Returns the first capture group of `pattern`'s first match in `text`, or `nil`.
+    private nonisolated static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: text,
+                                           range: NSRange(text.startIndex..., in: text)),
+              match.numberOfRanges >= 2,
+              let range = Range(match.range(at: 1), in: text) else { return nil }
+        return String(text[range])
     }
 
     // MARK: - Dependencies

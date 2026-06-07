@@ -292,6 +292,13 @@ struct DocumentView: View {
         guard let dm = appState.downloadManager,
               dm.isVolumeDownloaded(entry.volumeId) else { return }
         let url = dm.volumeURL(for: entry.volumeId)
+        // Live-parse the publication year from the volume's TEI XML so the
+        // citation tools show the volume's actual print year rather than a
+        // coverage-range value that may be indexed in the bundled manifest
+        // (mirrors CitationPopoverView.loadPublicationYear on macOS).
+        Task {
+            await vm.loadPublicationYear(from: url)
+        }
         Task {
             await vm.load(volumeURL: url)
             if vm.renderModel != nil {

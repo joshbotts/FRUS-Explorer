@@ -122,9 +122,26 @@ public struct FRUSVolumeMetadata: Sendable {
         publicationDate = entry.publicationDate ?? ""
         publicationPlace = "Washington, D.C."
         let year = Self.firstYear(in: entry.publicationDate) ?? 0
-        publisher = year >= 2014
-            ? "United States Government Publishing Office"
-            : "Government Printing Office"
+        publisher = Self.publisher(forYear: year)
+    }
+
+    /// Returns a copy of this metadata with the publication year overridden by
+    /// a value extracted live from the volume's TEI `<publicationStmt><date>`.
+    ///
+    /// The bundled manifest's `publicationDate` may hold a coverage range
+    /// (e.g. "1969–1976") rather than the volume's actual print year, while the
+    /// live XML's `@when` attribute is always the authoritative ISO publication
+    /// date — see `firstYear(in:)` and the Session 2026-06-07 citation fix.
+    /// `publisher` is recomputed from the overriding year per the GPO/USGPO rule.
+    public func overridingPublicationYear(_ year: String) -> FRUSVolumeMetadata {
+        FRUSVolumeMetadata(
+            title: title,
+            editors: editors,
+            generalEditor: generalEditor,
+            publicationDate: year,
+            publicationPlace: publicationPlace,
+            publisher: Self.publisher(forYear: Int(year) ?? 0)
+        )
     }
 
     /// Extracts the first 4-digit year from a free-form date string.
@@ -132,6 +149,16 @@ public struct FRUSVolumeMetadata: Sendable {
         guard let str = dateString, !str.isEmpty else { return nil }
         let digits = str.components(separatedBy: .init(charactersIn: "0123456789").inverted)
         return digits.first(where: { $0.count == 4 }).flatMap { Int($0) }
+    }
+
+    /// Derives the publisher name from a publication year.
+    ///
+    /// GPO (Government Printing Office) was renamed by Congress to USGPO
+    /// (United States Government Publishing Office) in December 2014.
+    static func publisher(forYear year: Int) -> String {
+        year >= 2014
+            ? "United States Government Publishing Office"
+            : "Government Printing Office"
     }
 }
 
