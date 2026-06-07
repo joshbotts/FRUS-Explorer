@@ -351,6 +351,16 @@ struct FRUSExplorerApp: App {
             ContentView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                #if os(macOS)
+                // Widened from the implicit default so the toolbar's leading
+                // back button, centred document title, and trailing tool
+                // launchers (Search/Graph/Info/Research) never need to
+                // collapse into the system overflow chevron at typical
+                // window widths — that collapse was combining the custom
+                // "Search" button with the system back-history popover into
+                // a single confusing overflow menu.
+                .frame(minWidth: 980, minHeight: 600)
+                #endif
                 .task {
                     await bootDownloadManager()
                 }

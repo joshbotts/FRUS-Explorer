@@ -175,20 +175,22 @@ struct MainWindowView: View {
     // MARK: - Document Title (principal toolbar item)
 
     private var documentTitle: some View {
-        VStack(spacing: 2) {
+        Group {
             if let entry = currentEntry {
-                Text(entry.header.isEmpty ? entry.documentId : entry.header)
-                    .font(.system(size: 13, weight: .medium))
+                // Condensed "volumeId/documentId" identifier (e.g.
+                // "frus1977-1980v28/d217") in place of the previous two-line
+                // header + volume-title stack. This keeps the centred toolbar
+                // item compact at a fixed width regardless of how long the
+                // document's prose header or volume title happen to be —
+                // leaving the leading back button and trailing tool launchers
+                // (Search/Graph/Info/Research) enough room that they no
+                // longer collapse into the system overflow chevron at
+                // typical window widths.
+                Text(entry.id)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .lineLimit(1)
                     .truncationMode(.middle)
-
-                if let volumeEntry = appState.manifestStore.entry(forVolumeId: entry.volumeId) {
-                    Text(volumeEntry.title)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
+                    .help(entry.header.isEmpty ? entry.documentId : entry.header)
             } else {
                 Text("FRUS Explorer")
                     .font(.system(size: 13, weight: .medium))
