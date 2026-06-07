@@ -140,6 +140,14 @@ enum DocumentSheet: Identifiable {
 ///          DocumentSheet.addToCollection + CollectionPickerSheetView added (Bug 3 — iOS
 ///          had no document-level collection membership control); "Add to Collection"
 ///          button added to moreMenu
+///   3.1 — Session 2026-06-07: edge-tap "page-turn" navigation — invisible
+///          leading/trailing tap zones (documentEdgeNavigationOverlay) open the
+///          previous/next document in the volume, ebook-reader style. Active only
+///          in Read mode (!panelVisible — the existing "Read"/"Research" segmented
+///          toggle) so research-mode interaction (selection, highlighting, panel
+///          use) is never disrupted by inadvertent edge taps. Adjacent entries are
+///          resolved by DocumentViewModel.loadAdjacentEntries, mirroring
+///          MacDocumentView's existing prevEntry/nextEntry chevron buttons.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -282,6 +290,10 @@ struct DocumentView: View {
                 vm.refreshCrossProjectNoteCount(
                     activeProjectId: appState.activeProjectId, context: modelContext
                 )
+                // Adjacent-document lookup powers the Read-mode edge-tap "page-turn"
+                // gesture (documentEdgeNavigationOverlay). Loaded unconditionally —
+                // the overlay itself is hidden in Research mode and at volume boundaries.
+                await vm.loadAdjacentEntries(pipeline: appState.indexingPipeline)
             }
         }
     }
@@ -685,6 +697,10 @@ struct DocumentView: View {
                 String(localized: "document.toolbar.panelMode.a11y",
                        defaultValue: "Toggle reading or research view")
             )
+            .accessibilityHint(
+                String(localized: "document.toolbar.panelMode.hint",
+                       defaultValue: "Read mode also enables edge-tap navigation to the previous and next document in this volume")
+            )
 
             // 5. More — overflow menu
             moreMenu(vm: vm)
@@ -986,6 +1002,10 @@ struct DocumentView: View {
             }
 
             // Document body — WKWebView handles scrolling, footnotes, and highlights.
+            // The edge-tap navigation overlay is layered on top via ZStack rather than
+            // composed as a sibling, so it can float over the web view without
+            // participating in its layout or scrolling.
+            ZStack {
             FRUSDocumentWebView(
                 model: model,
                 onPersonTap: { person in
@@ -1033,6 +1053,10 @@ struct DocumentView: View {
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            documentEdgeNavigationOverlay(vm: vm)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
             // Research panel — accordion of Notes, Tags, Summary
             if panelVisible {
                 Divider()
@@ -1040,6 +1064,118 @@ struct DocumentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Edge-Tap Document Navigation (Read mode "page-turn")
+
+    /// Invisible leading/trailing edge-tap zones that navigate to the previous/next
+    /// document in the current volume — an ebook-reader-style "page-turn" gesture.
+    ///
+    /// Shown only when:
+    ///  - **Read mode is active** (`!panelVisible` — the "Read"/"Research" segmented
+    ///    control in the toolbar; see `documentToolbar`). Research mode hides the
+    ///    zones entirely so taps near the edges while annotating, selecting text, or
+    ///    using the research panel are never misread as page-turns.
+    ///  - **An adjacent document exists** in that direction (`vm.previousEntry`/
+    ///    `vm.nextEntry`, populated by `DocumentViewModel.loadAdjacentEntries`).
+    ///    No zone is shown at the first/last document of a volume.
+    ///
+    /// Each zone is a narrow, fully transparent strip pinned to its edge —
+    /// `FRUSTheme.documentEdgeTapZoneWidth` is chosen to sit mostly outside the
+    /// reading column (which begins at `documentHorizontalPadding`), minimising
+    /// overlap with inline `<persName>`/`<gloss>`/cross-reference links so WKWebView
+    /// still receives taps on in-column content. A `Spacer` between the two zones
+    /// guarantees the entire central reading area is never intercepted.
+    ///
+    /// Version history:
+    ///   1.0 — Session 2026-06-07: initial implementation
+    @ViewBuilder
+    private func documentEdgeNavigationOverlay(vm: DocumentViewModel) -> some View {
+        if !panelVisible {
+            HStack(spacing: 0) {
+                documentEdgeTapZone(
+                    adjacentEntry: vm.previousEntry,
+                    systemImage: "chevron.left",
+                    label: String(localized: "document.nav.previous.a11y",
+                                  defaultValue: "Previous document"),
+                    hint: String(localized: "document.nav.previous.hint",
+                                 defaultValue: "Opens the previous document in this volume")
+                )
+                Spacer(minLength: 0)
+                documentEdgeTapZone(
+                    adjacentEntry: vm.nextEntry,
+                    systemImage: "chevron.right",
+                    label: String(localized: "document.nav.next.a11y",
+                                  defaultValue: "Next document"),
+                    hint: String(localized: "document.nav.next.hint",
+                                 defaultValue: "Opens the next document in this volume")
+                )
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Let the zones themselves opt into hit-testing; the HStack/Spacer must
+            // not swallow taps meant for the web view's central reading column.
+            .allowsHitTesting(true)
+        }
+    }
+
+    /// A single transparent edge-tap zone. Renders nothing (and accepts no taps)
+    /// when `adjacentEntry` is `nil`, so volume boundaries show no dead tap area.
+    @ViewBuilder
+    private func documentEdgeTapZone(
+        adjacentEntry: DocumentBrowserEntry?,
+        systemImage: String,
+        label: String,
+        hint: String
+    ) -> some View {
+        if let adjacentEntry {
+            Color.clear
+                .contentShape(Rectangle())
+                .frame(width: FRUSTheme.documentEdgeTapZoneWidth)
+                .onTapGesture {
+                    navigateToAdjacentDocument(adjacentEntry)
+                }
+                .accessibilityElement()
+                .accessibilityLabel(label)
+                .accessibilityHint(hint)
+                .accessibilityAddTraits(.isButton)
+                #if DEBUG
+                // Visualise the otherwise-invisible tap zones during development.
+                // FRUS_DEBUG_EDGE_TAP_ZONES is unset by default — set it in the
+                // scheme's environment variables to enable the overlay tint.
+                .overlay {
+                    if ProcessInfo.processInfo.environment["FRUS_DEBUG_EDGE_TAP_ZONES"] != nil {
+                        Image(systemName: systemImage)
+                            .foregroundStyle(.secondary)
+                            .background(Color.accentColor.opacity(0.08))
+                    }
+                }
+                #endif
+        } else {
+            Color.clear
+                .frame(width: FRUSTheme.documentEdgeTapZoneWidth)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// Navigates to a sibling document within the same volume, triggered by the
+    /// edge-tap "page-turn" gesture.
+    ///
+    /// Reuses the same cross-reference navigation pathway as `handleCrossRefTap`
+    /// (`appState.pendingBrowseDocument`, observed by `BrowserView.onChange` which
+    /// appends the entry to the Browse tab's navigation stack) — the identical
+    /// mechanism `MacDocumentView`'s prev/next chevron buttons use on macOS
+    /// (`navigationPath.append(prev/next)`). `DocumentView` can be presented from
+    /// several navigation contexts (Search, Citation Lookup, Cross-Reference Graph,
+    /// Browse), so routing every document-to-document jump through the Browse tab
+    /// keeps behaviour predictable and consistent with existing in-document navigation.
+    private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry) {
+        #if os(iOS)
+        appState.activeTab = .browse
+        #endif
+        appState.pendingBrowseDocument = adjacent
+        #if DEBUG
+        print("[DocumentView] Edge-tap page-turn → \(adjacent.volumeId)/\(adjacent.documentId)")
+        #endif
     }
 
     // MARK: - iOS Research Panel

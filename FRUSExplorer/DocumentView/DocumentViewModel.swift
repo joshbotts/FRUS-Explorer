@@ -100,6 +100,18 @@ public final class DocumentViewModel {
     /// The actual notes counted above, stored for cross-project reveal UI.
     var crossProjectNotes: [ResearchNote] = []
 
+    // MARK: - Volume Navigation
+
+    /// The document immediately before this one in the volume's document order,
+    /// or `nil` if this is the first document. Populated by `loadAdjacentEntries`.
+    /// Drives `MacDocumentView`'s prev/next chevron buttons and `DocumentView`'s
+    /// edge-tap "previous document" gesture in Read mode.
+    public var previousEntry: DocumentBrowserEntry? = nil
+
+    /// The document immediately after this one in the volume's document order,
+    /// or `nil` if this is the last document. Populated by `loadAdjacentEntries`.
+    public var nextEntry: DocumentBrowserEntry? = nil
+
     // MARK: - Summaries
 
     /// Summaries for this document, ordered newest-first.
@@ -295,6 +307,33 @@ public final class DocumentViewModel {
         } else {
             crossProjectNoteCount = 0
             crossProjectNotes = []
+        }
+    }
+
+    // MARK: - Volume Navigation
+
+    /// Looks up this document's neighbors within its volume's document order and
+    /// populates `previousEntry`/`nextEntry`.
+    ///
+    /// Mirrors `MacDocumentView.loadDocument()`'s `prevEntry`/`nextEntry` population
+    /// (queries `IndexingPipeline.documents(forVolume:)`, which returns entries in
+    /// source document order, and locates this document's index). Both platforms
+    /// then navigate by appending the adjacent entry to their respective navigation
+    /// stacks — macOS via bordered chevron buttons, iOS additionally via the
+    /// edge-tap "page-turn" gesture in Read mode (`DocumentView.documentEdgeNavigationOverlay`).
+    ///
+    /// No-op if `pipeline` is `nil` or the volume has not been indexed — `previousEntry`
+    /// and `nextEntry` simply remain `nil`, and dependent UI hides itself accordingly.
+    ///
+    /// Version history:
+    ///   1.0 — Session 2026-06-07: introduced alongside DocumentView's edge-tap
+    ///         previous/next document navigation (iOS Read-mode "page-turn" gesture)
+    public func loadAdjacentEntries(pipeline: IndexingPipeline?) async {
+        guard let pipeline else { return }
+        if let docs = try? await pipeline.documents(forVolume: entry.volumeId),
+           let idx = docs.firstIndex(where: { $0.documentId == entry.documentId }) {
+            previousEntry = idx > 0 ? docs[idx - 1] : nil
+            nextEntry = idx + 1 < docs.count ? docs[idx + 1] : nil
         }
     }
 

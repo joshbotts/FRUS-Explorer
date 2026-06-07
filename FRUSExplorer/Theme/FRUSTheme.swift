@@ -73,6 +73,13 @@ enum FRUSTheme {
     #endif
     static let sectionSpacing: CGFloat = 20
 
+    /// Width of the invisible edge-tap zones used for ebook-reader-style
+    /// previous/next document navigation in `DocumentView`'s Read mode.
+    /// Narrow enough to sit outside the primary reading column — which begins
+    /// at `documentHorizontalPadding` from each edge — so it rarely overlaps
+    /// inline `<persName>`/`<gloss>`/cross-reference links in the document body.
+    static let documentEdgeTapZoneWidth: CGFloat = 56
+
     // MARK: Tag Chips
 
     static let tagCornerRadius: CGFloat = 4
