@@ -39,6 +39,11 @@
 ///          the behaviour of `stemForIndex` in `FTS5Store` and the phrase-search path.
 ///          Previously, terms containing punctuation (apostrophes, hyphens) were stemmed
 ///          from the full sanitized string, producing different stems than the indexed text.
+///   1.2 — Session 2026-06-08: added `keywordExpression` — an optional pre-rendered
+///          fragment that takes priority over `keywords`/`booleanMode`, populated by
+///          `SearchService` from `FTS5InlineQueryParser` so the main search box can
+///          parse real Google-style inline syntax (`OR`, `"phrases"`, `-exclusions`,
+///          `term*`) instead of the previous naive whitespace split that mangled it.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -55,7 +60,24 @@ public struct FTS5Query: Sendable {
 
     /// Free-text keyword terms. Combined with `AND` (default) or `OR`.
     /// Each term is individually stemmed by the registered tokenizer at query time.
+    ///
+    /// Ignored when `keywordExpression` is non-nil (see below) — the two are
+    /// alternative ways of specifying the keyword portion of the query, not additive.
     public var keywords: [String]
+
+    /// A pre-rendered, ready-to-embed FTS5 expression fragment for the keyword portion
+    /// of the query — produced by `FTS5InlineQueryParser.parse(_:columnPrefix:)` from
+    /// the raw text typed into the main search box.
+    ///
+    /// When non-nil, `toFTS5MatchExpression()` embeds this fragment directly in place of
+    /// building one from `keywords`/`booleanMode` — it already carries its own stemming,
+    /// sanitisation, operator structure (`OR`/`NOT`/implicit `AND`), and column scoping.
+    /// `keywords` and `booleanMode` are ignored in that case.
+    ///
+    /// `nil` (the default) preserves the original structured-`keywords` rendering path
+    /// used by `CorpusAnalyticsService` and the test suite, where callers construct
+    /// `FTS5Query` directly from an already-tokenised `[String]` rather than raw text.
+    public var keywordExpression: String?
 
     /// Exact phrase to match. If non-nil, the phrase is added as a quoted FTS5 term.
     /// Phrase search is case-insensitive but order-sensitive.
@@ -88,6 +110,7 @@ public struct FTS5Query: Sendable {
 
     public init(
         keywords: [String] = [],
+        keywordExpression: String? = nil,
         phrase: String? = nil,
         booleanMode: BooleanMode = .and,
         excludedTerms: [String] = [],
@@ -97,6 +120,7 @@ public struct FTS5Query: Sendable {
         columns: [FTS5Column]? = nil
     ) {
         self.keywords = keywords
+        self.keywordExpression = keywordExpression
         self.phrase = phrase
         self.booleanMode = booleanMode
         self.excludedTerms = excludedTerms
@@ -126,26 +150,36 @@ public struct FTS5Query: Sendable {
             columnPrefix = ""
         }
 
-        // Keyword terms — sanitize then stem so they match the indexed stemmed tokens.
-        // Filter to letter-only characters before stemming, matching the behaviour of
-        // `stemForIndex` in `FTS5Store` and the phrase-search path below. Without this
-        // filter, terms containing apostrophes or hyphens (e.g. "don't", "non-proliferation")
-        // produce different stems than the indexed text.
-        let sanitizedKeywords = keywords
-            .map { sanitizeTerm($0) }
-            .filter { !$0.isEmpty }
-            .map { term -> String in
-                let lower = term.lowercased()
-                let alpha = lower.filter { $0.isLetter }
-                return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
-            }
+        // Keyword portion — `keywordExpression` (pre-rendered by `FTS5InlineQueryParser`
+        // from raw inline-syntax search-box text) takes priority when present; it already
+        // carries its own stemming, sanitisation, operator structure, and column scoping.
+        // Otherwise fall back to the original structured `keywords`/`booleanMode` path
+        // (used by `CorpusAnalyticsService` and the test suite, which construct `FTS5Query`
+        // directly from an already-tokenised `[String]`).
+        if let keywordExpression, !keywordExpression.isEmpty {
+            parts.append(keywordExpression)
+        } else {
+            // Sanitize then stem so terms match the indexed stemmed tokens. Filter to
+            // letter-only characters before stemming, matching the behaviour of
+            // `stemForIndex` in `FTS5Store` and the phrase-search path below. Without
+            // this filter, terms containing apostrophes or hyphens (e.g. "don't",
+            // "non-proliferation") produce different stems than the indexed text.
+            let sanitizedKeywords = keywords
+                .map { sanitizeTerm($0) }
+                .filter { !$0.isEmpty }
+                .map { term -> String in
+                    let lower = term.lowercased()
+                    let alpha = lower.filter { $0.isLetter }
+                    return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
+                }
 
-        if !sanitizedKeywords.isEmpty {
-            let operator_ = booleanMode == .or ? " OR " : " "
-            let keywordExpr = sanitizedKeywords
-                .map { columnPrefix + $0 }
-                .joined(separator: operator_)
-            parts.append(keywordExpr)
+            if !sanitizedKeywords.isEmpty {
+                let operator_ = booleanMode == .or ? " OR " : " "
+                let keywordExpr = sanitizedKeywords
+                    .map { columnPrefix + $0 }
+                    .joined(separator: operator_)
+                parts.append(keywordExpr)
+            }
         }
 
         // Phrase search (always full-table, ignores column prefix).

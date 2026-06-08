@@ -197,11 +197,6 @@ public actor SearchService {
     /// are searched. When all flags are `true`, `columns` is `nil` and FTS5
     /// searches all columns (the default, fastest path).
     public func makeFTS5Query(from parameters: SearchParameters) throws -> FTS5Query {
-        let keywords = parameters.keywords?
-            .split(whereSeparator: \.isWhitespace)
-            .map(String.init)
-            .filter { !$0.isEmpty } ?? []
-
         // Build active column set.
         // Document text columns (header, dateline, sourceNote, bodyText) are included
         // only when `includeDocumentText` is true. Summary and note columns are additive.
@@ -220,13 +215,34 @@ public actor SearchService {
             columns = cols.isEmpty ? nil : cols
         }
 
+        // Mirrors `FTS5Query.toFTS5MatchExpression()`'s own column-prefix construction —
+        // duplicated here (rather than exposed from `FTS5Query`) so `FTS5InlineQueryParser`
+        // can apply the identical prefix to each operand it renders, keeping the inline
+        // and structured paths byte-for-byte consistent for column-scoped searches.
+        let columnPrefix: String
+        if let cols = columns, !cols.isEmpty {
+            columnPrefix = "{\(cols.map(\.rawValue).joined(separator: " "))}:"
+        } else {
+            columnPrefix = ""
+        }
+
+        // Parse the raw search-box text as Google-style inline syntax — quotes, OR,
+        // leading "-", NOT, and trailing "*" are recognised as real operators rather
+        // than being mangled by a naive whitespace split (see `FTS5InlineQueryParser`'s
+        // doc comment for the bug history this replaces). A query with none of that
+        // syntax parses to exactly the same implicit-AND-of-stemmed-words expression
+        // the old path produced, so plain keyword search is unaffected.
+        let keywordExpression = parameters.keywords.flatMap {
+            FTS5InlineQueryParser.parse($0, columnPrefix: columnPrefix)
+        }
+
         // Single subject/user tag IDs passed to FTS5 for pre-filtering;
         // multiple tag IDs are handled by post-processing in search().
         let fts5SubjectTag = parameters.subjectTagIds.count == 1 ? parameters.subjectTagIds.first : nil
         let fts5UserTag    = parameters.userTagIds.count == 1    ? parameters.userTagIds.first    : nil
 
         let query = FTS5Query(
-            keywords: keywords,
+            keywordExpression: keywordExpression,
             phrase: parameters.phrase,
             booleanMode: parameters.booleanMode,
             excludedTerms: parameters.excludedTerms,
@@ -251,10 +267,33 @@ public actor SearchService {
     private func positiveTerms(from parameters: SearchParameters) -> [String] {
         var terms: [String] = []
         if let kw = parameters.keywords {
-            terms.append(contentsOf: kw
-                .split(whereSeparator: \.isWhitespace)
-                .map(String.init)
-                .filter { !$0.isEmpty })
+            // Lightweight cleanup of inline-syntax artifacts so the snippet highlighter
+            // bolds the words the user is actually searching *for* — not the operator
+            // syntax around them. This intentionally doesn't run the full
+            // `FTS5InlineQueryParser` (whose job is producing a MATCH expression, not a
+            // highlight-term list); it just strips the same surface syntax the parser
+            // recognises so e.g. `"cold war" OR blockade -korea` highlights "cold",
+            // "war", and "blockade" without also bolding the literal words "OR" or
+            // "korea" (which can never appear in a result anyway, since it's excluded)
+            // or rendering quote/dash/asterisk characters in the snippet.
+            var skipNextAsExcluded = false
+            for rawToken in kw.split(whereSeparator: \.isWhitespace).map(String.init) {
+                guard !rawToken.isEmpty else { continue }
+                if skipNextAsExcluded {
+                    skipNextAsExcluded = false
+                    continue
+                }
+                if rawToken == "OR" || rawToken == "AND" { continue }
+                if rawToken == "NOT" { skipNextAsExcluded = true; continue }
+                if rawToken.hasPrefix("-"), rawToken.count > 1 { continue }
+
+                var token = rawToken
+                if token.hasPrefix("\"") { token = String(token.dropFirst()) }
+                if token.hasSuffix("\"") { token = String(token.dropLast()) }
+                if token.hasSuffix("*"), token.count > 1 { token = String(token.dropLast()) }
+                guard !token.isEmpty else { continue }
+                terms.append(token)
+            }
         }
         if let phrase = parameters.phrase, !phrase.isEmpty {
             terms.append(contentsOf: phrase

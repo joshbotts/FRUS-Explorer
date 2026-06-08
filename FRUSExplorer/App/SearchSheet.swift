@@ -793,22 +793,21 @@ struct MacSearchWindowView: View {
                 .textCase(.uppercase)
                 .kerning(0.7)
 
-            // NOTE: the main search field is keyword-only — it splits the typed text
-            // on whitespace and combines the resulting words per the "Keyword mode"
-            // picker (AND/OR) in Advanced Filters. It does NOT parse Google-style
-            // inline operators: typed quotes, "OR"/"AND"/"NOT", or leading "-" are
-            // treated as literal characters/words, not syntax. (Quotes get stripped;
-            // "OR" becomes a literal third keyword ANDed with the others by default —
-            // which is *more* restrictive than a real OR and explains reports of "OR
-            // searches returning fewer results than AND searches for the same terms";
-            // a leading "-" is stripped before stemming, turning "-word" into a
-            // literal positive keyword — the opposite of exclusion.) Phrase matching,
-            // either/or matching, and exclusion are all real features — they just live
-            // in the dedicated Advanced Filters fields below, not in the search box.
+            // NOTE: as of Session 2026-06-08 the main search field genuinely parses
+            // Google-style inline syntax via FTS5InlineQueryParser — quotes, OR, NOT,
+            // a leading "-", and a trailing "*" are real operators here, not literal
+            // characters. (Previously they were stripped/mangled by a naive whitespace
+            // split — see FTS5InlineQueryParser's doc comment for that bug's history;
+            // this tips panel used to warn users away from typing this syntax for
+            // exactly that reason.) The equivalent structured Advanced Filters fields
+            // (Phrase, Keyword mode, Excluded terms) still exist and still work — typing
+            // inline syntax and using those fields both end up in the same FTS5 query,
+            // so combine them freely or use whichever feels more natural.
             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 6) {
-                TipItem(code: "Phrase field",        description: "exact word-order match (quotes typed in the search box are not parsed)")
-                TipItem(code: "Keyword mode: OR",    description: "match either term (typing \"OR\" in the search box searches for the literal word \"or\")")
-                TipItem(code: "Excluded terms field", description: "exclude a word (typing \"-word\" in the search box searches for \"word\", not against it)")
+                TipItem(code: "\"exact phrase\"", description: "match these words in this exact order")
+                TipItem(code: "term1 OR term2",   description: "match either term (capital OR — lowercase \"or\" is a literal word)")
+                TipItem(code: "-word",            description: "exclude documents containing this word (also: capital NOT)")
+                TipItem(code: "term*",            description: "prefix wildcard — \"negoti*\" matches negotiate, negotiations, …")
                 TipItem(code: nil, description: "Date filter uses TEI <date @when> — only dated documents match")
                 TipItem(code: nil, description: "Person filter searches indexed <persName> mentions across volumes")
                 TipItem(code: nil, description: "Scope toggles persist across sessions; adjust in Settings")
