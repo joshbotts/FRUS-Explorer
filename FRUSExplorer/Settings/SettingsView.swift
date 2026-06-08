@@ -209,12 +209,16 @@ struct SettingsView: View {
             // placeholder with no code visible anywhere in the running app.
             let guidance = String(localized: "settings.icloud.localOnly.detail",
                                   defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.")
-            let detail: String
-            if let initError = appState.cloudKitInitError {
-                detail = "\(guidance)\n\n\(String(localized: "settings.icloud.localOnly.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
-            } else {
-                detail = guidance
-            }
+            // Computed via an immediately-invoked closure rather than an `if`/`else`
+            // directly in this @ViewBuilder body — a plain `if let … else …` whose
+            // branches only assign to `detail` makes the result-builder transform try
+            // to coerce each branch's `()` result to `View`, producing "Type '()'
+            // cannot conform to 'View'". The closure keeps it a normal expression the
+            // builder evaluates once, outside the View-producing chain.
+            let detail: String = {
+                guard let initError = appState.cloudKitInitError else { return guidance }
+                return "\(guidance)\n\n\(String(localized: "settings.icloud.localOnly.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
+            }()
             iCloudStatusCell(
                 label: String(localized: "settings.icloud.localOnly", defaultValue: "Local Only"),
                 systemImage: "icloud.slash",

@@ -1068,12 +1068,16 @@ struct StatusBarView: View {
                 localized: "statusBar.sync.disabled.help",
                 defaultValue: "iCloud sync is unavailable — notes, collections, and tags won't sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
             )
-            let help: String
-            if let initError = appState.cloudKitInitError {
-                help = "\(guidance)\n\n\(String(localized: "statusBar.sync.disabled.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
-            } else {
-                help = guidance
-            }
+            // Computed via an immediately-invoked closure (not an `if`/`else` directly
+            // in this @ViewBuilder body) — a plain `if let … else …` whose branches
+            // only assign to `help` makes the result-builder transform try to coerce
+            // each branch's `()` result to `View`, producing "Type '()' cannot conform
+            // to 'View'". Wrapping the assignment in a closure keeps it a normal
+            // expression the builder evaluates once, outside the View-producing chain.
+            let help: String = {
+                guard let initError = appState.cloudKitInitError else { return guidance }
+                return "\(guidance)\n\n\(String(localized: "statusBar.sync.disabled.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
+            }()
             Label(
                 String(localized: "statusBar.sync.disabled", defaultValue: "Local Only"),
                 systemImage: "icloud.slash"
