@@ -41,15 +41,19 @@ import SwiftData
 ///   1.9 — Session 2026-06-07: over-cap "Visualize in Corpus Analytics" button in
 ///          `resultCountHeader` — hands keywords + active date filter off to
 ///          `AnalyticsView` via `AppState.pendingAnalytics` (see `AnalyticsParameters`)
+///   1.10 — Session 2026-06-08: removed the `.bottomBar` toolbar placement used on
+///          compact-width iPhones — it visually conflicted with `MainTabView`'s
+///          app-level tab bar (the tab bar won the z-order fight and hid the
+///          buttons entirely). Save Search and Saved Searches are now folded into
+///          a single "More" overflow `Menu`, and Filter/Timeline stay as compact
+///          icons — keeping everything in the nav bar at every size class so there
+///          is no second bottom bar to collide with the tab bar.
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
-    #endif
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
     @State private var vm: SearchViewModel
@@ -106,7 +110,7 @@ struct SearchView: View {
                         }
                     }
                     #endif
-                    ToolbarItem(placement: toolbarActionPlacement) {
+                    ToolbarItem(placement: .primaryAction) {
                         Button {
                             vm.showFilterPanel = true
                         } label: {
@@ -119,7 +123,7 @@ struct SearchView: View {
                                    defaultValue: "Toggle filters")
                         )
                     }
-                    ToolbarItem(placement: toolbarActionPlacement) {
+                    ToolbarItem(placement: .primaryAction) {
                         Button {
                             showTimeline.toggle()
                         } label: {
@@ -134,28 +138,43 @@ struct SearchView: View {
                         )
                         .disabled(vm.results.isEmpty)
                     }
-                    ToolbarItem(placement: toolbarActionPlacement) {
-                        Button {
-                            saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
-                            showSaveSearchSheet = true
+                    // Save Search / Saved Searches are folded into a single overflow
+                    // menu rather than given their own toolbar items. On iPhone these
+                    // previously moved to `.bottomBar` to avoid crowding the nav bar
+                    // alongside `.searchable` and its Cancel button — but that placed
+                    // them in direct z-order conflict with MainTabView's app-level tab
+                    // bar, which won and hid them entirely. Consolidating into one
+                    // `Menu` keeps everything in the nav bar (no `.bottomBar` anywhere
+                    // in this view) while still leaving room for `.searchable`.
+                    ToolbarItem(placement: .primaryAction) {
+                        Menu {
+                            Button {
+                                saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
+                                showSaveSearchSheet = true
+                            } label: {
+                                Label(
+                                    String(localized: "search.saveSearch.a11y",
+                                           defaultValue: "Save this search"),
+                                    systemImage: "bookmark"
+                                )
+                            }
+                            .disabled(!vm.hasSearched)
+
+                            Button {
+                                showSavedSearches = true
+                            } label: {
+                                Label(
+                                    String(localized: "search.savedSearches.a11y",
+                                           defaultValue: "Saved searches"),
+                                    systemImage: "bookmark.fill"
+                                )
+                            }
                         } label: {
-                            Image(systemName: "bookmark")
+                            Image(systemName: "ellipsis.circle")
                         }
                         .accessibilityLabel(
-                            String(localized: "search.saveSearch.a11y",
-                                   defaultValue: "Save this search")
-                        )
-                        .disabled(!vm.hasSearched)
-                    }
-                    ToolbarItem(placement: toolbarActionPlacement) {
-                        Button {
-                            showSavedSearches = true
-                        } label: {
-                            Image(systemName: "bookmark.fill")
-                        }
-                        .accessibilityLabel(
-                            String(localized: "search.savedSearches.a11y",
-                                   defaultValue: "Saved searches")
+                            String(localized: "search.moreActions.a11y",
+                                   defaultValue: "More search actions")
                         )
                     }
                 }
@@ -201,19 +220,6 @@ struct SearchView: View {
                 vm.applyProjectDefaults(project)
             }
         }
-    }
-
-    // MARK: - Toolbar Placement
-
-    /// On iPhone (compact horizontal size class), toolbar actions move to the bottom bar so the
-    /// navigation bar stays clear for the `.searchable` field and its Cancel button.
-    /// On iPad and macOS, they remain in the trailing navigation bar area.
-    private var toolbarActionPlacement: ToolbarItemPlacement {
-        #if os(iOS)
-        return horizontalSizeClass == .compact ? .bottomBar : .primaryAction
-        #else
-        return .primaryAction
-        #endif
     }
 
     // MARK: - Results Section
