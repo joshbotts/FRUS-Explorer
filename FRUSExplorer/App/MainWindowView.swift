@@ -59,7 +59,14 @@ struct MainWindowView: View {
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
 
-    /// Whether the citation popover is showing.
+    /// Whether the toolbar "Info" button's citation popover is showing.
+    ///
+    /// Exclusively owns the `.popover(isPresented:)` on the trailing-tools "Info"
+    /// button (below). `ResearchStripView`'s "Cite" button used to share this same
+    /// boolean via a `@Binding`, but two `.popover` modifiers anchored to different
+    /// source views driven by one boolean confuse SwiftUI's presentation machinery —
+    /// in practice neither popover appeared. `ResearchStripView` now owns its own
+    /// private `@State` for its Cite popover instead.
     @State private var showCitationPopover: Bool = false
 
     /// NARA Catalog Lookup sheet item.
@@ -90,7 +97,6 @@ struct MainWindowView: View {
             // Research strip — always rendered at full height.
             ResearchStripView(
                 entry: currentEntry,
-                showCitationPopover: $showCitationPopover,
                 highlightCoordinator: highlightCoordinator,
                 onNARALookup: { text in
                     // New UUID every time → SwiftUI treats it as a new view identity

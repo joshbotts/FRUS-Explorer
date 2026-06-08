@@ -75,7 +75,15 @@ final class HighlightCoordinator {
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
-    @Binding var showCitationPopover: Bool
+    /// Whether the Cite button's citation popover is showing.
+    ///
+    /// Owned privately rather than passed in as a `@Binding` — it used to share
+    /// `MainWindowView.showCitationPopover` with the toolbar "Info" button's own
+    /// `.popover(isPresented:)`. Two `.popover` modifiers anchored to different
+    /// source views but driven by the same boolean confuse SwiftUI's presentation
+    /// machinery: it can't determine which anchor to use, and in practice *neither*
+    /// popover appeared. Each trigger now owns an independent boolean.
+    @State private var showCitationPopover: Bool = false
     let highlightCoordinator: HighlightCoordinator
     /// Called when the user taps "Look Up in NARA Catalog" with text selected.
     /// The argument is the selected text string from the WebKit renderer.
@@ -98,11 +106,9 @@ struct ResearchStripView: View {
     @Query private var currentDocumentAssignments: [DocumentTagAssignment]
 
     init(entry: DocumentBrowserEntry?,
-         showCitationPopover: Binding<Bool>,
          highlightCoordinator: HighlightCoordinator,
          onNARALookup: ((String) -> Void)? = nil) {
         self.entry = entry
-        self._showCitationPopover = showCitationPopover
         self.highlightCoordinator = highlightCoordinator
         self.onNARALookup = onNARALookup
         let vId = entry?.volumeId ?? ""

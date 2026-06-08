@@ -125,42 +125,77 @@ struct DocumentTimelineView: View {
 
     // MARK: - Chart Mode
 
+    /// Earliest year present in the current result set, or `nil` when there's no
+    /// dated data. Drives `chartXScale(domain:)` below so the axis always reflects
+    /// the actual span of the displayed results rather than Swift Charts' default
+    /// "nice round number" auto-scaling (which can pad the domain well past the
+    /// real min/max and make a handful of results look lost in a mostly-empty chart).
+    private var yearRange: ClosedRange<Int>? {
+        guard let first = yearSections.first?.year, let last = yearSections.last?.year else {
+            return nil
+        }
+        // yearSections is sorted ascending (built from `yearToItems.keys.sorted()`),
+        // so first/last are the true min/max — no need to scan the whole array.
+        return first...last
+    }
+
     @ViewBuilder
     private var chartView: some View {
-        let minBarWidth: CGFloat = 22
-        let chartWidth = max(300, CGFloat(yearSections.count) * minBarWidth)
-        ScrollView(.horizontal, showsIndicators: false) {
-            Chart {
-                ForEach(yearSections) { section in
-                    BarMark(
-                        x: .value(String(localized: "timeline.x", defaultValue: "Year"),
-                                  section.year),
-                        y: .value(String(localized: "timeline.y", defaultValue: "Documents"),
-                                  section.count)
-                    )
-                    .foregroundStyle(Color.accentColor)
-                }
+        Chart {
+            ForEach(yearSections) { section in
+                BarMark(
+                    x: .value(String(localized: "timeline.x", defaultValue: "Year"),
+                              section.year),
+                    y: .value(String(localized: "timeline.y", defaultValue: "Documents"),
+                              section.count)
+                )
+                .foregroundStyle(Color.accentColor)
             }
-            .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: min(yearSections.count, 10))) { value in
-                    AxisGridLine()
-                    AxisTick()
-                    AxisValueLabel {
-                        if let year = value.as(Int.self) {
-                            Text(verbatim: "\(year)").font(.caption2)
-                        }
+        }
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: min(yearSections.count, 10))) { value in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel {
+                    if let year = value.as(Int.self) {
+                        Text(verbatim: "\(year)").font(.caption2)
                     }
                 }
             }
-            .chartYAxis {
-                AxisMarks {
-                    AxisGridLine()
-                    AxisValueLabel()
-                }
-            }
-            .frame(width: chartWidth, height: 220)
-            .padding()
         }
+        .chartYAxis {
+            AxisMarks {
+                AxisGridLine()
+                AxisValueLabel()
+            }
+        }
+        // Pin the x-axis domain to the actual earliest…latest year span of the
+        // current results — not Swift Charts' automatic "nice number" padding,
+        // which previously made the axis look like a fixed/generic range that
+        // didn't track what was actually being displayed. When there's only a
+        // single distinct year, widen by one on each side so the lone bar isn't
+        // rendered edge-to-edge across the whole plot area.
+        .chartXScale(domain: chartXDomain)
+        // Fill all available width — replaces the previous fixed-width
+        // ScrollView(.horizontal) sizing (`max(300, count * 22pt)`), which left
+        // the chart looking cramped and scrollable even when the window had
+        // plenty of room to show every bar at once.
+        .frame(maxWidth: .infinity, minHeight: 220, idealHeight: 220, maxHeight: .infinity)
+        .padding()
+    }
+
+    /// The domain passed to `chartXScale(domain:)` — `yearRange` widened by one
+    /// year on each side when the result set spans a single year, so a lone bar
+    /// renders with visible margins instead of filling the entire plot area edge
+    /// to edge. Falls back to a narrow placeholder range when there's no dated data
+    /// (the chart shows `EmptyView`/the "no dated documents" message in that case,
+    /// so this value is never actually plotted against).
+    private var chartXDomain: ClosedRange<Int> {
+        guard let range = yearRange else { return 0...1 }
+        guard range.lowerBound != range.upperBound else {
+            return (range.lowerBound - 1)...(range.upperBound + 1)
+        }
+        return range
     }
 
     // MARK: - List Mode
