@@ -89,13 +89,28 @@ targets:
         # falls back to BGTaskScheduler background-fetch tasks and logs:
         # "BUG IN CLIENT OF CLOUDKIT: CloudKit push notifications require the
         #  'remote-notification' background mode in your info plist."
+        # NOTE: the Info.plist string value for the BGTaskScheduler "background
+        # processing" mode is 'processing' — NOT 'background-processing'.
+        # 'background-processing' is rejected by App Store validation (error
+        # 90112, "Invalid Info.plist value").
         UIBackgroundModes:
           - remote-notification
-          - background-processing
+          - processing
         # Required by BGTaskScheduler: lists every task identifier this app may submit.
         # The 'indexing' task sustains IndexingPipeline work when the user switches away.
         BGTaskSchedulerPermittedIdentifiers:
           - bottsywattsy.FRUS-Explorer.indexing
+        # App Store validation (error 90474) requires all four orientations
+        # for any app that supports iPad multitasking
+        # (UIApplicationSupportsMultipleScenes, set below). XcodeGen's default
+        # Info.plist generation supplies only Portrait + both Landscape
+        # orientations; declare the full set explicitly — including
+        # PortraitUpsideDown — so the requirement is met on every regeneration.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         # Required for Handoff to route NSUserActivity instances to this app.
         NSUserActivityTypes:
           - com.joshbotts.frus-explorer.document
@@ -181,6 +196,10 @@ targets:
       properties:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        # App Store validation (error 90360) requires every embedded bundle —
+        # including extensions — to declare CFBundleDisplayName. XcodeGen's
+        # default Info.plist generation for app-extension targets omits it.
+        CFBundleDisplayName: "FRUS Explorer Widgets"
         # App Store validation requires an embedded extension's marketing version
         # and build number to match its host app's — override XcodeGen's
         # hardcoded "1.0"/"1" Info.plist defaults the same way the FRUSExplorer
