@@ -15,7 +15,14 @@ import SwiftData
 ///
 /// ## Filtering
 /// When `activeProjectId` is non-nil, only collections whose `projectIds`
-/// contains that ID are shown. When nil, all collections are shown (global view).
+/// contains that ID are shown by default, and a banner above the list explains
+/// the filter and offers a "Show All" button (see `projectFilterBanner`) — the
+/// `ResearchView` "By Collection" sidebar queries `Collection` directly with no
+/// such filter, so without this banner a collection visible there could appear
+/// to have vanished from this list with no explanation. Tapping "Show All" sets
+/// `showAllCollections = true`, which the banner then reflects with a "Scope to
+/// Project" button to restore the filter. When `activeProjectId` is nil, all
+/// collections are shown unconditionally (global view; no banner).
 ///
 /// ## Navigation
 /// Tapping a row navigates to `CollectionEditorView` for that collection.
@@ -32,6 +39,10 @@ import SwiftData
 ///   1.2 — Session 55: add Done toolbar button on macOS (previously no close control)
 ///   1.3 — Add `showDoneButton` parameter; set to `false` when hosted in a Window scene
 ///   1.4 — Session 89: manual entry deletion before collection delete (deleteRule .nullify)
+///   1.5 — Session 2026-06-07: project-filter banner with a "Show All" override —
+///          previously the active-project filter was silent, so a collection visible
+///          in `ResearchView` (which queries `Collection` with no project filter)
+///          could appear to be missing here with no indication why or how to see it
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -45,19 +56,29 @@ struct CollectionListView: View {
     #endif
 
     @Query(sort: \Collection.lastModified, order: .reverse) private var allCollections: [Collection]
+    @Query(sort: \Project.name) private var allProjects: [Project]
 
     @State private var collectionToEdit: Collection? = nil
     @State private var isCreating = false
+
+    /// User override of the active-project filter, toggled from `projectFilterBanner`.
+    /// Resets implicitly whenever the view is recreated (e.g. the window is reopened),
+    /// so a "Show All" choice doesn't silently persist across sessions and surprise the
+    /// user the next time they're scoped to a different project.
+    @State private var showAllCollections = false
 
     // MARK: - Body
 
     var body: some View {
         NavigationStack {
-            Group {
-                if filteredCollections.isEmpty {
-                    emptyState
-                } else {
-                    collectionList
+            VStack(spacing: 0) {
+                projectFilterBanner
+                Group {
+                    if filteredCollections.isEmpty {
+                        emptyState
+                    } else {
+                        collectionList
+                    }
                 }
             }
             .navigationTitle(String(localized: "collections.nav.title",
@@ -135,10 +156,93 @@ struct CollectionListView: View {
     // MARK: - Filtering
 
     private var filteredCollections: [Collection] {
-        guard let projectId = appState.activeProjectId else {
+        guard let projectId = appState.activeProjectId, !showAllCollections else {
             return allCollections
         }
         return allCollections.filter { $0.projectIds.contains(projectId) }
+    }
+
+    /// The `Project` named by `appState.activeProjectId`, resolved against `allProjects`
+    /// for display in `projectFilterBanner`. `nil` both when there's no active project
+    /// and (defensively) when the active project's record can't be found — e.g. it was
+    /// deleted on another device and the deletion hasn't synced down yet.
+    private var activeProject: Project? {
+        guard let projectId = appState.activeProjectId else { return nil }
+        return allProjects.first { $0.id == projectId }
+    }
+
+    /// Display name for `activeProject`, falling back to a localized placeholder for
+    /// untitled projects or — defensively — unresolved IDs (see `activeProject`).
+    private var activeProjectDisplayName: String {
+        guard let project = activeProject, !project.name.isEmpty else {
+            return String(localized: "collections.filterBanner.untitledProject",
+                          defaultValue: "Untitled Project")
+        }
+        return project.name
+    }
+
+    /// Count of collections hidden by the active-project filter — i.e. collections that
+    /// exist but aren't associated with `activeProjectId`. Drives whether the banner
+    /// offers a "Show All" button (no point offering it when nothing is hidden) and the
+    /// wording of the filtered-state message.
+    private var hiddenCollectionCount: Int {
+        guard let projectId = appState.activeProjectId else { return 0 }
+        return allCollections.filter { !$0.projectIds.contains(projectId) }.count
+    }
+
+    // MARK: - Project Filter Banner
+
+    /// Informs the user when this list is currently scoped to the active project, and
+    /// lets them override that scoping to see every collection regardless of project
+    /// association (and back again).
+    ///
+    /// Exists because `filteredCollections` silently hides collections that aren't
+    /// associated with `appState.activeProjectId` — and `ResearchView`'s "By Collection"
+    /// sidebar queries `Collection` directly with no such filter, so a collection visible
+    /// there could appear to have vanished from this list with no explanation. Hidden
+    /// entirely when there's no active project (global view; nothing to explain).
+    @ViewBuilder
+    private var projectFilterBanner: some View {
+        if appState.activeProjectId != nil {
+            HStack(spacing: 8) {
+                Image(systemName: showAllCollections ? "tray.full" : "line.3.horizontal.decrease.circle")
+                    .foregroundStyle(.secondary)
+                    .imageScale(.small)
+
+                if showAllCollections {
+                    Text(String(localized: "collections.filterBanner.showingAll",
+                                defaultValue: "Showing collections from every project, including ones outside “\(activeProjectDisplayName)”."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Button(String(localized: "collections.filterBanner.scopeToProject",
+                                  defaultValue: "Scope to “\(activeProjectDisplayName)”")) {
+                        showAllCollections = false
+                    }
+                    .font(.caption)
+                } else {
+                    let hidden = hiddenCollectionCount
+                    Text(hidden > 0
+                         ? String(localized: "collections.filterBanner.filtered.withHidden",
+                                  defaultValue: "Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.")
+                         : String(localized: "collections.filterBanner.filtered.noHidden",
+                                  defaultValue: "Showing collections for “\(activeProjectDisplayName)”."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if hidden > 0 {
+                        Spacer(minLength: 8)
+                        Button(String(localized: "collections.filterBanner.showAll",
+                                      defaultValue: "Show All")) {
+                            showAllCollections = true
+                        }
+                        .font(.caption)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.1))
+        }
     }
 
     // MARK: - Actions
