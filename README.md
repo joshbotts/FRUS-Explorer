@@ -15,7 +15,12 @@ series more effectively.
 - Persons and terms glossaries persisted to SQLite; live autocomplete person picker
 - Accurate footnote numbers from TEI `@n` attributes (matching printed volume numbering)
 - Cross-reference graph with node and edge labels, hover/click edge-context disclosure, 1°/2°/3° neighbourhood expansion, node context menu (Recenter Graph / Open in Main Window / Documents from Same Lot File), page-based reference resolution, and an info popover explaining the graph
-- Document-level research notes, user tagging, and **inline text highlights** (CSS Custom Highlight API; four colors; stored offsets survive document re-renders via rendering-version hash; visible without a separate highlight mode)
+- Document-level research notes, user tagging, and **inline text highlights** (CSS Custom Highlight API; four colors; stored offsets survive document re-renders via rendering-version hash; visible without a separate highlight mode); highlights are annotated inline across all three collection-export formats (HTML `<mark>`, PDF background shading, DOCX `<w:highlight>` runs)
+- **Citation tools**: formatted citation popover with View / Copy / **Share Citation** (combines the formatted citation and canonical history.state.gov URL into one shareable message via the system share sheet on iOS and macOS)
+- **Reading history**: every document visited and every search executed is recorded; macOS adds a **History** menu (last ten of each, with quick re-open/re-run) and a standalone **Complete History** window with an optional project filter
+- **Embedded in-app browser** for Markdown links throughout onboarding, About, and education content, plus a standalone **FRUS Research Guide** (Settings entry on iOS; dedicated window + Help-menu command on macOS) with contextual deep-links from Source Explorer and NARA Catalog Lookup
+- **iOS/iPadOS Read-mode page-turning**: invisible edge-tap zones in the document view open the previous/next document in the volume, ebook-reader style, without leaving Read mode or using the back button
+- **Search ↔ Corpus Analytics handoff**: jump from an Analytics chart to Search pre-filled with the term and year-range as a date filter ("View in Search"), or from a capped Search result set to Analytics pre-seeded with the same keywords and date filter ("Visualize in Corpus Analytics") to chart the distribution and narrow the range
 - **Research window / tab**: browse all annotated documents organized by user tag (document count descending) with highlight excerpts shown inline as colored strips; macOS `⌘⌥R` shortcut; iOS Research tab (third tab); "By Highlight Color" sidebar section for color-coded research workflows
 - AI summarization via Apple Intelligence (FoundationModels framework)
 - User-configurable summarization prompts with structured output support
@@ -32,7 +37,7 @@ series more effectively.
 - Front matter sections (preface, introduction, errata) browsable directly from the corpus
 - Accurate subseries grouping in the volume browser and manifest diff
 - **iOS/iPadOS**: five-tab navigation — Browse, Search, Research, Collections, Settings
-- **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons; save/load searches in the macOS search window
+- **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons; save/load searches in the macOS search window; chronological **Timeline** view in the Search window (toggled from the sort bar); compact `volumeId/documentId` toolbar title and 980×600 minimum window size so toolbar controls no longer collapse into the overflow chevron
 - **Save & load searches**: bookmark any query + filters in the macOS search window; saved searches also drive smart collections that auto-populate at export time
 
 ## Requirements
@@ -67,7 +72,7 @@ FRUSExplorer/
 │   ├── Models/                   SwiftData models, manifest structs, supporting types
 │   ├── Settings/                 macOS FRUSSettingsView + iOS SettingsView
 │   ├── TEI/                      XML parser, AST types, renderer
-│   ├── Distribution/             Direct-distribution-only code (SparkleUpdater)
+│   ├── Onboarding/               Onboarding flow, education pages, Research Guide
 │   ├── Resources/                Bundled data (manifest, taxonomy, subject tags)
 │   └── Localizable.strings       English base localisation
 ├── FRUSExplorerTests/            Unit tests (600+ tests, all passing)
@@ -93,10 +98,20 @@ Select the **FRUSExplorerMac** scheme with the **AppStore** build configuration.
 
 Select the **FRUSExplorerMac** scheme with the **DirectDistribution** build configuration.
 This configuration:
-- Links **Sparkle 2** for automatic updates (configured in `project.yml`)
-- Sets the `-DDIRECT_DISTRIBUTION` compiler flag to enable `Distribution/SparkleUpdater.swift`
 - Uses `CODE_SIGN_STYLE: Manual` with Developer ID signing
-- Includes a "Check for Updates…" menu item in the application menu
+- Is notarized and packaged into a DMG via `Scripts/notarize.sh`
+
+> **Note:** Sparkle-based automatic updates were removed (see commit `4119700`) —
+> Apple rejected the App Store submission with error 90296 ("App sandbox not
+> enabled") because Sparkle's helper executables don't carry the
+> `com.apple.security.app-sandbox` entitlement, and the App Store does not permit
+> third-party auto-update mechanisms in any case. Because Xcode links Swift
+> Package dependencies per-target rather than per-build-configuration, Sparkle
+> could not be confined to DirectDistribution builds without splitting
+> `FRUSExplorerMac` into two targets — a larger restructuring deferred for now.
+> Direct Distribution users currently check for updates manually (e.g. by
+> revisiting the distribution page); reintroducing in-app update checking would
+> require that two-target split.
 
 #### Release workflow (Direct Distribution)
 
@@ -115,12 +130,7 @@ This configuration:
      --password "xxxx-xxxx-xxxx-xxxx"
    ```
 
-3. Update the `SUFeedURL` in `project.yml` to point to your actual appcast endpoint:
-   ```yaml
-   INFOPLIST_KEY_SUFeedURL: "https://your-domain.example.com/appcast.xml"
-   ```
-
-4. Set `CODE_SIGN_IDENTITY` and `PROVISIONING_PROFILE_SPECIFIER` in `project.yml`
+3. Set `CODE_SIGN_IDENTITY` and `PROVISIONING_PROFILE_SPECIFIER` in `project.yml`
    (or pass them on the command line) matching your Developer ID certificate.
 
 **Build, notarize, and package:**
@@ -295,6 +305,8 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 | `frus.analytics` | Corpus Analytics | — | Term frequency charts |
 | `frus.collections` | Collections | ⇧⌘K | Document collection editor and exporter |
 | `frus.research` | Research | ⌘⌥R | Annotated documents organized by user tag |
+| `frus.history` | History | — | Complete reading + search history with project filter (also reachable via the History menu's "Complete History…" item) |
+| `frus.researchGuide` | FRUS Research Guide | — | Standalone research-methodology guide; reachable via the Help menu |
 | `about` | About FRUS Explorer | — | Version and acknowledgements |
 
 ## Bundle Identifiers

@@ -21,7 +21,8 @@
 13. [Analytics](#13-analytics)
 14. [Projects and Tags](#14-projects-and-tags)
 15. [Settings](#15-settings)
-16. [Keyboard Shortcuts](#16-keyboard-shortcuts)
+16. [Reading History and the Research Guide](#16-reading-history-and-the-research-guide)
+17. [Keyboard Shortcuts](#17-keyboard-shortcuts)
 
 ---
 
@@ -102,7 +103,7 @@ The toolbar runs across the top of the window.
 
 **Center — Document Title**
 
-When a document is open, its title and the name of the volume it belongs to appear here. The title updates automatically as you navigate.
+When a document is open, a compact `volumeId/documentId` title (e.g., `frus1969-76v01/d42`) appears here, updating automatically as you navigate. This condensed format keeps the title short enough that the toolbar's other controls don't collapse into the overflow chevron — the main window also enforces a 980×600 minimum size for the same reason.
 
 **Right-side toolbar buttons**
 
@@ -162,6 +163,8 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 | Collections | ⇧⌘K |
 | Research | ⌘⌥R |
 | Analytics | (toolbar button) |
+| History | (History menu → "Complete History…") |
+| FRUS Research Guide | (Help menu) |
 | Settings | ⌘, |
 
 ---
@@ -268,6 +271,12 @@ Click **Save Search** to bookmark the current query and all active filters. Save
 `[SCREENSHOT: Search window sidebar showing a list of saved searches]`
 
 Saved searches can also be linked to Collections to create *smart collections* that auto-populate at export time (see Section 10.3).
+
+### 5.6 Visualizing a Search in Corpus Analytics
+
+When a query returns more results than the Search window can display in full, a banner offers to **Visualize in Corpus Analytics**. Clicking it opens the Analytics window (Section 13) pre-seeded with your search terms and any active date-range filter, so you can chart the term's distribution across the corpus and narrow the date range before returning to a more focused search.
+
+`[SCREENSHOT: Search results banner offering "Visualize in Corpus Analytics" above a capped result list]`
 
 ---
 
@@ -434,11 +443,16 @@ Results are ranked by confidence:
 
 Click any result to open that document. If the volume is not downloaded, a **Download** button appears in place of the open link.
 
-### 9.3 Copying Citations
+### 9.3 Copying and Sharing Citations
 
-With a document open, click **Info** in the research strip to open the citation popover. Click **Copy** to copy the formatted citation to the clipboard.
+With a document open, click **Info** in the research strip (or use the document toolbar's **View Citation** / **Copy Citation** / **Share Citation** commands) to work with its formatted citation:
 
-`[SCREENSHOT: Citation popover showing formatted citation with Copy button]`
+- **Copy Citation** copies the formatted citation text to the clipboard, ready to paste into a paper, email, or notes app.
+- **Share Citation** opens the macOS share sheet with a single message that combines the formatted citation *and* its canonical `history.state.gov` link, so the recipient can both read the citation and open the original source online with one click. This works with any share destination macOS supports — Mail, Messages, Notes, AirDrop, third-party apps, and more.
+
+`[SCREENSHOT: Citation popover showing formatted citation with Copy and Share Citation buttons]`
+
+`[SCREENSHOT: macOS share sheet showing a combined citation-and-link message ready to send]`
 
 ---
 
@@ -626,6 +640,12 @@ Toggle between **Chart** (bar chart with optional trend line) and **Table** (scr
 
 `[SCREENSHOT: Analytics window in Table mode showing year, count, and subseries columns]`
 
+### 13.3 From a Chart to a Search
+
+Click a bar, point, or table row to **View in Search** — this opens the Search window with that term and the corresponding year range pre-filled as a date filter, so you can read the actual documents behind that data point. The relationship runs both ways: a capped Search result set can hand its terms and date filter back to Analytics via "Visualize in Corpus Analytics" (Section 5.6), making it easy to move fluidly between charting a trend and reading the documents that drive it.
+
+`[SCREENSHOT: Analytics chart with a "View in Search" action on a selected bar]`
+
 ---
 
 ## 14. Projects and Tags
@@ -716,7 +736,44 @@ All reset options require confirmation.
 
 ---
 
-## 16. Keyboard Shortcuts
+## 16. Reading History and the Research Guide
+
+### 16.1 The History Menu
+
+FRUS Explorer keeps a running record of every document you've opened and every search you've run. The **History** menu in the menu bar surfaces the last ten of each for quick access:
+
+- Recently viewed documents — choose one to reopen it directly
+- Recently run searches — choose one to re-run it with its original query and filters intact
+
+`[SCREENSHOT: History menu open, showing recent documents and recent searches]`
+
+### 16.2 The Complete History Window
+
+Choose **Complete History…** from the History menu (or open the `frus.history` window directly) to see your full reading and search history in a dedicated window — not just the last ten of each. An optional **project filter** lets you narrow the list to activity associated with a specific research project (see Section 14.1), which is useful for reconstructing the research trail behind a particular paper or question.
+
+`[SCREENSHOT: Complete History window showing a scrollable list of visited documents and searches with a project filter control]`
+
+From either list, you can reopen a document or re-run a search with a single click — the same way you would from the History menu's short lists.
+
+### 16.3 The FRUS Research Guide
+
+The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to frame a research question, how to cite material rigorously, and other practical guidance for working with declassified diplomatic records.
+
+Open it from **Help → FRUS Research Guide** (or the `frus.researchGuide` window scene). It opens in its own window that you can keep open for reference alongside your main research window. Internal links open in FRUS Explorer's embedded in-app browser (Section 16.4) so you never lose your place.
+
+`[SCREENSHOT: FRUS Research Guide window showing a methodology section with embedded links]`
+
+You'll also find contextual links into the Research Guide from **Source Explorer** and **NARA Catalog Lookup** — for example, a link explaining how to interpret an archival record group while you're looking at one — so guidance appears exactly when it's useful, not just as a separate reference document.
+
+### 16.4 The Embedded Browser
+
+Wherever FRUS Explorer shows a link to an external resource — onboarding, About, the Research Guide, education content, Source Explorer, or NARA Catalog Lookup — it opens in a built-in browser sheet rather than launching Safari. This keeps you in your research session: dismiss the sheet to return exactly where you were, with your document, search, or guide content untouched in the background.
+
+`[SCREENSHOT: Embedded browser sheet showing a history.state.gov page with a Done button]`
+
+---
+
+## 17. Keyboard Shortcuts
 
 ### Global
 
@@ -727,6 +784,8 @@ All reset options require confirmation.
 | Open Corpus Browser | ⇧⌘B |
 | Open Research window | ⌘⌥R |
 | Open Collections window | ⇧⌘K |
+| Open Complete History window | (History menu → "Complete History…") |
+| Open FRUS Research Guide | (Help menu) |
 | Open Settings | ⌘, |
 | Back in document history | ⌘[ |
 | Forward in document history | ⌘] |
