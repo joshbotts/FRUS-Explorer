@@ -40,26 +40,56 @@ import Observation
 ///   1.4 — Session 100: `appState` property for logEvent(.searchSubmit) after search()
 ///   1.5 — Session 130: `searchHardLimit = 500` passed to `searchService.search()`; iOS
 ///          was silently capped at `defaultPageSize = 20` (the macOS VM already used 7 500)
+///   1.6 — Session 2026-06-08: `phrase`, `prefixWildcard`, `booleanMode`, and
+///          `excludedTermsText` are no longer user-editable — `SearchFilterView`'s
+///          "Advanced Text" controls were removed in favour of `FTS5InlineQueryParser`
+///          inline syntax in the main search box. The properties remain solely so
+///          `applyParameters(_:)` can restore older `SavedSearch`/`pendingSearch`
+///          snapshots without data loss.
 @Observable
 @MainActor
 final class SearchViewModel {
 
     // MARK: - Text Search Parameters
 
-    /// Space-separated keywords (combined via `booleanMode`).
+    /// Raw text typed into the main search box, in Google-style inline syntax
+    /// (`"phrase"`, `term1 OR term2`, `-excluded`, `term*`) — parsed by
+    /// `FTS5InlineQueryParser` in `SearchService`.
     var keywords: String = ""
 
-    /// Exact phrase — order-sensitive, case-insensitive.
+    /// Legacy/backward-compatibility only — **no longer user-editable**.
+    ///
+    /// Exact phrase — order-sensitive, case-insensitive. Session 2026-06-08 removed
+    /// the dedicated "Exact phrase" field from `SearchFilterView`; users now type
+    /// `"quoted phrases"` directly into the main search box, where
+    /// `FTS5InlineQueryParser` handles them natively. This property is retained only
+    /// so `applyParameters(_:)` can faithfully restore older `SavedSearch`/
+    /// `pendingSearch` snapshots that still carry a populated `phrase` value.
     var phrase: String = ""
 
-    /// Prefix for a wildcard search. `*` is appended automatically.
-    /// Only prefix wildcards are supported; suffix wildcards are not valid FTS5.
+    /// Legacy/backward-compatibility only — **no longer user-editable**.
+    ///
+    /// Prefix for a wildcard search. `*` is appended automatically. Session
+    /// 2026-06-08 removed the dedicated "Prefix wildcard" field from
+    /// `SearchFilterView`; users now type `term*` directly into the main search box.
+    /// Retained only for `applyParameters(_:)` restoration of older snapshots.
     var prefixWildcard: String = ""
 
-    /// How keyword terms are combined. Default `.and`.
+    /// Legacy/backward-compatibility only — **no longer user-editable**.
+    ///
+    /// How keyword terms are combined. Default `.and`. Session 2026-06-08 removed
+    /// the "Keyword mode" (AND/OR) picker from `SearchFilterView`; users now type
+    /// `term1 OR term2` directly into the main search box, where mixed AND/OR/NOT
+    /// expressions are supported per-query (something this single global mode never
+    /// could express). Retained only for `applyParameters(_:)` restoration.
     var booleanMode: FTS5Query.BooleanMode = .and
 
-    /// Comma-separated terms that must NOT appear in matching documents.
+    /// Legacy/backward-compatibility only — **no longer user-editable**.
+    ///
+    /// Comma-separated terms that must NOT appear in matching documents. Session
+    /// 2026-06-08 removed the "Excluded terms" field from `SearchFilterView`; users
+    /// now type `-word` or `NOT word` directly into the main search box. Retained
+    /// only for `applyParameters(_:)` restoration of older snapshots.
     var excludedTermsText: String = ""
 
     // MARK: - Date Range Parameters
@@ -255,6 +285,11 @@ final class SearchViewModel {
     /// more documents than are shown. Users should narrow their search terms.
     var isResultsCapped: Bool { results.count == Self.searchHardLimit }
 
+    // Note: this still checks the legacy `phrase`/`prefixWildcard`/`excludedTermsText`/
+    // `booleanMode` fields even though `SearchFilterView` no longer exposes controls for
+    // them — a restored `SavedSearch`/`pendingSearch` snapshot can still populate them via
+    // `applyParameters(_:)`, and when it does, that state genuinely affects the query, so
+    // the "Clear Filters" affordance must remain available to reset it.
     var hasActiveFilters: Bool {
         if documentTypeFilter != .all { return true }
         if !personRefText.trimmingCharacters(in: .whitespaces).isEmpty { return true }

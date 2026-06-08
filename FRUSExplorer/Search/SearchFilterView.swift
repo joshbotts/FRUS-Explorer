@@ -30,8 +30,20 @@ import SwiftData
 /// - **Clear** (cancellationAction) — visible only when `vm.hasActiveFilters`;
 ///   clears all filter fields and the person search text
 ///
+/// ## Removed Advanced-Text Controls (Session 2026-06-08)
+/// The Phrase, Prefix-wildcard, Excluded-terms fields and the Keyword-mode (AND/OR)
+/// picker were removed from this sheet — `FTS5InlineQueryParser` now lets users
+/// express all four directly in the main search box (`"phrase"`, `term*`, `-word`,
+/// `OR`). The underlying `SearchViewModel` properties they bound to (`phrase`,
+/// `prefixWildcard`, `excludedTermsText`, `booleanMode`) are retained, but only as
+/// legacy/backward-compatibility state restored from `SavedSearch`/`pendingSearch`
+/// snapshots created before this change — they are no longer user-editable here.
+///
 /// Version history:
 ///   1.0 — Session 62: extracted from SearchView.filterPanel (F-002)
+///   1.1 — Session 2026-06-08: removed Advanced Text section (Phrase, Prefix
+///          wildcard, Excluded terms, Keyword-mode picker) — superseded by
+///          `FTS5InlineQueryParser` inline syntax in the main search box
 struct SearchFilterView: View {
 
     @Bindable var vm: SearchViewModel
@@ -79,7 +91,6 @@ struct SearchFilterView: View {
             Divider()
 
             Form {
-                advancedTextSection
                 dateRangeSection
                 documentTypeSection
                 personSection
@@ -109,7 +120,6 @@ struct SearchFilterView: View {
     private var iOSBody: some View {
         NavigationStack {
             Form {
-                advancedTextSection
                 dateRangeSection
                 documentTypeSection
                 personSection
@@ -144,65 +154,6 @@ struct SearchFilterView: View {
             }
         }
         .presentationDetents([.medium, .large])
-    }
-
-    // MARK: - Advanced Text
-
-    private var advancedTextSection: some View {
-        Section {
-            TextField(
-                String(localized: "search.phrase.placeholder",
-                       defaultValue: "Exact phrase"),
-                text: $vm.phrase
-            )
-            .accessibilityLabel(
-                String(localized: "search.phrase.a11y", defaultValue: "Exact phrase")
-            )
-
-            HStack {
-                TextField(
-                    String(localized: "search.prefix.placeholder",
-                           defaultValue: "Prefix wildcard (e.g. negoti)"),
-                    text: $vm.prefixWildcard
-                )
-                .accessibilityLabel(
-                    String(localized: "search.prefix.a11y",
-                           defaultValue: "Prefix wildcard")
-                )
-                Text("*")
-                    .foregroundStyle(.secondary)
-            }
-            Text(String(localized: "search.prefix.help",
-                        defaultValue: "Only prefix wildcards are supported. Suffix wildcards (e.g. *ate) are not valid FTS5 syntax."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            TextField(
-                String(localized: "search.excluded.placeholder",
-                       defaultValue: "Excluded terms (comma-separated)"),
-                text: $vm.excludedTermsText
-            )
-            .accessibilityLabel(
-                String(localized: "search.excluded.a11y",
-                       defaultValue: "Excluded terms, comma separated")
-            )
-
-            Picker(
-                String(localized: "search.boolean.label",
-                       defaultValue: "Keyword mode"),
-                selection: $vm.booleanMode
-            ) {
-                Text(String(localized: "search.boolean.and",
-                            defaultValue: "All keywords (AND)"))
-                    .tag(FTS5Query.BooleanMode.and)
-                Text(String(localized: "search.boolean.or",
-                            defaultValue: "Any keyword (OR)"))
-                    .tag(FTS5Query.BooleanMode.or)
-            }
-        } header: {
-            Text(String(localized: "search.section.advanced",
-                        defaultValue: "Advanced Text"))
-        }
     }
 
     // MARK: - Date Range
