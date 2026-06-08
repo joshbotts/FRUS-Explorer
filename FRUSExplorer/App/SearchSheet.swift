@@ -795,19 +795,20 @@ struct MacSearchWindowView: View {
 
             // NOTE: as of Session 2026-06-08 the main search field genuinely parses
             // Google-style inline syntax via FTS5InlineQueryParser — quotes, OR, NOT,
-            // a leading "-", and a trailing "*" are real operators here, not literal
-            // characters. (Previously they were stripped/mangled by a naive whitespace
-            // split — see FTS5InlineQueryParser's doc comment for that bug's history;
-            // this tips panel used to warn users away from typing this syntax for
-            // exactly that reason.) The equivalent structured Advanced Filters fields
-            // (Phrase, Keyword mode, Excluded terms) still exist and still work — typing
-            // inline syntax and using those fields both end up in the same FTS5 query,
-            // so combine them freely or use whichever feels more natural.
+            // a leading "-", a trailing "*", and now "(...)" grouping are real operators
+            // here, not literal characters. (Previously they were stripped/mangled by a
+            // naive whitespace split — see FTS5InlineQueryParser's doc comment for that
+            // bug's history; this tips panel used to warn users away from typing this
+            // syntax for exactly that reason.) The dedicated Phrase / Keyword-mode /
+            // Excluded-terms / Prefix-wildcard fields were removed from Advanced Filters
+            // the same session — everything they did is now expressible inline, with
+            // strictly more power (mixed AND/OR/NOT/grouping per query, not one global mode).
             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 6) {
                 TipItem(code: "\"exact phrase\"", description: "match these words in this exact order")
                 TipItem(code: "term1 OR term2",   description: "match either term (capital OR — lowercase \"or\" is a literal word)")
                 TipItem(code: "-word",            description: "exclude documents containing this word (also: capital NOT)")
                 TipItem(code: "term*",            description: "prefix wildcard — \"negoti*\" matches negotiate, negotiations, …")
+                TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match (capital OR inside parens)")
                 TipItem(code: nil, description: "Date filter uses TEI <date @when> — only dated documents match")
                 TipItem(code: nil, description: "Person filter searches indexed <persName> mentions across volumes")
                 TipItem(code: nil, description: "Scope toggles persist across sessions; adjust in Settings")

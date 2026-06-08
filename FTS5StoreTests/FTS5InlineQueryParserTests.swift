@@ -208,4 +208,92 @@ struct FTS5InlineQueryParserTests {
         // embedded as a bare "-" (which is invalid FTS5 syntax).
         #expect(FTS5InlineQueryParser.parse("cold ---") == "cold")
     }
+
+    // MARK: - Parenthetical Grouping
+
+    @Test("Parenthesised groups of OR-terms combine via implicit AND, preserving the user's intended grouping")
+    func basicGrouping() {
+        // The motivating example: "(aqaba OR tiran) AND (navigation OR passage OR transit)"
+        // — without grouping support this collapsed to a single flat OR-chain whose
+        // FTS5 NOT > AND > OR precedence read completely differently than intended.
+        #expect(FTS5InlineQueryParser.parse("(aqaba OR tiran) AND (navigation OR passage OR transit)")
+                == "(aqaba OR tiran) (navig OR passag OR transit)")
+    }
+
+    @Test("Adjacent groups combine via implicit AND with no explicit AND keyword")
+    func implicitAndBetweenGroups() {
+        #expect(FTS5InlineQueryParser.parse("(aqaba OR tiran) (navigation OR passage OR transit)")
+                == "(aqaba OR tiran) (navig OR passag OR transit)")
+    }
+
+    @Test("Lowercase 'or'/'and' inside parens are still literal words — grouping doesn't change operator casing rules")
+    func groupingDoesNotRelaxCasingRules() {
+        #expect(FTS5InlineQueryParser.parse("(aqaba or tiran) and (navigation or passage or transit)")
+                == "(aqaba or tiran) and (navig or passag or transit)")
+    }
+
+    @Test("NOT can exclude an entire parenthesised group")
+    func notExcludesGroup() {
+        #expect(FTS5InlineQueryParser.parse("cold NOT (korea OR vietnam)")
+                == "cold NOT (korea OR vietnam)")
+    }
+
+    @Test("A query consisting only of a NOT-excluded group returns nil (no positive content)")
+    func onlyNotGroupIsInvalid() {
+        #expect(FTS5InlineQueryParser.parse("NOT (korea OR vietnam)") == nil)
+    }
+
+    @Test("Groups nest to arbitrary depth and each level renders its own parentheses")
+    func nestedGroups() {
+        // "navig*" stays unstemmed — wildcard prefixes are sanitised but never
+        // Porter-stemmed (matches `FTS5Query`'s prefix-wildcard handling).
+        #expect(FTS5InlineQueryParser.parse("((aqaba OR tiran) AND navig*) OR (suez NOT canal)")
+                == "((aqaba OR tiran) navig*) OR (suez NOT canal)")
+    }
+
+    @Test("Phrases and column-prefix scoping work the same inside groups as at the top level")
+    func phraseAndColumnPrefixInsideGroup() {
+        #expect(FTS5InlineQueryParser.parse("(\"cold war\" OR detente)") == "(\"cold war\" OR detent)")
+
+        let prefix = "{header body_text}:"
+        #expect(FTS5InlineQueryParser.parse("(aqaba OR tiran)", columnPrefix: prefix)
+                == "(\(prefix)aqaba OR \(prefix)tiran)")
+    }
+
+    @Test("Orphaned operators inside a group are demoted to literals, just like at the top level")
+    func orphanDemotionInsideGroup() {
+        #expect(FTS5InlineQueryParser.parse("(cold OR)") == "(cold or)")
+    }
+
+    @Test("A group with no positive content is dropped entirely rather than rendered empty")
+    func contentlessGroupDropped() {
+        #expect(FTS5InlineQueryParser.parse("cold ()") == "cold")
+        #expect(FTS5InlineQueryParser.parse("cold (   )") == "cold")
+        #expect(FTS5InlineQueryParser.parse("cold (-korea)") == "cold")
+        #expect(FTS5InlineQueryParser.parse("cold (NOT korea)") == "cold")
+    }
+
+    @Test("Unmatched parentheses degrade gracefully to dropped punctuation rather than malformed output")
+    func unmatchedParenDegradesGracefully() {
+        #expect(FTS5InlineQueryParser.parse("cold (war") == "cold war")
+        #expect(FTS5InlineQueryParser.parse("cold war)") == "cold war")
+        #expect(FTS5InlineQueryParser.parse("cold )(") == "cold")
+    }
+
+    @Test("Leading hyphen does not negate a group — only the keyword NOT does")
+    func leadingHyphenDoesNotNegateGroup() {
+        // Documented asymmetry: "-(...)" tokenises as a standalone "-" (dropped) plus
+        // an ordinary, positive group — not as "exclude this group". Users must spell
+        // out "NOT (...)" to negate a group.
+        #expect(FTS5InlineQueryParser.parse("cold -(korea OR vietnam)")
+                == "cold (korea OR vietnam)")
+    }
+
+    @Test("A balanced group containing further unbalanced inner parens still extracts correctly")
+    func innerUnbalancedParensWithinBalancedOuterGroup() {
+        // "(a (b) c)" is one balanced outer group containing "a (b) c"; the inner
+        // "(b)" nests as its own group, so the whole thing renders as nested groups.
+        #expect(FTS5InlineQueryParser.parse("(cold (war) korea)")
+                == "(cold (war) korea)")
+    }
 }

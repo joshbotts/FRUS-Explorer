@@ -31,8 +31,9 @@
 /// | `OR` (uppercase only) | either side matches | `Rusk OR Bundy` |
 /// | `AND` (uppercase only) | both sides match (same as juxtaposition) | `cold AND war` |
 /// | leading `-` | exclude a term or phrase | `-quarantine`, `-"naval blockade"` |
-/// | `NOT` (uppercase only) | exclude the following term/phrase | `cold NOT korea` |
+/// | `NOT` (uppercase only) | exclude the following term/phrase, group, or wildcard | `cold NOT korea`, `NOT (korea OR vietnam)` |
 /// | trailing `*` | prefix wildcard | `negoti*` |
+/// | `( ... )` | groups a sub-expression; combines with the rest of the query like any operand | `(aqaba OR tiran) AND (navigation OR passage OR transit)` |
 ///
 /// Operator keywords are recognised **only in uppercase** and **only when they sit
 /// between valid operands** (matching both Google's and FTS5's own convention) — e.g.
@@ -44,15 +45,44 @@
 /// `FTS5Query` does today, so results match the stemmed index identically regardless
 /// of which path produced the expression.
 ///
+/// ## Grouping
+/// `(...)` groups parse and render **recursively**: `renderTokens` calls itself on
+/// each balanced group's contents, wraps the rendered result in literal parentheses,
+/// and folds it back into the surrounding token stream as a single opaque operand.
+/// That operand then flows through the very same `classify` /
+/// `demoteOrphanedOperators` / `assemble` pipeline as any bare word — so groups
+/// compose with `AND`/`OR`/`NOT` (including negating a whole group via
+/// `NOT (...)`) and nest to arbitrary depth:
+/// `((aqaba OR tiran) AND navig*) OR (suez NOT canal)` round-trips intact. FTS5
+/// itself natively supports parenthesised grouping in MATCH expressions, so the
+/// rendered fragment needs no further translation — it's valid FTS5 as written.
+///
+/// Degradation is graceful by construction: an unmatched `(` or stray `)` never
+/// finds a balanced partner, falls through to ordinary token handling, sanitises to
+/// nothing (parens are structural punctuation to `sanitizeBareToken`, exactly like
+/// `{`/`}`/`:`/`/`), and is silently dropped. A group whose contents carry no
+/// positive search content — `()`, `(   )`, `(-korea)` — is dropped in its entirety
+/// rather than rendering as an empty `()` or a content-free `(NOT korea)`.
+///
+/// One asymmetry worth calling out: leading-`-` negation does **not** compose with
+/// groups — `-(korea OR vietnam)` is *not* recognised as "exclude this group" (the
+/// `-` tokenises on its own, sanitises to nothing, and is dropped, leaving the group
+/// itself positive). Use the keyword form `NOT (korea OR vietnam)` instead, which
+/// *is* recognised — consistent with the existing rule that `NOT`, unlike `-`, must
+/// be spelled out and appear in uppercase.
+///
 /// ## What this does *not* attempt
-/// - **Grouping** (`(cold OR war) AND korea`) — Google's basic search box doesn't
-///   expose this either; FTS5's own `NOT` > `AND` > `OR` precedence already gives
-///   `cold OR war korea` the expected `cold OR (war AND korea)` reading without parens.
 /// - **Column filters** (`header:cold`) — handled separately via `columnPrefix`,
 ///   applied uniformly from `SearchParameters`'s content-scope toggles.
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-08: initial implementation
+///   2.0 — Session 2026-06-08: added recursive parenthetical-grouping support —
+///          `(...)` now parses and renders to nested FTS5 sub-expressions instead
+///          of being stripped as punctuation; groups compose with AND/OR/NOT
+///          (including `NOT (...)`) and nest to arbitrary depth; unmatched/empty
+///          groups degrade gracefully (dropped/`nil`) rather than producing
+///          malformed output
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -68,28 +98,104 @@ public enum FTS5InlineQueryParser {
     ///   of `FTS5Query`'s parts, or `nil` if `raw` contains no positive search content
     ///   (empty string, only excluded/negated terms, or terms that sanitise to nothing).
     public static func parse(_ raw: String, columnPrefix: String = "") -> String? {
-        var resolved: [ResolvedToken] = []
+        renderTokens(tokenize(raw), columnPrefix: columnPrefix)
+    }
 
-        for rawToken in tokenize(raw) {
-            guard let classified = classify(rawToken) else { continue }
-            switch classified {
-            case .op(let kind):
-                resolved.append(.opCandidate(kind))
-            case .operand(let operand):
-                guard let rendered = render(operand, columnPrefix: columnPrefix) else { continue }
-                resolved.append(.operand(rendered: rendered, isPositive: !operand.negated))
+    // MARK: - Recursive Group-Aware Rendering
+
+    /// Renders a flat sequence of raw tokens — which may contain balanced `(...)`
+    /// groups at any depth — into a stemmed, sanitised FTS5 MATCH expression
+    /// fragment, or `nil` if it carries no positive search content.
+    ///
+    /// Each balanced `(...)` group is located via `matchingGroup(in:openAt:)`,
+    /// rendered by **recursing into this same function**, and — provided it produced
+    /// any content — wrapped in literal parentheses and folded back into the token
+    /// stream as a single opaque `.operand`. That operand then flows through the
+    /// exact same `classify` / `demoteOrphanedOperators` / `assemble` pipeline as any
+    /// bare word or phrase, so a group composes with `AND`/`OR`/`NOT` — including
+    /// `NOT (a OR b)` — with no special-casing beyond "this operand happens to render
+    /// as a parenthesised sub-expression". FTS5 natively supports parenthesised
+    /// grouping in MATCH expressions, so the rendered fragment is valid as-is.
+    ///
+    /// Degradation is graceful by construction: an unmatched `(` or stray `)` never
+    /// finds a partner in `matchingGroup`, falls through to ordinary `classify`
+    /// handling, sanitises to nothing (parens are structural punctuation to
+    /// `sanitizeBareToken`), and is silently dropped — exactly like any other
+    /// punctuation-only token. A group whose contents render to `nil` (e.g. `()`,
+    /// `(   )`, or `(-korea)` — only excluded terms, no positive content) is
+    /// likewise dropped in its entirety rather than emitted as an empty `()`.
+    private static func renderTokens(_ tokens: [String], columnPrefix: String) -> String? {
+        var resolved: [ResolvedToken] = []
+        var index = 0
+        while index < tokens.count {
+            let rawToken = tokens[index]
+
+            if rawToken == "(", let group = matchingGroup(in: tokens, openAt: index) {
+                if let rendered = renderTokens(group.inner, columnPrefix: columnPrefix) {
+                    resolved.append(.operand(rendered: "(\(rendered))", isPositive: true))
+                }
+                index = group.closeIndex + 1
+                continue
             }
+
+            if let classified = classify(rawToken) {
+                switch classified {
+                case .op(let kind):
+                    resolved.append(.opCandidate(kind))
+                case .operand(let operand):
+                    if let rendered = render(operand, columnPrefix: columnPrefix) {
+                        resolved.append(.operand(rendered: rendered, isPositive: !operand.negated))
+                    }
+                }
+            }
+            index += 1
         }
 
         demoteOrphanedOperators(in: &resolved)
+        return assemble(resolved)
+    }
 
+    /// Scans forward from `tokens[openAt]` (which must be `"("`) for its balanced
+    /// closing `")"`, tracking nested-paren depth so inner groups don't terminate the
+    /// search early — e.g. for `(a (b) c) d`, the outer group's contents are correctly
+    /// identified as `a (b) c`, not just `a (b`.
+    ///
+    /// Returns the inner token slice (enclosing parens excluded) and the index of the
+    /// matching close, or `nil` if `tokens` never returns to depth zero — i.e. an
+    /// unmatched `(` that the caller should treat as an ordinary literal token.
+    private static func matchingGroup(
+        in tokens: [String], openAt: Int
+    ) -> (inner: [String], closeIndex: Int)? {
+        var depth = 0
+        var i = openAt
+        while i < tokens.count {
+            if tokens[i] == "(" {
+                depth += 1
+            } else if tokens[i] == ")" {
+                depth -= 1
+                if depth == 0 {
+                    return (Array(tokens[(openAt + 1)..<i]), i)
+                }
+            }
+            i += 1
+        }
+        return nil
+    }
+
+    /// Resolves operator placement and joins the surviving pieces into the final
+    /// MATCH expression fragment. Shared by the top-level call in `renderTokens` and
+    /// every recursive group invocation, so a group's internal "is there any positive
+    /// content?" check is identical to the top-level one. Returns `nil` when there is
+    /// no positive search content.
+    private static func assemble(_ resolved: [ResolvedToken]) -> String? {
         var pieces: [String] = []
         var hasPositiveOperand = false
-        // Tracks whether the operand about to be emitted sits immediately after a
-        // surviving `NOT` operator — e.g. in `cold NOT korea`, "korea" is excluded
-        // even though its own `Operand.negated` is `false` (that flag only tracks
-        // the leading-"-" form of negation). Without this, "NOT korea" alone would
-        // be miscounted as having positive content ("korea") and incorrectly produce
+        // Tracks whether the operand/group about to be emitted sits immediately after
+        // a surviving `NOT` operator — e.g. in `cold NOT korea` or `cold NOT (korea OR
+        // vietnam)`, the right-hand side is excluded even though its own rendering
+        // carries no negation marker of its own (that's a property of `Operand`, which
+        // groups don't have). Without this, `NOT korea` or `NOT (korea OR vietnam)`
+        // alone would be miscounted as having positive content and incorrectly produce
         // a MATCH expression instead of `nil`.
         var precededByNot = false
         for token in resolved {
@@ -150,9 +256,21 @@ public enum FTS5InlineQueryParser {
                 let end = min(j, chars.count - 1)
                 tokens.append(String(chars[i...end]))
                 i = end + 1
+            } else if chars[i] == "(" || chars[i] == ")" {
+                // Grouping parens are always emitted as their own single-character
+                // tokens — even when butted directly against a word, e.g. `(aqaba`
+                // or `tiran)` — so the recursive grouping pass in `renderTokens`
+                // recognises them regardless of spacing. Any that turn out to be
+                // unmatched or otherwise unusable are mapped to whitespace by
+                // `sanitizeBareToken` and silently dropped, same as today.
+                tokens.append(String(chars[i]))
+                i += 1
             } else {
                 var j = i
-                while j < chars.count, !chars[j].isWhitespace { j += 1 }
+                while j < chars.count, !chars[j].isWhitespace,
+                      chars[j] != "(", chars[j] != ")" {
+                    j += 1
+                }
                 tokens.append(String(chars[i..<j]))
                 i = j
             }
@@ -249,6 +367,10 @@ public enum FTS5InlineQueryParser {
     /// operands, which is always valid FTS5 syntax. Resolution is left-to-right and
     /// in-place so chains of misplaced operators (`"cold OR AND war"`) resolve
     /// consistently: each candidate sees prior candidates' already-resolved state.
+    ///
+    /// `isOperand` treats a rendered `(...)` group exactly like any bare word or
+    /// phrase — both arrive here as `.operand` cases — so `cold OR (war AND korea)`
+    /// and `(cold OR war) NOT korea` resolve with no group-specific logic at all.
     private static func demoteOrphanedOperators(in tokens: inout [ResolvedToken]) {
         func isOperand(_ index: Int) -> Bool {
             guard tokens.indices.contains(index) else { return false }
