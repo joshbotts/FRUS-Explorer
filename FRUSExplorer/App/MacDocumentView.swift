@@ -635,14 +635,13 @@ struct MacDocumentView: View {
 
             Spacer()
 
-            if let volumeEntry = appState.manifestStore.entry(forVolumeId: entry.volumeId) {
-                Text(
-                    "\(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId) " +
-                    "of \(volumeEntry.documentCount) in this volume"
-                )
+            // Just the document's own identifier — no "of N in this volume" suffix.
+            // `volumeEntry.documentCount` doesn't reflect the volume's true document
+            // count (it read 0 for every volume), so that phrasing was always wrong;
+            // the identifier alone is the part that's actually useful here.
+            Text(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
-            }
 
             Spacer()
 
