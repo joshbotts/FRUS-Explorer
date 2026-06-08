@@ -757,9 +757,11 @@ struct DocumentView: View {
             }
             .disabled(vm.formattedCitation == nil)
 
-            // 6. Copy Citation
+            // 6. Copy Citation — uses plain text so _..._ italic markers are
+            // not pasted as raw underscores. View Citation (above) still uses
+            // the markdown string via CitationSheetView.attributedCitation.
             Button {
-                if let citation = vm.formattedCitation {
+                if let citation = vm.plainTextFormattedCitation {
                     copyToPasteboard(citation)
                 }
             } label: {
@@ -768,7 +770,7 @@ struct DocumentView: View {
                     systemImage: "doc.on.clipboard"
                 )
             }
-            .disabled(vm.formattedCitation == nil)
+            .disabled(vm.plainTextFormattedCitation == nil)
 
             // 6b. Share Citation — system share sheet with the formatted citation
             // and the canonical history.state.gov URL combined into one message.
@@ -824,17 +826,12 @@ struct DocumentView: View {
             }
 
             // 10. Source Explorer — always available for all documents.
-            // On iPad (regular width) opens in a new Stage Manager window;
-            // on iPhone falls back to a sheet.
+            // Always uses a sheet on iOS/iPadOS: openWindow(id:) on a WindowGroup is
+            // a no-op unless Stage Manager is active, and sizeClass == .regular is true
+            // on all iPads regardless — so the window branch silently did nothing for
+            // most iPad users. A Stage Manager-aware path can be revisited if needed.
             Button {
-                let note = vm.sourceNote ?? ""
-                if sizeClass == .regular {
-                    appState.currentSourceNote = note
-                    appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
-                    openWindow(id: "frus.sourceExplorer.ios")
-                } else {
-                    activeSheet = .sourceExplorer(note)
-                }
+                activeSheet = .sourceExplorer(vm.sourceNote ?? "")
             } label: {
                 Label(
                     String(localized: "document.toolbar.sourceExplorer",

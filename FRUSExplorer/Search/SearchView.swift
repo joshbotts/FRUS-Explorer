@@ -419,6 +419,7 @@ struct SearchView: View {
                 } label: {
                     SearchResultRow(
                         result: result,
+                        userTags: vm.availableUserTags,
                         onUserTagTap: { tagId in
                             if let uuid = UUID(uuidString: tagId) {
                                 vm.selectedUserTagIds.insert(uuid)
@@ -443,6 +444,9 @@ struct SearchView: View {
 
 private struct SearchResultRow: View {
     let result: SearchResult
+    /// All known user tags, passed from the parent view's `vm.availableUserTags`.
+    /// Forwarded to `SearchTagChipsRow` so UUID strings can be resolved to names.
+    let userTags: [UserTag]
     let onUserTagTap: (String) -> Void
 
     var body: some View {
@@ -486,11 +490,12 @@ private struct SearchResultRow: View {
                     .padding(.top, 1)
             }
 
-            // User tag chips
+            // User tag chips — pass userTags so chips show names, not raw UUIDs
             if !result.userTagIds.isEmpty {
                 SearchTagChipsRow(
                     tagIds: result.userTagIds,
                     systemImage: "person.crop.circle.badge.plus",
+                    userTags: userTags,
                     onTap: onUserTagTap
                 )
             }
@@ -546,19 +551,34 @@ private struct SearchSnippetView: View {
 
 // MARK: - SearchTagChipsRow
 
+/// Horizontally scrolling row of tappable user-tag chips for a search result.
+///
+/// `userTags` is the full list of `UserTag` rows supplied by the parent view.
+/// Each UUID string in `tagIds` is resolved to a `UserTag.name` so the chip
+/// label shows the human-readable name rather than a raw UUID string.
 private struct SearchTagChipsRow: View {
     let tagIds: [String]
     let systemImage: String
+    /// All known user tags, supplied by the parent. Used to resolve UUID strings
+    /// in `tagIds` to display names.
+    let userTags: [UserTag]
     let onTap: (String) -> Void
+
+    /// Returns the display name for a tag UUID string, falling back to the UUID if
+    /// the tag has been deleted or is not yet loaded.
+    private func tagName(for tagId: String) -> String {
+        userTags.first(where: { $0.id.uuidString == tagId })?.name ?? tagId
+    }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
                 ForEach(tagIds, id: \.self) { tagId in
+                    let name = tagName(for: tagId)
                     Button {
                         onTap(tagId)
                     } label: {
-                        Label(tagId, systemImage: systemImage)
+                        Label(name, systemImage: systemImage)
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -567,7 +587,7 @@ private struct SearchTagChipsRow: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(
                         String(localized: "search.tagchip.a11y",
-                               defaultValue: "Filter by \(tagId)")
+                               defaultValue: "Filter by \(name)")
                     )
                 }
             }

@@ -8,6 +8,7 @@
 
 #if os(macOS)
 
+import SwiftData
 import SwiftUI
 
 // MARK: - MacSearchWindowView
@@ -67,6 +68,10 @@ import SwiftUI
 ///          the results list/pagination for `DocumentTimelineView` (the same
 ///          Swift Charts visualization already used on iOS Search and in the
 ///          Collections editor), bringing chronological browsing to macOS
+///   1.9 — Fix: added `.task` (no id) to consume `AppState.pendingSearch` on
+///          initial window load. The existing `.onChange` only fires on value
+///          *changes*; when the window is newly opened after `pendingSearch` is
+///          already set, the new view's `.onChange` never fires for that value.
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -79,6 +84,10 @@ struct MacSearchWindowView: View {
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var saveSearchName = ""
+
+    /// All user tags fetched from SwiftData. Passed to `SearchResultRow` so tag UUID
+    /// strings in results can be resolved to human-readable names.
+    @Query private var allUserTags: [UserTag]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -135,6 +144,16 @@ struct MacSearchWindowView: View {
         .task(id: searchVM.searchTrigger) {
             await searchVM.performSearch(service: appState.searchService)
             searchVM.recordSearchHistory(projectId: appState.activeProjectId, in: modelContext)
+        }
+        .task {
+            // Consume search parameters set *before* this window was opened.
+            // `.onChange` only fires on subsequent value changes — it misses the
+            // initial `pendingSearch` that was already set when the Window scene
+            // created a fresh `MacSearchWindowView` instance.
+            if let params = appState.pendingSearch {
+                searchVM.applyParameters(params)
+                appState.pendingSearch = nil
+            }
         }
         .onChange(of: appState.pendingSearch) { _, params in
             guard let params else { return }
@@ -721,7 +740,7 @@ struct MacSearchWindowView: View {
 
     private var resultsList: some View {
         List(searchVM.pagedResults, id: \.id) { result in
-            SearchResultRow(result: result)
+            SearchResultRow(result: result, userTags: allUserTags)
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                 .listRowSeparator(.visible, edges: .bottom)
                 .contentShape(Rectangle())
@@ -887,8 +906,21 @@ struct MacSearchWindowView: View {
 
 // MARK: - SearchResultRow
 
+/// A single search-result row for the macOS Search window.
+///
+/// `userTags` resolves UUID strings in `result.userTagIds` to human-readable
+/// tag names. Supplied by the parent `MacSearchWindowView` via its `@Query`.
 private struct SearchResultRow: View {
     let result: SearchResult
+    /// All known user tags, supplied by the parent view's `@Query`. Used to
+    /// resolve UUID strings in `result.userTagIds` to display names.
+    let userTags: [UserTag]
+
+    /// Returns the display name for a tag UUID string, falling back to the UUID if
+    /// the tag has been deleted or is not yet loaded.
+    private func tagName(for tagId: String) -> String {
+        userTags.first(where: { $0.id.uuidString == tagId })?.name ?? tagId
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -934,8 +966,8 @@ private struct SearchResultRow: View {
 
             if !result.userTagIds.isEmpty {
                 HStack(spacing: 4) {
-                    ForEach(result.userTagIds.prefix(3), id: \.self) { tag in
-                        Text("◆ \(tag)")
+                    ForEach(result.userTagIds.prefix(3), id: \.self) { tagId in
+                        Text("◆ \(tagName(for: tagId))")
                             .font(.system(size: 10))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)

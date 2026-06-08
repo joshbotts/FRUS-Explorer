@@ -1576,7 +1576,9 @@ struct CitationPopoverView: View {
             // Actions
             HStack(spacing: 6) {
                 Button {
-                    copyToClipboard(formattedCitation)
+                    // Copy plain text — markdown italic markers (_..._ / *...*) are
+                    // stripped so the clipboard receives clean text without raw syntax.
+                    copyToClipboard(plainTextCitation)
                 } label: {
                     Label("Copy citation", systemImage: "doc.on.doc").font(.system(size: 11))
                 }
@@ -1659,6 +1661,9 @@ struct CitationPopoverView: View {
     /// volume title, editors, city, publisher, year, document location.
     /// The document heading is intentionally excluded — FRUS citations reference the
     /// volume rather than quoting the document title.
+    ///
+    /// The returned string contains Markdown italic markers (`_..._` or `*...*`).
+    /// Use `plainTextCitation` when the destination is the clipboard or a share sheet.
     private var formattedCitation: String {
         guard let vol = volumeEntry else {
             return "Citation unavailable — volume metadata not loaded."
@@ -1713,6 +1718,26 @@ struct CitationPopoverView: View {
             result += ". \(city): \(publisher), \(year). \(docNum)."
             return result
         }
+    }
+
+    /// Plain-text version of `formattedCitation` with Markdown italic markers stripped.
+    ///
+    /// `formattedCitation` uses `_..._` and `*...*` for the series title; the view
+    /// renders these via `AttributedString(markdown:)` (producing actual italics), but
+    /// the clipboard and share sheet should receive clean text without raw underscore/
+    /// asterisk characters.  `AttributedString.characters` extracts the character
+    /// sequence after Markdown parsing, giving the plain text automatically.
+    private var plainTextCitation: String {
+        if let attrStr = try? AttributedString(
+            markdown: formattedCitation,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
+            return String(attrStr.characters)
+        }
+        // Fallback: strip paired delimiters via regex if markdown parsing fails.
+        return formattedCitation
+            .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
+            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
     }
 
     // MARK: - Publication Year
@@ -1845,12 +1870,12 @@ struct CitationPopoverView: View {
 
     /// A formatted citation plus its canonical `history.state.gov` URL,
     /// suitable for sharing via the system share sheet (Mail, Messages,
-    /// AirDrop, etc.). Falls back to the citation alone if no canonical URL
-    /// is available — mirrors `DocumentViewModel.shareableCitationMessage`
-    /// on iOS (Session 2026-06-07).
+    /// AirDrop, etc.). Uses `plainTextCitation` so markdown italic markers
+    /// (_..._  / *...*) do not appear as raw syntax in the share payload.
+    /// Falls back to `plainTextCitation` alone if no canonical URL is available.
     private var shareableCitationMessage: String {
-        guard let url = canonicalURL else { return formattedCitation }
-        return "\(formattedCitation)\n\n\(url)"
+        guard let url = canonicalURL else { return plainTextCitation }
+        return "\(plainTextCitation)\n\n\(url)"
     }
 
     private var accessedDate: String {

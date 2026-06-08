@@ -152,6 +152,9 @@ public final class DocumentViewModel {
     ///
     /// Uses `parsedPublicationYear` (live-parsed from the volume XML) in place of
     /// the manifest's `publicationDate` when available — see `loadPublicationYear(from:)`.
+    ///
+    /// The returned string contains Markdown italic markers (`_..._`) for the series
+    /// title. Use `plainTextFormattedCitation` for the clipboard and share sheet.
     public var formattedCitation: String? {
         guard let volumeEntry else { return nil }
         let docMeta = FRUSDocumentMetadata(entry)
@@ -160,6 +163,25 @@ public final class DocumentViewModel {
             volMeta = volMeta.overridingPublicationYear(liveYear)
         }
         return HistoryAtStateCitationFormatter().format(document: docMeta, volume: volMeta)
+    }
+
+    /// Plain-text version of `formattedCitation` with Markdown italic markers stripped.
+    ///
+    /// `HistoryAtStateCitationFormatter` wraps the series title in `_..._` for
+    /// Markdown italics. The clipboard and share sheet should receive clean text
+    /// without raw underscore characters. `AttributedString.characters` extracts
+    /// the character sequence after Markdown parsing, giving plain text automatically.
+    public var plainTextFormattedCitation: String? {
+        guard let citation = formattedCitation else { return nil }
+        if let attrStr = try? AttributedString(
+            markdown: citation,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
+            return String(attrStr.characters)
+        }
+        // Fallback: strip paired delimiters via regex if markdown parsing fails.
+        return citation
+            .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
     }
 
     /// The canonical `history.state.gov` URL for this document.
@@ -174,9 +196,11 @@ public final class DocumentViewModel {
 
     /// A formatted citation plus its canonical URL, suitable for sharing via
     /// the system share sheet (Messages, Mail, etc.). `nil` until both the
-    /// citation and canonical URL are available.
+    /// citation and canonical URL are available. Uses `plainTextFormattedCitation`
+    /// so Markdown italic markers (`_..._`) do not appear as raw underscores in
+    /// the share payload.
     public var shareableCitationMessage: String? {
-        guard let citation = formattedCitation,
+        guard let citation = plainTextFormattedCitation,
               let url = canonicalDocumentURL else { return nil }
         return "\(citation)\n\n\(url.absoluteString)"
     }

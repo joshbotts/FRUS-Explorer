@@ -451,8 +451,12 @@ struct BackgroundSummarizationSettingsView: View {
                   let searchService = appState.searchService else {
                 return .savedSearch(documentKeys: [])
             }
+            // Use a high explicit limit so the scope covers all matching documents,
+            // not just the default page of 20. Saved-search summarization should
+            // enqueue every document the query matches, not just the first page.
             let results = (try? await searchService.search(
-                parameters: savedSearch.searchParameters)) ?? []
+                parameters: savedSearch.searchParameters,
+                limit: 10_000)) ?? []
             let keys = Set(results.map { "\($0.volumeId)/\($0.documentId)" })
             #if DEBUG
             print("[BgSummarizer] Saved search '\(savedSearch.name)' resolved \(keys.count) documents")

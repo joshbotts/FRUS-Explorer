@@ -42,6 +42,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 116: initial implementation
+///   1.1 — Fix: `hasShownThisSession` moved from `@State` to `@AppStorage` so the
+///          educational sheet is not re-triggered every time SwiftUI recreates the
+///          banner view during active indexing (e.g. on each progress update).
 struct IndexingQueueBannerView: View {
 
     /// Current volume's indexing progress.
@@ -59,7 +62,11 @@ struct IndexingQueueBannerView: View {
 
     @State private var isExpanded = false
     @State private var showWhileIndexing = false
-    @State private var hasShownThisSession = false
+    /// Persisted flag so the educational sheet auto-opens only once, even if SwiftUI
+    /// recreates this view during long indexing runs. Use `@AppStorage` rather than
+    /// `@State` — `@State` resets to `false` on every view re-creation, causing the
+    /// sheet to re-trigger after each progress update.
+    @AppStorage("frus.hasShownIndexingEducation") private var hasShownThisSession = false
 
     var body: some View {
         VStack(spacing: 0) {
