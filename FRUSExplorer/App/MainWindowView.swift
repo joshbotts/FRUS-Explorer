@@ -59,16 +59,6 @@ struct MainWindowView: View {
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
 
-    /// Whether the toolbar "Info" button's citation popover is showing.
-    ///
-    /// Exclusively owns the `.popover(isPresented:)` on the trailing-tools "Info"
-    /// button (below). `ResearchStripView`'s "Cite" button used to share this same
-    /// boolean via a `@Binding`, but two `.popover` modifiers anchored to different
-    /// source views driven by one boolean confuse SwiftUI's presentation machinery —
-    /// in practice neither popover appeared. `ResearchStripView` now owns its own
-    /// private `@State` for its Cite popover instead.
-    @State private var showCitationPopover: Bool = false
-
     /// NARA Catalog Lookup sheet item.
     ///
     /// Using `.sheet(item:)` rather than `.sheet(isPresented:)` ensures SwiftUI creates
@@ -189,9 +179,12 @@ struct MainWindowView: View {
                 // item compact at a fixed width regardless of how long the
                 // document's prose header or volume title happen to be —
                 // leaving the leading back button and trailing tool launchers
-                // (Search/Graph/Info/Research) enough room that they no
-                // longer collapse into the system overflow chevron at
-                // typical window widths.
+                // (Search/Graph/Research/Collections/Corpus/Analytics) enough
+                // room that they no longer collapse into the system overflow
+                // chevron at typical window widths. ("Info" was removed in
+                // Session 2026-06-08 — it duplicated ResearchStripView's "Cite"
+                // button, which presents the identical CitationPopoverView and
+                // is always visible rather than tucked in the toolbar.)
                 Text(entry.id)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .lineLimit(1)
@@ -233,25 +226,6 @@ struct MainWindowView: View {
             .help(String(
                 localized: "mainwindow.tools.graph.help",
                 defaultValue: "Show cross-references for the current document in a separate window"
-            ))
-
-            Divider().frame(height: 20)
-
-            // Info / citation popover
-            Button {
-                showCitationPopover = true
-            } label: {
-                Label("Info", systemImage: "info.circle")
-            }
-            .disabled(currentEntry == nil)
-            .popover(isPresented: $showCitationPopover, arrowEdge: .bottom) {
-                if let entry = currentEntry {
-                    CitationPopoverView(entry: entry)
-                }
-            }
-            .help(String(
-                localized: "mainwindow.tools.info.help",
-                defaultValue: "Show document citation and metadata"
             ))
 
             Divider().frame(height: 20)

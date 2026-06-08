@@ -77,12 +77,16 @@ struct ResearchStripView: View {
     let entry: DocumentBrowserEntry?
     /// Whether the Cite button's citation popover is showing.
     ///
-    /// Owned privately rather than passed in as a `@Binding` — it used to share
-    /// `MainWindowView.showCitationPopover` with the toolbar "Info" button's own
-    /// `.popover(isPresented:)`. Two `.popover` modifiers anchored to different
-    /// source views but driven by the same boolean confuse SwiftUI's presentation
-    /// machinery: it can't determine which anchor to use, and in practice *neither*
-    /// popover appeared. Each trigger now owns an independent boolean.
+    /// Owned privately rather than passed in as a `@Binding` — it formerly shared
+    /// `MainWindowView.showCitationPopover` with that window's toolbar "Info"
+    /// button's own `.popover(isPresented:)`. Two `.popover` modifiers anchored to
+    /// different source views but driven by the same boolean confused SwiftUI's
+    /// presentation machinery: it couldn't determine which anchor to use, and in
+    /// practice *neither* popover appeared — giving each trigger an independent
+    /// boolean fixed it. The toolbar "Info" button was removed entirely in Session
+    /// 2026-06-08 (it duplicated this button's `CitationPopoverView`, just less
+    /// discoverably), so this is now the sole presenter — the private `@State`
+    /// remains simply because there's no longer any reason to share it.
     @State private var showCitationPopover: Bool = false
     let highlightCoordinator: HighlightCoordinator
     /// Called when the user taps "Look Up in NARA Catalog" with text selected.
