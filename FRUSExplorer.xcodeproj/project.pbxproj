@@ -23,6 +23,7 @@
 		0A867D1E23E2CD05A5213860 /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BB1028F3812398A57E3411 /* DocxCollectionExporter.swift */; };
 		0AB5DF131F2FD818232AF4CF /* FRUSURLSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D169294121369DEF9DF3BB /* FRUSURLSchemeHandler.swift */; };
 		0B143785B97EC873058060CD /* BrowserBreadcrumbBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E3205E3E4008F89BB4054C /* BrowserBreadcrumbBar.swift */; };
+		0B202FBACFE72F6ADE672D7D /* FTS5InlineQueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F026464A582483E73619623 /* FTS5InlineQueryParser.swift */; };
 		0BAA185CAEA88839CFFE430D /* FTS5Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAD8B667D9DBC00CF58162F /* FTS5Errors.swift */; };
 		0E410D22F78C0B8D005E5317 /* IndexingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFC1E7C3362A966E80CA3A6 /* IndexingActivityAttributes.swift */; };
 		0E7D2137040CFFD2A6F1BDC6 /* HistoryWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60908891C1CCD378F1735444 /* HistoryWindowView.swift */; };
@@ -130,6 +131,7 @@
 		5C6C2B5570252E48B32DA3BA /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55BC6B54C26290940931C4E /* MainWindowView.swift */; };
 		5C8CD6B84599C407BA566403 /* SourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA119D060DCD034BE99B6B3 /* SourceExplorerView.swift */; };
 		5C9BB2062A2F2C2C2A96AF6B /* CollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 423271170536DE4B8160B34A /* CollectionExporter.swift */; };
+		5CB069F9B81BD6B5CA10216F /* FTS5InlineQueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F026464A582483E73619623 /* FTS5InlineQueryParser.swift */; };
 		5E693B239B1B7C9D330CC1C4 /* ResearchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889499978D57AFAA88BE4093 /* ResearchSession.swift */; };
 		5EBEB485AF689114E6C233BA /* ResearchNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098147A931A317EF31085A2E /* ResearchNote.swift */; };
 		6031DF2938466493210A2697 /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */; };
@@ -524,6 +526,7 @@
 		8BC7B26DC3D2C323E479A1AC /* SummarizationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationUITests.swift; sourceTree = "<group>"; };
 		8CB3CD7C0774D261220D22FB /* DownloadsSettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsSettingsViewTests.swift; sourceTree = "<group>"; };
 		8DAD8B667D9DBC00CF58162F /* FTS5Errors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Errors.swift; sourceTree = "<group>"; };
+		8F026464A582483E73619623 /* FTS5InlineQueryParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5InlineQueryParser.swift; sourceTree = "<group>"; };
 		8F477D81EC8B3F8107B67F47 /* FRUSOffsetEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSOffsetEngineTests.swift; sourceTree = "<group>"; };
 		900970FD30FB61D26AE96F91 /* ProjectEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEditorView.swift; sourceTree = "<group>"; };
 		9544B6BB2DA0B054DB1B10B0 /* SummarizationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationServiceTests.swift; sourceTree = "<group>"; };
@@ -891,6 +894,7 @@
 			children = (
 				0975FA5C560DCC925D601728 /* FTS5Connection.swift */,
 				8DAD8B667D9DBC00CF58162F /* FTS5Errors.swift */,
+				8F026464A582483E73619623 /* FTS5InlineQueryParser.swift */,
 				3593868AA091B5AB96785D5B /* FTS5Query.swift */,
 				80CF02342D779587705CA46F /* FTS5Store.swift */,
 				14897C6413138665C6AD33A0 /* FTS5Tokenizer.swift */,
@@ -1336,6 +1340,7 @@
 				8600BD2EC3F9E901DF2E8FF4 /* FRUSWebViewConfiguration.swift in Sources */,
 				E4B25B9923B19C8B75EF1439 /* FTS5Connection.swift in Sources */,
 				0BAA185CAEA88839CFFE430D /* FTS5Errors.swift in Sources */,
+				5CB069F9B81BD6B5CA10216F /* FTS5InlineQueryParser.swift in Sources */,
 				DF25470CA9A052C9BAB48ED0 /* FTS5Query.swift in Sources */,
 				45FEBB7068690AC9F2D2CD31 /* FTS5Store.swift in Sources */,
 				AE3C4A9D6C4565A98F9A4A02 /* FTS5Tokenizer.swift in Sources */,
@@ -1483,6 +1488,7 @@
 				99BA0BE9ED83051B513EF9DB /* FRUSWebViewConfiguration.swift in Sources */,
 				416856D82FF1887F977836F8 /* FTS5Connection.swift in Sources */,
 				06F7C033964BFE9F7B39AAEB /* FTS5Errors.swift in Sources */,
+				0B202FBACFE72F6ADE672D7D /* FTS5InlineQueryParser.swift in Sources */,
 				240D1A42B3D0A6BBE1BBA32B /* FTS5Query.swift in Sources */,
 				387C8EC61FCD42C53EAE7806 /* FTS5Store.swift in Sources */,
 				F16CBC03DA4F3491B178EEE0 /* FTS5Tokenizer.swift in Sources */,
