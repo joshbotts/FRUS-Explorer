@@ -28,6 +28,24 @@ extension ModelContainer {
     ///   1.2 — Session 2026-06-07: added `SearchHistoryEntry` (mirrors `ReadingHistoryEntry`
     ///          for executed search queries) — backs the new macOS "History" menu and
     ///          "Complete History" window
+    ///   1.3 — Session 2026-06-07: `makeFRUSContainer()` return tuple gained `initError: NSError?`
+    ///          so callers can run the actual CloudKit init failure through
+    ///          `FRUSExplorerApp.cloudKitDiagnostic(_:)` and surface the real domain/code/
+    ///          description in the UI, instead of a hardcoded "check console" placeholder
+    ///
+    /// ## A note on schema migrations
+    /// Every new `PersistentModel` type added to this list — most recently
+    /// `SearchHistoryEntry` (1.2) and, before it, `DocumentTagAssignment` (Session 130) and
+    /// `DocumentHighlight` (Session 102) — introduces a *new CloudKit record type* that does
+    /// not yet exist in the deployed CloudKit schema. Per the "CloudKit schema note" below,
+    /// SwiftData/`NSPersistentCloudKitContainer` creates these record types lazily in the
+    /// **Development** schema the first time a record of that type is pushed; they must then
+    /// be promoted via CloudKit Dashboard → Schema → "Deploy Schema Changes to Production"
+    /// before Production/TestFlight/App Store builds can sync them. Until that promotion
+    /// happens, Production builds will see sync failures for the new record type — typically
+    /// `serverRejectedRequest` (15), `incompatibleVersion` (18), or `invalidArguments` (12) —
+    /// surfaced by `cloudKitDiagnostic(_:)` as e.g. "CKErrorDomain serverRejectedRequest: …".
+    /// **Whenever you add a model type here, deploy the CloudKit schema before shipping.**
     private static var frusModelTypes: [any PersistentModel.Type] {
         [
             Project.self,
@@ -87,7 +105,7 @@ extension ModelContainer {
     //
     // See Planning/130-CloudKit-SchemaInit.md for full context.
 
-    static func makeFRUSContainer() -> (container: ModelContainer, cloudKitEnabled: Bool) {
+    static func makeFRUSContainer() -> (container: ModelContainer, cloudKitEnabled: Bool, initError: NSError?) {
         // Skip CloudKit when running under the unit-test host (XCTestConfigurationFilePath)
         // or the UI-test app process (FRUS_UI_TEST_MODE injected via launchEnvironment).
         // Without this, CloudKit's background sync fires a SIGTRAP ~30 s after launch
@@ -98,7 +116,7 @@ extension ModelContainer {
             let reason = ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
                 ? "UI test mode" : "XCTest host"
             print("[SwiftData] \(reason) detected — using local store (no CloudKit)")
-            return (makeLocalContainer(), false)
+            return (makeLocalContainer(), false, nil)
         }
 
         // Use a fresh schema for the CloudKit attempt.
@@ -111,17 +129,26 @@ extension ModelContainer {
         do {
             let container = try ModelContainer(for: cloudSchema, configurations: [cloudConfig])
             print("[SwiftData] ModelContainer created — CloudKit sync ENABLED")
-            return (container, true)
+            return (container, true, nil)
         } catch {
             // CloudKit unavailable: log the full error so developers/testers can diagnose
             // the exact failure reason (schema migration, entitlement, sign-in, etc.).
             // This is intentionally NOT gated on #if DEBUG because sync failures are
             // critical operational events that must be visible in all build configurations.
+            //
+            // The NSError is also returned (not just logged) so the caller can run it
+            // through `FRUSExplorerApp.cloudKitDiagnostic(_:)` and surface the actual
+            // domain/code/description in the UI — `AppState.cloudKitInitError` previously
+            // held a hardcoded "check console for details" placeholder, which left users
+            // and testers with literally no way to self-diagnose an init failure (e.g. a
+            // CloudKit schema migration that hasn't been deployed to Production yet) from
+            // the running app; the only record was this console line.
+            let nsError = error as NSError
             print("[SwiftData] ⚠️  CloudKit container FAILED — falling back to local-only store")
-            print("[SwiftData] ⚠️  Error: \(error)")
-            print("[SwiftData] ⚠️  localizedDescription: \(error.localizedDescription)")
+            print("[SwiftData] ⚠️  Error: \(nsError)")
+            print("[SwiftData] ⚠️  localizedDescription: \(nsError.localizedDescription)")
             print("[SwiftData] ⚠️  Data changes will NOT sync across devices until this is resolved.")
-            return (makeLocalContainer(), false)
+            return (makeLocalContainer(), false, nsError)
         }
     }
 

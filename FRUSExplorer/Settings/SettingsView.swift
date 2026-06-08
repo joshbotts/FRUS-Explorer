@@ -201,12 +201,25 @@ struct SettingsView: View {
     @ViewBuilder
     private var iCloudSyncStatusRow: some View {
         if !appState.cloudKitSyncEnabled {
+            // Append the actual CloudKit diagnostic (domain + error code name +
+            // description, e.g. "CKErrorDomain serverRejectedRequest: …") below the
+            // general guidance whenever `AppState.cloudKitInitError` has one — so
+            // users and testers can see exactly *why* initialisation failed, not just
+            // that it did. Previously this was a hardcoded "check console for details"
+            // placeholder with no code visible anywhere in the running app.
+            let guidance = String(localized: "settings.icloud.localOnly.detail",
+                                  defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.")
+            let detail: String
+            if let initError = appState.cloudKitInitError {
+                detail = "\(guidance)\n\n\(String(localized: "settings.icloud.localOnly.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
+            } else {
+                detail = guidance
+            }
             iCloudStatusCell(
                 label: String(localized: "settings.icloud.localOnly", defaultValue: "Local Only"),
                 systemImage: "icloud.slash",
                 color: .orange,
-                detail: String(localized: "settings.icloud.localOnly.detail",
-                               defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.")
+                detail: detail
             )
         } else {
             switch appState.cloudKitSyncState {

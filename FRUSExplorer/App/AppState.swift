@@ -195,11 +195,18 @@ final class AppState {
     /// a "Local Only" warning with actionable guidance.
     var cloudKitSyncEnabled: Bool = true
 
-    /// Human-readable description of the error that prevented CloudKit initialisation.
+    /// Human-readable diagnostic for the error that prevented CloudKit initialisation,
+    /// formatted by `FRUSExplorerApp.cloudKitDiagnostic(_:)` from the actual `NSError`
+    /// `ModelContainer.makeFRUSContainer()` caught — e.g. `"CKErrorDomain
+    /// serverRejectedRequest: …"` — so the CloudKit error *domain and code name* are
+    /// always visible in the running app, not just in a console only developers can see.
     ///
     /// `nil` when CloudKit initialised successfully. Set alongside `cloudKitSyncEnabled = false`
-    /// by `FRUSExplorerApp.bootApp()`. Displayed in the Settings → Storage panel and in
-    /// `StatusBarView`'s sync-state tooltip so users can self-diagnose the failure.
+    /// by `FRUSExplorerApp.bootApp()`. Displayed in the Settings → iCloud "Local Only" row
+    /// and in `StatusBarView`'s "Local Only" tooltip so users — and testers reporting sync
+    /// problems — can self-diagnose the failure (e.g. recognising `serverRejectedRequest` /
+    /// `incompatibleVersion` as "an undeployed CloudKit schema change" per the migration
+    /// note on `ModelContainer.frusModelTypes`) without attaching a console.
     var cloudKitInitError: String? = nil
 
     /// Real-time CloudKit sync state, updated by observing

@@ -1060,16 +1060,27 @@ struct StatusBarView: View {
     private var cloudKitStatusChip: some View {
         if !appState.cloudKitSyncEnabled {
             // Container fell back to local SQLite — CloudKit init failed at launch.
+            // Append the actual diagnostic (CloudKit error domain + code name +
+            // description) to the tooltip when AppState has one, so the failure's
+            // error code is visible directly in the app — not just in Console.app.
+            // See AppState.cloudKitInitError / FRUSExplorerApp.cloudKitDiagnostic(_:).
+            let guidance = String(
+                localized: "statusBar.sync.disabled.help",
+                defaultValue: "iCloud sync is unavailable — notes, collections, and tags won't sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
+            )
+            let help: String
+            if let initError = appState.cloudKitInitError {
+                help = "\(guidance)\n\n\(String(localized: "statusBar.sync.disabled.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
+            } else {
+                help = guidance
+            }
             Label(
                 String(localized: "statusBar.sync.disabled", defaultValue: "Local Only"),
                 systemImage: "icloud.slash"
             )
             .font(.system(size: 11))
             .foregroundStyle(.orange)
-            .help(String(
-                localized: "statusBar.sync.disabled.help",
-                defaultValue: "iCloud sync is unavailable — notes, collections, and tags won't sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
-            ))
+            .help(help)
         } else {
             switch appState.cloudKitSyncState {
             case .unknown:

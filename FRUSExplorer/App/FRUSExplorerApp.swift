@@ -100,9 +100,11 @@ struct FRUSExplorerApp: App {
     @Environment(\.openWindow) private var openWindow
     #endif
 
-    // `makeFRUSContainer()` returns a tuple so the CloudKit-enabled flag is available
-    // without a second call. `modelContainer` is a computed property for backward
-    // compatibility with all existing `.modelContainer(modelContainer)` call sites.
+    // `makeFRUSContainer()` returns a tuple so the CloudKit-enabled flag (and, on
+    // failure, the actual `NSError` — see `bootDownloadManager`'s use of
+    // `cloudKitDiagnostic(_:)`) are available without a second call. `modelContainer`
+    // is a computed property for backward compatibility with all existing
+    // `.modelContainer(modelContainer)` call sites.
     private let _containerSetup = ModelContainer.makeFRUSContainer()
     private var modelContainer: ModelContainer { _containerSetup.container }
 
@@ -449,9 +451,25 @@ struct FRUSExplorerApp: App {
 
         // Surface the CloudKit init result in AppState so the status bar and settings
         // panel can show a "Local Only" warning when sync is unavailable.
+        //
+        // `cloudKitInitError` previously held a hardcoded "CloudKit initialisation
+        // failed. Check console for details." placeholder — useless to anyone who
+        // can't attach a console, and it discarded the actual NSError that
+        // `makeFRUSContainer()` already had in hand. Run it through the same
+        // `cloudKitDiagnostic(_:)` formatter used for live sync-event failures so
+        // the UI shows the real domain/code/description (e.g. "CKErrorDomain
+        // serverRejectedRequest: …" — the signature of an undeployed CloudKit
+        // schema change; see the "schema migrations" note on `frusModelTypes`).
         appState.cloudKitSyncEnabled = _containerSetup.cloudKitEnabled
         if !_containerSetup.cloudKitEnabled {
-            appState.cloudKitInitError = "CloudKit initialisation failed. Check console for details."
+            if let initError = _containerSetup.initError {
+                appState.cloudKitInitError = Self.cloudKitDiagnostic(initError)
+            } else {
+                appState.cloudKitInitError = String(
+                    localized: "cloudkit.initError.skipped",
+                    defaultValue: "CloudKit was skipped for this session (test or preview mode)."
+                )
+            }
         }
 
         // Seed interrupted volume IDs from the sentinel store before creating the pipeline
