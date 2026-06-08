@@ -400,6 +400,13 @@ struct DocumentView: View {
                         crossReferenceStore: store,
                         downloadedVolumeIds: downloadedVolumeIds
                     )
+                    // The graph benefits from extra vertical room — large layouts and
+                    // the force-directed simulation are easier to read at full height.
+                    // Letting the user drag between .medium/.large (mirrors the
+                    // pattern used for PromptEditorView/ProjectEditorView/
+                    // SearchFilterView sheets) makes that resize a system gesture
+                    // instead of requiring a dismiss-and-reopen at a different size.
+                    .presentationDetents([.medium, .large])
                 }
             case .summarizePromptPicker:
                 SummarizationPromptPickerSheet(

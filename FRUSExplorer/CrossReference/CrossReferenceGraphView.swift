@@ -136,6 +136,9 @@ struct CrossReferenceGraphView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    resetViewportButton
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button {
                         showInfoPopover.toggle()
                     } label: {
@@ -203,6 +206,7 @@ struct CrossReferenceGraphView: View {
                 .offset(vm.panOffset)
                 .gesture(magnificationGesture)
                 .gesture(panGesture)
+                .gesture(resetViewportGesture)
                 .onChange(of: geo.size, initial: true) { _, size in
                     vm.onCanvasSizeChanged(size, reduceMotion: reduceMotion)
                 }
@@ -843,6 +847,47 @@ struct CrossReferenceGraphView: View {
             .onChanged { value in
                 vm.panOffset = value.translation
             }
+    }
+
+    /// Double-tap anywhere on the canvas to restore the pan/zoom viewport to its
+    /// neutral state.
+    ///
+    /// `magnificationGesture`/`panGesture` have no bounds-clamping or rubber-banding
+    /// — an inadvertent pinch or drag can leave the (always-centred) central node
+    /// arbitrarily far off-screen with no way back. This mirrors the familiar
+    /// double-tap-to-reset-zoom convention from Maps/Photos and is the gesture-level
+    /// counterpart to the toolbar "Reset View" button (`resetViewportButton`), which
+    /// remains available for users who prefer (or need, for accessibility reasons) a
+    /// discoverable on-screen control instead of a gesture.
+    private var resetViewportGesture: some Gesture {
+        TapGesture(count: 2)
+            .onEnded {
+                vm.resetViewport(animated: !reduceMotion)
+            }
+    }
+
+    /// Toolbar button that restores the pan/zoom viewport to its neutral state.
+    ///
+    /// This is the discoverable, on-screen counterpart to `resetViewportGesture`
+    /// (double-tap) — important for users who don't know the gesture exists, who
+    /// can't perform it reliably (e.g. motor-control accessibility needs), or who
+    /// simply prefer an explicit control. Both paths call the same
+    /// `vm.resetViewport(animated:)`, which itself no-ops when the viewport is
+    /// already neutral, so tapping this when nothing has drifted is harmless.
+    private var resetViewportButton: some View {
+        Button {
+            vm.resetViewport(animated: !reduceMotion)
+        } label: {
+            Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
+                .accessibilityLabel(
+                    String(localized: "graph.resetView.a11y",
+                           defaultValue: "Reset view")
+                )
+        }
+        .help(String(
+            localized: "graph.resetView.help",
+            defaultValue: "Restore the graph's pan and zoom to their original position"
+        ))
     }
 
     // MARK: - Canvas Drawing Helpers

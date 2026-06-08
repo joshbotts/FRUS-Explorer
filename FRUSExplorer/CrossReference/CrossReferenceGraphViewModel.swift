@@ -196,8 +196,25 @@ final class CrossReferenceGraphViewModel {
     // MARK: - Interaction
 
     var selectedNodeKey: String?
+
+    /// Pinch-to-zoom magnification applied to the canvas, clamped to `0.25...4.0`
+    /// by `magnificationGesture`. `1.0` is the neutral/initial value — the layout's
+    /// own coordinates (in `nodePositions`) are rendered at their natural scale.
+    ///
+    /// Unlike `nodePositions` (which the layout engine recomputes from scratch on
+    /// every relayout and which always keeps the central node pinned to the canvas
+    /// centre), `scale` and `panOffset` are pure view-transform state: nothing ever
+    /// resets them automatically, so an inadvertent pinch/drag can leave the central
+    /// node arbitrarily off-screen with no built-in way back. `resetViewport()`
+    /// is the recovery path — see its doc comment.
     var scale: CGFloat = 1.0
+
+    /// Pan translation applied to the canvas via `panGesture`, in canvas points.
+    /// `.zero` is the neutral/initial value (canvas centred on the pinned central
+    /// node). See `scale`'s doc comment for why this can drift indefinitely and
+    /// how `resetViewport()` recovers from it.
     var panOffset: CGSize = .zero
+
     var navigationPath: [DocumentBrowserEntry] = []
 
     // MARK: - Selection
@@ -363,6 +380,44 @@ final class CrossReferenceGraphViewModel {
         isAnimatingLayout   = false
         // graphDegree is intentionally preserved so the user's expansion preference
         // survives re-centering on a different document.
+
+        // Re-centering on a new central node rebuilds the layout around it, but a
+        // stale pinch/pan transform from the *previous* graph would still be applied
+        // on top — potentially leaving the brand-new central node off-screen before
+        // the user has even seen it. Resetting the viewport here guarantees every
+        // re-centre starts from a clean, predictable view.
+        resetViewport(animated: false)
+    }
+
+    /// Restores the pan/zoom viewport to its neutral initial state — `scale = 1.0`,
+    /// `panOffset = .zero` — re-centring the canvas on the (always-pinned) central
+    /// node at its natural size.
+    ///
+    /// This is the recovery path for the gap described in `scale`'s doc comment:
+    /// `magnificationGesture`/`panGesture` have no bounds-clamping or rubber-banding,
+    /// so an inadvertent pinch or drag can leave the central node arbitrarily far
+    /// off-screen with no way back short of dismissing and reopening the graph.
+    /// Note that the underlying *layout* (`nodePositions`) never needs touching —
+    /// the central node is always pinned to the canvas centre by the layout engine;
+    /// only the view-level transform drifts, so resetting these two values is
+    /// sufficient and exact (no coordinate math required).
+    ///
+    /// - Parameter animated: When `true`, the change is wrapped in a gentle spring
+    ///   animation so the view glides back rather than snapping; pass `false` for
+    ///   silent resets that happen as a side effect of other state changes (e.g.
+    ///   re-centring on a new document, where an additional animation would be
+    ///   redundant with the graph-rebuild transition already underway).
+    func resetViewport(animated: Bool) {
+        guard scale != 1.0 || panOffset != .zero else { return }
+        if animated {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                scale = 1.0
+                panOffset = .zero
+            }
+        } else {
+            scale = 1.0
+            panOffset = .zero
+        }
     }
 
     func toggleCluster(_ key: String) {
