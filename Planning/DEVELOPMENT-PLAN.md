@@ -1,7 +1,7 @@
 # FRUS Explorer — Development Plan
 
-**Version**: 1.6  
-**Date**: 2026-06-08
+**Version**: 1.7  
+**Date**: 2026-06-09
 
 Each task below corresponds to a single development session. Tasks are ordered so that each session's outputs are available as inputs for subsequent sessions. All sessions share the same Xcode workspace.
 
@@ -108,6 +108,7 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 149 | persName / gloss Detail Sheets Empty | Await persons/terms from SQLite before building render model; nil-guard tap callbacks; `.personNotFound` sheet case | None |
 | 150 | Source Explorer — NARA API Resolution | CSV analysis of corpus citations; `NARACatalogLookupTable`; constrained API queries with naId parent filter; multiple candidate UI; specific error messages | None |
 | 151 | Volume Front Matter — Phases 1–4 | Parser recognises `prefatoryNote`/`sources`/`persons`/`terms` divs; VolumeView splits "Front Matter" / "Contents" sections; CompilationView routes to `FrontMatterPersonsView` and `VolumeSourcesView`; `isFrontMatter` propagates through AST → `document_cache.is_front_matter`; `SearchParameters.includeFrontMatter` toggle wired through SearchService, SearchViewModel, and SearchFilterView | 07, 09, 16, 34, 41 |
+| 152 | Volume Front Matter — macOS Corpus Browser | `CorpusVolumeDetailSheet.structureView` now splits sections into "Front Matter" / "Contents" headers (mirrors VolumeView); `CorpusSectionDocumentListView` routes persons → `FrontMatterPersonsView`, sources → `VolumeSourcesView`, prose → "Read" button; `<abbr>` glossary popovers via `abbrLookup` in `ASTToRenderNodeConverter`; "Front Matter" badge in search results (iOS + macOS); build 17 | 151 |
 
 ---
 

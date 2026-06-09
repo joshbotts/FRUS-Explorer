@@ -2694,6 +2694,8 @@ private struct SubseriesVolumeListView: View {
 ///   1.0 — Session 51: initial implementation
 ///   1.1 — Session 113: `DiscoveredMetadataRow` added to indexing phase view
 ///   1.2 — Session 115: `.interrupted` phase added; amber warning view with Re-index Now button
+///   1.3 — Session 2026-06-09: `frontMatterTypes` + `extractFrontMatter` added; `structureView`
+///          now splits sections into "Front Matter" and "Contents" headers, matching `VolumeView`
 private struct CorpusVolumeDetailSheet: View {
     let volume: VolumeManifestEntry
     @Environment(AppState.self) private var appState
@@ -3004,6 +3006,30 @@ private struct CorpusVolumeDetailSheet: View {
         .padding()
     }
 
+    /// Div types representing front-matter content.
+    /// Mirrors `VolumeView.frontMatterTypes` — keep in sync.
+    private static let frontMatterTypes: Set<String> = [
+        "front", "preface", "intro", "introduction", "errata", "foreword",
+        "prefatoryNote", "sources", "persons", "terms",
+    ]
+
+    /// Flattens front-matter sections for display under the "Front Matter" header.
+    ///
+    /// A `"front"` wrapper is expanded so its subsections appear directly (one fewer
+    /// tap). Any other top-level section typed as front matter is included as-is.
+    private static func extractFrontMatter(from sections: [VolumeSection]) -> [VolumeSection] {
+        var items: [VolumeSection] = []
+        for section in sections {
+            if section.divType == "front" {
+                if section.subsections.isEmpty { items.append(section) }
+                else { items.append(contentsOf: section.subsections) }
+            } else if frontMatterTypes.contains(section.divType) {
+                items.append(section)
+            }
+        }
+        return items
+    }
+
     @ViewBuilder
     private func structureView(_ structure: VolumeStructure) -> some View {
         if structure.isEmpty {
@@ -3013,15 +3039,29 @@ private struct CorpusVolumeDetailSheet: View {
                 description: Text("No structural sections were found in this volume.")
             )
         } else {
+            let frontMatterItems = Self.extractFrontMatter(from: structure.sections)
+            let contentSections = structure.sections.filter {
+                !Self.frontMatterTypes.contains($0.divType)
+            }
             List {
-                Section("Contents") {
-                    ForEach(structure.sections) { section in
-                        Button {
-                            selectedSection = section
-                        } label: {
-                            SectionRowLabel(section: section)
+                if !frontMatterItems.isEmpty {
+                    Section("Front Matter") {
+                        ForEach(frontMatterItems) { section in
+                            Button { selectedSection = section } label: {
+                                SectionRowLabel(section: section)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                    }
+                }
+                if !contentSections.isEmpty {
+                    Section("Contents") {
+                        ForEach(contentSections) { section in
+                            Button { selectedSection = section } label: {
+                                SectionRowLabel(section: section)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
@@ -3145,12 +3185,24 @@ private struct DiscoveredMetadataRow: View {
 
 // MARK: - CorpusSectionDocumentListView
 
-/// Sheet presenting the document list for a single section (chapter / compilation)
-/// selected from `CorpusVolumeDetailSheet`.
+/// Sheet presenting the content for a single section selected from `CorpusVolumeDetailSheet`.
 ///
-/// Tapping a document calls `onDocumentSelected`, which posts the entry to
-/// `AppState.pendingBrowseDocument` and dismisses all corpus browser sheets so the
+/// Routes to the appropriate view based on section type:
+/// - **Prose sections** (`preface`, `intro`, `introduction`, `errata`, `prefatoryNote`,
+///   `terms`) with an explicit `xml:id` show a "Read" button that opens the section as a
+///   document via `onDocumentSelected`.
+/// - **`"persons"`** sections embed `FrontMatterPersonsView` inside a `List` (since that
+///   view emits `Section` content rather than a root container).
+/// - **`"sources"`** sections embed `VolumeSourcesView` inside a `List` for the same reason.
+/// - All other sections fetch the indexed document list and display rows.
+///
+/// Tapping a document (or the "Read" button) calls `onDocumentSelected`, which posts the
+/// entry to `AppState.pendingBrowseDocument` and dismisses all corpus browser sheets so the
 /// main window can navigate to the document.
+///
+/// Version history:
+///   1.0 — Session 11: initial implementation (document list only)
+///   1.1 — Session 2026-06-09: front-matter routing — persons, sources, prose sections
 private struct CorpusSectionDocumentListView: View {
     let volume: VolumeManifestEntry
     let section: VolumeSection
@@ -3162,6 +3214,39 @@ private struct CorpusSectionDocumentListView: View {
 
     @State private var documents: [DocumentBrowserEntry] = []
     @State private var isLoading = true
+
+    // MARK: - Section Routing
+
+    /// `true` when this section is a prose-only front-matter div that can be opened
+    /// directly as a document, bypassing the indexed document list.
+    ///
+    /// Mirrors `CompilationView.canReadSectionDirectly` — keep in sync.
+    private var canReadSectionDirectly: Bool {
+        let proseTypes: Set<String> = [
+            "preface", "intro", "introduction", "errata",
+            "prefatoryNote", "terms",
+        ]
+        guard proseTypes.contains(section.divType),
+              section.allDocumentIds.isEmpty,
+              section.subsections.isEmpty
+        else { return false }
+        // Exclude auto-generated sectionIds (e.g. "preface-3") — they have no
+        // xml:id in the TEI and parseDocument(documentId:) cannot locate them.
+        let autoPrefix = "\(section.divType)-"
+        if section.sectionId.hasPrefix(autoPrefix) {
+            let suffix = section.sectionId.dropFirst(autoPrefix.count)
+            if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) { return false }
+        }
+        return !section.sectionId.isEmpty
+    }
+
+    /// `true` when this section is the structured Persons list.
+    private var isPersonsSection: Bool { section.divType == "persons" }
+
+    /// `true` when this section is the structured archival Sources list.
+    private var isSourcesSection: Bool { section.divType == "sources" }
+
+    // MARK: - Body
 
     var body: some View {
         // macOS-native layout: section title row + content + Done button bar.
@@ -3175,37 +3260,89 @@ private struct CorpusSectionDocumentListView: View {
 
             Divider()
 
-            Group {
-                if isLoading {
-                    ProgressView("Loading…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if documents.isEmpty {
-                    ContentUnavailableView(
-                        "No Documents",
-                        systemImage: "doc.text",
-                        description: Text("No indexed documents found in this section.")
-                    )
-                } else {
-                    List(documents, id: \.documentId) { doc in
+            if canReadSectionDirectly {
+                // Prose front-matter section — bypass document list and open directly.
+                VStack(spacing: 16) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.secondary)
+                    Text(String(localized: "corpus.section.proseSection",
+                                defaultValue: "Prose Section"))
+                        .font(.headline)
+                    Text(String(localized: "corpus.section.proseSection.detail",
+                                defaultValue: "This section contains prose content rather than individual numbered documents."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 320)
+                    Button {
+                        let entry = DocumentBrowserEntry(
+                            documentId: section.sectionId,
+                            volumeId: volume.volumeId,
+                            documentNumber: nil,
+                            header: section.title,
+                            dateline: nil,
+                            sourceNote: nil
+                        )
+                        dismiss()
+                        onDocumentSelected(entry)
+                    } label: {
+                        Label(
+                            String(
+                                format: String(localized: "browser.compilation.readSection",
+                                               defaultValue: "Read %@"),
+                                section.title
+                            ),
+                            systemImage: "doc.text"
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            } else if isPersonsSection {
+                // Persons section — FrontMatterPersonsView emits Section content
+                // and must be embedded inside a List.
+                List {
+                    FrontMatterPersonsView(volumeId: volume.volumeId)
+                }
+                .listStyle(.inset)
+            } else if isSourcesSection {
+                // Sources section — VolumeSourcesView emits Section content
+                // and must be embedded inside a List.
+                List {
+                    VolumeSourcesView(volumeId: volume.volumeId)
+                }
+                .listStyle(.inset)
+            } else if isLoading {
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if documents.isEmpty {
+                ContentUnavailableView(
+                    "No Documents",
+                    systemImage: "doc.text",
+                    description: Text("No indexed documents found in this section.")
+                )
+            } else {
+                List(documents, id: \.documentId) { doc in
+                    Button {
+                        dismiss()
+                        onDocumentSelected(doc)
+                    } label: {
+                        DocumentRowLabel(doc: doc)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
                         Button {
-                            dismiss()
-                            onDocumentSelected(doc)
+                            appState.currentGraphEntry = doc
+                            openWindow(id: "frus.crossReferenceGraph")
                         } label: {
-                            DocumentRowLabel(doc: doc)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button {
-                                appState.currentGraphEntry = doc
-                                openWindow(id: "frus.crossReferenceGraph")
-                            } label: {
-                                Label("Show Cross-Reference Graph",
-                                      systemImage: "point.3.connected.trianglepath.dotted")
-                            }
+                            Label("Show Cross-Reference Graph",
+                                  systemImage: "point.3.connected.trianglepath.dotted")
                         }
                     }
-                    .listStyle(.inset)
                 }
+                .listStyle(.inset)
             }
 
             Divider()
@@ -3219,7 +3356,14 @@ private struct CorpusSectionDocumentListView: View {
             .padding(.vertical, 10)
         }
         .frame(minWidth: 460, minHeight: 400)
-        .task { await loadDocuments() }
+        .task {
+            // Skip the document-list fetch for sections handled by dedicated views.
+            if canReadSectionDirectly || isPersonsSection || isSourcesSection {
+                isLoading = false
+            } else {
+                await loadDocuments()
+            }
+        }
     }
 
     private func loadDocuments() async {
