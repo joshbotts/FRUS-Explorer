@@ -1,7 +1,7 @@
 # FRUS Explorer — Development Plan
 
-**Version**: 1.5  
-**Date**: 2026-05-23
+**Version**: 1.6  
+**Date**: 2026-06-08
 
 Each task below corresponds to a single development session. Tasks are ordered so that each session's outputs are available as inputs for subsequent sessions. All sessions share the same Xcode workspace.
 
@@ -107,6 +107,7 @@ Each task below corresponds to a single development session. Tasks are ordered s
 | 148 | CloudKit Sync Silent Failures | Zone verification at launch; account status check; schema push; change token diagnostics; richer status bar error messaging | None |
 | 149 | persName / gloss Detail Sheets Empty | Await persons/terms from SQLite before building render model; nil-guard tap callbacks; `.personNotFound` sheet case | None |
 | 150 | Source Explorer — NARA API Resolution | CSV analysis of corpus citations; `NARACatalogLookupTable`; constrained API queries with naId parent filter; multiple candidate UI; specific error messages | None |
+| 151 | Volume Front Matter — Phases 1–4 | Parser recognises `prefatoryNote`/`sources`/`persons`/`terms` divs; VolumeView splits "Front Matter" / "Contents" sections; CompilationView routes to `FrontMatterPersonsView` and `VolumeSourcesView`; `isFrontMatter` propagates through AST → `document_cache.is_front_matter`; `SearchParameters.includeFrontMatter` toggle wired through SearchService, SearchViewModel, and SearchFilterView | 07, 09, 16, 34, 41 |
 
 ---
 
@@ -247,6 +248,35 @@ The following items were added to earlier sessions by later feature requirements
 - Three-step onboarding (`DownloadScopePickerView`) replaces old subseries/subject picker flow
 - `ManifestStore.corpusDateRange` must be implemented before Session 49 (`minYear=1861`, `maxYear=1992`)
 - `DownloadScope` enum (`.corpus`, `.subseries(String)`, `.volume(String)`) added to `DownloadManager`
+
+### Session 09 — Search Index Pipeline
+**Added by Session 151 (Volume Front Matter)**:
+- `is_front_matter INTEGER NOT NULL DEFAULT 0` column added to `document_cache` (idempotent `ALTER TABLE` migration)
+- `frontMatterDocumentKeys(limitToVolumeIds:) -> Set<String>` query added to `IndexingPipeline`
+- `DocumentCacheRow.isFrontMatter` field populated from `FRUSDocumentAST.isFrontMatter` during `parseAndExtract`
+- `TEIParserDelegate.frontMatterDivTypes` set controls which promoted quasi-documents receive `isFrontMatter = true`
+- Volumes indexed before this change have `is_front_matter = 0`; re-index is required for the toggle to take effect
+
+### Session 07 — TEI Parser Full Coverage
+**Added by Session 151 (Volume Front Matter)**:
+- `VolumeStructureParserDelegate.structuralTypes` extended with `"prefatoryNote"`, `"sources"`, `"persons"`, `"terms"`
+- `TEIParserDelegate.structuralDivTypes` extended with `"prefatoryNote"`, `"terms"` (sources/persons handled via specialised tables)
+- `FRUSDocumentAST.isFrontMatter: Bool` field added (default `false`); set to `true` for promoted front-matter prose divs
+- `humanTitle(for:)` extended with display labels for the four new types
+
+### Session 16 — Search View
+**Added by Session 151 (Volume Front Matter)**:
+- `SearchParameters.includeFrontMatter: Bool` (default `true`) controls whether front-matter quasi-documents appear in results
+- `SearchFilterView` exposes an "Include front matter" toggle in the Search Scope section
+- `SearchViewModel.includeFrontMatter` wired into `searchParameters`, `hasActiveFilters`, `clearFilters()`, `applyParameters(_:)`
+
+### Session 34 — Front Matter Browser Support
+**Extended by Session 151 (Volume Front Matter)**:
+- `CompilationView.canReadSectionDirectly` extended to include `"prefatoryNote"` and `"terms"`
+- `CompilationView` routes `"persons"` → `FrontMatterPersonsView` and `"sources"` → `VolumeSourcesView`
+- `VolumeView.volumeStructureSection` split into "Front Matter" and "Contents" `Section`s
+- `PersonIndexDetailSheet` visibility widened from `private` → `internal` for use in `FrontMatterPersonsView`
+- New files: `FrontMatterPersonsView.swift`, `VolumeSourcesView.swift`
 
 ### Session 32 — Breadcrumbs
 **Superseded by Session 50 (Browser Polish)**:
