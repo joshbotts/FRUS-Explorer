@@ -895,7 +895,7 @@ private struct DownloadsSettingsView: View {
 // MARK: - StorageManagementView
 
 /// Shows aggregate and per-volume storage usage, per-volume indexing status,
-/// and the Reindex All Volumes control.
+/// and indexing controls matching the macOS Storage pane.
 ///
 /// ## Indexing Status (Session 67)
 /// Each per-volume row indicates whether the volume has been indexed for full-text
@@ -907,10 +907,29 @@ private struct DownloadsSettingsView: View {
 /// bottom of the form contains the explanatory text, optional "Needs Attention" list
 /// for interrupted volumes, and the Reindex All Volumes button with live progress.
 ///
+/// ## Indexing Parity (Session 2026-06-08)
+/// Adds "Index Remaining" (index only unindexed volumes) and "Delete Index & Rebuild"
+/// (wipe FTS5 index + reindex from scratch) to match the macOS `SettingsStoragePane`.
+/// A `BatchKind`-driven queue progress card shows live progress during any batch.
+///
 /// ## Scroll Affordance (Session 67)
 /// The Form omits `maxHeight: .infinity` so the `NavigationSplitView` detail column
 /// bounds it correctly and it scrolls when the per-volume list is long.
 private struct StorageManagementView: View {
+
+    // MARK: - Batch tracking
+
+    /// Tracks the kind and progress of a Settings-triggered bulk indexing run.
+    /// Set at the start of `indexRemaining()` / `startReindexAll()` / `rebuildIndex()`;
+    /// cleared on completion. Drives `indexingQueueCard` visibility and header label.
+    private enum BatchKind {
+        /// Iterating through unindexed volumes one by one; `current` is 1-based.
+        case indexRemaining(current: Int, total: Int)
+        /// Running `indexAllVolumes()` as a single call.
+        case reindexAll(total: Int)
+        /// Running `removeAllVolumesFromIndex()` followed by `indexAllVolumes()`.
+        case rebuildAll(total: Int)
+    }
 
     @Environment(AppState.self) private var appState
 
@@ -924,9 +943,17 @@ private struct StorageManagementView: View {
     /// Per-volume reindex errors (rare, but surfaced inline).
     @State private var reindexErrors: [String: String] = [:]
 
-    // MARK: Reindex All state
+    // MARK: Batch state (unified across all three operations)
 
-    /// `true` while `indexAllVolumes()` is running.
+    /// Non-nil while any Settings-triggered bulk indexing batch is active.
+    /// Drives `indexingQueueCard` visibility and header label.
+    @State private var settingsBatch: BatchKind? = nil
+    /// Controls the "Delete Index & Rebuild" confirmation alert.
+    @State private var showRebuildConfirmation = false
+
+    // MARK: Reindex All legacy state (kept for the existing "Reindex All" UI path)
+
+    /// `true` while `indexAllVolumes()` is running via the "Reindex All" button.
     @State private var isReindexAll = false
     /// Stream state from `pipeline.progress` during a Reindex All operation.
     @State private var reindexAllProgressState: IndexingProgress.State = .idle
@@ -1066,6 +1093,26 @@ private struct StorageManagementView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
+                // Queue progress card — shown while any batch is running.
+                if settingsBatch != nil || appState.currentIndexingProgress != nil {
+                    indexingQueueCard
+                }
+
+                Button {
+                    Task { await indexRemaining() }
+                } label: {
+                    Label(
+                        String(localized: "settings.reindex.remaining.button",
+                               defaultValue: "Index Remaining"),
+                        systemImage: "plus.circle"
+                    )
+                }
+                .disabled(isAnythingIndexing || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.reindex.remaining.a11y",
+                           defaultValue: "Index only volumes that have not been indexed yet")
+                )
+
                 Button {
                     startReindexAll()
                 } label: {
@@ -1082,11 +1129,25 @@ private struct StorageManagementView: View {
                         )
                     }
                 }
-                .disabled(isReindexAll || reindexingInterruptedId != nil
-                          || appState.indexingPipeline == nil)
+                .disabled(isAnythingIndexing || appState.indexingPipeline == nil)
                 .accessibilityLabel(
                     String(localized: "settings.reindex.start.a11y",
                            defaultValue: "Reindex all downloaded FRUS volumes")
+                )
+
+                Button(role: .destructive) {
+                    showRebuildConfirmation = true
+                } label: {
+                    Label(
+                        String(localized: "settings.reindex.rebuild.button",
+                               defaultValue: "Delete Index & Rebuild"),
+                        systemImage: "trash.circle"
+                    )
+                }
+                .disabled(isAnythingIndexing || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.reindex.rebuild.a11y",
+                           defaultValue: "Delete the entire search index and rebuild from scratch")
                 )
 
                 if case .completed(let volumes, let docs) = reindexAllProgressState {
@@ -1129,6 +1190,91 @@ private struct StorageManagementView: View {
                 }
             }
         }
+        .alert(
+            String(localized: "settings.reindex.rebuild.confirm.title",
+                   defaultValue: "Delete Index and Rebuild?"),
+            isPresented: $showRebuildConfirmation
+        ) {
+            Button(String(localized: "settings.reindex.rebuild.confirm.action",
+                          defaultValue: "Delete & Rebuild"),
+                   role: .destructive) {
+                Task { await rebuildIndex() }
+            }
+            Button(String(localized: "settings.reindex.rebuild.confirm.cancel",
+                          defaultValue: "Cancel"),
+                   role: .cancel) {}
+        } message: {
+            let count = report?.perVolume.count ?? 0
+            Text(String(localized: "settings.reindex.rebuild.confirm.message",
+                        defaultValue: "This will permanently delete the entire search index, then rebuild it by re-parsing all \(count) downloaded volume\(count == 1 ? "" : "s"). Your research notes, highlights, summaries, collections, and tags will not be affected."))
+        }
+    }
+
+    // MARK: - Indexing Queue Card
+
+    /// Inline progress card shown inside the Reindex section while a Settings-triggered
+    /// batch is running. Mirrors the macOS `SettingsStoragePane.indexingQueueCard`.
+    @ViewBuilder
+    private var indexingQueueCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                switch settingsBatch {
+                case .indexRemaining(let current, let total):
+                    Text(String(localized: "settings.storage.indexing.remaining",
+                                defaultValue: "Volume \(current) of \(total)"))
+                        .font(.callout.weight(.medium))
+                case .reindexAll(let total):
+                    Text(String(localized: "settings.storage.reindexing.all",
+                                defaultValue: "Reindexing all \(total) volumes"))
+                        .font(.callout.weight(.medium))
+                case .rebuildAll(let total):
+                    Text(String(localized: "settings.storage.rebuilding.all",
+                                defaultValue: "Rebuilding index for all \(total) volumes"))
+                        .font(.callout.weight(.medium))
+                case nil:
+                    Text(String(localized: "settings.storage.indexing.generic",
+                                defaultValue: "Indexing…"))
+                        .font(.callout.weight(.medium))
+                }
+                Spacer()
+            }
+
+            if let update = appState.currentIndexingProgress {
+                let resolvedTitle = appState.manifestStore
+                    .entry(forVolumeId: update.volumeId)?.title
+                Text(resolvedTitle ?? update.volumeId)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                if update.totalDocuments > 0 {
+                    ProgressView(
+                        value: Double(update.completedDocuments),
+                        total: Double(update.totalDocuments)
+                    )
+                    .progressViewStyle(.linear)
+                    HStack {
+                        Text(String(localized: "settings.storage.indexing.docCount",
+                                    defaultValue: "\(update.completedDocuments) / \(update.totalDocuments) documents"))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if update.docsPerSecond > 0 {
+                            Text(String(format: String(localized: "settings.storage.indexing.throughput",
+                                                       defaultValue: "%.0f docs/s"),
+                                        update.docsPerSecond))
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.accentColor.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     // MARK: - Per-Volume Row
@@ -1218,6 +1364,14 @@ private struct StorageManagementView: View {
             }
         }
         // nil means status not yet loaded; show nothing to avoid layout jitter
+    }
+
+    // MARK: - Computed
+
+    /// `true` when any batch-indexing operation is in progress, used to disable
+    /// all action buttons to prevent concurrent batch conflicts.
+    private var isAnythingIndexing: Bool {
+        settingsBatch != nil || isReindexAll || reindexingInterruptedId != nil
     }
 
     // MARK: - Reindex
@@ -1315,6 +1469,82 @@ private struct StorageManagementView: View {
                 }
             }
             await MainActor.run { reindexingInterruptedId = nil }
+        }
+    }
+
+    // MARK: - Index Remaining
+
+    /// Indexes only the downloaded volumes that have not been indexed yet,
+    /// iterating one by one with `BatchKind.indexRemaining` progress tracking.
+    ///
+    /// Mirrors `SettingsStoragePane.indexRemaining()` on macOS.
+    private func indexRemaining() async {
+        guard let pipeline = appState.indexingPipeline,
+              let rep = report else { return }
+        let unindexed = rep.perVolume.filter {
+            (try? pipeline.isVolumeIndexed($0.volumeId)) != true
+        }
+        guard !unindexed.isEmpty else { return }
+        for (idx, entry) in unindexed.enumerated() {
+            settingsBatch = .indexRemaining(current: idx + 1, total: unindexed.count)
+            do {
+                try await pipeline.indexVolume(entry.volumeId)
+                indexedStatus[entry.volumeId] = true
+            } catch {
+                #if DEBUG
+                print("[Settings] indexRemaining: \(entry.volumeId) failed — \(error)")
+                #endif
+            }
+        }
+        settingsBatch = nil
+        // Reload report to refresh per-volume indexed status.
+        if let dm = appState.downloadManager {
+            report = try? await dm.storageReport(indexDirectory: appState.indexDirectory)
+        }
+    }
+
+    // MARK: - Rebuild Index
+
+    /// Wipes the entire search index then rebuilds it from all downloaded volumes.
+    ///
+    /// Unlike `startReindexAll()` (which relies on per-volume pre-deletes inside
+    /// `storeIndexData`), this issues a single `removeAllVolumesFromIndex()` first,
+    /// guaranteeing a fully clean state before the rebuild begins.
+    ///
+    /// Mirrors `SettingsStoragePane.rebuildIndex()` on macOS.
+    private func rebuildIndex() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        let total = report?.perVolume.count ?? 0
+        settingsBatch = .rebuildAll(total: total)
+        do {
+            try await pipeline.removeAllVolumesFromIndex()
+            appState.indexedVolumeIds = []
+        } catch {
+            settingsBatch = nil
+            reindexAllError = error.localizedDescription
+            #if DEBUG
+            print("[Settings] rebuildIndex: removeAllVolumesFromIndex failed — \(error)")
+            #endif
+            return
+        }
+        do {
+            try await pipeline.indexAllVolumes()
+        } catch {
+            reindexAllError = error.localizedDescription
+            #if DEBUG
+            print("[Settings] rebuildIndex: indexAllVolumes failed — \(error)")
+            #endif
+        }
+        settingsBatch = nil
+        // Refresh indexed status.
+        if let dm = appState.downloadManager {
+            report = try? await dm.storageReport(indexDirectory: appState.indexDirectory)
+        }
+        if let rep = report {
+            for perVol in rep.perVolume {
+                indexedStatus[perVol.volumeId] =
+                    (try? pipeline.isVolumeIndexed(perVol.volumeId)) ?? false
+            }
         }
     }
 }

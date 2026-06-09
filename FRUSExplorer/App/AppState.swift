@@ -715,6 +715,10 @@ final class AppState {
     /// Creates the activity on the first call when `indexingActivity == nil`.
     /// Subsequent calls update the existing activity's `ContentState` in place so
     /// the Dynamic Island does not flicker between volumes in a multi-volume batch.
+    ///
+    /// On app restart `indexingActivity` resets to `nil` even when an activity is
+    /// still running. To prevent a second widget appearing, the else-branch checks
+    /// `Activity<IndexingActivityAttributes>.activities` before calling `request(…)`.
     private func syncIndexingLiveActivity(update: IndexingProgressUpdate) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let title = manifestStore.entry(forVolumeId: update.volumeId)?.title ?? update.volumeId
@@ -741,10 +745,22 @@ final class AppState {
                 await running.update(ActivityContent(state: state, staleDate: nil))
             }
         } else {
-            indexingActivity = try? Activity.request(
-                attributes: IndexingActivityAttributes(),
-                content: ActivityContent(state: state, staleDate: nil)
-            )
+            // Adopt an existing activity that survived app restart before creating a
+            // new one. `indexingActivity` is in-memory only — after a relaunch it is
+            // nil even if a Live Activity widget is still displayed on the Dynamic
+            // Island. Without this check, each `syncIndexingLiveActivity` call during
+            // an in-progress index run after app restart spawns an additional widget.
+            if let existing = Activity<IndexingActivityAttributes>.activities.first {
+                indexingActivity = existing
+                Task { @MainActor in
+                    await existing.update(ActivityContent(state: state, staleDate: nil))
+                }
+            } else {
+                indexingActivity = try? Activity.request(
+                    attributes: IndexingActivityAttributes(),
+                    content: ActivityContent(state: state, staleDate: nil)
+                )
+            }
         }
     }
 

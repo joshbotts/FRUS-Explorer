@@ -176,11 +176,20 @@ public struct FTS5Document: Sendable {
 ///   1.0 — Session 03: initial implementation
 ///   1.1 — Session 38: `isEditorialNote` field added
 ///   1.2 — Session 123: `snippet` field is now always "" (FTS5 snippet() removed)
+///   1.3 — Session 2026-06-08: `documentNumber` added so citation formatters on iOS
+///          can include "Document N" in the citation string (mirrors the macOS
+///          `CitationPopoverView` which already used `entry.documentNumber`).
 public struct FTS5Result: Sendable {
     /// Document identifier (matches `FTS5Document.id`).
     public let documentId: String
     /// Volume this document belongs to.
     public let volumeId: String
+    /// Printed document number from the FRUS volume (e.g. `"217"`), if present.
+    ///
+    /// Extracted during indexing from the leading integer before the first `.` in
+    /// the document's `<head>` element. `nil` for editorial notes, front matter,
+    /// and documents whose headers do not begin with a numeric prefix.
+    public let documentNumber: String?
     /// Document header / title line.
     public let header: String
     /// Dateline, if present in the document.

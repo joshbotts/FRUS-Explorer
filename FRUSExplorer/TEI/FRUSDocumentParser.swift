@@ -194,7 +194,16 @@ public actor FRUSDocumentParser {
         }
         let composite = FullVolumeParserDelegate()
         xmlParser.delegate = composite
-        xmlParser.parse()
+        // `autoreleasepool` ensures the XMLParser's internal Objective-C allocations
+        // (NSXMLParser event buffers, NSString attribute dictionaries) are drained as
+        // soon as parsing finishes rather than accumulating until the enclosing async
+        // task's autorelease pool drains. This is particularly important on iOS where
+        // large FRUS volumes (3–15 MB XML) can create tens of thousands of temporary
+        // ObjC objects; without a pool, peak RSS can exceed the system's jetsam limit
+        // mid-batch and cause the indexer to be killed.
+        // `xmlParser.parse()` returns Bool but we rely on `teiDelegate.fatalError`
+        // for error detection; discarding the Bool is intentional.
+        _ = autoreleasepool { xmlParser.parse() }
 
         if let error = composite.teiDelegate.fatalError {
             throw FRUSParserError.xmlError(error)

@@ -208,11 +208,15 @@ public struct HistoryAtStateCitationFormatter: CitationFormatter {
         let year = publicationYear(from: volume.publicationDate)
         result += " (\(volume.publicationPlace): \(volume.publisher), \(year))"
 
-        if let docNum = document.documentNumber {
-            result += ", Document \(docNum)."
-        } else {
-            result += "."
-        }
+        // Prefer the printed document number ("Document 217"). When nil — which
+        // occurs for editorial notes, cross-reference navigation entries, and
+        // documents whose headers don't carry a numeric prefix — fall back to the
+        // document identifier (e.g. "d217"). This mirrors the macOS
+        // `CitationPopoverView.formattedCitation` which uses the same fallback
+        // so the citation always includes a locator rather than ending with just ")."
+        let docLocation = document.documentNumber.map { "Document \($0)" }
+            ?? document.documentId
+        result += ", \(docLocation)."
 
         return result
     }

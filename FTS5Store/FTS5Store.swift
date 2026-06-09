@@ -212,13 +212,28 @@ public actor FTS5Store {
         // FTS5 snippet with TEI-derived body text via documentBodyTextsAndDates(),
         // making snippet() pure overhead. Column 7 (snip) is a fixed empty string
         // so the column offsets of subsequent result-row bindings are unchanged.
+        // Column ordering (0-based):
+        //   0  document_id
+        //   1  volume_id
+        //   2  header
+        //   3  dateline
+        //   4  source_note
+        //   5  subject_tag_ids
+        //   6  user_tag_ids
+        //   7  snip (always '')
+        //   8  score (bm25)
+        //   9  is_editorial_note
+        //  10  document_number
+        //
+        // document_number is appended last so existing column indices are unchanged.
         let sql = """
         SELECT
             document_id, volume_id, header, dateline, source_note,
             subject_tag_ids, user_tag_ids,
             '' AS snip,
             bm25(\(schema.tableName)) AS score,
-            is_editorial_note
+            is_editorial_note,
+            document_number
         FROM \(schema.tableName)
         WHERE \(schema.tableName) MATCH ?
         ORDER BY score
@@ -242,15 +257,16 @@ public actor FTS5Store {
             if let tagId = query.userTagId,    !userIds.contains(tagId)    { continue }
 
             let result = FTS5Result(
-                documentId:   columnString(stmt, 0) ?? "",
-                volumeId:     columnString(stmt, 1) ?? "",
-                header:       columnString(stmt, 2) ?? "",
-                dateline:     columnString(stmt, 3),
-                sourceNote:   columnString(stmt, 4),
-                snippet:      columnString(stmt, 7) ?? "",
-                bm25Score:    sqlite3_column_double(stmt, 8),
-                subjectTagIds: subjectIds,
-                userTagIds:   userIds,
+                documentId:     columnString(stmt, 0) ?? "",
+                volumeId:       columnString(stmt, 1) ?? "",
+                documentNumber: columnString(stmt, 10),
+                header:         columnString(stmt, 2) ?? "",
+                dateline:       columnString(stmt, 3),
+                sourceNote:     columnString(stmt, 4),
+                snippet:        columnString(stmt, 7) ?? "",
+                bm25Score:      sqlite3_column_double(stmt, 8),
+                subjectTagIds:  subjectIds,
+                userTagIds:     userIds,
                 isEditorialNote: sqlite3_column_int(stmt, 9) != 0
             )
             results.append(result)

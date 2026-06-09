@@ -123,6 +123,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          TEI `<ref target="#p{N}">` / `<ref target="#pg{N}">` page references to their
 ///          containing document IDs via the `page_ranges` table; called in `storeIndexData`
 ///          after both tables are populated.
+///   3.1 — Session 2026-06-08: large-corpus indexing stability:
+///          • `PRAGMA wal_checkpoint(PASSIVE)` after each volume in `indexAllVolumes` to
+///            prevent the WAL file from growing unboundedly (~50 MB peak vs 1 GB+ before).
+///          • `autoreleasepool` added to `FRUSDocumentParser.parseVolumeFull` around the
+///            `XMLParser.parse()` call to drain ObjC autorelease pools between volumes,
+///            reducing peak RSS spikes that could trigger iOS jetsam kills mid-batch.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -563,6 +569,13 @@ public actor IndexingPipeline {
                         let progressNow = completedVolumes + failedVolumes
                         emit(.indexing(volumeId: data.volumeId, current: progressNow, total: total))
                         logger.info("indexAllVolumes: [\(progressNow, privacy: .public)/\(total, privacy: .public)] stored \(data.volumeId, privacy: .public) — \(data.documents.count, privacy: .public) docs in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
+                        // Checkpoint the WAL after each volume to prevent it growing
+                        // unboundedly during a large batch (e.g. 552-volume full corpus).
+                        // PASSIVE mode: flushes WAL pages to the main DB file without
+                        // blocking active readers. Keeps frus.db's WAL file bounded
+                        // (~50 MB peak instead of potential 1+ GB), reducing both peak
+                        // disk usage and the cost of the final checkpoint at batch end.
+                        try? auxExec("PRAGMA wal_checkpoint(PASSIVE)")
                     } catch {
                         volumeIndexingStartTime = nil
                         volumeDocumentsProcessed = 0

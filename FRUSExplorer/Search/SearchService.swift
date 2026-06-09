@@ -155,7 +155,7 @@ public actor SearchService {
             filtered.append(SearchResult(
                 documentId: raw.documentId,
                 volumeId: raw.volumeId,
-                documentNumber: nil,          // populated from document_cache in a future session
+                documentNumber: raw.documentNumber,
                 header: raw.header,
                 dateline: raw.dateline,
                 dateISO: nil,                 // populated by rebuildSnippetsAndAttachDates below
