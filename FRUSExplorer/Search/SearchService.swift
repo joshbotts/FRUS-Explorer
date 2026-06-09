@@ -113,6 +113,15 @@ public actor SearchService {
             return Set(pairs.map { "\($0.volumeId)/\($0.documentId)" })
         }()
 
+        // Build front-matter exclusion set when the toggle is off.
+        // Returns nil (no filtering) when includeFrontMatter is true.
+        let frontMatterKeys: Set<String>? = try await {
+            guard !parameters.includeFrontMatter else { return nil }
+            return try await pipeline.frontMatterDocumentKeys(
+                limitToVolumeIds: parameters.volumeIds
+            )
+        }()
+
         let rawResults = try await fts5Store.search(
             query: query,
             limit: effectiveLimit + 200,   // overscan to account for post-processing
@@ -129,6 +138,9 @@ public actor SearchService {
 
             // Person ref filter
             if let keys = personKeys, !keys.contains("\(raw.volumeId)/\(raw.documentId)") { continue }
+
+            // Front matter exclusion filter: skip if this is a known front-matter doc.
+            if let keys = frontMatterKeys, keys.contains("\(raw.volumeId)/\(raw.documentId)") { continue }
 
             // Subject tag AND filter
             if !parameters.subjectTagIds.isEmpty {

@@ -41,6 +41,7 @@ public enum DocumentTypeFilter: Sendable, Equatable {
 ///   1.2 — Session 39: `personRef` filter added
 ///   1.3 — Session 75: `includeDocumentText` added so document body columns can be excluded
 ///          to enable "summaries only" or "notes only" search scope
+///   1.4 — Session 2026-06-08: `includeFrontMatter` added for Phase 4 front-matter scope toggle
 public struct SearchParameters: Sendable, Equatable {
 
     // MARK: - Full-text fields
@@ -121,6 +122,17 @@ public struct SearchParameters: Sendable, Equatable {
     /// only restricts an existing keyword search's result set.
     public var personRef: String?
 
+    // MARK: - Front matter scope
+
+    /// Whether front-matter prose sections (preface, introduction, prefatoryNote, terms, etc.)
+    /// should be included in search results. Default `true`.
+    ///
+    /// When `false`, any result whose `"volumeId/documentId"` key appears in
+    /// `IndexingPipeline.frontMatterDocumentKeys(limitToVolumeIds:)` is excluded.
+    /// For volumes indexed before this field was added (front matter rows have
+    /// `is_front_matter = 0` by default), this filter is a no-op until the user reindexes.
+    public var includeFrontMatter: Bool
+
     // MARK: - Initialiser
 
     public init(
@@ -138,7 +150,8 @@ public struct SearchParameters: Sendable, Equatable {
         includeNotes: Bool = true,
         projectId: UUID? = nil,
         documentTypeFilter: DocumentTypeFilter = .all,
-        personRef: String? = nil
+        personRef: String? = nil,
+        includeFrontMatter: Bool = true
     ) {
         self.keywords = keywords
         self.phrase = phrase
@@ -155,6 +168,7 @@ public struct SearchParameters: Sendable, Equatable {
         self.projectId = projectId
         self.documentTypeFilter = documentTypeFilter
         self.personRef = personRef
+        self.includeFrontMatter = includeFrontMatter
     }
 }
 

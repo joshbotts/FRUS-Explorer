@@ -45,16 +45,29 @@ public struct FRUSDocumentAST: Sendable {
     /// date-range filtering.
     public let dateTimeMax: String?
 
+    /// `true` when this document was promoted from a prose-only front-matter structural
+    /// div (e.g. `<div type="preface">`, `<div type="prefatoryNote">`).
+    ///
+    /// Used by `IndexingPipeline` to populate the `is_front_matter` column in
+    /// `document_cache`, which in turn powers the "Include front matter" search
+    /// scope toggle in Phase 4.
+    ///
+    /// `false` for primary-source documents (`<div type="document">`) and editorial
+    /// notes (`<div type="editorialNote">`).
+    public let isFrontMatter: Bool
+
     public init(
         documentId: String,
         nodes: [FRUSASTNode],
         dateTimeMin: String? = nil,
-        dateTimeMax: String? = nil
+        dateTimeMax: String? = nil,
+        isFrontMatter: Bool = false
     ) {
         self.documentId = documentId
         self.nodes = nodes
         self.dateTimeMin = dateTimeMin
         self.dateTimeMax = dateTimeMax
+        self.isFrontMatter = isFrontMatter
     }
 }
 

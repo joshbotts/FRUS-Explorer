@@ -385,8 +385,9 @@ public actor IndexingPipeline {
         let cacheSQL = """
             INSERT OR REPLACE INTO document_cache
             (volume_id, document_id, document_number, header, dateline, source_note, body_text,
-             subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
+             is_front_matter)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         var cacheStmt: OpaquePointer?
         if sqlite3_prepare_v2(h, cacheSQL, -1, &cacheStmt, nil) == SQLITE_OK {
@@ -914,6 +915,37 @@ public actor IndexingPipeline {
         return ids
     }
 
+    // MARK: - Front Matter Document Key Query (used by SearchService Phase 4)
+
+    /// Returns the set of `"volumeId/documentId"` composite keys for front-matter documents.
+    ///
+    /// Used by `SearchService` to filter out front-matter quasi-documents when
+    /// `SearchParameters.includeFrontMatter == false`. An empty set is returned if no
+    /// volumes have been indexed yet or if `volumeIds` is an empty array.
+    ///
+    /// When `volumeIds` is nil, all indexed volumes are searched.
+    func frontMatterDocumentKeys(limitToVolumeIds volumeIds: [String]?) throws -> Set<String> {
+        var sql = "SELECT volume_id, document_id FROM document_cache WHERE is_front_matter = 1"
+        var args: [String] = []
+        if let vids = volumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            sql += " AND volume_id IN (\(placeholders))"
+            args = vids
+        }
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, v) in args.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), v, -1, SQLITE_TRANSIENT_IP)
+        }
+        var keys = Set<String>()
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let vid = auxColumnString(stmt, 0) ?? ""
+            let did = auxColumnString(stmt, 1) ?? ""
+            keys.insert("\(vid)/\(did)")
+        }
+        return keys
+    }
+
     // MARK: - Volume Sources Query (used by VolumeSourcesView)
 
     /// Returns all archival source entries for a volume from the `volume_sources` table.
@@ -1150,7 +1182,8 @@ public actor IndexingPipeline {
                 header: header, dateline: dateline, sourceNote: sourceNote,
                 bodyText: bodyText, subjectTagIds: subjectTagStr,
                 userTagIds: nil, summaryText: nil, noteText: nil,
-                isEditorialNote: isEditorialNote
+                isEditorialNote: isEditorialNote,
+                isFrontMatter: astDoc.isFrontMatter
             ))
         }
 
@@ -1982,11 +2015,14 @@ public actor IndexingPipeline {
                 summary_text TEXT,
                 note_text TEXT,
                 is_editorial_note INTEGER NOT NULL DEFAULT 0,
+                is_front_matter   INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
         // Idempotent migration for databases that predate Session 38.
         try? exec("ALTER TABLE document_cache ADD COLUMN is_editorial_note INTEGER NOT NULL DEFAULT 0")
+        // Idempotent migration for databases that predate Session 2026-06-08 (front matter scope).
+        try? exec("ALTER TABLE document_cache ADD COLUMN is_front_matter INTEGER NOT NULL DEFAULT 0")
         try exec("""
             CREATE TABLE IF NOT EXISTS person_mentions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2133,8 +2169,9 @@ public actor IndexingPipeline {
             let sql = """
                 INSERT OR REPLACE INTO document_cache
                 (volume_id, document_id, document_number, header, dateline, source_note, body_text,
-                 subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
+                 is_front_matter)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
             localStmt = try auxPrepare(sql)
             stmt = localStmt!
@@ -2163,6 +2200,7 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 10, row.summaryText)
                 auxBindOptional(stmt, 11, row.noteText)
                 sqlite3_bind_int(stmt, 12, row.isEditorialNote ? 1 : 0)
+                sqlite3_bind_int(stmt, 13, row.isFrontMatter  ? 1 : 0)
                 try auxStep(stmt)
             }
         }
@@ -2923,7 +2961,8 @@ public actor IndexingPipeline {
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {
         let sql = """
             SELECT document_number, header, dateline, source_note, body_text,
-                   subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note
+                   subject_tag_ids, user_tag_ids, summary_text, note_text,
+                   is_editorial_note, is_front_matter
             FROM document_cache WHERE volume_id = ? AND document_id = ?
             """
         let stmt = try auxPrepare(sql)
@@ -2942,7 +2981,8 @@ public actor IndexingPipeline {
             userTagIds: auxColumnString(stmt, 6),
             summaryText: auxColumnString(stmt, 7),
             noteText: auxColumnString(stmt, 8),
-            isEditorialNote: sqlite3_column_int(stmt, 9) != 0
+            isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
+            isFrontMatter:   sqlite3_column_int(stmt, 10) != 0
         )
     }
 
@@ -3132,6 +3172,9 @@ struct DocumentCacheRow: Sendable {
     let summaryText: String?
     let noteText: String?
     let isEditorialNote: Bool
+    /// `true` when the document was promoted from a prose-only front-matter structural
+    /// section (preface, introduction, prefatoryNote, terms, etc.).
+    let isFrontMatter: Bool
 
     func toFTS5Document(summaryText: String?, noteText: String?) -> FTS5Document {
         FTS5Document(

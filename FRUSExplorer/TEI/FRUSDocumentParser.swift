@@ -521,6 +521,14 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         "prefatoryNote", "terms",
     ]
 
+    /// Subset of `structuralDivTypes` that are front-matter sections.
+    /// Used to set `FRUSDocumentAST.isFrontMatter` so the indexing pipeline
+    /// can populate the `is_front_matter` column in `document_cache`.
+    private static let frontMatterDivTypes: Set<String> = [
+        "preface", "intro", "introduction", "errata", "foreword",
+        "prefatoryNote", "terms",
+    ]
+
     // MARK: Init
 
     init(targetDocumentId: String?) {
@@ -627,7 +635,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // to the FTS5 index. The section becomes its own indexed entity; children are not
             // bubbled to the parent.
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
-            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
+            // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
+            let isFrontMatter = Self.frontMatterDivTypes.contains(divType)
+            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
+                                      isFrontMatter: isFrontMatter)
             documents.append(doc)
         } else if isTransparent(elementName: elementName, attributes: frame.attributes) {
             // Transparent element: pass children up to the parent frame.

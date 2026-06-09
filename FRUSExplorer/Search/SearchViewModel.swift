@@ -116,6 +116,12 @@ final class SearchViewModel {
     /// Which document types to include in results. Default `.all`.
     var documentTypeFilter: DocumentTypeFilter = .all
 
+    // MARK: - Front Matter Scope
+
+    /// Whether front-matter prose sections (preface, introduction, prefatoryNote, terms, etc.)
+    /// are included in search results. Default `true`.
+    var includeFrontMatter: Bool = true
+
     // MARK: - Person Reference Filter
 
     /// `@ref` attribute value from `<persName>` to restrict results to documents
@@ -232,6 +238,7 @@ final class SearchViewModel {
         includeDocumentText = true
         includeSummaries = true
         includeNotes = true
+        includeFrontMatter = true
         documentTypeFilter = .all
         personRefText = ""
     }
@@ -275,7 +282,8 @@ final class SearchViewModel {
             documentTypeFilter: documentTypeFilter,
             personRef: personRefText.trimmingCharacters(in: .whitespaces).isEmpty
                 ? nil
-                : personRefText.trimmingCharacters(in: .whitespaces)
+                : personRefText.trimmingCharacters(in: .whitespaces),
+            includeFrontMatter: includeFrontMatter
         )
     }
 
@@ -300,6 +308,7 @@ final class SearchViewModel {
         if !phrase.isEmpty { return true }
         if !prefixWildcard.isEmpty { return true }
         if !includeDocumentText || !includeSummaries || !includeNotes { return true }
+        if !includeFrontMatter { return true }
         switch booleanMode {
         case .or: return true
         case .and: return false
@@ -344,6 +353,7 @@ final class SearchViewModel {
         includeDocumentText   = params.includeDocumentText
         includeSummaries      = params.includeSummaries
         includeNotes          = params.includeNotes
+        includeFrontMatter    = params.includeFrontMatter
         documentTypeFilter    = params.documentTypeFilter
     }
 

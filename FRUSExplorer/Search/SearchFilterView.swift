@@ -356,6 +356,11 @@ struct SearchFilterView: View {
                        defaultValue: "Include research notes"),
                 isOn: $vm.includeNotes
             )
+            Toggle(
+                String(localized: "search.scope.frontMatter",
+                       defaultValue: "Include front matter"),
+                isOn: $vm.includeFrontMatter
+            )
             if !vm.includeDocumentText {
                 Text(String(localized: "search.scope.documentText.help",
                             defaultValue: "Document text is excluded. Results will match only in summaries and/or research notes."))
