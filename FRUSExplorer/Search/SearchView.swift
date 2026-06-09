@@ -490,6 +490,30 @@ private struct SearchResultRow: View {
                     .padding(.top, 1)
             }
 
+            // Document-type badges
+            if result.isEditorialNote || result.isFrontMatter {
+                HStack(spacing: 6) {
+                    if result.isEditorialNote {
+                        Label(
+                            String(localized: "search.result.editorialNote.badge",
+                                   defaultValue: "Editorial Note"),
+                            systemImage: "text.badge.checkmark"
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(.purple)
+                    }
+                    if result.isFrontMatter {
+                        Label(
+                            String(localized: "search.result.frontMatter.badge",
+                                   defaultValue: "Front Matter"),
+                            systemImage: "doc.text"
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(.teal)
+                    }
+                }
+            }
+
             // User tag chips — pass userTags so chips show names, not raw UUIDs
             if !result.userTagIds.isEmpty {
                 SearchTagChipsRow(

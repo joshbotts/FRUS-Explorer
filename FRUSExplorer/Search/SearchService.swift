@@ -50,6 +50,9 @@ import Foundation
 ///          `documentBodyTextsAndDates`) and substitutes them for the FTS5-indexed
 ///          (Porter-stemmed) values. Search result rows now show the original document
 ///          header and dateline text rather than stemmed tokens.
+///   1.7 — Session 2026-06-08: `rebuildSnippetsAndAttachDates` reads `is_front_matter`
+///          from the extended `documentBodyTextsAndDates` return tuple and sets
+///          `SearchResult.isFrontMatter` so the search UI can badge front-matter results.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -358,12 +361,13 @@ public actor SearchService {
         let stemmedQueryTerms = queryTerms.isEmpty ? [] : queryTerms.map { PorterStemmer.stem($0.lowercased()) }
 
         let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-        let bodies:    [String: String]
-        let dates:     [String: String]
-        let headers:   [String: String]
-        let datelines: [String: String]
+        let bodies:          [String: String]
+        let dates:           [String: String]
+        let headers:         [String: String]
+        let datelines:       [String: String]
+        let frontMatterKeys: Set<String>
         do {
-            (bodies, dates, headers, datelines) =
+            (bodies, dates, headers, datelines, frontMatterKeys) =
                 try await pipeline.documentBodyTextsAndDates(for: keys)
         } catch {
             #if DEBUG
@@ -406,7 +410,8 @@ public actor SearchService {
                 bm25Score: result.bm25Score,
                 subjectTagIds: result.subjectTagIds,
                 userTagIds: result.userTagIds,
-                isEditorialNote: result.isEditorialNote
+                isEditorialNote: result.isEditorialNote,
+                isFrontMatter: frontMatterKeys.contains(key)
             )
         }
     }

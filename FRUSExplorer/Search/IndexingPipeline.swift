@@ -134,6 +134,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///            `"sources"`, `"persons"`, `"terms"` so front-matter sections are captured.
 ///          • `volumeSources(forVolumeId:)` public query added to surface front-matter archival
 ///            sources for `VolumeSourcesView`.
+///   3.3 — Session 2026-06-08: `documentBodyTextsAndDates` extended to also return
+///          `frontMatterKeys: Set<String>` — the set of `"volumeId/documentId"` composite
+///          keys for rows where `is_front_matter = 1`. `SearchService` uses this to populate
+///          `SearchResult.isFrontMatter` so the search UI can badge front-matter results.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -2917,12 +2921,14 @@ public actor IndexingPipeline {
     public func documentBodyTextsAndDates(
         for keys: [(volumeId: String, documentId: String)]
     ) throws -> (bodies: [String: String], dates: [String: String],
-                 headers: [String: String], datelines: [String: String]) {
-        guard !keys.isEmpty else { return ([:], [:], [:], [:]) }
-        var bodies:    [String: String] = [:]
-        var dates:     [String: String] = [:]
-        var headers:   [String: String] = [:]
-        var datelines: [String: String] = [:]
+                 headers: [String: String], datelines: [String: String],
+                 frontMatterKeys: Set<String>) {
+        guard !keys.isEmpty else { return ([:], [:], [:], [:], []) }
+        var bodies:          [String: String] = [:]
+        var dates:           [String: String] = [:]
+        var headers:         [String: String] = [:]
+        var datelines:       [String: String] = [:]
+        var frontMatterKeys: Set<String>      = []
         // 400 pairs × 2 params/pair = 800 — safely under the SQLite 999-variable cap.
         let chunkSize = 400
         for chunk in stride(from: 0, to: keys.count, by: chunkSize)
@@ -2934,7 +2940,8 @@ public actor IndexingPipeline {
                        dc.body_text,
                        dd.date_iso,
                        dc.header,
-                       dc.dateline
+                       dc.dateline,
+                       dc.is_front_matter
                 FROM document_cache dc
                 LEFT JOIN document_dates dd
                     ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
@@ -2953,9 +2960,11 @@ public actor IndexingPipeline {
                 if let d  = auxColumnString(stmt, 2) { dates[k]     = d }
                 if let h  = auxColumnString(stmt, 3) { headers[k]   = h }
                 if let dl = auxColumnString(stmt, 4) { datelines[k] = dl }
+                if sqlite3_column_int(stmt, 5) != 0  { frontMatterKeys.insert(k) }
             }
         }
-        return (bodies: bodies, dates: dates, headers: headers, datelines: datelines)
+        return (bodies: bodies, dates: dates, headers: headers,
+                datelines: datelines, frontMatterKeys: frontMatterKeys)
     }
 
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {

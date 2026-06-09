@@ -939,6 +939,15 @@ private struct SearchResultRow: View {
                         .foregroundStyle(.purple)
                         .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
+                if result.isFrontMatter {
+                    Text("front matter")
+                        .font(.system(size: 10))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Color.teal.opacity(0.1))
+                        .foregroundStyle(.teal)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
 
                 Spacer()
 

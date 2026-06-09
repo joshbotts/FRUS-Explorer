@@ -327,8 +327,12 @@ public final class DocumentViewModel {
             // Build lookup tables
             var pByRef: [String: PersonEntry] = [:]
             for p in persons { pByRef[p.ref] = p }
-            var tByRef: [String: GlossEntry] = [:]
-            for t in terms { tByRef[t.ref] = t }
+            var tByRef:  [String: GlossEntry] = [:]
+            var tByText: [String: GlossEntry] = [:]
+            for t in terms {
+                tByRef[t.ref]              = t
+                tByText[t.term.lowercased()] = t
+            }
             personsByRef = pByRef
             termsByRef   = tByRef
 
@@ -353,10 +357,14 @@ public final class DocumentViewModel {
             // Extract source note for Source Explorer
             sourceNote = extractSourceNote(from: ast.nodes)
 
-            // Convert AST → render model with lookup closures
+            // Convert AST → render model with lookup closures.
+            // `abbrLookup` matches `<abbr>` element text against the glossary by term
+            // name (case-insensitive) so abbreviations without an explicit @ref still
+            // render as tappable dotted-underline links.
             var converter = ASTToRenderNodeConverter(
                 personLookup: { [pByRef] ref in pByRef[ref] },
-                glossLookup:  { [tByRef] ref in tByRef[ref] }
+                glossLookup:  { [tByRef] ref in tByRef[ref] },
+                abbrLookup:   { [tByText] text in tByText[text.lowercased()] }
             )
             renderModel = converter.convert(ast)
 

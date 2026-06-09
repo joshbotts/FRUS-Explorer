@@ -37,6 +37,10 @@ import Foundation
 ///   1.1 — Session 78: `.attachment` case converts `.head` children to `.attachmentHeading`
 ///   1.2 — Session 79: `.titlePage` produces `.titlePageBlock` instead of `.unknown`
 ///   1.3 — Session 105: `renderingVersion(for:)` static API + `flatText(_:)` DFS helper
+///   1.4 — Session 2026-06-08: `abbrLookup` added; `.unknown(name: "abbr", …)` elements
+///          whose text matches a glossary term are emitted as `.glossLink` nodes so they
+///          render with the accent-coloured dotted underline and open `GlossDetailSheet`
+///          on tap, identical to explicit `<gloss ref="…">` elements.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -117,6 +121,17 @@ public struct ASTToRenderNodeConverter {
     /// `nil` until Session 07 populates the volume's terms list.
     public var glossLookup: ((String) -> GlossEntry?)?
 
+    /// Returns a `GlossEntry` whose `term` text matches the given abbreviation string
+    /// (case-insensitive). Used to resolve `<abbr>` elements that lack a `@ref` attribute.
+    ///
+    /// When non-nil, any `.unknown(name: "abbr", …)` AST node whose plain-text content
+    /// matches a glossary term is emitted as a `.glossLink` render node — giving it the
+    /// same dotted-underline styling and tap-to-sheet behaviour as explicit
+    /// `<gloss ref="…">` links.
+    ///
+    /// `nil` (default) means `<abbr>` elements are rendered as plain text without linking.
+    public var abbrLookup: ((String) -> GlossEntry?)?
+
     // MARK: State
 
     private var footnoteCounter = 0
@@ -125,9 +140,11 @@ public struct ASTToRenderNodeConverter {
     // MARK: Init
 
     public init(personLookup: ((String) -> PersonEntry?)? = nil,
-                glossLookup: ((String) -> GlossEntry?)? = nil) {
+                glossLookup: ((String) -> GlossEntry?)? = nil,
+                abbrLookup: ((String) -> GlossEntry?)? = nil) {
         self.personLookup = personLookup
         self.glossLookup = glossLookup
+        self.abbrLookup = abbrLookup
     }
 
     // MARK: - Public API
@@ -317,6 +334,23 @@ public struct ASTToRenderNodeConverter {
                 return convertNode(child)
             }
             return [.attachmentBlock(n: n, children: convertedChildren)]
+
+        case .unknown(let name, _, let children) where name == "abbr":
+            // Try to resolve the abbreviation text against the volume's glossary.
+            // If a match is found, emit a `.glossLink` identical to an explicit
+            // `<gloss ref="…">` element so the renderer styles it and the URL scheme
+            // handler can open GlossDetailSheet on tap.
+            let abbText = children.map(\.plainText).joined()
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !abbText.isEmpty, let entry = abbrLookup?(abbText) {
+                return [.glossLink(
+                    ref: "#\(entry.ref)",
+                    children: convertNodes(children),
+                    entry: entry
+                )]
+            }
+            // No matching glossary entry — fall through as plain text.
+            return convertNodes(children)
 
         case .unknown(let name, _, let children):
             return [.unknown(name: name, children: convertNodes(children))]

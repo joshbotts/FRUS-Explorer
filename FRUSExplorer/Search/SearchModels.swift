@@ -189,6 +189,10 @@ public struct SearchParameters: Sendable, Equatable {
 ///          chronologically rather than by the free-text `dateline` string,
 ///          which begins with the place of authorship and a textual month name
 ///          and therefore cannot be sorted as a date.
+///   1.3 — Session 2026-06-08: `isFrontMatter` field added. Populated from
+///          `document_cache.is_front_matter` via `documentBodyTextsAndDates`.
+///          Used by search result rows to show a teal "Front Matter" badge
+///          distinct from the purple editorial-note badge.
 public struct SearchResult: Sendable, Identifiable {
 
     /// Document identifier (e.g. `"d1"`), unique within its volume.
@@ -231,6 +235,15 @@ public struct SearchResult: Sendable, Identifiable {
     /// Whether this document is a FRUS editorial note rather than a primary-source document.
     public let isEditorialNote: Bool
 
+    /// Whether this document was promoted from a prose-only front-matter structural div
+    /// (preface, introduction, prefatoryNote, terms, etc.).
+    ///
+    /// Populated from `document_cache.is_front_matter` via `documentBodyTextsAndDates`
+    /// in `SearchService`. Defaults to `false` for volumes indexed before the
+    /// `is_front_matter` column was added (those volumes must be re-indexed for this
+    /// field to carry correct values).
+    public let isFrontMatter: Bool
+
     public var id: String { "\(volumeId)/\(documentId)" }
 
     public init(
@@ -245,7 +258,8 @@ public struct SearchResult: Sendable, Identifiable {
         bm25Score: Double,
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
-        isEditorialNote: Bool = false
+        isEditorialNote: Bool = false,
+        isFrontMatter: Bool = false
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -259,6 +273,7 @@ public struct SearchResult: Sendable, Identifiable {
         self.subjectTagIds = subjectTagIds
         self.userTagIds = userTagIds
         self.isEditorialNote = isEditorialNote
+        self.isFrontMatter = isFrontMatter
     }
 }
 
