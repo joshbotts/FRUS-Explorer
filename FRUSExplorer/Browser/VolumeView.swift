@@ -17,8 +17,15 @@ import SwiftUI
 /// instead. Tag chips call `vm.activateTagFilter(slug:forSubseries:)` which pops navigation
 /// back to the Subseries level with the filter applied.
 ///
+/// ## Front Matter Split (Session 2026-06-08)
+/// The section list is split into two groups: **Front Matter** (preface, persons, sources,
+/// terms, prefatory note, etc.) and **Contents** (compilations, chapters, appendices, index).
+/// A `<front>` wrapper section is automatically expanded so its subsections appear directly
+/// rather than requiring an extra tap to enter the wrapper.
+///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   2.0 — Session 2026-06-08: Front Matter / Contents split; front-matter div types surfaced
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -56,6 +63,13 @@ struct VolumeView: View {
     }
 
     // MARK: - Structure Section
+
+    /// Div types that represent front-matter content. The `"front"` wrapper type is
+    /// expanded inline (its subsections listed directly) rather than shown as a row.
+    private static let frontMatterTypes: Set<String> = [
+        "front", "preface", "intro", "introduction", "errata", "foreword",
+        "prefatoryNote", "sources", "persons", "terms",
+    ]
 
     @ViewBuilder
     private var volumeStructureSection: some View {
@@ -100,20 +114,28 @@ struct VolumeView: View {
                         .font(.callout)
                 }
             } else {
-                Section(header: Text(String(localized: "browser.volume.sections.header",
-                                            defaultValue: "Contents"))) {
-                    ForEach(structure.sections) { section in
-                        Button {
-                            vm.navigationPath.append(.compilation(
-                                volumeId: volume.volumeId, section: section
-                            ))
-                            #if DEBUG
-                            print("[BrowserView] Navigate → compilation \(section.sectionId)")
-                            #endif
-                        } label: {
-                            SectionRowLabel(section: section)
+                // Split into front-matter and body-content sections.
+                // A "<front>" wrapper is expanded so its subsections appear directly.
+                let frontMatterItems = Self.extractFrontMatter(from: structure.sections)
+                let contentSections = structure.sections.filter {
+                    !Self.frontMatterTypes.contains($0.divType)
+                }
+
+                if !frontMatterItems.isEmpty {
+                    Section(header: Text(String(localized: "browser.volume.frontMatter.header",
+                                                defaultValue: "Front Matter"))) {
+                        ForEach(frontMatterItems) { section in
+                            sectionRow(section: section)
                         }
-                        .buttonStyle(.plain)
+                    }
+                }
+
+                if !contentSections.isEmpty {
+                    Section(header: Text(String(localized: "browser.volume.sections.header",
+                                                defaultValue: "Contents"))) {
+                        ForEach(contentSections) { section in
+                            sectionRow(section: section)
+                        }
                     }
                 }
             }
@@ -128,6 +150,43 @@ struct VolumeView: View {
                 .font(.callout)
             }
         }
+    }
+
+    @ViewBuilder
+    private func sectionRow(section: VolumeSection) -> some View {
+        Button {
+            vm.navigationPath.append(.compilation(
+                volumeId: volume.volumeId, section: section
+            ))
+            #if DEBUG
+            print("[BrowserView] Navigate → compilation \(section.sectionId)")
+            #endif
+        } label: {
+            SectionRowLabel(section: section)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Extracts front-matter sections to display directly under the "Front Matter" header.
+    ///
+    /// If the top-level sections contain a `<front>` wrapper, its subsections are
+    /// flattened out (one tap saved). Any other top-level sections typed as front matter
+    /// (e.g. `"preface"` placed outside `<front>`) are included as-is.
+    private static func extractFrontMatter(from sections: [VolumeSection]) -> [VolumeSection] {
+        var items: [VolumeSection] = []
+        for section in sections {
+            if section.divType == "front" {
+                // Expand: show subsections directly, or the front section itself if empty.
+                if section.subsections.isEmpty {
+                    items.append(section)
+                } else {
+                    items.append(contentsOf: section.subsections)
+                }
+            } else if frontMatterTypes.contains(section.divType) {
+                items.append(section)
+            }
+        }
+        return items
     }
 }
 
@@ -265,6 +324,14 @@ struct SectionRowLabel: View {
             return String(localized: "browser.section.type.errata", defaultValue: "Errata")
         case "index":
             return String(localized: "browser.section.type.index", defaultValue: "Index")
+        case "prefatoryNote":
+            return String(localized: "browser.section.type.prefatoryNote", defaultValue: "Prefatory Note")
+        case "sources":
+            return String(localized: "browser.section.type.sources", defaultValue: "Sources")
+        case "persons":
+            return String(localized: "browser.section.type.persons", defaultValue: "Persons")
+        case "terms":
+            return String(localized: "browser.section.type.terms", defaultValue: "Terms & Abbreviations")
         default:
             return section.divType
         }

@@ -129,6 +129,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          • `autoreleasepool` added to `FRUSDocumentParser.parseVolumeFull` around the
 ///            `XMLParser.parse()` call to drain ObjC autorelease pools between volumes,
 ///            reducing peak RSS spikes that could trigger iOS jetsam kills mid-batch.
+///   3.2 — Session 2026-06-08: Volume Front Matter feature:
+///          • `VolumeStructureParserDelegate.structuralTypes` extended with `"prefatoryNote"`,
+///            `"sources"`, `"persons"`, `"terms"` so front-matter sections are captured.
+///          • `volumeSources(forVolumeId:)` public query added to surface front-matter archival
+///            sources for `VolumeSourcesView`.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -907,6 +912,37 @@ public actor IndexingPipeline {
             }
         }
         return ids
+    }
+
+    // MARK: - Volume Sources Query (used by VolumeSourcesView)
+
+    /// Returns all archival source entries for a volume from the `volume_sources` table.
+    ///
+    /// Results are ordered by `sort_order` (insertion order from the TEI source list).
+    /// Returns an empty array if the volume has not been indexed or has no sources list.
+    ///
+    /// Used by `VolumeSourcesView` to display the front-matter sources section.
+    public func volumeSources(forVolumeId volumeId: String) throws -> [VolumeSourceEntry] {
+        let sql = """
+            SELECT repository, record_group, lot_file, series_name, entry_text
+            FROM volume_sources
+            WHERE volume_id = ?
+            ORDER BY sort_order
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        var entries: [VolumeSourceEntry] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            entries.append(VolumeSourceEntry(
+                repository:  auxColumnString(stmt, 0),
+                recordGroup: auxColumnString(stmt, 1),
+                lotFile:     auxColumnString(stmt, 2),
+                seriesName:  auxColumnString(stmt, 3),
+                rawText:     auxColumnString(stmt, 4) ?? ""
+            ))
+        }
+        return entries
     }
 
     // MARK: - Date Range Query (used by SearchService)

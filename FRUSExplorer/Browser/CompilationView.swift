@@ -19,13 +19,21 @@ import SwiftUI
 ///
 /// ## Front Matter Support
 /// Structural sections whose `divType` is one of `"preface"`, `"intro"`,
-/// `"introduction"`, or `"errata"` and that contain bare prose (no nested
-/// `<div type="document">` children) are handled specially: instead of showing
-/// "No documents in this section", `CompilationView` shows a "Read [Title]" button.
+/// `"introduction"`, `"errata"`, `"prefatoryNote"`, or `"terms"` and that contain bare
+/// prose (no nested `<div type="document">` children) are handled specially: instead of
+/// showing "No documents in this section", `CompilationView` shows a "Read [Title]" button.
 /// Tapping it creates a synthetic `DocumentBrowserEntry` (using the section's
 /// `sectionId` as the `documentId`) and navigates to `DocumentView`.
 /// `FRUSDocumentParser.parseDocument(documentId:)` matches the structural div by
 /// `xml:id` (Session 34 fallback) and renders its prose content.
+///
+/// ## Persons Section
+/// A section with `divType == "persons"` is routed to `FrontMatterPersonsView`, which
+/// loads the indexed persons list for the volume from `PersonMentionStore`.
+///
+/// ## Sources Section
+/// A section with `divType == "sources"` is routed to `VolumeSourcesView`, which
+/// loads the structured archival sources from `IndexingPipeline.volumeSources(forVolumeId:)`.
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
@@ -38,6 +46,8 @@ import SwiftUI
 ///          list when indexing finishes — no navigate-away required;
 ///          `DocumentRowLabel` drops the redundant leading document-number chip because
 ///          the number is already part of the `header` text
+///   1.5 — Session 2026-06-08: `"prefatoryNote"` and `"terms"` added to `canReadSectionDirectly`;
+///          `"persons"` → `FrontMatterPersonsView`; `"sources"` → `VolumeSourcesView`
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -127,13 +137,17 @@ struct CompilationView: View {
     /// belongs to a type that should be readable without FTS indexing.
     ///
     /// Covers `<div type="preface">`, `<div type="introduction">`, `<div type="intro">`,
-    /// and `<div type="errata">` that are leaf sections (no subsections, no document IDs).
+    /// `<div type="errata">`, `<div type="prefatoryNote">`, and `<div type="terms">`
+    /// that are leaf sections (no subsections, no document IDs).
     ///
     /// Sections with auto-generated `sectionId` values (e.g. `"preface-3"`, produced when
     /// the TEI element has no `xml:id` attribute) are excluded because
     /// `FRUSDocumentParser.parseDocument(documentId:)` cannot locate them by ID.
     private var canReadSectionDirectly: Bool {
-        let proseTypes: Set<String> = ["preface", "intro", "introduction", "errata"]
+        let proseTypes: Set<String> = [
+            "preface", "intro", "introduction", "errata",
+            "prefatoryNote", "terms",
+        ]
         guard proseTypes.contains(section.divType),
               section.allDocumentIds.isEmpty,
               section.subsections.isEmpty
@@ -147,6 +161,14 @@ struct CompilationView: View {
         }
         return !section.sectionId.isEmpty
     }
+
+    /// `true` when this section is a structured Persons list that should be displayed
+    /// by `FrontMatterPersonsView` rather than as a document list.
+    private var isPersonsSection: Bool { section.divType == "persons" }
+
+    /// `true` when this section is a structured Sources list that should be displayed
+    /// by `VolumeSourcesView` rather than as a document list.
+    private var isSourcesSection: Bool { section.divType == "sources" }
 
     @ViewBuilder
     private var readSectionDirectlySection: some View {
@@ -190,6 +212,12 @@ struct CompilationView: View {
         if canReadSectionDirectly {
             // Prose-only front matter section — bypass indexing and open directly.
             readSectionDirectlySection
+        } else if isPersonsSection {
+            // Persons list — rendered by FrontMatterPersonsView without requiring indexing.
+            FrontMatterPersonsView(volumeId: volumeId)
+        } else if isSourcesSection {
+            // Archival sources list — rendered by VolumeSourcesView from the indexed table.
+            VolumeSourcesView(volumeId: volumeId)
         } else if vm.isIndexing {
             // Indexing in progress — show live progress (takes priority over index check).
             indexingProgressSection

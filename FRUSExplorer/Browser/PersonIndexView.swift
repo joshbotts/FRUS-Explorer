@@ -163,15 +163,24 @@ private struct PersonIndexRow: View {
 
 // MARK: - PersonIndexDetailSheet
 
-/// Sheet shown when a person row is tapped in `PersonIndexView`.
+/// Sheet shown when a person row is tapped in `PersonIndexView` or `FrontMatterPersonsView`.
 ///
-/// Displays name, biographical description, and mention count. The "Find all mentions"
-/// button triggers a person-filtered search and dismisses the sheet.
-private struct PersonIndexDetailSheet: View {
+/// Displays name, biographical description, and mention count. The mention count is loaded
+/// asynchronously on appear so callers can pass any initial value (including 0) without a
+/// blocking actor call at the tap site. The "Find all mentions" button triggers a
+/// person-filtered search and dismisses the sheet.
+struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+
+    /// Cross-corpus mention count loaded asynchronously on appear.
+    /// Starts as `indexEntry.mentionCount` (often already correct when coming from
+    /// `PersonIndexView`, or 0 when coming from `FrontMatterPersonsView`).
+    @State private var resolvedMentionCount: Int?
+
+    private var displayCount: Int { resolvedMentionCount ?? indexEntry.mentionCount }
 
     var body: some View {
         NavigationStack {
@@ -191,9 +200,20 @@ private struct PersonIndexDetailSheet: View {
 
                 Section {
                     LabeledContent(
-                        String(localized: "people.detail.mentions", defaultValue: "Mentions"),
-                        value: "\(indexEntry.mentionCount) document\(indexEntry.mentionCount == 1 ? "" : "s")"
-                    )
+                        String(localized: "people.detail.mentions", defaultValue: "Mentions")
+                    ) {
+                        if resolvedMentionCount == nil && indexEntry.mentionCount == 0 {
+                            // Loading from a caller that passed 0 as a placeholder.
+                            HStack(spacing: 6) {
+                                ProgressView().controlSize(.mini)
+                                Text(String(localized: "people.detail.mentions.loading",
+                                            defaultValue: "Loading…"))
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            Text("\(displayCount) document\(displayCount == 1 ? "" : "s")")
+                        }
+                    }
                 }
 
                 Section {
@@ -210,7 +230,7 @@ private struct PersonIndexDetailSheet: View {
                             systemImage: "magnifyingglass"
                         )
                     }
-                    .disabled(indexEntry.mentionCount == 0)
+                    .disabled(displayCount == 0)
                     .help(String(localized: "people.detail.findMentions.help",
                                  defaultValue: "Open Search filtered to documents that mention this person"))
                 }
@@ -231,6 +251,13 @@ private struct PersonIndexDetailSheet: View {
                 }
             }
             #endif
+        }
+        .task {
+            // If the caller passed 0 as a placeholder, load the real count now.
+            guard indexEntry.mentionCount == 0,
+                  let store = appState.personMentionStore else { return }
+            resolvedMentionCount = (try? await store.documentCount(
+                forPersonRef: indexEntry.entry.ref)) ?? 0
         }
     }
 }

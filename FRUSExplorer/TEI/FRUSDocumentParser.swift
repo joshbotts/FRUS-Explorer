@@ -290,9 +290,13 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
     private var autoIdCounter: Int = 0
 
     // Div types that form structural sections above the document level.
+    // Front-matter types (prefatoryNote, sources, persons, terms) were added in
+    // Session 2026-06-08 so they are captured as named subsections of the <front>
+    // wrapper rather than being silently ignored.
     private static let structuralTypes: Set<String> = [
         "compilation", "chapter", "subchapter", "appendix",
         "preface", "intro", "introduction", "errata", "index", "foreword",
+        "prefatoryNote", "sources", "persons", "terms",
     ]
 
     // MARK: - XMLParserDelegate
@@ -415,15 +419,19 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
 
     private func humanTitle(for divType: String) -> String {
         switch divType {
-        case "front":        return "Front Matter"
-        case "back":         return "Back Matter"
-        case "compilation":  return "Compilation"
-        case "chapter":      return "Chapter"
-        case "appendix":     return "Appendix"
-        case "preface":      return "Preface"
+        case "front":          return "Front Matter"
+        case "back":           return "Back Matter"
+        case "compilation":    return "Compilation"
+        case "chapter":        return "Chapter"
+        case "appendix":       return "Appendix"
+        case "preface":        return "Preface"
         case "intro", "introduction": return "Introduction"
-        case "errata":       return "Errata"
-        default:             return divType.capitalized
+        case "errata":         return "Errata"
+        case "prefatoryNote":  return "Prefatory Note"
+        case "sources":        return "Sources"
+        case "persons":        return "Persons"
+        case "terms":          return "Terms and Abbreviations"
+        default:               return divType.capitalized
         }
     }
 }
