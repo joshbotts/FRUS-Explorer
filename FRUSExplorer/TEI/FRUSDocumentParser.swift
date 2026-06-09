@@ -508,9 +508,17 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// Structural `div/@type` values that can be promoted to quasi-documents when they
     /// contain prose but no child `<div type="document">` or `<div type="editorialNote">`.
     /// Used during full-volume parses to index front-matter and appendix content.
+    ///
+    /// `"prefatoryNote"` and `"terms"` were added in Session 2026-06-08 alongside
+    /// the `VolumeStructureParserDelegate.structuralTypes` expansion so their prose
+    /// content is captured in the FTS5 index for Phase 4 front-matter search scope.
+    /// `"sources"` and `"persons"` are intentionally excluded: sources are structured
+    /// data handled by the `volume_sources` table; persons are handled by the `persons`
+    /// table — neither benefits from FTS5 indexing their raw XML.
     private static let structuralDivTypes: Set<String> = [
         "compilation", "chapter", "subchapter", "appendix",
         "preface", "intro", "introduction", "errata", "index", "foreword",
+        "prefatoryNote", "terms",
     ]
 
     // MARK: Init
