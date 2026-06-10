@@ -283,3 +283,27 @@ The following items were added to earlier sessions by later feature requirements
 **Superseded by Session 50 (Browser Polish)**:
 - `BrowserBreadcrumbBar` `ScrollView(.horizontal)` wrapper replaced with `BreadcrumbFlowLayout`
 - Multi-line display; no truncation; height is dynamic (`.safeAreaInset` inset must track actual height)
+
+### Session 2026-06-09 — Data Infrastructure Overhaul (Phases 1–3)
+
+**Phase 1 — correctness/stability fixes:**
+- `FTS5Store.delete(documentId:)` → `delete(documentId:volumeId:)`: FRUS document IDs ("d1") repeat per volume, so the unscoped delete removed rows from *every* volume on each summary/note/tag update and per-document volume removal. `IndexingPipeline.removeVolume` switched to a volume-scoped delete. Regression tests in `FTS5StoreTests` + `RemoveVolumeTests`.
+- `PRAGMA busy_timeout = 5000` on all five SQLite connections (FTS5Connection, IndexingPipeline auxDb, CrossReferenceStore, PersonMentionStore, PageRangeStore) — concurrent writers previously got instant `SQLITE_BUSY` that `try?` callers swallowed.
+- `DownloadManager.onVolumeDeleted` callback wired in `FRUSExplorerApp` → `IndexingPipeline.removeVolume` + AST-cache eviction. The `.frusVolumeDeleted` notification had no observer, so the iOS Downloads settings delete path orphaned index data.
+
+**Phase 2 — external-content FTS5 redesign (schema generation 4):**
+- `frus_documents` is now an external-content FTS5 table over `document_cache` using the built-in `porter unicode61` tokenizer; application-layer Porter stemming removed from index and query paths (`stemForIndex` deleted; `FTS5Query`/`FTS5InlineQueryParser` render quoted, unstemmed terms).
+- New `user_content` FTS5 table (summary_text, note_text) over the same `document_cache` rows — note/summary edits re-tokenize only user text; corpus index rows are immutable outside indexing.
+- Index maintenance via generated SQL triggers (`FTS5Schema.externalContentTriggerSQL`); `document_cache` is the single write path. Re-index UPSERTs preserve rowids and user fields (`INSERT OR REPLACE` previously wiped summaries/notes/tags on every re-index).
+- Migration: `PRAGMA user_version` 3→4 drops the legacy table; `rebuildSearchIndexFromCache()` rebuilds both FTS5 tables from `document_cache` via the FTS5 `rebuild` command — no XML re-parse — and restores rows lost to the unscoped-delete bug. `currentFTSSchemaVersion = 4`; date-index version stays 6.
+- DB shrinks by roughly the stemmed text copy (~⅓); search result display fields come back unstemmed directly.
+
+**Phase 3 — performance/capability:**
+- `IndexingPipeline.searchDocuments`/`searchDocumentsCount`: single-statement combined corpus + user-content search (rowid merge, MIN(bm25)) with all filters (volume, date overlap, front matter, person, subject/user tags, document type) in SQL — exact pagination, no overscan, accurate counts. `SearchService` rewritten around it; key-set whitelists and display-repair pass deleted.
+- `volume_structures` table: Browser structure JSON persisted during indexing (structure delegate joined `parseVolumeFull`'s composite); `BrowserViewModel`/macOS corpus browser read it instead of re-parsing XML.
+- `DocumentASTCache` (LRU, 24 entries, memory-warning flush) + `parseDocumentWindow(documentId:volumeURL:trailingDocuments:)`: document opens warm the cache with the parse window (prefix tail + target + 1 trailing), making page-turns/re-opens instant.
+- `indexVolume` runs a bounded FTS5 `merge` (quota 64) instead of full `optimize()` (which is O(total index) and would stall every download on a large corpus); `indexAllVolumes` keeps the single post-batch optimize.
+- Boot-time SwiftData→index sync is now skip-if-unchanged (`updateCacheColumns` value guard: zero-row UPDATE fires no triggers).
+- `BackgroundDownloadEngine`: volume downloads moved to a background `URLSession` — transfers survive suspension/termination, are re-adopted at launch (`resumeQueuedDownloads`), retried (≤2, linear backoff); `FRUSAppDelegate` handles background-session relaunch events; boot reconciliation indexes downloaded-but-unindexed volumes.
+
+**Verification:** 699/703 app tests pass (4 pre-existing failures in CitationFormatterTests/SourceExplorerTests, unrelated — see chip); 127/127 SPM tests; iOS + macOS targets build clean.

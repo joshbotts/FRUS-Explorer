@@ -487,12 +487,16 @@ public actor IndexingPipeline {
         let storeElapsed = Date().timeIntervalSince(storeStart)
         logger.info("indexVolume: \(volumeId, privacy: .public) stored in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
 
-        // Run optimize() once after a single-volume index. This is acceptable here
-        // because single-volume indexing is always an interactive user action.
+        // Bounded incremental merge after a single-volume index. A full optimize()
+        // here is O(total index size) — on a near-complete corpus every additional
+        // downloaded volume would trigger a multi-gigabyte segment merge. The FTS5
+        // 'merge' command with a positive page quota performs a fixed amount of
+        // b-tree consolidation and stops; automerge handles the rest over time.
+        // Full optimize() still runs once at the end of indexAllVolumes.
         let optStart = Date()
-        try await fts5Store.optimize()
+        try incrementalMergeFTS()
         let optElapsed = Date().timeIntervalSince(optStart)
-        logger.info("indexVolume: \(volumeId, privacy: .public) optimize in \(String(format: "%.1f", optElapsed), privacy: .public)s")
+        logger.info("indexVolume: \(volumeId, privacy: .public) incremental merge in \(String(format: "%.1f", optElapsed), privacy: .public)s")
 
         submitSpotlightItems(for: data)
         await stateTracker?.markCompleted(volumeId: volumeId)
@@ -720,6 +724,18 @@ public actor IndexingPipeline {
             try auxStep(stmt)
         }
         logger.info("removeAllVolumesFromIndex: complete")
+    }
+
+    /// Performs a bounded amount of FTS5 segment merging on both tables.
+    ///
+    /// `INSERT INTO t(t, rank) VALUES('merge', N)` with a positive N merges b-tree
+    /// segments until roughly N pages have been written, then stops — unlike
+    /// `optimize`, whose cost grows with total index size. Called after each
+    /// single-volume index so segment counts stay low without ever blocking an
+    /// interactive download on a whole-corpus merge.
+    private func incrementalMergeFTS() throws {
+        try auxExec("INSERT INTO frus_documents(frus_documents, rank) VALUES('merge', 64)")
+        try auxExec("INSERT INTO user_content(user_content, rank) VALUES('merge', 64)")
     }
 
     /// Rebuilds both FTS5 tables from the populated `document_cache` content table.
@@ -3190,7 +3206,8 @@ public actor IndexingPipeline {
         )
     }
 
-    /// Applies column assignments to a single `document_cache` row.
+    /// Applies column assignments to a single `document_cache` row, skipping the
+    /// write entirely when every assigned column already holds its new value.
     ///
     /// The `SET` list is built from `assignments` (column names are compile-time
     /// constants at every call site, never user input). Naming only the columns
@@ -3198,8 +3215,14 @@ public actor IndexingPipeline {
     /// so a summary/note write re-tokenizes only `user_content`, and a tags-only
     /// write touches no FTS5 index at all.
     ///
-    /// Logs a warning when no row matched (document not yet indexed) — the write is
-    /// then a no-op, matching the previous fetch-then-update behaviour.
+    /// The value guard (`col IS NOT ?` disjunction — `IS NOT` so NULLs compare
+    /// correctly) makes redundant writes match zero rows, so no trigger fires and
+    /// no text is re-tokenized. This is what lets the boot-time SwiftData → index
+    /// sync replay every stored summary and note each launch at negligible cost:
+    /// in the steady state every statement is a no-op.
+    ///
+    /// Logs a warning when the document is not in the cache at all (the write is
+    /// then a no-op, matching the previous fetch-then-update behaviour).
     private func updateCacheColumns(
         volumeId: String,
         documentId: String,
@@ -3207,17 +3230,40 @@ public actor IndexingPipeline {
         assignments: [(column: String, value: String?)]
     ) throws {
         let setList = assignments.map { "\($0.column) = ?" }.joined(separator: ", ")
-        let sql = "UPDATE document_cache SET \(setList) WHERE volume_id = ? AND document_id = ?"
+        let changedList = assignments.map { "\($0.column) IS NOT ?" }.joined(separator: " OR ")
+        let sql = """
+            UPDATE document_cache SET \(setList)
+            WHERE volume_id = ? AND document_id = ? AND (\(changedList))
+            """
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (i, assignment) in assignments.enumerated() {
-            auxBindOptional(stmt, Int32(i + 1), assignment.value)
+        var bind: Int32 = 1
+        for assignment in assignments {
+            auxBindOptional(stmt, bind, assignment.value)
+            bind += 1
         }
-        sqlite3_bind_text(stmt, Int32(assignments.count + 1), volumeId, -1, SQLITE_TRANSIENT_IP)
-        sqlite3_bind_text(stmt, Int32(assignments.count + 2), documentId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, bind, volumeId, -1, SQLITE_TRANSIENT_IP)
+        bind += 1
+        sqlite3_bind_text(stmt, bind, documentId, -1, SQLITE_TRANSIENT_IP)
+        bind += 1
+        for assignment in assignments {
+            auxBindOptional(stmt, bind, assignment.value)
+            bind += 1
+        }
         try auxStep(stmt)
+
         if sqlite3_changes(auxDb) == 0 {
-            logger.warning("\(label, privacy: .public): \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
+            // Zero changes means either "already current" (fine, common during the
+            // boot sync) or "document not indexed" (worth a warning). Distinguish
+            // with a cheap primary-key existence probe.
+            let probe = try auxPrepare(
+                "SELECT 1 FROM document_cache WHERE volume_id = ? AND document_id = ?")
+            defer { sqlite3_finalize(probe) }
+            sqlite3_bind_text(probe, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(probe, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+            if sqlite3_step(probe) != SQLITE_ROW {
+                logger.warning("\(label, privacy: .public): \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
+            }
         }
     }
 

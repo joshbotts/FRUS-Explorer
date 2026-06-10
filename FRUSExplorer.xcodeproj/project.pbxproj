@@ -19,6 +19,7 @@
 		06EAC57BB27383F03E11AB88 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175DA5DB0C781AF94092EFC /* SearchView.swift */; };
 		06F7C033964BFE9F7B39AAEB /* FTS5Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAD8B667D9DBC00CF58162F /* FTS5Errors.swift */; };
 		0803E1AE7F04555976D8F1B4 /* HTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F22A8C030EF1BBC980F1156 /* HTMLTemplate.swift */; };
+		08AEF7627FAA34BE5B06EE1D /* BackgroundDownloadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */; };
 		08D29958CE70338B99715F5F /* ResearchGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2EBC1ADEAB3F33E10EF7EC4 /* ResearchGuideView.swift */; };
 		0A867D1E23E2CD05A5213860 /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BB1028F3812398A57E3411 /* DocxCollectionExporter.swift */; };
 		0AB5DF131F2FD818232AF4CF /* FRUSURLSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D169294121369DEF9DF3BB /* FRUSURLSchemeHandler.swift */; };
@@ -271,6 +272,7 @@
 		B8C370E4638C2FA0A4E92779 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF3800E6EA9F402E0F8B123 /* CorpusView.swift */; };
 		B8E4870D78DC1A83F0B49528 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69230EB5695AC63BFDB59149 /* RISExporter.swift */; };
 		B8FA01376F53D2C3EC044017 /* CitationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6116A9829A1771E680567C25 /* CitationModels.swift */; };
+		B9D561B055D8E51B6F26774B /* BackgroundDownloadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */; };
 		BA011168F1E4FC343022CE91 /* VolumeConnectionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFFFF3C4599E5F0FCDEEB89 /* VolumeConnectionGraphView.swift */; };
 		BA1B3B4761551F64C8AF2B7B /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A626491C155C769DF2F17 /* DocumentWindowID.swift */; };
 		BB3F91CEDDCDDC56D60B83E7 /* GeneratedSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */; };
@@ -557,6 +559,7 @@
 		A42E5555EB4D3E129B7B9ED3 /* AppleIntelligenceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceProvider.swift; sourceTree = "<group>"; };
 		A6016A27A7FA06E9422FE9D4 /* CrossReferenceGraphViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossReferenceGraphViewModel.swift; sourceTree = "<group>"; };
 		A64B4DAD6C89EFA87310EC25 /* FRUSExplorerMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FRUSExplorerMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDownloadEngine.swift; sourceTree = "<group>"; };
 		A7D284716EA8E086EC0EB65E /* PersonIndexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonIndexView.swift; sourceTree = "<group>"; };
 		A8BAA83CD70417BEC8E4736E /* SummarizationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationProvider.swift; sourceTree = "<group>"; };
 		A9157F5C19EAE8DBFC671D07 /* DownloadModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadModels.swift; sourceTree = "<group>"; };
@@ -1095,6 +1098,7 @@
 		FB4BCEDD61BCF39851A1FB44 /* Downloads */ = {
 			isa = PBXGroup;
 			children = (
+				A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */,
 				DF60752821D1C24BB478D600 /* DownloadManager.swift */,
 				A9157F5C19EAE8DBFC671D07 /* DownloadModels.swift */,
 			);
@@ -1306,6 +1310,7 @@
 				8F3D9F3C141FC7964A2CFA28 /* AppActivityTypes.swift in Sources */,
 				AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */,
 				F00C4E0898E8B97D52E497AB /* AppleIntelligenceProvider.swift in Sources */,
+				08AEF7627FAA34BE5B06EE1D /* BackgroundDownloadEngine.swift in Sources */,
 				1909ED99015C679E65F837DD /* BackgroundSummarizationService.swift in Sources */,
 				C6996397BCE6032367ED085F /* BackgroundSummarizationSettingsView.swift in Sources */,
 				B4C57BF3C0AF41AF7457A307 /* BibtexExporter.swift in Sources */,
@@ -1457,6 +1462,7 @@
 				65B60DD5E9810F0D554339A1 /* AppActivityTypes.swift in Sources */,
 				3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */,
 				B0C3C7BBEF3F50F4EF5425A3 /* AppleIntelligenceProvider.swift in Sources */,
+				B9D561B055D8E51B6F26774B /* BackgroundDownloadEngine.swift in Sources */,
 				B3F04AAA86253C42BC399CA3 /* BackgroundSummarizationService.swift in Sources */,
 				FAB4ECAAEDFEAEEEFB72FD3E /* BackgroundSummarizationSettingsView.swift in Sources */,
 				68BE8F25C547E21D018F7D6C /* BibtexExporter.swift in Sources */,
