@@ -16,18 +16,23 @@ import Foundation
 ///
 /// ## Thread Safety
 /// `DownloadManager` is a Swift actor. All mutations to queue state are serialised on
-/// the actor's executor. The actual network transfer runs off the actor via a `nonisolated`
-/// helper so multiple downloads proceed concurrently without blocking the actor.
+/// the actor's executor. Transfers run out-of-process via `BackgroundDownloadEngine`
+/// (production) or off the actor via an injected `downloadTask` closure (tests).
+///
+/// ## Transfer Engine
+/// Production transfers use a **background `URLSession`** (`BackgroundDownloadEngine`):
+/// they continue while the app is suspended, survive app termination, and are
+/// re-adopted on the next launch via `resumeQueuedDownloads()`. Failed transfers
+/// (other than user cancellation) are retried up to `maxRetryCount` times with a
+/// short backoff before being dropped.
 ///
 /// ## Offline Behaviour
-/// When the app is offline, `enqueueDownload` accepts requests and persists them but does
-/// not start transfers. Call `resumeQueuedDownloads()` when connectivity is restored
-/// (done automatically by `FRUSExplorerApp` via `AppState.isOnline`).
-///
-/// ## App Termination
-/// Pending (not-yet-started) downloads are persisted and resume on the next launch.
-/// Active downloads that were in flight when the app was killed are **not** automatically
-/// re-queued — the user must re-initiate them from the Browser view.
+/// When the app is offline, `enqueueDownload` accepts requests and persists them but
+/// does not start transfers. Call `resumeQueuedDownloads()` when connectivity is
+/// restored (done automatically by `FRUSExplorerApp` via `AppState.isOnline`). The
+/// background session additionally waits for connectivity on its own
+/// (`waitsForConnectivity`), so a transfer started just before going offline resumes
+/// by itself.
 ///
 /// ## Storage Location
 /// All volume XML files are written to:
@@ -35,8 +40,9 @@ import Foundation
 /// Each file has `isExcludedFromBackupKey` set to prevent iCloud backup of large XML files.
 ///
 /// ## Dependency Injection
-/// The `downloadTask` parameter replaces the real URLSession call in tests. Inject a
-/// closure that writes fixture XML to a temporary file and returns its URL.
+/// The `downloadTask` parameter replaces the background engine in tests. Inject a
+/// closure that writes fixture XML to a temporary file and returns its URL; the
+/// manager then performs the move itself, in-process.
 ///
 /// ## Post-Download Hook
 /// `onVolumeDownloaded` is called (via an unstructured `Task`) immediately after a volume
@@ -46,18 +52,28 @@ import Foundation
 /// the closure is the only coupling point.
 ///
 /// ## Deletion Hook
-/// `deleteVolume` fires `Notification.Name.frusVolumeDeleted` so the FTS5 index pipeline
-/// can remove the volume's entries. The search index observer is registered in Session 09.
+/// `deleteVolume` calls `onVolumeDeleted` (via an unstructured `Task`) after the XML file
+/// is removed from disk. `FRUSExplorerApp` supplies a closure that calls
+/// `IndexingPipeline.removeVolume(_:)`, so the volume's FTS5 rows, auxiliary-table rows,
+/// and Spotlight items are cleaned up no matter which UI path triggered the deletion.
+/// `Notification.Name.frusVolumeDeleted` is also posted for any additional observers.
 ///
 /// Version history:
 ///   1.0 — Session 05: initial implementation
 ///   1.1 — Session 33: added `onVolumeDownloaded` callback for automatic post-download indexing
+///   1.2 — Session 2026-06-09: added `onVolumeDeleted` callback so every deletion path
+///          cleans up the search index. Previously `.frusVolumeDeleted` had no observer,
+///          so the iOS Downloads settings delete path orphaned the volume's index data.
+///   2.0 — Session 2026-06-09: background `URLSession` transfers via
+///          `BackgroundDownloadEngine` — downloads survive app suspension and
+///          termination and are re-adopted at the next launch; failed downloads are
+///          retried with backoff instead of silently vanishing from the queue.
 public actor DownloadManager {
 
     // MARK: - Types
 
-    /// The function signature used for the actual network transfer.
-    /// Default: `URLSession.shared.download(for:)`. Override in tests.
+    /// The function signature used for the actual network transfer in **tests**.
+    /// When non-nil, it replaces the background engine entirely.
     public typealias DownloadTask = @Sendable (URLRequest) async throws -> (URL, URLResponse)
 
     // MARK: - Immutable Configuration
@@ -68,12 +84,24 @@ public actor DownloadManager {
     /// Maximum number of simultaneous downloads.
     public let concurrencyLimit: Int
 
-    private let downloadTask: DownloadTask
+    /// Maximum automatic retries for a failed (non-cancelled) download.
+    public static let maxRetryCount = 2
+
+    private let downloadTask: DownloadTask?
     private let onStateChanged: @MainActor (DownloadManagerState) -> Void
 
     /// Called on an unstructured `Task` immediately after a volume file is written to disk.
     /// `nil` if no post-download action is needed (e.g. indexing is unavailable).
     private let onVolumeDownloaded: (@Sendable (String) async -> Void)?
+
+    /// Called on an unstructured `Task` after `deleteVolume` removes a volume file from
+    /// disk. `FRUSExplorerApp` supplies a closure that removes the volume's search-index
+    /// data via `IndexingPipeline.removeVolume(_:)`. `nil` if no cleanup is needed.
+    private let onVolumeDeleted: (@Sendable (String) async -> Void)?
+
+    /// `true` when transfers go through the shared `BackgroundDownloadEngine`
+    /// (production); `false` when a test injected `downloadTask`.
+    private let usesBackgroundEngine: Bool
 
     // MARK: - Mutable Queue State
 
@@ -83,8 +111,15 @@ public actor DownloadManager {
     /// volumeId → download URL string, for both pending and active entries.
     private var pendingUrls: [String: String] = [:]
 
-    /// Running Tasks, keyed by volumeId.
-    private var activeDownloads: [String: Task<Void, Never>] = [:]
+    /// Volume IDs with a transfer currently in flight.
+    private var activeVolumeIds: Set<String> = []
+
+    /// Running in-process Tasks for the **test** path, keyed by volumeId.
+    /// Empty in production (the background engine owns transfer lifecycle).
+    private var testTasks: [String: Task<Void, Never>] = [:]
+
+    /// Automatic retry attempts per volumeId for the current failure streak.
+    private var retryCounts: [String: Int] = [:]
 
     /// Whether downloads should start. Set to `true` by `resumeQueuedDownloads()`,
     /// `false` by `suspend()`. Guards `processQueue()` when offline.
@@ -101,25 +136,31 @@ public actor DownloadManager {
     /// - Parameters:
     ///   - volumesDirectory: Where XML files are written. Created if absent.
     ///   - concurrencyLimit: Max simultaneous downloads. Default 4.
-    ///   - downloadTask: URLSession replacement for tests. Default uses `URLSession.shared`.
+    ///   - downloadTask: Test replacement for the background engine. Default `nil`
+    ///     (production) routes transfers through `BackgroundDownloadEngine.shared`.
     ///   - onStateChanged: Called on the MainActor whenever active/pending queues change.
     ///   - onVolumeDownloaded: Called (via an unstructured `Task`) once a volume file is
     ///     confirmed on disk. Use this to trigger indexing without coupling `DownloadManager`
     ///     directly to `IndexingPipeline`. Pass `nil` if no post-download action is needed.
+    ///   - onVolumeDeleted: Called (via an unstructured `Task`) after `deleteVolume` removes
+    ///     a volume file from disk. Use this to remove the volume's search-index data
+    ///     without coupling `DownloadManager` directly to `IndexingPipeline`. Pass `nil`
+    ///     if no post-delete cleanup is needed.
     public init(
         volumesDirectory: URL,
         concurrencyLimit: Int = 4,
         downloadTask: DownloadTask? = nil,
         onStateChanged: @escaping @MainActor (DownloadManagerState) -> Void,
-        onVolumeDownloaded: (@Sendable (String) async -> Void)? = nil
+        onVolumeDownloaded: (@Sendable (String) async -> Void)? = nil,
+        onVolumeDeleted: (@Sendable (String) async -> Void)? = nil
     ) {
         self.volumesDirectory = volumesDirectory
         self.concurrencyLimit = concurrencyLimit
-        self.downloadTask = downloadTask ?? { request in
-            try await URLSession.shared.download(for: request)
-        }
+        self.downloadTask = downloadTask
+        self.usesBackgroundEngine = (downloadTask == nil)
         self.onStateChanged = onStateChanged
         self.onVolumeDownloaded = onVolumeDownloaded
+        self.onVolumeDeleted = onVolumeDeleted
 
         // Restore persisted pending queue from the previous app session.
         let restored = Self.loadPersistedQueue()
@@ -130,8 +171,20 @@ public actor DownloadManager {
         try? FileManager.default.createDirectory(at: volumesDirectory, withIntermediateDirectories: true)
 
         #if DEBUG
-        print("[DownloadManager] Initialised. volumesDir=\(volumesDirectory.path) pending=\(self.pendingQueue.count)")
+        print("[DownloadManager] Initialised. volumesDir=\(volumesDirectory.path) pending=\(restored.count) engine=\(self.usesBackgroundEngine)")
         #endif
+
+        // Route background-engine completions back into this actor. Only the
+        // production path attaches — tests own their transfer lifecycle and must
+        // not receive callbacks meant for another manager instance. Last statement
+        // in init: capturing self in an escaping closure ends the initializer's
+        // isolated access to stored properties.
+        if usesBackgroundEngine {
+            BackgroundDownloadEngine.shared.attach { [weak self] volumeId, error in
+                guard let self else { return }
+                Task { await self.transferDidComplete(volumeId: volumeId, error: error) }
+            }
+        }
     }
 
     // MARK: - Public API
@@ -139,7 +192,7 @@ public actor DownloadManager {
     /// A snapshot of the current queue state. Safe to read from any context via `await`.
     public var currentState: DownloadManagerState {
         DownloadManagerState(
-            activeVolumeIds: Array(activeDownloads.keys),
+            activeVolumeIds: Array(activeVolumeIds),
             pendingVolumeIds: pendingQueue
         )
     }
@@ -165,15 +218,16 @@ public actor DownloadManager {
     ///   - downloadUrl: The direct download URL from the GitHub API listing.
     public func enqueueDownload(volumeId: String, downloadUrl: String) {
         guard !isVolumeDownloaded(volumeId),
-              activeDownloads[volumeId] == nil,
+              !activeVolumeIds.contains(volumeId),
               !pendingQueue.contains(volumeId) else { return }
 
         pendingQueue.append(volumeId)
         pendingUrls[volumeId] = downloadUrl
+        retryCounts.removeValue(forKey: volumeId)
         persistQueue()
 
         #if DEBUG
-        print("[DownloadManager] Enqueued \(volumeId). pending=\(pendingQueue.count) active=\(activeDownloads.count)")
+        print("[DownloadManager] Enqueued \(volumeId). pending=\(pendingQueue.count) active=\(activeVolumeIds.count)")
         #endif
 
         processQueue()
@@ -184,13 +238,18 @@ public actor DownloadManager {
     /// If the volume file was partially written it is removed. If the volume was only
     /// pending (not yet started) it is removed from the persisted queue.
     public func cancelDownload(volumeId: String) {
-        // Cancel running task.
-        activeDownloads[volumeId]?.cancel()
-        activeDownloads.removeValue(forKey: volumeId)
+        // Cancel the running transfer.
+        if usesBackgroundEngine {
+            BackgroundDownloadEngine.shared.cancelDownload(volumeId: volumeId)
+        }
+        testTasks[volumeId]?.cancel()
+        testTasks.removeValue(forKey: volumeId)
+        activeVolumeIds.remove(volumeId)
 
         // Remove from pending queue.
         pendingQueue.removeAll { $0 == volumeId }
         pendingUrls.removeValue(forKey: volumeId)
+        retryCounts.removeValue(forKey: volumeId)
 
         // Remove any partially written file.
         let dest = volumeURL(for: volumeId)
@@ -206,15 +265,23 @@ public actor DownloadManager {
 
     /// Deletes a fully downloaded volume XML file from disk.
     ///
-    /// Posts `Notification.Name.frusVolumeDeleted` so the FTS5 index pipeline (Session 09)
-    /// can remove the volume's search entries. Throws if the file cannot be removed.
+    /// Calls `onVolumeDeleted` (via an unstructured `Task`) so the search index removes
+    /// the volume's FTS5 rows, auxiliary-table rows, and Spotlight items, and also posts
+    /// `Notification.Name.frusVolumeDeleted` for any additional observers. Throws if the
+    /// file cannot be removed.
     public func deleteVolume(volumeId: String) throws {
         let dest = volumeURL(for: volumeId)
         guard FileManager.default.fileExists(atPath: dest.path) else { return }
         try FileManager.default.removeItem(at: dest)
 
-        // Session 09 hook: the FTS5 index observer listens for this notification and
-        // removes the volume's rows from the frus_documents FTS5 table.
+        // Index cleanup runs in an unstructured Task so file deletion returns
+        // immediately; IndexingPipeline.removeVolume is idempotent, so callers that
+        // already removed the index themselves (e.g. the storage management sheet)
+        // are unaffected by the second pass.
+        if let callback = onVolumeDeleted {
+            Task { await callback(volumeId) }
+        }
+
         NotificationCenter.default.post(
             name: .frusVolumeDeleted,
             object: nil,
@@ -262,22 +329,42 @@ public actor DownloadManager {
         )
     }
 
-    /// Enables the manager and starts processing the pending queue.
+    /// Enables the manager, adopts transfers the background daemon kept alive
+    /// across the last app termination, and starts processing the pending queue.
     ///
     /// Call this when the device comes online. Safe to call multiple times.
-    public func resumeQueuedDownloads() {
+    public func resumeQueuedDownloads() async {
         isEnabled = true
+
+        // Adopt transfers still registered with the background session — they were
+        // started before the last suspension/termination and have been progressing
+        // (or waiting for connectivity) under the system daemon ever since.
+        if usesBackgroundEngine {
+            let inFlight = await BackgroundDownloadEngine.shared.inFlightVolumeIds()
+            for volumeId in inFlight {
+                activeVolumeIds.insert(volumeId)
+                pendingQueue.removeAll { $0 == volumeId }
+            }
+            if !inFlight.isEmpty {
+                persistQueue()
+                #if DEBUG
+                print("[DownloadManager] Adopted \(inFlight.count) in-flight background transfers.")
+                #endif
+            }
+        }
+
         processQueue()
 
         #if DEBUG
-        print("[DownloadManager] Resumed. pending=\(pendingQueue.count) active=\(activeDownloads.count)")
+        print("[DownloadManager] Resumed. pending=\(pendingQueue.count) active=\(activeVolumeIds.count)")
         #endif
     }
 
     /// Disables new downloads without cancelling active ones.
     ///
-    /// Call this when the device goes offline. Active transfers finish normally; new
-    /// entries from `enqueueDownload` are held in the persisted pending queue.
+    /// Call this when the device goes offline. Active transfers finish normally (the
+    /// background session waits for connectivity by itself); new entries from
+    /// `enqueueDownload` are held in the persisted pending queue.
     public func suspend() {
         isEnabled = false
 
@@ -292,19 +379,25 @@ public actor DownloadManager {
     /// Only runs when `isEnabled` is `true`.
     private func processQueue() {
         guard isEnabled else { return }
-        while activeDownloads.count < concurrencyLimit, !pendingQueue.isEmpty {
+        while activeVolumeIds.count < concurrencyLimit, !pendingQueue.isEmpty {
             let volumeId = pendingQueue.removeFirst()
             guard let urlString = pendingUrls[volumeId],
                   let url = URL(string: urlString) else {
                 pendingUrls.removeValue(forKey: volumeId)
                 continue
             }
-            activeDownloads[volumeId] = Task {
-                do {
-                    try await self.performDownload(volumeId: volumeId, downloadUrl: url)
-                    self.downloadDidSucceed(volumeId: volumeId)
-                } catch {
-                    self.downloadDidFail(volumeId: volumeId, error: error)
+            activeVolumeIds.insert(volumeId)
+
+            if usesBackgroundEngine {
+                BackgroundDownloadEngine.shared.startDownload(volumeId: volumeId, from: url)
+            } else {
+                testTasks[volumeId] = Task {
+                    do {
+                        try await self.performTestDownload(volumeId: volumeId, downloadUrl: url)
+                        self.transferDidComplete(volumeId: volumeId, error: nil)
+                    } catch {
+                        self.transferDidComplete(volumeId: volumeId, error: error)
+                    }
                 }
             }
         }
@@ -312,12 +405,10 @@ public actor DownloadManager {
         notifyStateChanged()
     }
 
-    /// Performs the actual network transfer. Runs off the actor's executor so concurrent
-    /// downloads proceed without blocking the actor for the duration of each transfer.
-    ///
-    /// The `volumesDirectory` and `downloadTask` are immutable `let` properties and can
-    /// therefore be accessed from this `nonisolated` context without data races.
-    nonisolated private func performDownload(volumeId: String, downloadUrl: URL) async throws {
+    /// Performs an in-process transfer using the injected test closure. Runs off the
+    /// actor's executor so concurrent test downloads proceed without blocking the actor.
+    nonisolated private func performTestDownload(volumeId: String, downloadUrl: URL) async throws {
+        guard let downloadTask else { throw URLError(.unknown) }
         var request = URLRequest(url: downloadUrl)
         request.setValue("FRUSExplorer/2.0", forHTTPHeaderField: "User-Agent")
 
@@ -340,9 +431,30 @@ public actor DownloadManager {
         #endif
     }
 
+    /// Routes a finished transfer (engine or test path) to success/failure handling.
+    private func transferDidComplete(volumeId: String, error: Error?) {
+        guard activeVolumeIds.contains(volumeId) || testTasks[volumeId] != nil else {
+            // Completion for a transfer this instance no longer tracks (e.g. a
+            // background transfer that finished during a previous process). The
+            // file is already on disk; trigger the post-download hook so the
+            // volume gets indexed.
+            if error == nil, let callback = onVolumeDownloaded {
+                Task { await callback(volumeId) }
+            }
+            return
+        }
+        if let error {
+            downloadDidFail(volumeId: volumeId, error: error)
+        } else {
+            downloadDidSucceed(volumeId: volumeId)
+        }
+    }
+
     private func downloadDidSucceed(volumeId: String) {
-        activeDownloads.removeValue(forKey: volumeId)
+        activeVolumeIds.remove(volumeId)
+        testTasks.removeValue(forKey: volumeId)
         pendingUrls.removeValue(forKey: volumeId)
+        retryCounts.removeValue(forKey: volumeId)
 
         // Trigger post-download indexing (or any other action) without blocking the actor.
         // The callback runs in an unstructured Task so it does not delay queue processing
@@ -355,16 +467,50 @@ public actor DownloadManager {
     }
 
     private func downloadDidFail(volumeId: String, error: Error) {
-        activeDownloads.removeValue(forKey: volumeId)
-        pendingUrls.removeValue(forKey: volumeId)
+        activeVolumeIds.remove(volumeId)
+        testTasks.removeValue(forKey: volumeId)
 
-        #if DEBUG
         let isCancelled = (error as? CancellationError) != nil
-        if !isCancelled {
-            print("[DownloadManager] ✗ \(volumeId) failed: \(error)")
-        }
-        #endif
+            || (error as? URLError)?.code == .cancelled
 
+        // Retry transient failures with a short backoff; give up (and forget the
+        // URL) after maxRetryCount attempts or on user cancellation.
+        if !isCancelled,
+           let urlString = pendingUrls[volumeId],
+           retryCounts[volumeId, default: 0] < Self.maxRetryCount {
+            let attempt = retryCounts[volumeId, default: 0] + 1
+            retryCounts[volumeId] = attempt
+            #if DEBUG
+            print("[DownloadManager] ✗ \(volumeId) failed (attempt \(attempt)): \(error). Retrying…")
+            #endif
+            Task {
+                // Linear backoff: 5 s, 10 s. Modest by design — the background
+                // session already retried transport-level hiccups internally.
+                try? await Task.sleep(for: .seconds(5 * attempt))
+                await self.retryDownload(volumeId: volumeId, downloadUrl: urlString)
+            }
+        } else {
+            pendingUrls.removeValue(forKey: volumeId)
+            retryCounts.removeValue(forKey: volumeId)
+            #if DEBUG
+            if !isCancelled {
+                print("[DownloadManager] ✗ \(volumeId) failed permanently: \(error)")
+            }
+            #endif
+        }
+
+        processQueue()
+    }
+
+    /// Re-enqueues a failed download at the back of the pending queue, preserving
+    /// its retry count.
+    private func retryDownload(volumeId: String, downloadUrl: String) {
+        guard !isVolumeDownloaded(volumeId),
+              !activeVolumeIds.contains(volumeId),
+              !pendingQueue.contains(volumeId) else { return }
+        pendingQueue.append(volumeId)
+        pendingUrls[volumeId] = downloadUrl
+        persistQueue()
         processQueue()
     }
 
@@ -422,6 +568,7 @@ public actor DownloadManager {
 public extension Notification.Name {
     /// Posted by `DownloadManager.deleteVolume` when a volume is removed from disk.
     /// `userInfo["volumeId"]` contains the deleted volume identifier.
-    /// The FTS5 index observer (Session 09) removes the volume's search entries on receipt.
+    /// Search-index cleanup is handled by the `onVolumeDeleted` callback, not this
+    /// notification; it remains available for auxiliary observers (e.g. UI refresh).
     static let frusVolumeDeleted = Notification.Name("frus.volumeDeleted")
 }

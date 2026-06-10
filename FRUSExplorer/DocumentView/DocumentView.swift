@@ -292,7 +292,8 @@ struct DocumentView: View {
             volumeEntry: volumeEntry,
             parser: FRUSDocumentParser(),
             subjectTagStore: appState.subjectTagStore,
-            personMentionStore: appState.personMentionStore
+            personMentionStore: appState.personMentionStore,
+            astCache: appState.documentASTCache
         )
         guard let vm else { return }
         guard let dm = appState.downloadManager,

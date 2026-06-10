@@ -346,13 +346,14 @@ struct PersonFilterTests {
     // MARK: - UnstemmedHeaderDisplayTest
 
     /// Verifies that `SearchResult.header` and `SearchResult.dateline` contain the
-    /// original (unstemmed) document text rather than the Porter-stemmed tokens stored
-    /// in the FTS5 virtual table.
+    /// original document text.
     ///
-    /// The FTS5 table stores `stemForIndex(header)` — e.g. "Memorandum of Conversation"
-    /// becomes "memorandum of convers". Reading `header` back from the FTS5 search row
-    /// therefore returns stemmed junk. `rebuildSnippetsAndAttachDates` must substitute
-    /// `document_cache.header` (original text) for the FTS5-indexed value.
+    /// Historical context: before the external-content redesign, the FTS5 table
+    /// stored application-stemmed text ("Memorandum of Conversation" became
+    /// "memorandum of convers") and SearchService had to repair display values from
+    /// `document_cache`. The combined search query now reads display fields straight
+    /// from `document_cache`, so this guards against any regression that reintroduces
+    /// stemmed tokens into result rows.
     @Test("Search results show unstemmed header and dateline from document_cache")
     @MainActor
     func searchResultsShowUnstemmedHeaderAndDateline() async throws {

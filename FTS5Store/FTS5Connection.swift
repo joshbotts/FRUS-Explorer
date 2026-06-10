@@ -63,6 +63,12 @@ final class FTS5Connection {
     private func enableWAL() throws {
         try exec("PRAGMA journal_mode=WAL")
         try exec("PRAGMA synchronous=NORMAL")
+        // Wait up to 5 s for a competing writer instead of failing immediately with
+        // SQLITE_BUSY. Multiple connections share this database file (FTS5Store,
+        // IndexingPipeline's auxiliary connection, and the read-only stores); without
+        // a busy timeout a write that collides with another connection's transaction
+        // errors out instantly and the update is silently dropped by `try?` callers.
+        try exec("PRAGMA busy_timeout = 5000")
         // Keep temporary structures (sort buffers, CTE materializations) in RAM.
         // Avoids the overhead of creating a transient temp-file for short-lived data.
         try exec("PRAGMA temp_store=MEMORY")
@@ -78,95 +84,87 @@ final class FTS5Connection {
 
     // MARK: - Schema Creation
 
+    /// The current schema generation, tracked with `PRAGMA user_version`.
+    ///
+    /// - 0–2: pre-version-tracking databases (application-layer stemming, standard
+    ///   FTS5 table, possibly missing `is_editorial_note`).
+    /// - 3: `is_editorial_note` column present (Session 48 migration).
+    /// - 4: external-content redesign (Session 2026-06-09) — `frus_documents` is an
+    ///   external-content table over `document_cache` using the built-in
+    ///   `porter unicode61` tokenizer, and user text lives in `user_content`.
+    static let currentSchemaGeneration = 4
+
     /// Creates (or migrates) the FTS5 virtual table.
     ///
-    /// ## Stemming Tokenizer Strategy
-    /// The FTS5 schema uses the `unicode61` built-in tokenizer. Porter stemming is
-    /// applied at the application layer:
-    ///   - **Indexing**: `FTS5Store` stems each word in document text before insertion.
-    ///   - **Querying**: `FTS5Query.toFTS5MatchExpression()` stems each keyword term.
+    /// ## Tokenizer Strategy (generation 4)
+    /// The schema uses SQLite's built-in `porter unicode61` tokenizer. Stemming
+    /// happens inside FTS5 symmetrically at index and query time, so stored column
+    /// values remain the *original* text. The previous application-layer Porter
+    /// stemming (which stored stemmed text and required `document_cache` lookups to
+    /// repair display values) is gone.
     ///
-    /// This gives equivalent search recall to a custom C tokenizer without requiring
-    /// the `fts5.h` C header, which is not exposed in the macOS system SQLite headers.
+    /// ## Migration
+    /// Migration state is tracked with `PRAGMA user_version`:
+    /// - `user_version >= 4`: schema is current; the table is created with
+    ///   `IF NOT EXISTS` and nothing else happens.
+    /// - `user_version < 4` **and the table already exists**: the table predates the
+    ///   external-content redesign (its shadow tables hold app-layer-stemmed text).
+    ///   It is dropped and recreated; the method returns `true` so the caller can
+    ///   rebuild the index from the content table (no XML re-parse is required —
+    ///   `document_cache` already holds the original text).
+    /// - `user_version < 4` and the table does not exist: fresh database; the table
+    ///   is created and the version stamped without signalling a rebuild.
     ///
-    /// ## Migration (schema version 3)
-    /// FTS5 virtual tables cannot be altered via `ALTER TABLE ADD COLUMN` — the
-    /// statement is silently ignored by SQLite. When the `is_editorial_note` column
-    /// (added in Session 38) is found to be absent from an existing `frus_documents`
-    /// table, this method drops the table and recreates it with the correct schema.
+    /// FTS5 virtual tables cannot be altered with `ALTER TABLE`, which is why every
+    /// schema change is a drop-and-recreate. Dropping an FTS5 table also removes its
+    /// shadow tables (`_data`, `_idx`, `_content`, `_docsize`, `_config`).
     ///
-    /// Migration state is tracked with `PRAGMA user_version` on the database file:
-    ///   - 0 (default): schema predates version tracking; column presence is checked.
-    ///   - 3 (current): schema is correct; no action needed.
-    ///
-    /// - Returns: `true` if the FTS5 table was dropped and recreated; `false` otherwise.
-    ///   A `true` return means the caller should enqueue a full re-index of all
-    ///   downloaded volumes so that `is_editorial_note` data is populated correctly.
+    /// - Returns: `true` if an existing FTS5 table was dropped and recreated; the
+    ///   caller should rebuild the index contents (for external-content schemas, via
+    ///   the FTS5 `rebuild` command against the populated content table).
     func createSchema(schema: FTS5Schema) throws -> Bool {
-        let columnDefs = buildColumnDefs(for: schema)
-        let tokenizerName = resolvedTokenizerName(for: schema)
-
-        var createSQL = """
-        CREATE VIRTUAL TABLE IF NOT EXISTS \(schema.tableName) USING fts5(
-            \(columnDefs),
-            tokenize = '\(tokenizerName)'
-        )
-        """
-        if let content = schema.contentTable {
-            createSQL = createSQL.replacingOccurrences(
-                of: "tokenize = '\(tokenizerName)'",
-                with: "content='\(content)', tokenize = '\(tokenizerName)'"
-            )
-        }
-
-        do {
-            try exec(createSQL)
-        } catch {
-            throw FTS5Error.schemaCreationFailed(message: "\(error)")
-        }
-
-        // Fast path: user_version = 3 means schema is already current.
         let version = userVersion()
-        if version >= 3 { return false }
 
-        // Detect missing column. A freshly created table has all columns, so this
-        // only returns false for databases created before Session 38.
-        let hasColumn = tableHasColumn("is_editorial_note", inTable: schema.tableName)
-        if hasColumn {
-            try setUserVersion(3)
+        if version >= Self.currentSchemaGeneration {
+            do {
+                try exec(schema.createTableSQL(ifNotExists: true))
+            } catch {
+                throw FTS5Error.schemaCreationFailed(message: "\(error)")
+            }
             return false
         }
 
-        // Column is absent — drop and recreate the FTS5 table.
-        // Dropping a FTS5 virtual table also removes all its shadow tables
-        // (`_data`, `_idx`, `_content`, `_docsize`, `_config`).
-        try exec("DROP TABLE IF EXISTS \(schema.tableName)")
-        try exec("""
-        CREATE VIRTUAL TABLE \(schema.tableName) USING fts5(
-            \(columnDefs),
-            tokenize = '\(tokenizerName)'
-        )
-        """)
-        try setUserVersion(3)
+        let existed = tableExists(schema.tableName)
+        do {
+            if existed {
+                try exec("DROP TABLE IF EXISTS \(schema.tableName)")
+            }
+            try exec(schema.createTableSQL(ifNotExists: true))
+        } catch {
+            throw FTS5Error.schemaCreationFailed(message: "\(error)")
+        }
+        try setUserVersion(Self.currentSchemaGeneration)
 
         #if DEBUG
-        print("[FTS5Connection] Rebuilt \(schema.tableName): is_editorial_note was absent (schema v\(version) → 3)")
+        if existed {
+            print("[FTS5Connection] Rebuilt \(schema.tableName) for schema generation \(Self.currentSchemaGeneration) (was v\(version))")
+        }
         #endif
-        return true
+        return existed
     }
 
     // MARK: - Schema Helpers
 
-    private func buildColumnDefs(for schema: FTS5Schema) -> String {
-        schema.columns.map { col -> String in
-            FTS5Schema.unindexedColumns.contains(col) ? "\(col.rawValue) UNINDEXED" : col.rawValue
-        }.joined(separator: ",\n    ")
-    }
-
-    private func resolvedTokenizerName(for schema: FTS5Schema) -> String {
-        // Substitute "unicode61" for "frus_english": the custom tokenizer name
-        // requires the fts5.h C API which is not exposed in system SQLite headers.
-        schema.tokenizerName == "frus_english" ? "unicode61" : schema.tokenizerName
+    /// Returns `true` if a table (or virtual table) with the given name exists.
+    func tableExists(_ table: String) -> Bool {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(
+            db, "SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name = ?",
+            -1, &stmt, nil
+        ) == SQLITE_OK, let s = stmt else { return false }
+        defer { sqlite3_finalize(s) }
+        sqlite3_bind_text(s, 1, table, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        return sqlite3_step(s) == SQLITE_ROW
     }
 
     /// Returns `true` if the named column exists in the named SQLite table.

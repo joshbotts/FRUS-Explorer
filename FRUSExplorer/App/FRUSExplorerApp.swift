@@ -92,10 +92,46 @@ import os
 ///   3.8 — Session 2026-06-07: macOS "History" CommandMenu added (Documents Visited /
 ///          Searches Executed submenus, last ten each, "Complete History…" item);
 ///          frus.history Window scene added hosting the new HistoryWindowView
+#if os(iOS)
+/// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
+///
+/// The only one this app needs is the background-`URLSession` wake-up: when all
+/// events for `BackgroundDownloadEngine`'s session have been delivered after the
+/// system relaunched the app in the background, UIKit requires the stored
+/// completion handler to be invoked. The engine calls it from
+/// `urlSessionDidFinishEvents(forBackgroundURLSession:)`.
+final class FRUSAppDelegate: NSObject, UIApplicationDelegate {
+
+    /// Stores the completion handler and ensures the engine's session is alive so
+    /// the queued events (finished volume downloads) are delivered and the files
+    /// moved into the volumes directory.
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        guard identifier == BackgroundDownloadEngine.sessionIdentifier else {
+            completionHandler()
+            return
+        }
+        // UIKit's completion handler is not Sendable by signature, but its
+        // contract is "call once, on the main thread" — the MainActor hop below
+        // honours that, making the unsafe transfer sound.
+        nonisolated(unsafe) let handler = completionHandler
+        BackgroundDownloadEngine.shared.storeBackgroundCompletionHandler {
+            Task { @MainActor in handler() }
+        }
+    }
+}
+#endif
+
 @main
 struct FRUSExplorerApp: App {
 
     @State private var appState = AppState()
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(FRUSAppDelegate.self) private var appDelegate
+    #endif
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
@@ -515,33 +551,80 @@ struct FRUSExplorerApp: App {
                 downloadedVolumeIds: downloadedIds
             )
 
-            // Trigger a background re-index when schema migrations require it.
-            // Two independent flags can each demand a re-index:
-            //   • store.didRebuildSchema + pipeline.needsFTSRebuildReindex:
-            //     FTS5 table was rebuilt (is_editorial_note column was absent).
-            //   • pipeline.needsDateReindex:
-            //     Date extraction strategy was upgraded in Session 36.
-            let ftsRebuildNeeded = store.didRebuildSchema && pipeline.needsFTSRebuildReindex
+            // Trigger background index migrations when schema versions require it.
+            // Two independent flags, with different costs:
+            //   • FTS rebuild (didRebuildSchema OR a previous rebuild never finished):
+            //     the FTS5 tables were recreated (external-content redesign). The
+            //     index is rebuilt from document_cache via the FTS5 `rebuild`
+            //     command — tens of seconds, no XML re-parse. The OR with
+            //     needsFTSRebuildReindex makes this self-healing: if the app is
+            //     killed between the schema drop and the rebuild, the UserDefaults
+            //     flag is still unset on next launch and the rebuild re-runs.
+            //   • Date re-index: the date-extraction strategy changed; requires a
+            //     full XML re-parse via indexAllVolumes (which also repopulates the
+            //     FTS tables through the document_cache sync triggers, so a pending
+            //     FTS rebuild is satisfied by it too).
+            let ftsRebuildNeeded = store.didRebuildSchema || pipeline.needsFTSRebuildReindex
             let dateReindexNeeded = pipeline.needsDateReindex
-            if ftsRebuildNeeded || dateReindexNeeded {
+            if dateReindexNeeded {
                 Task {
                     #if DEBUG
-                    print("[FRUSExplorer] Background re-index triggered (ftsRebuild=\(ftsRebuildNeeded), dateReindex=\(dateReindexNeeded)).")
+                    print("[FRUSExplorer] Background re-index triggered (dateReindex=true, ftsRebuild=\(ftsRebuildNeeded)).")
                     #endif
                     try? await pipeline.indexAllVolumes()
-                    if ftsRebuildNeeded  { await pipeline.markFTSRebuildReindexComplete() }
-                    if dateReindexNeeded { await pipeline.markDateReindexComplete() }
+                    await pipeline.markDateReindexComplete()
+                    if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index complete.")
                     #endif
                 }
+            } else if ftsRebuildNeeded {
+                Task {
+                    #if DEBUG
+                    print("[FRUSExplorer] FTS rebuild from document_cache triggered.")
+                    #endif
+                    if (try? await pipeline.rebuildSearchIndexFromCache()) != nil {
+                        await pipeline.markFTSRebuildReindexComplete()
+                    }
+                    #if DEBUG
+                    print("[FRUSExplorer] FTS rebuild from document_cache complete.")
+                    #endif
+                }
             }
 
-            // Push all existing SwiftData user annotations into the FTS5 index.
-            // FTS5 summary_text, note_text, and user_tag_ids are always NULL after initial
-            // indexing because they are created after the fact and stored only in SwiftData.
-            // This scan handles prior-session data and CloudKit-synced records from other
-            // devices. Runs in a background Task so it doesn't block boot.
+            // Reconcile downloads that completed without a post-download indexing
+            // pass — e.g. transfers the background session daemon finished while
+            // the app was not running, or volumes whose indexing previously failed.
+            // Volumes marked interrupted are excluded (the user resolves those
+            // explicitly from the amber badge). Skipped when a full date re-index
+            // is queued above, which re-parses everything anyway.
+            if !dateReindexNeeded {
+                let indexedIds = (try? pipeline.allIndexedVolumeIds()) ?? []
+                let interrupted = appState.interruptedVolumeIds
+                let unindexed = IndexingPipeline
+                    .findDownloadedVolumes(in: volumesDir)
+                    .map(\.volumeId)
+                    .filter { !indexedIds.contains($0) && !interrupted.contains($0) }
+                if !unindexed.isEmpty {
+                    Task {
+                        #if DEBUG
+                        print("[FRUSExplorer] Reconciling \(unindexed.count) downloaded-but-unindexed volumes.")
+                        #endif
+                        for volumeId in unindexed.sorted() {
+                            try? await pipeline.indexVolume(volumeId)
+                        }
+                    }
+                }
+            }
+
+            // Push all existing SwiftData user annotations into the search index.
+            // Summaries/notes are created after indexing and stored only in SwiftData;
+            // this scan handles prior-session data and CloudKit-synced records from
+            // other devices. Runs in a background Task so it doesn't block boot.
+            //
+            // Cost: in the steady state this is nearly free — updateCacheColumns
+            // skips rows whose values are already current (zero-row UPDATE, no FTS5
+            // trigger fires), so only new or changed records cause index writes.
             let container = modelContainer
             Task {
                 let context = ModelContext(container)
@@ -638,6 +721,21 @@ struct FRUSExplorerApp: App {
                     #if DEBUG
                     print("[FRUSExplorer] Auto-indexed \(volumeId): \(summaries.count) summaries, \(notes.count) notes synced.")
                     #endif
+                }
+            },
+            onVolumeDeleted: indexPipeline.map { pipeline in
+                // Remove the volume's FTS5 rows, auxiliary-table rows, and Spotlight
+                // items whenever a volume file is deleted, regardless of which UI
+                // path triggered the deletion. removeVolume is idempotent, so paths
+                // that already cleaned the index themselves are unaffected.
+                { @Sendable [appState] volumeId in
+                    try? await pipeline.removeVolume(volumeId)
+                    await MainActor.run {
+                        appState.indexedVolumeIds.remove(volumeId)
+                    }
+                    // Drop any cached document ASTs so a re-download can never
+                    // serve stale content from the deleted file.
+                    await appState.documentASTCache.removeVolume(volumeId)
                 }
             }
         )

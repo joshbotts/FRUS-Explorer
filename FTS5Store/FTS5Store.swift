@@ -26,11 +26,16 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 /// concurrency (`Sendable` types throughout).
 ///
 /// ## Stemming
-/// Porter stemming is applied at the application layer before text reaches SQLite:
-///   - **Indexing**: `stemForIndex(_:)` stems each whitespace-delimited word in
-///     document text before the string is bound to the INSERT statement.
-///   - **Querying**: `FTS5Query.toFTS5MatchExpression()` stems each keyword term
-///     before embedding it in the FTS5 MATCH expression.
+/// Stemming is performed by SQLite's built-in `porter unicode61` tokenizer,
+/// symmetrically at index and query time. Stored column values are the original
+/// (unstemmed) text, so values returned by `search` are display-quality.
+///
+/// ## External-Content Schemas
+/// When the schema declares a `contentTable`, the FTS5 table holds only the
+/// inverted index; rows are maintained by SQL triggers on the content table (see
+/// `FTS5Schema.externalContentTriggerSQL()`). The write methods on this store
+/// (`insert`, `insertBatch`, `update`, `delete`, `deleteVolume`, `deleteAll`)
+/// throw `FTS5Error.externalContentWrite` — write to the content table instead.
 ///
 /// ## Usage
 /// ```swift
@@ -65,6 +70,16 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///          Skipping it eliminates the most expensive per-row operation for large
 ///          result sets. `FTS5Result.snippet` now carries an empty string; callers
 ///          that care about snippets (e.g. `SearchService`) must supply their own.
+///   1.5 — Session 2026-06-09: `delete(documentId:)` replaced by
+///          `delete(documentId:volumeId:)`. FRUS document IDs (e.g. "d1") repeat in
+///          every volume, so the unscoped delete removed rows from all volumes —
+///          every summary/note/tag update and every per-document volume removal
+///          silently corrupted the index for other volumes.
+///   2.0 — Session 2026-06-09: external-content redesign. Application-layer Porter
+///          stemming removed (`stemForIndex` deleted); the `porter unicode61`
+///          tokenizer stems inside SQLite and stored values stay unstemmed. Write
+///          methods throw `FTS5Error.externalContentWrite` for external-content
+///          schemas — index maintenance happens via content-table triggers.
 public actor FTS5Store {
 
     private let connection: FTS5Connection
@@ -103,12 +118,25 @@ public actor FTS5Store {
 
     // MARK: - Insertion
 
+    /// Throws `FTS5Error.externalContentWrite` when this store's schema is an
+    /// external-content table. Rows of external-content tables are maintained by
+    /// triggers on the content table; writing through the FTS5 table directly
+    /// would desynchronise the index from the content.
+    private func requireStandardSchema() throws {
+        if schema.contentTable != nil {
+            throw FTS5Error.externalContentWrite(tableName: schema.tableName)
+        }
+    }
+
     /// Inserts a single document into the FTS5 index.
     ///
-    /// All indexed text fields are Porter-stemmed before insertion.
+    /// Text is stored as-is; the `porter unicode61` tokenizer stems at index time.
     /// Calling `insert` for a document whose `id` already exists will create a
     /// duplicate row; use `update` to replace an existing document.
+    ///
+    /// - Throws: `FTS5Error.externalContentWrite` for external-content schemas.
     public func insert(document: FTS5Document) throws {
+        try requireStandardSchema()
         let sql = insertSQL()
         let stmt = try connection.prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -121,26 +149,39 @@ public actor FTS5Store {
     /// Replaces an existing document in the FTS5 index.
     ///
     /// Implemented as `delete` + `insert`. FTS5 does not support in-place row
-    /// updates via a stable rowid when `content=` is not used.
+    /// updates via a stable rowid when `content=` is not used. The delete is
+    /// scoped to the document's `volumeId` — FRUS document IDs (e.g. `"d1"`)
+    /// repeat in every volume, so an unscoped delete would remove rows from
+    /// other volumes.
+    ///
+    /// - Throws: `FTS5Error.externalContentWrite` for external-content schemas.
     public func update(document: FTS5Document) throws {
-        try delete(documentId: document.id)
+        try requireStandardSchema()
+        try delete(documentId: document.id, volumeId: document.volumeId)
         try insert(document: document)
 
-        logger.debug("Updated document \(document.id, privacy: .public)")
+        logger.debug("Updated document \(document.volumeId, privacy: .public)/\(document.id, privacy: .public)")
     }
 
-    /// Removes a document from the FTS5 index by its identifier.
+    /// Removes a single document from the FTS5 index.
     ///
-    /// Uses the FTS5 `DELETE` extension syntax. If the document does not exist,
-    /// the operation succeeds silently.
-    public func delete(documentId: String) throws {
-        let sql = "DELETE FROM \(schema.tableName) WHERE document_id = ?"
+    /// The delete is scoped by both `documentId` and `volumeId` because FRUS
+    /// document IDs (e.g. `"d1"`) are only unique within a volume — an unscoped
+    /// `document_id` delete would silently remove matching rows from every
+    /// indexed volume. If the document does not exist, the operation succeeds
+    /// silently.
+    ///
+    /// - Throws: `FTS5Error.externalContentWrite` for external-content schemas.
+    public func delete(documentId: String, volumeId: String) throws {
+        try requireStandardSchema()
+        let sql = "DELETE FROM \(schema.tableName) WHERE document_id = ? AND volume_id = ?"
         let stmt = try connection.prepare(sql)
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, documentId, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(stmt, 2, volumeId, -1, SQLITE_TRANSIENT)
         try connection.step(stmt)
 
-        logger.debug("Deleted document \(documentId, privacy: .public)")
+        logger.debug("Deleted document \(volumeId, privacy: .public)/\(documentId, privacy: .public)")
     }
 
     /// Removes all FTS5 rows belonging to a given volume.
@@ -148,7 +189,10 @@ public actor FTS5Store {
     /// Called before re-indexing a volume so that a second pass does not produce
     /// duplicate search results. Document IDs (e.g. "d1") are not globally unique
     /// across volumes, so this delete must be scoped by `volume_id`.
+    ///
+    /// - Throws: `FTS5Error.externalContentWrite` for external-content schemas.
     public func deleteVolume(volumeId: String) throws {
+        try requireStandardSchema()
         let sql = "DELETE FROM \(schema.tableName) WHERE volume_id = ?"
         let stmt = try connection.prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -168,7 +212,9 @@ public actor FTS5Store {
     /// calling it after every volume is O(n²) on the total index size.
     ///
     /// - Parameter documents: One or more documents to insert. Must be non-empty.
+    /// - Throws: `FTS5Error.externalContentWrite` for external-content schemas.
     public func insertBatch(_ documents: [FTS5Document]) throws {
+        try requireStandardSchema()
         guard !documents.isEmpty else { throw FTS5Error.emptyBatch }
 
         let sql = insertSQL()
@@ -344,9 +390,15 @@ public actor FTS5Store {
 
     /// Deletes every document from the FTS5 index in a single SQL statement.
     ///
-    /// Use this instead of calling `delete(documentId:)` in a loop when resetting
-    /// all data — one statement is orders of magnitude faster than per-document deletes.
+    /// Use this instead of calling `delete(documentId:volumeId:)` in a loop when
+    /// resetting all data — one statement is orders of magnitude faster than
+    /// per-document deletes.
+    ///
+    /// - Throws: `FTS5Error.externalContentWrite` for external-content schemas
+    ///   (delete the content-table rows instead, or use the FTS5 `delete-all`
+    ///   command with triggers disabled).
     public func deleteAll() throws {
+        try requireStandardSchema()
         try connection.exec("DELETE FROM \(schema.tableName)")
         logger.info("deleteAll complete on \(self.schema.tableName, privacy: .public)")
     }
@@ -373,34 +425,6 @@ public actor FTS5Store {
         return (attrs[.size] as? Int) ?? 0
     }
 
-    // MARK: - Application-Layer Stemming
-
-    /// Stems a body-text string for insertion into the FTS5 index.
-    ///
-    /// Splits on whitespace, lowercases each word, applies Porter stemming, and
-    /// rejoins. Non-alphabetic tokens (numbers, punctuation fragments) are preserved
-    /// as-is to ensure numeric references and dates remain searchable.
-    ///
-    /// This function is `nonisolated` so callers can stem text concurrently
-    /// before calling the isolated `insert` / `insertBatch` methods.
-    nonisolated public func stemForIndex(_ text: String) -> String {
-        text.split(whereSeparator: \.isWhitespace)
-            .map { token -> String in
-                let lower = String(token).lowercased()
-                // Strip non-letter characters (trailing periods, hyphens, digits, etc.)
-                // to get the word's alphabetic core for Porter stemming. Unicode letters
-                // (é, ñ, ü, …) are preserved so accented words index consistently with
-                // how the same words appear in queries. Tokens with no letter content
-                // (e.g. "1969-76") are passed through as-is so numeric references remain
-                // searchable via FTS5's own tokenizer.
-                let alpha = lower.filter { $0.isLetter }
-                guard !alpha.isEmpty else { return lower }
-                return PorterStemmer.stem(alpha)
-            }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-    }
-
     // MARK: - Private Helpers
 
     private func insertSQL() -> String {
@@ -410,19 +434,26 @@ public actor FTS5Store {
     }
 
     private func bind(document doc: FTS5Document, to stmt: OpaquePointer) {
-        // Column order must match FTS5Column.allCases
-        sqlite3_bind_text(stmt, 1,  doc.id,                        -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(stmt, 2,  doc.volumeId,                  -1, SQLITE_TRANSIENT)
-        bindOptional(stmt, 3,  doc.documentNumber)
-        sqlite3_bind_text(stmt, 4,  stemForIndex(doc.header),      -1, SQLITE_TRANSIENT)
-        bindOptional(stmt, 5,  doc.dateline.map { stemForIndex($0) })
-        bindOptional(stmt, 6,  doc.sourceNote.map { stemForIndex($0) })
-        sqlite3_bind_text(stmt, 7,  stemForIndex(doc.bodyText),    -1, SQLITE_TRANSIENT)
-        bindOptional(stmt, 8,  doc.subjectTagIds)
-        bindOptional(stmt, 9,  doc.userTagIds)
-        bindOptional(stmt, 10, doc.summaryText.map { stemForIndex($0) })
-        bindOptional(stmt, 11, doc.noteText.map { stemForIndex($0) })
-        sqlite3_bind_int(stmt, 12, doc.isEditorialNote ? 1 : 0)
+        // Text is bound as-is; the porter tokenizer stems at index time.
+        // Bind positions follow the schema's column order. Standard schemas only —
+        // external-content schemas reject writes before reaching this point.
+        for (i, column) in schema.columns.enumerated() {
+            let position = Int32(i + 1)
+            switch column {
+            case .documentId:      sqlite3_bind_text(stmt, position, doc.id, -1, SQLITE_TRANSIENT)
+            case .volumeId:        sqlite3_bind_text(stmt, position, doc.volumeId, -1, SQLITE_TRANSIENT)
+            case .documentNumber:  bindOptional(stmt, position, doc.documentNumber)
+            case .header:          sqlite3_bind_text(stmt, position, doc.header, -1, SQLITE_TRANSIENT)
+            case .dateline:        bindOptional(stmt, position, doc.dateline)
+            case .sourceNote:      bindOptional(stmt, position, doc.sourceNote)
+            case .bodyText:        sqlite3_bind_text(stmt, position, doc.bodyText, -1, SQLITE_TRANSIENT)
+            case .subjectTagIds:   bindOptional(stmt, position, doc.subjectTagIds)
+            case .userTagIds:      bindOptional(stmt, position, doc.userTagIds)
+            case .summaryText:     bindOptional(stmt, position, doc.summaryText)
+            case .noteText:        bindOptional(stmt, position, doc.noteText)
+            case .isEditorialNote: sqlite3_bind_int(stmt, position, doc.isEditorialNote ? 1 : 0)
+            }
+        }
     }
 
     private func bindOptional(_ stmt: OpaquePointer, _ col: Int32, _ value: String?) {

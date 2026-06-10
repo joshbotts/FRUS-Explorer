@@ -10,59 +10,56 @@ import Foundation
 
 // MARK: - SearchService
 
-/// Translates `SearchParameters` into FTS5 queries and returns typed `SearchResult` values.
+/// Translates `SearchParameters` into the combined FTS5 search and returns typed
+/// `SearchResult` values.
 ///
-/// ## Filtering
-/// Filters are applied in this order:
-/// 1. FTS5 full-text match (keyword, phrase, prefix wildcard, NOT terms).
-/// 2. Volume ID filter (post-processing if `searchParameters.volumeIds` is non-nil).
-/// 3. Date range filter (queries `document_dates` in `IndexingPipeline` before searching).
-/// 4. Subject tag AND filter (post-processing for multiple tag IDs).
-/// 5. User tag AND filter (post-processing for multiple tag IDs).
+/// ## Query Construction
+/// Document text (header, dateline, source note, body) lives in the
+/// `frus_documents` FTS5 table; user-generated text (summaries, research notes)
+/// lives in `user_content`. `makeMatchExpressions(from:)` renders one FTS5 MATCH
+/// expression per table from the same raw search input, honouring the
+/// `includeDocumentText` / `includeSummaries` / `includeNotes` scope flags.
 ///
-/// ## Date Range Filtering
-/// Date filtering relies on `IndexingPipeline.documentKeysInDateRange(_:limitToVolumeIds:)`.
-/// Documents whose dateline could not be parsed to ISO 8601 are excluded when a date range
-/// is specified. This is documented in the Search UI help text.
+/// ## Filtering & Pagination
+/// All structured filters — volume IDs, date range, person ref, front matter,
+/// subject/user tags, document type — are applied **inside the SQL** by
+/// `IndexingPipeline.searchDocuments`, before `LIMIT`/`OFFSET`. Pagination is
+/// therefore exact; there is no overscan or Swift-side post-filtering, and
+/// `searchCount` agrees with the paginated results.
 ///
-/// ## Column Scoping
-/// When `SearchParameters.includeSummaries` and/or `includeNotes` are `false`, the
-/// corresponding FTS5 columns are excluded from the search scope via `FTS5Query.columns`.
+/// ## Snippets
+/// FTS5 stores original (unstemmed) text, and each result row carries its body
+/// text, so snippets are built in-process from the same row — no second query.
 ///
 /// Version history:
 ///   1.0 — Session 09: initial implementation
 ///   1.1 — Session 38: document type filter applied in `search(_:limit:offset:)`
 ///   1.2 — Session 39: `personMentionStore` added; `personRef` filter applied in `search`
-///   1.3 — Session 120: TEI-derived snippet pass. After the FTS5 row set is filtered,
-///          each result's `snippet` is regenerated from the unstemmed
-///          `document_cache.body_text` so users see the actual word forms in the
-///          document rather than stemmed tokens. The match window is sized for two
-///          full lines of surrounding context.
-///   1.4 — Session 122: `dateISO` populated on every `SearchResult` from
-///          `document_dates.date_iso` via a batched lookup. Enables chronologically
-///          correct date-asc / date-desc sorting in the macOS search window.
-///   1.5 — Session 123: performance pass — `rebuildSnippetsFromTEI` + `attachDates`
-///          replaced by `rebuildSnippetsAndAttachDates`, which fetches body text and
-///          dates together via `IndexingPipeline.documentBodyTextsAndDates(for:)`.
-///          Halves actor round-trips and SQL statements for the post-processing phase.
-///   1.6 — Session 129: `rebuildSnippetsAndAttachDates` now also reads `header` and
-///          `dateline` from `document_cache` (via the extended return tuple of
-///          `documentBodyTextsAndDates`) and substitutes them for the FTS5-indexed
-///          (Porter-stemmed) values. Search result rows now show the original document
-///          header and dateline text rather than stemmed tokens.
-///   1.7 — Session 2026-06-08: `rebuildSnippetsAndAttachDates` reads `is_front_matter`
-///          from the extended `documentBodyTextsAndDates` return tuple and sets
-///          `SearchResult.isFrontMatter` so the search UI can badge front-matter results.
+///   1.3 — Session 120: TEI-derived snippet pass from unstemmed `document_cache` text
+///   1.4 — Session 122: `dateISO` populated for chronological sorting
+///   1.5 — Session 123: post-processing round-trips merged into one call
+///   1.6 — Session 129: unstemmed header/dateline substituted for FTS5-stemmed values
+///   1.7 — Session 2026-06-08: `isFrontMatter` populated on results
+///   2.0 — Session 2026-06-09: external-content redesign. Search runs as a single
+///          SQL statement via `IndexingPipeline.searchDocuments` (corpus +
+///          user-content match merge, SQL-side filters, exact pagination). The
+///          stemmed-display repair pass and key-set whitelists are gone — FTS5 now
+///          stores original text and filters evaluate in the database.
 public actor SearchService {
 
     // MARK: - Dependencies
 
     private let fts5Store: FTS5Store
     private let pipeline: IndexingPipeline
+
+    /// Retained for initialiser compatibility. Person-ref filtering is applied in
+    /// SQL by `IndexingPipeline.searchDocuments` (an `EXISTS` against
+    /// `person_mentions`); this store is no longer consulted during search.
     private let personMentionStore: PersonMentionStore?
 
     // MARK: - Pagination defaults
 
+    /// Default number of results per page.
     public static let defaultPageSize = 20
 
     // MARK: - Initialisation
@@ -70,10 +67,12 @@ public actor SearchService {
     /// Creates a `SearchService`.
     ///
     /// - Parameters:
-    ///   - fts5Store: The shared FTS5 store containing indexed documents.
-    ///   - pipeline: The indexing pipeline that owns the `document_dates` auxiliary table.
-    ///   - personMentionStore: Optional store for person ref filtering. When `nil`,
-    ///     `SearchParameters.personRef` is silently ignored.
+    ///   - fts5Store: The shared FTS5 store (used for schema ownership; queries run
+    ///     through `pipeline`).
+    ///   - pipeline: The indexing pipeline that owns the combined search query and
+    ///     auxiliary tables.
+    ///   - personMentionStore: Unused by search since the SQL-side filter redesign;
+    ///     accepted for initialiser compatibility.
     public init(
         fts5Store: FTS5Store,
         pipeline: IndexingPipeline,
@@ -91,7 +90,8 @@ public actor SearchService {
     /// - Parameters:
     ///   - parameters: Search criteria.
     ///   - limit: Maximum results to return.
-    ///   - offset: Number of results to skip for pagination.
+    ///   - offset: Number of results to skip for pagination (exact — filters are
+    ///     applied before pagination in SQL).
     /// - Returns: Matching documents ordered by BM25 relevance.
     /// - Throws: `FTS5Error.emptyQuery` if no searchable content can be constructed.
     public func search(
@@ -99,141 +99,110 @@ public actor SearchService {
         limit: Int = defaultPageSize,
         offset: Int = 0
     ) async throws -> [SearchResult] {
-        let query = try makeFTS5Query(from: parameters)
-        let effectiveLimit = limit
-
-        // Build date-range whitelist if requested.
-        let dateKeys: Set<String>? = try await {
-            guard let range = parameters.dateRange else { return nil }
-            return try await pipeline.documentKeysInDateRange(range, limitToVolumeIds: parameters.volumeIds)
-        }()
-
-        // Build person-ref whitelist if requested.
-        let personKeys: Set<String>? = try await {
-            guard let ref = parameters.personRef,
-                  let store = personMentionStore else { return nil }
-            let pairs = try await store.documents(forPersonRef: ref)
-            return Set(pairs.map { "\($0.volumeId)/\($0.documentId)" })
-        }()
-
-        // Build front-matter exclusion set when the toggle is off.
-        // Returns nil (no filtering) when includeFrontMatter is true.
-        let frontMatterKeys: Set<String>? = try await {
-            guard !parameters.includeFrontMatter else { return nil }
-            return try await pipeline.frontMatterDocumentKeys(
-                limitToVolumeIds: parameters.volumeIds
-            )
-        }()
-
-        let rawResults = try await fts5Store.search(
-            query: query,
-            limit: effectiveLimit + 200,   // overscan to account for post-processing
+        let (corpusMatch, userMatch) = try makeMatchExpressions(from: parameters)
+        let rows = try await pipeline.searchDocuments(
+            corpusMatch: corpusMatch,
+            userContentMatch: userMatch,
+            filters: makeFilters(from: parameters),
+            limit: limit,
             offset: offset
         )
 
-        var filtered: [SearchResult] = []
-        for raw in rawResults {
-            // Volume filter
-            if let vids = parameters.volumeIds, !vids.contains(raw.volumeId) { continue }
+        // Stem each positive term once; reused across all rows for highlighting.
+        let queryTerms = positiveTerms(from: parameters)
+        let stemmedQueryTerms = queryTerms.map { PorterStemmer.stem($0.lowercased()) }
 
-            // Date filter
-            if let keys = dateKeys, !keys.contains("\(raw.volumeId)/\(raw.documentId)") { continue }
-
-            // Person ref filter
-            if let keys = personKeys, !keys.contains("\(raw.volumeId)/\(raw.documentId)") { continue }
-
-            // Front matter exclusion filter: skip if this is a known front-matter doc.
-            if let keys = frontMatterKeys, keys.contains("\(raw.volumeId)/\(raw.documentId)") { continue }
-
-            // Subject tag AND filter
-            if !parameters.subjectTagIds.isEmpty {
-                let has = parameters.subjectTagIds.allSatisfy { raw.subjectTagIds.contains($0) }
-                if !has { continue }
+        return rows.map { row in
+            let snippet: String
+            if !row.bodyText.isEmpty, !stemmedQueryTerms.isEmpty,
+               let contextSnippet = Self.makeContextSnippet(
+                   body: row.bodyText,
+                   stemmedTerms: stemmedQueryTerms,
+                   contextRadius: 200
+               ) {
+                snippet = contextSnippet
+            } else {
+                snippet = headerFallbackSnippet(header: row.header, dateline: row.dateline)
             }
 
-            // User tag AND filter
-            if !parameters.userTagIds.isEmpty {
-                let has = parameters.userTagIds.allSatisfy { raw.userTagIds.contains($0) }
-                if !has { continue }
-            }
-
-            // Document type filter
-            switch parameters.documentTypeFilter {
-            case .documentsOnly:
-                if raw.isEditorialNote { continue }
-            case .editorialNotesOnly:
-                if !raw.isEditorialNote { continue }
-            case .all:
-                break
-            }
-
-            filtered.append(SearchResult(
-                documentId: raw.documentId,
-                volumeId: raw.volumeId,
-                documentNumber: raw.documentNumber,
-                header: raw.header,
-                dateline: raw.dateline,
-                dateISO: nil,                 // populated by rebuildSnippetsAndAttachDates below
-                sourceNote: raw.sourceNote,
-                snippet: raw.snippet,         // empty string (FTS5 snippet() removed); replaced below
-                bm25Score: raw.bm25Score,
-                subjectTagIds: raw.subjectTagIds,
-                userTagIds: raw.userTagIds,
-                isEditorialNote: raw.isEditorialNote
-            ))
-
-            if filtered.count >= effectiveLimit { break }
+            return SearchResult(
+                documentId: row.documentId,
+                volumeId: row.volumeId,
+                documentNumber: row.documentNumber,
+                header: row.header,
+                dateline: row.dateline,
+                dateISO: row.dateISO,
+                sourceNote: row.sourceNote,
+                snippet: snippet,
+                bm25Score: row.score,
+                subjectTagIds: Self.splitTagIds(row.subjectTagIds),
+                userTagIds: Self.splitTagIds(row.userTagIds),
+                isEditorialNote: row.isEditorialNote,
+                isFrontMatter: row.isFrontMatter
+            )
         }
-
-        // Build TEI-derived snippets and attach ISO dates in a single actor round-trip.
-        // `documentBodyTextsAndDates` fetches body_text + date_iso with one CTE join,
-        // replacing what was previously two sequential calls (rebuildSnippetsFromTEI
-        // + attachDates) with two separate SQL queries and two actor hops.
-        return await rebuildSnippetsAndAttachDates(
-            results: filtered,
-            queryTerms: positiveTerms(from: parameters)
-        )
     }
 
-    /// Returns the total number of results matching `parameters` (for pagination UI).
+    /// Returns the exact total number of results matching `parameters`.
     ///
-    /// Does not apply post-processing filters; the returned count is an upper bound.
-    /// For accurate counts with complex filters, use `search` and count the results.
+    /// Runs the same match expressions and SQL filters as `search`, so the count
+    /// always agrees with the paginated result set.
     public func searchCount(parameters: SearchParameters) async throws -> Int {
-        let query = try makeFTS5Query(from: parameters)
-        return try await fts5Store.searchCount(query: query)
+        let (corpusMatch, userMatch) = try makeMatchExpressions(from: parameters)
+        return try await pipeline.searchDocumentsCount(
+            corpusMatch: corpusMatch,
+            userContentMatch: userMatch,
+            filters: makeFilters(from: parameters)
+        )
     }
 
     // MARK: - Query Building
 
-    /// Translates `SearchParameters` into an `FTS5Query`.
+    /// Renders the corpus and user-content FTS5 MATCH expressions from the raw
+    /// search input, honouring the scope flags.
     ///
-    /// Column scoping: when any scope flag is `false`, only the opted-in columns
-    /// are searched. When all flags are `true`, `columns` is `nil` and FTS5
-    /// searches all columns (the default, fastest path).
-    public func makeFTS5Query(from parameters: SearchParameters) throws -> FTS5Query {
-        // Build active column set.
-        // Document text columns (header, dateline, sourceNote, bodyText) are included
-        // only when `includeDocumentText` is true. Summary and note columns are additive.
-        // When all flags are true the full FTS5 default search (columns: nil) is used.
-        var columns: [FTS5Column]? = nil
-        let needsColumnFilter = !parameters.includeDocumentText
-                             || !parameters.includeSummaries
-                             || !parameters.includeNotes
-        if needsColumnFilter {
-            var cols: [FTS5Column] = []
-            if parameters.includeDocumentText {
-                cols.append(contentsOf: [.header, .dateline, .sourceNote, .bodyText])
-            }
-            if parameters.includeSummaries { cols.append(.summaryText) }
-            if parameters.includeNotes     { cols.append(.noteText) }
-            columns = cols.isEmpty ? nil : cols
+    /// - `includeDocumentText` controls the `frus_documents` expression. Its indexed
+    ///   columns are exactly the document text fields, so no column prefix is needed.
+    /// - `includeSummaries`/`includeNotes` control the `user_content` expression;
+    ///   when only one is enabled the expression is column-scoped to `summary_text`
+    ///   or `note_text`.
+    ///
+    /// - Returns: A tuple of optional MATCH expressions; an element is `nil` when
+    ///   its scope is disabled or the input renders to no positive content.
+    /// - Throws: `FTS5Error.emptyQuery` when both expressions are `nil`.
+    func makeMatchExpressions(
+        from parameters: SearchParameters
+    ) throws -> (corpus: String?, userContent: String?) {
+        var corpus: String? = nil
+        if parameters.includeDocumentText {
+            corpus = renderExpression(from: parameters, columns: nil)
         }
 
-        // Mirrors `FTS5Query.toFTS5MatchExpression()`'s own column-prefix construction —
-        // duplicated here (rather than exposed from `FTS5Query`) so `FTS5InlineQueryParser`
-        // can apply the identical prefix to each operand it renders, keeping the inline
-        // and structured paths byte-for-byte consistent for column-scoped searches.
+        var userContent: String? = nil
+        if parameters.includeSummaries || parameters.includeNotes {
+            var columns: [FTS5Column]? = nil
+            if !(parameters.includeSummaries && parameters.includeNotes) {
+                columns = parameters.includeSummaries ? [.summaryText] : [.noteText]
+            }
+            userContent = renderExpression(from: parameters, columns: columns)
+        }
+
+        guard corpus != nil || userContent != nil else {
+            throw FTS5Error.emptyQuery
+        }
+        return (corpus, userContent)
+    }
+
+    /// Renders one FTS5 MATCH expression for the given column scope.
+    ///
+    /// The raw search-box text is parsed as Google-style inline syntax — quotes,
+    /// `OR`, leading `-`, `NOT`, trailing `*` — by `FTS5InlineQueryParser`, with the
+    /// column prefix applied to each operand. Structured fields (phrase, excluded
+    /// terms, prefix wildcard) are rendered by `FTS5Query`.
+    private func renderExpression(
+        from parameters: SearchParameters,
+        columns: [FTS5Column]?
+    ) -> String? {
         let columnPrefix: String
         if let cols = columns, !cols.isEmpty {
             columnPrefix = "{\(cols.map(\.rawValue).joined(separator: " "))}:"
@@ -241,20 +210,9 @@ public actor SearchService {
             columnPrefix = ""
         }
 
-        // Parse the raw search-box text as Google-style inline syntax — quotes, OR,
-        // leading "-", NOT, and trailing "*" are recognised as real operators rather
-        // than being mangled by a naive whitespace split (see `FTS5InlineQueryParser`'s
-        // doc comment for the bug history this replaces). A query with none of that
-        // syntax parses to exactly the same implicit-AND-of-stemmed-words expression
-        // the old path produced, so plain keyword search is unaffected.
         let keywordExpression = parameters.keywords.flatMap {
             FTS5InlineQueryParser.parse($0, columnPrefix: columnPrefix)
         }
-
-        // Single subject/user tag IDs passed to FTS5 for pre-filtering;
-        // multiple tag IDs are handled by post-processing in search().
-        let fts5SubjectTag = parameters.subjectTagIds.count == 1 ? parameters.subjectTagIds.first : nil
-        let fts5UserTag    = parameters.userTagIds.count == 1    ? parameters.userTagIds.first    : nil
 
         let query = FTS5Query(
             keywordExpression: keywordExpression,
@@ -262,19 +220,31 @@ public actor SearchService {
             booleanMode: parameters.booleanMode,
             excludedTerms: parameters.excludedTerms,
             prefixWildcard: parameters.prefixWildcard,
-            subjectTagId: fts5SubjectTag,
-            userTagId: fts5UserTag,
             columns: columns
         )
-
-        // Validate that the query has at least one positive search term.
-        guard query.toFTS5MatchExpression() != nil else {
-            throw FTS5Error.emptyQuery
-        }
-        return query
+        return query.toFTS5MatchExpression()
     }
 
-    // MARK: - TEI Snippet Generation
+    /// Maps `SearchParameters` to the SQL-side filter set.
+    private func makeFilters(from parameters: SearchParameters) -> SearchSQLFilters {
+        SearchSQLFilters(
+            volumeIds: parameters.volumeIds,
+            dateRange: parameters.dateRange,
+            includeFrontMatter: parameters.includeFrontMatter,
+            personRef: parameters.personRef,
+            subjectTagIds: parameters.subjectTagIds,
+            userTagIds: parameters.userTagIds,
+            documentTypeFilter: parameters.documentTypeFilter
+        )
+    }
+
+    /// Splits a space-separated tag-ID string into an array. Empty/nil → `[]`.
+    private static func splitTagIds(_ raw: String?) -> [String] {
+        guard let raw, !raw.isEmpty else { return [] }
+        return raw.split(separator: " ").map(String.init)
+    }
+
+    // MARK: - Snippet Generation
 
     /// Returns the set of positive search terms (keywords + phrase words + prefix)
     /// that should be highlighted in the result snippet. Excluded terms are not
@@ -324,103 +294,12 @@ public actor SearchService {
         return terms.filter { seen.insert($0.lowercased()).inserted }
     }
 
-    /// Builds TEI-derived snippets, attaches ISO dates, and replaces FTS5-stemmed
-    /// header/dateline values with the originals — all in a single `IndexingPipeline`
-    /// round-trip.
-    ///
-    /// Calls `pipeline.documentBodyTextsAndDates(for:)`, which issues one CTE-join
-    /// query per chunk of 400 keys to fetch `body_text`, `date_iso`, `header`, and
-    /// `dateline` from `document_cache` / `document_dates` simultaneously.
-    ///
-    /// **Why header/dateline must be re-fetched**: The FTS5 table stores **stemmed**
-    /// text. `stemForIndex()` is applied to `header` and `dateline` before insertion,
-    /// so the values returned by the FTS5 `search()` call are Porter-stemmed tokens
-    /// (`"memorandum presid special assist"` instead of the original
-    /// `"Memorandum From the President's Special Assistant …"`).
-    /// `document_cache` stores the original unstemmed text and is the correct source
-    /// for display. The fallback (for documents absent from `document_cache`) keeps
-    /// the FTS5-stemmed value, which is a graceful degradation.
-    ///
-    /// **Snippet building**: the body text is scanned word-by-word; the first word
-    /// whose Porter stem matches any positive query term is wrapped in `<b>…</b>`
-    /// with ~400 characters of surrounding context (approximately two lines at the
-    /// macOS list font).
-    ///
-    /// **Date attachment**: `dateISO` is populated from `date_iso`; results without
-    /// a stored date keep `dateISO == nil` and are placed at the end of sorted lists.
-    ///
-    /// **Cache miss fallback**: documents absent from `document_cache` receive a
-    /// snippet of `header · dateline` so the result row is never blank.
-    private func rebuildSnippetsAndAttachDates(
-        results: [SearchResult],
-        queryTerms: [String]
-    ) async -> [SearchResult] {
-        guard !results.isEmpty else { return results }
-
-        // Stem each positive term once; the same set is reused across all rows.
-        let stemmedQueryTerms = queryTerms.isEmpty ? [] : queryTerms.map { PorterStemmer.stem($0.lowercased()) }
-
-        let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-        let bodies:          [String: String]
-        let dates:           [String: String]
-        let headers:         [String: String]
-        let datelines:       [String: String]
-        let frontMatterKeys: Set<String>
-        do {
-            (bodies, dates, headers, datelines, frontMatterKeys) =
-                try await pipeline.documentBodyTextsAndDates(for: keys)
-        } catch {
-            #if DEBUG
-            print("[SearchService] documentBodyTextsAndDates failed: \(error) — snippets, date sort, and header display will degrade")
-            #endif
-            return results
-        }
-
-        return results.map { result in
-            let key = "\(result.volumeId)/\(result.documentId)"
-            let dateISO = dates[key]
-
-            // Prefer the document_cache (original) header/dateline over the FTS5
-            // (stemmed) version. Falls back to the FTS5 value on a cache miss.
-            let header   = headers[key]   ?? result.header
-            let dateline = datelines[key] ?? result.dateline
-
-            let snippet: String
-            if let body = bodies[key], !body.isEmpty, !stemmedQueryTerms.isEmpty {
-                // Build TEI-derived context snippet; falls back to header·dateline on miss.
-                snippet = Self.makeContextSnippet(
-                    body: body,
-                    stemmedTerms: stemmedQueryTerms,
-                    contextRadius: 200
-                ) ?? headerFallbackSnippet(header: header, dateline: dateline)
-            } else {
-                // Cache miss or no query terms: show header + dateline as minimal context.
-                snippet = headerFallbackSnippet(header: header, dateline: dateline)
-            }
-
-            return SearchResult(
-                documentId: result.documentId,
-                volumeId: result.volumeId,
-                documentNumber: result.documentNumber,
-                header: header,
-                dateline: dateline,
-                dateISO: dateISO,
-                sourceNote: result.sourceNote,
-                snippet: snippet,
-                bm25Score: result.bm25Score,
-                subjectTagIds: result.subjectTagIds,
-                userTagIds: result.userTagIds,
-                isEditorialNote: result.isEditorialNote,
-                isFrontMatter: frontMatterKeys.contains(key)
-            )
-        }
-    }
-
     /// Builds a minimal fallback snippet from a header and dateline string.
     ///
-    /// Used when the `document_cache` body text is unavailable for a result (e.g. a
-    /// volume that was just indexed and whose cache row hasn't landed yet). Showing
-    /// the header and dateline is preferable to an empty snippet row.
+    /// Used when no body word matches a stemmed query term (e.g. the match was in a
+    /// summary or note rather than the document body, or the app-side Porter stem
+    /// disagrees with SQLite's). Showing the header and dateline is preferable to an
+    /// empty snippet row.
     private func headerFallbackSnippet(header: String, dateline: String?) -> String {
         [header, dateline]
             .compactMap { s in (s?.isEmpty == false) ? s : nil }

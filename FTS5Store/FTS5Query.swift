@@ -44,6 +44,10 @@
 ///          `SearchService` from `FTS5InlineQueryParser` so the main search box can
 ///          parse real Google-style inline syntax (`OR`, `"phrases"`, `-exclusions`,
 ///          `term*`) instead of the previous naive whitespace split that mangled it.
+///   2.0 — Session 2026-06-09: query-side stemming removed. The `porter unicode61`
+///          tokenizer stems both index entries and query terms inside SQLite, so the
+///          rendered MATCH expression now carries the user's original (sanitised,
+///          lowercased) words instead of application-layer Porter stems.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -159,54 +163,48 @@ public struct FTS5Query: Sendable {
         if let keywordExpression, !keywordExpression.isEmpty {
             parts.append(keywordExpression)
         } else {
-            // Sanitize then stem so terms match the indexed stemmed tokens. Filter to
-            // letter-only characters before stemming, matching the behaviour of
-            // `stemForIndex` in `FTS5Store` and the phrase-search path below. Without
-            // this filter, terms containing apostrophes or hyphens (e.g. "don't",
-            // "non-proliferation") produce different stems than the indexed text.
+            // Sanitize and lowercase only. The porter tokenizer stems query terms
+            // inside SQLite exactly as it stems indexed text, so no application-layer
+            // transform is needed (or wanted — a mismatched app-side stem would
+            // *prevent* the tokenizer from matching). Terms are emitted as quoted
+            // FTS5 strings: characters like apostrophes are invalid in barewords but
+            // fine inside a quoted string, where SQLite tokenizes them exactly as it
+            // tokenized the indexed text.
             let sanitizedKeywords = keywords
-                .map { sanitizeTerm($0) }
+                .map { sanitizeTerm($0).lowercased() }
                 .filter { !$0.isEmpty }
-                .map { term -> String in
-                    let lower = term.lowercased()
-                    let alpha = lower.filter { $0.isLetter }
-                    return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
-                }
 
             if !sanitizedKeywords.isEmpty {
                 let operator_ = booleanMode == .or ? " OR " : " "
                 let keywordExpr = sanitizedKeywords
-                    .map { columnPrefix + $0 }
+                    .map { columnPrefix + "\"\($0)\"" }
                     .joined(separator: operator_)
                 parts.append(keywordExpr)
             }
         }
 
         // Phrase search (always full-table, ignores column prefix).
-        // Each word is Porter-stemmed — the same transform applied at index time via
-        // FTS5Store.stemForIndex — so the quoted FTS5 phrase matches pre-stemmed tokens.
+        // Words are embedded as-is; the porter tokenizer stems each phrase token at
+        // query time, so morphological variants still match in word order.
         if let phrase, !phrase.isEmpty {
             let sanitized = sanitizePhrase(phrase)
             if !sanitized.isEmpty {
-                let stemmedPhrase = sanitized
+                let phraseWords = sanitized
                     .split(whereSeparator: \.isWhitespace)
-                    .map { word -> String in
-                        let lower = String(word).lowercased()
-                        let alpha = lower.filter { $0.isLetter }
-                        return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
-                    }
+                    .map { String($0).lowercased() }
                     .joined(separator: " ")
-                if !stemmedPhrase.isEmpty {
-                    parts.append("\"\(stemmedPhrase)\"")
+                if !phraseWords.isEmpty {
+                    parts.append("\"\(phraseWords)\"")
                 }
             }
         }
 
-        // Prefix wildcard
+        // Prefix wildcard — quoted-string-plus-star is FTS5's prefix-query form
+        // for non-bareword text.
         if let prefix = prefixWildcard, !prefix.isEmpty {
             let sanitized = sanitizeTerm(prefix)
             if !sanitized.isEmpty {
-                parts.append(columnPrefix + sanitized + "*")
+                parts.append(columnPrefix + "\"\(sanitized)\"*")
             }
         }
 
@@ -216,18 +214,13 @@ public struct FTS5Query: Sendable {
 
         // NOT terms — appended to whatever positive expression exists.
         // FTS5 requires at least one positive term when using NOT.
-        // Apply the same letter-filter-before-stem transform used for keywords above.
+        // Sanitised and lowercased only; the porter tokenizer stems at query time.
         let sanitizedExclusions = excludedTerms
-            .map { sanitizeTerm($0) }
+            .map { sanitizeTerm($0).lowercased() }
             .filter { !$0.isEmpty }
-            .map { term -> String in
-                let lower = term.lowercased()
-                let alpha = lower.filter { $0.isLetter }
-                return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
-            }
 
         if !sanitizedExclusions.isEmpty {
-            let notPart = sanitizedExclusions.map { "NOT \($0)" }.joined(separator: " ")
+            let notPart = sanitizedExclusions.map { "NOT \"\($0)\"" }.joined(separator: " ")
             if expression.isEmpty {
                 // No positive term — NOT alone is invalid FTS5 syntax. Skip.
                 // Callers should validate that at least one positive term exists.

@@ -49,6 +49,9 @@ public actor PageRangeStore {
         guard rc == SQLITE_OK else {
             throw PageRangeStoreError.databaseOpenFailed(code: rc)
         }
+        // Wait up to 5 s instead of failing instantly with SQLITE_BUSY when a WAL
+        // checkpoint or recovery briefly locks the file.
+        sqlite3_busy_timeout(dbPtr, 5000)
         self.db = dbPtr
     }
 
@@ -166,6 +169,9 @@ public actor PageRangeStore {
         guard rc == SQLITE_OK else {
             throw PageRangeStoreError.databaseOpenFailed(code: rc)
         }
+        // Wait up to 5 s instead of failing instantly with SQLITE_BUSY when a WAL
+        // checkpoint or recovery briefly locks the file.
+        sqlite3_busy_timeout(db, 5000)
     }
 
     private func prepare(_ sql: String, db: OpaquePointer) -> OpaquePointer? {

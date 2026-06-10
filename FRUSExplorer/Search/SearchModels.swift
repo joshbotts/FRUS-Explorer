@@ -127,9 +127,9 @@ public struct SearchParameters: Sendable, Equatable {
     /// Whether front-matter prose sections (preface, introduction, prefatoryNote, terms, etc.)
     /// should be included in search results. Default `true`.
     ///
-    /// When `false`, any result whose `"volumeId/documentId"` key appears in
-    /// `IndexingPipeline.frontMatterDocumentKeys(limitToVolumeIds:)` is excluded.
-    /// For volumes indexed before this field was added (front matter rows have
+    /// When `false`, rows with `document_cache.is_front_matter = 1` are excluded
+    /// inside the search SQL (`IndexingPipeline.searchDocuments`). For volumes
+    /// indexed before this field was added (front matter rows have
     /// `is_front_matter = 0` by default), this filter is a no-op until the user reindexes.
     public var includeFrontMatter: Bool
 
@@ -190,9 +190,8 @@ public struct SearchParameters: Sendable, Equatable {
 ///          which begins with the place of authorship and a textual month name
 ///          and therefore cannot be sorted as a date.
 ///   1.3 — Session 2026-06-08: `isFrontMatter` field added. Populated from
-///          `document_cache.is_front_matter` via `documentBodyTextsAndDates`.
-///          Used by search result rows to show a teal "Front Matter" badge
-///          distinct from the purple editorial-note badge.
+///          `document_cache.is_front_matter`. Used by search result rows to show a
+///          teal "Front Matter" badge distinct from the purple editorial-note badge.
 public struct SearchResult: Sendable, Identifiable {
 
     /// Document identifier (e.g. `"d1"`), unique within its volume.
@@ -238,8 +237,8 @@ public struct SearchResult: Sendable, Identifiable {
     /// Whether this document was promoted from a prose-only front-matter structural div
     /// (preface, introduction, prefatoryNote, terms, etc.).
     ///
-    /// Populated from `document_cache.is_front_matter` via `documentBodyTextsAndDates`
-    /// in `SearchService`. Defaults to `false` for volumes indexed before the
+    /// Populated from `document_cache.is_front_matter` by the combined search
+    /// query. Defaults to `false` for volumes indexed before the
     /// `is_front_matter` column was added (those volumes must be re-indexed for this
     /// field to carry correct values).
     public let isFrontMatter: Bool

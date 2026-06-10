@@ -344,6 +344,12 @@ final class AppState {
     /// Loads and merges the volume manifest. Loaded from bundle at init; live data fetched at boot.
     var manifestStore: ManifestStore = ManifestStore()
 
+    /// Shared in-memory LRU cache of parsed document ASTs. Warmed by
+    /// `DocumentViewModel.load` parse windows so adjacent-document page-turns and
+    /// re-opens skip the XML parse entirely. Cleared per-volume on deletion and
+    /// globally on iOS memory warnings.
+    let documentASTCache = DocumentASTCache()
+
     // MARK: - Search Infrastructure
 
     /// The shared indexing pipeline. Created at boot by `FRUSExplorerApp` alongside

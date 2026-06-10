@@ -38,4 +38,9 @@ public enum FTS5Error: Error, Sendable {
 
     /// The backup exclusion resource value could not be set on the database URL.
     case backupExclusionFailed(message: String)
+
+    /// A direct write was attempted on an external-content FTS5 table.
+    /// Rows of external-content tables are maintained by triggers on the content
+    /// table; write to the content table instead.
+    case externalContentWrite(tableName: String)
 }

@@ -258,11 +258,23 @@ public final class BrowserViewModel {
 
     /// Loads the `VolumeStructure` for a volume, caching the result.
     ///
-    /// No-ops if the structure is already cached. Sets `isLoadingStructure` and
-    /// `structureError` around the async parse operation.
+    /// No-ops if the structure is already cached. The persisted structure from
+    /// `volume_structures` (written at index time) is preferred; volumes that are
+    /// downloaded but not yet indexed fall back to parsing the XML. Sets
+    /// `isLoadingStructure` and `structureError` around the async operation.
     public func loadVolumeStructure(for volume: VolumeManifestEntry) async {
         guard volumeStructures[volume.volumeId] == nil else { return }
         guard let dm = downloadManager, dm.isVolumeDownloaded(volume.volumeId) else { return }
+
+        // Fast path: structure persisted at index time — a single SQLite read
+        // instead of a SAX pass over the whole volume XML.
+        if let pipeline = indexingPipeline,
+           let cached = try? await pipeline.cachedVolumeStructure(forVolumeId: volume.volumeId),
+           !cached.isEmpty {
+            volumeStructures[volume.volumeId] = cached
+            return
+        }
+
         let url = dm.volumeURL(for: volume.volumeId)  // nonisolated — safe to call without await
         isLoadingStructure = true
         structureError = nil
