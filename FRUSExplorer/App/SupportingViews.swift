@@ -3014,26 +3014,36 @@ private struct CorpusVolumeDetailSheet: View {
         .padding()
     }
 
-    /// Div types representing front-matter content.
-    /// Mirrors `VolumeView.frontMatterTypes` — keep in sync.
-    private static let frontMatterTypes: Set<String> = [
-        "front", "preface", "intro", "introduction", "errata", "foreword",
-        "prefatoryNote", "sources", "persons", "terms",
-    ]
-
     /// Flattens front-matter sections for display under the "Front Matter" header.
     ///
     /// A `"front"` wrapper is expanded so its subsections appear directly (one fewer
-    /// tap). Any other top-level section typed as front matter is included as-is.
+    /// tap); a wrapper carrying direct documents (1861-era volumes place the
+    /// President's annual message in `<front>`) is kept alongside them. Any other
+    /// top-level section whose kind is front matter is included as-is.
     private static func extractFrontMatter(from sections: [VolumeSection]) -> [VolumeSection] {
         var items: [VolumeSection] = []
         for section in sections {
             if section.divType == "front" {
-                if section.subsections.isEmpty { items.append(section) }
-                else { items.append(contentsOf: section.subsections) }
-            } else if frontMatterTypes.contains(section.divType) {
+                if section.subsections.isEmpty || !section.documentIds.isEmpty {
+                    items.append(section)
+                }
+                items.append(contentsOf: section.subsections)
+            } else if section.isFrontMatterKind {
                 items.append(section)
             }
+        }
+        return items
+    }
+
+    /// Flattens back-matter sections (errata, index) by expanding the `<back>`
+    /// wrapper, mirroring `extractFrontMatter`.
+    private static func extractBackMatter(from sections: [VolumeSection]) -> [VolumeSection] {
+        var items: [VolumeSection] = []
+        for section in sections where section.divType == "back" {
+            if section.subsections.isEmpty || !section.documentIds.isEmpty {
+                items.append(section)
+            }
+            items.append(contentsOf: section.subsections)
         }
         return items
     }
@@ -3048,8 +3058,9 @@ private struct CorpusVolumeDetailSheet: View {
             )
         } else {
             let frontMatterItems = Self.extractFrontMatter(from: structure.sections)
+            let backMatterItems = Self.extractBackMatter(from: structure.sections)
             let contentSections = structure.sections.filter {
-                !Self.frontMatterTypes.contains($0.divType)
+                !$0.isFrontMatterKind && $0.divType != "back"
             }
             List {
                 if !frontMatterItems.isEmpty {
@@ -3065,6 +3076,16 @@ private struct CorpusVolumeDetailSheet: View {
                 if !contentSections.isEmpty {
                     Section("Contents") {
                         ForEach(contentSections) { section in
+                            Button { selectedSection = section } label: {
+                                SectionRowLabel(section: section)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                if !backMatterItems.isEmpty {
+                    Section("Back Matter") {
+                        ForEach(backMatterItems) { section in
                             Button { selectedSection = section } label: {
                                 SectionRowLabel(section: section)
                             }
@@ -3227,32 +3248,14 @@ private struct CorpusSectionDocumentListView: View {
 
     /// `true` when this section is a prose-only front-matter div that can be opened
     /// directly as a document, bypassing the indexed document list.
-    ///
-    /// Mirrors `CompilationView.canReadSectionDirectly` — keep in sync.
-    private var canReadSectionDirectly: Bool {
-        let proseTypes: Set<String> = [
-            "preface", "intro", "introduction", "errata",
-            "prefatoryNote", "terms",
-        ]
-        guard proseTypes.contains(section.divType),
-              section.allDocumentIds.isEmpty,
-              section.subsections.isEmpty
-        else { return false }
-        // Exclude auto-generated sectionIds (e.g. "preface-3") — they have no
-        // xml:id in the TEI and parseDocument(documentId:) cannot locate them.
-        let autoPrefix = "\(section.divType)-"
-        if section.sectionId.hasPrefix(autoPrefix) {
-            let suffix = section.sectionId.dropFirst(autoPrefix.count)
-            if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) { return false }
-        }
-        return !section.sectionId.isEmpty
-    }
+    /// Delegates to the shared `VolumeSection.canReadDirectly` kind helper.
+    private var canReadSectionDirectly: Bool { section.canReadDirectly }
 
     /// `true` when this section is the structured Persons list.
-    private var isPersonsSection: Bool { section.divType == "persons" }
+    private var isPersonsSection: Bool { section.isPersonsList }
 
     /// `true` when this section is the structured archival Sources list.
-    private var isSourcesSection: Bool { section.divType == "sources" }
+    private var isSourcesSection: Bool { section.isSourcesList }
 
     // MARK: - Body
 

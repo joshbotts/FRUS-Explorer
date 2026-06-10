@@ -48,6 +48,9 @@ import SwiftUI
 ///          the number is already part of the `header` text
 ///   1.5 — Session 2026-06-08: `"prefatoryNote"` and `"terms"` added to `canReadSectionDirectly`;
 ///          `"persons"` → `FrontMatterPersonsView`; `"sources"` → `VolumeSourcesView`
+///   1.6 — Session 2026-06-10: routing predicates replaced with the shared
+///          `VolumeSection` kind helpers (`canReadDirectly`, `isPersonsList`,
+///          `isSourcesList`), which understand the real corpus encoding
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -133,43 +136,6 @@ struct CompilationView: View {
 
     // MARK: - Front Matter Direct Read
 
-    /// `true` when this section contains prose directly (no document sub-divs) and
-    /// belongs to a type that should be readable without FTS indexing.
-    ///
-    /// Covers `<div type="preface">`, `<div type="introduction">`, `<div type="intro">`,
-    /// `<div type="errata">`, `<div type="prefatoryNote">`, and `<div type="terms">`
-    /// that are leaf sections (no subsections, no document IDs).
-    ///
-    /// Sections with auto-generated `sectionId` values (e.g. `"preface-3"`, produced when
-    /// the TEI element has no `xml:id` attribute) are excluded because
-    /// `FRUSDocumentParser.parseDocument(documentId:)` cannot locate them by ID.
-    private var canReadSectionDirectly: Bool {
-        let proseTypes: Set<String> = [
-            "preface", "intro", "introduction", "errata",
-            "prefatoryNote", "terms",
-        ]
-        guard proseTypes.contains(section.divType),
-              section.allDocumentIds.isEmpty,
-              section.subsections.isEmpty
-        else { return false }
-        // Guard against auto-generated sectionIds like "preface-3" — these have no
-        // xml:id in the TEI source and parseDocument would return nil.
-        let autoPrefix = "\(section.divType)-"
-        if section.sectionId.hasPrefix(autoPrefix) {
-            let suffix = section.sectionId.dropFirst(autoPrefix.count)
-            if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) { return false }
-        }
-        return !section.sectionId.isEmpty
-    }
-
-    /// `true` when this section is a structured Persons list that should be displayed
-    /// by `FrontMatterPersonsView` rather than as a document list.
-    private var isPersonsSection: Bool { section.divType == "persons" }
-
-    /// `true` when this section is a structured Sources list that should be displayed
-    /// by `VolumeSourcesView` rather than as a document list.
-    private var isSourcesSection: Bool { section.divType == "sources" }
-
     @ViewBuilder
     private var readSectionDirectlySection: some View {
         Section {
@@ -209,13 +175,13 @@ struct CompilationView: View {
 
     @ViewBuilder
     private var documentListSection: some View {
-        if canReadSectionDirectly {
+        if section.canReadDirectly {
             // Prose-only front matter section — bypass indexing and open directly.
             readSectionDirectlySection
-        } else if isPersonsSection {
+        } else if section.isPersonsList {
             // Persons list — rendered by FrontMatterPersonsView without requiring indexing.
             FrontMatterPersonsView(volumeId: volumeId)
-        } else if isSourcesSection {
+        } else if section.isSourcesList {
             // Archival sources list — rendered by VolumeSourcesView from the indexed table.
             VolumeSourcesView(volumeId: volumeId)
         } else if vm.isIndexing {

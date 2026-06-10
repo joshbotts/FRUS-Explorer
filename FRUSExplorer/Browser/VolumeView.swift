@@ -18,14 +18,17 @@ import SwiftUI
 /// back to the Subseries level with the filter applied.
 ///
 /// ## Front Matter Split (Session 2026-06-08)
-/// The section list is split into two groups: **Front Matter** (preface, persons, sources,
-/// terms, prefatory note, etc.) and **Contents** (compilations, chapters, appendices, index).
-/// A `<front>` wrapper section is automatically expanded so its subsections appear directly
-/// rather than requiring an extra tap to enter the wrapper.
+/// The section list is split into three groups: **Front Matter** (preface, persons,
+/// sources, terms, press release, summary, etc.), **Contents** (compilations, chapters,
+/// appendices), and **Back Matter** (errata, index). The `<front>` and `<back>` wrapper
+/// sections are automatically expanded so their subsections appear directly rather than
+/// requiring an extra tap to enter the wrapper.
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   2.0 — Session 2026-06-08: Front Matter / Contents split; front-matter div types surfaced
+///   2.1 — Session 2026-06-10: kind sets moved to `VolumeSection.frontMatterKinds`
+///          (real corpus encoding); Back Matter group added with `<back>` expansion
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -63,13 +66,6 @@ struct VolumeView: View {
     }
 
     // MARK: - Structure Section
-
-    /// Div types that represent front-matter content. The `"front"` wrapper type is
-    /// expanded inline (its subsections listed directly) rather than shown as a row.
-    private static let frontMatterTypes: Set<String> = [
-        "front", "preface", "intro", "introduction", "errata", "foreword",
-        "prefatoryNote", "sources", "persons", "terms",
-    ]
 
     @ViewBuilder
     private var volumeStructureSection: some View {
@@ -114,11 +110,13 @@ struct VolumeView: View {
                         .font(.callout)
                 }
             } else {
-                // Split into front-matter and body-content sections.
-                // A "<front>" wrapper is expanded so its subsections appear directly.
+                // Split into front-matter, body-content, and back-matter groups.
+                // The "<front>" and "<back>" wrappers are expanded so their
+                // subsections appear directly.
                 let frontMatterItems = Self.extractFrontMatter(from: structure.sections)
+                let backMatterItems = Self.extractBackMatter(from: structure.sections)
                 let contentSections = structure.sections.filter {
-                    !Self.frontMatterTypes.contains($0.divType)
+                    !$0.isFrontMatterKind && $0.divType != "back"
                 }
 
                 if !frontMatterItems.isEmpty {
@@ -134,6 +132,15 @@ struct VolumeView: View {
                     Section(header: Text(String(localized: "browser.volume.sections.header",
                                                 defaultValue: "Contents"))) {
                         ForEach(contentSections) { section in
+                            sectionRow(section: section)
+                        }
+                    }
+                }
+
+                if !backMatterItems.isEmpty {
+                    Section(header: Text(String(localized: "browser.volume.backMatter.header",
+                                                defaultValue: "Back Matter"))) {
+                        ForEach(backMatterItems) { section in
                             sectionRow(section: section)
                         }
                     }
@@ -171,20 +178,36 @@ struct VolumeView: View {
     ///
     /// If the top-level sections contain a `<front>` wrapper, its subsections are
     /// flattened out (one tap saved). Any other top-level sections typed as front matter
-    /// (e.g. `"preface"` placed outside `<front>`) are included as-is.
+    /// (e.g. `"preface"` placed outside `<front>`) are included as-is. A `<front>`
+    /// wrapper that holds documents directly (the 1861-era volumes place the
+    /// President's annual message in `<front>`) is kept alongside its subsections so
+    /// those documents stay reachable.
     private static func extractFrontMatter(from sections: [VolumeSection]) -> [VolumeSection] {
         var items: [VolumeSection] = []
         for section in sections {
             if section.divType == "front" {
-                // Expand: show subsections directly, or the front section itself if empty.
-                if section.subsections.isEmpty {
+                // Expand: show subsections directly, or the front section itself
+                // when it is empty or carries direct documents.
+                if section.subsections.isEmpty || !section.documentIds.isEmpty {
                     items.append(section)
-                } else {
-                    items.append(contentsOf: section.subsections)
                 }
-            } else if frontMatterTypes.contains(section.divType) {
+                items.append(contentsOf: section.subsections)
+            } else if section.isFrontMatterKind {
                 items.append(section)
             }
+        }
+        return items
+    }
+
+    /// Extracts back-matter sections (errata, index) by expanding the `<back>` wrapper,
+    /// mirroring `extractFrontMatter`.
+    private static func extractBackMatter(from sections: [VolumeSection]) -> [VolumeSection] {
+        var items: [VolumeSection] = []
+        for section in sections where section.divType == "back" {
+            if section.subsections.isEmpty || !section.documentIds.isEmpty {
+                items.append(section)
+            }
+            items.append(contentsOf: section.subsections)
         }
         return items
     }
@@ -332,6 +355,18 @@ struct SectionRowLabel: View {
             return String(localized: "browser.section.type.persons", defaultValue: "Persons")
         case "terms":
             return String(localized: "browser.section.type.terms", defaultValue: "Terms & Abbreviations")
+        case "table-of-contents":
+            return String(localized: "browser.section.type.toc", defaultValue: "Table of Contents")
+        case "press-release":
+            return String(localized: "browser.section.type.pressRelease", defaultValue: "Press Release")
+        case "volume-summary":
+            return String(localized: "browser.section.type.volumeSummary", defaultValue: "Volume Summary")
+        case "about-frus-series":
+            return String(localized: "browser.section.type.aboutSeries", defaultValue: "About the Series")
+        case "historical-document":
+            return String(localized: "browser.section.type.historicalDocument", defaultValue: "Document")
+        case "section":
+            return String(localized: "browser.section.type.section", defaultValue: "Section")
         default:
             return section.divType
         }

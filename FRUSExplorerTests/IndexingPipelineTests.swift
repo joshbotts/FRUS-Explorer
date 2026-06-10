@@ -2025,3 +2025,221 @@ struct DocumentASTCacheTests {
         #expect(await cache.ast(volumeId: "v2", documentId: "d1") != nil)
     }
 }
+
+// MARK: - RealCorpusEncodingTests
+
+/// Writes a volume fixture using the **real** HistoryAtState/frus TEI encoding:
+/// documents are `<div type="document" subtype="historical-document|editorial-note">`,
+/// and front/back matter is `<div type="section" subtype="…" xml:id="…">` — the
+/// vocabulary verified against the published corpus on 2026-06-10. The legacy
+/// fixtures above (`type="editorialNote"`, `type="preface"`) describe an encoding
+/// that never occurs in the wild; this builder exists so vocabulary regressions
+/// can no longer pass the test suite.
+private func writeRealEncodingVolume(to url: URL, volumeId: String) throws {
+    let xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+      <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+      <publicationStmt><date when="2010">2010</date></publicationStmt>
+      <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+      <text>
+        <front>
+          <div type="section" subtype="table-of-contents" xml:id="toc">
+            <head>Contents</head>
+            <list><item>Chapter one</item></list>
+          </div>
+          <div type="section" subtype="preface" xml:id="preface">
+            <head>Preface</head>
+            <p>Prefatory remarks about silvermine documentation policy.</p>
+          </div>
+          <div type="section" subtype="sources" xml:id="sources">
+            <head>Sources</head>
+            <list>
+              <item>RG 59, Central Files 1969 POL 1, Lot File 70 D 150</item>
+            </list>
+          </div>
+          <div type="section" subtype="index" xml:id="terms">
+            <head>Abbreviations</head>
+            <list><item xml:id="t_AEC"><term>AEC</term>: Atomic Energy Commission</item></list>
+          </div>
+          <div type="section" subtype="index" xml:id="persons">
+            <head>Persons</head>
+            <list><item xml:id="p_kissinger"><persName>Kissinger, Henry A.</persName>, Assistant to the President</item></list>
+          </div>
+        </front>
+        <body>
+          <div type="compilation" xml:id="comp1">
+            <head>Foundations of Foreign Policy</head>
+            <div type="document" subtype="editorial-note" n="1" xml:id="d1">
+              <head>1. Editorial Note</head>
+              <p>Editorial commentary about quartzline policy planning.</p>
+            </div>
+            <div type="document" subtype="historical-document" n="2" xml:id="d2">
+              <head>2. Memorandum of Conversation</head>
+              <dateline>Washington, January 20, 1969.</dateline>
+              <p>Discussion of copperfield negotiations.</p>
+            </div>
+          </div>
+        </body>
+        <back>
+          <div type="section" subtype="errata" xml:id="errata">
+            <head>Errata</head>
+            <p>Corrections to ironwood citations.</p>
+          </div>
+          <div type="section" subtype="index" xml:id="index">
+            <head>Index</head>
+            <list><item>Copperfield, 12</item></list>
+          </div>
+        </back>
+      </text>
+    </TEI>
+    """
+    try xml.data(using: .utf8)!.write(to: url)
+}
+
+@Suite("Real corpus TEI encoding")
+struct RealCorpusEncodingTests {
+
+    @Test("Volume structure captures front and back sections with normalised kinds")
+    func structureCapturesRealSections() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            try writeRealEncodingVolume(to: url, volumeId: "frus1969-76v01")
+
+            let structure = try await FRUSDocumentParser().parseVolumeStructure(volumeURL: url)
+
+            // The <front> wrapper must survive intact with all five sections —
+            // regression for the unmatched-</div> pop that detached it.
+            let front = try #require(structure.sections.first { $0.divType == "front" })
+            #expect(front.subsections.map(\.divType) ==
+                    ["table-of-contents", "preface", "sources", "terms", "persons"],
+                    "section kinds must be normalised from subtype + xml:id")
+            #expect(front.subsections.map(\.sectionId) ==
+                    ["toc", "preface", "sources", "terms", "persons"])
+            #expect(front.subsections.first { $0.divType == "preface" }?.title == "Preface")
+
+            // Body structure unaffected; editorial notes counted as documents.
+            let comp = try #require(structure.sections.first { $0.divType == "compilation" })
+            #expect(comp.documentIds == ["d1", "d2"])
+
+            // Back matter captured with kinds; persons/terms resolution must not
+            // hijack the genuine back index (xml:id="index").
+            let back = try #require(structure.sections.first { $0.divType == "back" })
+            #expect(back.subsections.map(\.divType) == ["errata", "index"])
+        }
+    }
+
+    @Test("Unknown wrapper divs are transparent: nested structure bubbles up intact")
+    func unknownWrapperIsTransparent() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>t</title></titleStmt>
+              <publicationStmt><date>2010</date></publicationStmt>
+              <sourceDesc><p>f</p></sourceDesc></fileDesc></teiHeader>
+              <text><body>
+                <div type="mystery-wrapper">
+                  <div type="compilation" xml:id="comp1">
+                    <head>Compilation</head>
+                    <div type="document" subtype="historical-document" xml:id="d1">
+                      <head>1. Document</head><p>Text.</p>
+                    </div>
+                  </div>
+                </div>
+              </body></text>
+            </TEI>
+            """
+            try xml.data(using: .utf8)!.write(to: url)
+
+            let structure = try await FRUSDocumentParser().parseVolumeStructure(volumeURL: url)
+            let comp = try #require(structure.sections.first { $0.divType == "compilation" },
+                                    "compilation nested in an unknown wrapper must bubble to top level")
+            #expect(comp.documentIds == ["d1"])
+        }
+    }
+
+    @Test("Editorial notes are detected via subtype and front matter is indexed")
+    func editorialNotesAndFrontMatterIndexed() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            try writeRealEncodingVolume(to: url, volumeId: "frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // Editorial note flag must come from subtype="editorial-note".
+            let docs = try await pipeline.documents(forVolume: "frus1969-76v01")
+            #expect(docs.first { $0.documentId == "d1" }?.isEditorialNote == true,
+                    "subtype=\"editorial-note\" must set isEditorialNote")
+            #expect(docs.first { $0.documentId == "d2" }?.isEditorialNote == false)
+
+            // The preface is promoted to a searchable front-matter quasi-document…
+            let withFront = try await pipeline.searchDocuments(
+                corpusMatch: "\"silvermine\"", userContentMatch: nil,
+                filters: SearchSQLFilters(includeFrontMatter: true), limit: 10, offset: 0)
+            #expect(withFront.count == 1)
+            #expect(withFront.first?.isFrontMatter == true)
+
+            // …and excluded when the front-matter scope is off.
+            let withoutFront = try await pipeline.searchDocuments(
+                corpusMatch: "\"silvermine\"", userContentMatch: nil,
+                filters: SearchSQLFilters(includeFrontMatter: false), limit: 10, offset: 0)
+            #expect(withoutFront.isEmpty)
+
+            // The table of contents must NOT be promoted into the search index.
+            let tocHits = try await store.search(
+                query: FTS5Query(phrase: "chapter one"), limit: 10, offset: 0)
+            #expect(tocHits.isEmpty, "table-of-contents text must not pollute search")
+
+            // The editorial-note document-type filter works end to end.
+            let edNotesOnly = try await pipeline.searchDocuments(
+                corpusMatch: "\"quartzline\"", userContentMatch: nil,
+                filters: SearchSQLFilters(documentTypeFilter: .editorialNotesOnly),
+                limit: 10, offset: 0)
+            #expect(edNotesOnly.count == 1)
+            #expect(edNotesOnly.first?.documentId == "d1")
+        }
+    }
+
+    @Test("Archival sources are extracted from the real sources section encoding")
+    func sourcesExtractedFromRealEncoding() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            try writeRealEncodingVolume(to: url, volumeId: "frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let sources = try await pipeline.volumeSources(forVolumeId: "frus1969-76v01")
+            #expect(!sources.isEmpty,
+                    "subtype=\"sources\" sections must populate volume_sources")
+            #expect(sources.contains { $0.rawText.contains("RG 59") })
+        }
+    }
+
+    @Test("Persons and terms glossaries resolve from subtype=index sections")
+    func personsAndTermsResolved() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            try writeRealEncodingVolume(to: url, volumeId: "frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let structure = try #require(
+                try await pipeline.cachedVolumeStructure(forVolumeId: "frus1969-76v01"))
+            let front = try #require(structure.sections.first { $0.divType == "front" })
+            let persons = try #require(front.subsections.first { $0.divType == "persons" })
+            let terms = try #require(front.subsections.first { $0.divType == "terms" })
+            #expect(persons.isPersonsList)
+            #expect(VolumeSection.proseReadableKinds.contains(terms.divType))
+            #expect(terms.canReadDirectly, "terms glossary should open directly in DocumentView")
+        }
+    }
+}
