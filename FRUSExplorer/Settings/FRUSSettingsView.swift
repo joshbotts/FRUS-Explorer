@@ -250,6 +250,7 @@ private struct SettingsAboutPane: View {
 
 private struct SettingsDisplayPane: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+    @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
 
     var body: some View {
         ScrollView {
@@ -271,6 +272,20 @@ private struct SettingsDisplayPane: View {
                 .padding(.bottom, 8)
 
                 Text("Adjusts the body text size in the Document view.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+
+                PaneSectionHeader(title: "Citations")
+                Picker("Citation style", selection: $citationStyle) {
+                    ForEach(CitationStyle.allCases) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+                .padding(.bottom, 8)
+
+                Text("Used for Copy Citation, Share Citation, and the citation popover's default. The popover can still switch styles per-presentation for comparison.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
@@ -410,8 +425,7 @@ private struct SettingsProjectsPane: View {
         ) {
             Button("Delete", role: .destructive) {
                 if let p = projectToDelete {
-                    if appState.activeProjectId == p.id { appState.activeProjectId = nil }
-                    modelContext.delete(p)
+                    ProjectAdminService.delete(p, context: modelContext, appState: appState)
                 }
             }
             Button("Cancel", role: .cancel) {}
@@ -421,31 +435,7 @@ private struct SettingsProjectsPane: View {
     }
 
     private func mergeProject(source: Project, into target: Project) {
-        let sourceId = source.id
-        let targetId = target.id
-
-        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
-        for note in allNotes where note.projectIds.contains(sourceId) {
-            var ids = note.projectIds.filter { $0 != sourceId }
-            if !ids.contains(targetId) { ids.append(targetId) }
-            note.projectIds = ids
-        }
-        let allCollections = (try? modelContext.fetch(FetchDescriptor<Collection>())) ?? []
-        for collection in allCollections where collection.projectIds.contains(sourceId) {
-            var ids = collection.projectIds.filter { $0 != sourceId }
-            if !ids.contains(targetId) { ids.append(targetId) }
-            collection.projectIds = ids
-        }
-        let allSummaries = (try? modelContext.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
-        for summary in allSummaries where summary.projectId == sourceId {
-            summary.projectId = targetId
-        }
-        let allHistory = (try? modelContext.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? []
-        for entry in allHistory where entry.projectId == sourceId {
-            entry.projectId = targetId
-        }
-        if appState.activeProjectId == sourceId { appState.activeProjectId = targetId }
-        modelContext.delete(source)
+        ProjectAdminService.merge(source, into: target, context: modelContext, appState: appState)
     }
 
     private var activeContextRow: some View {
@@ -2807,43 +2797,17 @@ private struct SettingsResetPane: View {
 
         isResetting = true
 
-        // 1. Delete every .xml file in volumesDirectory directly via the filesystem.
-        //    Iterating manifest entries misses any file not in the manifest, which would
-        //    leave hasDownloadedVolumes() returning true and block OnboardingView.
-        if let dm = appState.downloadManager {
-            let dir = dm.volumesDirectory
-            if let files = try? FileManager.default.contentsOfDirectory(
-                at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
-            ) {
-                for file in files where file.pathExtension.lowercased() == "xml" {
-                    try? FileManager.default.removeItem(at: file)
-                }
-            }
-        }
+        // 1-2. Delete downloaded volume XML and clear the search index; return to onboarding.
+        await ResetService.resetLocalData(appState: appState)
 
-        // 2. Remove the search index — one bulk DELETE per table, not one call per manifest entry.
-        if let pipeline = appState.indexingPipeline {
-            do {
-                try await pipeline.removeAllVolumesFromIndex()
-                appState.indexedVolumeIds = []
-                appState.indexGeneration += 1
-            } catch {
-                #if DEBUG
-                print("[Settings] removeAllVolumesFromIndex failed: \(error)")
-                #endif
-            }
-        }
-
-        // 3. If full reset, delete all SwiftData records
+        // 3. If full reset, also delete all SwiftData records
         if includeCloudKit {
             deleteAllUserData()
         }
 
-        // 4. Clear onboarding flag — ContentView immediately re-evaluates and shows OnboardingView
-        appState.hasCompletedOnboarding = false
         isResetting = false
 
-        // 5. Close auxiliary windows (Search, Corpus Browser, etc.) — they'd be confusing
+        // 4. Close auxiliary windows (Search, Corpus Browser, etc.) — they'd be confusing
         //    during onboarding and might obscure the ContentView window which has already
         //    switched to OnboardingView. NSApplication.mainWindow is unreliable here: it
         //    returns whichever window last had focus (often an auxiliary window), not the

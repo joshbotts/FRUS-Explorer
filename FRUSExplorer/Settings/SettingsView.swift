@@ -25,6 +25,7 @@ import UniformTypeIdentifiers
 /// | Storage management | `StorageManagementView` |
 /// | Sideload | `SideloadView` |
 /// | User tags | `UserTagsView` |
+/// | Projects | `ProjectsSettingsView` |
 /// | Summarization prompts | `SummarizationPromptsSettingsView` |
 /// | NARA API key | `NARAKeyView` |
 /// | Reset | `ResetView` |
@@ -64,6 +65,9 @@ import UniformTypeIdentifiers
 ///          and replaced by DownloadsSettingsView (merged scope picker + browse list)
 ///   2.3 — Session 118: Reindex row removed; Storage renamed to Storage & Index; Reindex All
 ///          controls absorbed into StorageManagementView; Summarization Prompts → Summarization
+///   2.4 — Session 153: Projects row added to Research section (ProjectsSettingsView), closing
+///          the iOS gap where projects could be created but never renamed/merged/deleted;
+///          delete/merge mutations shared with macOS SettingsProjectsPane via ProjectAdminService
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -118,6 +122,10 @@ struct SettingsView: View {
                     NavigationLink(String(localized: "settings.row.tags",
                                          defaultValue: "User Tags")) {
                         UserTagsView()
+                    }
+                    NavigationLink(String(localized: "settings.row.projects",
+                                         defaultValue: "Projects")) {
+                        ProjectsSettingsView()
                     }
                     NavigationLink(String(localized: "settings.row.summarization",
                                          defaultValue: "Summarization")) {
@@ -1897,6 +1905,192 @@ private struct UserTagsView: View {
     }
 }
 
+// MARK: - ProjectsSettingsView
+
+/// iOS Settings → Research → Projects: rename, merge, and delete `Project`
+/// records.
+///
+/// Mirrors the `UserTagsView` interaction pattern (tap or leading swipe to
+/// rename, trailing swipe to delete) with a context menu "Merge into…" action
+/// in place of the always-visible merge button used by the macOS
+/// `SettingsProjectsPane`. Delete and merge mutations are shared with macOS
+/// via `ProjectAdminService`.
+///
+/// Project creation and active-project switching are handled elsewhere
+/// (`ProjectPickerMenu`, `ProjectEditorView`); this view is solely for
+/// administering existing projects.
+///
+/// Version history:
+///   1.0 — Session 153: initial implementation (closes the iOS delete/merge gap)
+private struct ProjectsSettingsView: View {
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Project.name) private var projects: [Project]
+
+    @State private var renamingProject: Project? = nil
+    @State private var renameText = ""
+    @State private var mergingProject: Project? = nil
+    @State private var projectToDelete: Project? = nil
+    @State private var showDeleteConfirmation = false
+
+    var body: some View {
+        Form {
+            Section {
+                if projects.isEmpty {
+                    Text(String(localized: "settings.projects.empty",
+                                defaultValue: "No projects created yet."))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(projects) { project in
+                        let isRenaming = renamingProject?.id == project.id
+                        Group {
+                            if isRenaming {
+                                TextField(
+                                    String(localized: "settings.projects.rename.placeholder",
+                                           defaultValue: "Project name"),
+                                    text: $renameText
+                                )
+                                .onSubmit { commitRename() }
+                                .accessibilityLabel(
+                                    String(localized: "settings.projects.rename.a11y",
+                                           defaultValue: "Rename project \(project.name)")
+                                )
+                            } else {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(project.name)
+                                    if let question = project.researchQuestion, !question.isEmpty {
+                                        Text(question)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            guard renamingProject == nil else { return }
+                            renamingProject = project
+                            renameText = project.name
+                        }
+                        // Leading swipe: Rename. Mirrors UserTagsView so the action is
+                        // discoverable for users unfamiliar with tap-to-rename.
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            if !isRenaming {
+                                Button {
+                                    renamingProject = project
+                                    renameText = project.name
+                                } label: {
+                                    Label(
+                                        String(localized: "settings.projects.rename.swipe",
+                                               defaultValue: "Rename"),
+                                        systemImage: "pencil"
+                                    )
+                                }
+                                .tint(.accentColor)
+                                .accessibilityLabel(
+                                    String(localized: "settings.projects.rename.swipe.a11y",
+                                           defaultValue: "Rename project \(project.name)")
+                                )
+                            }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                projectToDelete = project
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label(
+                                    String(localized: "settings.projects.delete.swipe",
+                                           defaultValue: "Delete"),
+                                    systemImage: "trash"
+                                )
+                            }
+                            .accessibilityLabel(
+                                String(localized: "settings.projects.delete.swipe.a11y",
+                                       defaultValue: "Delete project \(project.name)")
+                            )
+                        }
+                        .contextMenu {
+                            Button {
+                                mergingProject = project
+                            } label: {
+                                Label(
+                                    String(localized: "settings.projects.merge.button",
+                                           defaultValue: "Merge into…"),
+                                    systemImage: "arrow.triangle.merge"
+                                )
+                            }
+                            .disabled(projects.count < 2)
+                        }
+                    }
+                }
+            } header: {
+                Text(String(localized: "settings.projects.list.header", defaultValue: "Projects"))
+            } footer: {
+                Text(String(localized: "settings.projects.list.footer",
+                            defaultValue: "Tap or swipe right to rename. Touch and hold for merge options. Swipe left to delete."))
+                    .font(.caption)
+            }
+        }
+        .navigationTitle(String(localized: "settings.projects.title", defaultValue: "Projects"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
+        #endif
+        .toolbar {
+            if renamingProject != nil {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "settings.projects.rename.done", defaultValue: "Done")) {
+                        commitRename()
+                    }
+                }
+            }
+        }
+        .sheet(item: $mergingProject) { sourceProject in
+            MergeProjectSheet(
+                sourceProject: sourceProject,
+                allProjects: projects.filter { $0.id != sourceProject.id },
+                onMerge: { targetProject in
+                    ProjectAdminService.merge(sourceProject, into: targetProject, context: modelContext, appState: appState)
+                    mergingProject = nil
+                }
+            )
+        }
+        .confirmationDialog(
+            String(localized: "settings.projects.delete.title", defaultValue: "Delete Project?"),
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.projects.delete.confirm", defaultValue: "Delete"), role: .destructive) {
+                if let project = projectToDelete {
+                    ProjectAdminService.delete(project, context: modelContext, appState: appState)
+                }
+                projectToDelete = nil
+            }
+            Button(String(localized: "settings.projects.delete.cancel", defaultValue: "Cancel"), role: .cancel) {
+                projectToDelete = nil
+            }
+        } message: {
+            Text(String(localized: "settings.projects.delete.message",
+                        defaultValue: "Activity records are kept but unlinked from this project."))
+        }
+    }
+
+    private func commitRename() {
+        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, let project = renamingProject {
+            project.name = trimmed
+        }
+        renamingProject = nil
+        renameText = ""
+    }
+}
+
 // MARK: - MergeTagSheet
 
 struct MergeTagSheet: View {
@@ -2239,6 +2433,7 @@ private struct NARAKeyView: View {
     @State private var hasExistingKey: Bool = false
     @State private var isSaving: Bool = false
     @State private var saveResult: SaveResult? = nil
+    @State private var callCount: Int = 0
 
     private let keychainStore = KeychainStore.shared
 
@@ -2356,6 +2551,20 @@ private struct NARAKeyView: View {
                     }
                 }
             }
+
+            Section(String(localized: "settings.naraKey.usage.header",
+                           defaultValue: "Usage (Last 30 Days)")) {
+                HStack {
+                    Text(String(localized: "settings.naraKey.usage.count",
+                                defaultValue: "\(callCount) API call\(callCount == 1 ? "" : "s")"))
+                        .font(.callout)
+                    Spacer()
+                    Text(String(localized: "settings.naraKey.usage.limitNote",
+                                defaultValue: "Limit not enforced by FRUS Explorer"))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
         }
         .navigationTitle(String(localized: "settings.naraKey.title",
                                 defaultValue: "NARA Catalog API Key"))
@@ -2368,6 +2577,7 @@ private struct NARAKeyView: View {
         #endif
         .task {
             hasExistingKey = await keychainStore.hasAPIKey()
+            callCount = await NARAAPIKeyStore.shared.callCountLast30Days
         }
     }
 
@@ -2411,13 +2621,20 @@ private struct NARAKeyView: View {
 
 // MARK: - ResetView
 
-/// Two-step confirmation UI for the destructive "Reset App to Initial State" action.
+/// Three-tier reset UI, ordered least → most destructive: iCloud Sync, Local
+/// Data, and the two-step "Reset App to Initial State" action.
 ///
 /// ## What is deleted
-/// - All downloaded volume XML files (via `DownloadManager`)
-/// - All SwiftData user-generated records: `ResearchNote`, `UserTag`, `GeneratedSummary`,
-///   `ReadingHistoryEntry`, `Collection`, `CollectionEntry`, `SummarizationPrompt`, `Project`
-/// - Active project selection (`AppState.activeProjectId`)
+/// - **Reset iCloud Sync**: the local SwiftData SQLite store, forcing a fresh
+///   download from CloudKit on next launch. iCloud data is untouched.
+/// - **Reset Local Data**: downloaded volume XML files and the search index
+///   (`frus.db`), via the shared `ResetService.resetLocalData(appState:)`. The
+///   local SwiftData store and iCloud-synced data are untouched.
+/// - **Reset App to Initial State**: everything `ResetService.resetLocalData`
+///   clears, plus all SwiftData user-generated records: `ResearchNote`,
+///   `UserTag`, `GeneratedSummary`, `ReadingHistoryEntry`, `Collection`,
+///   `CollectionEntry`, `SummarizationPrompt`, `Project`, and the active
+///   project selection (`AppState.activeProjectId`).
 ///
 /// ## Post-reset navigation
 /// Both platforms now set `hasCompletedOnboarding = false` directly after clearing data.
@@ -2427,7 +2644,8 @@ private struct NARAKeyView: View {
 ///
 /// ## Confirmation gates
 /// The user must confirm twice (two `confirmationDialog` calls) before `performReset()`
-/// is invoked, guarding against accidental taps.
+/// is invoked, guarding against accidental taps. Sync and Local resets each require
+/// a single confirmation.
 ///
 /// Version history:
 ///   1.0 — Session 24: initial implementation
@@ -2435,6 +2653,9 @@ private struct NARAKeyView: View {
 ///          for safe post-reset onboarding navigation (macOS)
 ///   1.2 — Session 44: iOS path simplified to direct assignment
 ///   1.3 — Session 46: macOS path also simplified; pendingOnboardingAfterReset removed
+///   1.4 — Session 153: added the "Reset Local Data" tier (between Sync and Full),
+///          backed by the shared `ResetService`, closing the iOS gap with
+///          macOS `SettingsResetPane`
 private struct ResetView: View {
 
     @Environment(AppState.self) private var appState
@@ -2443,6 +2664,7 @@ private struct ResetView: View {
     @State private var showFirstConfirmation  = false
     @State private var showSecondConfirmation = false
     @State private var showSyncReset          = false
+    @State private var showLocalReset         = false
     @State private var isResetting = false
     @State private var resetError: String? = nil
 
@@ -2461,6 +2683,27 @@ private struct ResetView: View {
                     showSyncReset = true
                 }
                 .disabled(isResetting)
+            }
+
+            // Local-only reset — deletes downloaded volumes and the search index from
+            // this device. iCloud-synced data (notes, collections, tags, projects) is
+            // untouched and will re-sync on next launch.
+            Section(header: Text(String(localized: "settings.reset.local.header",
+                                        defaultValue: "This Device"))) {
+                Text(String(localized: "settings.reset.local.warning",
+                            defaultValue: "Deletes all downloaded volume files and the search index from this device. Your notes, collections, tags, and projects remain in iCloud and will be restored the next time the app launches."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                Button(String(localized: "settings.reset.local.button",
+                              defaultValue: "Reset Local Data"), role: .destructive) {
+                    showLocalReset = true
+                }
+                .disabled(isResetting)
+                .accessibilityLabel(
+                    String(localized: "settings.reset.local.button.a11y",
+                           defaultValue: "Reset local data. Destructive action.")
+                )
             }
 
             Section {
@@ -2511,6 +2754,22 @@ private struct ResetView: View {
         } message: {
             Text(String(localized: "settings.reset.sync.confirm.message",
                         defaultValue: "The local iCloud sync state will be cleared. Your data in iCloud is not deleted. The app will re-download your notes and collections on next launch."))
+        }
+        .confirmationDialog(
+            String(localized: "settings.reset.local.confirm.title",
+                   defaultValue: "Reset Local Data?"),
+            isPresented: $showLocalReset,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.reset.local.confirm.proceed",
+                          defaultValue: "Reset Local Data"), role: .destructive) {
+                performLocalReset()
+            }
+            Button(String(localized: "settings.reset.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
+        } message: {
+            Text(String(localized: "settings.reset.local.confirm.message",
+                        defaultValue: "Volume files and the search index will be deleted from this device. Your notes, collections, tags, and projects in iCloud are not affected and will re-sync."))
         }
         .confirmationDialog(
             String(localized: "settings.reset.confirm1.title",
@@ -2574,32 +2833,23 @@ private struct ResetView: View {
         isResetting = false
     }
 
+    /// Local-only reset: deletes downloaded volumes and the search index, leaving
+    /// the local SwiftData store and iCloud-synced data untouched.
+    private func performLocalReset() {
+        isResetting = true
+        Task {
+            await ResetService.resetLocalData(appState: appState)
+            await MainActor.run { isResetting = false }
+        }
+    }
+
     private func performReset() {
         isResetting = true
         resetError = nil
         Task {
             do {
-                // Delete all downloaded .xml files directly from the filesystem.
-                // Iterating manifest entries misses files not currently in the manifest,
-                // which would leave hasDownloadedVolumes() returning true and block OnboardingView.
-                if let dm = appState.downloadManager {
-                    let dir = dm.volumesDirectory
-                    if let files = try? FileManager.default.contentsOfDirectory(
-                        at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
-                    ) {
-                        for file in files where file.pathExtension.lowercased() == "xml" {
-                            try? FileManager.default.removeItem(at: file)
-                        }
-                    }
-                }
-                // Clear the search index so re-indexing after onboarding starts from scratch.
-                if let pipeline = appState.indexingPipeline {
-                    try await pipeline.removeAllVolumesFromIndex()
-                    await MainActor.run {
-                        appState.indexedVolumeIds = []
-                        appState.indexGeneration += 1
-                    }
-                }
+                // Delete downloaded volumes and clear the search index.
+                await ResetService.resetLocalData(appState: appState)
                 // Delete all SwiftData user-generated records
                 try modelContext.delete(model: ResearchNote.self)
                 try modelContext.delete(model: UserTag.self)
@@ -2637,6 +2887,7 @@ private struct ResetView: View {
 
 private struct DisplaySettingsView: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+    @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
 
     var body: some View {
         Form {
@@ -2659,6 +2910,28 @@ private struct DisplaySettingsView: View {
             } footer: {
                 Text(String(localized: "settings.display.textSize.footer",
                             defaultValue: "Adjusts the body text size in the Document view."))
+            }
+
+            Section {
+                Picker(String(localized: "settings.display.citationStyle.label",
+                              defaultValue: "Citation Style"),
+                       selection: $citationStyle) {
+                    ForEach(CitationStyle.allCases) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .accessibilityLabel(
+                    String(localized: "settings.display.citationStyle.a11y",
+                           defaultValue: "Citation style")
+                )
+            } header: {
+                Text(String(localized: "settings.display.citationStyle.header",
+                            defaultValue: "Citations"))
+            } footer: {
+                Text(String(localized: "settings.display.citationStyle.footer",
+                            defaultValue: "Used when copying or sharing a citation."))
             }
 
         }
@@ -2759,5 +3032,11 @@ enum SettingsKeys {
     /// Written by the Downloads settings (both platforms), read at boot by
     /// `FRUSExplorerApp` and applied live via `DownloadManager.setConcurrencyLimit`.
     static let concurrentDownloadLimit = "frus.concurrentDownloadLimit"
+
+    /// UserDefaults key for the persisted citation style (history.state.gov /
+    /// Chicago / Turabian). Read via `CitationStyle.current`; drives
+    /// `DocumentViewModel.formattedCitation` and friends, the iOS
+    /// `CitationSheetView`, and the macOS citation popover's initial selection.
+    static let citationStyle = "frus.citation.style"
 }
 

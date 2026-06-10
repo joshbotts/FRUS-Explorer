@@ -156,11 +156,14 @@ public final class DocumentViewModel {
 
     /// The formatted citation string, available when a volume entry was supplied at init.
     ///
+    /// Uses the user's persisted `CitationStyle.current` preference (history.state.gov
+    /// by default; Chicago and Turabian also available — see Settings → Display).
     /// Uses `parsedPublicationYear` (live-parsed from the volume XML) in place of
     /// the manifest's `publicationDate` when available — see `loadPublicationYear(from:)`.
     ///
-    /// The returned string contains Markdown italic markers (`_..._`) for the series
-    /// title. Use `plainTextFormattedCitation` for the clipboard and share sheet.
+    /// The returned string contains Markdown italic markers (`_..._` or `*...*`)
+    /// for the series/volume title. Use `plainTextFormattedCitation` for the
+    /// clipboard and share sheet.
     public var formattedCitation: String? {
         guard let volumeEntry else { return nil }
         let docMeta = FRUSDocumentMetadata(entry)
@@ -168,15 +171,16 @@ public final class DocumentViewModel {
         if let liveYear = parsedPublicationYear {
             volMeta = volMeta.overridingPublicationYear(liveYear)
         }
-        return HistoryAtStateCitationFormatter().format(document: docMeta, volume: volMeta)
+        return CitationStyle.current.makeFormatter().format(document: docMeta, volume: volMeta)
     }
 
     /// Plain-text version of `formattedCitation` with Markdown italic markers stripped.
     ///
-    /// `HistoryAtStateCitationFormatter` wraps the series title in `_..._` for
-    /// Markdown italics. The clipboard and share sheet should receive clean text
-    /// without raw underscore characters. `AttributedString.characters` extracts
-    /// the character sequence after Markdown parsing, giving plain text automatically.
+    /// Citation formatters wrap the title in `_..._` (history.state.gov) or
+    /// `*...*` (Chicago/Turabian) for Markdown italics. The clipboard and share
+    /// sheet should receive clean text without raw delimiter characters.
+    /// `AttributedString.characters` extracts the character sequence after
+    /// Markdown parsing, giving plain text automatically.
     public var plainTextFormattedCitation: String? {
         guard let citation = formattedCitation else { return nil }
         if let attrStr = try? AttributedString(
@@ -188,6 +192,7 @@ public final class DocumentViewModel {
         // Fallback: strip paired delimiters via regex if markdown parsing fails.
         return citation
             .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
+            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
     }
 
     /// The canonical `history.state.gov` URL for this document.

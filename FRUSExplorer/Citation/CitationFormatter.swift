@@ -16,8 +16,7 @@ import Foundation
 /// as a `CitationStyle` enum case — no call-site changes are required
 /// because the formatter is resolved via `CitationStyle.makeFormatter()`.
 ///
-/// Current styles: `.historyAtState`
-/// Future styles: `.chicagoFootnote`, `.chicagoBibliography`, etc.
+/// Current styles: `.historyAtState`, `.chicago`, `.turabian`
 public protocol CitationFormatter: Sendable {
     func format(document: FRUSDocumentMetadata, volume: FRUSVolumeMetadata) -> String
 }
@@ -28,12 +27,18 @@ public protocol CitationFormatter: Sendable {
 ///
 /// Additional styles are added by appending a case and implementing
 /// `makeFormatter()` — no existing code changes required.
-public enum CitationStyle: String, CaseIterable, Sendable {
+public enum CitationStyle: String, CaseIterable, Identifiable, Sendable {
     case historyAtState
+    case chicago
+    case turabian
+
+    public var id: String { rawValue }
 
     public func makeFormatter() -> any CitationFormatter {
         switch self {
         case .historyAtState: return HistoryAtStateCitationFormatter()
+        case .chicago: return ChicagoCitationFormatter()
+        case .turabian: return TurabianCitationFormatter()
         }
     }
 
@@ -42,8 +47,71 @@ public enum CitationStyle: String, CaseIterable, Sendable {
         case .historyAtState:
             return String(localized: "citation.style.historyAtState",
                           defaultValue: "History at State (Recommended)")
+        case .chicago:
+            return String(localized: "citation.style.chicago",
+                          defaultValue: "Chicago")
+        case .turabian:
+            return String(localized: "citation.style.turabian",
+                          defaultValue: "Turabian")
         }
     }
+
+    /// A compact label suitable for a segmented control (e.g. the macOS
+    /// citation popover's per-presentation style switcher).
+    public var shortDisplayName: String {
+        switch self {
+        case .historyAtState:
+            return String(localized: "citation.style.short.historyAtState",
+                          defaultValue: "history.state.gov")
+        case .chicago:
+            return String(localized: "citation.style.short.chicago",
+                          defaultValue: "Chicago")
+        case .turabian:
+            return String(localized: "citation.style.short.turabian",
+                          defaultValue: "Turabian")
+        }
+    }
+
+    /// The user's persisted citation style preference
+    /// (`SettingsKeys.citationStyle`), defaulting to `.historyAtState`
+    /// when unset or unrecognized. Drives `DocumentViewModel.formattedCitation`
+    /// and friends, the iOS `CitationSheetView`, and the macOS citation
+    /// popover's initial selection.
+    public static var current: CitationStyle {
+        get {
+            guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.citationStyle),
+                  let style = CitationStyle(rawValue: raw) else { return .historyAtState }
+            return style
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: SettingsKeys.citationStyle)
+        }
+    }
+}
+
+// MARK: - Shared Formatting Helpers
+
+/// Joins names as "Name", "Name1 and Name2", or "Name1, Name2, and Name3"
+/// (Oxford comma) — used by the Chicago/Turabian styles, which prefix the
+/// list with "edited by"/"Edited by" regardless of editor count (unlike the
+/// history.state.gov "ed./eds." convention).
+private func joinedNameList(_ names: [String]) -> String {
+    switch names.count {
+    case 0: return ""
+    case 1: return names[0]
+    case 2: return "\(names[0]) and \(names[1])"
+    default:
+        return names.dropLast().joined(separator: ", ") + ", and \(names.last!)"
+    }
+}
+
+/// Extracts a display year from `dateString`, falling back to "n.d." when empty
+/// or no 4-digit year can be found.
+private func publicationYearString(from dateString: String) -> String {
+    if let year = FRUSVolumeMetadata.firstYear(in: dateString) {
+        return String(year)
+    }
+    return dateString.isEmpty ? "n.d." : dateString
 }
 
 // MARK: - FRUSDocumentMetadata
@@ -262,5 +330,87 @@ public struct HistoryAtStateCitationFormatter: CitationFormatter {
             return String(year)
         }
         return dateString.isEmpty ? "n.d." : dateString
+    }
+}
+
+// MARK: - ChicagoCitationFormatter
+
+/// Formats FRUS citations per the Chicago Manual of Style (notes-bibliography),
+/// using the full volume title.
+///
+/// ## Format
+/// ```
+/// *Full volume title*, edited by Name (City: Publisher, Year), Document N.
+/// ```
+///
+/// If no document number is available (editorial notes, pre-1955 volumes), the
+/// citation ends after the publication parenthetical instead of leaking the TEI
+/// `xml:id` — mirrors `HistoryAtStateCitationFormatter`'s no-document-number
+/// handling (Session 2026-06-09 fix).
+///
+/// Relocated from the macOS citation popover (`CitationPopoverView`) in
+/// Session 153 so the style is available everywhere a citation is formatted.
+public struct ChicagoCitationFormatter: CitationFormatter {
+
+    public init() {}
+
+    public func format(document: FRUSDocumentMetadata, volume: FRUSVolumeMetadata) -> String {
+        var result = "*\(volume.title)*"
+
+        if !volume.editors.isEmpty {
+            result += ", edited by \(joinedNameList(volume.editors))"
+        }
+
+        let year = publicationYearString(from: volume.publicationDate)
+        result += " (\(volume.publicationPlace): \(volume.publisher), \(year))"
+
+        if let number = document.documentNumber {
+            result += ", Document \(number)."
+        } else {
+            result += "."
+        }
+
+        return result
+    }
+}
+
+// MARK: - TurabianCitationFormatter
+
+/// Formats FRUS citations per Turabian (student edition of Chicago), using the
+/// full volume title.
+///
+/// ## Format
+/// ```
+/// *Full volume title*. Edited by Name. City: Publisher, Year. Document N.
+/// ```
+///
+/// If no document number is available (editorial notes, pre-1955 volumes), the
+/// citation ends after the publication sentence instead of leaking the TEI
+/// `xml:id` — mirrors `HistoryAtStateCitationFormatter`'s no-document-number
+/// handling (Session 2026-06-09 fix).
+///
+/// Relocated from the macOS citation popover (`CitationPopoverView`) in
+/// Session 153 so the style is available everywhere a citation is formatted.
+public struct TurabianCitationFormatter: CitationFormatter {
+
+    public init() {}
+
+    public func format(document: FRUSDocumentMetadata, volume: FRUSVolumeMetadata) -> String {
+        var result = "*\(volume.title)*"
+
+        if !volume.editors.isEmpty {
+            result += ". Edited by \(joinedNameList(volume.editors))"
+        }
+
+        let year = publicationYearString(from: volume.publicationDate)
+        result += ". \(volume.publicationPlace): \(volume.publisher), \(year)"
+
+        if let number = document.documentNumber {
+            result += ". Document \(number)."
+        } else {
+            result += "."
+        }
+
+        return result
     }
 }
