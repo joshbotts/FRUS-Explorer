@@ -691,6 +691,11 @@ struct SummaryBlockView: View {
 
     @State private var showPromptPicker: Bool = false
 
+    /// Whether the on-device model can generate new summaries right now.
+    /// Existing summaries (possibly synced from other devices) are always shown;
+    /// only the generate/regenerate affordances are gated.
+    private var aiAvailable: Bool { AppleIntelligenceProvider.shared.isAvailable }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
 
@@ -711,13 +716,15 @@ struct SummaryBlockView: View {
                 Spacer()
 
                 HStack(spacing: 4) {
-                    Button("Change prompt") { showPromptPicker = true }
-                        .font(.system(size: 10))
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
-                        .popover(isPresented: $showPromptPicker) {
-                            SummaryPromptPickerView(vm: vm)
-                        }
+                    if aiAvailable {
+                        Button("Change prompt") { showPromptPicker = true }
+                            .font(.system(size: 10))
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                            .popover(isPresented: $showPromptPicker) {
+                                SummaryPromptPickerView(vm: vm)
+                            }
+                    }
 
                     if vm.summaries.count > 1 {
                         Text("·").foregroundStyle(.tertiary).font(.system(size: 10))
@@ -762,12 +769,26 @@ struct SummaryBlockView: View {
                         }
                     }
 
-                    Button("Regenerate") { Task { await regenerateSummary() } }
-                        .font(.system(size: 10))
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
-                        .disabled(vm.isSummarizing)
+                    if aiAvailable {
+                        Button("Regenerate") { Task { await regenerateSummary() } }
+                            .font(.system(size: 10))
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                            .disabled(vm.isSummarizing)
+                    }
                 }
+            }
+
+            // Error from the most recent generation attempt — visible regardless
+            // of whether a previous summary exists below it.
+            if let error = vm.summarizationError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel(String(
+                        localized: "summary.error.a11y",
+                        defaultValue: "Summarization failed: \(error)"
+                    ))
             }
 
             // Body
@@ -781,11 +802,20 @@ struct SummaryBlockView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
-            } else {
+            } else if aiAvailable {
                 Button("Summarize this document") { Task { await regenerateSummary() } }
                     .font(.system(size: 13))
                     .buttonStyle(.plain)
                     .foregroundStyle(.tertiary)
+            } else {
+                // No summary and no way to make one on this hardware — explain
+                // instead of offering a button that fails silently.
+                Text(String(
+                    localized: "summary.unavailable.explanation",
+                    defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries created on your other devices still appear here via iCloud."
+                ))
+                .font(.system(size: 12))
+                .foregroundStyle(.tertiary)
             }
         }
         .padding(14)

@@ -133,6 +133,12 @@ public final class DocumentViewModel {
     /// `true` while a summarization request is in flight.
     public var isSummarizing: Bool = false
 
+    /// Human-readable description of the most recent summarization failure, or
+    /// `nil` when the last attempt succeeded (or none has run). Set by
+    /// `generateSummary`; cleared at the start of each new attempt. Displayed as
+    /// an alert on iOS and inline in the macOS summary block.
+    public var summarizationError: String? = nil
+
     // MARK: - Source Explorer
 
     /// Raw plain-text source note extracted during `load()`. `nil` if the document has no source note.
@@ -511,6 +517,7 @@ public final class DocumentViewModel {
     ) async {
         guard !documentPlainText.isEmpty, !isSummarizing else { return }
         isSummarizing = true
+        summarizationError = nil
 
         // Build snapshot on main actor before crossing actor boundary
         let snapshot = SummarizationPromptSnapshot(from: prompt)
@@ -529,6 +536,10 @@ public final class DocumentViewModel {
             print("[SummarizationUI] Summary generated for \(entry.volumeId)/\(entry.documentId)")
             #endif
         } catch {
+            // Surface the failure to the UI — a guardrail rejection, model-busy
+            // condition, or oversized document previously looked like "the spinner
+            // stopped and nothing happened".
+            summarizationError = error.localizedDescription
             #if DEBUG
             print("[SummarizationUI] Generation failed for \(entry.documentId): \(error)")
             #endif

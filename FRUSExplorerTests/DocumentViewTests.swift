@@ -261,3 +261,65 @@ private func insertPersonMention(
     sqlite3_bind_text(stmt, 3, personRef,  -1, TRANSIENT)
     sqlite3_step(stmt)
 }
+
+// MARK: - SummarizationErrorSurfacingTests
+
+/// A provider that always fails — used to verify that generation failures reach
+/// `DocumentViewModel.summarizationError` instead of being silently logged.
+private actor FailingSummarizationProvider: SummarizationProvider {
+    var isAvailable: Bool = true
+    var contextWindowTokenLimit: Int = 3_072
+
+    func summarize(
+        request: SummarizationRequest,
+        prompt: SummarizationPromptSnapshot
+    ) async throws -> SummarizationResult {
+        throw SummarizationError.providerUnavailable
+    }
+}
+
+@Suite("DocumentViewModel — summarization error surfacing")
+@MainActor
+struct SummarizationErrorSurfacingTests {
+
+    @Test("A failed generation sets summarizationError; a new attempt clears it first")
+    func failureSetsError() async throws {
+        let schema = Schema([
+            ResearchNote.self, UserTag.self, Collection.self, GeneratedSummary.self,
+            SummarizationPrompt.self, Project.self, ReadingHistoryEntry.self,
+            SearchHistoryEntry.self, DocumentHighlight.self, DocumentTagAssignment.self,
+            SavedSearch.self, ResearchSession.self,
+        ])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+
+        let vm = DocumentViewModel(
+            entry: DocumentBrowserEntry(
+                documentId: "d1", volumeId: "frus1969-76v01", header: "Memo"),
+            volumeEntry: nil,
+            parser: FRUSDocumentParser(),
+            subjectTagStore: SubjectTagStore(entries: [], appearances: [])
+        )
+        vm.documentPlainText = "Some document text to summarize."
+
+        let prompt = SummarizationPrompt(
+            name: "Test", promptText: "Summarize: {document_text}")
+        context.insert(prompt)
+
+        let service = SummarizationService(modelContainer: container)
+        await vm.generateSummary(
+            prompt: prompt,
+            provider: FailingSummarizationProvider(),
+            service: service,
+            activeProjectId: nil,
+            context: context
+        )
+
+        #expect(vm.summarizationError != nil,
+                "generation failure must surface to the UI, not just the console")
+        #expect(vm.isSummarizing == false)
+    }
+}
