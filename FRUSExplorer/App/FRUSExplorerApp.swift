@@ -674,7 +674,7 @@ struct FRUSExplorerApp: App {
 
         let dm = DownloadManager(
             volumesDirectory: volumesDir,
-            concurrencyLimit: UserDefaults.standard.integer(forKey: "downloadConcurrencyLimit").nonZeroOrDefault(4),
+            concurrencyLimit: UserDefaults.standard.integer(forKey: SettingsKeys.concurrentDownloadLimit).nonZeroOrDefault(4),
             onStateChanged: { @MainActor [appState] state in
                 appState.downloadQueue = state.allQueuedVolumeIds
             },

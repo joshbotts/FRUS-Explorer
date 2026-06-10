@@ -477,3 +477,58 @@ struct MacSearchViewModelTests {
 }
 
 #endif // os(macOS)
+
+// MARK: - SearchDefaultsWiringTests
+
+/// Verifies the Settings "Search Defaults" pane is actually consumed — the
+/// `frus.search.*` keys were written by the pane but never read until
+/// Session 2026-06-10 wired them into the search view models.
+@MainActor
+struct SearchDefaultsWiringTests {
+
+    /// Builds a minimal SearchService for view-model construction.
+    private func makeService(dir: URL) throws -> SearchService {
+        let dbURL = dir.appendingPathComponent("defaults-test.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store,
+            databaseURL: dbURL,
+            volumesDirectory: dir,
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+            concurrencyLimit: 1
+        )
+        return SearchService(fts5Store: store, pipeline: pipeline)
+    }
+
+    @Test("SearchViewModel seeds scope and type filter from SearchDefaults and resets to them")
+    func viewModelSeedsFromDefaults() async throws {
+        let defaults = UserDefaults.standard
+        let savedScope = defaults.object(forKey: SearchDefaults.scopeSummariesKey)
+        let savedType  = defaults.object(forKey: SearchDefaults.typeFilterKey)
+        defer {
+            defaults.set(savedScope, forKey: SearchDefaults.scopeSummariesKey)
+            defaults.set(savedType, forKey: SearchDefaults.typeFilterKey)
+        }
+        defaults.set(false, forKey: SearchDefaults.scopeSummariesKey)
+        defaults.set("documentsOnly", forKey: SearchDefaults.typeFilterKey)
+
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSearchDefaults-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let vm = SearchViewModel(searchService: try makeService(dir: dir))
+        #expect(vm.includeSummaries == false,
+                "scope toggles must seed from the persisted Search Defaults")
+        #expect(vm.includeDocumentText == true)
+        #expect(vm.documentTypeFilter == .documentsOnly)
+
+        // A per-session override followed by Clear Filters returns to the
+        // configured defaults, not the hardcoded ones.
+        vm.includeSummaries = true
+        vm.documentTypeFilter = .all
+        vm.clearFilters()
+        #expect(vm.includeSummaries == false)
+        #expect(vm.documentTypeFilter == .documentsOnly)
+    }
+}

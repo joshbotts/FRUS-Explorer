@@ -250,7 +250,6 @@ private struct SettingsAboutPane: View {
 
 private struct SettingsDisplayPane: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
-    @AppStorage("frus.display.showDocumentNumbers") private var showDocumentNumbers = true
 
     var body: some View {
         ScrollView {
@@ -274,14 +273,6 @@ private struct SettingsDisplayPane: View {
                 Text("Adjusts the body text size in the Document view.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
-                    .padding(.bottom, 16)
-
-                PaneSectionHeader(title: "Document view")
-                settingsPaneToggleRow(
-                    label: "Show document numbers",
-                    detail: "Displays the printed document number (e.g. \"Document 28\") in the identity line.",
-                    isOn: $showDocumentNumbers
-                )
             }
             .padding(24)
         }
@@ -291,10 +282,10 @@ private struct SettingsDisplayPane: View {
 // MARK: - Search Pane
 
 private struct SettingsSearchPane: View {
-    @AppStorage("frus.search.scopeDocuments")  private var scopeDocuments  = true
-    @AppStorage("frus.search.scopeNotes")      private var scopeNotes      = true
-    @AppStorage("frus.search.scopeSummaries")  private var scopeSummaries  = true
-    @AppStorage("frus.search.defaultTypeFilter") private var defaultTypeFilter = "all"
+    @AppStorage(SearchDefaults.scopeDocumentsKey) private var scopeDocuments  = true
+    @AppStorage(SearchDefaults.scopeNotesKey)     private var scopeNotes      = true
+    @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries  = true
+    @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
 
     var body: some View {
         ScrollView {
@@ -1005,8 +996,6 @@ private struct SettingsStoragePane: View {
     @State private var showRebuildConfirmation = false
     /// Controls the Manage Storage sheet.
     @State private var showManageStorageSheet = false
-    /// Drive re-reads of `storageLimitGB` for the advisory card and usage bar.
-    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
 
     var body: some View {
         ScrollView {
@@ -1016,23 +1005,26 @@ private struct SettingsStoragePane: View {
                     subtitle: "Manage volumes stored on this Mac."
                 )
 
-                // Storage limit
-                PaneSectionHeader(title: "Storage limit")
-                storageLimitRow
-                    .padding(.bottom, 4)
-
+                // Storage report — per-category breakdown mirroring the iOS
+                // Storage pane, with a Manage Storage entry for freeing space.
+                PaneSectionHeader(title: "Storage used")
                 if let report = storageReport {
-                    usageBar(report: report)
-                        .padding(.bottom, 6)
-                    // Per-category breakdown — mirrors the iOS Storage pane.
                     usageBreakdown(report: report)
-                        .padding(.bottom, storageLimitAdvisoryVisible(for: report) ? 10 : 16)
+                        .padding(.bottom, 8)
 
-                    // Storage advisory — appears when usage is ≥ 85% of a set limit.
-                    if storageLimitAdvisoryVisible(for: report) {
-                        storageLimitAdvisoryCard(report: report)
-                            .padding(.bottom, 16)
+                    HStack(spacing: 10) {
+                        Button("Manage Storage…") {
+                            showManageStorageSheet = true
+                        }
+                        .buttonStyle(.bordered)
+                        .font(.system(size: 12))
+                        .help("Review downloaded volumes with no attached notes, collections, or summaries and remove them to free space.")
+
+                        Text("For reference: the full FRUS corpus uses ~3.4 GB of XML and ~9–10 GB of search index — approximately 13 GB total.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
                     }
+                    .padding(.bottom, 16)
                 }
 
                 // Indexing controls — placed above the volume table so they're
@@ -1167,133 +1159,10 @@ private struct SettingsStoragePane: View {
         return result
     }
 
-    /// Returns `true` when a storage limit is set and current usage is ≥ 85% of it.
-    private func storageLimitAdvisoryVisible(for report: StorageReport) -> Bool {
-        guard storageLimitGB > 0 else { return false }
-        let limitBytes = storageLimitGB * 1_073_741_824
-        return report.grandTotalBytes >= Int(Double(limitBytes) * 0.85)
-    }
-
-    /// The advisory card shown when usage is near or over the limit.
-    private func storageLimitAdvisoryCard(report: StorageReport) -> some View {
-        let limitBytes = storageLimitGB * 1_073_741_824
-        let isOver = report.grandTotalBytes > limitBytes
-        let candidateCount = (storageReport?.perVolume ?? [])
-            .filter { !protectedVolumeIds.contains($0.volumeId) }.count
-
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: isOver ? "exclamationmark.circle.fill" : "exclamationmark.circle")
-                    .foregroundStyle(isOver ? .red : .orange)
-                    .font(.system(size: 14))
-                Text(isOver
-                     ? "Storage limit exceeded"
-                     : "Approaching storage limit")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(isOver ? .red : .orange)
-            }
-
-            if isOver {
-                let overBy = report.grandTotalBytes - limitBytes
-                Text("You are using \(formattedBytes(overBy)) more than your \(storageLimitGB) GB limit.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            } else {
-                let remaining = limitBytes - report.grandTotalBytes
-                Text("You have approximately \(formattedBytes(remaining)) remaining before reaching your \(storageLimitGB) GB limit.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-
-            if candidateCount > 0 {
-                Text("\(candidateCount) downloaded volume\(candidateCount == 1 ? "" : "s") \(candidateCount == 1 ? "has" : "have") no attached notes, collections, or summaries and could be removed to free space.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                Button("Manage Storage…") {
-                    showManageStorageSheet = true
-                }
-                .buttonStyle(.bordered)
-                .font(.system(size: 12))
-            } else {
-                Text("All downloaded volumes have attached notes, collections, or summaries. Use the Remove button in the volume list to manually remove specific volumes.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isOver ? Color.red.opacity(0.05) : Color.orange.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(isOver ? Color.red.opacity(0.2) : Color.orange.opacity(0.2),
-                               lineWidth: 0.5)
-        )
-    }
-
     // MARK: - Private helpers
 
     private func formattedBytes(_ bytes: Int) -> String {
         ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
-    }
-
-    // MARK: Storage Limit Row
-
-    private var storageLimitRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("On-device limit")
-                    .font(.system(size: 13))
-                Text("App will warn before downloads exceed this limit. The full FRUS corpus uses ~3.4 GB of XML and ~9–10 GB of search index — approximately 13 GB total on device.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Picker("Limit", selection: $storageLimitGB) {
-                Text("5 GB").tag(5)
-                Text("10 GB").tag(10)
-                Text("15 GB").tag(15)
-                Text("20 GB").tag(20)
-                Text("No limit").tag(0)
-            }
-            .frame(width: 100)
-            .labelsHidden()
-        }
-        .padding(12)
-        .background(Color.secondary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 7))
-    }
-
-    // MARK: Usage Bar
-
-    private func usageBar(report: StorageReport) -> some View {
-        let usedGB = Double(report.totalVolumesBytes + report.totalIndexBytes) / 1_073_741_824
-        let limitGB = storageLimitGB > 0 ? Double(storageLimitGB) : 4.0
-        let fraction = min(usedGB / limitGB, 1.0)
-
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("Used: \(String(format: "%.1f", usedGB)) GB")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if storageLimitGB > 0 {
-                    Text("Limit: \(storageLimitGB) GB")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.secondary.opacity(0.15))
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(fraction > 0.85 ? Color.orange : Color.accentColor)
-                        .frame(width: geo.size.width * fraction)
-                }
-            }
-            .frame(height: 6)
-        }
     }
 
     // MARK: Usage Breakdown
@@ -1989,13 +1858,12 @@ private struct SettingsAddVolumesPane: View {
     @State private var selectedVolumeIds: Set<String> = []
     @State private var isEnqueuing = false
 
-    // MARK: Phase 1 — storage limit gate
-    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
-    @State private var showLimitWarning = false
-    /// Volumes held while the limit-warning dialog is displayed.
-    @State private var pendingVolumesForDownload: [VolumeManifestEntry] = []
-    /// Projected total in bytes if `pendingVolumesForDownload` are downloaded.
-    @State private var projectedTotalBytes: Int = 0
+    /// Seeded from UserDefaults so the picker reflects the active limit.
+    @State private var concurrentDownloadLimit: Int = {
+        let stored = UserDefaults.standard.integer(forKey: SettingsKeys.concurrentDownloadLimit)
+        return stored > 0 ? stored : 4
+    }()
+
 
     // MARK: - Body
 
@@ -2014,6 +1882,12 @@ private struct SettingsAddVolumesPane: View {
                     .padding(.bottom, 20)
 
                 downloadSection
+
+                Divider()
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
+
+                concurrencySection
             }
             .padding(24)
         }
@@ -2028,26 +1902,40 @@ private struct SettingsAddVolumesPane: View {
             if appState.isOnline { await appState.manifestStore.refresh() }
         }
         // Phase 1: storage limit warning before batch download
-        .confirmationDialog(
-            "Storage Limit",
-            isPresented: $showLimitWarning,
-            titleVisibility: .visible
-        ) {
-            Button("Download Anyway") {
-                Task { await performEnqueue(pendingVolumesForDownload) }
-                pendingVolumesForDownload = []
-            }
-            Button("Cancel", role: .cancel) {
-                pendingVolumesForDownload = []
-            }
-        } message: {
-            let limitStr = "\(storageLimitGB) GB"
-            let projStr = ByteCountFormatter.string(fromByteCount: Int64(projectedTotalBytes), countStyle: .file)
-            Text("Downloading \(pendingVolumesForDownload.count) volume\(pendingVolumesForDownload.count == 1 ? "" : "s") would bring total storage to approximately \(projStr), exceeding your \(limitStr) limit.\n\nThe estimate includes a 2.8× search index overhead (the full FRUS corpus produces roughly 2.5–3× its XML size in search index data). Actual usage will vary.")
-        }
     }
 
     // MARK: - Sideload Section
+
+    /// Concurrent-download control. Mirrors the iOS Downloads settings picker;
+    /// writes `SettingsKeys.concurrentDownloadLimit` and applies immediately.
+    private var concurrencySection: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Concurrent downloads")
+                    .font(.system(size: 13))
+                Text("How many volumes download at the same time.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Picker("Concurrent downloads", selection: $concurrentDownloadLimit) {
+                ForEach([1, 2, 3, 4, 6], id: \.self) { n in
+                    Text("\(n)").tag(n)
+                }
+            }
+            .frame(width: 70)
+            .labelsHidden()
+            .onChange(of: concurrentDownloadLimit) { _, newValue in
+                UserDefaults.standard.set(newValue, forKey: SettingsKeys.concurrentDownloadLimit)
+                if let dm = appState.downloadManager {
+                    Task { await dm.setConcurrencyLimit(newValue) }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.secondary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+    }
 
     private var sideloadSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -2392,23 +2280,6 @@ private struct SettingsAddVolumesPane: View {
             volumes = allVolumes.filter { selectedVolumeIds.contains($0.volumeId) }
         }
 
-        // Phase 1: check projected usage against the storage limit before downloading.
-        if storageLimitGB > 0, let report = try? await dm.storageReport(indexDirectory: appState.indexDirectory) {
-            let limitBytes = storageLimitGB * 1_073_741_824
-            // Exclude volumes already on disk from the projection.
-            let toDownload = volumes.filter { !dm.isVolumeDownloaded($0.volumeId) }
-            let newVolumeBytes = toDownload.reduce(0) { $0 + $1.sizeBytes }
-            // Add estimated index overhead (~40% of XML size per volume).
-            let estimatedIndexBytes = Int(Double(newVolumeBytes) * SettingsStoragePane.indexOverheadFactor)
-            let projected = report.grandTotalBytes + newVolumeBytes + estimatedIndexBytes
-            if projected > limitBytes {
-                projectedTotalBytes = projected
-                pendingVolumesForDownload = toDownload
-                showLimitWarning = true
-                return
-            }
-        }
-
         await performEnqueue(volumes)
     }
 
@@ -2531,7 +2402,6 @@ private struct SettingsNARAPane: View {
 private struct SettingsSummarizationPane: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("frus.summarization.enabled") private var isEnabled: Bool = true
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
     @Query(sort: \GeneratedSummary.lastModified, order: .reverse) private var allSummaries: [GeneratedSummary]
 
@@ -2550,17 +2420,12 @@ private struct SettingsSummarizationPane: View {
                     subtitle: "Configure AI summarization using Apple Intelligence."
                 )
 
-                // Enable toggle
-                PaneSectionHeader(title: "Feature")
-                settingsPaneToggleRow(
-                    label: "Enable AI summarization",
-                    detail: "Show the summary block in the Document view. Requires Apple Intelligence.",
-                    isOn: $isEnabled
-                )
-                .padding(.bottom, 12)
-
-                if appState.summarizationService == nil {
-                    Label("Apple Intelligence is not available on this device.", systemImage: "exclamationmark.triangle")
+                // Availability notice — generation requires the on-device model;
+                // prompts remain editable regardless (they sync via iCloud and are
+                // used on the user's other devices).
+                if !AppleIntelligenceProvider.shared.isAvailable {
+                    Label("Apple Intelligence is not available on this device. Prompts can still be edited and sync to your other devices, where they are used for generation.",
+                          systemImage: "exclamationmark.triangle")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .padding(.bottom, 16)
