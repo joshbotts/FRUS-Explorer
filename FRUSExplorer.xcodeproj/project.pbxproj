@@ -111,6 +111,7 @@
 		4D5766EC3CA8FEB526A89BFE /* IndexingLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8F73462F05AB30E20AA89F /* IndexingLiveActivity.swift */; };
 		4DBD6F40DAE69A8C0313AB86 /* ResearchNoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EE3C7C01FFEA08B1D1483F /* ResearchNoteEditorView.swift */; };
 		4E06931EE3EFF2BBB19DB50F /* SummarizationPromptSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C74F148CD75B5EF5C5335E9 /* SummarizationPromptSeeder.swift */; };
+		4E3A62CA21D3DDFB89010FE6 /* DocumentASTCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6FF6BA791B5D41F0FC768D /* DocumentASTCache.swift */; };
 		4F388E510DD724FCD2ABB8A5 /* SearchHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27312D2E8FAB3837BAE37B27 /* SearchHistoryEntry.swift */; };
 		4FFE970F25AD2FC4CD3B432A /* ResearchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889499978D57AFAA88BE4093 /* ResearchSession.swift */; };
 		51327B45E60BDD50CE2CFC5E /* IndexingContextCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEE2C0A79F4FBE75F3ED6D4 /* IndexingContextCardTests.swift */; };
@@ -322,6 +323,7 @@
 		E2551CE6F76FCCFEAADEE122 /* IndexingStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED9D81D04E002137249C19F /* IndexingStateTracker.swift */; };
 		E2B7B0A0D88687B240A39B1B /* ProjectPickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8B1348EC114EC90B45EAB1 /* ProjectPickerMenu.swift */; };
 		E336CB3BC326A02994D0B575 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = F1D767EB095F342A813EA1D2 /* manifest.json */; };
+		E3D76309E350421F307A4FE6 /* DocumentASTCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6FF6BA791B5D41F0FC768D /* DocumentASTCache.swift */; };
 		E3F856DF02689CB52541EE2D /* ResponseFormatCodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69E9AFFBFB5AAA0F89AC6BC /* ResponseFormatCodingTests.swift */; };
 		E419C286C9CF514997BEBDB5 /* IndexingStateTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006B7F25C5A010EA9ED911EC /* IndexingStateTrackerTests.swift */; };
 		E44167532316A537E2B69962 /* frus-highlights.js in Resources */ = {isa = PBXBuildFile; fileRef = B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */; };
@@ -466,6 +468,7 @@
 		449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASTToRenderNodeConverter.swift; sourceTree = "<group>"; };
 		4796534819AD8F60335063F5 /* IndexingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingPipeline.swift; sourceTree = "<group>"; };
 		48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaxonomyModels.swift; sourceTree = "<group>"; };
+		4A6FF6BA791B5D41F0FC768D /* DocumentASTCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentASTCache.swift; sourceTree = "<group>"; };
 		4D22A04D0F74B2FF8862A17F /* EmbeddedMarkdownLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedMarkdownLinkTests.swift; sourceTree = "<group>"; };
 		4E6C65B7B3B43E854DD4AFE9 /* IndexingBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingBannerView.swift; sourceTree = "<group>"; };
 		4EEE03B3F3FCFFBE22AA9245 /* MacSearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSearchViewModel.swift; sourceTree = "<group>"; };
@@ -955,6 +958,7 @@
 			isa = PBXGroup;
 			children = (
 				449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */,
+				4A6FF6BA791B5D41F0FC768D /* DocumentASTCache.swift */,
 				8B5A88FD6AE12C259469664C /* FRUSASTNode.swift */,
 				1242DB8819CA5517FA76085B /* FRUSDocumentParser.swift */,
 				C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */,
@@ -1326,6 +1330,7 @@
 				DC929497C0A8C6D7A61B7D04 /* CrossReferenceGraphWindowView.swift in Sources */,
 				73627CF1F89D6CA7C111EF2B /* CrossReferenceModels.swift in Sources */,
 				33EA037FE5006EDEA9CFB0F7 /* CrossReferenceStore.swift in Sources */,
+				4E3A62CA21D3DDFB89010FE6 /* DocumentASTCache.swift in Sources */,
 				C52A33DBA54ED2DCC18F8E38 /* DocumentHighlight.swift in Sources */,
 				8EA026D1ED11D5A4489B3E63 /* DocumentTagAssignment.swift in Sources */,
 				33AC5C8B0ED9827448B236FB /* DocumentTimelineView.swift in Sources */,
@@ -1476,6 +1481,7 @@
 				3B306EAD5FD1EECD26B77636 /* CrossReferenceGraphWindowView.swift in Sources */,
 				18A04C056E4EC2BA0F50EBF8 /* CrossReferenceModels.swift in Sources */,
 				B5BC8A014526AC2FD5D46B04 /* CrossReferenceStore.swift in Sources */,
+				E3D76309E350421F307A4FE6 /* DocumentASTCache.swift in Sources */,
 				167370CCEC91EB23116B70B4 /* DocumentHighlight.swift in Sources */,
 				CA5E4CD61606B24F276EE64D /* DocumentTagAssignment.swift in Sources */,
 				31ED48F07C48A9A6C81449CF /* DocumentTimelineView.swift in Sources */,

@@ -22,7 +22,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
-public struct VolumeSection: Sendable, Identifiable {
+///   1.1 — Session 2026-06-09: `Codable` conformance added so structures can be
+///          persisted to the `volume_structures` table at index time and served to
+///          the Browser without re-parsing the volume XML.
+public struct VolumeSection: Sendable, Identifiable, Codable {
 
     /// The `xml:id` attribute of the enclosing `<div>`, or a generated stable string
     /// if the element lacks one. e.g. `"c1"`, `"app1"`, `"front"`.
@@ -60,7 +63,8 @@ public struct VolumeSection: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
-public struct VolumeStructure: Sendable {
+///   1.1 — Session 2026-06-09: `Codable` conformance added (see `VolumeSection`).
+public struct VolumeStructure: Sendable, Codable {
     /// The volume this structure belongs to.
     public let volumeId: String
 

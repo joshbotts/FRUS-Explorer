@@ -137,6 +137,49 @@ public actor FRUSDocumentParser {
         return result
     }
 
+    /// Parses the target document **and a surrounding window** in a single pass.
+    ///
+    /// SAX parsing must start from the beginning of the file, so by the time the
+    /// target document is reached every preceding document has already been parsed —
+    /// this method returns them instead of discarding them, plus `trailingDocuments`
+    /// additional documents past the target, so callers can warm an AST cache and
+    /// make adjacent-document navigation (Read-mode page-turns) instant.
+    ///
+    /// - Parameters:
+    ///   - documentId: The `xml:id` of the target `<div>`.
+    ///   - volumeURL: The local file URL of the downloaded volume XML.
+    ///   - trailingDocuments: How many documents past the target to include. Default 1.
+    /// - Returns: All documents parsed before the abort, in volume order. Empty if
+    ///   no element with the target ID exists.
+    /// - Throws: `FRUSParserError` if the file cannot be read or parsed.
+    public func parseDocumentWindow(
+        documentId: String,
+        volumeURL: URL,
+        trailingDocuments: Int = 1
+    ) async throws -> [FRUSDocumentAST] {
+        guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
+            throw FRUSParserError.fileUnreadable(volumeURL)
+        }
+        let delegate = TEIParserDelegate(
+            targetDocumentId: documentId,
+            trailingDocumentsAfterTarget: trailingDocuments
+        )
+        delegate.parserRef = xmlParser
+        xmlParser.delegate = delegate
+        _ = autoreleasepool { xmlParser.parse() }
+
+        if let error = delegate.fatalError {
+            // Aborted parsing (target found) is not a real error. Reaching EOF with
+            // fewer trailing documents than requested (target near the end of the
+            // volume) is also fine — XMLParser reports no error for clean EOF.
+            if delegate.foundTargetDocument { /* expected */ } else {
+                throw FRUSParserError.xmlError(error)
+            }
+        }
+        guard delegate.foundTargetDocument else { return [] }
+        return delegate.documents
+    }
+
     /// Parses all person entries from `<div type="persons">` or `<listPerson>` in the volume.
     ///
     /// Each entry maps to the `xml:id` that `<persName ref="...">` elements reference.
@@ -221,7 +264,8 @@ public actor FRUSDocumentParser {
             documents:     composite.teiDelegate.documents,
             persons:       composite.personsDelegate.entries,
             terms:         composite.termsDelegate.entries,
-            volumeSources: composite.sourcesDelegate.entries
+            volumeSources: composite.sourcesDelegate.entries,
+            structureSections: composite.structureDelegate.topLevelSections
         )
     }
 
@@ -452,6 +496,10 @@ public struct VolumeFullParseResult: Sendable {
     public let terms:          [GlossEntry]
     /// Archival source entries from the volume front-matter sources list.
     public let volumeSources:  [VolumeSourceEntry]
+    /// Top-level structural sections (compilations, chapters, front/back matter)
+    /// for the Browser hierarchy. Persisted to `volume_structures` at index time
+    /// so browsing an indexed volume never re-parses its XML.
+    public let structureSections: [VolumeSection]
 }
 
 /// One entry from a FRUS volume's front-matter archival sources list.
@@ -495,6 +543,18 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     // MARK: Configuration
 
     private let targetDocumentId: String?
+
+    /// Number of additional documents to parse *after* the target before aborting.
+    ///
+    /// `0` (default) preserves the original `parseDocument` behaviour: abort the
+    /// moment the target's closing `</div>` is seen. `parseDocumentWindow` passes
+    /// `1` so the next document is captured too, pre-warming the AST cache for the
+    /// Read-mode forward page-turn.
+    let trailingDocumentsAfterTarget: Int
+
+    /// Trailing documents still to parse once the target has completed.
+    private var trailingRemaining: Int = 0
+
     weak var parserRef: XMLParser?
 
     // MARK: Stack
@@ -531,8 +591,9 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
     // MARK: Init
 
-    init(targetDocumentId: String?) {
+    init(targetDocumentId: String?, trailingDocumentsAfterTarget: Int = 0) {
         self.targetDocumentId = targetDocumentId
+        self.trailingDocumentsAfterTarget = trailingDocumentsAfterTarget
     }
 
     // MARK: - XMLParserDelegate
@@ -590,11 +651,28 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             if !stack.isEmpty {
                 stack[stack.count - 1].hasChildDocuments = true
             }
-            foundTargetDocument = (targetDocumentId == nil || docId == targetDocumentId)
-            if foundTargetDocument, targetDocumentId != nil {
-                // Found the target — abort parsing to avoid processing the rest of the file.
-                parserRef?.abortParsing()
-                return
+            if targetDocumentId != nil {
+                if foundTargetDocument {
+                    // A document completed *after* the target — part of the trailing
+                    // window requested via `trailingDocumentsAfterTarget` (used to
+                    // pre-warm the AST cache for forward page-turns).
+                    trailingRemaining -= 1
+                    if trailingRemaining <= 0 {
+                        parserRef?.abortParsing()
+                        return
+                    }
+                } else if docId == targetDocumentId {
+                    foundTargetDocument = true
+                    trailingRemaining = trailingDocumentsAfterTarget
+                    if trailingRemaining <= 0 {
+                        // No trailing window requested — abort immediately to avoid
+                        // processing the rest of the file (original behaviour).
+                        parserRef?.abortParsing()
+                        return
+                    }
+                }
+            } else {
+                foundTargetDocument = true
             }
         } else if elementName == "div",
                   let targetId = targetDocumentId,
@@ -1293,6 +1371,7 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
     let personsDelegate: PersonsParserDelegate = PersonsParserDelegate()
     let termsDelegate:   TermsParserDelegate   = TermsParserDelegate()
     let sourcesDelegate: SourcesParserDelegate = SourcesParserDelegate()
+    let structureDelegate: VolumeStructureParserDelegate = VolumeStructureParserDelegate()
 
     // MARK: - XMLParserDelegate Forwarding
 
@@ -1305,6 +1384,7 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
         personsDelegate.parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
         termsDelegate  .parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
         sourcesDelegate.parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
+        structureDelegate.parser(parser, didStartElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName, attributes: attributeDict)
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
@@ -1312,6 +1392,7 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
         personsDelegate.parser(parser, foundCharacters: string)
         termsDelegate  .parser(parser, foundCharacters: string)
         sourcesDelegate.parser(parser, foundCharacters: string)
+        structureDelegate.parser(parser, foundCharacters: string)
     }
 
     func parser(_ parser: XMLParser, foundIgnorableWhitespace whitespaceString: String) {
@@ -1327,6 +1408,7 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
         personsDelegate.parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
         termsDelegate  .parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
         sourcesDelegate.parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
+        structureDelegate.parser(parser, didEndElement: elementName, namespaceURI: namespaceURI, qualifiedName: qName)
     }
 
     func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {

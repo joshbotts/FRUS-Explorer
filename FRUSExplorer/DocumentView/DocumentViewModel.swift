@@ -267,6 +267,11 @@ public final class DocumentViewModel {
     /// Person mention store for "Find all mentions" feature. Optional — `nil` if the
     /// database could not be opened at boot or in test contexts that don't need it.
     private let personMentionStore: PersonMentionStore?
+    /// Shared AST window cache. When supplied, `load(volumeURL:)` serves the
+    /// document from memory if a previous parse already produced it (adjacent
+    /// page-turns, re-opens) and warms the cache with the parse window otherwise.
+    /// `nil` (tests, previews) falls back to plain single-document parsing.
+    private let astCache: DocumentASTCache?
 
     // MARK: - Init
 
@@ -275,13 +280,15 @@ public final class DocumentViewModel {
         volumeEntry: VolumeManifestEntry?,
         parser: FRUSDocumentParser,
         subjectTagStore: SubjectTagStore,
-        personMentionStore: PersonMentionStore? = nil
+        personMentionStore: PersonMentionStore? = nil,
+        astCache: DocumentASTCache? = nil
     ) {
         self.entry = entry
         self.volumeEntry = volumeEntry
         self.parser = parser
         self.subjectTagStore = subjectTagStore
         self.personMentionStore = personMentionStore
+        self.astCache = astCache
     }
 
     // MARK: - Loading
@@ -293,12 +300,31 @@ public final class DocumentViewModel {
         isLoading = true
         loadError = nil
         do {
-            // Parse document AST concurrently with SQLite glossary lookup.
-            // For indexed volumes the SQLite path is fast and avoids re-parsing the
-            // full volume XML. The XML parse is kept as a fallback for volumes that
-            // are downloaded but not yet indexed.
-            async let astResult = parser.parseDocument(documentId: entry.documentId,
-                                                       volumeURL: volumeURL)
+            // Resolve the document AST concurrently with the SQLite glossary lookup.
+            // Cache first: a previous parse window (adjacent document, re-open) makes
+            // this instant. On a miss, parse a window — the target plus everything
+            // before it that the SAX pass produces anyway, plus one trailing document
+            // — and warm the cache with the window's tail so Read-mode page-turns in
+            // either direction skip the XML entirely.
+            async let astResult: FRUSDocumentAST? = { [parser, astCache, entry] in
+                if let cached = await astCache?.ast(volumeId: entry.volumeId,
+                                                    documentId: entry.documentId) {
+                    return cached
+                }
+                guard let astCache else {
+                    return try await parser.parseDocument(documentId: entry.documentId,
+                                                          volumeURL: volumeURL)
+                }
+                let window = try await parser.parseDocumentWindow(
+                    documentId: entry.documentId,
+                    volumeURL: volumeURL,
+                    trailingDocuments: 1
+                )
+                // Cache the tail of the window (a few documents before the target,
+                // the target, and the trailing document) — not the entire prefix.
+                await astCache.store(Array(window.suffix(8)), volumeId: entry.volumeId)
+                return window.first { $0.documentId == entry.documentId }
+            }()
 
             // SQLite-first persons lookup
             let persons: [PersonEntry]

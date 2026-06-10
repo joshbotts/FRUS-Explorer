@@ -1894,3 +1894,134 @@ struct IndexingMemoryTests {
         }
     }
 }
+
+// MARK: - VolumeStructureCacheTests
+
+@Suite("IndexingPipeline — volume structure cache")
+struct VolumeStructureCacheTests {
+
+    @Test("indexVolume persists the Browser structure; removeVolume clears it")
+    func structurePersistedAndCleared() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>Memo</head><p>Detente talks.</p>"),
+                    ("d2", "<head>Cable</head><p>Berlin briefing.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let structure = try await pipeline.cachedVolumeStructure(forVolumeId: "frus1969-76v01")
+            let comp = structure?.sections.first { $0.sectionId == "comp1" }
+            #expect(comp != nil, "compilation section should be captured during indexing")
+            #expect(comp?.documentIds.contains("d1") == true)
+            #expect(comp?.documentIds.contains("d2") == true)
+
+            try await pipeline.removeVolume("frus1969-76v01")
+            let after = try await pipeline.cachedVolumeStructure(forVolumeId: "frus1969-76v01")
+            #expect(after == nil, "removeVolume must clear the cached structure")
+        }
+    }
+}
+
+// MARK: - DocumentWindowParseTests
+
+@Suite("FRUSDocumentParser — document window")
+struct DocumentWindowParseTests {
+
+    /// Writes a four-document fixture and returns its URL.
+    private func writeFourDocVolume(in dir: URL) throws -> URL {
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+        try writeTEIVolume(
+            to: url,
+            volumeId: "frus1969-76v01",
+            documents: [
+                ("d1", "<head>One</head><p>First document.</p>"),
+                ("d2", "<head>Two</head><p>Second document.</p>"),
+                ("d3", "<head>Three</head><p>Third document.</p>"),
+                ("d4", "<head>Four</head><p>Fourth document.</p>"),
+            ]
+        )
+        return url
+    }
+
+    @Test("parseDocumentWindow returns the prefix, target, and one trailing document")
+    func windowIncludesTrailing() async throws {
+        try await withTempDir { dir in
+            let url = try writeFourDocVolume(in: dir)
+            let window = try await FRUSDocumentParser().parseDocumentWindow(
+                documentId: "d2", volumeURL: url, trailingDocuments: 1)
+            #expect(window.map(\.documentId) == ["d1", "d2", "d3"],
+                    "window should stop one document past the target")
+        }
+    }
+
+    @Test("parseDocumentWindow at the last document reaches EOF without error")
+    func windowAtEndOfVolume() async throws {
+        try await withTempDir { dir in
+            let url = try writeFourDocVolume(in: dir)
+            let window = try await FRUSDocumentParser().parseDocumentWindow(
+                documentId: "d4", volumeURL: url, trailingDocuments: 1)
+            #expect(window.map(\.documentId) == ["d1", "d2", "d3", "d4"],
+                    "no trailing document exists past d4; clean EOF expected")
+        }
+    }
+
+    @Test("parseDocumentWindow for a missing ID returns an empty array")
+    func windowMissingTarget() async throws {
+        try await withTempDir { dir in
+            let url = try writeFourDocVolume(in: dir)
+            let window = try await FRUSDocumentParser().parseDocumentWindow(
+                documentId: "d99", volumeURL: url, trailingDocuments: 1)
+            #expect(window.isEmpty)
+        }
+    }
+
+    @Test("parseDocument still returns exactly the target document")
+    func singleDocumentParseUnchanged() async throws {
+        try await withTempDir { dir in
+            let url = try writeFourDocVolume(in: dir)
+            let ast = try await FRUSDocumentParser().parseDocument(
+                documentId: "d3", volumeURL: url)
+            #expect(ast?.documentId == "d3")
+        }
+    }
+}
+
+// MARK: - DocumentASTCacheTests
+
+@Suite("DocumentASTCache")
+struct DocumentASTCacheTests {
+
+    @Test("store and retrieve round-trips; LRU evicts beyond capacity")
+    func lruBehaviour() async throws {
+        let cache = DocumentASTCache(capacity: 2)
+        let docs = (1...3).map { FRUSDocumentAST(documentId: "d\($0)", nodes: []) }
+        await cache.store([docs[0], docs[1]], volumeId: "v1")
+        #expect(await cache.ast(volumeId: "v1", documentId: "d1") != nil)
+
+        // d1 was just touched, so storing d3 must evict d2 (least recently used).
+        await cache.store([docs[2]], volumeId: "v1")
+        #expect(await cache.ast(volumeId: "v1", documentId: "d2") == nil,
+                "least-recently-used entry should be evicted at capacity")
+        #expect(await cache.ast(volumeId: "v1", documentId: "d1") != nil)
+        #expect(await cache.ast(volumeId: "v1", documentId: "d3") != nil)
+    }
+
+    @Test("removeVolume drops only that volume's entries")
+    func removeVolumeScoped() async throws {
+        let cache = DocumentASTCache(capacity: 8)
+        await cache.store([FRUSDocumentAST(documentId: "d1", nodes: [])], volumeId: "v1")
+        await cache.store([FRUSDocumentAST(documentId: "d1", nodes: [])], volumeId: "v2")
+        await cache.removeVolume("v1")
+        #expect(await cache.ast(volumeId: "v1", documentId: "d1") == nil)
+        #expect(await cache.ast(volumeId: "v2", documentId: "d1") != nil)
+    }
+}

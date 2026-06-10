@@ -669,6 +669,9 @@ struct FRUSExplorerApp: App {
                     await MainActor.run {
                         appState.indexedVolumeIds.remove(volumeId)
                     }
+                    // Drop any cached document ASTs so a re-download can never
+                    // serve stale content from the deleted file.
+                    await appState.documentASTCache.removeVolume(volumeId)
                 }
             }
         )

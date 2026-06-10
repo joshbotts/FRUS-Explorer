@@ -714,7 +714,7 @@ public actor IndexingPipeline {
         try auxExec("INSERT INTO user_content(user_content) VALUES('delete-all')")
         for table in ["cross_references", "page_ranges", "document_dates",
                       "document_cache", "person_mentions", "persons", "terms",
-                      "document_sources", "volume_sources"] {
+                      "document_sources", "volume_sources", "volume_structures"] {
             let stmt = try auxPrepare("DELETE FROM \(table)")
             defer { sqlite3_finalize(stmt) }
             try auxStep(stmt)
@@ -948,6 +948,23 @@ public actor IndexingPipeline {
             }
         }
         return ids
+    }
+
+    // MARK: - Volume Structure Cache (used by BrowserViewModel)
+
+    /// Returns the Browser structure persisted for a volume at index time, or `nil`
+    /// if the volume has not been indexed (or was indexed before the
+    /// `volume_structures` table existed — the Browser then falls back to parsing
+    /// the volume XML on demand, exactly as before).
+    public func cachedVolumeStructure(forVolumeId volumeId: String) throws -> VolumeStructure? {
+        let stmt = try auxPrepare(
+            "SELECT structure_json FROM volume_structures WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW,
+              let json = auxColumnString(stmt, 0),
+              let data = json.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(VolumeStructure.self, from: data)
     }
 
     // MARK: - Volume Sources Query (used by VolumeSourcesView)
@@ -1437,6 +1454,12 @@ public actor IndexingPipeline {
                 )
             }
 
+        // JSON-encode the Browser structure captured during the same parse pass.
+        // Failure is non-fatal: the Browser falls back to parsing the XML on demand.
+        let structure = VolumeStructure(volumeId: volumeId, sections: fullResult.structureSections)
+        let structureJSON = (try? JSONEncoder().encode(structure))
+            .flatMap { String(data: $0, encoding: .utf8) }
+
         return VolumeIndexData(
             volumeId: volumeId, crossReferences: crossRefs,
             pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
@@ -1444,7 +1467,8 @@ public actor IndexingPipeline {
             persons: personRows,
             terms: termRows,
             documentSources: documentSourceRows + footnoteSourceRows,
-            volumeSources: volumeSourceRows
+            volumeSources: volumeSourceRows,
+            structureJSON: structureJSON
         )
     }
 
@@ -1545,6 +1569,7 @@ public actor IndexingPipeline {
         try auxInsertTerms(data.terms)
         try auxInsertDocumentSources(data.documentSources)
         try auxInsertVolumeSources(data.volumeSources)
+        try auxInsertVolumeStructure(volumeId: data.volumeId, structureJSON: data.structureJSON)
     }
 
     // MARK: - Progress
@@ -2297,6 +2322,15 @@ public actor IndexingPipeline {
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_rg ON volume_sources(volume_id, record_group)")
 
+        // Session 2026-06-09: Browser structure cache. One JSON-encoded
+        // `VolumeStructure` per indexed volume so browsing never re-parses XML.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS volume_structures (
+                volume_id      TEXT PRIMARY KEY,
+                structure_json TEXT NOT NULL
+            )
+            """)
+
         // --- External-content FTS5 sync (Session 2026-06-09) ---
         //
         // `frus_documents` is created (and migrated) by `FTS5Store`, which is always
@@ -2459,6 +2493,18 @@ public actor IndexingPipeline {
                 try auxStep(stmt)
             }
         }
+    }
+
+    /// Stores (or replaces) the JSON-encoded Browser structure for a volume.
+    /// A `nil` payload (encoding failed during parse) is a no-op.
+    private func auxInsertVolumeStructure(volumeId: String, structureJSON: String?) throws {
+        guard let structureJSON else { return }
+        let stmt = try auxPrepare(
+            "INSERT OR REPLACE INTO volume_structures (volume_id, structure_json) VALUES (?, ?)")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, structureJSON, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
     }
 
     /// Deletes `document_cache` rows for documents that disappeared from a volume's
@@ -2778,6 +2824,7 @@ public actor IndexingPipeline {
             ("terms",             "volume_id"),
             ("document_sources",  "volume_id"),
             ("volume_sources",    "volume_id"),
+            ("volume_structures", "volume_id"),
         ] {
             let stmt = try auxPrepare("DELETE FROM \(table) WHERE \(col) = ?")
             defer { sqlite3_finalize(stmt) }
@@ -3349,6 +3396,8 @@ private struct VolumeIndexData: Sendable {
     let terms: [TermRow]
     let documentSources: [DocumentSourceRow]
     let volumeSources: [VolumeSourceRow]
+    /// JSON-encoded `VolumeStructure` for the Browser cache, or `nil` if encoding failed.
+    let structureJSON: String?
 }
 
 private struct PersonMentionRow: Sendable {

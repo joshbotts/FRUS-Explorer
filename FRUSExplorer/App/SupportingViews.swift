@@ -2821,6 +2821,14 @@ private struct CorpusVolumeDetailSheet: View {
     private func loadStructure() async {
         guard let dm = appState.downloadManager else { return }
         phase = .loadingStructure
+        // Fast path: structure persisted at index time — a single SQLite read
+        // instead of a SAX pass over the whole volume XML.
+        if let pipeline = appState.indexingPipeline,
+           let cached = try? await pipeline.cachedVolumeStructure(forVolumeId: volume.volumeId),
+           !cached.isEmpty {
+            phase = .ready(cached)
+            return
+        }
         let url = dm.volumeURL(for: volume.volumeId)
         do {
             let structure = try await parser.parseVolumeStructure(volumeURL: url)

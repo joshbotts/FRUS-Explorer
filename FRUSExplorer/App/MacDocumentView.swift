@@ -692,7 +692,8 @@ struct MacDocumentView: View {
             volumeEntry: volumeEntry,
             parser: FRUSDocumentParser(),
             subjectTagStore: appState.subjectTagStore,
-            personMentionStore: appState.personMentionStore
+            personMentionStore: appState.personMentionStore,
+            astCache: appState.documentASTCache
         )
 
         await vm.load(volumeURL: volumeURL)
