@@ -21,31 +21,24 @@
 // intentionally conservative (understemming is preferred over overstemming for a
 // historical document corpus where proper nouns and archaic spellings are common).
 //
-// ## Stemming Strategy in FTS5Store
+// ## Role of this stemmer (since the Session 2026-06-09 redesign)
 //
-// FRUS Explorer applies Porter stemming at the application layer rather than via a
-// custom SQLite FTS5 tokenizer. Stemming happens at two points:
+// Index- and query-side stemming is performed by SQLite's built-in
+// `porter unicode61` FTS5 tokenizer — no application-layer stemming touches the
+// text that reaches the database in either direction.
 //
-//   1. Indexing: `FTS5Store.stemForIndex(_:)` stems each whitespace-delimited word
-//      in document text before passing the string to SQLite for insertion.
-//
-//   2. Querying: `FTS5Query.toFTS5MatchExpression()` stems each keyword term before
-//      embedding it in the FTS5 MATCH expression.
-//
-// This approach gives equivalent search recall to a custom C tokenizer without
-// requiring the `fts5.h` C header, which is not exposed in the macOS system SQLite
-// headers importable from a Swift Package target. The FTS5 virtual table is created
-// with the `unicode61` built-in tokenizer (whitespace + Unicode normalisation).
-//
-// Trade-off: snippet highlighting shows the stemmed token rather than the original
-// word form (e.g. "negoti" instead of "negotiations"). If this becomes a user
-// experience concern, a C tokenizer shim target can be added to the package to
-// restore highlight accuracy via a proper `fts5_tokenizer` registration.
+// This Swift implementation remains for one job: **snippet highlighting**.
+// `SearchService.makeContextSnippet` walks a result's body text word-by-word and
+// stems each word to decide whether it matches a query term; that comparison has
+// to happen in Swift, after the search returns. Both sides of the comparison are
+// stemmed by this same implementation, so highlighting is internally consistent.
+// In rare edge cases this stemmer may disagree with SQLite's porter implementation
+// (the row matched but no word highlights); the snippet then falls back to the
+// header/dateline form, which is cosmetic only.
 
 /// Reduces an English word to its Porter stem.
 ///
-/// Input is expected to be a single lowercase alphabetic word. Non-alphabetic
-/// tokens are returned unchanged by `FTS5Store.stemForIndex`.
+/// Input is expected to be a single lowercase alphabetic word.
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation

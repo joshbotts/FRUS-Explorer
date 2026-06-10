@@ -390,48 +390,54 @@ public enum FTS5InlineQueryParser {
             guard !isValidPlacement else { continue }
 
             let literal = kind.fts5Keyword.lowercased()
-            guard let stemmed = stemBareWord(literal) else { continue }
-            tokens[index] = .operand(rendered: stemmed, isPositive: true)
+            guard let word = stemBareWord(literal) else { continue }
+            tokens[index] = .operand(rendered: "\"\(word)\"", isPositive: true)
         }
     }
 
     // MARK: - Rendering
 
-    /// Renders a single operand to its FTS5 fragment (sanitised, stemmed, column-scoped,
+    /// Renders a single operand to its FTS5 fragment (sanitised, quoted, column-scoped,
     /// and `NOT`-prefixed when negated). Returns `nil` when the operand sanitises to
     /// nothing usable (e.g. a phrase consisting only of punctuation).
+    ///
+    /// Every term is emitted as a double-quoted FTS5 string. Quoting matters now that
+    /// terms are no longer reduced to their alphabetic core: characters like
+    /// apostrophes and hyphens are not valid in FTS5 *barewords* (`don't` unquoted is
+    /// a syntax error) but are fine inside a quoted string, where SQLite tokenizes
+    /// them exactly as it tokenized the indexed text.
     private static func render(_ operand: Operand, columnPrefix: String) -> String? {
         switch operand.kind {
         case .word(let raw):
-            guard let stemmed = stemBareWord(raw) else { return nil }
-            let core = columnPrefix + stemmed
+            guard let word = stemBareWord(raw) else { return nil }
+            let core = columnPrefix + "\"\(word)\""
             return operand.negated ? "NOT \(core)" : core
 
         case .phrase(let raw):
-            guard let stemmed = stemPhrase(raw) else { return nil }
+            guard let phrase = stemPhrase(raw) else { return nil }
             // Phrase search always spans all indexed columns — matches the documented
             // limitation in `FTS5Query` ("column filters and phrase search are mutually
             // exclusive in this builder") so the two query-construction paths agree.
-            let core = "\"\(stemmed)\""
+            let core = "\"\(phrase)\""
             return operand.negated ? "NOT \(core)" : core
 
         case .wildcard(let prefix):
             let sanitized = sanitizeBareToken(prefix)
             guard !sanitized.isEmpty else { return nil }
-            // Matches `FTS5Query`'s prefix-wildcard handling: sanitised but not
-            // lowercased or stemmed — FTS5 prefix matching is on raw indexed tokens.
-            let core = columnPrefix + sanitized + "*"
+            // Quoted-string-plus-star is FTS5's prefix-query form for non-bareword
+            // text; matches `FTS5Query`'s prefix-wildcard handling.
+            let core = columnPrefix + "\"\(sanitized)\"*"
             return operand.negated ? "NOT \(core)" : core
         }
     }
 
-    // MARK: - Sanitization & Stemming
+    // MARK: - Sanitization
     //
-    // Mirrors `FTS5Query.sanitizeTerm`/`sanitizePhrase` and its keyword/exclusion
-    // stemming transforms exactly (filter to `isLetter` before `PorterStemmer.stem`,
-    // matching `FTS5Store.stemForIndex`) — this is what guarantees a term typed
-    // through either the inline parser or the structured Advanced Filters fields
-    // resolves to the identical stemmed token and therefore the identical match set.
+    // Mirrors `FTS5Query.sanitizeTerm`/`sanitizePhrase` exactly — this is what
+    // guarantees a term typed through either the inline parser or the structured
+    // Advanced Filters fields renders to the identical MATCH fragment and therefore
+    // the identical match set. No stemming happens here: the `porter unicode61`
+    // tokenizer stems query terms inside SQLite, symmetrically with indexed text.
 
     /// Strips FTS5 structural/operator characters from a single token, collapsing
     /// runs of resulting whitespace. Equivalent to `FTS5Query.sanitizeTerm`.
@@ -452,30 +458,31 @@ public enum FTS5InlineQueryParser {
         return components.joined(separator: " ")
     }
 
-    /// Sanitises, lowercases, filters to letters, and Porter-stems a bare word —
-    /// identical to the per-keyword transform in `FTS5Query.toFTS5MatchExpression()`.
+    /// Sanitises and lowercases a bare word — identical to the per-keyword transform
+    /// in `FTS5Query.toFTS5MatchExpression()`. The porter tokenizer stems the term
+    /// at query time, so no application-layer stemming is applied.
     ///
-    /// Differs from that transform in one respect: when the sanitised text contains
-    /// *no* letters, `FTS5Query` falls back to embedding the lowercased sanitised text
-    /// verbatim (e.g. a stray `"123"` keyword survives as `123`). This parser instead
-    /// only keeps that fallback when the result is purely alphanumeric — anything else
-    /// (a lone `-`, `***`, …) is dropped rather than risking invalid FTS5 syntax. Inline
-    /// syntax invites far more punctuation-heavy edge-case input than the structured
-    /// keyword path ever saw, so this extra guard is specific to the new parser.
+    /// Differs from that transform in one respect: when the sanitised text would be
+    /// risky FTS5 syntax (a lone `-`, `***`, …), this parser drops the token entirely
+    /// rather than embedding it. Inline syntax invites far more punctuation-heavy
+    /// edge-case input than the structured keyword path ever saw, so this extra
+    /// guard is specific to the parser. Multi-word survivors (e.g. `"a(b"` sanitising
+    /// to `"a b"`) and purely alphanumeric tokens are kept verbatim.
     private static func stemBareWord(_ raw: String) -> String? {
         let sanitized = sanitizeBareToken(raw)
         guard !sanitized.isEmpty else { return nil }
         let lower = sanitized.lowercased()
         let alpha = lower.filter { $0.isLetter }
         if !alpha.isEmpty {
-            return PorterStemmer.stem(alpha)
+            return lower
         }
         let alnum = lower.filter { $0.isLetter || $0.isNumber }
         return (!lower.isEmpty && alnum == lower) ? lower : nil
     }
 
-    /// Sanitises and Porter-stems each word of a phrase — identical to the per-word
+    /// Sanitises and lowercases each word of a phrase — identical to the per-word
     /// transform in `FTS5Query.toFTS5MatchExpression()`'s phrase-handling branch.
+    /// The porter tokenizer stems each phrase token at query time.
     private static func stemPhrase(_ raw: String) -> String? {
         let sanitized = raw
             .replacingOccurrences(of: "\"", with: "")
@@ -486,11 +493,7 @@ public enum FTS5InlineQueryParser {
 
         let words = sanitized
             .split(whereSeparator: \.isWhitespace)
-            .map { word -> String in
-                let lower = String(word).lowercased()
-                let alpha = lower.filter { $0.isLetter }
-                return alpha.isEmpty ? lower : PorterStemmer.stem(alpha)
-            }
+            .map { String($0).lowercased() }
         let joined = words.joined(separator: " ")
         return joined.isEmpty ? nil : joined
     }

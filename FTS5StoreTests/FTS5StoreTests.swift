@@ -8,14 +8,173 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FTS5Store
 
 // MARK: - Test Helpers
 
-private func makeStore() throws -> (FTS5Store, URL) {
+/// SQLITE_TRANSIENT for test-side binds (copy the string immediately).
+private let TEST_SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
+/// Test double exposing the production external-content stack through the same
+/// method names the pre-redesign `FTS5Store` write API had, so the test bodies
+/// below read identically while writes flow through the `document_cache` content
+/// table and the sync triggers — exactly as `IndexingPipeline` writes in the app.
+private final class TestStore {
+
+    /// The store under test (search side).
+    let store: FTS5Store
+
+    /// Write-side connection holding the content table and triggers.
+    private let connection: FTS5Connection
+
+    init(databaseURL: URL) throws {
+        // Content table first — the FTS tables and triggers reference it.
+        connection = try FTS5Connection(databaseURL: databaseURL)
+        try connection.exec("""
+            CREATE TABLE IF NOT EXISTS document_cache (
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                document_number TEXT,
+                header TEXT NOT NULL,
+                dateline TEXT,
+                source_note TEXT,
+                body_text TEXT NOT NULL,
+                subject_tag_ids TEXT,
+                user_tag_ids TEXT,
+                summary_text TEXT,
+                note_text TEXT,
+                is_editorial_note INTEGER NOT NULL DEFAULT 0,
+                is_front_matter   INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (volume_id, document_id)
+            )
+            """)
+        store = try FTS5Store(databaseURL: databaseURL)
+        try connection.exec(FTS5Schema.userContent.createTableSQL(ifNotExists: true))
+        for sql in FTS5Schema.frusDocuments.externalContentTriggerSQL() {
+            try connection.exec(sql)
+        }
+        for sql in FTS5Schema.userContent.externalContentTriggerSQL() {
+            try connection.exec(sql)
+        }
+    }
+
+    /// Inserts (or fully replaces) a document row in the content table; the sync
+    /// triggers maintain both FTS5 tables.
+    func insert(document doc: FTS5Document) async throws {
+        try upsert(doc)
+    }
+
+    /// Full-replace update through the content table (fires the UPDATE triggers).
+    func update(document doc: FTS5Document) async throws {
+        try upsert(doc)
+    }
+
+    /// Volume-scoped delete through the content table (fires the DELETE trigger).
+    func delete(documentId: String, volumeId: String) async throws {
+        let stmt = try connection.prepare(
+            "DELETE FROM document_cache WHERE document_id = ? AND volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, documentId, -1, TEST_SQLITE_TRANSIENT)
+        sqlite3_bind_text(stmt, 2, volumeId, -1, TEST_SQLITE_TRANSIENT)
+        try connection.step(stmt)
+    }
+
+    /// Transactional batch insert through the content table.
+    func insertBatch(_ docs: [FTS5Document]) async throws {
+        try connection.beginTransaction()
+        do {
+            for doc in docs { try upsert(doc) }
+            try connection.commitTransaction()
+        } catch {
+            connection.rollbackTransaction()
+            throw error
+        }
+    }
+
+    /// Passthrough to `FTS5Store.search`.
+    func search(query: FTS5Query, limit: Int, offset: Int) async throws -> [FTS5Result] {
+        try await store.search(query: query, limit: limit, offset: offset)
+    }
+
+    /// Passthrough to `FTS5Store.storageSize`.
+    func storageSize() async throws -> Int {
+        try await store.storageSize()
+    }
+
+    /// Returns (volumeId, documentId) pairs whose summary/note text matches
+    /// `matchExpr` in the `user_content` FTS5 table.
+    func userContentMatches(_ matchExpr: String) throws -> [(volumeId: String, documentId: String)] {
+        let stmt = try connection.prepare(
+            "SELECT volume_id, document_id FROM user_content WHERE user_content MATCH ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, matchExpr, -1, TEST_SQLITE_TRANSIENT)
+        var rows: [(String, String)] = []
+        while try connection.step(stmt) {
+            let v = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            let d = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            rows.append((v, d))
+        }
+        return rows
+    }
+
+    /// Updates only the note text of an existing row (fires the user-content
+    /// UPDATE trigger but not the corpus one).
+    func setNoteText(_ note: String?, documentId: String, volumeId: String) throws {
+        let stmt = try connection.prepare(
+            "UPDATE document_cache SET note_text = ? WHERE document_id = ? AND volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        if let note { sqlite3_bind_text(stmt, 1, note, -1, TEST_SQLITE_TRANSIENT) }
+        else        { sqlite3_bind_null(stmt, 1) }
+        sqlite3_bind_text(stmt, 2, documentId, -1, TEST_SQLITE_TRANSIENT)
+        sqlite3_bind_text(stmt, 3, volumeId, -1, TEST_SQLITE_TRANSIENT)
+        try connection.step(stmt)
+    }
+
+    private func upsert(_ doc: FTS5Document) throws {
+        let sql = """
+            INSERT INTO document_cache
+            (volume_id, document_id, document_number, header, dateline, source_note, body_text,
+             subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note, is_front_matter)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            ON CONFLICT(volume_id, document_id) DO UPDATE SET
+              document_number = excluded.document_number,
+              header          = excluded.header,
+              dateline        = excluded.dateline,
+              source_note     = excluded.source_note,
+              body_text       = excluded.body_text,
+              subject_tag_ids = excluded.subject_tag_ids,
+              user_tag_ids    = excluded.user_tag_ids,
+              summary_text    = excluded.summary_text,
+              note_text       = excluded.note_text,
+              is_editorial_note = excluded.is_editorial_note
+            """
+        let stmt = try connection.prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        func bindOpt(_ col: Int32, _ value: String?) {
+            if let value { sqlite3_bind_text(stmt, col, value, -1, TEST_SQLITE_TRANSIENT) }
+            else         { sqlite3_bind_null(stmt, col) }
+        }
+        sqlite3_bind_text(stmt, 1, doc.volumeId, -1, TEST_SQLITE_TRANSIENT)
+        sqlite3_bind_text(stmt, 2, doc.id, -1, TEST_SQLITE_TRANSIENT)
+        bindOpt(3, doc.documentNumber)
+        sqlite3_bind_text(stmt, 4, doc.header, -1, TEST_SQLITE_TRANSIENT)
+        bindOpt(5, doc.dateline)
+        bindOpt(6, doc.sourceNote)
+        sqlite3_bind_text(stmt, 7, doc.bodyText, -1, TEST_SQLITE_TRANSIENT)
+        bindOpt(8, doc.subjectTagIds)
+        bindOpt(9, doc.userTagIds)
+        bindOpt(10, doc.summaryText)
+        bindOpt(11, doc.noteText)
+        sqlite3_bind_int(stmt, 12, doc.isEditorialNote ? 1 : 0)
+        try connection.step(stmt)
+    }
+}
+
+private func makeStore() throws -> (TestStore, URL) {
     let dir = FileManager.default.temporaryDirectory
     let url = dir.appendingPathComponent("fts5test-\(UUID().uuidString).sqlite")
-    let store = try FTS5Store(databaseURL: url, schema: .frusDocuments)
+    let store = try TestStore(databaseURL: url)
     return (store, url)
 }
 
@@ -364,6 +523,65 @@ struct FTS5StoreTests {
         try (url as NSURL).getResourceValue(&value, forKey: .isExcludedFromBackupKey)
         #expect((value as? Bool) == true)
     }
+
+    // MARK: - External-Content Behaviour
+
+    @Test("Direct writes to an external-content store are rejected")
+    func externalContentWritesRejected() async throws {
+        let (testStore, _) = try makeStore()
+        await #expect(throws: FTS5Error.self) {
+            try await testStore.store.insert(document: sampleDoc())
+        }
+    }
+
+    @Test("Summary text matches in user_content, not in the corpus table")
+    func summaryTextSearchedSeparately() async throws {
+        let (store, _) = try makeStore()
+        try await store.insert(document: sampleDoc(
+            id: "d1",
+            body: "Telegram about grain exports."
+        ))
+        try await store.update(document: FTS5Document(
+            id: "d1", volumeId: "frus1969-76v01",
+            header: "Memorandum of Conversation",
+            bodyText: "Telegram about grain exports.",
+            summaryText: "Discusses wheat shipment quotas."
+        ))
+
+        // The corpus table must not match summary-only words…
+        let corpus = try await store.search(
+            query: FTS5Query(keywords: ["wheat"]), limit: 10, offset: 0)
+        #expect(corpus.isEmpty, "summary text must not be indexed in frus_documents")
+
+        // …but user_content must.
+        let userRows = try store.userContentMatches("wheat")
+        #expect(userRows.count == 1)
+        #expect(userRows.first?.documentId == "d1")
+    }
+
+    @Test("Note-only update syncs user_content and leaves the corpus index intact")
+    func noteUpdateDoesNotTouchCorpus() async throws {
+        let (store, _) = try makeStore()
+        try await store.insert(document: sampleDoc(
+            id: "d1", body: "Negotiations over the blockade."))
+
+        try store.setNoteText("remember the armistice angle",
+                              documentId: "d1", volumeId: "frus1969-76v01")
+
+        // Corpus search unaffected by the note write.
+        let corpus = try await store.search(
+            query: FTS5Query(keywords: ["blockade"]), limit: 10, offset: 0)
+        #expect(corpus.count == 1)
+
+        // The note is searchable in user_content (porter stems "armistice").
+        let noteRows = try store.userContentMatches("armistice")
+        #expect(noteRows.count == 1)
+
+        // Clearing the note removes it from user_content.
+        try store.setNoteText(nil, documentId: "d1", volumeId: "frus1969-76v01")
+        let cleared = try store.userContentMatches("armistice")
+        #expect(cleared.isEmpty)
+    }
 }
 
 // MARK: - PorterStemmerTests
@@ -412,25 +630,25 @@ struct PorterStemmerTests {
 /// Unit tests for `FTS5Query.toFTS5MatchExpression()`.
 struct FTS5QueryTests {
 
-    @Test("Single keyword produces simple term expression")
+    @Test("Single keyword produces a quoted term expression")
     func singleKeyword() {
         let q = FTS5Query(keywords: ["nuclear"])
         let expr = q.toFTS5MatchExpression()
-        #expect(expr == "nuclear")
+        #expect(expr == "\"nuclear\"")
     }
 
     @Test("Multiple keywords joined with AND by default")
     func multipleKeywordsAND() {
         let q = FTS5Query(keywords: ["cold", "war"])
         let expr = q.toFTS5MatchExpression()
-        #expect(expr == "cold war")
+        #expect(expr == "\"cold\" \"war\"")
     }
 
     @Test("Multiple keywords joined with OR in .or mode")
     func multipleKeywordsOR() {
         let q = FTS5Query(keywords: ["cold", "korea"], booleanMode: .or)
         let expr = q.toFTS5MatchExpression()
-        #expect(expr == "cold OR korea")
+        #expect(expr == "\"cold\" OR \"korea\"")
     }
 
     @Test("Phrase search wraps term in double quotes")
@@ -445,14 +663,14 @@ struct FTS5QueryTests {
         var q = FTS5Query(keywords: ["cold"])
         q.excludedTerms = ["korea"]
         let expr = q.toFTS5MatchExpression()
-        #expect(expr == "cold NOT korea")
+        #expect(expr == "\"cold\" NOT \"korea\"")
     }
 
-    @Test("Prefix wildcard appends asterisk")
+    @Test("Prefix wildcard appends asterisk after the quoted prefix")
     func prefixWildcard() {
         let q = FTS5Query(prefixWildcard: "negoti")
         let expr = q.toFTS5MatchExpression()
-        #expect(expr == "negoti*")
+        #expect(expr == "\"negoti\"*")
     }
 
     @Test("Empty query returns nil")
@@ -465,42 +683,34 @@ struct FTS5QueryTests {
     func columnScope() {
         let q = FTS5Query(keywords: ["cold"], columns: [.header, .bodyText])
         let expr = q.toFTS5MatchExpression()
-        #expect(expr == "{header body_text}:cold")
+        #expect(expr == "{header body_text}:\"cold\"")
     }
 
-    @Test("Injected FTS5 operators in keyword are sanitized")
+    @Test("Injected FTS5 operators in keyword are neutralised inside a quoted string")
     func sanitizeInjection() {
         let q = FTS5Query(keywords: ["cold OR war AND NOT"])
         let expr = q.toFTS5MatchExpression()
-        // The FTS5 operator words are kept as literals; structural punctuation stripped.
-        #expect(expr != nil)
-        #expect(!(expr?.contains("\"") ?? false))
+        // Structural punctuation is stripped by the sanitizer and the whole term is
+        // embedded as one quoted string, so the operator words become literal
+        // (lowercased) search words rather than FTS5 syntax.
+        #expect(expr == "\"cold or war and not\"")
     }
 
-    // MARK: - Stemming Asymmetry Tests (Session 129)
-
-    @Test("StemmingAsymmetryTest: keyword with apostrophe stems same as letter-only equivalent")
-    func apostropheKeywordConsistentStemming() {
-        // Before the Session 129 fix the keyword path called PorterStemmer.stem on the
-        // full lowercased string (including the apostrophe), producing a different stem
-        // than stemForIndex (which filters to isLetter first). After the fix both paths
-        // agree: "don't" → filter letters → "dont" → stem.
-        let qApostrophe = FTS5Query(keywords: ["don't"])
-        let qClean      = FTS5Query(keywords: ["dont"])
-        let exprApostrophe = qApostrophe.toFTS5MatchExpression()
-        let exprClean      = qClean.toFTS5MatchExpression()
-        #expect(exprApostrophe == exprClean,
-                "Apostrophe in keyword must be stripped before stemming, matching stemForIndex")
+    @Test("Keywords keep their original word form — the tokenizer stems, not the app")
+    func keywordsNotStemmedInExpression() {
+        // Pre-redesign, "negotiations" rendered as the Porter stem "negoti". The
+        // porter tokenizer now stems inside SQLite, so the expression must carry the
+        // user's original word for the tokenizer to transform symmetrically.
+        let q = FTS5Query(keywords: ["negotiations"])
+        #expect(q.toFTS5MatchExpression() == "\"negotiations\"")
     }
 
-    @Test("StemmingAsymmetryTest: excluded term with apostrophe stems same as letter-only equivalent")
-    func apostropheExclusionConsistentStemming() {
-        // The NOT-terms path had the same asymmetry as the keyword path.
-        var qApostrophe = FTS5Query(keywords: ["war"])
-        qApostrophe.excludedTerms = ["don't"]
-        var qClean = FTS5Query(keywords: ["war"])
-        qClean.excludedTerms = ["dont"]
-        #expect(qApostrophe.toFTS5MatchExpression() == qClean.toFTS5MatchExpression(),
-                "Apostrophe in excluded term must be stripped before stemming")
+    @Test("Apostrophes survive sanitisation safely inside the quoted term")
+    func apostropheKeywordQuoted() {
+        // "don't" is not a valid FTS5 bareword (apostrophes are syntax errors
+        // unquoted) but is safe inside a quoted string, where unicode61 tokenizes
+        // it exactly as it tokenized the indexed text.
+        let q = FTS5Query(keywords: ["don't"])
+        #expect(q.toFTS5MatchExpression() == "\"don't\"")
     }
 }

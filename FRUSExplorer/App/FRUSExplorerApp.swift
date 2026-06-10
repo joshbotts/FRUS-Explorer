@@ -515,24 +515,43 @@ struct FRUSExplorerApp: App {
                 downloadedVolumeIds: downloadedIds
             )
 
-            // Trigger a background re-index when schema migrations require it.
-            // Two independent flags can each demand a re-index:
-            //   • store.didRebuildSchema + pipeline.needsFTSRebuildReindex:
-            //     FTS5 table was rebuilt (is_editorial_note column was absent).
-            //   • pipeline.needsDateReindex:
-            //     Date extraction strategy was upgraded in Session 36.
-            let ftsRebuildNeeded = store.didRebuildSchema && pipeline.needsFTSRebuildReindex
+            // Trigger background index migrations when schema versions require it.
+            // Two independent flags, with different costs:
+            //   • FTS rebuild (didRebuildSchema OR a previous rebuild never finished):
+            //     the FTS5 tables were recreated (external-content redesign). The
+            //     index is rebuilt from document_cache via the FTS5 `rebuild`
+            //     command — tens of seconds, no XML re-parse. The OR with
+            //     needsFTSRebuildReindex makes this self-healing: if the app is
+            //     killed between the schema drop and the rebuild, the UserDefaults
+            //     flag is still unset on next launch and the rebuild re-runs.
+            //   • Date re-index: the date-extraction strategy changed; requires a
+            //     full XML re-parse via indexAllVolumes (which also repopulates the
+            //     FTS tables through the document_cache sync triggers, so a pending
+            //     FTS rebuild is satisfied by it too).
+            let ftsRebuildNeeded = store.didRebuildSchema || pipeline.needsFTSRebuildReindex
             let dateReindexNeeded = pipeline.needsDateReindex
-            if ftsRebuildNeeded || dateReindexNeeded {
+            if dateReindexNeeded {
                 Task {
                     #if DEBUG
-                    print("[FRUSExplorer] Background re-index triggered (ftsRebuild=\(ftsRebuildNeeded), dateReindex=\(dateReindexNeeded)).")
+                    print("[FRUSExplorer] Background re-index triggered (dateReindex=true, ftsRebuild=\(ftsRebuildNeeded)).")
                     #endif
                     try? await pipeline.indexAllVolumes()
-                    if ftsRebuildNeeded  { await pipeline.markFTSRebuildReindexComplete() }
-                    if dateReindexNeeded { await pipeline.markDateReindexComplete() }
+                    await pipeline.markDateReindexComplete()
+                    if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index complete.")
+                    #endif
+                }
+            } else if ftsRebuildNeeded {
+                Task {
+                    #if DEBUG
+                    print("[FRUSExplorer] FTS rebuild from document_cache triggered.")
+                    #endif
+                    if (try? await pipeline.rebuildSearchIndexFromCache()) != nil {
+                        await pipeline.markFTSRebuildReindexComplete()
+                    }
+                    #if DEBUG
+                    print("[FRUSExplorer] FTS rebuild from document_cache complete.")
                     #endif
                 }
             }

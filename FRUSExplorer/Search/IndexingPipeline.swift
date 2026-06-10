@@ -138,6 +138,24 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `frontMatterKeys: Set<String>` — the set of `"volumeId/documentId"` composite
 ///          keys for rows where `is_front_matter = 1`. `SearchService` uses this to populate
 ///          `SearchResult.isFrontMatter` so the search UI can badge front-matter results.
+///   4.0 — Session 2026-06-09: external-content FTS5 redesign.
+///          • `frus_documents` and the new `user_content` table are external-content
+///            FTS5 tables over `document_cache`, maintained by SQL triggers created in
+///            `setupDatabase`. `document_cache` is the single write path for document
+///            text; the FTS5 tables store only the inverted index (porter unicode61).
+///          • Re-indexing UPSERTs cache rows in place — preserving rowids (the FTS5
+///            key) and user fields (`summary_text`, `note_text`, `user_tag_ids`),
+///            which `INSERT OR REPLACE` previously wiped on every re-index.
+///          • Summary/note/tag updates are single-row `document_cache` UPDATEs; the
+///            `AFTER UPDATE OF` triggers re-tokenize only the affected FTS5 table.
+///          • `searchDocuments`/`searchDocumentsCount` run the combined corpus +
+///            user-content search with all structured filters in SQL — exact
+///            pagination, no overscan, one round-trip per search.
+///          • `rebuildSearchIndexFromCache()` rebuilds both FTS5 tables from
+///            `document_cache` via the FTS5 `rebuild` command (migration fast path —
+///            no XML re-parse).
+///          • Removed: `frontMatterDocumentKeys`, `documentBodyTexts(AndDates)`
+///            (subsumed by `searchDocuments`), per-document FTS5 delete loops.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -198,13 +216,18 @@ public actor IndexingPipeline {
 
     /// Current FTS5 virtual table schema version.
     ///
-    /// Increment this value when the `frus_documents` FTS5 schema changes in a way
-    /// that requires all downloaded volumes to be re-indexed.
+    /// Increment this value when the FTS5 schema changes in a way that requires
+    /// the index contents to be rebuilt.
     ///
     /// - Version 3: `is_editorial_note UNINDEXED` column added (Session 38/48).
-    ///   Prior databases lacked this column (FTS5 `ALTER TABLE` is silently ignored);
-    ///   `FTS5Connection.createSchema` detects and rebuilds when absent.
-    public static let currentFTSSchemaVersion: Int = 3
+    /// - Version 4: external-content redesign (Session 2026-06-09). `frus_documents`
+    ///   reads content from `document_cache` and uses the built-in `porter unicode61`
+    ///   tokenizer; summaries/notes moved to the `user_content` table. The rebuild is
+    ///   satisfied by `rebuildSearchIndexFromCache()` (no XML re-parse): the content
+    ///   table already holds original unstemmed text. This also restores any rows
+    ///   previously lost to the unscoped-`document_id` FTS5 delete bug, because
+    ///   `document_cache` was never affected by those deletes.
+    public static let currentFTSSchemaVersion: Int = 4
 
     /// UserDefaults key tracking whether the post-FTS5-rebuild re-index is complete.
     public static let ftsSchemaVersionKey = "frusExplorer.ftsSchemaVersion"
@@ -241,12 +264,12 @@ public actor IndexingPipeline {
     ///   before Session 118 accumulated duplicate rows in `frus_documents` because the
     ///   `deleteVolume()` call before reindex was not yet present; bumping this version
     ///   triggers a full clean reindex via `needsDateReindex` on affected devices
-    /// - Version 7: unscoped FTS5 delete migration (Session 2026-06-09) — every
-    ///   summary/note/tag update and per-volume index removal previously deleted FTS5
-    ///   rows by `document_id` alone, removing matching rows (e.g. "d1") from every
-    ///   indexed volume; bumping this version triggers a full clean reindex to restore
-    ///   the missing rows on affected devices
-    public static let currentDateIndexVersion: Int = 7
+    ///
+    /// (The Session 2026-06-09 unscoped-FTS5-delete fix did **not** bump this version:
+    /// rows lost to that bug are restored by the FTS schema-version-4 migration's
+    /// `rebuildSearchIndexFromCache()`, which rebuilds from the unaffected
+    /// `document_cache` without the full XML re-parse a date-version bump would force.)
+    public static let currentDateIndexVersion: Int = 6
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -389,17 +412,10 @@ public actor IndexingPipeline {
         try Self.setupDatabase(h)
         auxDb = h
 
-        // Pre-prepare the document_cache INSERT once after schema setup so every
+        // Pre-prepare the document_cache UPSERT once after schema setup so every
         // call to auxInsertDocumentCache reuses the compiled statement (#7).
-        let cacheSQL = """
-            INSERT OR REPLACE INTO document_cache
-            (volume_id, document_id, document_number, header, dateline, source_note, body_text,
-             subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
-             is_front_matter)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
         var cacheStmt: OpaquePointer?
-        if sqlite3_prepare_v2(h, cacheSQL, -1, &cacheStmt, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(h, Self.documentCacheUpsertSQL, -1, &cacheStmt, nil) == SQLITE_OK {
             preparedCacheInsert = cacheStmt
         }
 
@@ -456,13 +472,13 @@ public actor IndexingPipeline {
         ))
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
         let parseElapsed = Date().timeIntervalSince(parseStart)
-        logger.info("indexVolume: \(volumeId, privacy: .public) parsed \(data.documents.count, privacy: .public) docs in \(String(format: "%.1f", parseElapsed), privacy: .public)s")
+        logger.info("indexVolume: \(volumeId, privacy: .public) parsed \(data.documentCache.count, privacy: .public) docs in \(String(format: "%.1f", parseElapsed), privacy: .public)s")
 
         // Emit a second .reading update now that the total document count is known.
         // This lets progress bars render a determinate state before storage begins.
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .reading,
-            completedDocuments: 0, totalDocuments: data.documents.count, docsPerSecond: 0
+            completedDocuments: 0, totalDocuments: data.documentCache.count, docsPerSecond: 0
         ))
         emitMetadata(buildMetadata(from: data))
 
@@ -480,15 +496,15 @@ public actor IndexingPipeline {
 
         submitSpotlightItems(for: data)
         await stateTracker?.markCompleted(volumeId: volumeId)
-        emit(.completed(volumeCount: 1, documentCount: data.documents.count))
+        emit(.completed(volumeCount: 1, documentCount: data.documentCache.count))
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .complete,
-            completedDocuments: data.documents.count,
-            totalDocuments: data.documents.count,
-            docsPerSecond: currentDocsPerSecond(forTotal: data.documents.count)
+            completedDocuments: data.documentCache.count,
+            totalDocuments: data.documentCache.count,
+            docsPerSecond: currentDocsPerSecond(forTotal: data.documentCache.count)
         ))
         let totalElapsed = Date().timeIntervalSince(volumeIndexingStartTime ?? Date())
-        logger.info("indexVolume: \(volumeId, privacy: .public) complete — \(data.documents.count, privacy: .public) docs, total \(String(format: "%.1f", totalElapsed), privacy: .public)s")
+        logger.info("indexVolume: \(volumeId, privacy: .public) complete — \(data.documentCache.count, privacy: .public) docs, total \(String(format: "%.1f", totalElapsed), privacy: .public)s")
         volumeIndexingStartTime = nil
         volumeDocumentsProcessed = 0
     }
@@ -556,7 +572,7 @@ public actor IndexingPipeline {
                     // begins and matches the behaviour of indexVolume().
                     emitUpdate(IndexingProgressUpdate(
                         volumeId: data.volumeId, stage: .reading,
-                        completedDocuments: 0, totalDocuments: data.documents.count,
+                        completedDocuments: 0, totalDocuments: data.documentCache.count,
                         docsPerSecond: 0
                     ))
                     // Emit metadata so AppState.lastDiscoveredMetadata is populated and
@@ -577,13 +593,13 @@ public actor IndexingPipeline {
                         volumeDocumentsProcessed = 0
                         await stateTracker?.markCompleted(volumeId: data.volumeId)
                         completedVolumes += 1
-                        totalDocuments += data.documents.count
+                        totalDocuments += data.documentCache.count
                         // Snapshot mutable counters before use in emit/log to satisfy Swift 6
                         // strict-concurrency: OSLog interpolation creates an autoclosure that
                         // would otherwise capture the mutable vars across an actor hop.
                         let progressNow = completedVolumes + failedVolumes
                         emit(.indexing(volumeId: data.volumeId, current: progressNow, total: total))
-                        logger.info("indexAllVolumes: [\(progressNow, privacy: .public)/\(total, privacy: .public)] stored \(data.volumeId, privacy: .public) — \(data.documents.count, privacy: .public) docs in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
+                        logger.info("indexAllVolumes: [\(progressNow, privacy: .public)/\(total, privacy: .public)] stored \(data.volumeId, privacy: .public) — \(data.documentCache.count, privacy: .public) docs in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
                         // Checkpoint the WAL after each volume to prevent it growing
                         // unboundedly during a large batch (e.g. 552-volume full corpus).
                         // PASSIVE mode: flushes WAL pages to the main DB file without
@@ -663,11 +679,12 @@ public actor IndexingPipeline {
 
     /// Removes all index data for a volume from FTS5 and all auxiliary tables.
     ///
-    /// Uses the single-statement `FTS5Store.deleteVolume(volumeId:)` so the delete is
-    /// scoped to this volume. The previous per-document loop deleted by `document_id`
-    /// alone, which removed matching rows (e.g. `"d1"`) from **every** indexed volume.
+    /// Deleting the volume's `document_cache` rows fires the external-content sync
+    /// triggers, which remove the matching rows from both `frus_documents` and
+    /// `user_content` — scoped to exactly this volume's rowids. (The previous
+    /// per-document FTS5 delete loop matched by `document_id` alone, which removed
+    /// rows like `"d1"` from **every** indexed volume.)
     public func removeVolume(_ volumeId: String) async throws {
-        try await fts5Store.deleteVolume(volumeId: volumeId)
         try auxDeleteVolume(volumeId)
         try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
 
@@ -679,8 +696,22 @@ public actor IndexingPipeline {
     /// Issues one `DELETE` statement per table rather than iterating manifest entries,
     /// making it suitable for the app-reset path where iterating 500+ entries would
     /// cause the UI to hang for tens of seconds.
+    ///
+    /// The FTS5 sync triggers are dropped for the duration: per-row trigger
+    /// maintenance across ~80k rows would take minutes, whereas the FTS5
+    /// `delete-all` command plus an untriggered table delete is near-instant. The
+    /// triggers are recreated before returning (also on failure).
     public func removeAllVolumesFromIndex() async throws {
-        try await fts5Store.deleteAll()
+        for sql in FTS5Schema.frusDocuments.dropTriggerSQL() { try auxExec(sql) }
+        for sql in FTS5Schema.userContent.dropTriggerSQL() { try auxExec(sql) }
+        defer {
+            // Always restore the sync triggers, even if a delete failed mid-way.
+            for sql in FTS5Schema.frusDocuments.externalContentTriggerSQL() { try? auxExec(sql) }
+            for sql in FTS5Schema.userContent.externalContentTriggerSQL() { try? auxExec(sql) }
+        }
+
+        try auxExec("INSERT INTO frus_documents(frus_documents) VALUES('delete-all')")
+        try auxExec("INSERT INTO user_content(user_content) VALUES('delete-all')")
         for table in ["cross_references", "page_ranges", "document_dates",
                       "document_cache", "person_mentions", "persons", "terms",
                       "document_sources", "volume_sources"] {
@@ -689,6 +720,30 @@ public actor IndexingPipeline {
             try auxStep(stmt)
         }
         logger.info("removeAllVolumesFromIndex: complete")
+    }
+
+    /// Rebuilds both FTS5 tables from the populated `document_cache` content table.
+    ///
+    /// This is the fast migration path after an FTS5 schema rebuild: the content
+    /// table already holds every indexed volume's original text, so the FTS5
+    /// `rebuild` command re-derives the inverted index without re-parsing any XML.
+    /// On a full corpus this takes tens of seconds versus the better part of an
+    /// hour for `indexAllVolumes()`. The resulting index is fully merged, so no
+    /// separate `optimize()` pass is needed.
+    public func rebuildSearchIndexFromCache() async throws {
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: "", stage: .optimizing,
+            completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
+        ))
+        let start = Date()
+        try auxExec("INSERT INTO frus_documents(frus_documents) VALUES('rebuild')")
+        try auxExec("INSERT INTO user_content(user_content) VALUES('rebuild')")
+        let elapsed = Date().timeIntervalSince(start)
+        logger.info("rebuildSearchIndexFromCache: complete in \(String(format: "%.1f", elapsed), privacy: .public)s")
+        emitUpdate(IndexingProgressUpdate(
+            volumeId: "", stage: .complete,
+            completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
+        ))
     }
 
     /// Runs `VACUUM` on the auxiliary SQLite database to reclaim pages freed by
@@ -708,52 +763,44 @@ public actor IndexingPipeline {
         logger.info("vacuumIndex: complete")
     }
 
-    /// Updates the FTS5 index and document cache with a plain-text summary.
+    /// Updates the summary text for a document in `document_cache`.
     ///
-    /// Use this overload when the `GeneratedSummary` SwiftData model cannot safely cross
-    /// actor boundaries (e.g. boot-time sync from a background `ModelContext`).
+    /// The `user_content` FTS5 sync trigger re-indexes the row's user text in the
+    /// same statement; the corpus index is untouched. Use this overload when the
+    /// `GeneratedSummary` SwiftData model cannot safely cross actor boundaries
+    /// (e.g. boot-time sync from a background `ModelContext`).
     func updateSummaryText(volumeId: String, documentId: String, responseText: String) async throws {
-        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
-            logger.warning("updateSummaryText: \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
-            return
-        }
-        let updated = cached.toFTS5Document(summaryText: responseText, noteText: cached.noteText)
-        try await fts5Store.update(document: updated)
-        try updateCacheFields(volumeId: volumeId, documentId: documentId,
-                              summaryText: responseText, noteText: cached.noteText)
+        try updateCacheColumns(
+            volumeId: volumeId, documentId: documentId, label: "updateSummaryText",
+            assignments: [("summary_text", responseText)]
+        )
     }
 
-    /// Updates the FTS5 index and document cache with research note content and user tag IDs.
+    /// Updates research note content and user tag IDs for a document in `document_cache`.
     ///
-    /// Use this overload when the `ResearchNote` SwiftData model cannot safely cross
-    /// actor boundaries (e.g. boot-time sync or post-download sync from a background
-    /// `ModelContext`). Converts the note's `[UUID]` tag array to the space-separated
-    /// string format stored in FTS5 before calling this method.
+    /// The `user_content` FTS5 sync trigger re-indexes the note text; `user_tag_ids`
+    /// is `UNINDEXED` so its new value is visible to queries immediately without any
+    /// index maintenance. Use this overload when the `ResearchNote` SwiftData model
+    /// cannot safely cross actor boundaries (e.g. boot-time or post-download sync
+    /// from a background `ModelContext`). Convert the note's `[UUID]` tag array to
+    /// the space-separated string format before calling.
     func updateNoteText(
         volumeId: String,
         documentId: String,
         bodyText: String,
         userTagIds: String?
     ) async throws {
-        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
-            logger.warning("updateNoteText: \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
-            return
-        }
-        let updated = cached.toFTS5Document(
-            summaryText: cached.summaryText,
-            noteText: bodyText,
-            updatedUserTagIds: userTagIds
+        try updateCacheColumns(
+            volumeId: volumeId, documentId: documentId, label: "updateNoteText",
+            assignments: [("note_text", bodyText), ("user_tag_ids", userTagIds)]
         )
-        try await fts5Store.update(document: updated)
-        try updateCacheNoteFields(volumeId: volumeId, documentId: documentId,
-                                  userTagIds: userTagIds, noteText: bodyText)
     }
 
-    /// Updates user-tag assignments for a document in both the FTS5 index and
-    /// `document_cache`, without touching the note or summary text.
+    /// Updates user-tag assignments for a document without touching the note or
+    /// summary text.
     ///
-    /// Reads the existing `noteText` from `document_cache` so the FTS5 row update
-    /// preserves it. Pass `nil` for `userTagIds` to remove all tag associations.
+    /// `user_tag_ids` is `UNINDEXED` in both FTS5 tables, so this is a plain row
+    /// update with no index maintenance at all. Pass `nil` to remove all tags.
     ///
     /// - Parameters:
     ///   - volumeId:   Volume identifier (e.g. `"frus1969-76v10"`).
@@ -764,21 +811,9 @@ public actor IndexingPipeline {
         documentId: String,
         userTagIds: String?
     ) async throws {
-        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId) else {
-            logger.warning("updateUserTagIds: \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
-            return
-        }
-        let updated = cached.toFTS5Document(
-            summaryText: cached.summaryText,
-            noteText: cached.noteText,
-            updatedUserTagIds: userTagIds
-        )
-        try await fts5Store.update(document: updated)
-        try updateCacheNoteFields(
-            volumeId: volumeId,
-            documentId: documentId,
-            userTagIds: userTagIds,
-            noteText: cached.noteText
+        try updateCacheColumns(
+            volumeId: volumeId, documentId: documentId, label: "updateUserTagIds",
+            assignments: [("user_tag_ids", userTagIds)]
         )
     }
 
@@ -801,32 +836,25 @@ public actor IndexingPipeline {
 
     /// Updates the summary text for a document that is already in the index.
     ///
-    /// Reads original field text from `document_cache`, merges in `summary.responseText`,
-    /// and calls `FTS5Store.update` so the new text is immediately searchable.
+    /// Writes `summary.responseText` to `document_cache`; the `user_content` FTS5
+    /// sync trigger makes the new text immediately searchable.
     func updateSummary(_ summary: GeneratedSummary) async throws {
-        guard let cached = try fetchCache(volumeId: summary.volumeId, documentId: summary.documentId) else {
-            logger.warning("updateSummary: \(summary.volumeId, privacy: .public)/\(summary.documentId, privacy: .public) not in cache")
-            return
-        }
-        let updated = cached.toFTS5Document(summaryText: summary.responseText, noteText: cached.noteText)
-        try await fts5Store.update(document: updated)
-        try updateCacheFields(volumeId: summary.volumeId, documentId: summary.documentId,
-                              summaryText: summary.responseText, noteText: cached.noteText)
+        try await updateSummaryText(
+            volumeId: summary.volumeId,
+            documentId: summary.documentId,
+            responseText: summary.responseText
+        )
     }
 
     /// Updates the research note text for a document that is already in the index.
     ///
-    /// Reads original field text from `document_cache`, merges in `note.bodyText`,
-    /// and calls `FTS5Store.update` so the new text is immediately searchable.
+    /// Writes `note.bodyText` to `document_cache`; the `user_content` FTS5 sync
+    /// trigger makes the new text immediately searchable.
     func updateResearchNote(_ note: ResearchNote) async throws {
-        guard let cached = try fetchCache(volumeId: note.volumeId, documentId: note.documentId) else {
-            logger.warning("updateResearchNote: \(note.volumeId, privacy: .public)/\(note.documentId, privacy: .public) not in cache")
-            return
-        }
-        let updated = cached.toFTS5Document(summaryText: cached.summaryText, noteText: note.bodyText)
-        try await fts5Store.update(document: updated)
-        try updateCacheFields(volumeId: note.volumeId, documentId: note.documentId,
-                              summaryText: cached.summaryText, noteText: note.bodyText)
+        try updateCacheColumns(
+            volumeId: note.volumeId, documentId: note.documentId, label: "updateResearchNote",
+            assignments: [("note_text", note.bodyText)]
+        )
     }
 
     // MARK: - Spotlight
@@ -834,13 +862,13 @@ public actor IndexingPipeline {
     /// Submits CSSearchableItem records for all documents in `data` to the default
     /// Spotlight index. Errors are silently ignored — Spotlight is best-effort.
     private func submitSpotlightItems(for data: VolumeIndexData) {
-        let items = data.documents.map { doc -> CSSearchableItem in
+        let items = data.documentCache.map { doc -> CSSearchableItem in
             let attrs = CSSearchableItemAttributeSet(contentType: .text)
-            attrs.title = doc.header.isEmpty ? doc.id : doc.header
+            attrs.title = doc.header.isEmpty ? doc.documentId : doc.header
             attrs.contentDescription = String(doc.bodyText.prefix(300))
-            attrs.keywords = [data.volumeId, doc.id]
+            attrs.keywords = [data.volumeId, doc.documentId]
             return CSSearchableItem(
-                uniqueIdentifier: "\(data.volumeId)/\(doc.id)",
+                uniqueIdentifier: "\(data.volumeId)/\(doc.documentId)",
                 domainIdentifier: data.volumeId,
                 attributeSet: attrs
             )
@@ -922,37 +950,6 @@ public actor IndexingPipeline {
         return ids
     }
 
-    // MARK: - Front Matter Document Key Query (used by SearchService Phase 4)
-
-    /// Returns the set of `"volumeId/documentId"` composite keys for front-matter documents.
-    ///
-    /// Used by `SearchService` to filter out front-matter quasi-documents when
-    /// `SearchParameters.includeFrontMatter == false`. An empty set is returned if no
-    /// volumes have been indexed yet or if `volumeIds` is an empty array.
-    ///
-    /// When `volumeIds` is nil, all indexed volumes are searched.
-    func frontMatterDocumentKeys(limitToVolumeIds volumeIds: [String]?) throws -> Set<String> {
-        var sql = "SELECT volume_id, document_id FROM document_cache WHERE is_front_matter = 1"
-        var args: [String] = []
-        if let vids = volumeIds, !vids.isEmpty {
-            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
-            sql += " AND volume_id IN (\(placeholders))"
-            args = vids
-        }
-        let stmt = try auxPrepare(sql)
-        defer { sqlite3_finalize(stmt) }
-        for (i, v) in args.enumerated() {
-            sqlite3_bind_text(stmt, Int32(i + 1), v, -1, SQLITE_TRANSIENT_IP)
-        }
-        var keys = Set<String>()
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            let vid = auxColumnString(stmt, 0) ?? ""
-            let did = auxColumnString(stmt, 1) ?? ""
-            keys.insert("\(vid)/\(did)")
-        }
-        return keys
-    }
-
     // MARK: - Volume Sources Query (used by VolumeSourcesView)
 
     /// Returns all archival source entries for a volume from the `volume_sources` table.
@@ -982,6 +979,208 @@ public actor IndexingPipeline {
             ))
         }
         return entries
+    }
+
+    // MARK: - Combined Search Query (used by SearchService)
+
+    /// Executes the combined corpus + user-content full-text search with all
+    /// structured filters applied inside SQL.
+    ///
+    /// The query merges matches from `frus_documents` (corpus text) and
+    /// `user_content` (summaries/notes) by `document_cache` rowid — the shared
+    /// external-content key — taking the better (lower) BM25 score when a document
+    /// matches in both. Display fields, body text, the ISO date, and the
+    /// front-matter flag are joined from `document_cache` / `document_dates` in the
+    /// same statement, so a search is a single SQL round-trip.
+    ///
+    /// Filters (volume, date range, front matter, person, tags, document type) are
+    /// `WHERE` conditions evaluated **before** `LIMIT`/`OFFSET`, which makes
+    /// pagination exact — the previous design post-filtered an overscanned FTS5
+    /// page in Swift, so page boundaries drifted whenever a filter dropped rows.
+    ///
+    /// - Parameters:
+    ///   - corpusMatch: FTS5 MATCH expression for `frus_documents`, or `nil` to skip
+    ///     corpus text (e.g. when the user scopes search to summaries only).
+    ///   - userContentMatch: FTS5 MATCH expression for `user_content`, or `nil` to
+    ///     skip summaries/notes.
+    ///   - filters: Structured filters applied in the `WHERE` clause.
+    ///   - limit: Maximum rows returned.
+    ///   - offset: Rows to skip (exact, because filtering precedes pagination).
+    /// - Throws: `FTS5Error.emptyQuery` when both match expressions are `nil`.
+    public func searchDocuments(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        limit: Int,
+        offset: Int
+    ) throws -> [IndexedSearchRow] {
+        let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+        let (whereClause, filterBinds) = Self.filterConditions(filters)
+        let sql = """
+            \(matchCTE)
+            SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
+                   dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                   dc.is_editorial_note, dc.is_front_matter, dd.date_iso, m.score
+            FROM merged m
+            JOIN document_cache dc ON dc.rowid = m.docrowid
+            LEFT JOIN document_dates dd
+                ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            \(whereClause)
+            ORDER BY m.score
+            LIMIT \(limit) OFFSET \(offset)
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, bind) in (matchBinds + filterBinds).enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+        }
+
+        var rows: [IndexedSearchRow] = []
+        while try auxStep(stmt) {
+            rows.append(IndexedSearchRow(
+                documentId: auxColumnString(stmt, 0) ?? "",
+                volumeId: auxColumnString(stmt, 1) ?? "",
+                documentNumber: auxColumnString(stmt, 2),
+                header: auxColumnString(stmt, 3) ?? "",
+                dateline: auxColumnString(stmt, 4),
+                sourceNote: auxColumnString(stmt, 5),
+                bodyText: auxColumnString(stmt, 6) ?? "",
+                subjectTagIds: auxColumnString(stmt, 7),
+                userTagIds: auxColumnString(stmt, 8),
+                isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
+                isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
+                dateISO: auxColumnString(stmt, 11),
+                score: sqlite3_column_double(stmt, 12)
+            ))
+        }
+        return rows
+    }
+
+    /// Returns the exact number of documents matching the search and all filters.
+    ///
+    /// Runs the same match CTE and `WHERE` clause as `searchDocuments` with a
+    /// `COUNT(*)`, so the count agrees with paginated results — unlike the previous
+    /// FTS5-only count, which ignored post-processing filters and could overstate.
+    public func searchDocumentsCount(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters
+    ) throws -> Int {
+        let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+        let (whereClause, filterBinds) = Self.filterConditions(filters)
+        let sql = """
+            \(matchCTE)
+            SELECT COUNT(*)
+            FROM merged m
+            JOIN document_cache dc ON dc.rowid = m.docrowid
+            LEFT JOIN document_dates dd
+                ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            \(whereClause)
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, bind) in (matchBinds + filterBinds).enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+        }
+        guard try auxStep(stmt) else { return 0 }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    /// Builds the `WITH merged(docrowid, score)` CTE for the requested match scopes.
+    ///
+    /// One scope yields a single MATCH subquery; both scopes yield a `UNION ALL`
+    /// grouped by rowid taking the better (minimum) BM25 score.
+    private static func matchCTE(
+        corpusMatch: String?,
+        userContentMatch: String?
+    ) throws -> (sql: String, binds: [String]) {
+        let corpusSelect = "SELECT rowid AS docrowid, bm25(frus_documents) AS score FROM frus_documents WHERE frus_documents MATCH ?"
+        let userSelect = "SELECT rowid AS docrowid, bm25(user_content) AS score FROM user_content WHERE user_content MATCH ?"
+        switch (corpusMatch, userContentMatch) {
+        case (nil, nil):
+            throw FTS5Error.emptyQuery
+        case (let corpus?, nil):
+            return ("WITH merged(docrowid, score) AS (\(corpusSelect))", [corpus])
+        case (nil, let user?):
+            return ("WITH merged(docrowid, score) AS (\(userSelect))", [user])
+        case (let corpus?, let user?):
+            let sql = """
+                WITH merged(docrowid, score) AS (
+                  SELECT docrowid, MIN(score) FROM (
+                    \(corpusSelect)
+                    UNION ALL
+                    \(userSelect)
+                  ) GROUP BY docrowid
+                )
+                """
+            return (sql, [corpus, user])
+        }
+    }
+
+    /// Renders `filters` to a `WHERE` clause and its bind values.
+    ///
+    /// Tag conditions wrap the space-separated tag-ID columns in spaces and use
+    /// `LIKE '% <id> %'` so each ID matches as a whole token; multiple IDs are
+    /// ANDed, mirroring the previous Swift-side `allSatisfy` semantics.
+    private static func filterConditions(_ filters: SearchSQLFilters) -> (whereClause: String, binds: [String]) {
+        var conditions: [String] = []
+        var binds: [String] = []
+
+        if let vids = filters.volumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            conditions.append("dc.volume_id IN (\(placeholders))")
+            binds.append(contentsOf: vids)
+        }
+
+        if let range = filters.dateRange {
+            // Interval overlap, matching documentKeysInDateRange: the document's
+            // [date_iso, COALESCE(date_iso_max, date_iso)] range must intersect the
+            // query bounds; undated documents are excluded when a range is active.
+            conditions.append("dd.date_iso IS NOT NULL")
+            if let earliest = range.earliest {
+                conditions.append("COALESCE(dd.date_iso_max, dd.date_iso) >= ?")
+                binds.append(earliest)
+            }
+            if let latest = range.latest {
+                conditions.append("dd.date_iso <= ?")
+                binds.append(latest)
+            }
+        }
+
+        if !filters.includeFrontMatter {
+            conditions.append("dc.is_front_matter = 0")
+        }
+
+        if let personRef = filters.personRef {
+            conditions.append("""
+                EXISTS (SELECT 1 FROM person_mentions pm
+                        WHERE pm.volume_id = dc.volume_id
+                          AND pm.document_id = dc.document_id
+                          AND pm.person_ref = ?)
+                """)
+            binds.append(personRef)
+        }
+
+        for tagId in filters.subjectTagIds {
+            conditions.append("(' ' || COALESCE(dc.subject_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')")
+            binds.append(tagId)
+        }
+        for tagId in filters.userTagIds {
+            conditions.append("(' ' || COALESCE(dc.user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')")
+            binds.append(tagId)
+        }
+
+        switch filters.documentTypeFilter {
+        case .documentsOnly:
+            conditions.append("dc.is_editorial_note = 0")
+        case .editorialNotesOnly:
+            conditions.append("dc.is_editorial_note = 1")
+        case .all:
+            break
+        }
+
+        let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
+        return (whereClause, binds)
     }
 
     // MARK: - Date Range Query (used by SearchService)
@@ -1120,7 +1319,6 @@ public actor IndexingPipeline {
         let fullResult = try await parser.parseVolumeFull(volumeURL: url)
         let astDocs = fullResult.documents
 
-        var fts5Docs: [FTS5Document] = []
         var crossRefs: [CrossReferenceRow] = []
         var pageRangeRows: [PageRangeRow] = []
         var dateRows: [DocumentDateRow] = []
@@ -1147,14 +1345,6 @@ public actor IndexingPipeline {
             }()
 
             let subjectTagStr = subjectTagStrings[did]
-
-            fts5Docs.append(FTS5Document(
-                id: did, volumeId: volumeId, documentNumber: docNumber,
-                header: header, dateline: dateline, sourceNote: sourceNote,
-                bodyText: bodyText, subjectTagIds: subjectTagStr,
-                userTagIds: nil, summaryText: nil, noteText: nil,
-                isEditorialNote: isEditorialNote
-            ))
 
             // Single recursive walk collects cross-refs, person refs, and page ranges
             // simultaneously (#4 — replaces 3 separate full-tree traversals per doc).
@@ -1248,7 +1438,7 @@ public actor IndexingPipeline {
             }
 
         return VolumeIndexData(
-            volumeId: volumeId, documents: fts5Docs, crossReferences: crossRefs,
+            volumeId: volumeId, crossReferences: crossRefs,
             pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
             personMentions: personMentionRows,
             persons: personRows,
@@ -1261,31 +1451,37 @@ public actor IndexingPipeline {
     // MARK: - Storage
 
     private func storeIndexData(_ data: VolumeIndexData) async throws {
-        guard !data.documents.isEmpty else { return }
+        guard !data.documentCache.isEmpty else { return }
 
-        // --- FTS5 + document_cache insertion, co-batched for iOS memory throttle ---
+        // --- document_cache insertion, batched for the iOS memory throttle ---
         //
-        // Both arrays are written in the same chunk so that each batch's allocations
-        // can be freed by ARC before the next batch begins. On iOS, batchSize == 50
-        // (or 20 under memory pressure); on macOS it is effectively unlimited.
-        // Clamp to totalDocs so ceiling-division and chunk-end arithmetic are
-        // overflow-safe even when effectiveBatchSize == Int.max (the macOS sentinel
-        // meaning "process everything in one pass").
-        let totalDocs = data.documents.count
+        // document_cache is the single write path for document text: the sync
+        // triggers created in setupDatabase() maintain the frus_documents and
+        // user_content FTS5 tables from each row write, inside the same
+        // transaction. On iOS, batchSize == 50 (or 20 under memory pressure); on
+        // macOS it is effectively unlimited. Clamp to totalDocs so ceiling-division
+        // and chunk-end arithmetic are overflow-safe even when effectiveBatchSize
+        // == Int.max (the macOS sentinel meaning "process everything in one pass").
+        let totalDocs = data.documentCache.count
         let batchSize = min(effectiveBatchSize, max(totalDocs, 1))
         let totalBatches = (totalDocs + batchSize - 1) / batchSize
         var processed = 0
         var batchNumber = 0
 
-        // Delete any existing FTS5 rows for this volume before inserting the fresh batch.
-        // Without this, re-indexing accumulates duplicate rows because document IDs like
-        // "d1" are not globally unique — only (document_id, volume_id) is unique.
-        try await fts5Store.deleteVolume(volumeId: data.volumeId)
+        // Remove cache rows for documents that no longer exist in this volume's
+        // TEI (upstream revisions occasionally renumber or drop documents). The
+        // UPSERT below updates surviving rows in place — preserving their rowid
+        // (the FTS5 external-content key) and their user fields — so only genuinely
+        // vanished documents need deleting. The DELETE trigger cleans both FTS5
+        // tables for each removed row.
+        try auxDeleteVanishedCacheRows(
+            volumeId: data.volumeId,
+            survivingDocumentIds: data.documentCache.map(\.documentId)
+        )
 
         for chunkStart in stride(from: 0, to: totalDocs, by: batchSize) {
             batchNumber += 1
             let chunkEnd = min(chunkStart + batchSize, totalDocs)
-            let fts5Chunk  = Array(data.documents[chunkStart..<chunkEnd])
             let cacheChunk = Array(data.documentCache[chunkStart..<chunkEnd])
 
             emitUpdate(IndexingProgressUpdate(
@@ -1296,10 +1492,9 @@ public actor IndexingPipeline {
                 docsPerSecond: currentDocsPerSecond(forTotal: max(processed, 1))
             ))
 
-            try await fts5Store.insertBatch(fts5Chunk)
             try auxInsertDocumentCache(cacheChunk)
 
-            processed += fts5Chunk.count
+            processed += cacheChunk.count
             volumeDocumentsProcessed = processed
             // Yield between batches so the OS can reclaim per-batch allocations.
             await Task.yield()
@@ -1372,8 +1567,8 @@ public actor IndexingPipeline {
         let personNames = data.persons.sorted { $0.name < $1.name }.prefix(12).map { $0.name }
         return VolumeMetadataDiscovered(
             volumeId: data.volumeId,
-            totalDocuments: data.documents.count,
-            editorialNoteCount: data.documents.filter { $0.isEditorialNote }.count,
+            totalDocuments: data.documentCache.count,
+            editorialNoteCount: data.documentCache.filter { $0.isEditorialNote }.count,
             uniquePersonCount: Set(data.personMentions.map { $0.personRef }).count,
             crossReferenceCount: data.crossReferences.count,
             datedDocumentCount: isoDateStrings.count,
@@ -2101,6 +2296,30 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_rg ON volume_sources(volume_id, record_group)")
+
+        // --- External-content FTS5 sync (Session 2026-06-09) ---
+        //
+        // `frus_documents` is created (and migrated) by `FTS5Store`, which is always
+        // constructed before this pipeline (it is an init parameter). `user_content`
+        // and the sync triggers are created here because they reference
+        // `document_cache`, whose DDL lives above. All statements are idempotent.
+        //
+        // The triggers keep both FTS5 tables synchronised with `document_cache`:
+        // INSERT/DELETE maintain both; the UPDATE OF triggers fire only when the
+        // statement's SET list names one of that table's *indexed* columns, so a
+        // summary/note update re-tokenizes only `user_content` and a re-index
+        // UPSERT re-tokenizes only `frus_documents`.
+        //
+        // NOTE for future migrations: DROP the triggers before dropping either FTS5
+        // table — orphaned triggers would make every document_cache write fail with
+        // "no such table".
+        try exec(FTS5Schema.userContent.createTableSQL(ifNotExists: true))
+        for sql in FTS5Schema.frusDocuments.externalContentTriggerSQL() {
+            try exec(sql)
+        }
+        for sql in FTS5Schema.userContent.externalContentTriggerSQL() {
+            try exec(sql)
+        }
     }
 
     // MARK: - Auxiliary Table DML
@@ -2170,6 +2389,36 @@ public actor IndexingPipeline {
         }
     }
 
+    /// UPSERT for `document_cache` rows produced by the indexing parse.
+    ///
+    /// On conflict (re-index of an existing volume) the corpus fields are replaced
+    /// but `user_tag_ids`, `summary_text`, and `note_text` are deliberately left
+    /// untouched — those columns belong to user data synced from SwiftData, and the
+    /// parse always produces `nil` for them. (The previous `INSERT OR REPLACE`
+    /// silently wiped them on every re-index, leaving notes/summaries unsearchable
+    /// until the next boot-time sync.) Keeping the same row also preserves its
+    /// rowid, which the external-content FTS5 tables use as their key.
+    ///
+    /// The `DO UPDATE SET` list names the corpus columns, so only the
+    /// `frus_documents` sync trigger (`AFTER UPDATE OF header, dateline,
+    /// source_note, body_text`) fires — `user_content` is untouched.
+    private static let documentCacheUpsertSQL = """
+        INSERT INTO document_cache
+        (volume_id, document_id, document_number, header, dateline, source_note, body_text,
+         subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
+         is_front_matter)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(volume_id, document_id) DO UPDATE SET
+          document_number   = excluded.document_number,
+          header            = excluded.header,
+          dateline          = excluded.dateline,
+          source_note       = excluded.source_note,
+          body_text         = excluded.body_text,
+          subject_tag_ids   = excluded.subject_tag_ids,
+          is_editorial_note = excluded.is_editorial_note,
+          is_front_matter   = excluded.is_front_matter
+        """
+
     private func auxInsertDocumentCache(_ rows: [DocumentCacheRow]) throws {
         guard !rows.isEmpty else { return }
         // Use the pre-prepared statement when available (#7); fall back to
@@ -2179,14 +2428,7 @@ public actor IndexingPipeline {
         if let prepared = preparedCacheInsert {
             stmt = prepared
         } else {
-            let sql = """
-                INSERT OR REPLACE INTO document_cache
-                (volume_id, document_id, document_number, header, dateline, source_note, body_text,
-                 subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
-                 is_front_matter)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """
-            localStmt = try auxPrepare(sql)
+            localStmt = try auxPrepare(Self.documentCacheUpsertSQL)
             stmt = localStmt!
         }
         defer { if let s = localStmt { sqlite3_finalize(s) } }
@@ -2217,6 +2459,38 @@ public actor IndexingPipeline {
                 try auxStep(stmt)
             }
         }
+    }
+
+    /// Deletes `document_cache` rows for documents that disappeared from a volume's
+    /// TEI between indexing runs.
+    ///
+    /// The surviving IDs are staged in a temp table (kept in memory by
+    /// `temp_store=MEMORY`) so the `NOT IN` comparison is unbounded — chunking a
+    /// `NOT IN` parameter list would change its semantics, and large compilation
+    /// volumes exceed SQLite's 999-bind-variable limit.
+    private func auxDeleteVanishedCacheRows(volumeId: String, survivingDocumentIds: [String]) throws {
+        try auxExec("CREATE TEMP TABLE IF NOT EXISTS surviving_doc_ids (d TEXT PRIMARY KEY)")
+        try auxExec("DELETE FROM surviving_doc_ids")
+        defer { try? auxExec("DELETE FROM surviving_doc_ids") }
+
+        let insert = try auxPrepare("INSERT OR IGNORE INTO surviving_doc_ids (d) VALUES (?)")
+        defer { sqlite3_finalize(insert) }
+        try inTransaction {
+            for id in survivingDocumentIds {
+                sqlite3_bind_text(insert, 1, id, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(insert)
+                sqlite3_reset(insert)
+            }
+        }
+
+        let delete = try auxPrepare("""
+            DELETE FROM document_cache
+            WHERE volume_id = ?
+              AND document_id NOT IN (SELECT d FROM surviving_doc_ids)
+            """)
+        defer { sqlite3_finalize(delete) }
+        sqlite3_bind_text(delete, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(delete)
     }
 
     private func auxInsertPersonMentions(_ rows: [PersonMentionRow], inExternalTransaction: Bool = false) throws {
@@ -2841,130 +3115,6 @@ public actor IndexingPipeline {
         return out
     }
 
-    /// Returns the unstemmed `body_text` for each of the given document keys.
-    ///
-    /// The values come from `document_cache.body_text`, which stores the original
-    /// AST-derived plain text **before** Porter stemming was applied for FTS5. This
-    /// is the correct source for user-facing search snippets: it preserves the actual
-    /// spelling of every word in the document, whereas the FTS5 `frus_documents.body_text`
-    /// column contains stemmed tokens (`negoti` instead of `negotiating`) and would
-    /// mislead the reader if surfaced directly.
-    ///
-    /// Uses a `WITH keys(v, d) AS (VALUES …)` CTE joined against the
-    /// `document_cache` composite primary key so SQLite performs index point-lookups
-    /// instead of a full table scan. Prefer `documentBodyTextsAndDates(for:)` when
-    /// dates are also needed — it fetches both in a single query.
-    ///
-    /// - Parameter keys: `(volumeId, documentId)` pairs to look up.
-    /// - Returns: Dictionary mapping `"volumeId/documentId"` → body text.
-    ///   Documents not present in `document_cache` are absent from the result.
-    public func documentBodyTexts(
-        for keys: [(volumeId: String, documentId: String)]
-    ) throws -> [String: String] {
-        guard !keys.isEmpty else { return [:] }
-        var out: [String: String] = [:]
-        // 400 pairs × 2 params/pair = 800 — safely under the SQLite 999-variable cap.
-        let chunkSize = 400
-        for chunk in stride(from: 0, to: keys.count, by: chunkSize)
-                .map({ Array(keys[$0..<min($0 + chunkSize, keys.count)]) }) {
-            let valuePlaceholders = chunk.map { _ in "(?, ?)" }.joined(separator: ", ")
-            let sql = """
-                WITH keys(v, d) AS (VALUES \(valuePlaceholders))
-                SELECT dc.volume_id || '/' || dc.document_id, dc.body_text
-                FROM document_cache dc
-                JOIN keys ON dc.volume_id = keys.v AND dc.document_id = keys.d
-                """
-            let stmt = try auxPrepare(sql)
-            defer { sqlite3_finalize(stmt) }
-            for (i, pair) in chunk.enumerated() {
-                sqlite3_bind_text(stmt, Int32(2 * i + 1), pair.volumeId,   -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_text(stmt, Int32(2 * i + 2), pair.documentId, -1, SQLITE_TRANSIENT_IP)
-            }
-            while sqlite3_step(stmt) == SQLITE_ROW {
-                if let k = auxColumnString(stmt, 0), let b = auxColumnString(stmt, 1) {
-                    out[k] = b
-                }
-            }
-        }
-        return out
-    }
-
-    /// Returns `body_text`, `header`, `dateline` (all from `document_cache`) and
-    /// `date_iso` (from `document_dates`) for each of the given document keys in a
-    /// single SQL round-trip.
-    ///
-    /// This is the preferred lookup for search post-processing because it combines
-    /// everything needed to fully populate a `SearchResult` in one CTE-join query.
-    /// A `WITH keys(v, d) AS (VALUES …)` CTE is used so SQLite resolves each pair
-    /// via the composite primary key index rather than scanning the table.
-    ///
-    /// ## Why header/dateline come from document_cache (not FTS5)
-    /// The FTS5 table stores **stemmed** text — `stemForIndex()` is applied to
-    /// `header` and `dateline` at index time so they participate in full-text search.
-    /// Reading them back from FTS5 would yield token strings like
-    /// `"memorandum presid special assist"` instead of the original
-    /// `"Memorandum From the President's Special Assistant …"`.
-    /// `document_cache` preserves the original AST-derived plain text and is the
-    /// correct source for any user-facing display.
-    ///
-    /// The returned `dates` and `datelines` dictionaries omit entries for documents
-    /// whose `date_iso` / `dateline` column is NULL.
-    ///
-    /// - Parameter keys: `(volumeId, documentId)` pairs to look up.
-    /// - Returns:
-    ///   - `bodies`:    `"volumeId/documentId"` → unstemmed body text.
-    ///   - `dates`:     `"volumeId/documentId"` → ISO 8601 date string (where available).
-    ///   - `headers`:   `"volumeId/documentId"` → original (unstemmed) header text.
-    ///   - `datelines`: `"volumeId/documentId"` → original dateline string (where present).
-    public func documentBodyTextsAndDates(
-        for keys: [(volumeId: String, documentId: String)]
-    ) throws -> (bodies: [String: String], dates: [String: String],
-                 headers: [String: String], datelines: [String: String],
-                 frontMatterKeys: Set<String>) {
-        guard !keys.isEmpty else { return ([:], [:], [:], [:], []) }
-        var bodies:          [String: String] = [:]
-        var dates:           [String: String] = [:]
-        var headers:         [String: String] = [:]
-        var datelines:       [String: String] = [:]
-        var frontMatterKeys: Set<String>      = []
-        // 400 pairs × 2 params/pair = 800 — safely under the SQLite 999-variable cap.
-        let chunkSize = 400
-        for chunk in stride(from: 0, to: keys.count, by: chunkSize)
-                .map({ Array(keys[$0..<min($0 + chunkSize, keys.count)]) }) {
-            let valuePlaceholders = chunk.map { _ in "(?, ?)" }.joined(separator: ", ")
-            let sql = """
-                WITH keys(v, d) AS (VALUES \(valuePlaceholders))
-                SELECT dc.volume_id || '/' || dc.document_id,
-                       dc.body_text,
-                       dd.date_iso,
-                       dc.header,
-                       dc.dateline,
-                       dc.is_front_matter
-                FROM document_cache dc
-                LEFT JOIN document_dates dd
-                    ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
-                JOIN keys ON dc.volume_id = keys.v AND dc.document_id = keys.d
-                """
-            let stmt = try auxPrepare(sql)
-            defer { sqlite3_finalize(stmt) }
-            for (i, pair) in chunk.enumerated() {
-                sqlite3_bind_text(stmt, Int32(2 * i + 1), pair.volumeId,   -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_text(stmt, Int32(2 * i + 2), pair.documentId, -1, SQLITE_TRANSIENT_IP)
-            }
-            while sqlite3_step(stmt) == SQLITE_ROW {
-                guard let k = auxColumnString(stmt, 0),
-                      let b = auxColumnString(stmt, 1) else { continue }
-                bodies[k] = b
-                if let d  = auxColumnString(stmt, 2) { dates[k]     = d }
-                if let h  = auxColumnString(stmt, 3) { headers[k]   = h }
-                if let dl = auxColumnString(stmt, 4) { datelines[k] = dl }
-                if sqlite3_column_int(stmt, 5) != 0  { frontMatterKeys.insert(k) }
-            }
-        }
-        return (bodies: bodies, dates: dates, headers: headers,
-                datelines: datelines, frontMatterKeys: frontMatterKeys)
-    }
-
     private func fetchCache(volumeId: String, documentId: String) throws -> DocumentCacheRow? {
         let sql = """
             SELECT document_number, header, dateline, source_note, body_text,
@@ -2993,26 +3143,35 @@ public actor IndexingPipeline {
         )
     }
 
-    private func updateCacheFields(volumeId: String, documentId: String, summaryText: String?, noteText: String?) throws {
-        let sql = "UPDATE document_cache SET summary_text = ?, note_text = ? WHERE volume_id = ? AND document_id = ?"
+    /// Applies column assignments to a single `document_cache` row.
+    ///
+    /// The `SET` list is built from `assignments` (column names are compile-time
+    /// constants at every call site, never user input). Naming only the columns
+    /// being changed matters: the FTS5 sync triggers are `AFTER UPDATE OF <cols>`,
+    /// so a summary/note write re-tokenizes only `user_content`, and a tags-only
+    /// write touches no FTS5 index at all.
+    ///
+    /// Logs a warning when no row matched (document not yet indexed) — the write is
+    /// then a no-op, matching the previous fetch-then-update behaviour.
+    private func updateCacheColumns(
+        volumeId: String,
+        documentId: String,
+        label: String,
+        assignments: [(column: String, value: String?)]
+    ) throws {
+        let setList = assignments.map { "\($0.column) = ?" }.joined(separator: ", ")
+        let sql = "UPDATE document_cache SET \(setList) WHERE volume_id = ? AND document_id = ?"
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        auxBindOptional(stmt, 1, summaryText)
-        auxBindOptional(stmt, 2, noteText)
-        sqlite3_bind_text(stmt, 3, volumeId, -1, SQLITE_TRANSIENT_IP)
-        sqlite3_bind_text(stmt, 4, documentId, -1, SQLITE_TRANSIENT_IP)
+        for (i, assignment) in assignments.enumerated() {
+            auxBindOptional(stmt, Int32(i + 1), assignment.value)
+        }
+        sqlite3_bind_text(stmt, Int32(assignments.count + 1), volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, Int32(assignments.count + 2), documentId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(stmt)
-    }
-
-    private func updateCacheNoteFields(volumeId: String, documentId: String, userTagIds: String?, noteText: String?) throws {
-        let sql = "UPDATE document_cache SET user_tag_ids = ?, note_text = ? WHERE volume_id = ? AND document_id = ?"
-        let stmt = try auxPrepare(sql)
-        defer { sqlite3_finalize(stmt) }
-        auxBindOptional(stmt, 1, userTagIds)
-        auxBindOptional(stmt, 2, noteText)
-        sqlite3_bind_text(stmt, 3, volumeId, -1, SQLITE_TRANSIENT_IP)
-        sqlite3_bind_text(stmt, 4, documentId, -1, SQLITE_TRANSIENT_IP)
-        try auxStep(stmt)
+        if sqlite3_changes(auxDb) == 0 {
+            logger.warning("\(label, privacy: .public): \(volumeId, privacy: .public)/\(documentId, privacy: .public) not in cache")
+        }
     }
 
     // MARK: - Raw SQLite Helpers
@@ -3080,6 +3239,82 @@ public actor IndexingPipeline {
     }
 }
 
+// MARK: - Combined Search Types
+
+/// One row from the combined corpus + user-content search query
+/// (`IndexingPipeline.searchDocuments`).
+///
+/// Carries every field `SearchService` needs to build a `SearchResult` — display
+/// text, the unstemmed body for snippet generation, the canonical ISO date, and
+/// flags — so a search completes in a single SQL round-trip.
+public struct IndexedSearchRow: Sendable {
+    /// Document identifier (e.g. `"d1"`), unique within its volume.
+    public let documentId: String
+    /// Volume this document belongs to.
+    public let volumeId: String
+    /// Printed document number, if present.
+    public let documentNumber: String?
+    /// Original (unstemmed) document header.
+    public let header: String
+    /// Original dateline, if present.
+    public let dateline: String?
+    /// Source note, if present.
+    public let sourceNote: String?
+    /// Full plain-text body — used by `SearchService` to build context snippets.
+    public let bodyText: String
+    /// Space-separated subject tag IDs, if any.
+    public let subjectTagIds: String?
+    /// Space-separated user tag IDs, if any.
+    public let userTagIds: String?
+    /// Whether this document is a FRUS editorial note.
+    public let isEditorialNote: Bool
+    /// Whether this document is promoted front matter (preface, introduction, …).
+    public let isFrontMatter: Bool
+    /// Canonical ISO 8601 date from `document_dates`, if known.
+    public let dateISO: String?
+    /// BM25 relevance score (lower = more relevant). When the document matched in
+    /// both FTS5 tables, this is the better of the two scores.
+    public let score: Double
+}
+
+/// Structured filters applied inside the SQL of
+/// `IndexingPipeline.searchDocuments` / `searchDocumentsCount`.
+public struct SearchSQLFilters: Sendable {
+    /// Restrict results to these volume IDs. `nil` (or empty) = all volumes.
+    public var volumeIds: [String]?
+    /// Restrict results to documents whose date range overlaps this range.
+    /// Undated documents are excluded when non-nil.
+    public var dateRange: DateRange?
+    /// When `false`, front-matter documents are excluded.
+    public var includeFrontMatter: Bool
+    /// Restrict results to documents mentioning this person ref.
+    public var personRef: String?
+    /// Subject tag IDs that must all be present (AND).
+    public var subjectTagIds: [String]
+    /// User tag IDs that must all be present (AND).
+    public var userTagIds: [String]
+    /// Editorial-note / primary-document type filter.
+    public var documentTypeFilter: DocumentTypeFilter
+
+    public init(
+        volumeIds: [String]? = nil,
+        dateRange: DateRange? = nil,
+        includeFrontMatter: Bool = true,
+        personRef: String? = nil,
+        subjectTagIds: [String] = [],
+        userTagIds: [String] = [],
+        documentTypeFilter: DocumentTypeFilter = .all
+    ) {
+        self.volumeIds = volumeIds
+        self.dateRange = dateRange
+        self.includeFrontMatter = includeFrontMatter
+        self.personRef = personRef
+        self.subjectTagIds = subjectTagIds
+        self.userTagIds = userTagIds
+        self.documentTypeFilter = documentTypeFilter
+    }
+}
+
 // MARK: - Private Data Structures
 
 private struct DocumentSourceRow: Sendable {
@@ -3105,7 +3340,6 @@ private struct VolumeSourceRow: Sendable {
 
 private struct VolumeIndexData: Sendable {
     let volumeId: String
-    let documents: [FTS5Document]
     let crossReferences: [CrossReferenceRow]
     let pageRanges: [PageRangeRow]
     let documentDates: [DocumentDateRow]
@@ -3182,28 +3416,6 @@ struct DocumentCacheRow: Sendable {
     /// `true` when the document was promoted from a prose-only front-matter structural
     /// section (preface, introduction, prefatoryNote, terms, etc.).
     let isFrontMatter: Bool
-
-    func toFTS5Document(summaryText: String?, noteText: String?) -> FTS5Document {
-        FTS5Document(
-            id: documentId, volumeId: volumeId, documentNumber: documentNumber,
-            header: header, dateline: dateline, sourceNote: sourceNote,
-            bodyText: bodyText, subjectTagIds: subjectTagIds, userTagIds: userTagIds,
-            summaryText: summaryText, noteText: noteText,
-            isEditorialNote: isEditorialNote
-        )
-    }
-
-    /// Overload that also replaces the stored `userTagIds` value.
-    /// Used by `updateNoteText` to sync user-tag assignments from SwiftData into FTS5.
-    func toFTS5Document(summaryText: String?, noteText: String?, updatedUserTagIds: String?) -> FTS5Document {
-        FTS5Document(
-            id: documentId, volumeId: volumeId, documentNumber: documentNumber,
-            header: header, dateline: dateline, sourceNote: sourceNote,
-            bodyText: bodyText, subjectTagIds: subjectTagIds, userTagIds: updatedUserTagIds,
-            summaryText: summaryText, noteText: noteText,
-            isEditorialNote: isEditorialNote
-        )
-    }
 }
 
 // MARK: - FRUSASTNode Extensions

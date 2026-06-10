@@ -359,11 +359,12 @@ struct RemoveVolumeTests {
 @Suite("IndexingPipeline — incremental updates")
 struct IncrementalUpdateTests {
 
-    @Test("updateSummary makes summary text searchable")
+    @Test("updateSummary makes summary text searchable via user_content")
     func summaryTextSearchable() async throws {
         try await withTempDir { dir in
             let (pipeline, store) = try await makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
 
             try writeTEIVolume(
                 to: volDir.appendingPathComponent("frus1969-76v01.xml"),
@@ -373,7 +374,7 @@ struct IncrementalUpdateTests {
             try await pipeline.indexVolume("frus1969-76v01")
 
             // Before update: "quasiparticle" is not in the index
-            let before = try await store.search(query: FTS5Query(keywords: ["quasiparticle"]), limit: 5, offset: 0)
+            let before = try await service.search(parameters: SearchParameters(keywords: "quasiparticle"))
             #expect(before.isEmpty)
 
             let summary = GeneratedSummary(
@@ -382,16 +383,24 @@ struct IncrementalUpdateTests {
             )
             try await pipeline.updateSummary(summary)
 
-            let after = try await store.search(query: FTS5Query(keywords: ["quasiparticle"]), limit: 5, offset: 0)
+            // The default search scope includes summaries, which now live in the
+            // user_content FTS5 table rather than frus_documents.
+            let after = try await service.search(parameters: SearchParameters(keywords: "quasiparticle"))
             #expect(!after.isEmpty)
+
+            // The corpus table must NOT match summary-only words.
+            let corpusOnly = try await store.search(
+                query: FTS5Query(keywords: ["quasiparticle"]), limit: 5, offset: 0)
+            #expect(corpusOnly.isEmpty, "summary text must not be indexed in frus_documents")
         }
     }
 
-    @Test("updateResearchNote makes note text searchable")
+    @Test("updateResearchNote makes note text searchable via user_content")
     func noteTextSearchable() async throws {
         try await withTempDir { dir in
             let (pipeline, store) = try await makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
 
             try writeTEIVolume(
                 to: volDir.appendingPathComponent("frus1969-76v01.xml"),
@@ -406,8 +415,35 @@ struct IncrementalUpdateTests {
             )
             try await pipeline.updateResearchNote(note)
 
-            let results = try await store.search(query: FTS5Query(keywords: ["xenolith"]), limit: 5, offset: 0)
+            let results = try await service.search(parameters: SearchParameters(keywords: "xenolith"))
             #expect(!results.isEmpty)
+        }
+    }
+
+    @Test("Re-indexing a volume preserves summary and note text")
+    func reindexPreservesUserContent() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [("d1", "<head>Memorandum</head><p>Original text.</p>")]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.updateSummaryText(
+                volumeId: "frus1969-76v01", documentId: "d1",
+                responseText: "Summary about quasiparticle effects."
+            )
+
+            // Regression: INSERT OR REPLACE used to wipe summary_text/note_text on
+            // every re-index; the UPSERT must preserve them.
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let after = try await service.search(parameters: SearchParameters(keywords: "quasiparticle"))
+            #expect(!after.isEmpty, "Re-indexing must not wipe user summaries from the index")
         }
     }
 }
@@ -417,27 +453,43 @@ struct IncrementalUpdateTests {
 @Suite("SearchService — query building and filtering")
 struct SearchParametersTests {
 
-    @Test("makeFTS5Query maps keywords correctly")
-    func keywordsToFTS5() async throws {
+    @Test("makeMatchExpressions renders keywords into the corpus expression")
+    func keywordsToMatchExpression() async throws {
         try await withTempDir { dir in
             let (pipeline, store) = try await makeTestPipeline(dir: dir)
             let service = SearchService(fts5Store: store, pipeline: pipeline)
             let params = SearchParameters(keywords: "detente kissinger")
-            let query = try await service.makeFTS5Query(from: params)
-            #expect(!query.keywords.isEmpty)
-            #expect(query.keywords.contains("detente"))
-            #expect(query.keywords.contains("kissinger"))
+            let (corpus, userContent) = try await service.makeMatchExpressions(from: params)
+            #expect(corpus == "\"detente\" \"kissinger\"")
+            // Default scope flags include summaries and notes, so the user-content
+            // expression is rendered from the same keywords.
+            #expect(userContent == "\"detente\" \"kissinger\"")
         }
     }
 
-    @Test("makeFTS5Query throws emptyQuery for blank parameters")
+    @Test("makeMatchExpressions scopes the user-content expression to one column")
+    func userContentColumnScoping() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            var params = SearchParameters(keywords: "detente")
+            params.includeDocumentText = false
+            params.includeSummaries = true
+            params.includeNotes = false
+            let (corpus, userContent) = try await service.makeMatchExpressions(from: params)
+            #expect(corpus == nil)
+            #expect(userContent == "{summary_text}:\"detente\"")
+        }
+    }
+
+    @Test("makeMatchExpressions throws emptyQuery for blank parameters")
     func emptyQueryThrows() async throws {
         try await withTempDir { dir in
             let (pipeline, store) = try await makeTestPipeline(dir: dir)
             let service = SearchService(fts5Store: store, pipeline: pipeline)
             let params = SearchParameters()   // no keywords, phrase, or wildcard
             do {
-                _ = try await service.makeFTS5Query(from: params)
+                _ = try await service.makeMatchExpressions(from: params)
                 Issue.record("Expected emptyQuery error")
             } catch FTS5Error.emptyQuery {
                 // expected
@@ -1431,17 +1483,18 @@ struct GlossaryPersistenceTests {
 
 // MARK: - FTS5RebuildTests
 
-/// Tests for the Session 48 FTS5 schema migration that adds `is_editorial_note`.
+/// Tests for the FTS5 schema-generation migration.
 ///
-/// The migration detects when `is_editorial_note` is absent from an existing
-/// `frus_documents` FTS5 virtual table and drops/recreates the table.
-/// `PRAGMA user_version = 3` marks the schema as current after migration.
+/// A `frus_documents` table from a database whose `PRAGMA user_version` is below
+/// the current generation (4 — the external-content redesign) is dropped and
+/// recreated by `FTS5Connection.createSchema`; `FTS5Store.didRebuildSchema`
+/// signals the caller to rebuild index contents from `document_cache`.
 @Suite("FTS5RebuildTests")
 struct FTS5RebuildTests {
 
     // MARK: - Helpers
 
-    /// Creates an FTS5 database with the pre–Session 38 schema (no `is_editorial_note`).
+    /// Creates an FTS5 database with a legacy (pre-generation-4) schema.
     ///
     /// Uses raw SQLite3 calls to build the legacy table so `FTS5Store.init` sees
     /// an existing database with the outdated schema.
@@ -1490,31 +1543,35 @@ struct FTS5RebuildTests {
 
     // MARK: - Tests
 
-    /// Opening an FTS5 database that lacks `is_editorial_note` triggers a rebuild.
-    ///
-    /// `FTS5Store.didRebuildSchema` must be `true` and INSERTs that reference the
-    /// column must succeed after the migration.
-    @Test("ftsSchemaUpgradeAddsEditorialNoteColumn")
-    func ftsSchemaUpgradeAddsEditorialNoteColumn() async throws {
+    /// Opening a legacy (pre-generation-4) FTS5 database triggers a schema rebuild.
+    @Test("ftsSchemaUpgradeRebuildsLegacyTable")
+    func ftsSchemaUpgradeRebuildsLegacyTable() async throws {
         try await withTempDir { dir in
             let dbURL = dir.appendingPathComponent("legacy.sqlite")
             try createLegacyDatabase(at: dbURL)
 
             let store = try FTS5Store(databaseURL: dbURL)
             #expect(store.didRebuildSchema == true,
-                    "FTS5Store should detect the missing column and set didRebuildSchema")
+                    "FTS5Store should detect the legacy schema generation and set didRebuildSchema")
 
-            // After rebuild, an INSERT with is_editorial_note must succeed.
-            let doc = FTS5Document(
-                id: "d2", volumeId: "frus1861",
-                header: "Rebuilt Header", bodyText: "Rebuilt body",
-                isEditorialNote: true
-            )
-            try await store.insert(document: doc)
+            // The rebuilt table is external-content: direct writes must be rejected…
+            await #expect(throws: FTS5Error.self) {
+                try await store.insert(document: FTS5Document(
+                    id: "d2", volumeId: "frus1861",
+                    header: "Rebuilt Header", bodyText: "Rebuilt body",
+                    isEditorialNote: true
+                ))
+            }
+            // …and an (empty) search must succeed against the new schema.
+            let results = try await store.search(
+                query: FTS5Query(keywords: ["anything"]), limit: 5, offset: 0)
+            #expect(results.isEmpty)
         }
     }
 
-    /// The FTS5 table is functional for search after a schema rebuild.
+    /// After a legacy-schema migration, the full stack (pipeline + triggers +
+    /// rebuild-from-cache) produces a searchable index without re-parsing XML
+    /// beyond the initial indexing.
     @Test("ftsRebuildPreservesTableFunctionality")
     func ftsRebuildPreservesTableFunctionality() async throws {
         try await withTempDir { dir in
@@ -1524,15 +1581,34 @@ struct FTS5RebuildTests {
             let store = try FTS5Store(databaseURL: dbURL)
             #expect(store.didRebuildSchema == true)
 
-            let doc = FTS5Document(
-                id: "d3", volumeId: "frus1861",
-                header: "Rebuilt document", bodyText: "searchable content after rebuild",
-                isEditorialNote: false
+            // Construct the pipeline on the migrated database (creates
+            // document_cache, user_content, and the sync triggers), then index a
+            // volume and verify search works end-to-end.
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let pipeline = try IndexingPipeline(
+                fts5Store: store,
+                databaseURL: dbURL,
+                volumesDirectory: volDir,
+                subjectTagStore: SubjectTagStore(entries: [], appearances: []),
+                concurrencyLimit: 1
             )
-            try await store.insert(document: doc)
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [("d3", "<head>Rebuilt document</head><p>searchable content after rebuild</p>")]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
             let query = FTS5Query(keywords: ["searchable"], booleanMode: .and)
             let results = try await store.search(query: query, limit: 10, offset: 0)
             #expect(!results.isEmpty, "Search should return results after schema rebuild")
+
+            // rebuildSearchIndexFromCache must also be a no-op-safe operation that
+            // leaves the index searchable (the boot migration path runs it).
+            try await pipeline.rebuildSearchIndexFromCache()
+            let afterRebuild = try await store.search(query: query, limit: 10, offset: 0)
+            #expect(!afterRebuild.isEmpty, "Index must remain searchable after rebuild-from-cache")
         }
     }
 
