@@ -354,27 +354,36 @@ struct SourceExplorerTests {
         #expect(client.cfpfAADURL.absoluteString.contains("aad.archives.gov"))
     }
 
-    @Test("DecimalPeriod: year 1946 routes to 1945-1949 NARA page")
+    // NARA removed the seven decimal-file sub-period pages (HTTP 404, verified
+    // 2026-06-04) and consolidated them onto the 1910-1963 parent page — see
+    // `decimalFilePeriodURL`. Every decimal-era year must therefore route to the
+    // parent page, never to a sub-period path, while the human-readable *label*
+    // stays period-specific.
+
+    @Test("DecimalPeriod: year 1946 routes to the consolidated 1910-1963 page with a 1945–1949 label")
     func year1946RoutesToCorrectPeriod() async {
         let client = NARACatalogClient()
         let url = client.decimalFilePeriodURL(year: 1946)
-        #expect(url.absoluteString.contains("1945-1949"))
+        #expect(url.absoluteString.hasSuffix("rg-59-central-files/1910-1963"),
+                "decimal-era years must use the consolidated parent page (sub-period pages 404)")
         let label = client.decimalFilePeriodLabel(year: 1946)
         #expect(label == "1945–1949")
     }
 
-    @Test("DecimalPeriod: year 1912 routes to 1910-1929 NARA page")
+    @Test("DecimalPeriod: year 1912 routes to the consolidated 1910-1963 page with a 1910–1929 label")
     func year1912RoutesToCorrectPeriod() async {
         let client = NARACatalogClient()
         let url = client.decimalFilePeriodURL(year: 1912)
-        #expect(url.absoluteString.contains("1910-1929"))
+        #expect(url.absoluteString.hasSuffix("rg-59-central-files/1910-1963"))
+        #expect(client.decimalFilePeriodLabel(year: 1912) == "1910–1929")
     }
 
-    @Test("DecimalPeriod: year 1961 routes to 1960-1963 NARA page")
+    @Test("DecimalPeriod: year 1961 routes to the consolidated 1910-1963 page with a 1960–January 1963 label")
     func year1961RoutesToCorrectPeriod() async {
         let client = NARACatalogClient()
         let url = client.decimalFilePeriodURL(year: 1961)
-        #expect(url.absoluteString.contains("1960-1963"))
+        #expect(url.absoluteString.hasSuffix("rg-59-central-files/1910-1963"))
+        #expect(client.decimalFilePeriodLabel(year: 1961) == "1960–January 1963")
     }
 
     @Test("DecimalPeriod: all 7 periods return archives.gov URLs")

@@ -189,6 +189,14 @@ public struct FRUSVolumeMetadata: Sendable {
 /// ## Source
 /// Confirmed against https://history.state.gov/historicaldocuments/citing-frus
 /// at Session 13 (2026-05-15).
+///
+/// Version history:
+///   1.0 — Session 13: initial implementation
+///   1.1 — Session 2026-06-09: removed the `documentId` fallback introduced in
+///          commit f886282. Documents without a printed number (editorial notes,
+///          pre-1955 volumes) again end the citation after the publication
+///          parenthetical instead of leaking the TEI `xml:id` (e.g. "edn-01")
+///          into the formatted text.
 public struct HistoryAtStateCitationFormatter: CitationFormatter {
 
     private static let knownSeriesNames: [String] = [
@@ -208,15 +216,19 @@ public struct HistoryAtStateCitationFormatter: CitationFormatter {
         let year = publicationYear(from: volume.publicationDate)
         result += " (\(volume.publicationPlace): \(volume.publisher), \(year))"
 
-        // Prefer the printed document number ("Document 217"). When nil — which
-        // occurs for editorial notes, cross-reference navigation entries, and
-        // documents whose headers don't carry a numeric prefix — fall back to the
-        // document identifier (e.g. "d217"). This mirrors the macOS
-        // `CitationPopoverView.formattedCitation` which uses the same fallback
-        // so the citation always includes a locator rather than ending with just ")."
-        let docLocation = document.documentNumber.map { "Document \($0)" }
-            ?? document.documentId
-        result += ", \(docLocation)."
+        // Append "Document N" only when a printed document number exists. When nil
+        // — editorial notes, cross-reference navigation entries, pre-1955 volumes
+        // whose headers carry no numeric prefix — the citation ends after the
+        // publication parenthetical, per the history.state.gov style documented
+        // above. The TEI `xml:id` (e.g. "d217", "edn-01") is an internal
+        // identifier, not a recognised citation locator, and must never leak into
+        // the formatted text; document-level linking is served by the canonical
+        // history.state.gov URL that the share flows append separately.
+        if let number = document.documentNumber {
+            result += ", Document \(number)."
+        } else {
+            result += "."
+        }
 
         return result
     }

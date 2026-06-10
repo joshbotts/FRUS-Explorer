@@ -307,3 +307,8 @@ The following items were added to earlier sessions by later feature requirements
 - `BackgroundDownloadEngine`: volume downloads moved to a background `URLSession` — transfers survive suspension/termination, are re-adopted at launch (`resumeQueuedDownloads`), retried (≤2, linear backoff); `FRUSAppDelegate` handles background-session relaunch events; boot reconciliation indexes downloaded-but-unindexed volumes.
 
 **Verification:** 699/703 app tests pass (4 pre-existing failures in CitationFormatterTests/SourceExplorerTests, unrelated — see chip); 127/127 SPM tests; iOS + macOS targets build clean.
+
+### Session 2026-06-09 (follow-up) — Pre-existing Test Failures Fixed
+- **SourceExplorerTests (3 stale tests):** commit 39b3ef6 intentionally consolidated the seven NARA decimal-file sub-period URLs onto the `…/rg-59-central-files/1910-1963` parent page (sub-period pages return HTTP 404, verified live 2026-06-04) but missed the tests. Tests updated to pin the consolidated URL (`hasSuffix` check) while asserting period-specific *labels* ("1945–1949", "1910–1929", "1960–January 1963") remain.
+- **CitationFormatterTests (1 code regression):** commit f886282 added a `documentId` fallback to `HistoryAtStateCitationFormatter` so citations "always include a locator" — leaking TEI `xml:id`s ("edn-01") into formatted citations for editorial notes and unnumbered documents, contradicting the formatter's own documented history.state.gov style. Fallback removed: no printed document number → citation ends after the publication parenthetical. BibTeX/RIS note fields and page-turn UI labels intentionally keep the `documentId` (metadata/affordance, not citation text).
+- Full FRUSExplorerTests bundle: 703/703 passing.
