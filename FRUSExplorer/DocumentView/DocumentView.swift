@@ -164,6 +164,10 @@ enum DocumentSheet: Identifiable {
 ///          canonical history.state.gov URL (`DocumentViewModel
 ///          .shareableCitationMessage`), mirroring the new "Share Citation"
 ///          item added to the macOS citation popover's Export menu.
+///   3.4 — Session 154: added Reading preferences — edge-tap page-turn zones
+///          can be disabled (`edgeTapNavigationEnabled`), and a default
+///          document mode (Read/Research/remember-last) is applied to
+///          `panelVisible` once per document open.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -192,6 +196,10 @@ struct DocumentView: View {
     @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = true
     @AppStorage("frus.document.researchPanel.notes")    private var notesExpanded   = true
     @AppStorage("frus.document.researchPanel.tags")     private var tagsExpanded    = false
+    /// Whether the Read-mode edge-tap "page-turn" zones are active (Session 154).
+    @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
+    /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
+    @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
     /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
     /// that sets this is hidden, keeping the panel closed).
     @State private var showNotesPanel = false
@@ -258,6 +266,15 @@ struct DocumentView: View {
                    || existingVm.entry.volumeId != entry.volumeId {
                 vm = nil
                 pendingHighlightLink = nil
+            }
+            // Apply the default document mode on open. .rememberLast leaves
+            // panelVisible untouched, preserving the prior cross-document
+            // persistence; .read/.research force it, but the in-document
+            // segmented control can still switch modes live afterwards.
+            switch defaultDocumentMode {
+            case .read:         panelVisible = false
+            case .research:     panelVisible = true
+            case .rememberLast: break
             }
             bootstrapViewModel()
             appState.logEvent(.documentOpen(
@@ -1130,6 +1147,9 @@ struct DocumentView: View {
     /// document in the current volume — an ebook-reader-style "page-turn" gesture.
     ///
     /// Shown only when:
+    ///  - **The user has not disabled it** (`edgeTapNavigationEnabled`,
+    ///    `SettingsKeys.edgeTapNavigationEnabled`, default on). Some readers
+    ///    trigger the zones accidentally; this is an escape hatch (Session 154).
     ///  - **Read mode is active** (`!panelVisible` — the "Read"/"Research" segmented
     ///    control in the toolbar; see `documentToolbar`). Research mode hides the
     ///    zones entirely so taps near the edges while annotating, selecting text, or
@@ -1147,9 +1167,10 @@ struct DocumentView: View {
     ///
     /// Version history:
     ///   1.0 — Session 2026-06-07: initial implementation
+    ///   1.1 — Session 154: gated on `edgeTapNavigationEnabled` preference
     @ViewBuilder
     private func documentEdgeNavigationOverlay(vm: DocumentViewModel) -> some View {
-        if !panelVisible {
+        if !panelVisible && edgeTapNavigationEnabled {
             HStack(spacing: 0) {
                 documentEdgeTapZone(
                     adjacentEntry: vm.previousEntry,

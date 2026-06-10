@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CryptoKit
 import Foundation
 
 /// DownloadManager coordinates all FRUS volume download activity.
@@ -68,6 +69,11 @@ import Foundation
 ///          `BackgroundDownloadEngine` — downloads survive app suspension and
 ///          termination and are re-adopted at the next launch; failed downloads are
 ///          retried with backoff instead of silently vanishing from the queue.
+///   2.1 — Session 154: `enqueueDownload` gained a `force` parameter so the
+///          "Update" action in Downloads settings can re-queue an already-downloaded
+///          volume; added `blobSHA(for:)` / `localVolumeInfo(for:)` /
+///          `gitBlobSHA1(for:)` for `VolumeUpdateChecker`, with a UserDefaults-backed
+///          cache invalidated on delete and re-download.
 public actor DownloadManager {
 
     // MARK: - Types
@@ -211,14 +217,19 @@ public actor DownloadManager {
     /// Adds a volume to the download queue.
     ///
     /// If the volume is already downloaded, already active, or already pending, this is a
-    /// no-op. Downloads start immediately if the manager is enabled and below the
-    /// concurrency limit; otherwise the entry waits in the persisted pending queue.
+    /// no-op — unless `force` is `true`, which re-queues an already-downloaded volume
+    /// (the transfer engine overwrites the existing file on completion). Downloads start
+    /// immediately if the manager is enabled and below the concurrency limit; otherwise
+    /// the entry waits in the persisted pending queue.
     ///
     /// - Parameters:
     ///   - volumeId: The stable volume identifier (e.g. `"frus1969-76v01"`).
     ///   - downloadUrl: The direct download URL from the GitHub API listing.
-    public func enqueueDownload(volumeId: String, downloadUrl: String) {
-        guard !isVolumeDownloaded(volumeId),
+    ///   - force: If `true`, bypasses the "already downloaded" check so an existing
+    ///     volume is re-downloaded and overwritten. Used by the "Update" action in
+    ///     Downloads settings (Session 154). Default `false`.
+    public func enqueueDownload(volumeId: String, downloadUrl: String, force: Bool = false) {
+        guard (force || !isVolumeDownloaded(volumeId)),
               !activeVolumeIds.contains(volumeId),
               !pendingQueue.contains(volumeId) else { return }
 
@@ -274,6 +285,7 @@ public actor DownloadManager {
         let dest = volumeURL(for: volumeId)
         guard FileManager.default.fileExists(atPath: dest.path) else { return }
         try FileManager.default.removeItem(at: dest)
+        Self.invalidateBlobSHA(for: volumeId)
 
         // Index cleanup runs in an unstructured Task so file deletion returns
         // immediately; IndexingPipeline.removeVolume is idempotent, so callers that
@@ -388,12 +400,75 @@ public actor DownloadManager {
         #endif
     }
 
+    // MARK: - Update Detection (Session 154)
+
+    /// On-disk facts about a downloaded volume for `VolumeUpdateChecker`. Returns
+    /// `nil` if the volume is not downloaded.
+    public func localVolumeInfo(for volumeId: String) -> LocalVolumeInfo? {
+        let url = volumeURL(for: volumeId)
+        guard let size = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int else {
+            return nil
+        }
+        return LocalVolumeInfo(sha: blobSHA(for: volumeId), sizeBytes: size)
+    }
+
+    /// Returns the git blob SHA-1 of a downloaded volume's XML file, in the same
+    /// form GitHub's contents API reports for the same file
+    /// (`gitBlobSHA1(for:)`), or `nil` if the volume is not downloaded.
+    ///
+    /// Cached in `UserDefaults` keyed by `volumeId` so repeat checks (e.g. opening
+    /// the Downloads settings pane) avoid re-hashing large files. The cache is
+    /// invalidated whenever the volume is deleted or re-downloaded.
+    public func blobSHA(for volumeId: String) -> String? {
+        if let cached = Self.loadBlobSHACache()[volumeId] {
+            return cached
+        }
+        guard let data = try? Data(contentsOf: volumeURL(for: volumeId)) else { return nil }
+        let sha = Self.gitBlobSHA1(for: data)
+        var cache = Self.loadBlobSHACache()
+        cache[volumeId] = sha
+        Self.saveBlobSHACache(cache)
+        return sha
+    }
+
+    /// Computes the git blob SHA-1 of `data`, in the same form GitHub's contents API
+    /// reports for repository files: `sha1("blob <byte length>\0" + data)`.
+    public nonisolated static func gitBlobSHA1(for data: Data) -> String {
+        var hasher = Insecure.SHA1()
+        hasher.update(data: Data("blob \(data.count)\0".utf8))
+        hasher.update(data: data)
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static let blobSHACacheKey = "frus.downloadedVolumeBlobSHA"
+
+    private static func loadBlobSHACache() -> [String: String] {
+        (UserDefaults.standard.dictionary(forKey: blobSHACacheKey) as? [String: String]) ?? [:]
+    }
+
+    private static func saveBlobSHACache(_ cache: [String: String]) {
+        UserDefaults.standard.set(cache, forKey: blobSHACacheKey)
+    }
+
+    private static func invalidateBlobSHA(for volumeId: String) {
+        var cache = loadBlobSHACache()
+        cache.removeValue(forKey: volumeId)
+        saveBlobSHACache(cache)
+    }
+
     // MARK: - Private Queue Processing
 
     /// Starts as many pending downloads as the concurrency limit allows.
     /// Only runs when `isEnabled` is `true`.
     private func processQueue() {
         guard isEnabled else { return }
+
+        // Read once per call so every transfer started in this pass uses a
+        // consistent snapshot of the preference (Session 154 cellular policy).
+        // `object(forKey:)` distinguishes "unset" from "explicitly false" —
+        // `bool(forKey:)` would default an unset key to `false`.
+        let allowsCellular = (UserDefaults.standard.object(forKey: SettingsKeys.allowCellularDownloads) as? Bool) ?? true
+
         while activeVolumeIds.count < concurrencyLimit, !pendingQueue.isEmpty {
             let volumeId = pendingQueue.removeFirst()
             guard let urlString = pendingUrls[volumeId],
@@ -404,11 +479,11 @@ public actor DownloadManager {
             activeVolumeIds.insert(volumeId)
 
             if usesBackgroundEngine {
-                BackgroundDownloadEngine.shared.startDownload(volumeId: volumeId, from: url)
+                BackgroundDownloadEngine.shared.startDownload(volumeId: volumeId, from: url, allowsCellular: allowsCellular)
             } else {
                 testTasks[volumeId] = Task {
                     do {
-                        try await self.performTestDownload(volumeId: volumeId, downloadUrl: url)
+                        try await self.performTestDownload(volumeId: volumeId, downloadUrl: url, allowsCellular: allowsCellular)
                         self.transferDidComplete(volumeId: volumeId, error: nil)
                     } catch {
                         self.transferDidComplete(volumeId: volumeId, error: error)
@@ -422,10 +497,11 @@ public actor DownloadManager {
 
     /// Performs an in-process transfer using the injected test closure. Runs off the
     /// actor's executor so concurrent test downloads proceed without blocking the actor.
-    nonisolated private func performTestDownload(volumeId: String, downloadUrl: URL) async throws {
+    nonisolated private func performTestDownload(volumeId: String, downloadUrl: URL, allowsCellular: Bool) async throws {
         guard let downloadTask else { throw URLError(.unknown) }
         var request = URLRequest(url: downloadUrl)
         request.setValue("FRUSExplorer/2.0", forHTTPHeaderField: "User-Agent")
+        request.allowsCellularAccess = allowsCellular
 
         let (tempURL, response) = try await downloadTask(request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
@@ -470,6 +546,10 @@ public actor DownloadManager {
         testTasks.removeValue(forKey: volumeId)
         pendingUrls.removeValue(forKey: volumeId)
         retryCounts.removeValue(forKey: volumeId)
+
+        // The on-disk content just changed (fresh download or "Update" overwrite);
+        // drop any cached blob SHA so the next update check re-hashes the new file.
+        Self.invalidateBlobSHA(for: volumeId)
 
         // Trigger post-download indexing (or any other action) without blocking the actor.
         // The callback runs in an unstructured Task so it does not delay queue processing

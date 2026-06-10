@@ -725,8 +725,17 @@ final class AppState {
     /// On app restart `indexingActivity` resets to `nil` even when an activity is
     /// still running. To prevent a second widget appearing, the else-branch checks
     /// `Activity<IndexingActivityAttributes>.activities` before calling `request(…)`.
+    ///
+    /// Checks `SettingsKeys.liveActivityEnabled` (default on, Session 154) before
+    /// requesting or updating an activity; when the user has turned the preference
+    /// off, any already-running activity is ended instead.
     private func syncIndexingLiveActivity(update: IndexingProgressUpdate) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let liveActivityEnabled = (UserDefaults.standard.object(forKey: SettingsKeys.liveActivityEnabled) as? Bool) ?? true
+        guard liveActivityEnabled else {
+            endIndexingLiveActivity()
+            return
+        }
         let title = manifestStore.entry(forVolumeId: update.volumeId)?.title ?? update.volumeId
         let qp = indexingQueuePosition
         let fraction: Double? = update.totalDocuments > 0

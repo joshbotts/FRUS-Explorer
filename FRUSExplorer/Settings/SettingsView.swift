@@ -68,6 +68,8 @@ import UniformTypeIdentifiers
 ///   2.4 — Session 153: Projects row added to Research section (ProjectsSettingsView), closing
 ///          the iOS gap where projects could be created but never renamed/merged/deleted;
 ///          delete/merge mutations shared with macOS SettingsProjectsPane via ProjectAdminService
+///   2.5 — Session 154: Data section added with "Export Research Data…" row
+///          (ResearchDataExportView) — JSON + per-note Markdown export via ShareLink
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -143,6 +145,14 @@ struct SettingsView: View {
                     NavigationLink(String(localized: "settings.row.naraKey",
                                          defaultValue: "NARA Catalog API Key")) {
                         NARAKeyView()
+                    }
+                }
+
+                Section(String(localized: "settings.section.data",
+                               defaultValue: "Data")) {
+                    NavigationLink(String(localized: "settings.row.exportData",
+                                         defaultValue: "Export Research Data…")) {
+                        ResearchDataExportView()
                     }
                 }
 
@@ -340,12 +350,20 @@ struct SettingsView: View {
 /// 2. **Find Volumes** — scope picker + enqueue button, followed by the per-volume
 ///    browse list. Footer explains the two interaction styles.
 /// 3. **Downloaded Volumes** — swipe-to-delete with confirmation dialog.
-/// 4. **Settings** — concurrent downloads picker.
-/// 5. **Check for New Volumes** — button that refreshes the live manifest.
+/// 4. **Updates** — "Check for Updates" diffs downloaded volumes' git blob SHAs
+///    against the live manifest; lists changed volumes with per-volume "Update" and
+///    "Update All" (force re-download + automatic re-index, preserving user data).
+/// 5. **Settings** — concurrent downloads picker; iOS also gets an "Allow Cellular
+///    Downloads" toggle (`SettingsKeys.allowCellularDownloads`).
+/// 6. **Check for New Volumes** — button that refreshes the live manifest.
 ///
 /// Version history:
 ///   1.0 — Session 117: merged from VolumeManagementView (Session 49, 51, 70) and
 ///          DownloadManagerSettingsView (Session 49, 67)
+///   1.1 — Session 154: added iOS-only "Allow Cellular Downloads" toggle to the
+///          Settings section, applied per-request via `DownloadManager.processQueue()`
+///   1.2 — Session 154: added "Updates" section — `VolumeUpdateChecker` detects
+///          upstream corrections to downloaded volumes via git blob SHA comparison
 private struct DownloadsSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -367,6 +385,18 @@ private struct DownloadsSettingsView: View {
     @State private var selectedSubseries: String = ""
     @State private var singleVolumeSearch: String = ""
     @State private var enqueuedMessage: String? = nil
+
+    // MARK: Cellular download policy (Session 154, iOS only)
+
+    #if os(iOS)
+    @AppStorage(SettingsKeys.allowCellularDownloads) private var allowCellularDownloads: Bool = true
+    #endif
+
+    // MARK: Update detection (Session 154)
+
+    @State private var updatableVolumes: [UpdatableVolume] = []
+    @State private var isCheckingForUpdates: Bool = false
+    @State private var hasCheckedForUpdates: Bool = false
 
     // Phase 1: storage limit gate
 
@@ -496,7 +526,17 @@ private struct DownloadsSettingsView: View {
                 downloadedVolumesSection
             }
 
-            // 4. Settings.
+            // 4. Updates — check downloaded volumes for upstream corrections.
+            Section(
+                header: Text(String(localized: "settings.volumes.updates.header",
+                                     defaultValue: "Updates")),
+                footer: Text(String(localized: "settings.volumes.updates.footer",
+                                     defaultValue: "Checks downloaded volumes against the FRUS repository for upstream corrections. Updating re-downloads and re-indexes the volume; your notes, highlights, tags, and summaries are preserved."))
+            ) {
+                updatesSection
+            }
+
+            // 5. Settings.
             Section(String(localized: "downloads.settings.header",
                            defaultValue: "Settings")) {
                 Picker(
@@ -527,9 +567,25 @@ private struct DownloadsSettingsView: View {
                             defaultValue: "How many volumes download at the same time."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                #if os(iOS)
+                Toggle(
+                    String(localized: "settings.volumes.allowCellular.label",
+                           defaultValue: "Allow Cellular Downloads"),
+                    isOn: $allowCellularDownloads
+                )
+                .accessibilityHint(
+                    String(localized: "settings.volumes.allowCellular.a11y",
+                           defaultValue: "When off, volume downloads only proceed over Wi-Fi")
+                )
+                Text(String(localized: "settings.volumes.allowCellular.note",
+                            defaultValue: "Applies to downloads started after this change. Volume files are large; Wi-Fi is recommended."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                #endif
             }
 
-            // 5. Check for New Volumes.
+            // 6. Check for New Volumes.
             Section {
                 Button {
                     Task { await appState.manifestStore.fetchLiveManifest() }
@@ -646,6 +702,77 @@ private struct DownloadsSettingsView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var updatesSection: some View {
+        if !updatableVolumes.isEmpty {
+            ForEach(updatableVolumes) { updatable in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(updatable.entry.title)
+                            .font(.callout)
+                            .lineLimit(2)
+                        Text(updatable.entry.volumeId)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(String(localized: "settings.volumes.updates.update",
+                                  defaultValue: "Update")) {
+                        Task { await updateVolume(updatable) }
+                    }
+                    .font(.callout)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(
+                        String(localized: "settings.volumes.updates.update.a11y",
+                               defaultValue: "Update \(updatable.entry.title)")
+                    )
+                }
+            }
+
+            Button {
+                Task { await updateAllVolumes() }
+            } label: {
+                Label(
+                    String(localized: "settings.volumes.updates.updateAll",
+                           defaultValue: "Update All"),
+                    systemImage: "arrow.down.circle"
+                )
+            }
+            .accessibilityLabel(
+                String(localized: "settings.volumes.updates.updateAll.a11y",
+                       defaultValue: "Update all volumes with available corrections")
+            )
+        } else if hasCheckedForUpdates && !isCheckingForUpdates {
+            Text(String(localized: "settings.volumes.updates.upToDate",
+                        defaultValue: "All downloaded volumes are up to date."))
+                .foregroundStyle(.secondary)
+                .font(.callout)
+        }
+
+        Button {
+            Task { await checkForUpdates() }
+        } label: {
+            if isCheckingForUpdates {
+                HStack {
+                    ProgressView()
+                    Text(String(localized: "settings.volumes.updates.checking",
+                                defaultValue: "Checking for Updates…"))
+                }
+            } else {
+                Label(
+                    String(localized: "settings.volumes.updates.check",
+                           defaultValue: "Check for Updates"),
+                    systemImage: "arrow.triangle.2.circlepath"
+                )
+            }
+        }
+        .disabled(isCheckingForUpdates || downloadedVolumes.isEmpty || appState.manifestStore.diffResult == nil)
+        .accessibilityLabel(
+            String(localized: "settings.volumes.updates.check.a11y",
+                   defaultValue: "Check downloaded volumes for upstream updates")
+        )
     }
 
     @ViewBuilder
@@ -833,6 +960,50 @@ private struct DownloadsSettingsView: View {
         #endif
     }
 
+    /// Diffs every downloaded volume's git blob SHA against the live manifest and
+    /// populates `updatableVolumes` with any that have changed upstream.
+    ///
+    /// Runs only on explicit user request (the "Check for Updates" button) — never
+    /// automatically at launch, since hashing every downloaded volume is too costly
+    /// to run silently.
+    private func checkForUpdates() async {
+        guard let dm = appState.downloadManager,
+              let liveInfo = appState.manifestStore.diffResult?.liveInfoByVolumeId else {
+            return
+        }
+        await MainActor.run { isCheckingForUpdates = true }
+        let known = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        let result = await VolumeUpdateChecker.updatableVolumes(
+            known: known,
+            liveInfoByVolumeId: liveInfo,
+            downloadManager: dm
+        )
+        await MainActor.run {
+            updatableVolumes = result
+            hasCheckedForUpdates = true
+            isCheckingForUpdates = false
+        }
+    }
+
+    /// Re-downloads `updatable` (overwriting the stale local copy) and removes it
+    /// from `updatableVolumes`. `onVolumeDownloaded` re-indexes the volume
+    /// automatically once the transfer completes; the UPSERT path preserves the
+    /// user's notes, highlights, tags, and summaries.
+    private func updateVolume(_ updatable: UpdatableVolume) async {
+        guard let dm = appState.downloadManager else { return }
+        await dm.enqueueDownload(volumeId: updatable.id, downloadUrl: updatable.entry.downloadUrl, force: true)
+        await MainActor.run {
+            updatableVolumes.removeAll { $0.id == updatable.id }
+        }
+    }
+
+    /// Re-downloads every volume currently listed in `updatableVolumes`.
+    private func updateAllVolumes() async {
+        for updatable in updatableVolumes {
+            await updateVolume(updatable)
+        }
+    }
+
     private func availableFiltered(_ volumes: [VolumeManifestEntry]) -> [VolumeManifestEntry] {
         let q = availableSearch.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return volumes }
@@ -880,6 +1051,13 @@ private struct DownloadsSettingsView: View {
 /// ## Scroll Affordance (Session 67)
 /// The Form omits `maxHeight: .infinity` so the `NavigationSplitView` detail column
 /// bounds it correctly and it scrolls when the per-volume list is long.
+///
+/// ## Diagnostics (Session 154)
+/// A "Diagnostics" section after Reindex adds "Check Index Integrity" (runs
+/// `IndexingPipeline.checkIndexIntegrity()` and shows a green "No problems found"
+/// or a list of problem descriptions with a suggestion to rebuild) and "Rebuild
+/// Spotlight Index" (clears and re-submits the system Spotlight index from
+/// `document_cache` without re-parsing XML).
 private struct StorageManagementView: View {
 
     // MARK: - Batch tracking
@@ -926,6 +1104,25 @@ private struct StorageManagementView: View {
     @State private var reindexAllError: String? = nil
     /// Tracks an individual interrupted-volume re-index; `"all"` when doing the bulk sweep.
     @State private var reindexingInterruptedId: String? = nil
+
+    // MARK: Diagnostics state (Session 154)
+
+    /// `true` while `checkIndexIntegrity()` is running.
+    @State private var integrityCheckRunning = false
+    /// Result of the most recent integrity check: `nil` before the first run,
+    /// empty when no problems were found, or one description per problem.
+    @State private var integrityCheckResult: [String]? = nil
+    /// `true` while `rebuildSpotlightIndex()` is running.
+    @State private var spotlightRebuildRunning = false
+    /// `true` once a Spotlight rebuild has completed successfully.
+    @State private var spotlightRebuildSucceeded = false
+    /// Error message from a failed Spotlight rebuild.
+    @State private var spotlightRebuildError: String? = nil
+
+    #if os(iOS)
+    /// Whether indexing progress shows a Live Activity / Dynamic Island widget (Session 154).
+    @AppStorage(SettingsKeys.liveActivityEnabled) private var liveActivityEnabled = true
+    #endif
 
     var body: some View {
         Form {
@@ -1032,6 +1229,23 @@ private struct StorageManagementView: View {
             }
 
             // Reindex All section: absorbed from former standalone ReindexView.
+            #if os(iOS)
+            Section {
+                Toggle(
+                    String(localized: "settings.storage.liveActivity.label",
+                           defaultValue: "Show Indexing Live Activity"),
+                    isOn: $liveActivityEnabled
+                )
+                .accessibilityHint(
+                    String(localized: "settings.storage.liveActivity.a11y",
+                           defaultValue: "When off, indexing progress will not appear in the Dynamic Island or on the Lock Screen")
+                )
+            } footer: {
+                Text(String(localized: "settings.storage.liveActivity.footer",
+                            defaultValue: "Shows indexing progress in the Dynamic Island and on the Lock Screen while volumes are being indexed."))
+            }
+            #endif
+
             Section(String(localized: "settings.storage.reindex.header",
                            defaultValue: "Reindex")) {
                 Text(String(localized: "settings.reindex.about.body",
@@ -1111,6 +1325,100 @@ private struct StorageManagementView: View {
                         .foregroundStyle(.red)
                         .font(.callout)
                 }
+            }
+
+            Section {
+                Button {
+                    Task { await runIndexIntegrityCheck() }
+                } label: {
+                    if integrityCheckRunning {
+                        HStack {
+                            ProgressView().padding(.trailing, 4)
+                            Text(String(localized: "settings.storage.integrity.running",
+                                        defaultValue: "Checking…")).font(.callout)
+                        }
+                    } else {
+                        Label(
+                            String(localized: "settings.storage.integrity.button",
+                                   defaultValue: "Check Index Integrity"),
+                            systemImage: "stethoscope"
+                        )
+                    }
+                }
+                .disabled(isAnythingIndexing || integrityCheckRunning || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.storage.integrity.a11y",
+                           defaultValue: "Check the search index for corruption")
+                )
+
+                if let result = integrityCheckResult {
+                    if result.isEmpty {
+                        Label(
+                            String(localized: "settings.storage.integrity.ok",
+                                   defaultValue: "No problems found"),
+                            systemImage: "checkmark.circle"
+                        )
+                        .foregroundStyle(.green)
+                        .font(.callout)
+                    } else {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(result, id: \.self) { problem in
+                                Label(problem, systemImage: "exclamationmark.triangle")
+                                    .foregroundStyle(.red)
+                                    .font(.callout)
+                            }
+                            Text(String(localized: "settings.storage.integrity.suggestion",
+                                        defaultValue: "Try \"Delete Index & Rebuild\" above to fix these problems."))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Button {
+                    Task { await runRebuildSpotlightIndex() }
+                } label: {
+                    if spotlightRebuildRunning {
+                        HStack {
+                            ProgressView().padding(.trailing, 4)
+                            Text(String(localized: "settings.storage.spotlight.running",
+                                        defaultValue: "Rebuilding…")).font(.callout)
+                        }
+                    } else {
+                        Label(
+                            String(localized: "settings.storage.spotlight.button",
+                                   defaultValue: "Rebuild Spotlight Index"),
+                            systemImage: "magnifyingglass"
+                        )
+                    }
+                }
+                .disabled(isAnythingIndexing || spotlightRebuildRunning || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.storage.spotlight.a11y",
+                           defaultValue: "Clear and re-submit the system Spotlight search index")
+                )
+
+                if spotlightRebuildSucceeded {
+                    Label(
+                        String(localized: "settings.storage.spotlight.ok",
+                               defaultValue: "Spotlight index rebuilt"),
+                        systemImage: "checkmark.circle"
+                    )
+                    .foregroundStyle(.green)
+                    .font(.callout)
+                }
+
+                if let error = spotlightRebuildError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+            } header: {
+                Text(String(localized: "settings.storage.diagnostics.header",
+                            defaultValue: "Diagnostics"))
+            } footer: {
+                Text(String(localized: "settings.storage.diagnostics.footer",
+                            defaultValue: "Run these checks if search results look incomplete, or if FRUS documents are missing from the system Spotlight search."))
             }
         }
         .navigationTitle(String(localized: "storage.navigationTitle",
@@ -1492,6 +1800,46 @@ private struct StorageManagementView: View {
                     (try? pipeline.isVolumeIndexed(perVol.volumeId)) ?? false
             }
         }
+    }
+
+    // MARK: - Diagnostics (Session 154)
+
+    /// Runs `IndexingPipeline.checkIndexIntegrity()` and stores the result for display.
+    ///
+    /// An empty result renders as a green "No problems found" row; a non-empty
+    /// result lists each problem with a suggestion to run "Delete Index & Rebuild".
+    private func runIndexIntegrityCheck() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        integrityCheckRunning = true
+        integrityCheckResult = nil
+        do {
+            integrityCheckResult = try await pipeline.checkIndexIntegrity()
+        } catch {
+            integrityCheckResult = [error.localizedDescription]
+            #if DEBUG
+            print("[Settings] checkIndexIntegrity failed: \(error)")
+            #endif
+        }
+        integrityCheckRunning = false
+    }
+
+    /// Runs `IndexingPipeline.rebuildSpotlightIndex()`, clearing and re-submitting
+    /// the system Spotlight index from `document_cache` without re-parsing XML.
+    private func runRebuildSpotlightIndex() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        spotlightRebuildRunning = true
+        spotlightRebuildSucceeded = false
+        spotlightRebuildError = nil
+        do {
+            try await pipeline.rebuildSpotlightIndex()
+            spotlightRebuildSucceeded = true
+        } catch {
+            spotlightRebuildError = error.localizedDescription
+            #if DEBUG
+            print("[Settings] rebuildSpotlightIndex failed: \(error)")
+            #endif
+        }
+        spotlightRebuildRunning = false
     }
 }
 
@@ -2888,6 +3236,10 @@ private struct ResetView: View {
 private struct DisplaySettingsView: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
     @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
+    @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
+    #if os(iOS)
+    @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
+    #endif
 
     var body: some View {
         Form {
@@ -2934,6 +3286,39 @@ private struct DisplaySettingsView: View {
                             defaultValue: "Used when copying or sharing a citation."))
             }
 
+            Section {
+                Picker(String(localized: "settings.display.defaultMode.label",
+                              defaultValue: "Open Documents In"),
+                       selection: $defaultDocumentMode) {
+                    ForEach(DefaultDocumentMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .accessibilityLabel(
+                    String(localized: "settings.display.defaultMode.a11y",
+                           defaultValue: "Default document mode")
+                )
+
+                #if os(iOS)
+                Toggle(
+                    String(localized: "settings.display.edgeTapNavigation.label",
+                           defaultValue: "Edge-Tap Page Turn"),
+                    isOn: $edgeTapNavigationEnabled
+                )
+                .accessibilityHint(
+                    String(localized: "settings.display.edgeTapNavigation.a11y",
+                           defaultValue: "When on, tapping near the left or right edge in Read mode opens the previous or next document")
+                )
+                #endif
+            } header: {
+                Text(String(localized: "settings.display.reading.header",
+                            defaultValue: "Reading"))
+            } footer: {
+                Text(String(localized: "settings.display.reading.footer",
+                            defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. The in-document Read/Research control always overrides for the current document."))
+            }
         }
         .navigationTitle(String(localized: "settings.display.title", defaultValue: "Display"))
         #if os(iOS)
@@ -3038,5 +3423,39 @@ enum SettingsKeys {
     /// `DocumentViewModel.formattedCitation` and friends, the iOS
     /// `CitationSheetView`, and the macOS citation popover's initial selection.
     static let citationStyle = "frus.citation.style"
+
+    /// UserDefaults key (Bool, default `true`) controlling whether volume
+    /// downloads may use cellular data. Read by `DownloadManager.processQueue()`
+    /// and applied per-request via `URLRequest.allowsCellularAccess` — changing
+    /// it only affects downloads started afterwards, not transfers already
+    /// handed to the background session. iOS only; surfaced in the iOS
+    /// Downloads settings "Settings" section (Session 154).
+    static let allowCellularDownloads = "frus.downloads.allowCellular"
+
+    /// UserDefaults key (Bool, default `true`) controlling whether the document
+    /// reader's invisible leading/trailing edge-tap zones page through to the
+    /// previous/next document while in Read mode. Read by
+    /// `DocumentView.documentEdgeNavigationOverlay` (iOS only — macOS uses
+    /// explicit prev/next chevron buttons instead). Surfaced in the "Reading"
+    /// group of the iOS Display settings (Session 154).
+    static let edgeTapNavigationEnabled = "frus.reading.edgeTapNavigation"
+
+    /// UserDefaults key (`DefaultDocumentMode` raw value, default `"rememberLast"`)
+    /// controlling which mode a document opens in: forced Read, forced Research,
+    /// or remember the last choice (the pre-Session-154 behaviour, where
+    /// `frus.document.researchPanel.visible` simply persists across documents).
+    /// Applied once per document open by `DocumentView` (iOS) and
+    /// `MacDocumentView` (macOS); the in-document Read/Research segmented
+    /// control still overrides live for that document. Surfaced in the
+    /// "Reading" group of Display settings on both platforms (Session 154).
+    static let defaultDocumentMode = "frus.reading.defaultMode"
+
+    /// UserDefaults key (Bool, default `true`) controlling whether indexing
+    /// progress requests a Live Activity (Dynamic Island / Lock Screen widget).
+    /// Checked in `AppState.syncIndexingLiveActivity()` before
+    /// `Activity<IndexingActivityAttributes>.request`; when off, any running
+    /// activity is ended. iOS only; surfaced in the iOS Storage & Index
+    /// settings, near the reindex controls (Session 154).
+    static let liveActivityEnabled = "frus.indexing.liveActivityEnabled"
 }
 
