@@ -295,6 +295,42 @@ struct RemoveVolumeTests {
         }
     }
 
+    @Test("removeVolume is scoped: another volume's same-named documents survive")
+    func removeVolumeScopedToVolume() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // FRUS document IDs repeat in every volume — both volumes contain "d1".
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [("d1", "<head>Memorandum</head><p>Detente and negotiations.</p>")]
+            )
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v02.xml"),
+                volumeId: "frus1969-76v02",
+                documents: [("d1", "<head>Telegram</head><p>Blockade discussions in Berlin.</p>")]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v02")
+
+            try await pipeline.removeVolume("frus1969-76v01")
+
+            // Regression: the per-document delete loop used to remove "d1" from
+            // every volume, so v02's d1 vanished when v01 was removed.
+            let survivors = try await store.search(
+                query: FTS5Query(keywords: ["blockade"]), limit: 10, offset: 0)
+            #expect(survivors.count == 1,
+                    "Removing v01 must not delete v02's d1 from the FTS5 index")
+            #expect(survivors.first?.volumeId == "frus1969-76v02")
+
+            let removed = try await store.search(
+                query: FTS5Query(keywords: ["detente"]), limit: 10, offset: 0)
+            #expect(removed.isEmpty)
+        }
+    }
+
     @Test("removeVolume removes page_ranges rows (verified by date key query)")
     func removedVolumePageRangesCleared() async throws {
         try await withTempDir { dir in

@@ -63,6 +63,12 @@ final class FTS5Connection {
     private func enableWAL() throws {
         try exec("PRAGMA journal_mode=WAL")
         try exec("PRAGMA synchronous=NORMAL")
+        // Wait up to 5 s for a competing writer instead of failing immediately with
+        // SQLITE_BUSY. Multiple connections share this database file (FTS5Store,
+        // IndexingPipeline's auxiliary connection, and the read-only stores); without
+        // a busy timeout a write that collides with another connection's transaction
+        // errors out instantly and the update is silently dropped by `try?` callers.
+        try exec("PRAGMA busy_timeout = 5000")
         // Keep temporary structures (sort buffers, CTE materializations) in RAM.
         // Avoids the overhead of creating a transient temp-file for short-lived data.
         try exec("PRAGMA temp_store=MEMORY")

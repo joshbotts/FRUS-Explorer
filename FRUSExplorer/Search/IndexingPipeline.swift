@@ -241,7 +241,12 @@ public actor IndexingPipeline {
     ///   before Session 118 accumulated duplicate rows in `frus_documents` because the
     ///   `deleteVolume()` call before reindex was not yet present; bumping this version
     ///   triggers a full clean reindex via `needsDateReindex` on affected devices
-    public static let currentDateIndexVersion: Int = 6
+    /// - Version 7: unscoped FTS5 delete migration (Session 2026-06-09) — every
+    ///   summary/note/tag update and per-volume index removal previously deleted FTS5
+    ///   rows by `document_id` alone, removing matching rows (e.g. "d1") from every
+    ///   indexed volume; bumping this version triggers a full clean reindex to restore
+    ///   the missing rows on affected devices
+    public static let currentDateIndexVersion: Int = 7
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -658,17 +663,15 @@ public actor IndexingPipeline {
 
     /// Removes all index data for a volume from FTS5 and all auxiliary tables.
     ///
-    /// Enumerates document IDs from `document_cache`, calls `FTS5Store.delete` for
-    /// each, then deletes auxiliary rows in a single transaction per table.
+    /// Uses the single-statement `FTS5Store.deleteVolume(volumeId:)` so the delete is
+    /// scoped to this volume. The previous per-document loop deleted by `document_id`
+    /// alone, which removed matching rows (e.g. `"d1"`) from **every** indexed volume.
     public func removeVolume(_ volumeId: String) async throws {
-        let docIds = try fetchDocumentIds(forVolume: volumeId)
-        for docId in docIds {
-            try await fts5Store.delete(documentId: docId)
-        }
+        try await fts5Store.deleteVolume(volumeId: volumeId)
         try auxDeleteVolume(volumeId)
         try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
 
-        logger.info("removeVolume: removed \(docIds.count, privacy: .public) FTS5 documents for \(volumeId, privacy: .public)")
+        logger.info("removeVolume: removed FTS5 and auxiliary rows for \(volumeId, privacy: .public)")
     }
 
     /// Removes all indexed data for every volume in a single bulk operation.
@@ -1962,6 +1965,12 @@ public actor IndexingPipeline {
         }
         try exec("PRAGMA journal_mode=WAL")
         try exec("PRAGMA synchronous=NORMAL")
+        // Wait up to 5 s for a competing writer instead of failing immediately with
+        // SQLITE_BUSY. The FTS5Store connection writes to the same file from a
+        // different actor (e.g. background summarization updating summary_text while
+        // a volume is being indexed here); without a busy timeout those collisions
+        // surface as instant errors that `try?` callers silently swallow.
+        try exec("PRAGMA busy_timeout = 5000")
         // Keep temporary structures (sort buffers, CTE materializations) in RAM.
         try exec("PRAGMA temp_store=MEMORY")
         try exec("""
@@ -2501,17 +2510,6 @@ public actor IndexingPipeline {
             sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
             try auxStep(stmt)
         }
-    }
-
-    private func fetchDocumentIds(forVolume volumeId: String) throws -> [String] {
-        let stmt = try auxPrepare("SELECT document_id FROM document_cache WHERE volume_id = ?")
-        defer { sqlite3_finalize(stmt) }
-        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
-        var ids: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            if let id = auxColumnString(stmt, 0) { ids.append(id) }
-        }
-        return ids
     }
 
     /// Returns the indexed body text for a single document, or `nil` if not yet indexed.

@@ -255,7 +255,7 @@ struct FTS5StoreTests {
             limit: 10, offset: 0)
         #expect(results.count == 2)
 
-        try await store.delete(documentId: "d1")
+        try await store.delete(documentId: "d1", volumeId: "frus1969-76v01")
 
         results = try await store.search(
             query: FTS5Query(keywords: ["soviet"]),
@@ -263,6 +263,56 @@ struct FTS5StoreTests {
         let ids = results.map(\.documentId)
         #expect(!ids.contains("d1"), "Deleted document should not appear")
         #expect(ids.contains("d2"))
+    }
+
+    @Test("Delete is scoped by volume: same document_id in another volume survives")
+    func deleteScopedByVolume() async throws {
+        let (store, _) = try makeStore()
+        // FRUS document IDs repeat in every volume — "d1" exists in both volumes here.
+        try await store.insert(document: sampleDoc(
+            id: "d1", volumeId: "frus1969-76v01", body: "Soviet strategic interests."))
+        try await store.insert(document: sampleDoc(
+            id: "d1", volumeId: "frus1969-76v02", body: "Soviet tactical doctrine."))
+
+        try await store.delete(documentId: "d1", volumeId: "frus1969-76v01")
+
+        let results = try await store.search(
+            query: FTS5Query(keywords: ["soviet"]),
+            limit: 10, offset: 0)
+        #expect(results.count == 1, "Only the targeted volume's d1 should be deleted")
+        #expect(results.first?.volumeId == "frus1969-76v02",
+                "The other volume's d1 must survive a volume-scoped delete")
+    }
+
+    @Test("Update is scoped by volume: same document_id in another volume survives")
+    func updateScopedByVolume() async throws {
+        let (store, _) = try makeStore()
+        try await store.insert(document: sampleDoc(
+            id: "d1", volumeId: "frus1969-76v01", body: "Original text about detente."))
+        try await store.insert(document: sampleDoc(
+            id: "d1", volumeId: "frus1969-76v02", body: "Unrelated text about Berlin."))
+
+        // Simulates a summary/note update: replace volume 1's d1 row.
+        try await store.update(document: sampleDoc(
+            id: "d1", volumeId: "frus1969-76v01", body: "Updated text about detente."))
+
+        let berlin = try await store.search(
+            query: FTS5Query(keywords: ["berlin"]),
+            limit: 10, offset: 0)
+        #expect(berlin.count == 1,
+                "Updating v01/d1 must not delete v02/d1 (regression: unscoped delete)")
+
+        let updated = try await store.search(
+            query: FTS5Query(keywords: ["updated"]),
+            limit: 10, offset: 0)
+        #expect(updated.count == 1)
+        #expect(updated.first?.volumeId == "frus1969-76v01")
+
+        // The replaced row must not be duplicated.
+        let detente = try await store.search(
+            query: FTS5Query(keywords: ["detente"]),
+            limit: 10, offset: 0)
+        #expect(detente.count == 1, "Update must replace, not duplicate, the row")
     }
 
     // MARK: - Batch Insert Performance

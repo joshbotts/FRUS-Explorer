@@ -58,6 +58,11 @@ public actor CrossReferenceStore {
         }
         db = h
 
+        // Wait up to 5 s instead of failing instantly with SQLITE_BUSY when a WAL
+        // checkpoint or recovery briefly locks the file (writers on other connections
+        // include FTS5Store and IndexingPipeline's auxiliary connection).
+        sqlite3_busy_timeout(h, 5000)
+
         #if DEBUG
         print("[CrossReferenceStore] Opened read-only connection to \(databaseURL.lastPathComponent)")
         #endif

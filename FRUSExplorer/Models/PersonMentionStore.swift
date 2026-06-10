@@ -62,6 +62,10 @@ public actor PersonMentionStore {
         }
         db = h
 
+        // Wait up to 5 s instead of failing instantly with SQLITE_BUSY when a WAL
+        // checkpoint or recovery briefly locks the file.
+        sqlite3_busy_timeout(h, 5000)
+
         #if DEBUG
         print("[PersonMentionStore] Opened read-only connection to \(databaseURL.lastPathComponent)")
         #endif

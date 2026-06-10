@@ -639,6 +639,18 @@ struct FRUSExplorerApp: App {
                     print("[FRUSExplorer] Auto-indexed \(volumeId): \(summaries.count) summaries, \(notes.count) notes synced.")
                     #endif
                 }
+            },
+            onVolumeDeleted: indexPipeline.map { pipeline in
+                // Remove the volume's FTS5 rows, auxiliary-table rows, and Spotlight
+                // items whenever a volume file is deleted, regardless of which UI
+                // path triggered the deletion. removeVolume is idempotent, so paths
+                // that already cleaned the index themselves are unaffected.
+                { @Sendable [appState] volumeId in
+                    try? await pipeline.removeVolume(volumeId)
+                    await MainActor.run {
+                        appState.indexedVolumeIds.remove(volumeId)
+                    }
+                }
             }
         )
         appState.downloadManager = dm

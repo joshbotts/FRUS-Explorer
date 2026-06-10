@@ -46,12 +46,18 @@ import Foundation
 /// the closure is the only coupling point.
 ///
 /// ## Deletion Hook
-/// `deleteVolume` fires `Notification.Name.frusVolumeDeleted` so the FTS5 index pipeline
-/// can remove the volume's entries. The search index observer is registered in Session 09.
+/// `deleteVolume` calls `onVolumeDeleted` (via an unstructured `Task`) after the XML file
+/// is removed from disk. `FRUSExplorerApp` supplies a closure that calls
+/// `IndexingPipeline.removeVolume(_:)`, so the volume's FTS5 rows, auxiliary-table rows,
+/// and Spotlight items are cleaned up no matter which UI path triggered the deletion.
+/// `Notification.Name.frusVolumeDeleted` is also posted for any additional observers.
 ///
 /// Version history:
 ///   1.0 — Session 05: initial implementation
 ///   1.1 — Session 33: added `onVolumeDownloaded` callback for automatic post-download indexing
+///   1.2 — Session 2026-06-09: added `onVolumeDeleted` callback so every deletion path
+///          cleans up the search index. Previously `.frusVolumeDeleted` had no observer,
+///          so the iOS Downloads settings delete path orphaned the volume's index data.
 public actor DownloadManager {
 
     // MARK: - Types
@@ -74,6 +80,11 @@ public actor DownloadManager {
     /// Called on an unstructured `Task` immediately after a volume file is written to disk.
     /// `nil` if no post-download action is needed (e.g. indexing is unavailable).
     private let onVolumeDownloaded: (@Sendable (String) async -> Void)?
+
+    /// Called on an unstructured `Task` after `deleteVolume` removes a volume file from
+    /// disk. `FRUSExplorerApp` supplies a closure that removes the volume's search-index
+    /// data via `IndexingPipeline.removeVolume(_:)`. `nil` if no cleanup is needed.
+    private let onVolumeDeleted: (@Sendable (String) async -> Void)?
 
     // MARK: - Mutable Queue State
 
@@ -106,12 +117,17 @@ public actor DownloadManager {
     ///   - onVolumeDownloaded: Called (via an unstructured `Task`) once a volume file is
     ///     confirmed on disk. Use this to trigger indexing without coupling `DownloadManager`
     ///     directly to `IndexingPipeline`. Pass `nil` if no post-download action is needed.
+    ///   - onVolumeDeleted: Called (via an unstructured `Task`) after `deleteVolume` removes
+    ///     a volume file from disk. Use this to remove the volume's search-index data
+    ///     without coupling `DownloadManager` directly to `IndexingPipeline`. Pass `nil`
+    ///     if no post-delete cleanup is needed.
     public init(
         volumesDirectory: URL,
         concurrencyLimit: Int = 4,
         downloadTask: DownloadTask? = nil,
         onStateChanged: @escaping @MainActor (DownloadManagerState) -> Void,
-        onVolumeDownloaded: (@Sendable (String) async -> Void)? = nil
+        onVolumeDownloaded: (@Sendable (String) async -> Void)? = nil,
+        onVolumeDeleted: (@Sendable (String) async -> Void)? = nil
     ) {
         self.volumesDirectory = volumesDirectory
         self.concurrencyLimit = concurrencyLimit
@@ -120,6 +136,7 @@ public actor DownloadManager {
         }
         self.onStateChanged = onStateChanged
         self.onVolumeDownloaded = onVolumeDownloaded
+        self.onVolumeDeleted = onVolumeDeleted
 
         // Restore persisted pending queue from the previous app session.
         let restored = Self.loadPersistedQueue()
@@ -206,15 +223,23 @@ public actor DownloadManager {
 
     /// Deletes a fully downloaded volume XML file from disk.
     ///
-    /// Posts `Notification.Name.frusVolumeDeleted` so the FTS5 index pipeline (Session 09)
-    /// can remove the volume's search entries. Throws if the file cannot be removed.
+    /// Calls `onVolumeDeleted` (via an unstructured `Task`) so the search index removes
+    /// the volume's FTS5 rows, auxiliary-table rows, and Spotlight items, and also posts
+    /// `Notification.Name.frusVolumeDeleted` for any additional observers. Throws if the
+    /// file cannot be removed.
     public func deleteVolume(volumeId: String) throws {
         let dest = volumeURL(for: volumeId)
         guard FileManager.default.fileExists(atPath: dest.path) else { return }
         try FileManager.default.removeItem(at: dest)
 
-        // Session 09 hook: the FTS5 index observer listens for this notification and
-        // removes the volume's rows from the frus_documents FTS5 table.
+        // Index cleanup runs in an unstructured Task so file deletion returns
+        // immediately; IndexingPipeline.removeVolume is idempotent, so callers that
+        // already removed the index themselves (e.g. the storage management sheet)
+        // are unaffected by the second pass.
+        if let callback = onVolumeDeleted {
+            Task { await callback(volumeId) }
+        }
+
         NotificationCenter.default.post(
             name: .frusVolumeDeleted,
             object: nil,
@@ -422,6 +447,7 @@ public actor DownloadManager {
 public extension Notification.Name {
     /// Posted by `DownloadManager.deleteVolume` when a volume is removed from disk.
     /// `userInfo["volumeId"]` contains the deleted volume identifier.
-    /// The FTS5 index observer (Session 09) removes the volume's search entries on receipt.
+    /// Search-index cleanup is handled by the `onVolumeDeleted` callback, not this
+    /// notification; it remains available for auxiliary observers (e.g. UI refresh).
     static let frusVolumeDeleted = Notification.Name("frus.volumeDeleted")
 }

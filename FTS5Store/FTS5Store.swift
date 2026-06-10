@@ -65,6 +65,11 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///          Skipping it eliminates the most expensive per-row operation for large
 ///          result sets. `FTS5Result.snippet` now carries an empty string; callers
 ///          that care about snippets (e.g. `SearchService`) must supply their own.
+///   1.5 — Session 2026-06-09: `delete(documentId:)` replaced by
+///          `delete(documentId:volumeId:)`. FRUS document IDs (e.g. "d1") repeat in
+///          every volume, so the unscoped delete removed rows from all volumes —
+///          every summary/note/tag update and every per-document volume removal
+///          silently corrupted the index for other volumes.
 public actor FTS5Store {
 
     private let connection: FTS5Connection
@@ -121,26 +126,33 @@ public actor FTS5Store {
     /// Replaces an existing document in the FTS5 index.
     ///
     /// Implemented as `delete` + `insert`. FTS5 does not support in-place row
-    /// updates via a stable rowid when `content=` is not used.
+    /// updates via a stable rowid when `content=` is not used. The delete is
+    /// scoped to the document's `volumeId` — FRUS document IDs (e.g. `"d1"`)
+    /// repeat in every volume, so an unscoped delete would remove rows from
+    /// other volumes.
     public func update(document: FTS5Document) throws {
-        try delete(documentId: document.id)
+        try delete(documentId: document.id, volumeId: document.volumeId)
         try insert(document: document)
 
-        logger.debug("Updated document \(document.id, privacy: .public)")
+        logger.debug("Updated document \(document.volumeId, privacy: .public)/\(document.id, privacy: .public)")
     }
 
-    /// Removes a document from the FTS5 index by its identifier.
+    /// Removes a single document from the FTS5 index.
     ///
-    /// Uses the FTS5 `DELETE` extension syntax. If the document does not exist,
-    /// the operation succeeds silently.
-    public func delete(documentId: String) throws {
-        let sql = "DELETE FROM \(schema.tableName) WHERE document_id = ?"
+    /// The delete is scoped by both `documentId` and `volumeId` because FRUS
+    /// document IDs (e.g. `"d1"`) are only unique within a volume — an unscoped
+    /// `document_id` delete would silently remove matching rows from every
+    /// indexed volume. If the document does not exist, the operation succeeds
+    /// silently.
+    public func delete(documentId: String, volumeId: String) throws {
+        let sql = "DELETE FROM \(schema.tableName) WHERE document_id = ? AND volume_id = ?"
         let stmt = try connection.prepare(sql)
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, documentId, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(stmt, 2, volumeId, -1, SQLITE_TRANSIENT)
         try connection.step(stmt)
 
-        logger.debug("Deleted document \(documentId, privacy: .public)")
+        logger.debug("Deleted document \(volumeId, privacy: .public)/\(documentId, privacy: .public)")
     }
 
     /// Removes all FTS5 rows belonging to a given volume.
@@ -344,8 +356,9 @@ public actor FTS5Store {
 
     /// Deletes every document from the FTS5 index in a single SQL statement.
     ///
-    /// Use this instead of calling `delete(documentId:)` in a loop when resetting
-    /// all data — one statement is orders of magnitude faster than per-document deletes.
+    /// Use this instead of calling `delete(documentId:volumeId:)` in a loop when
+    /// resetting all data — one statement is orders of magnitude faster than
+    /// per-document deletes.
     public func deleteAll() throws {
         try connection.exec("DELETE FROM \(schema.tableName)")
         logger.info("deleteAll complete on \(self.schema.tableName, privacy: .public)")
