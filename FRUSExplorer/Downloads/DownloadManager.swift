@@ -81,8 +81,9 @@ public actor DownloadManager {
     /// Root directory where all downloaded XML files are stored.
     public let volumesDirectory: URL
 
-    /// Maximum number of simultaneous downloads.
-    public let concurrencyLimit: Int
+    /// Maximum number of simultaneous downloads. Updatable at runtime via
+    /// `setConcurrencyLimit(_:)`.
+    public private(set) var concurrencyLimit: Int
 
     /// Maximum automatic retries for a failed (non-cancelled) download.
     public static let maxRetryCount = 2
@@ -357,6 +358,20 @@ public actor DownloadManager {
 
         #if DEBUG
         print("[DownloadManager] Resumed. pending=\(pendingQueue.count) active=\(activeVolumeIds.count)")
+        #endif
+    }
+
+    /// Updates the maximum number of simultaneous downloads (clamped to 1…8)
+    /// and immediately starts any pending entries a higher limit now allows.
+    /// Active transfers are never cancelled by a lower limit — it applies as
+    /// transfers finish. Persisting the choice is the Settings pane's job
+    /// (`SettingsKeys.concurrentDownloadLimit`).
+    public func setConcurrencyLimit(_ limit: Int) {
+        concurrencyLimit = max(1, min(limit, 8))
+        processQueue()
+
+        #if DEBUG
+        print("[DownloadManager] Concurrency limit set to \(concurrencyLimit).")
         #endif
     }
 

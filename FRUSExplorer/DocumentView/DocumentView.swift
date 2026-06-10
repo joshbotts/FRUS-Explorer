@@ -257,6 +257,7 @@ struct DocumentView: View {
                existingVm.entry.documentId != entry.documentId
                    || existingVm.entry.volumeId != entry.volumeId {
                 vm = nil
+                pendingHighlightLink = nil
             }
             bootstrapViewModel()
             appState.logEvent(.documentOpen(
@@ -353,6 +354,19 @@ struct DocumentView: View {
     private func documentContent(vm: DocumentViewModel, model: FRUSDocumentRenderModel) -> some View {
         webKitDocumentContent(vm: vm, model: model)
             .toolbar { documentToolbar(vm: vm) }
+        // Summarization failures must be visible even when the research panel is
+        // hidden (Read mode) — previously they were logged and silently dropped.
+        .alert(
+            String(localized: "summary.error.title", defaultValue: "Summarization Failed"),
+            isPresented: Binding(
+                get: { vm.summarizationError != nil },
+                set: { if !$0 { vm.summarizationError = nil } }
+            )
+        ) {
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) { }
+        } message: {
+            Text(vm.summarizationError ?? "")
+        }
         // Single consolidated sheet driven by the DocumentSheet enum (F-024).
         // One .sheet modifier is cheaper than 7 and makes the "only one sheet at a
         // time" constraint explicit in the type system.
@@ -709,8 +723,29 @@ struct DocumentView: View {
                 String(localized: "document.toolbar.createHighlight.a11y",
                        defaultValue: "Create highlight")
             )
-            .sheet(isPresented: $showHighlightColorPicker) {
-                highlightColorPickerSheet
+            // The colour-picker sheet is presented from the main content chain
+            // (single `.sheet(isPresented:)` for this binding) so it works for
+            // both this button and the selection edit-menu action, including
+            // when this button is collapsed into the system overflow menu.
+
+            // 3b. Add Note to Highlight — transient, appears right after a
+            // highlight is created (mirrors the macOS research strip button).
+            // One-shot: consumed on tap, cleared on document change.
+            if let highlightId = pendingHighlightLink {
+                Button {
+                    pendingHighlightLink = nil
+                    activeSheet = .noteEditorForHighlight(highlightId)
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.noteForHighlight",
+                               defaultValue: "Add Note to Highlight"),
+                        systemImage: "note.text.badge.plus"
+                    )
+                }
+                .accessibilityLabel(
+                    String(localized: "document.toolbar.noteForHighlight.a11y",
+                           defaultValue: "Add a research note to the highlight you just created")
+                )
             }
 
             // 4. Research panel toggle — segmented Read / Research picker.
@@ -808,23 +843,10 @@ struct DocumentView: View {
                 )
             }
 
-            // 9. NARA Catalog Lookup — available when text is selected anywhere in
-            // the document (body or footnotes). Shown when webKitSelectedText is
-            // non-nil; this persists after the overflow-menu blur event so the
-            // selected text is still accessible when the user taps the item.
-            if webKitSelectedText != nil {
-                Button {
-                    let text = webKitSelectedText ?? ""
-                    webKitSelectedText = nil   // clear after capturing so button goes away
-                    activeSheet = .naraLookup(text: text)
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.naraLookup",
-                               defaultValue: "Look Up in NARA Catalog"),
-                        systemImage: "magnifyingglass.circle"
-                    )
-                }
-            }
+            // 9. NARA Catalog Lookup moved to the text-selection edit menu
+            // (see .onEditMenuNARALookup on the web view) — the conditional
+            // toolbar item popped in and out of the overflow menu as the
+            // selection changed, which was both jarring and undiscoverable.
 
             // 10. Source Explorer — always available for all documents.
             // Always uses a sheet on iOS/iPadOS: openWindow(id:) on a WindowGroup is
@@ -1075,6 +1097,18 @@ struct DocumentView: View {
                 webKitSelectionRange = nil
             }
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
+            .onEditMenuHighlight {
+                // "Highlight" on the selection edit menu — same flow as the
+                // toolbar paintbrush: pick a colour, then create the highlight
+                // from webKitSelectionRange.
+                showHighlightColorPicker = true
+            }
+            .onEditMenuNARALookup {
+                let text = webKitSelectedText ?? ""
+                webKitSelectedText = nil
+                activeSheet = .naraLookup(text: text)
+            }
+            .canHighlightSelection { webKitSelectionRange != nil }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             documentEdgeNavigationOverlay(vm: vm)
@@ -1222,14 +1256,39 @@ struct DocumentView: View {
                         .padding(.vertical, 8)
                 } else if summaryExpanded {
                     Divider()
-                    HStack(spacing: 8) {
-                        Image(systemName: "sparkles").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.summary.empty",
-                                    defaultValue: "No summary yet — tap More → Summarize with AI."))
+                    if vm.isSummarizing {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text(String(localized: "panel.summary.generating",
+                                        defaultValue: "Summarizing…"))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(16)
+                    } else if AppleIntelligenceProvider.shared.isAvailable {
+                        Button {
+                            activeSheet = .summarizePromptPicker
+                        } label: {
+                            Label(
+                                String(localized: "panel.summary.generate",
+                                       defaultValue: "Summarize this Document"),
+                                systemImage: "sparkles"
+                            )
                             .font(.callout)
-                            .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(vm.documentPlainText.isEmpty)
+                        .padding(16)
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles").foregroundStyle(.tertiary)
+                            Text(String(localized: "panel.summary.unavailable",
+                                        defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud."))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(16)
                     }
-                    .padding(16)
                 }
                 Divider()
             }

@@ -129,6 +129,26 @@ final class MacSearchViewModel {
 
     var scopeCollections: Bool = false // deferred to future session
 
+    // MARK: - Initialisation
+
+    /// Applies the user-configured search defaults (`SearchDefaults`, set in
+    /// Settings → Search) to the scope toggles, the type filter, and the
+    /// underlying `parameters`. Property observers do not fire during
+    /// initialisation, so `parameters` is updated explicitly.
+    init() {
+        let documents = SearchDefaults.scopeDocuments
+        let notes     = SearchDefaults.scopeNotes
+        let summaries = SearchDefaults.scopeSummaries
+        let typeFilter = SearchDefaults.documentTypeFilter
+        scopeDocuments = documents
+        scopeNotes     = notes
+        scopeSummaries = summaries
+        parameters.includeDocumentText = documents
+        parameters.includeNotes        = notes
+        parameters.includeSummaries    = summaries
+        parameters.documentTypeFilter  = typeFilter
+    }
+
     // MARK: - Filter Parameters
 
     var parameters: SearchParameters = SearchParameters()

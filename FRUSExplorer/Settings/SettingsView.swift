@@ -361,10 +361,6 @@ private struct DownloadsSettingsView: View {
     @State private var enqueuedMessage: String? = nil
 
     // Phase 1: storage limit gate
-    @AppStorage("frus.storage.limitGB") private var storageLimitGBiOS: Int = 0
-    @State private var showLimitWarningIOS = false
-    @State private var pendingEnqueueiOS: [VolumeManifestEntry] = []
-    @State private var projectedTotaliOS: Int = 0
 
     var body: some View {
         Form {
@@ -506,8 +502,13 @@ private struct DownloadsSettingsView: View {
                 }
                 .onChange(of: concurrentDownloadLimit) { _, newValue in
                     UserDefaults.standard.set(newValue, forKey: SettingsKeys.concurrentDownloadLimit)
+                    // Apply immediately — a higher limit starts pending downloads
+                    // right away; a lower one applies as transfers finish.
+                    if let dm = appState.downloadManager {
+                        Task { await dm.setConcurrencyLimit(newValue) }
+                    }
                     #if DEBUG
-                    print("[Settings] Concurrent download limit set to \(newValue) (takes effect on next launch)")
+                    print("[Settings] Concurrent download limit set to \(newValue)")
                     #endif
                 }
                 .accessibilityLabel(
@@ -515,7 +516,7 @@ private struct DownloadsSettingsView: View {
                            defaultValue: "Concurrent download limit")
                 )
                 Text(String(localized: "settings.volumes.concurrentLimit.note",
-                            defaultValue: "Takes effect on next launch."))
+                            defaultValue: "How many volumes download at the same time."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -572,33 +573,6 @@ private struct DownloadsSettingsView: View {
                 format: String(localized: "settings.volumes.delete.confirm.message",
                                defaultValue: "\"%@\" will be removed from your device. You can re-download it later."),
                 entry.title
-            ))
-        }
-        // Phase 1: storage limit warning before batch download.
-        .confirmationDialog(
-            String(localized: "settings.download.limitWarning.title",
-                   defaultValue: "Storage Limit"),
-            isPresented: $showLimitWarningIOS,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "settings.download.limitWarning.proceed",
-                          defaultValue: "Download Anyway")) {
-                let pending = pendingEnqueueiOS
-                pendingEnqueueiOS = []
-                Task { await performEnqueueiOS(pending) }
-            }
-            Button(String(localized: "settings.download.limitWarning.cancel",
-                          defaultValue: "Cancel"),
-                   role: .cancel) {
-                pendingEnqueueiOS = []
-            }
-        } message: {
-            let limitStr = "\(storageLimitGBiOS) GB"
-            let projStr = ByteCountFormatter.string(fromByteCount: Int64(projectedTotaliOS), countStyle: .file)
-            Text(String(
-                format: String(localized: "settings.download.limitWarning.message",
-                               defaultValue: "Downloading these volumes would bring total storage to approximately %@, exceeding your %@ limit. The estimate uses a 2.8× search index factor (the full FRUS corpus produces roughly 2.5–3× its XML size in search index data)."),
-                projStr, limitStr
             ))
         }
     }
@@ -830,23 +804,6 @@ private struct DownloadsSettingsView: View {
             toEnqueue = source.filter { $0.volumeId == id }
         }
         Task {
-            // Phase 1: check storage limit before downloading.
-            if storageLimitGBiOS > 0,
-               let report = try? await dm.storageReport(indexDirectory: appState.indexDirectory) {
-                let limitBytes = storageLimitGBiOS * 1_073_741_824
-                let newOnly = toEnqueue.filter { !dm.isVolumeDownloaded($0.volumeId) }
-                let newBytes = newOnly.reduce(0) { $0 + $1.sizeBytes }
-                let estimated = Int(Double(newBytes) * StorageReport.indexOverheadFactor)  // XML × 2.8 index overhead
-                let projected = report.grandTotalBytes + newBytes + estimated
-                if projected > limitBytes {
-                    await MainActor.run {
-                        projectedTotaliOS = projected
-                        pendingEnqueueiOS = newOnly
-                        showLimitWarningIOS = true
-                    }
-                    return
-                }
-            }
             await performEnqueueiOS(toEnqueue)
         }
     }
@@ -962,31 +919,12 @@ private struct StorageManagementView: View {
     /// Tracks an individual interrupted-volume re-index; `"all"` when doing the bulk sweep.
     @State private var reindexingInterruptedId: String? = nil
 
-    @AppStorage("frus.storage.limitGB") private var storageLimitGB: Int = 0
-
     var body: some View {
         Form {
-            Section(header: EmptyView(),
-                    footer: Text(String(localized: "settings.storage.limit.footer",
-                                        defaultValue: "The app will warn before downloads exceed this limit. The full FRUS corpus uses ~3.4 GB of XML and ~9 GB of search index — approximately 12–13 GB total on device."))) {
-                Picker(String(localized: "settings.storage.limit.label",
-                              defaultValue: "On-Device Limit"),
-                       selection: $storageLimitGB) {
-                    Text("5 GB").tag(5)
-                    Text("10 GB").tag(10)
-                    Text("15 GB").tag(15)
-                    Text("20 GB").tag(20)
-                    Text(String(localized: "settings.storage.limit.none",
-                                defaultValue: "No Limit")).tag(0)
-                }
-                .accessibilityLabel(
-                    String(localized: "settings.storage.limit.a11y",
-                           defaultValue: "On-device storage limit")
-                )
-            }
-
-            Section(String(localized: "settings.storage.aggregate.header",
-                           defaultValue: "Total Storage Used")) {
+            Section(header: Text(String(localized: "settings.storage.aggregate.header",
+                                        defaultValue: "Total Storage Used")),
+                    footer: Text(String(localized: "settings.storage.aggregate.footer",
+                                        defaultValue: "For reference: the full FRUS corpus uses ~3.4 GB of XML and ~9 GB of search index — approximately 12–13 GB total on device."))) {
                 if let report {
                     LabeledContent(
                         String(localized: "settings.storage.volumes.label",
@@ -2699,7 +2637,6 @@ private struct ResetView: View {
 
 private struct DisplaySettingsView: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
-    @AppStorage("frus.display.showDocumentNumbers") private var showDocumentNumbers = true
 
     var body: some View {
         Form {
@@ -2724,21 +2661,6 @@ private struct DisplaySettingsView: View {
                             defaultValue: "Adjusts the body text size in the Document view."))
             }
 
-            Section {
-                Toggle(String(localized: "settings.display.showNumbers.label",
-                              defaultValue: "Show Document Numbers"),
-                       isOn: $showDocumentNumbers)
-                .accessibilityLabel(
-                    String(localized: "settings.display.showNumbers.a11y",
-                           defaultValue: "Show document numbers in the document view")
-                )
-            } header: {
-                Text(String(localized: "settings.display.documentView.header",
-                            defaultValue: "Document View"))
-            } footer: {
-                Text(String(localized: "settings.display.showNumbers.footer",
-                            defaultValue: "Displays the printed document number (e.g. \"Document 28\") in the document identity line."))
-            }
         }
         .navigationTitle(String(localized: "settings.display.title", defaultValue: "Display"))
         #if os(iOS)
@@ -2754,10 +2676,10 @@ private struct DisplaySettingsView: View {
 // MARK: - SearchDefaultsView
 
 private struct SearchDefaultsView: View {
-    @AppStorage("frus.search.scopeDocuments")    private var scopeDocuments    = true
-    @AppStorage("frus.search.scopeNotes")        private var scopeNotes        = true
-    @AppStorage("frus.search.scopeSummaries")    private var scopeSummaries    = true
-    @AppStorage("frus.search.defaultTypeFilter") private var defaultTypeFilter = "all"
+    @AppStorage(SearchDefaults.scopeDocumentsKey) private var scopeDocuments    = true
+    @AppStorage(SearchDefaults.scopeNotesKey)     private var scopeNotes        = true
+    @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries    = true
+    @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
 
     var body: some View {
         Form {
@@ -2833,6 +2755,9 @@ func formattedBytes(_ bytes: Int) -> String {
 // MARK: - SettingsKeys
 
 enum SettingsKeys {
+    /// UserDefaults key for the maximum simultaneous volume downloads.
+    /// Written by the Downloads settings (both platforms), read at boot by
+    /// `FRUSExplorerApp` and applied live via `DownloadManager.setConcurrencyLimit`.
     static let concurrentDownloadLimit = "frus.concurrentDownloadLimit"
 }
 

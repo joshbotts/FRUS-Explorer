@@ -25,14 +25,28 @@ import Foundation
 ///   1.1 — Session 2026-06-09: `Codable` conformance added so structures can be
 ///          persisted to the `volume_structures` table at index time and served to
 ///          the Browser without re-parsing the volume XML.
+///   2.0 — Session 2026-06-10: `divType` now carries the *effective section kind*
+///          derived from the real corpus encoding (`type="section"` + `subtype` +
+///          `xml:id`), not the raw `type` attribute. Kind-classification helpers
+///          (`isFrontMatterKind`, `canReadDirectly`, `isPersonsList`, …) centralise
+///          the routing rules previously duplicated across `VolumeView`,
+///          `CompilationView`, and the macOS corpus browser.
 public struct VolumeSection: Sendable, Identifiable, Codable {
 
     /// The `xml:id` attribute of the enclosing `<div>`, or a generated stable string
     /// if the element lacks one. e.g. `"c1"`, `"app1"`, `"front"`.
     public let sectionId: String
 
-    /// The TEI `type` attribute value. e.g. `"compilation"`, `"chapter"`, `"appendix"`,
-    /// `"preface"`, `"front"`, `"back"`.
+    /// The section's effective kind.
+    ///
+    /// For body structure this is the TEI `type` attribute (`"compilation"`,
+    /// `"chapter"`, `"subchapter"`, `"appendix"`). For front/back matter — which the
+    /// real corpus encodes as `<div type="section" subtype="…">` — this is the
+    /// normalised kind derived from `subtype` and `xml:id` by
+    /// `FRUSDocumentParser` (e.g. `"preface"`, `"sources"`, `"persons"`, `"terms"`,
+    /// `"table-of-contents"`, `"press-release"`, `"volume-summary"`,
+    /// `"about-frus-series"`, `"errata"`, `"index"`, `"historical-document"`).
+    /// `"front"` / `"back"` mark the wrapper elements themselves.
     public let divType: String
 
     /// The section's `<head>` text, or a humanised fallback derived from `divType`.
@@ -50,6 +64,66 @@ public struct VolumeSection: Sendable, Identifiable, Codable {
     /// All document IDs reachable from this section or any of its subsections.
     public var allDocumentIds: [String] {
         documentIds + subsections.flatMap(\.allDocumentIds)
+    }
+
+    // MARK: - Kind Classification (single source of truth for browser routing)
+
+    /// Kinds that belong to the browser's "Front Matter" group (including the
+    /// `"front"` wrapper itself, which the UI expands inline).
+    public static let frontMatterKinds: Set<String> = [
+        "front", "preface", "intro", "introduction", "errata", "foreword",
+        "prefatoryNote", "sources", "persons", "terms",
+        "table-of-contents", "press-release", "volume-summary",
+        "about-frus-series", "historical-document", "section",
+    ]
+
+    /// Kinds whose content is prose (or a rendered list) that `DocumentView` can
+    /// display directly via the `xml:id`-matching quasi-document parse — no FTS
+    /// indexing required.
+    ///
+    /// `"persons"` and `"sources"` are deliberately absent: they route to the
+    /// structured `FrontMatterPersonsView` / `VolumeSourcesView` instead.
+    public static let proseReadableKinds: Set<String> = [
+        "preface", "intro", "introduction", "errata", "foreword",
+        "prefatoryNote", "terms", "appendix",
+        "table-of-contents", "press-release", "volume-summary",
+        "about-frus-series", "historical-document", "index", "section",
+    ]
+
+    /// `true` when this section belongs in the browser's "Front Matter" group.
+    public var isFrontMatterKind: Bool {
+        Self.frontMatterKinds.contains(divType)
+    }
+
+    /// `true` when this section is the structured Persons glossary, which routes to
+    /// `FrontMatterPersonsView` rather than a document list.
+    public var isPersonsList: Bool { divType == "persons" }
+
+    /// `true` when this section is the structured archival Sources list, which routes
+    /// to `VolumeSourcesView` rather than a document list.
+    public var isSourcesList: Bool { divType == "sources" }
+
+    /// `true` when this is a prose-only leaf section that can be opened directly in
+    /// `DocumentView` (the parser locates the `<div>` by `xml:id`, so a real ID from
+    /// the TEI source is required — auto-generated fallback IDs are excluded).
+    public var canReadDirectly: Bool {
+        guard Self.proseReadableKinds.contains(divType),
+              documentIds.isEmpty,
+              subsections.isEmpty
+        else { return false }
+        return hasExplicitSectionId
+    }
+
+    /// `true` when `sectionId` came from an `xml:id` in the TEI source rather than
+    /// the parser's auto-generated `"<kind>-<n>"` fallback for ID-less elements.
+    public var hasExplicitSectionId: Bool {
+        guard !sectionId.isEmpty else { return false }
+        let autoPrefix = "\(divType)-"
+        if sectionId.hasPrefix(autoPrefix) {
+            let suffix = sectionId.dropFirst(autoPrefix.count)
+            if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) { return false }
+        }
+        return true
     }
 }
 

@@ -449,3 +449,51 @@ public struct IndexingProgress: Sendable {
         self.timestamp = timestamp
     }
 }
+
+// MARK: - SearchDefaults
+
+/// User-configurable default search scope, persisted by the Settings
+/// "Search Defaults" pane (iOS) / "Search" pane (macOS) and applied when a
+/// search view model is created.
+///
+/// Per-session changes in the search filter panel override these values without
+/// writing them back — the footer text in both settings panes documents exactly
+/// that contract. `SearchViewModel` (iOS) seeds its scope properties from here
+/// and `clearFilters()` resets to these values; `MacSearchViewModel` applies
+/// them in its initialiser.
+public enum SearchDefaults {
+
+    /// UserDefaults key for the "search document text by default" toggle.
+    public static let scopeDocumentsKey = "frus.search.scopeDocuments"
+    /// UserDefaults key for the "include research notes by default" toggle.
+    public static let scopeNotesKey = "frus.search.scopeNotes"
+    /// UserDefaults key for the "include AI summaries by default" toggle.
+    public static let scopeSummariesKey = "frus.search.scopeSummaries"
+    /// UserDefaults key for the default document-type filter
+    /// (`"all"` / `"documentsOnly"` / `"editorialNotesOnly"`).
+    public static let typeFilterKey = "frus.search.defaultTypeFilter"
+
+    /// Whether document body text is searched by default. Default `true`.
+    public static var scopeDocuments: Bool {
+        UserDefaults.standard.object(forKey: scopeDocumentsKey) as? Bool ?? true
+    }
+
+    /// Whether research notes are included in search by default. Default `true`.
+    public static var scopeNotes: Bool {
+        UserDefaults.standard.object(forKey: scopeNotesKey) as? Bool ?? true
+    }
+
+    /// Whether AI summaries are included in search by default. Default `true`.
+    public static var scopeSummaries: Bool {
+        UserDefaults.standard.object(forKey: scopeSummariesKey) as? Bool ?? true
+    }
+
+    /// The default document-type filter. Default `.all`.
+    public static var documentTypeFilter: DocumentTypeFilter {
+        switch UserDefaults.standard.string(forKey: typeFilterKey) {
+        case "documentsOnly":      return .documentsOnly
+        case "editorialNotesOnly": return .editorialNotesOnly
+        default:                   return .all
+        }
+    }
+}

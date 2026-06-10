@@ -269,7 +269,16 @@ public actor IndexingPipeline {
     /// rows lost to that bug are restored by the FTS schema-version-4 migration's
     /// `rebuildSearchIndexFromCache()`, which rebuilds from the unaffected
     /// `document_cache` without the full XML re-parse a date-version bump would force.)
-    public static let currentDateIndexVersion: Int = 6
+    ///
+    /// - Version 7: real-corpus TEI vocabulary fix (Session 2026-06-10). Editorial
+    ///   notes are detected via `subtype="editorial-note"` (the `type="editorialNote"`
+    ///   encoding never occurs in the published corpus), front/back-matter sections
+    ///   (`type="section"` + `subtype`) are promoted to searchable quasi-documents
+    ///   with `is_front_matter` set, archival sources extraction recognises the real
+    ///   sources section, and `volume_structures` rows gain the full front/back
+    ///   hierarchy. All of these live in parse output, so a full XML re-parse is
+    ///   required to repopulate them.
+    public static let currentDateIndexVersion: Int = 7
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

@@ -106,15 +106,17 @@ final class SearchViewModel {
     // MARK: - Content Scope Parameters
 
     /// Whether document body content (header, dateline, source note, body text)
-    /// is included in the search scope. Default `true`.
-    var includeDocumentText: Bool = true
-    var includeSummaries: Bool = true
-    var includeNotes: Bool = true
+    /// is included in the search scope. Seeded from the Settings "Search Defaults"
+    /// pane (`SearchDefaults`); per-session changes here do not write back.
+    var includeDocumentText: Bool = SearchDefaults.scopeDocuments
+    var includeSummaries: Bool = SearchDefaults.scopeSummaries
+    var includeNotes: Bool = SearchDefaults.scopeNotes
 
     // MARK: - Document Type Filter
 
-    /// Which document types to include in results. Default `.all`.
-    var documentTypeFilter: DocumentTypeFilter = .all
+    /// Which document types to include in results. Seeded from the Settings
+    /// "Search Defaults" pane (`SearchDefaults`).
+    var documentTypeFilter: DocumentTypeFilter = SearchDefaults.documentTypeFilter
 
     // MARK: - Front Matter Scope
 
@@ -235,11 +237,11 @@ final class SearchViewModel {
         dateRangeEnabled = false
         selectedSubjectTagIds = []
         selectedUserTagIds = []
-        includeDocumentText = true
-        includeSummaries = true
-        includeNotes = true
+        includeDocumentText = SearchDefaults.scopeDocuments
+        includeSummaries = SearchDefaults.scopeSummaries
+        includeNotes = SearchDefaults.scopeNotes
         includeFrontMatter = true
-        documentTypeFilter = .all
+        documentTypeFilter = SearchDefaults.documentTypeFilter
         personRefText = ""
     }
 

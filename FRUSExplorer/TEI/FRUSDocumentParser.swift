@@ -317,6 +317,10 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
     private struct Frame {
         var sectionId: String
         var divType: String
+        /// `true` for unrecognised wrapper divs: the frame exists only to keep
+        /// open/close events balanced; on pop, its documents and subsections bubble
+        /// up to the parent instead of emitting a `VolumeSection`.
+        var isTransparent: Bool = false
         var headParts: [String] = []
         var documentIds: [String] = []
         var subsections: [VolumeSection] = []
@@ -333,15 +337,47 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
     private var headNestDepth: Int = 0
     private var autoIdCounter: Int = 0
 
-    // Div types that form structural sections above the document level.
-    // Front-matter types (prefatoryNote, sources, persons, terms) were added in
-    // Session 2026-06-08 so they are captured as named subsections of the <front>
-    // wrapper rather than being silently ignored.
+    // Div types that form structural sections above the document level when they
+    // appear as literal `type` values. The real corpus encodes front/back matter as
+    // `type="section"` + `subtype` (resolved by `structuralKind`); these literal
+    // values cover body structure plus the legacy fixture vocabulary.
     private static let structuralTypes: Set<String> = [
         "compilation", "chapter", "subchapter", "appendix",
         "preface", "intro", "introduction", "errata", "index", "foreword",
         "prefatoryNote", "sources", "persons", "terms",
     ]
+
+    /// Resolves a `<div>`'s effective structural kind from its attributes, or `nil`
+    /// when the div is not structural (an unknown wrapper — tracked as a transparent
+    /// frame so its children bubble up to the correct parent).
+    ///
+    /// ## Real corpus encoding (verified against HistoryAtState/frus, 2026-06-10)
+    /// Front/back matter is `<div type="section" subtype="…" xml:id="…">`:
+    /// `subtype` ∈ {preface, sources, table-of-contents, press-release,
+    /// volume-summary, about-frus-series, errata, index, historical-document}.
+    /// The Persons and Terms glossaries are `subtype="index"` distinguished by
+    /// `xml:id` (`"persons"` / `"terms"` / `"abbreviations"`), matching the pattern
+    /// `PersonsParserDelegate` and `TermsParserDelegate` already key on. The 1861-era
+    /// volume uses a bare `type="toc"`, normalised to `"table-of-contents"`.
+    static func structuralKind(type: String, subtype: String, xmlId: String) -> String? {
+        if type == "section" {
+            if subtype == "index" {
+                switch xmlId.lowercased() {
+                case "persons", "persname", "listofpersons":
+                    return "persons"
+                case "terms", "abbreviations", "listofabbreviations":
+                    return "terms"
+                default:
+                    return "index"
+                }
+            }
+            if !subtype.isEmpty { return subtype }
+            if !xmlId.isEmpty { return xmlId.lowercased() }
+            return "section"
+        }
+        if type == "toc" { return "table-of-contents" }
+        return structuralTypes.contains(type) ? type : nil
+    }
 
     // MARK: - XMLParserDelegate
 
@@ -371,6 +407,7 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
 
         case "div":
             let divType = attrs["type"] ?? ""
+            let subtype = attrs["subtype"] ?? ""
             let xmlId   = attrs["xml:id"] ?? attrs["id"] ?? ""
 
             if divType == "document" || divType == "editorialNote" {
@@ -381,12 +418,21 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
                     top.documentIds.append(xmlId)
                     stack[stack.count - 1] = top
                 }
-            } else if Self.structuralTypes.contains(divType) {
+            } else if let kind = Self.structuralKind(type: divType, subtype: subtype, xmlId: xmlId) {
                 autoIdCounter += 1
-                let id = xmlId.isEmpty ? "\(divType)-\(autoIdCounter)" : xmlId
-                stack.append(Frame(sectionId: id, divType: divType))
+                let id = xmlId.isEmpty ? "\(kind)-\(autoIdCounter)" : xmlId
+                stack.append(Frame(sectionId: id, divType: kind))
+            } else {
+                // Unrecognised div type — push a transparent frame so this div's
+                // closing tag pops *itself* rather than a real structural frame.
+                // (Previously, every unmatched </div> popped the current frame,
+                // which detached the <front> wrapper from its sections in every
+                // real volume.)
+                autoIdCounter += 1
+                stack.append(Frame(sectionId: "transparent-\(autoIdCounter)",
+                                   divType: divType,
+                                   isTransparent: true))
             }
-            // Unrecognised div types (type="persons", "terms", "toc", etc.) are ignored.
 
         case "head":
             // Capture head text only when inside a structural section frame.
@@ -445,6 +491,34 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
 
     private func popFrame() {
         guard let frame = stack.popLast() else { return }
+
+        if frame.isTransparent {
+            // Bubble the unrecognised wrapper's children up to its parent so
+            // structure nested inside unknown div types is never lost. Documents
+            // attach to the parent (matching the pre-frame behaviour, where they
+            // were recorded against the enclosing structural section directly).
+            if stack.isEmpty {
+                topLevelSections.append(contentsOf: frame.subsections)
+                if !frame.documentIds.isEmpty {
+                    // Top-level documents inside an unknown wrapper still need a
+                    // navigable home; emit the wrapper as a generic section.
+                    let rawTitle = frame.headParts.joined()
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    topLevelSections.append(VolumeSection(
+                        sectionId: frame.sectionId,
+                        divType: "section",
+                        title: rawTitle.isEmpty ? humanTitle(for: "section") : rawTitle,
+                        documentIds: frame.documentIds,
+                        subsections: []
+                    ))
+                }
+            } else {
+                stack[stack.count - 1].subsections.append(contentsOf: frame.subsections)
+                stack[stack.count - 1].documentIds.append(contentsOf: frame.documentIds)
+            }
+            return
+        }
+
         let rawTitle = frame.headParts.joined().trimmingCharacters(in: .whitespacesAndNewlines)
         let title = rawTitle.isEmpty ? humanTitle(for: frame.divType) : rawTitle
         let section = VolumeSection(
@@ -475,6 +549,13 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
         case "sources":        return "Sources"
         case "persons":        return "Persons"
         case "terms":          return "Terms and Abbreviations"
+        case "table-of-contents": return "Contents"
+        case "press-release":  return "Press Release"
+        case "volume-summary": return "Summary"
+        case "about-frus-series": return "About the Series"
+        case "historical-document": return "Document"
+        case "index":          return "Index"
+        case "section":        return "Section"
         default:               return divType.capitalized
         }
     }
@@ -565,28 +646,20 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// Depth of the current `<div type="document">` on the stack, or -1 if not inside one.
     private var documentDivDepth: Int = -1
 
-    /// Structural `div/@type` values that can be promoted to quasi-documents when they
-    /// contain prose but no child `<div type="document">` or `<div type="editorialNote">`.
-    /// Used during full-volume parses to index front-matter and appendix content.
+    /// Section kinds eligible for quasi-document promotion into the FTS5 index.
     ///
-    /// `"prefatoryNote"` and `"terms"` were added in Session 2026-06-08 alongside
-    /// the `VolumeStructureParserDelegate.structuralTypes` expansion so their prose
-    /// content is captured in the FTS5 index for Phase 4 front-matter search scope.
-    /// `"sources"` and `"persons"` are intentionally excluded: sources are structured
-    /// data handled by the `volume_sources` table; persons are handled by the `persons`
-    /// table — neither benefits from FTS5 indexing their raw XML.
-    private static let structuralDivTypes: Set<String> = [
+    /// The body-structure types (compilation, chapter, …) are included because a
+    /// prose-only chapter or appendix is still worth indexing; the section kinds
+    /// cover the real corpus front/back matter. Excluded by design:
+    /// `"persons"`/`"sources"` (structured data with dedicated views and tables),
+    /// `"table-of-contents"`/`"index"` (navigation aids — page numbers and chapter
+    /// titles would pollute search results), and `"section"` (unidentifiable).
+    private static let promotableQuasiDocumentKinds: Set<String> = [
         "compilation", "chapter", "subchapter", "appendix",
-        "preface", "intro", "introduction", "errata", "index", "foreword",
-        "prefatoryNote", "terms",
-    ]
-
-    /// Subset of `structuralDivTypes` that are front-matter sections.
-    /// Used to set `FRUSDocumentAST.isFrontMatter` so the indexing pipeline
-    /// can populate the `is_front_matter` column in `document_cache`.
-    private static let frontMatterDivTypes: Set<String> = [
         "preface", "intro", "introduction", "errata", "foreword",
         "prefatoryNote", "terms",
+        "press-release", "volume-summary", "about-frus-series",
+        "historical-document",
     ]
 
     // MARK: Init
@@ -642,7 +715,18 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // qualified name (e.g. "frus:doc-dateTime-min").
             let dateTimeMin = frame.attributes["frus:doc-dateTime-min"]
             let dateTimeMax = frame.attributes["frus:doc-dateTime-max"]
-            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
+            // The real corpus marks editorial notes as `type="document"
+            // subtype="editorial-note"` (the standalone `type="editorialNote"`
+            // encoding below exists only in legacy fixtures). Wrap their content in
+            // the .editorialNote node so rendering, badges, the document-type search
+            // filter, and `document_cache.is_editorial_note` all recognise them.
+            let nodes: [FRUSASTNode]
+            if frame.attributes["subtype"] == "editorial-note" {
+                nodes = [.editorialNote(frame.children)]
+            } else {
+                nodes = frame.children
+            }
+            let doc = FRUSDocumentAST(documentId: docId, nodes: nodes,
                                       dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax)
             documents.append(doc)
             documentDivDepth = -1
@@ -701,20 +785,27 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             }
         } else if elementName == "div",
                   targetDocumentId == nil,
-                  let divType = frame.attributes["type"],
-                  Self.structuralDivTypes.contains(divType),
+                  let kind = VolumeStructureParserDelegate.structuralKind(
+                      type: frame.attributes["type"] ?? "",
+                      subtype: frame.attributes["subtype"] ?? "",
+                      xmlId: frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
+                  ),
+                  Self.promotableQuasiDocumentKinds.contains(kind),
                   !frame.hasChildDocuments,
                   !(frame.attributes["xml:id"] ?? frame.attributes["id"] ?? "").isEmpty,
                   !frame.children.isEmpty {
-            // Prose-only structural section (preface, introduction, foreword, appendix, etc.)
-            // with no child document divs. Promote to a quasi-document so the full-volume
-            // parse indexes its content and makes it searchable. This covers front-matter
-            // and appendix content that was previously viewable via DocumentView but invisible
-            // to the FTS5 index. The section becomes its own indexed entity; children are not
-            // bubbled to the parent.
+            // Prose-only structural section (preface, press release, summary, etc.)
+            // with no child document divs. Promote to a quasi-document so the
+            // full-volume parse indexes its content and makes it searchable. The
+            // section's *kind* is resolved from the real corpus encoding
+            // (`type="section"` + `subtype` + `xml:id`); persons, sources, tables of
+            // contents, and name indexes are excluded — they are structured data
+            // with dedicated views, or navigation aids whose text would only add
+            // noise to full-text search. The section becomes its own indexed
+            // entity; children are not bubbled to the parent.
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
             // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
-            let isFrontMatter = Self.frontMatterDivTypes.contains(divType)
+            let isFrontMatter = VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
             let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
                                       isFrontMatter: isFrontMatter)
             documents.append(doc)
@@ -1468,8 +1559,15 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 attributes attributeDict: [String: String] = [:]) {
         elementDepth += 1
         if !inSourcesSection {
-            let type = attributeDict["type"]?.lowercased() ?? ""
-            if (elementName == "div" && Self.sourceSectionTypes.contains(type))
+            // Real corpus encoding: `<div type="section" subtype="sources"
+            // xml:id="sources">`. The bare type values and `<listBibl>` cover
+            // legacy fixtures and non-standard volumes.
+            let type    = attributeDict["type"]?.lowercased() ?? ""
+            let subtype = attributeDict["subtype"]?.lowercased() ?? ""
+            let xmlId   = attributeDict["xml:id"]?.lowercased() ?? ""
+            if (elementName == "div" && (Self.sourceSectionTypes.contains(type)
+                                         || Self.sourceSectionTypes.contains(subtype)
+                                         || Self.sourceSectionTypes.contains(xmlId)))
                || elementName == "listBibl" {
                 inSourcesSection = true
                 sectionDepth     = elementDepth
