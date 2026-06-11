@@ -8,9 +8,38 @@
 
 # iPad / Mac Interface Parity and Stage Manager
 
-**Status:** Planning  
+**Status:** Partially implemented — see Implementation Status below  
 **Priority:** Medium (medium-term backlog)  
 **Estimated effort:** 4–8 sessions (depending on scope chosen)
+
+---
+
+## Implementation Status (updated 2026-06-11, Session 159)
+
+The phase plan below was written before several phases were quietly delivered by
+other sessions. Actual state:
+
+| Phase | Plan estimate | **Actual state** |
+|---|---|---|
+| 1 — iPad sidebar root | 1–2 sessions | **Done (Session 159)** — realized via `.tabViewStyle(.sidebarAdaptable)` on the existing `MainTabView` `TabView`, *not* a custom `iPadRootView` (see below) |
+| 2 — Inspector panel | 1 session | **Done (Session 110)** — `DocumentView` uses `.inspector(isPresented:)` on iPad |
+| 3 — Tools in detail pane | 1 session | Not done — remaining backlog |
+| 4 — iOS settings indexing controls | 0.5 session | **Done** — `StorageManagementView` has "Index Remaining" + "Delete Index & Rebuild" mirroring macOS |
+| 5 — Stage Manager multi-window | 1–2 sessions | **Partial (Session 108)** — `UIApplicationSupportsMultipleScenes`, `WindowGroup(for: DocumentWindowID.self)`, Source Explorer window; cross-ref-graph window + `supportsMultipleWindows` cleanup remain |
+
+**Why `.sidebarAdaptable` instead of a custom `iPadRootView` (Session 159):**
+`BrowserView` (`splitLayout`) and `ResearchView` already use their own
+`NavigationSplitView` on iPad. Wrapping the five sections in an *outer*
+`NavigationSplitView` (the original Phase 1 design) would nest split-in-split,
+the SwiftUI anti-pattern. The deployment target is iOS 26 and `MainTabView`
+already uses the iOS 18 value-based `Tab(...)` API, so adding
+`.tabViewStyle(.sidebarAdaptable)` makes iPad render the tabs as a native
+adaptive sidebar (persistent in landscape, top bar in portrait) while iPhone
+keeps its bottom tab bar — and each section keeps its own internal navigation
+as the sidebar's detail content. One reversible modifier, no new files, no
+nested split. The `iPadRootView`/`NavigationSplitView` design in Phase 1 below
+is therefore superseded and kept only for historical context. A future
+enhancement could add `TabSection` grouping for sidebar section headers.
 
 ---
 
@@ -22,22 +51,26 @@ The current platform split is:
 
 An iPad in landscape with a keyboard and Magic Trackpad has the same ergonomic profile as a Mac laptop — researchers expect a layout closer to macOS, not the phone-style tab bar. Specific gaps identified in testing:
 
+(Table as originally assessed; ✅/❌ in the "iPad (current)" column reflect the
+pre-Session-159 state. See Implementation Status above for what has since shipped —
+e.g. Sidebar navigation and Settings: Index Remaining are now ✅ on iPad.)
+
 | Feature | macOS | iPhone | iPad (current) |
 |---|---|---|---|
-| Sidebar navigation | ✅ | ❌ (tab bar) | ❌ (tab bar) |
+| Sidebar navigation | ✅ | ❌ (tab bar) | ✅ (`.sidebarAdaptable`, Session 159) |
 | Always-visible Research Strip | ✅ | ❌ | ❌ |
 | Multi-window (Stage Manager) | ✅ | ❌ | Partial (broken Source Explorer) |
-| Inspector/research panel | ✅ | ❌ | `.inspector` on iPadOS 17 ✅ |
-| Settings: Index Remaining | ✅ | ❌ | ❌ |
+| Inspector/research panel | ✅ | ❌ | `.inspector` ✅ (Session 110) |
+| Settings: Index Remaining | ✅ | ✅ | ✅ (`StorageManagementView`) |
 | Keyboard shortcuts | ✅ | N/A | Partial |
-| Hover states / tooltips | ✅ | N/A | ✅ (iPadOS 17 pointer) |
+| Hover states / tooltips | ✅ | N/A | ✅ (pointer) |
 
 ---
 
 ## Design Principles
 
 1. **iPhone stays on `MainTabView`.** Phone users benefit from familiar tab navigation; the tab bar is not a deficit on a 6" screen.
-2. **iPad gets a dedicated root view.** A new `iPadRootView` uses `NavigationSplitView` (sidebar + detail) on iPadOS 17+, shared idiomatically with macOS views.
+2. **iPad gets a sidebar.** *(Superseded — Session 159.)* Originally specified as a custom `iPadRootView` using `NavigationSplitView`; realized instead via `.tabViewStyle(.sidebarAdaptable)` on the shared `MainTabView`, which avoids nesting split-in-split with `BrowserView`/`ResearchView`. See Implementation Status.
 3. **Maximize shared code.** `BrowserView`, `DocumentView`, `SearchView`, `CrossReferenceGraphView`, and all sheet/inspector content are shared across iPhone, iPad, and macOS unchanged.
 4. **No separate iPad target.** Conditional compilation (`#if os(iOS) && targetEnvironment(macCatalyst)` / `@available`) handles differences within the shared iOS target.
 5. **Stage Manager is opt-in-bonus.** The primary goal is a good non-Stage-Manager iPad experience. Stage Manager multi-window is a follow-on enhancement.

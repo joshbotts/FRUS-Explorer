@@ -44,6 +44,10 @@ import SwiftData
 ///          transitions between banner ↔ card via .move + .opacity
 ///   1.7 — Session 130: Activity tab replaced by Research tab (ResearchView); no badge
 ///          on Research tab (it is a navigation tool, not an inbox)
+///   1.8 — Session 159: `.tabViewStyle(.sidebarAdaptable)` — iPad renders the tabs as a
+///          native adaptive sidebar (BigPicture-iPadMacParity Phase 1); iPhone keeps the
+///          bottom tab bar unchanged. Each tab's own NavigationSplitView/Stack becomes
+///          the sidebar's detail content, so no nested split view is introduced.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -98,6 +102,14 @@ struct MainTabView: View {
             // a specific count.
             .badge(appState.unindexedVolumeCount > 0 ? "·" : "")
         }
+        // iPad (regular width) renders the tabs as a native adaptive sidebar — the
+        // macOS-like layout researchers expect on a keyboard/trackpad iPad — while
+        // iPhone (compact width) automatically falls back to the bottom tab bar, so
+        // the phone experience is unchanged. Each tab keeps its own internal
+        // navigation (e.g. BrowserView's / ResearchView's NavigationSplitView),
+        // which becomes the sidebar's detail content rather than nesting a second
+        // split. (BigPicture-iPadMacParity Phase 1.)
+        .tabViewStyle(.sidebarAdaptable)
     }
 
     /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.
