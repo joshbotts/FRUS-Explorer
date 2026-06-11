@@ -72,10 +72,17 @@ import SwiftUI
 ///          initial window load. The existing `.onChange` only fires on value
 ///          *changes*; when the window is newly opened after `pendingSearch` is
 ///          already set, the new view's `.onChange` never fires for that value.
+///   1.10 — Session 159: result row context menu gained a working "Open in New
+///          Window" (was a deferred stub) that opens the document in its own
+///          `DocumentWindowID` window via `openWindow`; macOS shows it as a tab or
+///          a separate window per the user's "Prefer tabs" setting since document
+///          windows share a `WindowGroup`. Default click still opens in the main
+///          window (`navigateToResult` → `pendingBrowseDocument`).
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
 
     @State private var searchVM = MacSearchViewModel()
     @State private var showAdvancedFilters = false
@@ -746,8 +753,25 @@ struct MacSearchWindowView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { navigateToResult(result) }
                 .contextMenu {
-                    Button("Open in new window") {
-                        // openWindow API — deferred to future session
+                    // Default click opens in the main window (navigateToResult →
+                    // pendingBrowseDocument); offered explicitly here too.
+                    Button {
+                        navigateToResult(result)
+                    } label: {
+                        Label(
+                            String(localized: "search.result.open",
+                                   defaultValue: "Open"),
+                            systemImage: "arrow.up.right.square"
+                        )
+                    }
+                    Button {
+                        openResultInNewWindow(result)
+                    } label: {
+                        Label(
+                            String(localized: "search.result.openNewWindow",
+                                   defaultValue: "Open in New Window"),
+                            systemImage: "macwindow.on.rectangle"
+                        )
                     }
                 }
         }
@@ -901,6 +925,20 @@ struct MacSearchWindowView: View {
             sourceNote: result.sourceNote,
             isEditorialNote: result.isEditorialNote
         )
+    }
+
+    /// Opens the result in its own document window, leaving the Search window and
+    /// the main window untouched (so the results list stays put). macOS shows it as
+    /// a tab or a separate window per the user's "Prefer tabs when opening documents"
+    /// setting (System Settings ▸ Desktop & Dock) — document windows share one
+    /// `WindowGroup`, so they tab together. Per-document identity means reopening the
+    /// same document focuses its existing window/tab.
+    private func openResultInNewWindow(_ result: SearchResult) {
+        openWindow(value: DocumentWindowID(
+            volumeId: result.volumeId,
+            documentId: result.documentId,
+            header: result.header
+        ))
     }
 }
 
