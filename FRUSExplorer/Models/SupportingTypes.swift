@@ -96,3 +96,29 @@ public enum TextSizePreference: String, CaseIterable, Identifiable, Sendable {
         }
     }
 }
+
+// MARK: - DefaultDocumentMode
+
+/// User preference for which mode a document opens in (Session 154).
+///
+/// Stored via `AppStorage(SettingsKeys.defaultDocumentMode)`. `.rememberLast`
+/// preserves the original behaviour: `frus.document.researchPanel.visible`
+/// persists the last Read/Research choice across documents and is left alone
+/// on open. `.read`/`.research` force that panel-visibility flag to a fixed
+/// value each time a document opens; the in-document segmented control can
+/// still switch modes live for that document.
+public enum DefaultDocumentMode: String, CaseIterable, Identifiable, Sendable {
+    case read
+    case research
+    case rememberLast
+
+    public var id: String { rawValue }
+
+    public var label: String {
+        switch self {
+        case .read:         return "Read"
+        case .research:     return "Research"
+        case .rememberLast: return "Remember Last"
+        }
+    }
+}

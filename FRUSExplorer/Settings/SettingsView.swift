@@ -25,6 +25,7 @@ import UniformTypeIdentifiers
 /// | Storage management | `StorageManagementView` |
 /// | Sideload | `SideloadView` |
 /// | User tags | `UserTagsView` |
+/// | Projects | `ProjectsSettingsView` |
 /// | Summarization prompts | `SummarizationPromptsSettingsView` |
 /// | NARA API key | `NARAKeyView` |
 /// | Reset | `ResetView` |
@@ -64,6 +65,11 @@ import UniformTypeIdentifiers
 ///          and replaced by DownloadsSettingsView (merged scope picker + browse list)
 ///   2.3 — Session 118: Reindex row removed; Storage renamed to Storage & Index; Reindex All
 ///          controls absorbed into StorageManagementView; Summarization Prompts → Summarization
+///   2.4 — Session 153: Projects row added to Research section (ProjectsSettingsView), closing
+///          the iOS gap where projects could be created but never renamed/merged/deleted;
+///          delete/merge mutations shared with macOS SettingsProjectsPane via ProjectAdminService
+///   2.5 — Session 154: Data section added with "Export Research Data…" row
+///          (ResearchDataExportView) — JSON + per-note Markdown export via ShareLink
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -119,6 +125,10 @@ struct SettingsView: View {
                                          defaultValue: "User Tags")) {
                         UserTagsView()
                     }
+                    NavigationLink(String(localized: "settings.row.projects",
+                                         defaultValue: "Projects")) {
+                        ProjectsSettingsView()
+                    }
                     NavigationLink(String(localized: "settings.row.summarization",
                                          defaultValue: "Summarization")) {
                         SummarizationPromptsSettingsView()
@@ -135,6 +145,14 @@ struct SettingsView: View {
                     NavigationLink(String(localized: "settings.row.naraKey",
                                          defaultValue: "NARA Catalog API Key")) {
                         NARAKeyView()
+                    }
+                }
+
+                Section(String(localized: "settings.section.data",
+                               defaultValue: "Data")) {
+                    NavigationLink(String(localized: "settings.row.exportData",
+                                         defaultValue: "Export Research Data…")) {
+                        ResearchDataExportView()
                     }
                 }
 
@@ -332,12 +350,20 @@ struct SettingsView: View {
 /// 2. **Find Volumes** — scope picker + enqueue button, followed by the per-volume
 ///    browse list. Footer explains the two interaction styles.
 /// 3. **Downloaded Volumes** — swipe-to-delete with confirmation dialog.
-/// 4. **Settings** — concurrent downloads picker.
-/// 5. **Check for New Volumes** — button that refreshes the live manifest.
+/// 4. **Updates** — "Check for Updates" diffs downloaded volumes' git blob SHAs
+///    against the live manifest; lists changed volumes with per-volume "Update" and
+///    "Update All" (force re-download + automatic re-index, preserving user data).
+/// 5. **Settings** — concurrent downloads picker; iOS also gets an "Allow Cellular
+///    Downloads" toggle (`SettingsKeys.allowCellularDownloads`).
+/// 6. **Check for New Volumes** — button that refreshes the live manifest.
 ///
 /// Version history:
 ///   1.0 — Session 117: merged from VolumeManagementView (Session 49, 51, 70) and
 ///          DownloadManagerSettingsView (Session 49, 67)
+///   1.1 — Session 154: added iOS-only "Allow Cellular Downloads" toggle to the
+///          Settings section, applied per-request via `DownloadManager.processQueue()`
+///   1.2 — Session 154: added "Updates" section — `VolumeUpdateChecker` detects
+///          upstream corrections to downloaded volumes via git blob SHA comparison
 private struct DownloadsSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -359,6 +385,18 @@ private struct DownloadsSettingsView: View {
     @State private var selectedSubseries: String = ""
     @State private var singleVolumeSearch: String = ""
     @State private var enqueuedMessage: String? = nil
+
+    // MARK: Cellular download policy (Session 154, iOS only)
+
+    #if os(iOS)
+    @AppStorage(SettingsKeys.allowCellularDownloads) private var allowCellularDownloads: Bool = true
+    #endif
+
+    // MARK: Update detection (Session 154)
+
+    @State private var updatableVolumes: [UpdatableVolume] = []
+    @State private var isCheckingForUpdates: Bool = false
+    @State private var hasCheckedForUpdates: Bool = false
 
     // Phase 1: storage limit gate
 
@@ -488,7 +526,17 @@ private struct DownloadsSettingsView: View {
                 downloadedVolumesSection
             }
 
-            // 4. Settings.
+            // 4. Updates — check downloaded volumes for upstream corrections.
+            Section(
+                header: Text(String(localized: "settings.volumes.updates.header",
+                                     defaultValue: "Updates")),
+                footer: Text(String(localized: "settings.volumes.updates.footer",
+                                     defaultValue: "Checks downloaded volumes against the FRUS repository for upstream corrections. Updating re-downloads and re-indexes the volume; your notes, highlights, tags, and summaries are preserved."))
+            ) {
+                updatesSection
+            }
+
+            // 5. Settings.
             Section(String(localized: "downloads.settings.header",
                            defaultValue: "Settings")) {
                 Picker(
@@ -519,9 +567,25 @@ private struct DownloadsSettingsView: View {
                             defaultValue: "How many volumes download at the same time."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                #if os(iOS)
+                Toggle(
+                    String(localized: "settings.volumes.allowCellular.label",
+                           defaultValue: "Allow Cellular Downloads"),
+                    isOn: $allowCellularDownloads
+                )
+                .accessibilityHint(
+                    String(localized: "settings.volumes.allowCellular.a11y",
+                           defaultValue: "When off, volume downloads only proceed over Wi-Fi")
+                )
+                Text(String(localized: "settings.volumes.allowCellular.note",
+                            defaultValue: "Applies to downloads started after this change. Volume files are large; Wi-Fi is recommended."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                #endif
             }
 
-            // 5. Check for New Volumes.
+            // 6. Check for New Volumes.
             Section {
                 Button {
                     Task { await appState.manifestStore.fetchLiveManifest() }
@@ -638,6 +702,77 @@ private struct DownloadsSettingsView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var updatesSection: some View {
+        if !updatableVolumes.isEmpty {
+            ForEach(updatableVolumes) { updatable in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(updatable.entry.title)
+                            .font(.callout)
+                            .lineLimit(2)
+                        Text(updatable.entry.volumeId)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(String(localized: "settings.volumes.updates.update",
+                                  defaultValue: "Update")) {
+                        Task { await updateVolume(updatable) }
+                    }
+                    .font(.callout)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(
+                        String(localized: "settings.volumes.updates.update.a11y",
+                               defaultValue: "Update \(updatable.entry.title)")
+                    )
+                }
+            }
+
+            Button {
+                Task { await updateAllVolumes() }
+            } label: {
+                Label(
+                    String(localized: "settings.volumes.updates.updateAll",
+                           defaultValue: "Update All"),
+                    systemImage: "arrow.down.circle"
+                )
+            }
+            .accessibilityLabel(
+                String(localized: "settings.volumes.updates.updateAll.a11y",
+                       defaultValue: "Update all volumes with available corrections")
+            )
+        } else if hasCheckedForUpdates && !isCheckingForUpdates {
+            Text(String(localized: "settings.volumes.updates.upToDate",
+                        defaultValue: "All downloaded volumes are up to date."))
+                .foregroundStyle(.secondary)
+                .font(.callout)
+        }
+
+        Button {
+            Task { await checkForUpdates() }
+        } label: {
+            if isCheckingForUpdates {
+                HStack {
+                    ProgressView()
+                    Text(String(localized: "settings.volumes.updates.checking",
+                                defaultValue: "Checking for Updates…"))
+                }
+            } else {
+                Label(
+                    String(localized: "settings.volumes.updates.check",
+                           defaultValue: "Check for Updates"),
+                    systemImage: "arrow.triangle.2.circlepath"
+                )
+            }
+        }
+        .disabled(isCheckingForUpdates || downloadedVolumes.isEmpty || appState.manifestStore.diffResult == nil)
+        .accessibilityLabel(
+            String(localized: "settings.volumes.updates.check.a11y",
+                   defaultValue: "Check downloaded volumes for upstream updates")
+        )
     }
 
     @ViewBuilder
@@ -825,6 +960,50 @@ private struct DownloadsSettingsView: View {
         #endif
     }
 
+    /// Diffs every downloaded volume's git blob SHA against the live manifest and
+    /// populates `updatableVolumes` with any that have changed upstream.
+    ///
+    /// Runs only on explicit user request (the "Check for Updates" button) — never
+    /// automatically at launch, since hashing every downloaded volume is too costly
+    /// to run silently.
+    private func checkForUpdates() async {
+        guard let dm = appState.downloadManager,
+              let liveInfo = appState.manifestStore.diffResult?.liveInfoByVolumeId else {
+            return
+        }
+        await MainActor.run { isCheckingForUpdates = true }
+        let known = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        let result = await VolumeUpdateChecker.updatableVolumes(
+            known: known,
+            liveInfoByVolumeId: liveInfo,
+            downloadManager: dm
+        )
+        await MainActor.run {
+            updatableVolumes = result
+            hasCheckedForUpdates = true
+            isCheckingForUpdates = false
+        }
+    }
+
+    /// Re-downloads `updatable` (overwriting the stale local copy) and removes it
+    /// from `updatableVolumes`. `onVolumeDownloaded` re-indexes the volume
+    /// automatically once the transfer completes; the UPSERT path preserves the
+    /// user's notes, highlights, tags, and summaries.
+    private func updateVolume(_ updatable: UpdatableVolume) async {
+        guard let dm = appState.downloadManager else { return }
+        await dm.enqueueDownload(volumeId: updatable.id, downloadUrl: updatable.entry.downloadUrl, force: true)
+        await MainActor.run {
+            updatableVolumes.removeAll { $0.id == updatable.id }
+        }
+    }
+
+    /// Re-downloads every volume currently listed in `updatableVolumes`.
+    private func updateAllVolumes() async {
+        for updatable in updatableVolumes {
+            await updateVolume(updatable)
+        }
+    }
+
     private func availableFiltered(_ volumes: [VolumeManifestEntry]) -> [VolumeManifestEntry] {
         let q = availableSearch.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return volumes }
@@ -872,6 +1051,13 @@ private struct DownloadsSettingsView: View {
 /// ## Scroll Affordance (Session 67)
 /// The Form omits `maxHeight: .infinity` so the `NavigationSplitView` detail column
 /// bounds it correctly and it scrolls when the per-volume list is long.
+///
+/// ## Diagnostics (Session 154)
+/// A "Diagnostics" section after Reindex adds "Check Index Integrity" (runs
+/// `IndexingPipeline.checkIndexIntegrity()` and shows a green "No problems found"
+/// or a list of problem descriptions with a suggestion to rebuild) and "Rebuild
+/// Spotlight Index" (clears and re-submits the system Spotlight index from
+/// `document_cache` without re-parsing XML).
 private struct StorageManagementView: View {
 
     // MARK: - Batch tracking
@@ -918,6 +1104,25 @@ private struct StorageManagementView: View {
     @State private var reindexAllError: String? = nil
     /// Tracks an individual interrupted-volume re-index; `"all"` when doing the bulk sweep.
     @State private var reindexingInterruptedId: String? = nil
+
+    // MARK: Diagnostics state (Session 154)
+
+    /// `true` while `checkIndexIntegrity()` is running.
+    @State private var integrityCheckRunning = false
+    /// Result of the most recent integrity check: `nil` before the first run,
+    /// empty when no problems were found, or one description per problem.
+    @State private var integrityCheckResult: [String]? = nil
+    /// `true` while `rebuildSpotlightIndex()` is running.
+    @State private var spotlightRebuildRunning = false
+    /// `true` once a Spotlight rebuild has completed successfully.
+    @State private var spotlightRebuildSucceeded = false
+    /// Error message from a failed Spotlight rebuild.
+    @State private var spotlightRebuildError: String? = nil
+
+    #if os(iOS)
+    /// Whether indexing progress shows a Live Activity / Dynamic Island widget (Session 154).
+    @AppStorage(SettingsKeys.liveActivityEnabled) private var liveActivityEnabled = true
+    #endif
 
     var body: some View {
         Form {
@@ -1024,6 +1229,23 @@ private struct StorageManagementView: View {
             }
 
             // Reindex All section: absorbed from former standalone ReindexView.
+            #if os(iOS)
+            Section {
+                Toggle(
+                    String(localized: "settings.storage.liveActivity.label",
+                           defaultValue: "Show Indexing Live Activity"),
+                    isOn: $liveActivityEnabled
+                )
+                .accessibilityHint(
+                    String(localized: "settings.storage.liveActivity.a11y",
+                           defaultValue: "When off, indexing progress will not appear in the Dynamic Island or on the Lock Screen")
+                )
+            } footer: {
+                Text(String(localized: "settings.storage.liveActivity.footer",
+                            defaultValue: "Shows indexing progress in the Dynamic Island and on the Lock Screen while volumes are being indexed."))
+            }
+            #endif
+
             Section(String(localized: "settings.storage.reindex.header",
                            defaultValue: "Reindex")) {
                 Text(String(localized: "settings.reindex.about.body",
@@ -1103,6 +1325,100 @@ private struct StorageManagementView: View {
                         .foregroundStyle(.red)
                         .font(.callout)
                 }
+            }
+
+            Section {
+                Button {
+                    Task { await runIndexIntegrityCheck() }
+                } label: {
+                    if integrityCheckRunning {
+                        HStack {
+                            ProgressView().padding(.trailing, 4)
+                            Text(String(localized: "settings.storage.integrity.running",
+                                        defaultValue: "Checking…")).font(.callout)
+                        }
+                    } else {
+                        Label(
+                            String(localized: "settings.storage.integrity.button",
+                                   defaultValue: "Check Index Integrity"),
+                            systemImage: "stethoscope"
+                        )
+                    }
+                }
+                .disabled(isAnythingIndexing || integrityCheckRunning || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.storage.integrity.a11y",
+                           defaultValue: "Check the search index for corruption")
+                )
+
+                if let result = integrityCheckResult {
+                    if result.isEmpty {
+                        Label(
+                            String(localized: "settings.storage.integrity.ok",
+                                   defaultValue: "No problems found"),
+                            systemImage: "checkmark.circle"
+                        )
+                        .foregroundStyle(.green)
+                        .font(.callout)
+                    } else {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(result, id: \.self) { problem in
+                                Label(problem, systemImage: "exclamationmark.triangle")
+                                    .foregroundStyle(.red)
+                                    .font(.callout)
+                            }
+                            Text(String(localized: "settings.storage.integrity.suggestion",
+                                        defaultValue: "Try \"Delete Index & Rebuild\" above to fix these problems."))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Button {
+                    Task { await runRebuildSpotlightIndex() }
+                } label: {
+                    if spotlightRebuildRunning {
+                        HStack {
+                            ProgressView().padding(.trailing, 4)
+                            Text(String(localized: "settings.storage.spotlight.running",
+                                        defaultValue: "Rebuilding…")).font(.callout)
+                        }
+                    } else {
+                        Label(
+                            String(localized: "settings.storage.spotlight.button",
+                                   defaultValue: "Rebuild Spotlight Index"),
+                            systemImage: "magnifyingglass"
+                        )
+                    }
+                }
+                .disabled(isAnythingIndexing || spotlightRebuildRunning || appState.indexingPipeline == nil)
+                .accessibilityLabel(
+                    String(localized: "settings.storage.spotlight.a11y",
+                           defaultValue: "Clear and re-submit the system Spotlight search index")
+                )
+
+                if spotlightRebuildSucceeded {
+                    Label(
+                        String(localized: "settings.storage.spotlight.ok",
+                               defaultValue: "Spotlight index rebuilt"),
+                        systemImage: "checkmark.circle"
+                    )
+                    .foregroundStyle(.green)
+                    .font(.callout)
+                }
+
+                if let error = spotlightRebuildError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+            } header: {
+                Text(String(localized: "settings.storage.diagnostics.header",
+                            defaultValue: "Diagnostics"))
+            } footer: {
+                Text(String(localized: "settings.storage.diagnostics.footer",
+                            defaultValue: "Run these checks if search results look incomplete, or if FRUS documents are missing from the system Spotlight search."))
             }
         }
         .navigationTitle(String(localized: "storage.navigationTitle",
@@ -1484,6 +1800,46 @@ private struct StorageManagementView: View {
                     (try? pipeline.isVolumeIndexed(perVol.volumeId)) ?? false
             }
         }
+    }
+
+    // MARK: - Diagnostics (Session 154)
+
+    /// Runs `IndexingPipeline.checkIndexIntegrity()` and stores the result for display.
+    ///
+    /// An empty result renders as a green "No problems found" row; a non-empty
+    /// result lists each problem with a suggestion to run "Delete Index & Rebuild".
+    private func runIndexIntegrityCheck() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        integrityCheckRunning = true
+        integrityCheckResult = nil
+        do {
+            integrityCheckResult = try await pipeline.checkIndexIntegrity()
+        } catch {
+            integrityCheckResult = [error.localizedDescription]
+            #if DEBUG
+            print("[Settings] checkIndexIntegrity failed: \(error)")
+            #endif
+        }
+        integrityCheckRunning = false
+    }
+
+    /// Runs `IndexingPipeline.rebuildSpotlightIndex()`, clearing and re-submitting
+    /// the system Spotlight index from `document_cache` without re-parsing XML.
+    private func runRebuildSpotlightIndex() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        spotlightRebuildRunning = true
+        spotlightRebuildSucceeded = false
+        spotlightRebuildError = nil
+        do {
+            try await pipeline.rebuildSpotlightIndex()
+            spotlightRebuildSucceeded = true
+        } catch {
+            spotlightRebuildError = error.localizedDescription
+            #if DEBUG
+            print("[Settings] rebuildSpotlightIndex failed: \(error)")
+            #endif
+        }
+        spotlightRebuildRunning = false
     }
 }
 
@@ -1897,6 +2253,192 @@ private struct UserTagsView: View {
     }
 }
 
+// MARK: - ProjectsSettingsView
+
+/// iOS Settings → Research → Projects: rename, merge, and delete `Project`
+/// records.
+///
+/// Mirrors the `UserTagsView` interaction pattern (tap or leading swipe to
+/// rename, trailing swipe to delete) with a context menu "Merge into…" action
+/// in place of the always-visible merge button used by the macOS
+/// `SettingsProjectsPane`. Delete and merge mutations are shared with macOS
+/// via `ProjectAdminService`.
+///
+/// Project creation and active-project switching are handled elsewhere
+/// (`ProjectPickerMenu`, `ProjectEditorView`); this view is solely for
+/// administering existing projects.
+///
+/// Version history:
+///   1.0 — Session 153: initial implementation (closes the iOS delete/merge gap)
+private struct ProjectsSettingsView: View {
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Project.name) private var projects: [Project]
+
+    @State private var renamingProject: Project? = nil
+    @State private var renameText = ""
+    @State private var mergingProject: Project? = nil
+    @State private var projectToDelete: Project? = nil
+    @State private var showDeleteConfirmation = false
+
+    var body: some View {
+        Form {
+            Section {
+                if projects.isEmpty {
+                    Text(String(localized: "settings.projects.empty",
+                                defaultValue: "No projects created yet."))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(projects) { project in
+                        let isRenaming = renamingProject?.id == project.id
+                        Group {
+                            if isRenaming {
+                                TextField(
+                                    String(localized: "settings.projects.rename.placeholder",
+                                           defaultValue: "Project name"),
+                                    text: $renameText
+                                )
+                                .onSubmit { commitRename() }
+                                .accessibilityLabel(
+                                    String(localized: "settings.projects.rename.a11y",
+                                           defaultValue: "Rename project \(project.name)")
+                                )
+                            } else {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(project.name)
+                                    if let question = project.researchQuestion, !question.isEmpty {
+                                        Text(question)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            guard renamingProject == nil else { return }
+                            renamingProject = project
+                            renameText = project.name
+                        }
+                        // Leading swipe: Rename. Mirrors UserTagsView so the action is
+                        // discoverable for users unfamiliar with tap-to-rename.
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            if !isRenaming {
+                                Button {
+                                    renamingProject = project
+                                    renameText = project.name
+                                } label: {
+                                    Label(
+                                        String(localized: "settings.projects.rename.swipe",
+                                               defaultValue: "Rename"),
+                                        systemImage: "pencil"
+                                    )
+                                }
+                                .tint(.accentColor)
+                                .accessibilityLabel(
+                                    String(localized: "settings.projects.rename.swipe.a11y",
+                                           defaultValue: "Rename project \(project.name)")
+                                )
+                            }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                projectToDelete = project
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label(
+                                    String(localized: "settings.projects.delete.swipe",
+                                           defaultValue: "Delete"),
+                                    systemImage: "trash"
+                                )
+                            }
+                            .accessibilityLabel(
+                                String(localized: "settings.projects.delete.swipe.a11y",
+                                       defaultValue: "Delete project \(project.name)")
+                            )
+                        }
+                        .contextMenu {
+                            Button {
+                                mergingProject = project
+                            } label: {
+                                Label(
+                                    String(localized: "settings.projects.merge.button",
+                                           defaultValue: "Merge into…"),
+                                    systemImage: "arrow.triangle.merge"
+                                )
+                            }
+                            .disabled(projects.count < 2)
+                        }
+                    }
+                }
+            } header: {
+                Text(String(localized: "settings.projects.list.header", defaultValue: "Projects"))
+            } footer: {
+                Text(String(localized: "settings.projects.list.footer",
+                            defaultValue: "Tap or swipe right to rename. Touch and hold for merge options. Swipe left to delete."))
+                    .font(.caption)
+            }
+        }
+        .navigationTitle(String(localized: "settings.projects.title", defaultValue: "Projects"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(macOS)
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
+        #endif
+        .toolbar {
+            if renamingProject != nil {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "settings.projects.rename.done", defaultValue: "Done")) {
+                        commitRename()
+                    }
+                }
+            }
+        }
+        .sheet(item: $mergingProject) { sourceProject in
+            MergeProjectSheet(
+                sourceProject: sourceProject,
+                allProjects: projects.filter { $0.id != sourceProject.id },
+                onMerge: { targetProject in
+                    ProjectAdminService.merge(sourceProject, into: targetProject, context: modelContext, appState: appState)
+                    mergingProject = nil
+                }
+            )
+        }
+        .confirmationDialog(
+            String(localized: "settings.projects.delete.title", defaultValue: "Delete Project?"),
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.projects.delete.confirm", defaultValue: "Delete"), role: .destructive) {
+                if let project = projectToDelete {
+                    ProjectAdminService.delete(project, context: modelContext, appState: appState)
+                }
+                projectToDelete = nil
+            }
+            Button(String(localized: "settings.projects.delete.cancel", defaultValue: "Cancel"), role: .cancel) {
+                projectToDelete = nil
+            }
+        } message: {
+            Text(String(localized: "settings.projects.delete.message",
+                        defaultValue: "Activity records are kept but unlinked from this project."))
+        }
+    }
+
+    private func commitRename() {
+        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, let project = renamingProject {
+            project.name = trimmed
+        }
+        renamingProject = nil
+        renameText = ""
+    }
+}
+
 // MARK: - MergeTagSheet
 
 struct MergeTagSheet: View {
@@ -2239,6 +2781,7 @@ private struct NARAKeyView: View {
     @State private var hasExistingKey: Bool = false
     @State private var isSaving: Bool = false
     @State private var saveResult: SaveResult? = nil
+    @State private var callCount: Int = 0
 
     private let keychainStore = KeychainStore.shared
 
@@ -2356,6 +2899,20 @@ private struct NARAKeyView: View {
                     }
                 }
             }
+
+            Section(String(localized: "settings.naraKey.usage.header",
+                           defaultValue: "Usage (Last 30 Days)")) {
+                HStack {
+                    Text(String(localized: "settings.naraKey.usage.count",
+                                defaultValue: "\(callCount) API call\(callCount == 1 ? "" : "s")"))
+                        .font(.callout)
+                    Spacer()
+                    Text(String(localized: "settings.naraKey.usage.limitNote",
+                                defaultValue: "Limit not enforced by FRUS Explorer"))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
         }
         .navigationTitle(String(localized: "settings.naraKey.title",
                                 defaultValue: "NARA Catalog API Key"))
@@ -2368,6 +2925,7 @@ private struct NARAKeyView: View {
         #endif
         .task {
             hasExistingKey = await keychainStore.hasAPIKey()
+            callCount = await NARAAPIKeyStore.shared.callCountLast30Days
         }
     }
 
@@ -2411,13 +2969,20 @@ private struct NARAKeyView: View {
 
 // MARK: - ResetView
 
-/// Two-step confirmation UI for the destructive "Reset App to Initial State" action.
+/// Three-tier reset UI, ordered least → most destructive: iCloud Sync, Local
+/// Data, and the two-step "Reset App to Initial State" action.
 ///
 /// ## What is deleted
-/// - All downloaded volume XML files (via `DownloadManager`)
-/// - All SwiftData user-generated records: `ResearchNote`, `UserTag`, `GeneratedSummary`,
-///   `ReadingHistoryEntry`, `Collection`, `CollectionEntry`, `SummarizationPrompt`, `Project`
-/// - Active project selection (`AppState.activeProjectId`)
+/// - **Reset iCloud Sync**: the local SwiftData SQLite store, forcing a fresh
+///   download from CloudKit on next launch. iCloud data is untouched.
+/// - **Reset Local Data**: downloaded volume XML files and the search index
+///   (`frus.db`), via the shared `ResetService.resetLocalData(appState:)`. The
+///   local SwiftData store and iCloud-synced data are untouched.
+/// - **Reset App to Initial State**: everything `ResetService.resetLocalData`
+///   clears, plus all SwiftData user-generated records: `ResearchNote`,
+///   `UserTag`, `GeneratedSummary`, `ReadingHistoryEntry`, `Collection`,
+///   `CollectionEntry`, `SummarizationPrompt`, `Project`, and the active
+///   project selection (`AppState.activeProjectId`).
 ///
 /// ## Post-reset navigation
 /// Both platforms now set `hasCompletedOnboarding = false` directly after clearing data.
@@ -2427,7 +2992,8 @@ private struct NARAKeyView: View {
 ///
 /// ## Confirmation gates
 /// The user must confirm twice (two `confirmationDialog` calls) before `performReset()`
-/// is invoked, guarding against accidental taps.
+/// is invoked, guarding against accidental taps. Sync and Local resets each require
+/// a single confirmation.
 ///
 /// Version history:
 ///   1.0 — Session 24: initial implementation
@@ -2435,6 +3001,9 @@ private struct NARAKeyView: View {
 ///          for safe post-reset onboarding navigation (macOS)
 ///   1.2 — Session 44: iOS path simplified to direct assignment
 ///   1.3 — Session 46: macOS path also simplified; pendingOnboardingAfterReset removed
+///   1.4 — Session 153: added the "Reset Local Data" tier (between Sync and Full),
+///          backed by the shared `ResetService`, closing the iOS gap with
+///          macOS `SettingsResetPane`
 private struct ResetView: View {
 
     @Environment(AppState.self) private var appState
@@ -2443,6 +3012,7 @@ private struct ResetView: View {
     @State private var showFirstConfirmation  = false
     @State private var showSecondConfirmation = false
     @State private var showSyncReset          = false
+    @State private var showLocalReset         = false
     @State private var isResetting = false
     @State private var resetError: String? = nil
 
@@ -2461,6 +3031,27 @@ private struct ResetView: View {
                     showSyncReset = true
                 }
                 .disabled(isResetting)
+            }
+
+            // Local-only reset — deletes downloaded volumes and the search index from
+            // this device. iCloud-synced data (notes, collections, tags, projects) is
+            // untouched and will re-sync on next launch.
+            Section(header: Text(String(localized: "settings.reset.local.header",
+                                        defaultValue: "This Device"))) {
+                Text(String(localized: "settings.reset.local.warning",
+                            defaultValue: "Deletes all downloaded volume files and the search index from this device. Your notes, collections, tags, and projects remain in iCloud and will be restored the next time the app launches."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                Button(String(localized: "settings.reset.local.button",
+                              defaultValue: "Reset Local Data"), role: .destructive) {
+                    showLocalReset = true
+                }
+                .disabled(isResetting)
+                .accessibilityLabel(
+                    String(localized: "settings.reset.local.button.a11y",
+                           defaultValue: "Reset local data. Destructive action.")
+                )
             }
 
             Section {
@@ -2511,6 +3102,22 @@ private struct ResetView: View {
         } message: {
             Text(String(localized: "settings.reset.sync.confirm.message",
                         defaultValue: "The local iCloud sync state will be cleared. Your data in iCloud is not deleted. The app will re-download your notes and collections on next launch."))
+        }
+        .confirmationDialog(
+            String(localized: "settings.reset.local.confirm.title",
+                   defaultValue: "Reset Local Data?"),
+            isPresented: $showLocalReset,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.reset.local.confirm.proceed",
+                          defaultValue: "Reset Local Data"), role: .destructive) {
+                performLocalReset()
+            }
+            Button(String(localized: "settings.reset.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
+        } message: {
+            Text(String(localized: "settings.reset.local.confirm.message",
+                        defaultValue: "Volume files and the search index will be deleted from this device. Your notes, collections, tags, and projects in iCloud are not affected and will re-sync."))
         }
         .confirmationDialog(
             String(localized: "settings.reset.confirm1.title",
@@ -2574,32 +3181,23 @@ private struct ResetView: View {
         isResetting = false
     }
 
+    /// Local-only reset: deletes downloaded volumes and the search index, leaving
+    /// the local SwiftData store and iCloud-synced data untouched.
+    private func performLocalReset() {
+        isResetting = true
+        Task {
+            await ResetService.resetLocalData(appState: appState)
+            await MainActor.run { isResetting = false }
+        }
+    }
+
     private func performReset() {
         isResetting = true
         resetError = nil
         Task {
             do {
-                // Delete all downloaded .xml files directly from the filesystem.
-                // Iterating manifest entries misses files not currently in the manifest,
-                // which would leave hasDownloadedVolumes() returning true and block OnboardingView.
-                if let dm = appState.downloadManager {
-                    let dir = dm.volumesDirectory
-                    if let files = try? FileManager.default.contentsOfDirectory(
-                        at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
-                    ) {
-                        for file in files where file.pathExtension.lowercased() == "xml" {
-                            try? FileManager.default.removeItem(at: file)
-                        }
-                    }
-                }
-                // Clear the search index so re-indexing after onboarding starts from scratch.
-                if let pipeline = appState.indexingPipeline {
-                    try await pipeline.removeAllVolumesFromIndex()
-                    await MainActor.run {
-                        appState.indexedVolumeIds = []
-                        appState.indexGeneration += 1
-                    }
-                }
+                // Delete downloaded volumes and clear the search index.
+                await ResetService.resetLocalData(appState: appState)
                 // Delete all SwiftData user-generated records
                 try modelContext.delete(model: ResearchNote.self)
                 try modelContext.delete(model: UserTag.self)
@@ -2637,6 +3235,11 @@ private struct ResetView: View {
 
 private struct DisplaySettingsView: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+    @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
+    @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
+    #if os(iOS)
+    @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
+    #endif
 
     var body: some View {
         Form {
@@ -2661,6 +3264,61 @@ private struct DisplaySettingsView: View {
                             defaultValue: "Adjusts the body text size in the Document view."))
             }
 
+            Section {
+                Picker(String(localized: "settings.display.citationStyle.label",
+                              defaultValue: "Citation Style"),
+                       selection: $citationStyle) {
+                    ForEach(CitationStyle.allCases) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .accessibilityLabel(
+                    String(localized: "settings.display.citationStyle.a11y",
+                           defaultValue: "Citation style")
+                )
+            } header: {
+                Text(String(localized: "settings.display.citationStyle.header",
+                            defaultValue: "Citations"))
+            } footer: {
+                Text(String(localized: "settings.display.citationStyle.footer",
+                            defaultValue: "Used when copying or sharing a citation."))
+            }
+
+            Section {
+                Picker(String(localized: "settings.display.defaultMode.label",
+                              defaultValue: "Open Documents In"),
+                       selection: $defaultDocumentMode) {
+                    ForEach(DefaultDocumentMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .accessibilityLabel(
+                    String(localized: "settings.display.defaultMode.a11y",
+                           defaultValue: "Default document mode")
+                )
+
+                #if os(iOS)
+                Toggle(
+                    String(localized: "settings.display.edgeTapNavigation.label",
+                           defaultValue: "Edge-Tap Page Turn"),
+                    isOn: $edgeTapNavigationEnabled
+                )
+                .accessibilityHint(
+                    String(localized: "settings.display.edgeTapNavigation.a11y",
+                           defaultValue: "When on, tapping near the left or right edge in Read mode opens the previous or next document")
+                )
+                #endif
+            } header: {
+                Text(String(localized: "settings.display.reading.header",
+                            defaultValue: "Reading"))
+            } footer: {
+                Text(String(localized: "settings.display.reading.footer",
+                            defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. The in-document Read/Research control always overrides for the current document."))
+            }
         }
         .navigationTitle(String(localized: "settings.display.title", defaultValue: "Display"))
         #if os(iOS)
@@ -2759,5 +3417,45 @@ enum SettingsKeys {
     /// Written by the Downloads settings (both platforms), read at boot by
     /// `FRUSExplorerApp` and applied live via `DownloadManager.setConcurrencyLimit`.
     static let concurrentDownloadLimit = "frus.concurrentDownloadLimit"
+
+    /// UserDefaults key for the persisted citation style (history.state.gov /
+    /// Chicago / Turabian). Read via `CitationStyle.current`; drives
+    /// `DocumentViewModel.formattedCitation` and friends, the iOS
+    /// `CitationSheetView`, and the macOS citation popover's initial selection.
+    static let citationStyle = "frus.citation.style"
+
+    /// UserDefaults key (Bool, default `true`) controlling whether volume
+    /// downloads may use cellular data. Read by `DownloadManager.processQueue()`
+    /// and applied per-request via `URLRequest.allowsCellularAccess` — changing
+    /// it only affects downloads started afterwards, not transfers already
+    /// handed to the background session. iOS only; surfaced in the iOS
+    /// Downloads settings "Settings" section (Session 154).
+    static let allowCellularDownloads = "frus.downloads.allowCellular"
+
+    /// UserDefaults key (Bool, default `true`) controlling whether the document
+    /// reader's invisible leading/trailing edge-tap zones page through to the
+    /// previous/next document while in Read mode. Read by
+    /// `DocumentView.documentEdgeNavigationOverlay` (iOS only — macOS uses
+    /// explicit prev/next chevron buttons instead). Surfaced in the "Reading"
+    /// group of the iOS Display settings (Session 154).
+    static let edgeTapNavigationEnabled = "frus.reading.edgeTapNavigation"
+
+    /// UserDefaults key (`DefaultDocumentMode` raw value, default `"rememberLast"`)
+    /// controlling which mode a document opens in: forced Read, forced Research,
+    /// or remember the last choice (the pre-Session-154 behaviour, where
+    /// `frus.document.researchPanel.visible` simply persists across documents).
+    /// Applied once per document open by `DocumentView` (iOS) and
+    /// `MacDocumentView` (macOS); the in-document Read/Research segmented
+    /// control still overrides live for that document. Surfaced in the
+    /// "Reading" group of Display settings on both platforms (Session 154).
+    static let defaultDocumentMode = "frus.reading.defaultMode"
+
+    /// UserDefaults key (Bool, default `true`) controlling whether indexing
+    /// progress requests a Live Activity (Dynamic Island / Lock Screen widget).
+    /// Checked in `AppState.syncIndexingLiveActivity()` before
+    /// `Activity<IndexingActivityAttributes>.request`; when off, any running
+    /// activity is ended. iOS only; surfaced in the iOS Storage & Index
+    /// settings, near the reindex controls (Session 154).
+    static let liveActivityEnabled = "frus.indexing.liveActivityEnabled"
 }
 

@@ -1567,6 +1567,25 @@ struct ExportSheetView: View {
                 resolvedSourceNote = nil
             }
 
+            // Zotero JSON item (for ExportFormat.zoteroJSON)
+            let zoteroItem: ZoteroJSONExporter.Item?
+            if let volMeta {
+                let year = FRUSVolumeMetadata.firstYear(in: volMeta.publicationDate).map(String.init) ?? "n.d."
+                let (tags, _) = ZoteroJSONExporter.fetchTagsAndNotes(
+                    documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
+                zoteroItem = ZoteroJSONExporter.makeItem(
+                    document: docMeta,
+                    volume: volMeta,
+                    year: year,
+                    url: urlString,
+                    isEditorialNote: false,
+                    tags: tags,
+                    notes: resolvedNoteTexts
+                )
+            } else {
+                zoteroItem = nil
+            }
+
             return CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
@@ -1581,7 +1600,8 @@ struct ExportSheetView: View {
                 header: header,
                 dateline: dateline,
                 highlights: resolvedHighlights,
-                sourceNoteText: resolvedSourceNote
+                sourceNoteText: resolvedSourceNote,
+                zoteroItem: zoteroItem
             )
         }
     }
@@ -1789,6 +1809,25 @@ struct ExportSheetView: View {
             let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
             let volumeTitle = manifestEntry?.title ?? entry.volumeId
             let bodyText = bodyTexts[key] ?? ""
+
+            let zoteroItem: ZoteroJSONExporter.Item?
+            if let volMeta {
+                let year = FRUSVolumeMetadata.firstYear(in: volMeta.publicationDate).map(String.init) ?? "n.d."
+                let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
+                    documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
+                zoteroItem = ZoteroJSONExporter.makeItem(
+                    document: docMeta,
+                    volume: volMeta,
+                    year: year,
+                    url: urlString,
+                    isEditorialNote: false,
+                    tags: tags,
+                    notes: notes
+                )
+            } else {
+                zoteroItem = nil
+            }
+
             return CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
@@ -1800,7 +1839,8 @@ struct ExportSheetView: View {
                 historyStateGovURL: urlString,
                 renderModel: renderModel,
                 header: header,
-                dateline: dateline
+                dateline: dateline,
+                zoteroItem: zoteroItem
             )
         }
     }

@@ -47,10 +47,49 @@ private func makeFailing(_ error: Error = URLError(.timedOut)) -> DownloadManage
     return { _ in throw error }
 }
 
+/// Records the `URLRequest` passed to a mock download task so tests can assert on
+/// per-request flags such as `allowsCellularAccess` (Session 154 cellular policy).
+private actor RequestCapture {
+    private(set) var lastRequest: URLRequest?
+    func record(_ request: URLRequest) { lastRequest = request }
+}
+
+/// Like `makeMockDownloadTask`, but records the incoming request via `capture`
+/// before returning a successful response.
+private func makeCapturingDownloadTask(
+    capture: RequestCapture,
+    delay: Duration = .milliseconds(10)
+) -> DownloadManager.DownloadTask {
+    return { request in
+        await capture.record(request)
+        try await Task.sleep(for: delay)
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".xml")
+        try "<volumes/>".write(to: tempURL, atomically: true, encoding: .utf8)
+        let response = HTTPURLResponse(
+            url: request.url!,
+            statusCode: 200,
+            httpVersion: "HTTP/1.1",
+            headerFields: nil
+        )!
+        return (tempURL, response)
+    }
+}
+
 /// A shared UserDefaults suite isolated per test to prevent cross-test contamination.
 private func makeTestUserDefaults() -> UserDefaults {
     let suite = "frus.test.\(UUID().uuidString)"
     return UserDefaults(suiteName: suite)!
+}
+
+/// Removes any cached blob SHA for `volumeId` from the shared `UserDefaults`-backed
+/// cache (`DownloadManager.blobSHA(for:)`), so update-detection tests that reuse a
+/// volumeId across runs never read a stale value (Session 154).
+private func clearBlobSHACache(for volumeId: String) {
+    let key = "frus.downloadedVolumeBlobSHA"
+    var cache = (UserDefaults.standard.dictionary(forKey: key) as? [String: String]) ?? [:]
+    cache.removeValue(forKey: volumeId)
+    UserDefaults.standard.set(cache, forKey: key)
 }
 
 // MARK: - Suite
@@ -412,6 +451,185 @@ struct DownloadManagerTests {
 
             let calls = await log.calls
             #expect(calls.count >= 2, "onStateChanged must fire at least twice: once on enqueue, once on completion")
+        }
+    }
+
+    // MARK: - Cellular Download Policy
+
+    @Test("Downloads allow cellular access by default")
+    func cellularAllowedByDefault() async throws {
+        try await withTempDirectory { dir in
+            UserDefaults.standard.removeObject(forKey: SettingsKeys.allowCellularDownloads)
+            defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.allowCellularDownloads) }
+
+            let capture = RequestCapture()
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 4,
+                downloadTask: makeCapturingDownloadTask(capture: capture),
+                onStateChanged: { _ in }
+            )
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(volumeId: "frus1969-76v01", downloadUrl: "https://example.com/frus1969-76v01.xml")
+
+            var attempts = 0
+            while await capture.lastRequest == nil, attempts < 50 {
+                try await Task.sleep(for: .milliseconds(20))
+                attempts += 1
+            }
+
+            let request = await capture.lastRequest
+            #expect(request?.allowsCellularAccess == true, "Cellular downloads should be allowed when the preference is unset (default true)")
+        }
+    }
+
+    @Test("Disabling cellular downloads is applied per-request")
+    func cellularDownloadsCanBeDisabled() async throws {
+        try await withTempDirectory { dir in
+            UserDefaults.standard.set(false, forKey: SettingsKeys.allowCellularDownloads)
+            defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.allowCellularDownloads) }
+
+            let capture = RequestCapture()
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 4,
+                downloadTask: makeCapturingDownloadTask(capture: capture),
+                onStateChanged: { _ in }
+            )
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(volumeId: "frus1969-76v01", downloadUrl: "https://example.com/frus1969-76v01.xml")
+
+            var attempts = 0
+            while await capture.lastRequest == nil, attempts < 50 {
+                try await Task.sleep(for: .milliseconds(20))
+                attempts += 1
+            }
+
+            let request = await capture.lastRequest
+            #expect(request?.allowsCellularAccess == false, "Disabling the preference must set allowsCellularAccess = false on the download request")
+        }
+    }
+
+    // MARK: - Update Detection (Session 154)
+
+    @Test("blobSHA computes the git blob SHA-1 of a downloaded volume's contents")
+    func blobSHAMatchesGitBlobHash() async throws {
+        try await withTempDirectory { dir in
+            let volumeId = "frus1990-92v01"
+            clearBlobSHACache(for: volumeId)
+            defer { clearBlobSHACache(for: volumeId) }
+
+            let content = "<volumes>blob sha fixture</volumes>"
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 4,
+                downloadTask: makeMockDownloadTask(content: content),
+                onStateChanged: { _ in }
+            )
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml")
+
+            let dest = await dm.volumeURL(for: volumeId)
+            var attempts = 0
+            while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
+                try await Task.sleep(for: .milliseconds(20))
+                attempts += 1
+            }
+
+            let expected = DownloadManager.gitBlobSHA1(for: Data(content.utf8))
+            #expect(await dm.blobSHA(for: volumeId) == expected)
+        }
+    }
+
+    @Test("blobSHA and localVolumeInfo return nil for a volume that is not downloaded")
+    func blobSHANilWhenNotDownloaded() async throws {
+        try await withTempDirectory { dir in
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 4,
+                downloadTask: makeMockDownloadTask(),
+                onStateChanged: { _ in }
+            )
+            #expect(await dm.blobSHA(for: "frus-does-not-exist") == nil)
+            #expect(await dm.localVolumeInfo(for: "frus-does-not-exist") == nil)
+        }
+    }
+
+    @Test("localVolumeInfo reports the on-disk size and git blob SHA-1")
+    func localVolumeInfoReportsSizeAndSha() async throws {
+        try await withTempDirectory { dir in
+            let volumeId = "frus1990-92v02"
+            clearBlobSHACache(for: volumeId)
+            defer { clearBlobSHACache(for: volumeId) }
+
+            let content = "<volumes>local volume info fixture</volumes>"
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 4,
+                downloadTask: makeMockDownloadTask(content: content),
+                onStateChanged: { _ in }
+            )
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml")
+
+            let dest = await dm.volumeURL(for: volumeId)
+            var attempts = 0
+            while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
+                try await Task.sleep(for: .milliseconds(20))
+                attempts += 1
+            }
+
+            let info = await dm.localVolumeInfo(for: volumeId)
+            #expect(info?.sizeBytes == content.utf8.count)
+            #expect(info?.sha == DownloadManager.gitBlobSHA1(for: Data(content.utf8)))
+        }
+    }
+
+    @Test("enqueueDownload(force:) re-downloads and overwrites an already-downloaded volume")
+    func forceEnqueueOverwritesExistingVolume() async throws {
+        try await withTempDirectory { dir in
+            let volumeId = "frus1990-92v03"
+            let dest = dir.appendingPathComponent("\(volumeId).xml")
+            try "<old/>".write(to: dest, atomically: true, encoding: .utf8)
+
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 4,
+                downloadTask: makeMockDownloadTask(content: "<new/>"),
+                onStateChanged: { _ in }
+            )
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml", force: true)
+
+            var attempts = 0
+            while attempts < 50 {
+                if let text = try? String(contentsOf: dest, encoding: .utf8), text == "<new/>" { break }
+                try await Task.sleep(for: .milliseconds(20))
+                attempts += 1
+            }
+
+            #expect(try String(contentsOf: dest, encoding: .utf8) == "<new/>")
+        }
+    }
+
+    @Test("enqueueDownload without force is a no-op for an already-downloaded volume")
+    func enqueueWithoutForceLeavesExistingVolumeUntouched() async throws {
+        try await withTempDirectory { dir in
+            let volumeId = "frus1990-92v04"
+            let dest = dir.appendingPathComponent("\(volumeId).xml")
+            try "<old/>".write(to: dest, atomically: true, encoding: .utf8)
+
+            let dm = DownloadManager(
+                volumesDirectory: dir,
+                concurrencyLimit: 4,
+                downloadTask: makeMockDownloadTask(content: "<new/>"),
+                onStateChanged: { _ in }
+            )
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml")
+            try await Task.sleep(for: .milliseconds(30))
+
+            #expect(try String(contentsOf: dest, encoding: .utf8) == "<old/>")
         }
     }
 }

@@ -2243,3 +2243,59 @@ struct RealCorpusEncodingTests {
         }
     }
 }
+
+// MARK: - IndexIntegrityTests
+
+@Suite("IndexingPipeline — checkIndexIntegrity (Session 154)")
+struct IndexIntegrityTests {
+
+    @Test("checkIndexIntegrity returns no problems on a freshly indexed fixture")
+    func integrityCheckPassesOnFreshIndex() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                               volumeId: "frus1969-76v01",
+                               documents: [("d1", "<head>Memorandum of Conversation</head><p>Discussed detente policy.</p>")])
+
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let problems = try await pipeline.checkIndexIntegrity()
+            #expect(problems.isEmpty)
+        }
+    }
+
+    @Test("checkIndexIntegrity reports a problem when frus_documents diverges from document_cache")
+    func integrityCheckFailsOnCorruptedTable() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                               volumeId: "frus1969-76v01",
+                               documents: [("d1", "<head>Memorandum of Conversation</head><p>Discussed detente policy.</p>")])
+
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // Open a second connection to the same database file and corrupt the
+            // frus_documents external-content sync: drop its sync triggers, then
+            // modify document_cache directly so the FTS5 index no longer matches
+            // its content table.
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            var handle: OpaquePointer?
+            #expect(sqlite3_open_v2(dbURL.path, &handle, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+            defer { sqlite3_close(handle) }
+            for sql in FTS5Schema.frusDocuments.dropTriggerSQL() {
+                #expect(sqlite3_exec(handle, sql, nil, nil, nil) == SQLITE_OK)
+            }
+            #expect(sqlite3_exec(
+                handle,
+                "UPDATE document_cache SET header = 'CORRUPTED', body_text = 'CORRUPTED' WHERE document_id = 'd1'",
+                nil, nil, nil
+            ) == SQLITE_OK)
+
+            let problems = try await pipeline.checkIndexIntegrity()
+            #expect(!problems.isEmpty)
+            #expect(problems.contains { $0.contains("frus_documents") })
+        }
+    }
+}

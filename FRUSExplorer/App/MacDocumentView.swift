@@ -46,6 +46,8 @@ import SwiftData
 ///          note anchoring
 ///   1.6 — Highlight controls + Sources moved to ResearchStripView; state managed via
 ///          HighlightCoordinator passed from MainWindowView
+///   1.7 — Session 154: applies the default document mode preference
+///          (Read/Research/remember-last) to `panelVisible` once per document open
 @MainActor
 struct MacDocumentView: View {
 
@@ -77,6 +79,8 @@ struct MacDocumentView: View {
     @AppStorage("frus.document.researchPanel.summary")   private var summaryExpanded = true
     @AppStorage("frus.document.researchPanel.notes")     private var notesExpanded   = true
     @AppStorage("frus.document.researchPanel.tags")      private var tagsExpanded    = false
+    /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
+    @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
 
     // MARK: - Init
 
@@ -144,6 +148,15 @@ struct MacDocumentView: View {
             }
         }
         .task {
+            // Apply the default document mode on open. .rememberLast leaves
+            // panelVisible untouched, preserving the prior cross-document
+            // persistence; .read/.research force it, but ResearchStripView's
+            // segmented control can still switch modes live afterwards.
+            switch defaultDocumentMode {
+            case .read:         panelVisible = false
+            case .research:     panelVisible = true
+            case .rememberLast: break
+            }
             await loadDocument()
             highlightCoordinator.createWebKitHighlightAction = createWebKitHighlight(color:)
             appState.logEvent(.documentOpen(

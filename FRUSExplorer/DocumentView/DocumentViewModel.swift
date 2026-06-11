@@ -44,6 +44,8 @@ import SwiftData
 ///   1.4 — Session 66: `documentTitle` stored property added; set from first `<head>` element
 ///          after load so cross-reference targets (created with `header: ""`) can supply
 ///          a meaningful navigation title once the document has been parsed
+///   1.5 — Session 155: `bibtexCitation`, `risCitation`, `zoteroItem(tags:notes:)` added for
+///          the citation Export menu's "Send to Zotero" actions
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -156,11 +158,14 @@ public final class DocumentViewModel {
 
     /// The formatted citation string, available when a volume entry was supplied at init.
     ///
+    /// Uses the user's persisted `CitationStyle.current` preference (history.state.gov
+    /// by default; Chicago and Turabian also available — see Settings → Display).
     /// Uses `parsedPublicationYear` (live-parsed from the volume XML) in place of
     /// the manifest's `publicationDate` when available — see `loadPublicationYear(from:)`.
     ///
-    /// The returned string contains Markdown italic markers (`_..._`) for the series
-    /// title. Use `plainTextFormattedCitation` for the clipboard and share sheet.
+    /// The returned string contains Markdown italic markers (`_..._` or `*...*`)
+    /// for the series/volume title. Use `plainTextFormattedCitation` for the
+    /// clipboard and share sheet.
     public var formattedCitation: String? {
         guard let volumeEntry else { return nil }
         let docMeta = FRUSDocumentMetadata(entry)
@@ -168,15 +173,16 @@ public final class DocumentViewModel {
         if let liveYear = parsedPublicationYear {
             volMeta = volMeta.overridingPublicationYear(liveYear)
         }
-        return HistoryAtStateCitationFormatter().format(document: docMeta, volume: volMeta)
+        return CitationStyle.current.makeFormatter().format(document: docMeta, volume: volMeta)
     }
 
     /// Plain-text version of `formattedCitation` with Markdown italic markers stripped.
     ///
-    /// `HistoryAtStateCitationFormatter` wraps the series title in `_..._` for
-    /// Markdown italics. The clipboard and share sheet should receive clean text
-    /// without raw underscore characters. `AttributedString.characters` extracts
-    /// the character sequence after Markdown parsing, giving plain text automatically.
+    /// Citation formatters wrap the title in `_..._` (history.state.gov) or
+    /// `*...*` (Chicago/Turabian) for Markdown italics. The clipboard and share
+    /// sheet should receive clean text without raw delimiter characters.
+    /// `AttributedString.characters` extracts the character sequence after
+    /// Markdown parsing, giving plain text automatically.
     public var plainTextFormattedCitation: String? {
         guard let citation = formattedCitation else { return nil }
         if let attrStr = try? AttributedString(
@@ -188,6 +194,7 @@ public final class DocumentViewModel {
         // Fallback: strip paired delimiters via regex if markdown parsing fails.
         return citation
             .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
+            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
     }
 
     /// The canonical `history.state.gov` URL for this document.
@@ -209,6 +216,70 @@ public final class DocumentViewModel {
         guard let citation = plainTextFormattedCitation,
               let url = canonicalDocumentURL else { return nil }
         return "\(citation)\n\n\(url.absoluteString)"
+    }
+
+    /// The document's citation formatted as a BibTeX `@incollection` record,
+    /// for "Copy BibTeX" and "Send to Zotero (BibTeX)…" actions. `nil` until a
+    /// volume entry is available.
+    public var bibtexCitation: String? {
+        guard let volumeEntry else { return nil }
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = effectiveVolumeMetadata(volumeEntry)
+        return BibtexExporter().export(
+            volumeId: entry.volumeId,
+            document: docMeta,
+            volume: volMeta,
+            year: effectivePublicationYear(volMeta: volMeta),
+            url: canonicalDocumentURL?.absoluteString
+        )
+    }
+
+    /// The document's citation formatted as a RIS record, for "Copy RIS".
+    /// `nil` until a volume entry is available.
+    public var risCitation: String? {
+        guard let volumeEntry else { return nil }
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = effectiveVolumeMetadata(volumeEntry)
+        return RISExporter().export(
+            document: docMeta,
+            volume: volMeta,
+            year: effectivePublicationYear(volMeta: volMeta),
+            url: canonicalDocumentURL?.absoluteString
+        )
+    }
+
+    /// Builds a Zotero JSON `bookSection` item for this document, attaching
+    /// the supplied `tags` and `notes` (typically resolved via
+    /// `ZoteroJSONExporter.fetchTagsAndNotes`). `nil` until a volume entry is
+    /// available.
+    public func zoteroItem(tags: [String], notes: [String]) -> ZoteroJSONExporter.Item? {
+        guard let volumeEntry else { return nil }
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = effectiveVolumeMetadata(volumeEntry)
+        return ZoteroJSONExporter.makeItem(
+            document: docMeta,
+            volume: volMeta,
+            year: effectivePublicationYear(volMeta: volMeta),
+            url: canonicalDocumentURL?.absoluteString,
+            isEditorialNote: entry.isEditorialNote,
+            tags: tags,
+            notes: notes
+        )
+    }
+
+    /// Returns `volumeEntry`'s metadata with the publication year overridden by
+    /// `parsedPublicationYear` when available — see `formattedCitation`.
+    private func effectiveVolumeMetadata(_ volumeEntry: VolumeManifestEntry) -> FRUSVolumeMetadata {
+        var volMeta = FRUSVolumeMetadata(volumeEntry)
+        if let liveYear = parsedPublicationYear {
+            volMeta = volMeta.overridingPublicationYear(liveYear)
+        }
+        return volMeta
+    }
+
+    /// Extracts a display year from `volMeta.publicationDate`, falling back to "n.d.".
+    private func effectivePublicationYear(volMeta: FRUSVolumeMetadata) -> String {
+        FRUSVolumeMetadata.firstYear(in: volMeta.publicationDate).map(String.init) ?? "n.d."
     }
 
     /// Reads the volume's downloaded TEI XML and extracts the live publication

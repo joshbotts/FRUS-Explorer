@@ -29,10 +29,15 @@ import SwiftUI
 ///   2.0 — Session 2026-06-08: Front Matter / Contents split; front-matter div types surfaced
 ///   2.1 — Session 2026-06-10: kind sets moved to `VolumeSection.frontMatterKinds`
 ///          (real corpus encoding); Back Matter group added with `<back>` expansion
+///   2.2 — Session 153: added a toolbar button presenting `VolumeConnectionGraphView`
+///          in a sheet, closing the iOS gap with the macOS corpus browser's
+///          per-volume cross-reference graph affordance
 struct VolumeView: View {
 
     let vm: BrowserViewModel
     let volume: VolumeManifestEntry
+
+    @State private var showConnectionGraph = false
 
     var body: some View {
         List {
@@ -63,6 +68,54 @@ struct VolumeView: View {
         .navigationBarTitleDisplayMode(.large)
         #endif
         .task { await vm.loadVolumeStructure(for: volume) }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                let isIndexed = vm.isIndexed(volume.volumeId)
+                Button {
+                    showConnectionGraph = true
+                } label: {
+                    Label(
+                        String(localized: "browser.volume.connectionGraph",
+                               defaultValue: "Cross-Volume Connections"),
+                        systemImage: "point.3.connected.trianglepath.dotted"
+                    )
+                }
+                .disabled(!isIndexed)
+                .accessibilityLabel(
+                    String(localized: "browser.volume.connectionGraph.a11y",
+                           defaultValue: "Cross-volume connection graph for \(volume.volumeId)")
+                )
+                .accessibilityHint(
+                    isIndexed
+                        ? ""
+                        : String(localized: "browser.volume.connectionGraph.notIndexed.a11y",
+                                 defaultValue: "Index this volume to view its cross-volume connections.")
+                )
+            }
+        }
+        // The graph benefits from extra vertical room — large layouts and the
+        // force-directed simulation are easier to read at full height. Letting
+        // the user drag between .medium/.large mirrors the presentation used
+        // for DocumentView's DocumentSheet.crossReferenceGraph sheet.
+        .sheet(isPresented: $showConnectionGraph) {
+            NavigationStack {
+                VolumeConnectionGraphView(volumeId: volume.volumeId)
+                    .navigationTitle(String(localized: "browser.volume.connectionGraph.title",
+                                            defaultValue: "Connections"))
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(String(localized: "browser.volume.connectionGraph.done",
+                                          defaultValue: "Done")) {
+                                showConnectionGraph = false
+                            }
+                        }
+                    }
+            }
+            .presentationDetents([.medium, .large])
+        }
     }
 
     // MARK: - Structure Section

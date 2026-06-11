@@ -156,6 +156,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///            no XML re-parse).
 ///          • Removed: `frontMatterDocumentKeys`, `documentBodyTexts(AndDates)`
 ///            (subsumed by `searchDocuments`), per-document FTS5 delete loops.
+///   4.1 — Session 154: `checkIndexIntegrity()` runs `PRAGMA quick_check` plus an
+///          `integrity-check` (rank=1) on both `frus_documents` and `user_content`,
+///          returning a list of problem descriptions for the Storage settings pane.
+///          `rebuildSpotlightIndex()` clears and re-submits the Spotlight index from
+///          `document_cache` without re-parsing XML; `submitSpotlightItems(for:)` and
+///          the new method now share a `makeSearchableItem` helper.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -788,6 +794,43 @@ public actor IndexingPipeline {
         logger.info("vacuumIndex: complete")
     }
 
+    /// Runs SQLite and FTS5 integrity diagnostics on `frus.db` (Session 154).
+    ///
+    /// Combines two checks:
+    /// - `PRAGMA quick_check`, which scans the whole database file for
+    ///   structural corruption (b-tree pages, schema, freelist).
+    /// - `INSERT INTO <table>(<table>, rank) VALUES('integrity-check', 1)` on
+    ///   both `frus_documents` and `user_content` — the `rank = 1` form of
+    ///   FTS5's `integrity-check` command cross-checks each external-content
+    ///   index against its `document_cache` content rows.
+    ///
+    /// - Returns: An empty array if no problems were found, or one descriptive
+    ///   string per problem. The Storage settings pane shows an empty result as
+    ///   "No problems found" and a non-empty result as an error list with a
+    ///   suggestion to run "Delete Index & Rebuild".
+    public func checkIndexIntegrity() async throws -> [String] {
+        var problems: [String] = []
+
+        let quickCheckStmt = try auxPrepare("PRAGMA quick_check")
+        defer { sqlite3_finalize(quickCheckStmt) }
+        while try auxStep(quickCheckStmt) {
+            if let result = auxColumnString(quickCheckStmt, 0), result != "ok" {
+                problems.append(result)
+            }
+        }
+
+        for table in [FTS5Schema.frusDocuments.tableName, FTS5Schema.userContent.tableName] {
+            do {
+                try auxExec("INSERT INTO \(table)(\(table), rank) VALUES('integrity-check', 1)")
+            } catch let IndexingError.sqliteError(_, message) {
+                problems.append("\(table): \(message)")
+            }
+        }
+
+        logger.info("checkIndexIntegrity: \(problems.count, privacy: .public) problem(s) found")
+        return problems
+    }
+
     /// Updates the summary text for a document in `document_cache`.
     ///
     /// The `user_content` FTS5 sync trigger re-indexes the row's user text in the
@@ -887,18 +930,69 @@ public actor IndexingPipeline {
     /// Submits CSSearchableItem records for all documents in `data` to the default
     /// Spotlight index. Errors are silently ignored — Spotlight is best-effort.
     private func submitSpotlightItems(for data: VolumeIndexData) {
-        let items = data.documentCache.map { doc -> CSSearchableItem in
-            let attrs = CSSearchableItemAttributeSet(contentType: .text)
-            attrs.title = doc.header.isEmpty ? doc.documentId : doc.header
-            attrs.contentDescription = String(doc.bodyText.prefix(300))
-            attrs.keywords = [data.volumeId, doc.documentId]
-            return CSSearchableItem(
-                uniqueIdentifier: "\(data.volumeId)/\(doc.documentId)",
-                domainIdentifier: data.volumeId,
-                attributeSet: attrs
+        let items = data.documentCache.map { doc in
+            Self.makeSearchableItem(
+                volumeId: data.volumeId, documentId: doc.documentId,
+                header: doc.header, bodyText: doc.bodyText
             )
         }
         CSSearchableIndex.default().indexSearchableItems(items) { _ in }
+    }
+
+    /// Builds a single `CSSearchableItem` from cached document fields, shared by
+    /// `submitSpotlightItems(for:)` and `rebuildSpotlightIndex()`.
+    private static func makeSearchableItem(
+        volumeId: String, documentId: String, header: String, bodyText: String
+    ) -> CSSearchableItem {
+        let attrs = CSSearchableItemAttributeSet(contentType: .text)
+        attrs.title = header.isEmpty ? documentId : header
+        attrs.contentDescription = String(bodyText.prefix(300))
+        attrs.keywords = [volumeId, documentId]
+        return CSSearchableItem(
+            uniqueIdentifier: "\(volumeId)/\(documentId)",
+            domainIdentifier: volumeId,
+            attributeSet: attrs
+        )
+    }
+
+    /// Rebuilds the on-device Spotlight index from `document_cache`, without
+    /// re-parsing any volume XML (Session 154).
+    ///
+    /// Deletes every FRUS Explorer item from the system Spotlight index, then
+    /// re-submits one `CSSearchableItem` per cached document using the header and
+    /// body-text prefix already stored in `document_cache` — the same shape as
+    /// `submitSpotlightItems(for:)`, batched to avoid building one enormous array
+    /// for a full-corpus rebuild. Use this to recover from a Spotlight index that
+    /// has drifted from the on-disk search index without a full reindex.
+    public func rebuildSpotlightIndex() async throws {
+        try await CSSearchableIndex.default().deleteAllSearchableItems()
+
+        let sql = "SELECT volume_id, document_id, header, body_text FROM document_cache ORDER BY rowid"
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+
+        var batch: [CSSearchableItem] = []
+        var total = 0
+        while try auxStep(stmt) {
+            batch.append(Self.makeSearchableItem(
+                volumeId: auxColumnString(stmt, 0) ?? "",
+                documentId: auxColumnString(stmt, 1) ?? "",
+                header: auxColumnString(stmt, 2) ?? "",
+                bodyText: auxColumnString(stmt, 3) ?? ""
+            ))
+
+            if batch.count >= 500 {
+                try await CSSearchableIndex.default().indexSearchableItems(batch)
+                total += batch.count
+                batch.removeAll(keepingCapacity: true)
+            }
+        }
+        if !batch.isEmpty {
+            try await CSSearchableIndex.default().indexSearchableItems(batch)
+            total += batch.count
+        }
+
+        logger.info("rebuildSpotlightIndex: resubmitted \(total, privacy: .public) items")
     }
 
     // MARK: - Browser Query (used by BrowserViewModel)

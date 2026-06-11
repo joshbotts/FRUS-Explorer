@@ -11,6 +11,7 @@
 import AppKit
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - HighlightCoordinator
 
@@ -1505,11 +1506,19 @@ private struct MacIndexingQueuePanel: View {
 ///         combining the formatted citation and its canonical
 ///         history.state.gov URL (`shareableCitationMessage`), mirroring
 ///         the new "Share Citation" toolbar item on iOS.
+///   1.3 — Session 155: Export menu gained "Send to Zotero (BibTeX)…" and
+///         "Send to Zotero (JSON)…" — saves a file via `NSSavePanel`, then
+///         opens it in Zotero (if installed) or reveals it in Finder.
 struct CitationPopoverView: View {
     let entry: DocumentBrowserEntry
 
     @Environment(AppState.self) private var appState
-    @State private var selectedStyle: CitationPopoverStyle = .historyStateDotGov
+    @Environment(\.modelContext) private var modelContext
+    /// Initial selection mirrors the user's persisted preference
+    /// (Settings → Display → Citations); the segmented control below lets the
+    /// user switch styles per-presentation for comparison without changing
+    /// that preference.
+    @State private var selectedStyle: CitationStyle = CitationStyle.current
     /// Publication year extracted live from the volume's TEI `<publicationStmt><date>`.
     /// Preferred over the manifest value, which may contain a coverage range rather
     /// than the actual print year.
@@ -1541,15 +1550,15 @@ struct CitationPopoverView: View {
 
             // Style picker
             Picker("Style", selection: $selectedStyle) {
-                ForEach(CitationPopoverStyle.allCases) { style in
-                    Text(style.displayName).tag(style)
+                ForEach(CitationStyle.allCases) { style in
+                    Text(style.shortDisplayName).tag(style)
                 }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             .help(String(
                 localized: "citation.popover.stylePicker.help",
-                defaultValue: "Choose citation style (history.state.gov, Chicago footnote, Chicago bibliography…)"
+                defaultValue: "Choose citation style (history.state.gov, Chicago, Turabian) for this view — change the default in Settings → Display"
             ))
 
             // Citation text — rendered as Markdown so _series title_ displays as italic.
@@ -1653,6 +1662,17 @@ struct CitationPopoverView: View {
                         Label("Save as .bib\u{2026}", systemImage: "square.and.arrow.down")
                     }
                     Divider()
+                    Button {
+                        if let vol = volumeEntry { sendToZoteroBibtex(vol: vol) }
+                    } label: {
+                        Label("Send to Zotero (BibTeX)\u{2026}", systemImage: "square.and.arrow.up")
+                    }
+                    Button {
+                        if let vol = volumeEntry { sendToZoteroJSON(vol: vol) }
+                    } label: {
+                        Label("Send to Zotero (JSON)\u{2026}", systemImage: "square.and.arrow.up")
+                    }
+                    Divider()
                     ShareLink(item: shareableCitationMessage) {
                         Label("Share Citation\u{2026}", systemImage: "square.and.arrow.up")
                     }
@@ -1685,12 +1705,9 @@ struct CitationPopoverView: View {
 
     // MARK: - Formatted Citation
 
-    /// Builds the formatted citation string.
-    ///
-    /// Fields used (in order): series title (italicised), subseries, volume number,
-    /// volume title, editors, city, publisher, year, document location.
-    /// The document heading is intentionally excluded — FRUS citations reference the
-    /// volume rather than quoting the document title.
+    /// Builds the formatted citation string for `selectedStyle` via the shared
+    /// `CitationFormatter` conformers in `Citation/CitationFormatter.swift`
+    /// (relocated here from inline string-building in Session 153).
     ///
     /// The returned string contains Markdown italic markers (`_..._` or `*...*`).
     /// Use `plainTextCitation` when the destination is the clipboard or a share sheet.
@@ -1699,55 +1716,12 @@ struct CitationPopoverView: View {
             return "Citation unavailable — volume metadata not loaded."
         }
 
-        // vol.title contains the full series/subseries/volume path, e.g.:
-        //   "Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972"
-        let volTitle = vol.title
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-
-        let year      = effectiveYear(for: vol)
-        let city      = "Washington, D.C."
-        let publisher = effectivePublisher(year: year)
-        let docNum    = entry.documentNumber.map { "Document \($0)" } ?? entry.documentId
-
-        // Editor list: "Name" / "Name and Name" / "Name, Name, and Name"
-        let editorString: String? = {
-            let eds = vol.editors
-            guard !eds.isEmpty else { return nil }
-            switch eds.count {
-            case 1: return eds[0]
-            case 2: return "\(eds[0]) and \(eds[1])"
-            default:
-                return eds.dropLast().joined(separator: ", ") + ", and \(eds.last!)"
-            }
-        }()
-
-        switch selectedStyle {
-        case .historyStateDotGov:
-            // _Series title_, rest of volume title, ed./eds. Name (City: Publisher, Year), Document N.
-            var result = italicizedSeriesTitle(volTitle)
-            if let eds = editorString {
-                let prefix = vol.editors.count == 1 ? "ed." : "eds."
-                result += ", \(prefix) \(eds)"
-            }
-            result += " (\(city): \(publisher), \(year)), \(docNum)."
-            return result
-
-        case .chicago:
-            // *Full volume title*, edited by Name. (City: Publisher, Year), Document N.
-            var result = "*\(volTitle)*"
-            if let eds = editorString { result += ", edited by \(eds)" }
-            result += " (\(city): \(publisher), \(year)), \(docNum)."
-            return result
-
-        case .turabian:
-            // *Full volume title*. Edited by Name. City: Publisher, Year. Document N.
-            var result = "*\(volTitle)*"
-            if let eds = editorString { result += ". Edited by \(eds)" }
-            result += ". \(city): \(publisher), \(year). \(docNum)."
-            return result
+        let docMeta = FRUSDocumentMetadata(entry)
+        var volMeta = FRUSVolumeMetadata(vol)
+        if let liveYear = parsedPublicationYear {
+            volMeta = volMeta.overridingPublicationYear(liveYear)
         }
+        return selectedStyle.makeFormatter().format(document: docMeta, volume: volMeta)
     }
 
     /// Plain-text version of `formattedCitation` with Markdown italic markers stripped.
@@ -1792,18 +1766,6 @@ struct CitationPopoverView: View {
         return y >= 2014
             ? "United States Government Publishing Office"
             : "Government Printing Office"
-    }
-
-    /// Wraps the series name portion of a FRUS volume title in underscores (Markdown italics).
-    private func italicizedSeriesTitle(_ fullTitle: String) -> String {
-        let knownSeries = [
-            "Foreign Relations of the United States",
-            "Papers Relating to the Foreign Relations of the United States",
-        ]
-        for prefix in knownSeries where fullTitle.hasPrefix(prefix) {
-            return "_\(prefix)_" + String(fullTitle.dropFirst(prefix.count))
-        }
-        return fullTitle
     }
 
     // MARK: - Live Publication Year Extraction
@@ -1892,6 +1854,64 @@ struct CitationPopoverView: View {
         }
     }
 
+    // MARK: - Send to Zotero
+
+    /// Builds a Zotero JSON item for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    @MainActor
+    private func sendToZoteroJSON(vol: VolumeManifestEntry) {
+        let docMeta = FRUSDocumentMetadata(entry)
+        var volMeta = FRUSVolumeMetadata(vol)
+        if let liveYear = parsedPublicationYear {
+            volMeta = volMeta.overridingPublicationYear(liveYear)
+        }
+        let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            context: modelContext
+        )
+        let item = ZoteroJSONExporter.makeItem(
+            document: docMeta,
+            volume: volMeta,
+            year: effectiveYear(for: vol),
+            url: canonicalURL,
+            isEditorialNote: entry.isEditorialNote,
+            tags: tags,
+            notes: notes
+        )
+        guard let data = try? ZoteroJSONExporter().exportData(items: [item]) else { return }
+        sendToZotero(data: data, suggestedName: "\(entry.volumeId)-\(entry.documentId)-zotero.json", contentType: .json)
+    }
+
+    /// Builds a BibTeX record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    @MainActor
+    private func sendToZoteroBibtex(vol: VolumeManifestEntry) {
+        guard let data = bibtexString(vol: vol).data(using: .utf8) else { return }
+        sendToZotero(data: data, suggestedName: "\(entry.volumeId)-\(entry.documentId).bib", contentType: .init(filenameExtension: "bib") ?? .data)
+    }
+
+    /// Saves `data` to a user-chosen location via `NSSavePanel`, then opens the
+    /// saved file in Zotero (if installed) or reveals it in Finder.
+    @MainActor
+    private func sendToZotero(data: Data, suggestedName: String, contentType: UTType) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [contentType]
+        panel.nameFieldStringValue = suggestedName
+        panel.title = "Send to Zotero"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                return
+            }
+            if let zoteroURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.zotero.zotero") {
+                NSWorkspace.shared.open([url], withApplicationAt: zoteroURL, configuration: NSWorkspace.OpenConfiguration())
+            } else {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private var canonicalURL: String? {
@@ -1925,25 +1945,6 @@ struct CitationPopoverView: View {
     private func copyToClipboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
-    }
-}
-
-// MARK: - CitationPopoverStyle
-// Renamed from CitationStyle to avoid conflict with Citation/CitationFormatter.CitationStyle.
-
-private enum CitationPopoverStyle: String, CaseIterable, Identifiable {
-    case historyStateDotGov
-    case chicago
-    case turabian
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .historyStateDotGov: return "history.state.gov"
-        case .chicago:            return "Chicago"
-        case .turabian:           return "Turabian"
-        }
     }
 }
 

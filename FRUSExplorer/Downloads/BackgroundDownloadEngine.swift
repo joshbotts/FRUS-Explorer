@@ -117,10 +117,14 @@ final class BackgroundDownloadEngine: NSObject, URLSessionDownloadDelegate, @unc
     /// Submits a volume download to the background session.
     ///
     /// The `volumeId` rides along in `taskDescription`, which the session persists
-    /// across app relaunches.
-    func startDownload(volumeId: String, from url: URL) {
+    /// across app relaunches. `allowsCellular` is applied per-request — the
+    /// background session's `URLSessionConfiguration` is immutable once created,
+    /// but `URLRequest.allowsCellularAccess` is honoured by background transfers
+    /// (Session 154 cellular download policy).
+    func startDownload(volumeId: String, from url: URL, allowsCellular: Bool = true) {
         var request = URLRequest(url: url)
         request.setValue("FRUSExplorer/2.0", forHTTPHeaderField: "User-Agent")
+        request.allowsCellularAccess = allowsCellular
         let task = session.downloadTask(with: request)
         task.taskDescription = volumeId
         task.resume()

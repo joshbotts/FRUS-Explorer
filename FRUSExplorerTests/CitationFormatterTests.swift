@@ -251,3 +251,204 @@ struct CitationFormatterTests {
         #expect(meta.title == "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972")
     }
 }
+
+// MARK: - ChicagoCitationFormatterTests
+
+struct ChicagoCitationFormatterTests {
+
+    private let formatter = ChicagoCitationFormatter()
+
+    @Test("Standard citation with two editors uses 'edited by' and full title")
+    func standardCitation() {
+        let volume = makeVolume(
+            title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
+            editors: ["Louis J. Smith", "David H. Herschler"],
+            publicationDate: "1972"
+        )
+        let doc = makeDocument(documentNumber: "1")
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*, edited by Louis J. Smith and David H. Herschler (Washington: Government Printing Office, 1972), Document 1.")
+    }
+
+    @Test("Three editors use Oxford comma format with 'edited by'")
+    func multipleEditors() {
+        let volume = makeVolume(
+            title: "Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972",
+            editors: ["Daniel J. Lawler", "Erin R. Mahan", "Adam M. Howard"],
+            publicationDate: "2010"
+        )
+        let doc = makeDocument(documentNumber: "75")
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(result.contains("edited by Daniel J. Lawler, Erin R. Mahan, and Adam M. Howard"))
+        #expect(result.hasSuffix("Document 75."))
+    }
+
+    @Test("Single editor uses 'edited by' without 'ed./eds.' prefix")
+    func singleEditor() {
+        let volume = makeVolume(
+            title: "Foreign Relations of the United States, 1977–1980, Volume I, Foundations of Foreign Policy",
+            editors: ["Kristin L. Ahlberg"],
+            publicationDate: "2014"
+        )
+        let doc = makeDocument(documentNumber: "12")
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(result.contains("edited by Kristin L. Ahlberg"))
+        #expect(!result.contains("ed."))
+    }
+
+    @Test("Editorial note without document number omits 'Document N' and ends with period")
+    func editorialNote() {
+        let volume = makeVolume(
+            title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
+            editors: ["Louis J. Smith", "David H. Herschler"],
+            publicationDate: "1972"
+        )
+        let doc = FRUSDocumentMetadata(
+            documentId: "edn-01",
+            documentNumber: nil,
+            header: "Editorial Note",
+            dateline: nil
+        )
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(!result.contains("Document"))
+        #expect(!result.contains("edn-01"))
+        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*, edited by Louis J. Smith and David H. Herschler (Washington: Government Printing Office, 1972).")
+    }
+
+    @Test("No editors omits 'edited by' clause")
+    func noEditors() {
+        let volume = makeVolume(
+            title: "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, 1870",
+            editors: [],
+            publicationDate: "1871"
+        )
+        let doc = makeDocument(documentNumber: "3")
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(!result.contains("edited by"))
+        #expect(result.hasPrefix("*Papers Relating to the Foreign Relations of the United States"))
+    }
+}
+
+// MARK: - TurabianCitationFormatterTests
+
+struct TurabianCitationFormatterTests {
+
+    private let formatter = TurabianCitationFormatter()
+
+    @Test("Standard citation with two editors uses period-delimited sentences")
+    func standardCitation() {
+        let volume = makeVolume(
+            title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
+            editors: ["Louis J. Smith", "David H. Herschler"],
+            publicationDate: "1972"
+        )
+        let doc = makeDocument(documentNumber: "1")
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*. Edited by Louis J. Smith and David H. Herschler. Washington: Government Printing Office, 1972. Document 1.")
+    }
+
+    @Test("Three editors use Oxford comma format with 'Edited by'")
+    func multipleEditors() {
+        let volume = makeVolume(
+            title: "Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972",
+            editors: ["Daniel J. Lawler", "Erin R. Mahan", "Adam M. Howard"],
+            publicationDate: "2010"
+        )
+        let doc = makeDocument(documentNumber: "75")
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(result.contains("Edited by Daniel J. Lawler, Erin R. Mahan, and Adam M. Howard"))
+        #expect(result.hasSuffix("Document 75."))
+    }
+
+    @Test("Editorial note without document number omits 'Document N' and ends after publication sentence")
+    func editorialNote() {
+        let volume = makeVolume(
+            title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
+            editors: ["Louis J. Smith", "David H. Herschler"],
+            publicationDate: "1972"
+        )
+        let doc = FRUSDocumentMetadata(
+            documentId: "edn-01",
+            documentNumber: nil,
+            header: "Editorial Note",
+            dateline: nil
+        )
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(!result.contains("Document"))
+        #expect(!result.contains("edn-01"))
+        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*. Edited by Louis J. Smith and David H. Herschler. Washington: Government Printing Office, 1972.")
+    }
+
+    @Test("No editors omits 'Edited by' sentence")
+    func noEditors() {
+        let volume = makeVolume(
+            title: "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, 1870",
+            editors: [],
+            publicationDate: "1871"
+        )
+        let doc = makeDocument(documentNumber: "3")
+
+        let result = formatter.format(document: doc, volume: volume)
+
+        #expect(!result.contains("Edited by"))
+        #expect(result.hasPrefix("*Papers Relating to the Foreign Relations of the United States"))
+    }
+}
+
+// MARK: - CitationStyleTests
+
+struct CitationStyleTests {
+
+    @Test("CitationStyle.current defaults to historyAtState when unset")
+    func defaultsToHistoryAtState() {
+        let defaults = UserDefaults.standard
+        let saved = defaults.object(forKey: SettingsKeys.citationStyle)
+        defer {
+            if let saved { defaults.set(saved, forKey: SettingsKeys.citationStyle) }
+            else { defaults.removeObject(forKey: SettingsKeys.citationStyle) }
+        }
+        defaults.removeObject(forKey: SettingsKeys.citationStyle)
+
+        #expect(CitationStyle.current == .historyAtState)
+    }
+
+    @Test("CitationStyle.current persists and round-trips through UserDefaults")
+    func persistsAndRoundTrips() {
+        let defaults = UserDefaults.standard
+        let saved = defaults.object(forKey: SettingsKeys.citationStyle)
+        defer {
+            if let saved { defaults.set(saved, forKey: SettingsKeys.citationStyle) }
+            else { defaults.removeObject(forKey: SettingsKeys.citationStyle) }
+        }
+
+        CitationStyle.current = .chicago
+        #expect(CitationStyle.current == .chicago)
+        #expect(defaults.string(forKey: SettingsKeys.citationStyle) == "chicago")
+
+        CitationStyle.current = .turabian
+        #expect(CitationStyle.current == .turabian)
+    }
+
+    @Test("makeFormatter() resolves each style to its expected formatter type")
+    func makeFormatterResolvesEachStyle() {
+        #expect(CitationStyle.historyAtState.makeFormatter() is HistoryAtStateCitationFormatter)
+        #expect(CitationStyle.chicago.makeFormatter() is ChicagoCitationFormatter)
+        #expect(CitationStyle.turabian.makeFormatter() is TurabianCitationFormatter)
+    }
+}

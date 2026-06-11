@@ -13,6 +13,9 @@ import Observation
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — Session 154: added `liveInfoByVolumeId`, capturing the live git blob SHA
+///          and byte size for every `known` volume so `VolumeUpdateChecker` can
+///          detect upstream corrections to already-downloaded volumes.
 public struct ManifestDiffResult: Sendable {
     /// Volumes present in both manifests (use bundled rich metadata).
     public let known: [VolumeManifestEntry]
@@ -24,6 +27,29 @@ public struct ManifestDiffResult: Sendable {
     /// Volumes in the bundled manifest but absent from the live listing.
     /// No longer published; hidden from download UI but downloaded copies are unaffected.
     public let noLongerPublished: [VolumeManifestEntry]
+
+    /// Live git blob SHA and byte size for every `known` volume, keyed by `volumeId`.
+    /// Used by `VolumeUpdateChecker` to detect upstream corrections to volumes the
+    /// user has already downloaded.
+    public let liveInfoByVolumeId: [String: LiveVolumeInfo]
+}
+
+/// Live git blob SHA and byte size for a volume, as reported by GitHub's contents
+/// API at the time of the last `fetchLiveManifest()`.
+///
+/// Compared against `LocalVolumeInfo` by `VolumeUpdateChecker.hasUpdate(local:live:)`
+/// to detect volumes that have received upstream corrections since download.
+public struct LiveVolumeInfo: Sendable, Equatable {
+    /// Git blob SHA-1 of the file's current contents on GitHub.
+    public let sha: String
+
+    /// Current file size in bytes on GitHub.
+    public let sizeBytes: Int
+
+    public init(sha: String, sizeBytes: Int) {
+        self.sha = sha
+        self.sizeBytes = sizeBytes
+    }
 }
 
 /// Minimal metadata for a volume that appears in the live GitHub listing but not the
@@ -61,6 +87,9 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
 ///   1.3 — Session 69: frusSubseries(from:) simplified to single-step year-range extraction
 ///          (^\d{4}(-\d{2,4})?); fixes conference-suffix-on-volume-marker, mixed alphanumeric
 ///          edition suffixes (IranEd2), and single-letter sub-series identifiers (G in 1952-54G)
+///   1.4 — Session 154: live GitHub listing now includes each file's git blob `sha`;
+///          `ManifestDiffResult.liveInfoByVolumeId` exposes it (with size) for
+///          `VolumeUpdateChecker` to detect upstream corrections
 @Observable
 @MainActor
 public final class ManifestStore {
@@ -243,10 +272,17 @@ public final class ManifestStore {
                 )
             }
 
+        var liveInfoByVolumeId: [String: LiveVolumeInfo] = [:]
+        for entry in known {
+            guard let liveEntry = liveByFilename[entry.filename] else { continue }
+            liveInfoByVolumeId[entry.volumeId] = LiveVolumeInfo(sha: liveEntry.sha, sizeBytes: liveEntry.size)
+        }
+
         return ManifestDiffResult(
             known: known,
             newlyAvailable: newlyAvailable,
-            noLongerPublished: noLongerPublished
+            noLongerPublished: noLongerPublished,
+            liveInfoByVolumeId: liveInfoByVolumeId
         )
     }
 
@@ -316,9 +352,12 @@ private struct GitHubLiveEntry: Codable {
     let name: String
     let size: Int
     let downloadUrl: String
+    /// Git blob SHA-1 of the file's current contents, used by `VolumeUpdateChecker`
+    /// to detect upstream corrections to already-downloaded volumes (Session 154).
+    let sha: String
 
     enum CodingKeys: String, CodingKey {
-        case name, size
+        case name, size, sha
         case downloadUrl = "download_url"
     }
 }

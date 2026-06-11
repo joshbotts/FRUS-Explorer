@@ -13,7 +13,7 @@ import XCTest
 /// Three obstruction scenarios are exercised:
 ///   1. Tab bar (bottom) — does not cover the last row in a browser list
 ///   2. Breadcrumb bar (top safeAreaInset) — does not cover the first row of a pushed view
-///   3. Software keyboard — does not cover the project name field in ProjectEditorView
+///   3. Software keyboard — does not cover the citation lookup field in CitationLookupView
 ///
 /// ## Launch configuration (inherited from `FRUSExplorerUITests` pattern)
 /// Each test class configures `XCUIApplication` with:
@@ -27,6 +27,12 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — Session 52: initial implementation
+///   1.1 — Session 156: scenario 1 retries scroll-to-bottom with a settle delay until
+///          the last row becomes hittable (the floating tab bar's resting position
+///          is reached over several swipes, not two); scenario 3 rewritten against
+///          `CitationLookupView` (Search tab → "Find by citation") since the
+///          "Activity tab → New Project" flow it previously exercised no longer
+///          exists on iOS
 final class UIObstructionTests: XCTestCase {
 
     var app: XCUIApplication!
@@ -46,11 +52,16 @@ final class UIObstructionTests: XCTestCase {
     // MARK: - 1. Tab bar does not obstruct the last browser row
 
     /// Scrolls the corpus / subseries browser list to the bottom and verifies that
-    /// the last visible cell is hittable (i.e. not obscured by the tab bar).
+    /// the last visible cell eventually becomes hittable (i.e. not obscured by the
+    /// floating tab bar).
     ///
-    /// The SwiftUI `TabView` automatically adds safe-area insets for its tab bar, and
-    /// `List` respects those insets — so the last row should always scroll clear of
-    /// the bar. This test acts as a regression guard.
+    /// The iOS 18 floating `TabView` bar overlaps the bottom of the `List`'s scroll
+    /// content; each `swipeUp` gesture's deceleration/rubber-band animation continues
+    /// briefly after the gesture itself returns control to the test, so the list's
+    /// final resting position is reached over several swipes rather than after a
+    /// fixed count of two. This test repeatedly swipes (with a short settle delay)
+    /// until the last row is hittable, guarding against a regression where the row
+    /// remains permanently obscured no matter how far the user scrolls.
     func testTabBarNotObstructingLastBrowserRow() throws {
         // The Browse tab is selected by default; confirm we are in the browser.
         // On iOS the tab bar item is labelled "Browse".
@@ -64,18 +75,26 @@ final class UIObstructionTests: XCTestCase {
         let firstCell = app.cells.firstMatch
         let appeared = firstCell.waitForExistence(timeout: 10)
         XCTAssertTrue(appeared, "Expected browser list cells to appear within 10 s")
+        XCTAssertGreaterThan(app.cells.count, 0, "Expected at least one cell in the browser list")
 
-        // Scroll to the very bottom of the list.
-        app.swipeUp(velocity: .fast)
-        app.swipeUp(velocity: .fast)
+        // Scroll toward the bottom of the list, settling briefly after each swipe,
+        // until the last cell becomes hittable. XCTest's `isHittable` returns false
+        // when a view is clipped or covered.
+        var becameHittable = false
+        for _ in 1...15 {
+            let lastCell = app.cells.element(boundBy: app.cells.count - 1)
+            if lastCell.isHittable {
+                becameHittable = true
+                break
+            }
+            app.swipeUp(velocity: .fast)
+            Thread.sleep(forTimeInterval: 0.5)
+        }
 
-        // After scrolling, the last cell in the list should be fully visible and hittable.
-        // XCTest's `isHittable` returns false when a view is clipped or covered.
-        let lastCell = app.cells.element(boundBy: app.cells.count - 1)
-        XCTAssertTrue(lastCell.exists, "Expected at least one cell to remain after scrolling")
         XCTAssertTrue(
-            lastCell.isHittable,
-            "Last browser row is not hittable — it may be obscured by the tab bar"
+            becameHittable,
+            "Last browser row never became hittable after repeated scrolling — "
+                + "it may be permanently obscured by the tab bar"
         )
     }
 
@@ -118,59 +137,66 @@ final class UIObstructionTests: XCTestCase {
         )
     }
 
-    // MARK: - 3. Software keyboard does not cover the project name field
+    // MARK: - 3. Software keyboard does not cover the citation lookup field
 
-    /// Navigates to the Activity tab, creates a new project, taps the name
+    /// Opens Citation Lookup from the Search tab, taps the paste-citation
     /// `TextField`, and verifies that the field remains visible (above the keyboard).
     ///
-    /// `ProjectEditorView` wraps its fields in a `Form`, which uses
+    /// `CitationLookupView` wraps its fields in a `Form`, which uses
     /// `UIScrollView`-backed keyboard avoidance on iOS — the form scrolls so the
     /// focused field stays above the keyboard. This test guards against any
     /// regression where the field is scrolled out of view or the keyboard fully
     /// covers it.
-    func testKeyboardDoesNotCoverProjectNameField() throws {
-        // Navigate to the Activity tab.
-        let activityTab = app.tabBars.firstMatch.buttons["Activity"]
+    ///
+    /// Note: an earlier version of this test exercised "Activity" tab → "New
+    /// Project" → name field. That flow no longer exists on iOS — the Activity tab
+    /// was renamed to "Research" (Session 130) and project creation is macOS-only
+    /// (`SettingsProjectsPane`). Citation Lookup exercises the same `Form`-based
+    /// keyboard-avoidance mechanism and is reachable with no preconditions.
+    func testKeyboardDoesNotCoverCitationLookupField() throws {
+        // Navigate to the Search tab.
+        let searchTab = app.tabBars.firstMatch.buttons["Search"]
         XCTAssertTrue(
-            activityTab.waitForExistence(timeout: 5),
-            "Activity tab bar item not found"
+            searchTab.waitForExistence(timeout: 5),
+            "Search tab bar item not found"
         )
-        activityTab.tap()
+        searchTab.tap()
 
-        // Tap the "+" button to open the new-project editor.
-        let addButton = app.navigationBars.buttons["Add"]
-            .firstMatch
-        // Fall back to any "+" or "New Project" button if "Add" label not used.
-        let addFallback = app.buttons["New Project"].firstMatch
-        let addBtnExists = addButton.waitForExistence(timeout: 5)
-            || addFallback.waitForExistence(timeout: 2)
-        XCTAssertTrue(addBtnExists, "No new-project button found in Activity tab navigation bar")
+        // "Find by citation" lives in the "More search actions" overflow menu.
+        let moreActions = app.buttons["More search actions"]
+        XCTAssertTrue(
+            moreActions.waitForExistence(timeout: 5),
+            "More search actions toolbar button not found"
+        )
+        moreActions.tap()
 
-        if addButton.exists && addButton.isHittable {
-            addButton.tap()
-        } else {
-            addFallback.tap()
-        }
+        let citationLookupButton = app.buttons["Find by citation"]
+        XCTAssertTrue(
+            citationLookupButton.waitForExistence(timeout: 5),
+            "Find by citation menu item not found"
+        )
+        citationLookupButton.tap()
 
-        // The project editor presents. Wait for a text field (project name).
-        let nameField = app.textFields.firstMatch
-        let fieldAppeared = nameField.waitForExistence(timeout: 5)
-        XCTAssertTrue(fieldAppeared, "Project name text field did not appear in editor")
+        // The Citation Lookup sheet presents a Form whose first field is the
+        // paste-citation text field.
+        let pasteField = app.textFields.firstMatch
+        let fieldAppeared = pasteField.waitForExistence(timeout: 5)
+        XCTAssertTrue(fieldAppeared, "Citation paste text field did not appear in lookup sheet")
 
         // Tap the field to raise the software keyboard.
-        nameField.tap()
+        pasteField.tap()
 
         // Allow the keyboard animation to complete.
         let keyboard = app.keyboards.firstMatch
         let keyboardAppeared = keyboard.waitForExistence(timeout: 3)
-        XCTAssertTrue(keyboardAppeared, "Software keyboard did not appear after tapping name field")
+        XCTAssertTrue(keyboardAppeared, "Software keyboard did not appear after tapping citation field")
 
         // The field must still be hittable — Form's scroll-to-visible should have
         // moved it above the keyboard. `isHittable` fails if the element is fully
         // occluded by another view (including the keyboard).
         XCTAssertTrue(
-            nameField.isHittable,
-            "Project name field is not hittable after keyboard appeared — keyboard may be covering it"
+            pasteField.isHittable,
+            "Citation paste field is not hittable after keyboard appeared — keyboard may be covering it"
         )
     }
 }

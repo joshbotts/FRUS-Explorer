@@ -11,6 +11,7 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import AppKit
 
 // MARK: - FRUSSettingsView
 
@@ -57,6 +58,9 @@ import UniformTypeIdentifiers
 ///          • Notes pane: added horizontal padding to note rows for consistency.
 ///          • Storage pane: index + volume size breakdown added below usage bar;
 ///            indexing queue card and action buttons moved above the volume table.
+///   1.3 — Session 154: Data pane added (Advanced section) — JSON export via
+///          NSSavePanel and per-note Markdown export via NSOpenPanel folder picker,
+///          both built on ResearchDataExporter.
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -114,6 +118,7 @@ struct FRUSSettingsView: View {
                 case .downloads:      SettingsAddVolumesPane()
                 case .naraAPI:        SettingsNARAPane()
                 case .summarization:  SettingsSummarizationPane()
+                case .data:           SettingsDataPane()
                 case .reset:          SettingsResetPane()
                 }
             }
@@ -129,7 +134,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
     case about, display, search
     case projects, tags, notes
     case storage, downloads
-    case naraAPI, summarization
+    case naraAPI, summarization, data
     case reset
 
     var id: String { rawValue }
@@ -146,6 +151,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .downloads:     return "Add Volumes"
         case .naraAPI:       return "NARA API"
         case .summarization: return "Summarization"
+        case .data:          return "Data"
         case .reset:         return "Reset"
         }
     }
@@ -162,6 +168,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .downloads:     return "plus.circle"
         case .naraAPI:       return "key"
         case .summarization: return "sparkles"
+        case .data:          return "square.and.arrow.up"
         case .reset:         return "arrow.counterclockwise"
         }
     }
@@ -169,7 +176,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
     static let general:  [SettingsPane] = [.display, .search]
     static let research: [SettingsPane] = [.projects, .tags, .notes]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
-    static let advanced: [SettingsPane] = [.naraAPI, .summarization]
+    static let advanced: [SettingsPane] = [.naraAPI, .summarization, .data]
     static let resetSection: [SettingsPane] = [.reset]
 }
 
@@ -250,6 +257,8 @@ private struct SettingsAboutPane: View {
 
 private struct SettingsDisplayPane: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+    @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
+    @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
 
     var body: some View {
         ScrollView {
@@ -271,6 +280,34 @@ private struct SettingsDisplayPane: View {
                 .padding(.bottom, 8)
 
                 Text("Adjusts the body text size in the Document view.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+
+                PaneSectionHeader(title: "Citations")
+                Picker("Citation style", selection: $citationStyle) {
+                    ForEach(CitationStyle.allCases) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+                .padding(.bottom, 8)
+
+                Text("Used for Copy Citation, Share Citation, and the citation popover's default. The popover can still switch styles per-presentation for comparison.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+
+                PaneSectionHeader(title: "Reading")
+                Picker("Open documents in", selection: $defaultDocumentMode) {
+                    ForEach(DefaultDocumentMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+                .padding(.bottom, 8)
+
+                Text("\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. The in-document Read/Research control always overrides for the current document.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
@@ -410,8 +447,7 @@ private struct SettingsProjectsPane: View {
         ) {
             Button("Delete", role: .destructive) {
                 if let p = projectToDelete {
-                    if appState.activeProjectId == p.id { appState.activeProjectId = nil }
-                    modelContext.delete(p)
+                    ProjectAdminService.delete(p, context: modelContext, appState: appState)
                 }
             }
             Button("Cancel", role: .cancel) {}
@@ -421,31 +457,7 @@ private struct SettingsProjectsPane: View {
     }
 
     private func mergeProject(source: Project, into target: Project) {
-        let sourceId = source.id
-        let targetId = target.id
-
-        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
-        for note in allNotes where note.projectIds.contains(sourceId) {
-            var ids = note.projectIds.filter { $0 != sourceId }
-            if !ids.contains(targetId) { ids.append(targetId) }
-            note.projectIds = ids
-        }
-        let allCollections = (try? modelContext.fetch(FetchDescriptor<Collection>())) ?? []
-        for collection in allCollections where collection.projectIds.contains(sourceId) {
-            var ids = collection.projectIds.filter { $0 != sourceId }
-            if !ids.contains(targetId) { ids.append(targetId) }
-            collection.projectIds = ids
-        }
-        let allSummaries = (try? modelContext.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
-        for summary in allSummaries where summary.projectId == sourceId {
-            summary.projectId = targetId
-        }
-        let allHistory = (try? modelContext.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? []
-        for entry in allHistory where entry.projectId == sourceId {
-            entry.projectId = targetId
-        }
-        if appState.activeProjectId == sourceId { appState.activeProjectId = targetId }
-        modelContext.delete(source)
+        ProjectAdminService.merge(source, into: target, context: modelContext, appState: appState)
     }
 
     private var activeContextRow: some View {
@@ -953,6 +965,11 @@ private struct SettingsNotesPane: View {
 ///          Phase 2 — `SettingsStoragePane` gains LRU/protection indicators on volume rows,
 ///          a storage advisory card when near/over limit, and a Manage Storage sheet with
 ///          removal candidates, estimated index sizes, and post-removal VACUUM
+///   1.5 — Session 154: "Diagnostics" section — "Check Index Integrity" runs
+///          `IndexingPipeline.checkIndexIntegrity()` and shows a green "No problems
+///          found" or a list of problem descriptions with a suggestion to rebuild;
+///          "Rebuild Spotlight Index" clears and re-submits the system Spotlight
+///          index from `document_cache` without re-parsing XML
 private struct SettingsStoragePane: View {
 
     // MARK: - Batch tracking
@@ -996,6 +1013,20 @@ private struct SettingsStoragePane: View {
     @State private var showRebuildConfirmation = false
     /// Controls the Manage Storage sheet.
     @State private var showManageStorageSheet = false
+
+    // MARK: Diagnostics state (Session 154)
+
+    /// `true` while `checkIndexIntegrity()` is running.
+    @State private var integrityCheckRunning = false
+    /// Result of the most recent integrity check: `nil` before the first run,
+    /// empty when no problems were found, or one description per problem.
+    @State private var integrityCheckResult: [String]? = nil
+    /// `true` while `rebuildSpotlightIndex()` is running.
+    @State private var spotlightRebuildRunning = false
+    /// `true` once a Spotlight rebuild has completed successfully.
+    @State private var spotlightRebuildSucceeded = false
+    /// Error message from a failed Spotlight rebuild.
+    @State private var spotlightRebuildError: String? = nil
 
     var body: some View {
         ScrollView {
@@ -1097,6 +1128,10 @@ private struct SettingsStoragePane: View {
                     }
                     .padding(.top, 6)
                 }
+
+                // Diagnostics — index integrity check and Spotlight rebuild (Session 154).
+                PaneSectionHeader(title: "Diagnostics")
+                diagnosticsSection
 
                 // Volume table — below the controls so short volume lists don't push
                 // the indexing controls off-screen.
@@ -1351,6 +1386,113 @@ private struct SettingsStoragePane: View {
             }
         }
         .labelStyle(.titleAndIcon)
+    }
+
+    // MARK: - Diagnostics (Session 154)
+
+    /// "Check Index Integrity" and "Rebuild Spotlight Index" actions, with inline
+    /// result rows. Mirrors the iOS `StorageManagementView` Diagnostics section.
+    @ViewBuilder
+    private var diagnosticsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Button {
+                    Task { await runIndexIntegrityCheck() }
+                } label: {
+                    if integrityCheckRunning {
+                        HStack(spacing: 4) {
+                            ProgressView().controlSize(.small)
+                            Text("Checking…")
+                        }
+                        .font(.system(size: 12))
+                    } else {
+                        Label("Check Index Integrity", systemImage: "stethoscope")
+                            .font(.system(size: 12))
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(settingsBatch != nil || integrityCheckRunning || appState.indexingPipeline == nil)
+                .help("Run a SQLite and FTS5 integrity check on the search index.")
+
+                Button {
+                    Task { await runRebuildSpotlightIndex() }
+                } label: {
+                    if spotlightRebuildRunning {
+                        HStack(spacing: 4) {
+                            ProgressView().controlSize(.small)
+                            Text("Rebuilding…")
+                        }
+                        .font(.system(size: 12))
+                    } else {
+                        Label("Rebuild Spotlight Index", systemImage: "magnifyingglass")
+                            .font(.system(size: 12))
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(settingsBatch != nil || spotlightRebuildRunning || appState.indexingPipeline == nil)
+                .help("Clear and re-submit the system Spotlight index from cached document text, without re-parsing volume XML.")
+            }
+
+            if let result = integrityCheckResult {
+                if result.isEmpty {
+                    Label("No problems found", systemImage: "checkmark.circle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.green)
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(result, id: \.self) { problem in
+                            Label(problem, systemImage: "exclamationmark.triangle")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.red)
+                        }
+                        Text("Try \"Delete Index & Rebuild\" above to fix these problems.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            if spotlightRebuildSucceeded {
+                Label("Spotlight index rebuilt", systemImage: "checkmark.circle")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.green)
+            }
+            if let error = spotlightRebuildError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.red)
+            }
+        }
+        .padding(.bottom, 4)
+    }
+
+    /// Runs `IndexingPipeline.checkIndexIntegrity()` and stores the result for display.
+    private func runIndexIntegrityCheck() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        integrityCheckRunning = true
+        integrityCheckResult = nil
+        do {
+            integrityCheckResult = try await pipeline.checkIndexIntegrity()
+        } catch {
+            integrityCheckResult = [error.localizedDescription]
+        }
+        integrityCheckRunning = false
+    }
+
+    /// Runs `IndexingPipeline.rebuildSpotlightIndex()`, clearing and re-submitting
+    /// the system Spotlight index from `document_cache` without re-parsing XML.
+    private func runRebuildSpotlightIndex() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        spotlightRebuildRunning = true
+        spotlightRebuildSucceeded = false
+        spotlightRebuildError = nil
+        do {
+            try await pipeline.rebuildSpotlightIndex()
+            spotlightRebuildSucceeded = true
+        } catch {
+            spotlightRebuildError = error.localizedDescription
+        }
+        spotlightRebuildRunning = false
     }
 
     // MARK: - Inline Queue Progress Card
@@ -1844,6 +1986,13 @@ private struct ManageStorageSheet: View {
 
 // MARK: - Add Volumes Pane
 
+/// macOS pane for sideloading, downloading, and updating FRUS volumes.
+///
+/// Version history:
+///   1.0 — Sideload from file, download by corpus/subseries/volume, concurrency setting
+///   1.1 — Session 154: added "Updates" section — `VolumeUpdateChecker` detects
+///          upstream corrections to downloaded volumes via git blob SHA comparison,
+///          with per-volume "Update" and "Update All" (force re-download + re-index)
 private struct SettingsAddVolumesPane: View {
     @Environment(AppState.self) private var appState
 
@@ -1864,6 +2013,11 @@ private struct SettingsAddVolumesPane: View {
         return stored > 0 ? stored : 4
     }()
 
+    // MARK: Update detection state (Session 154)
+    @State private var updatableVolumes: [UpdatableVolume] = []
+    @State private var isCheckingForUpdates: Bool = false
+    @State private var hasCheckedForUpdates: Bool = false
+
 
     // MARK: - Body
 
@@ -1882,6 +2036,12 @@ private struct SettingsAddVolumesPane: View {
                     .padding(.bottom, 20)
 
                 downloadSection
+
+                Divider()
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
+
+                updatesSection
 
                 Divider()
                     .padding(.top, 20)
@@ -1935,6 +2095,77 @@ private struct SettingsAddVolumesPane: View {
         .padding(12)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 7))
+    }
+
+    /// Lists downloaded volumes whose upstream copy has changed since download, with
+    /// per-volume "Update" and "Update All" actions. "Check for Updates" diffs each
+    /// downloaded volume's git blob SHA against the live manifest (Session 154);
+    /// updating force-redownloads and re-indexes, preserving user notes/tags/summaries.
+    private var updatesSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            PaneSectionHeader(title: "Updates")
+            Text("Checks downloaded volumes against the FRUS repository for upstream corrections. Updating re-downloads and re-indexes the volume; your notes, highlights, tags, and summaries are preserved.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .padding(.bottom, 12)
+
+            if !updatableVolumes.isEmpty {
+                VStack(spacing: 6) {
+                    ForEach(updatableVolumes) { updatable in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(updatable.entry.title)
+                                    .font(.system(size: 12))
+                                    .lineLimit(2)
+                                Text(updatable.entry.volumeId)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Update") {
+                                Task { await updateVolume(updatable) }
+                            }
+                            .font(.system(size: 12))
+                            .buttonStyle(.bordered)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.secondary.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+                .padding(.bottom, 12)
+            } else if hasCheckedForUpdates && !isCheckingForUpdates {
+                Text("All downloaded volumes are up to date.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 12)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    Task { await checkForUpdates() }
+                } label: {
+                    if isCheckingForUpdates {
+                        Label("Checking…", systemImage: "arrow.triangle.2.circlepath")
+                    } else {
+                        Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(isCheckingForUpdates || downloadedVolumes.isEmpty || appState.manifestStore.diffResult == nil)
+
+                if !updatableVolumes.isEmpty {
+                    Button {
+                        Task { await updateAllVolumes() }
+                    } label: {
+                        Label("Update All", systemImage: "arrow.down.circle")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
     }
 
     private var sideloadSection: some View {
@@ -2217,6 +2448,11 @@ private struct SettingsAddVolumesPane: View {
         allSubseries.map { sub in (sub, allVolumes.filter { $0.subseries == sub }) }
     }
 
+    private var downloadedVolumes: [VolumeManifestEntry] {
+        guard let dm = appState.downloadManager else { return [] }
+        return allVolumes.filter { dm.isVolumeDownloaded($0.volumeId) }
+    }
+
     private func startYear(_ subseries: String) -> Int {
         Int(subseries.prefix(4)) ?? 0
     }
@@ -2288,6 +2524,44 @@ private struct SettingsAddVolumesPane: View {
         guard let dm = appState.downloadManager else { return }
         for entry in volumes {
             await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
+        }
+    }
+
+    // MARK: - Update Detection (Session 154)
+
+    /// Diffs every downloaded volume's git blob SHA against the live manifest and
+    /// populates `updatableVolumes` with any that have changed upstream. Runs only
+    /// on explicit user request — never automatically at launch.
+    private func checkForUpdates() async {
+        guard let dm = appState.downloadManager,
+              let liveInfo = appState.manifestStore.diffResult?.liveInfoByVolumeId else {
+            return
+        }
+        isCheckingForUpdates = true
+        let known = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        updatableVolumes = await VolumeUpdateChecker.updatableVolumes(
+            known: known,
+            liveInfoByVolumeId: liveInfo,
+            downloadManager: dm
+        )
+        hasCheckedForUpdates = true
+        isCheckingForUpdates = false
+    }
+
+    /// Re-downloads `updatable` (overwriting the stale local copy) and removes it
+    /// from `updatableVolumes`. `onVolumeDownloaded` re-indexes the volume
+    /// automatically once the transfer completes; the UPSERT path preserves the
+    /// user's notes, highlights, tags, and summaries.
+    private func updateVolume(_ updatable: UpdatableVolume) async {
+        guard let dm = appState.downloadManager else { return }
+        await dm.enqueueDownload(volumeId: updatable.id, downloadUrl: updatable.entry.downloadUrl, force: true)
+        updatableVolumes.removeAll { $0.id == updatable.id }
+    }
+
+    /// Re-downloads every volume currently listed in `updatableVolumes`.
+    private func updateAllVolumes() async {
+        for updatable in updatableVolumes {
+            await updateVolume(updatable)
         }
     }
 }
@@ -2607,6 +2881,159 @@ private struct SettingsSummarizationPane: View {
     }
 }
 
+// MARK: - Data Pane
+
+/// Settings → Data — research data export.
+///
+/// macOS counterpart to iOS `ResearchDataExportView`. Builds the same
+/// `ResearchDataEnvelope` via `ResearchDataExporter` but saves to disk through
+/// `NSSavePanel` (JSON) and `NSOpenPanel` (a destination folder for the
+/// per-note Markdown export) rather than a share sheet.
+///
+/// Version history:
+///   1.0 — Session 154: initial implementation
+private struct SettingsDataPane: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+
+    @Query private var notes: [ResearchNote]
+    @Query private var tags: [UserTag]
+    @Query private var tagAssignments: [DocumentTagAssignment]
+    @Query private var highlights: [DocumentHighlight]
+    @Query private var collections: [Collection]
+    @Query private var prompts: [SummarizationPrompt]
+    @Query private var projects: [Project]
+    @Query private var summaries: [GeneratedSummary]
+
+    @State private var includeGeneratedSummaries = false
+    @State private var isExportingMarkdown = false
+    @State private var statusMessage: String?
+
+    private var userPromptCount: Int {
+        prompts.filter { !$0.isStandard }.count
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                PaneHeader(
+                    title: "Data",
+                    subtitle: "Export your research notes, tags, highlights, collections, prompts, and projects."
+                )
+
+                PaneSectionHeader(title: "Contents")
+                VStack(alignment: .leading, spacing: 4) {
+                    contentsRow("Research Notes", notes.count)
+                    contentsRow("Tags & Assignments", tags.count + tagAssignments.count)
+                    contentsRow("Highlights", highlights.count)
+                    contentsRow("Collections", collections.count)
+                    contentsRow("Custom Prompts", userPromptCount)
+                    contentsRow("Projects", projects.count)
+                }
+                .padding(.bottom, 12)
+
+                PaneSectionHeader(title: "Export")
+
+                Toggle("Include AI-Generated Summaries", isOn: $includeGeneratedSummaries)
+                Text("Adds all \(summaries.count) generated summaries to the JSON export. Off by default since AI output can be large.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 8)
+
+                HStack(spacing: 8) {
+                    Button("Export as JSON…") { exportJSON() }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+
+                    Button("Export Notes as Markdown…") { exportMarkdown() }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(isExportingMarkdown || notes.isEmpty)
+                }
+
+                if isExportingMarkdown {
+                    HStack(spacing: 6) {
+                        ProgressView().scaleEffect(0.6, anchor: .center)
+                        Text("Writing Markdown files…")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 8)
+                } else if let statusMessage {
+                    Text(statusMessage)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+                }
+            }
+            .padding(24)
+        }
+    }
+
+    private func contentsRow(_ label: String, _ count: Int) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 12))
+            Spacer()
+            Text("\(count)")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Builds the JSON envelope and presents `NSSavePanel` to write it to disk.
+    private func exportJSON() {
+        do {
+            let envelope = try ResearchDataExporter.makeEnvelope(
+                modelContext: modelContext,
+                includeGeneratedSummaries: includeGeneratedSummaries
+            )
+            let data = try ResearchDataExporter.exportJSONData(envelope)
+
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.json]
+            panel.nameFieldStringValue = "frus-research-export.json"
+            panel.begin { response in
+                guard response == .OK, let url = panel.url else { return }
+                do {
+                    try data.write(to: url, options: .atomic)
+                    statusMessage = "Saved to \(url.lastPathComponent)."
+                } catch {
+                    statusMessage = "Couldn't save the export: \(error.localizedDescription)"
+                }
+            }
+        } catch {
+            statusMessage = "Couldn't prepare the export: \(error.localizedDescription)"
+        }
+    }
+
+    /// Prompts for a destination folder via `NSOpenPanel`, then writes one
+    /// Markdown file per research note into it.
+    private func exportMarkdown() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Choose"
+        panel.message = "Choose a folder to save a Markdown file for each research note."
+        guard panel.runModal() == .OK, let directory = panel.url else { return }
+
+        isExportingMarkdown = true
+        Task {
+            let exports = await ResearchDataExporter.markdownExports(notes: notes, tags: tags, appState: appState)
+            var written = 0
+            for export in exports {
+                let url = directory.appendingPathComponent(export.filename)
+                if (try? export.content.write(to: url, atomically: true, encoding: .utf8)) != nil {
+                    written += 1
+                }
+            }
+            statusMessage = "Saved \(written) note\(written == 1 ? "" : "s") to \(directory.lastPathComponent)."
+            isExportingMarkdown = false
+        }
+    }
+}
+
 // MARK: - Reset Pane
 
 private struct SettingsResetPane: View {
@@ -2807,43 +3234,17 @@ private struct SettingsResetPane: View {
 
         isResetting = true
 
-        // 1. Delete every .xml file in volumesDirectory directly via the filesystem.
-        //    Iterating manifest entries misses any file not in the manifest, which would
-        //    leave hasDownloadedVolumes() returning true and block OnboardingView.
-        if let dm = appState.downloadManager {
-            let dir = dm.volumesDirectory
-            if let files = try? FileManager.default.contentsOfDirectory(
-                at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
-            ) {
-                for file in files where file.pathExtension.lowercased() == "xml" {
-                    try? FileManager.default.removeItem(at: file)
-                }
-            }
-        }
+        // 1-2. Delete downloaded volume XML and clear the search index; return to onboarding.
+        await ResetService.resetLocalData(appState: appState)
 
-        // 2. Remove the search index — one bulk DELETE per table, not one call per manifest entry.
-        if let pipeline = appState.indexingPipeline {
-            do {
-                try await pipeline.removeAllVolumesFromIndex()
-                appState.indexedVolumeIds = []
-                appState.indexGeneration += 1
-            } catch {
-                #if DEBUG
-                print("[Settings] removeAllVolumesFromIndex failed: \(error)")
-                #endif
-            }
-        }
-
-        // 3. If full reset, delete all SwiftData records
+        // 3. If full reset, also delete all SwiftData records
         if includeCloudKit {
             deleteAllUserData()
         }
 
-        // 4. Clear onboarding flag — ContentView immediately re-evaluates and shows OnboardingView
-        appState.hasCompletedOnboarding = false
         isResetting = false
 
-        // 5. Close auxiliary windows (Search, Corpus Browser, etc.) — they'd be confusing
+        // 4. Close auxiliary windows (Search, Corpus Browser, etc.) — they'd be confusing
         //    during onboarding and might obscure the ContentView window which has already
         //    switched to OnboardingView. NSApplication.mainWindow is unreliable here: it
         //    returns whichever window last had focus (often an auxiliary window), not the
