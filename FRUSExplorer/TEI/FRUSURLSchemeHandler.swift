@@ -39,6 +39,10 @@ import WebKit
 ///
 /// ## Session history
 ///   1.0 — Session 142: initial implementation; replaces `StubFRUSURLSchemeHandler`
+///   1.1 — Session 160: dispatch moved into `dispatch(url:)`, called from the
+///          navigation delegate's `decidePolicyFor`. `webView(_:start:)` no longer
+///          dispatches — cancelling the navigation there suppresses the scheme task
+///          on macOS, which is why in-document person/term links never fired.
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -76,14 +80,21 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         #endif
     }
 
-    // MARK: - WKURLSchemeHandler
+    // MARK: - Dispatch
 
-    func webView(_ webView: WKWebView, start urlSchemeTask: any WKURLSchemeTask) {
-        // Always respond so WebKit does not report a load error.
-        defer { respond(to: urlSchemeTask) }
-
-        guard let url = urlSchemeTask.request.url else { return }
-
+    /// Resolves a `frusexplorer://` URL to its `PersonEntry` / `GlossEntry` /
+    /// cross-reference target and invokes the matching callback.
+    ///
+    /// This is called from the navigation delegate
+    /// (`_FRUSWebViewCoordinator.webView(_:decidePolicyFor:)`) when an interactive
+    /// link is tapped — **not** from `webView(_:start:)`. The navigation delegate
+    /// cancels `frusexplorer://` navigations so the scheme handler's empty response
+    /// can never replace the document, but cancelling also prevents
+    /// `webView(_:start:)` from running (notably on macOS). Dispatching here, in a
+    /// single place, keeps person/gloss/cross-ref taps working deterministically on
+    /// both platforms without any double dispatch.
+    @MainActor
+    func dispatch(url: URL) {
         // Path components with leading "/" filtered out; values are percent-decoded.
         let parts = url.pathComponents
             .filter { $0 != "/" }
@@ -108,6 +119,16 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         default:
             break
         }
+    }
+
+    // MARK: - WKURLSchemeHandler
+
+    func webView(_ webView: WKWebView, start urlSchemeTask: any WKURLSchemeTask) {
+        // Respond with an empty 200 so WebKit never reports a load error if it ever
+        // does start this task. The actual tap dispatch happens in the navigation
+        // delegate's decidePolicyFor (see `dispatch(url:)`), because cancelling the
+        // navigation there prevents this method from running on macOS.
+        respond(to: urlSchemeTask)
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: any WKURLSchemeTask) {}

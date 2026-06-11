@@ -330,13 +330,24 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         }
     }
 
-    /// Allows the initial HTML load and blocks all external navigations.
+    /// Allows the initial HTML load and dispatches `frusexplorer://` link taps.
+    ///
+    /// When the tapped link uses the `frusexplorer` scheme, the person/gloss/cross-ref
+    /// callback is fired here (via `FRUSURLSchemeHandler.dispatch(url:)`) and the
+    /// navigation is cancelled. Cancelling is required so the scheme handler's empty
+    /// response can't replace the document — but it also prevents the scheme handler's
+    /// `webView(_:start:)` from running, so this is the only reliable place to dispatch
+    /// interactive links (the scheme task does not start on macOS once cancelled).
     func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction
     ) async -> WKNavigationActionPolicy {
-        guard navigationAction.request.url?.scheme != "frusexplorer" else { return .cancel }
-        return .allow
+        guard let url = navigationAction.request.url, url.scheme == "frusexplorer" else {
+            return .allow
+        }
+        let handler = schemeHandler
+        await MainActor.run { handler?.dispatch(url: url) }
+        return .cancel
     }
 
     #if DEBUG
