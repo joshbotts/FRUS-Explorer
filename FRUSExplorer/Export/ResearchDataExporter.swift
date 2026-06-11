@@ -370,7 +370,10 @@ enum ResearchDataExporter {
         tags: [UserTag],
         appState: AppState
     ) async -> [ResearchNoteMarkdownExport] {
-        let tagNamesById = Dictionary(uniqueKeysWithValues: tags.map { ($0.id, $0.name) })
+        // uniquingKeysWith: CloudKit sync can transiently surface duplicate ids;
+        // uniqueKeysWithValues would crash on them.
+        let tagNamesById = Dictionary(tags.map { ($0.id, $0.name) },
+                                      uniquingKeysWith: { first, _ in first })
         var results: [ResearchNoteMarkdownExport] = []
         results.reserveCapacity(notes.count)
         for note in notes {
@@ -409,11 +412,10 @@ enum ResearchDataExporter {
         frontMatter.append("volumeId: \(note.volumeId)")
         frontMatter.append("url: \(canonicalURL)")
         if let citation {
-            let escaped = citation.replacingOccurrences(of: "\"", with: "\\\"")
-            frontMatter.append("citation: \"\(escaped)\"")
+            frontMatter.append("citation: \(yamlQuoted(citation))")
         }
         if !tagNames.isEmpty {
-            frontMatter.append("tags: [\(tagNames.joined(separator: ", "))]")
+            frontMatter.append("tags: [\(tagNames.map(yamlQuoted).joined(separator: ", "))]")
         }
         if let createdAt = note.createdAt {
             frontMatter.append("created: \(ISO8601DateFormatter().string(from: createdAt))")
@@ -428,5 +430,15 @@ enum ResearchDataExporter {
         let filename = "\(note.volumeId)-\(note.documentId)-\(shortId).md"
 
         return ResearchNoteMarkdownExport(id: note.id, filename: filename, content: content)
+    }
+
+    /// Wraps `value` in a double-quoted YAML scalar, escaping backslashes and
+    /// quotes — user-authored tag names and citation text can contain `:`/`"`/`]`,
+    /// which break unquoted YAML.
+    private static func yamlQuoted(_ value: String) -> String {
+        let escaped = value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        return "\"\(escaped)\""
     }
 }

@@ -212,7 +212,10 @@ public struct ZoteroJSONExporter: Sendable {
         context: ModelContext
     ) -> (tags: [String], notes: [String]) {
         let allTags = (try? context.fetch(FetchDescriptor<UserTag>())) ?? []
-        let tagNameById = Dictionary(uniqueKeysWithValues: allTags.map { ($0.id, $0.name) })
+        // uniquingKeysWith: CloudKit sync can transiently surface duplicate ids;
+        // uniqueKeysWithValues would crash on them.
+        let tagNameById = Dictionary(allTags.map { ($0.id, $0.name) },
+                                     uniquingKeysWith: { first, _ in first })
 
         let assignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>(
             predicate: #Predicate { $0.volumeId == volumeId && $0.documentId == documentId }

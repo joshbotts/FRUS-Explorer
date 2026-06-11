@@ -967,27 +967,34 @@ public actor IndexingPipeline {
     public func rebuildSpotlightIndex() async throws {
         try await CSSearchableIndex.default().deleteAllSearchableItems()
 
-        let sql = "SELECT volume_id, document_id, header, body_text FROM document_cache ORDER BY rowid"
-        let stmt = try auxPrepare(sql)
-        defer { sqlite3_finalize(stmt) }
-
-        var batch: [CSSearchableItem] = []
+        // Each batch is read with its own statement, fully stepped and finalized
+        // before the Spotlight submission suspends. The actor is reentrant: an
+        // open statement held across an `await` could observe (or block) another
+        // call mutating or rebuilding the database mid-iteration. Keyset
+        // pagination on rowid keeps each read O(batch) regardless of corpus size.
+        var lastRowId: Int64 = 0
         var total = 0
-        while try auxStep(stmt) {
-            batch.append(Self.makeSearchableItem(
-                volumeId: auxColumnString(stmt, 0) ?? "",
-                documentId: auxColumnString(stmt, 1) ?? "",
-                header: auxColumnString(stmt, 2) ?? "",
-                bodyText: auxColumnString(stmt, 3) ?? ""
-            ))
-
-            if batch.count >= 500 {
-                try await CSSearchableIndex.default().indexSearchableItems(batch)
-                total += batch.count
-                batch.removeAll(keepingCapacity: true)
+        while true {
+            var batch: [CSSearchableItem] = []
+            do {
+                let sql = """
+                    SELECT rowid, volume_id, document_id, header, body_text
+                    FROM document_cache WHERE rowid > ? ORDER BY rowid LIMIT 500
+                    """
+                let stmt = try auxPrepare(sql)
+                defer { sqlite3_finalize(stmt) }
+                sqlite3_bind_int64(stmt, 1, lastRowId)
+                while try auxStep(stmt) {
+                    lastRowId = sqlite3_column_int64(stmt, 0)
+                    batch.append(Self.makeSearchableItem(
+                        volumeId: auxColumnString(stmt, 1) ?? "",
+                        documentId: auxColumnString(stmt, 2) ?? "",
+                        header: auxColumnString(stmt, 3) ?? "",
+                        bodyText: auxColumnString(stmt, 4) ?? ""
+                    ))
+                }
             }
-        }
-        if !batch.isEmpty {
+            guard !batch.isEmpty else { break }
             try await CSSearchableIndex.default().indexSearchableItems(batch)
             total += batch.count
         }

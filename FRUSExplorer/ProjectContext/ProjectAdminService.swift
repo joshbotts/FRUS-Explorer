@@ -27,9 +27,10 @@ import SwiftData
 ///
 /// ## Merge
 /// Reassigns `ResearchNote.projectIds`, `Collection.projectIds`,
-/// `GeneratedSummary.projectId`, and `ReadingHistoryEntry.projectId` from
-/// `source` to `target`, then deletes `source`. A merge into the same project
-/// (`source.id == target.id`) is a no-op.
+/// `GeneratedSummary.projectId`, `ReadingHistoryEntry.projectId`, and
+/// `SearchHistoryEntry.projectId` from `source` to `target`, then deletes
+/// `source`. A merge into the same project (`source.id == target.id`) is a
+/// no-op.
 ///
 /// In both cases, if `source`/the deleted project is the active project,
 /// `appState.activeProjectId` is updated so the user is never left pointing at
@@ -37,6 +38,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 153: extracted from `SettingsProjectsPane`
+///   1.1 — Session 158: merge also reassigns `SearchHistoryEntry.projectId`
+///          (previously left dangling at the deleted source project's id)
 @MainActor
 struct ProjectAdminService {
 
@@ -85,6 +88,11 @@ struct ProjectAdminService {
 
         let allHistory = (try? context.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? []
         for entry in allHistory where entry.projectId == sourceId {
+            entry.projectId = targetId
+        }
+
+        let allSearchHistory = (try? context.fetch(FetchDescriptor<SearchHistoryEntry>())) ?? []
+        for entry in allSearchHistory where entry.projectId == sourceId {
             entry.projectId = targetId
         }
 

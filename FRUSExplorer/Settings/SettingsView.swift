@@ -398,8 +398,6 @@ private struct DownloadsSettingsView: View {
     @State private var isCheckingForUpdates: Bool = false
     @State private var hasCheckedForUpdates: Bool = false
 
-    // Phase 1: storage limit gate
-
     var body: some View {
         Form {
             // 1. Active Downloads — hidden when queue is idle.
