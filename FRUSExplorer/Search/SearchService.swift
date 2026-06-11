@@ -268,8 +268,11 @@ public actor SearchService {
                     skipNextAsExcluded = false
                     continue
                 }
-                if rawToken == "OR" || rawToken == "AND" { continue }
-                if rawToken == "NOT" { skipNextAsExcluded = true; continue }
+                // Operators are case-insensitive (matching FTS5InlineQueryParser), so
+                // skip them in any case rather than bolding a literal "and"/"or".
+                let upperToken = rawToken.uppercased()
+                if upperToken == "OR" || upperToken == "AND" { continue }
+                if upperToken == "NOT" { skipNextAsExcluded = true; continue }
                 if rawToken.hasPrefix("-"), rawToken.count > 1 { continue }
 
                 var token = rawToken

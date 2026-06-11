@@ -114,7 +114,9 @@ struct VolumeView: View {
                         }
                     }
             }
+            #if os(iOS)
             .presentationDetents([.medium, .large])
+            #endif
         }
     }
 

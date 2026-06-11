@@ -460,10 +460,13 @@ struct SearchParametersTests {
             let service = SearchService(fts5Store: store, pipeline: pipeline)
             let params = SearchParameters(keywords: "detente kissinger")
             let (corpus, userContent) = try await service.makeMatchExpressions(from: params)
-            #expect(corpus == "\"detente\" \"kissinger\"")
+            // Adjacent keywords are joined with an explicit AND (Session 159) — FTS5
+            // rejects bare juxtaposition between parenthesised groups, so the parser
+            // emits the keyword everywhere for consistency.
+            #expect(corpus == "\"detente\" AND \"kissinger\"")
             // Default scope flags include summaries and notes, so the user-content
             // expression is rendered from the same keywords.
-            #expect(userContent == "\"detente\" \"kissinger\"")
+            #expect(userContent == "\"detente\" AND \"kissinger\"")
         }
     }
 

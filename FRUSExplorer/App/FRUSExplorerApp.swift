@@ -278,8 +278,71 @@ struct FRUSExplorerApp: App {
             .environment(appState)
             .modelContainer(modelContainer)
         }
+
+        // MARK: - Cross-Reference Graph Window (iPadOS Stage Manager)
+        //
+        // Mirrors the macOS "frus.crossReferenceGraph" Window scene. Reads
+        // appState.currentGraphEntry — set by the caller before openWindow(id:).
+        // Single-instance: opening the same id focuses the existing window, and
+        // `.id(entry.id)` retargets the graph when reopened for another document.
+        WindowGroup("Cross-Reference Graph", id: "frus.crossReferenceGraph.ios") {
+            Group {
+                if let entry = appState.currentGraphEntry,
+                   let store = appState.crossReferenceStore {
+                    let downloaded: Set<String> = {
+                        guard let dm = appState.downloadManager else { return [] }
+                        let known = appState.manifestStore.diffResult?.known ?? []
+                        return Set(known.compactMap {
+                            dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil
+                        })
+                    }()
+                    CrossReferenceGraphView(
+                        entry: entry,
+                        crossReferenceStore: store,
+                        downloadedVolumeIds: downloaded
+                    )
+                    .id(entry.id)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "graphWindow.empty.title",
+                               defaultValue: "No Document Selected"),
+                        systemImage: "point.3.connected.trianglepath.dotted",
+                        description: Text(
+                            String(localized: "graphWindow.empty.detail",
+                                   defaultValue: "Open a document, then tap Cross-References in the toolbar.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
         #endif
         #if os(macOS)
+        // MARK: - Document Window (macOS native tabbing)
+        //
+        // Opening documents as separate windows lets macOS gather them into native
+        // tabs (Window ▸ Merge All Windows / the window tab bar) and view them side
+        // by side. Additive — the primary `mainWindowScene` remains the default;
+        // these open only via openWindow(value: DocumentWindowID(...)) (the "New
+        // Window" button in ResearchStripView). Value identity is (volumeId,
+        // documentId), so reopening the same document focuses its existing window.
+        WindowGroup(for: DocumentWindowID.self) { $windowID in
+            Group {
+                if let id = windowID {
+                    MacDocumentWindowView(windowID: id)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "documentWindow.empty.title",
+                               defaultValue: "No Document"),
+                        systemImage: "doc.text"
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+
         // MARK: - Search Window
         Window("Search", id: "frus.search") {
             MacSearchWindowView()

@@ -168,6 +168,12 @@ enum DocumentSheet: Identifiable {
 ///          can be disabled (`edgeTapNavigationEnabled`), and a default
 ///          document mode (Read/Research/remember-last) is applied to
 ///          `panelVisible` once per document open.
+///   3.5 — Session 159: "Open in New Window" gated on
+///          `@Environment(\.supportsMultipleWindows)` instead of
+///          `sizeClass == .regular` (iPad/Mac parity Phase 5). The size-class
+///          proxy is true on every iPad, so the button previously appeared for
+///          all iPad users but `openWindow` silently no-ops without Stage
+///          Manager; the new gate offers it only when a second window can open.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -206,6 +212,12 @@ struct DocumentView: View {
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
+    /// `true` only when the platform can actually open a second window — Stage
+    /// Manager on iPad; never on iPhone or a non-Stage-Manager iPad. Gates the
+    /// "Open in New Window" affordance so it isn't offered where `openWindow`
+    /// would silently no-op. `sizeClass == .regular` is true on *all* iPads and
+    /// is therefore the wrong proxy for multi-window capability.
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
 
     @Query private var highlights:             [DocumentHighlight]
     @Query private var documentNotes:          [ResearchNote]
@@ -572,6 +584,35 @@ struct DocumentView: View {
         return Set(known.compactMap { dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil })
     }
 
+    // MARK: - Tool Windows (iPad Stage Manager) / sheet fallback
+
+    /// Shows this document's cross-reference graph. When the platform can open a
+    /// second window (Stage Manager on iPad), it opens the `frus.crossReferenceGraph.ios`
+    /// scene alongside the document via `appState.currentGraphEntry`; otherwise it
+    /// presents the in-place sheet so the graph is reachable on every device.
+    private func openCrossReferenceGraph() {
+        if supportsMultipleWindows {
+            appState.currentGraphEntry = entry
+            openWindow(id: "frus.crossReferenceGraph.ios")
+        } else {
+            activeSheet = .crossReferenceGraph
+        }
+    }
+
+    /// Resolves this document's source note in the Source Explorer. Opens the
+    /// `frus.sourceExplorer.ios` window alongside the document when multi-window is
+    /// available (priming `appState.currentSourceNote`/`currentSourceNoteYear`, the
+    /// same state the window scene reads), otherwise the in-place sheet.
+    private func openSourceExplorer(vm: DocumentViewModel) {
+        if supportsMultipleWindows {
+            appState.currentSourceNote = vm.sourceNote ?? ""
+            appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
+            openWindow(id: "frus.sourceExplorer.ios")
+        } else {
+            activeSheet = .sourceExplorer(vm.sourceNote ?? "")
+        }
+    }
+
     // MARK: - Tag Helpers
 
     private var appliedUserTags: [UserTag] {
@@ -848,9 +889,10 @@ struct DocumentView: View {
                        defaultValue: "Add document to a collection")
             )
 
-            // 8. Cross-references
+            // 8. Cross-references — opens alongside the document as a Stage Manager
+            // window when multi-window is available, otherwise an in-place sheet.
             Button {
-                activeSheet = .crossReferenceGraph
+                openCrossReferenceGraph()
             } label: {
                 Label(
                     String(localized: "document.toolbar.crossRef", defaultValue: "Cross-References"),
@@ -863,13 +905,12 @@ struct DocumentView: View {
             // toolbar item popped in and out of the overflow menu as the
             // selection changed, which was both jarring and undiscoverable.
 
-            // 10. Source Explorer — always available for all documents.
-            // Always uses a sheet on iOS/iPadOS: openWindow(id:) on a WindowGroup is
-            // a no-op unless Stage Manager is active, and sizeClass == .regular is true
-            // on all iPads regardless — so the window branch silently did nothing for
-            // most iPad users. A Stage Manager-aware path can be revisited if needed.
+            // 10. Source Explorer — always available for all documents. Opens
+            // alongside the document as a Stage Manager window when multi-window is
+            // available (the frus.sourceExplorer.ios scene), otherwise an in-place
+            // sheet — so it works for every iPad regardless of Stage Manager.
             Button {
-                activeSheet = .sourceExplorer(vm.sourceNote ?? "")
+                openSourceExplorer(vm: vm)
             } label: {
                 Label(
                     String(localized: "document.toolbar.sourceExplorer",
@@ -878,8 +919,11 @@ struct DocumentView: View {
                 )
             }
 
-            // 11. Open in New Window — iPad Stage Manager only
-            if sizeClass == .regular {
+            // 11. Open in New Window — only when the platform can actually open a
+            // second window (Stage Manager on iPad). Gating on supportsMultipleWindows
+            // instead of sizeClass == .regular stops the button from appearing on
+            // every iPad and then doing nothing when Stage Manager is off.
+            if supportsMultipleWindows {
                 Button {
                     openWindow(value: DocumentWindowID(
                         volumeId: entry.volumeId,

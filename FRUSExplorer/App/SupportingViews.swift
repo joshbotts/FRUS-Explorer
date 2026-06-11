@@ -292,6 +292,28 @@ struct ResearchStripView: View {
                 if let entry { CitationPopoverView(entry: entry) }
             }
 
+            // Open in New Window — opens this document in its own window. macOS
+            // gathers windows from the same WindowGroup into native tabs (Window ▸
+            // Merge All Windows / the window tab bar), so this is how a researcher
+            // views several documents as tabs or side by side.
+            ResearchStripButton(
+                title: "New Window",
+                systemImage: "square.on.square",
+                isDisabled: isDisabled
+            ) {
+                if let entry {
+                    openWindow(value: DocumentWindowID(
+                        volumeId: entry.volumeId,
+                        documentId: entry.documentId,
+                        header: entry.header
+                    ))
+                }
+            }
+            .help(String(
+                localized: "researchStrip.newWindow.help",
+                defaultValue: "Open this document in its own window — drag windows together for tabs"
+            ))
+
             Spacer()
 
             // Research panel toggle — segmented Read / Research picker.
