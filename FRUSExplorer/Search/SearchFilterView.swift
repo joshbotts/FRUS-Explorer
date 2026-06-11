@@ -153,7 +153,12 @@ struct SearchFilterView: View {
                 }
             }
         }
+        // iOS sheet sizing only — macOS sizes `macBody` via `.frame(...)`. Guarded for
+        // consistency with the other detent sheets (and to keep the iOS-only modifier
+        // out of the macOS build, where `iOSBody` is compiled but never presented).
+        #if os(iOS)
         .presentationDetents([.medium, .large])
+        #endif
     }
 
     // MARK: - Date Range
