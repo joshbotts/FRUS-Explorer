@@ -805,4 +805,87 @@ private struct TrailingIconLabelStyle: LabelStyle {
     }
 }
 
+// MARK: - MacDocumentWindowView
+
+/// Standalone macOS document window hosting one document as a full research
+/// workspace — research strip, document body, and status bar — so a window opened
+/// via `openWindow(value: DocumentWindowID(...))` is self-sufficient rather than a
+/// bare document with no tools.
+///
+/// macOS gathers windows from the same `WindowGroup(for: DocumentWindowID.self)`
+/// into native tabs (Window ▸ Merge All Windows / the window tab bar), which is how
+/// a researcher views several documents as tabs in one frame. Each window owns its
+/// own navigation stack and `HighlightCoordinator`, independent of the main window
+/// and of every other document window.
+///
+/// Version history:
+///   1.0 — Session 159: initial implementation (iPad/Mac parity Phase 2 —
+///          macOS native window tabbing)
+struct MacDocumentWindowView: View {
+
+    /// The document this window opened for.
+    let windowID: DocumentWindowID
+
+    @Environment(AppState.self) private var appState
+
+    /// This window's own navigation stack — cross-reference taps push within the
+    /// window rather than affecting the main window or other document windows.
+    @State private var navigationPath: [DocumentBrowserEntry] = []
+    /// This window's own highlight state (text selection, pending highlight link).
+    @State private var highlightCoordinator = HighlightCoordinator()
+    /// NARA Catalog Lookup sheet item (see `MainWindowView` for the `.sheet(item:)` rationale).
+    @State private var naraLookupItem: NARACatalogLookupItem? = nil
+
+    /// The document the window opened for, as a `DocumentBrowserEntry`.
+    private var rootEntry: DocumentBrowserEntry {
+        DocumentBrowserEntry(
+            documentId: windowID.documentId,
+            volumeId: windowID.volumeId,
+            header: windowID.header
+        )
+    }
+
+    /// The document currently shown (the navigation stack's top, or the root).
+    private var currentEntry: DocumentBrowserEntry {
+        navigationPath.last ?? rootEntry
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ResearchStripView(
+                entry: currentEntry,
+                highlightCoordinator: highlightCoordinator,
+                onNARALookup: { text in
+                    naraLookupItem = NARACatalogLookupItem(text: text)
+                }
+            )
+            .sheet(item: $naraLookupItem) { item in
+                NARACatalogLookupView(initialText: item.text)
+            }
+
+            NavigationStack(path: $navigationPath) {
+                MacDocumentView(
+                    entry: rootEntry,
+                    navigationPath: $navigationPath,
+                    highlightCoordinator: highlightCoordinator
+                )
+                .navigationDestination(for: DocumentBrowserEntry.self) { entry in
+                    MacDocumentView(
+                        entry: entry,
+                        navigationPath: $navigationPath,
+                        highlightCoordinator: highlightCoordinator
+                    )
+                }
+            }
+
+            StatusBarView()
+        }
+        // Window/tab title — the document's heading, falling back to its id.
+        .navigationTitle(currentEntry.header.isEmpty ? currentEntry.documentId : currentEntry.header)
+        .onChange(of: currentEntry) { _, _ in
+            highlightCoordinator.reset()
+        }
+    }
+}
+
 #endif // os(macOS)

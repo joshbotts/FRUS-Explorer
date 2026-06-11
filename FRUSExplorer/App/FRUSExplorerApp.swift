@@ -319,6 +319,30 @@ struct FRUSExplorerApp: App {
         }
         #endif
         #if os(macOS)
+        // MARK: - Document Window (macOS native tabbing)
+        //
+        // Opening documents as separate windows lets macOS gather them into native
+        // tabs (Window ▸ Merge All Windows / the window tab bar) and view them side
+        // by side. Additive — the primary `mainWindowScene` remains the default;
+        // these open only via openWindow(value: DocumentWindowID(...)) (the "New
+        // Window" button in ResearchStripView). Value identity is (volumeId,
+        // documentId), so reopening the same document focuses its existing window.
+        WindowGroup(for: DocumentWindowID.self) { $windowID in
+            Group {
+                if let id = windowID {
+                    MacDocumentWindowView(windowID: id)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "documentWindow.empty.title",
+                               defaultValue: "No Document"),
+                        systemImage: "doc.text"
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+
         // MARK: - Search Window
         Window("Search", id: "frus.search") {
             MacSearchWindowView()
