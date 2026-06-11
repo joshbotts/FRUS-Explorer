@@ -53,6 +53,12 @@ import SwiftData
 ///          `NavigationStack`/toolbar (since 1.10), so a `.toolbar` modifier applied
 ///          outside it (as `SearchTabView` previously did) never reaches the nav
 ///          bar — the button was silently unreachable on iOS.
+///   1.12 — Session 159: on iPad with Stage Manager (`supportsMultipleWindows`),
+///          opening a result opens the document in its own window so the results
+///          list stays visible alongside (open several documents from one list in
+///          turn); per-document window identity focuses an already-open document
+///          rather than duplicating it. A row context-menu "Open in Place" pushes
+///          inline instead. iPhone / non-Stage-Manager keeps the push behaviour.
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -60,6 +66,13 @@ struct SearchView: View {
     #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
     #endif
+
+    @Environment(\.openWindow) private var openWindow
+    /// `true` when the platform can open a second window (Stage Manager on iPad).
+    /// When set, opening a result opens the document in its own window so the
+    /// results list stays visible alongside; otherwise the document is pushed onto
+    /// the search navigation stack as before.
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
 
     @State private var vm: SearchViewModel
     @State private var showTimeline = false
@@ -276,7 +289,7 @@ struct SearchView: View {
                         if let r = vm.results.first(where: {
                             $0.volumeId == item.volumeId && $0.documentId == item.documentId
                         }) {
-                            vm.navigationPath.append(vm.makeEntry(from: r))
+                            openResult(vm.makeEntry(from: r))
                         }
                     }
                 )
@@ -430,11 +443,31 @@ struct SearchView: View {
         #endif
     }
 
+    /// Opens a search result. On a platform that can open a second window (Stage
+    /// Manager on iPad) the document opens in its own window — the results list
+    /// stays visible alongside, so the user can open several documents from one
+    /// list in turn. Per-document window identity means reopening the same document
+    /// focuses its existing window while a different document opens a new one.
+    /// Everywhere else the document is pushed onto the search navigation stack.
+    private func openResult(_ entry: DocumentBrowserEntry) {
+        #if os(iOS)
+        if supportsMultipleWindows {
+            openWindow(value: DocumentWindowID(
+                volumeId: entry.volumeId,
+                documentId: entry.documentId,
+                header: entry.header
+            ))
+            return
+        }
+        #endif
+        vm.navigationPath.append(entry)
+    }
+
     private var resultsList: some View {
         List {
             ForEach(vm.results) { result in
                 Button {
-                    vm.navigationPath.append(vm.makeEntry(from: result))
+                    openResult(vm.makeEntry(from: result))
                 } label: {
                     SearchResultRow(
                         result: result,
@@ -449,6 +482,23 @@ struct SearchView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(result.header)
+                #if os(iOS)
+                // When multi-window is available the row opens a window by default;
+                // offer the in-place reader (push) as an explicit alternative.
+                .contextMenu {
+                    if supportsMultipleWindows {
+                        Button {
+                            vm.navigationPath.append(vm.makeEntry(from: result))
+                        } label: {
+                            Label(
+                                String(localized: "search.result.openInPlace",
+                                       defaultValue: "Open in Place"),
+                                systemImage: "rectangle.portrait"
+                            )
+                        }
+                    }
+                }
+                #endif
             }
         }
         #if os(iOS)

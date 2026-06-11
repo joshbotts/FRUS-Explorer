@@ -16,9 +16,28 @@ import Foundation
 ///
 /// `Codable` conformance lets SwiftUI persist and restore window state
 /// across scene lifecycle events (backgrounding, system kills, etc.).
+///
+/// ## Identity
+/// Equality and hashing are deliberately keyed on `(volumeId, documentId)` only —
+/// `header` is a display placeholder, not part of the document's identity. SwiftUI
+/// reuses an existing window when the presented value compares equal, so without
+/// this the *same* document opened with a different placeholder header (e.g. from a
+/// search result vs. a cross-reference tap, which build entries with different
+/// header strings) would wrongly spawn a duplicate window instead of focusing the
+/// one already open.
 struct DocumentWindowID: Codable, Hashable {
     var volumeId: String
     var documentId: String
     /// Placeholder heading shown in the window title bar while the document loads.
+    /// Not part of the value's identity — see the `Equatable`/`Hashable` note above.
     var header: String
+
+    static func == (lhs: DocumentWindowID, rhs: DocumentWindowID) -> Bool {
+        lhs.volumeId == rhs.volumeId && lhs.documentId == rhs.documentId
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(volumeId)
+        hasher.combine(documentId)
+    }
 }

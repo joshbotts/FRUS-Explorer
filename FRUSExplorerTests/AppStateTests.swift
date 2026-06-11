@@ -168,3 +168,55 @@ struct NavigationStateTests {
         #expect(state.showCitationLookup == false)
     }
 }
+
+// MARK: - DocumentWindowIDTests
+
+/// Tests `DocumentWindowID` value identity (Session 159).
+///
+/// `WindowGroup(for: DocumentWindowID.self)` reuses a window when the presented
+/// value compares equal, so equality/hashing must key on `(volumeId, documentId)`
+/// only — `header` is a display placeholder. Without this, the same document
+/// opened with a different header (e.g. from a search result vs. a cross-reference
+/// tap) would wrongly spawn a duplicate window instead of focusing the open one.
+struct DocumentWindowIDTests {
+
+    @Test("Same volume+document with different header are equal")
+    func equalIgnoringHeader() {
+        let a = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d1", header: "Memo")
+        let b = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d1", header: "Different placeholder")
+        #expect(a == b)
+    }
+
+    @Test("Same volume+document with different header hash equally and dedup in a Set")
+    func hashIgnoringHeader() {
+        let a = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d1", header: "Memo")
+        let b = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d1", header: "Other")
+        #expect(a.hashValue == b.hashValue)
+        // Behaving as one Set element is exactly the property SwiftUI relies on to
+        // reuse (rather than duplicate) a document window.
+        #expect(Set([a, b]).count == 1)
+    }
+
+    @Test("Different documentId are not equal")
+    func differentDocumentNotEqual() {
+        let a = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d1", header: "Memo")
+        let b = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d2", header: "Memo")
+        #expect(a != b)
+    }
+
+    @Test("Different volumeId are not equal")
+    func differentVolumeNotEqual() {
+        let a = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d1", header: "Memo")
+        let b = DocumentWindowID(volumeId: "frus1969-76v02", documentId: "d1", header: "Memo")
+        #expect(a != b)
+    }
+
+    @Test("Codable round-trip preserves all fields, including the non-identifying header")
+    func codableRoundTrip() throws {
+        let original = DocumentWindowID(volumeId: "frus1969-76v01", documentId: "d1", header: "Memo")
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(DocumentWindowID.self, from: data)
+        #expect(decoded == original)
+        #expect(decoded.header == "Memo")
+    }
+}

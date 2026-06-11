@@ -278,6 +278,45 @@ struct FRUSExplorerApp: App {
             .environment(appState)
             .modelContainer(modelContainer)
         }
+
+        // MARK: - Cross-Reference Graph Window (iPadOS Stage Manager)
+        //
+        // Mirrors the macOS "frus.crossReferenceGraph" Window scene. Reads
+        // appState.currentGraphEntry — set by the caller before openWindow(id:).
+        // Single-instance: opening the same id focuses the existing window, and
+        // `.id(entry.id)` retargets the graph when reopened for another document.
+        WindowGroup("Cross-Reference Graph", id: "frus.crossReferenceGraph.ios") {
+            Group {
+                if let entry = appState.currentGraphEntry,
+                   let store = appState.crossReferenceStore {
+                    let downloaded: Set<String> = {
+                        guard let dm = appState.downloadManager else { return [] }
+                        let known = appState.manifestStore.diffResult?.known ?? []
+                        return Set(known.compactMap {
+                            dm.isVolumeDownloaded($0.volumeId) ? $0.volumeId : nil
+                        })
+                    }()
+                    CrossReferenceGraphView(
+                        entry: entry,
+                        crossReferenceStore: store,
+                        downloadedVolumeIds: downloaded
+                    )
+                    .id(entry.id)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "graphWindow.empty.title",
+                               defaultValue: "No Document Selected"),
+                        systemImage: "point.3.connected.trianglepath.dotted",
+                        description: Text(
+                            String(localized: "graphWindow.empty.detail",
+                                   defaultValue: "Open a document, then tap Cross-References in the toolbar.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
         #endif
         #if os(macOS)
         // MARK: - Search Window
