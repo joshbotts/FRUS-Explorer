@@ -731,9 +731,12 @@ struct MacDocumentView: View {
             context: modelContext
         )
 
-        // Load adjacent entries for prev/next navigation buttons.
+        // Load adjacent entries for prev/next navigation buttons. The reading
+        // sequence spans the whole volume — front matter, body, and back matter —
+        // so Prev/Next never skips structured front-matter sections (Persons,
+        // Sources, Table of Contents, Index) the search index leaves out.
         if let pipeline = appState.indexingPipeline {
-            if let docs = try? await pipeline.documents(forVolume: entry.volumeId),
+            if let docs = try? await pipeline.readingSequence(forVolume: entry.volumeId),
                let idx = docs.firstIndex(where: { $0.documentId == entry.documentId }) {
                 prevEntry = idx > 0 ? docs[idx - 1] : nil
                 nextEntry = idx + 1 < docs.count ? docs[idx + 1] : nil

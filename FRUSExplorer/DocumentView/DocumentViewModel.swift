@@ -536,11 +536,12 @@ public final class DocumentViewModel {
     /// populates `previousEntry`/`nextEntry`.
     ///
     /// Mirrors `MacDocumentView.loadDocument()`'s `prevEntry`/`nextEntry` population
-    /// (queries `IndexingPipeline.documents(forVolume:)`, which returns entries in
-    /// source document order, and locates this document's index). Both platforms
-    /// then navigate by appending the adjacent entry to their respective navigation
-    /// stacks — macOS via bordered chevron buttons, iOS additionally via the
-    /// edge-tap "page-turn" gesture in Read mode (`DocumentView.documentEdgeNavigationOverlay`).
+    /// (queries `IndexingPipeline.readingSequence(forVolume:)`, which returns the whole
+    /// volume — front matter, body, and back matter — in source order, and locates this
+    /// document's index). Both platforms then navigate by appending the adjacent entry
+    /// to their respective navigation stacks — macOS via bordered chevron buttons, iOS
+    /// additionally via the edge-tap "page-turn" gesture in Read mode
+    /// (`DocumentView.documentEdgeNavigationOverlay`).
     ///
     /// No-op if `pipeline` is `nil` or the volume has not been indexed — `previousEntry`
     /// and `nextEntry` simply remain `nil`, and dependent UI hides itself accordingly.
@@ -550,7 +551,7 @@ public final class DocumentViewModel {
     ///         previous/next document navigation (iOS Read-mode "page-turn" gesture)
     public func loadAdjacentEntries(pipeline: IndexingPipeline?) async {
         guard let pipeline else { return }
-        if let docs = try? await pipeline.documents(forVolume: entry.volumeId),
+        if let docs = try? await pipeline.readingSequence(forVolume: entry.volumeId),
            let idx = docs.firstIndex(where: { $0.documentId == entry.documentId }) {
             previousEntry = idx > 0 ? docs[idx - 1] : nil
             nextEntry = idx + 1 < docs.count ? docs[idx + 1] : nil
