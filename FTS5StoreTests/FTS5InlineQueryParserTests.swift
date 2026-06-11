@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Testing
+import SQLite3
 @testable import FTS5Store
 
 // MARK: - FTS5InlineQueryParserTests
@@ -19,13 +20,17 @@ import Testing
 /// Terms render as double-quoted FTS5 strings carrying the user's original
 /// (sanitised, lowercased) words — the `porter unicode61` tokenizer stems them
 /// inside SQLite, so no Porter stems appear in the rendered expressions.
+///
+/// Adjacent operands are joined with an explicit `AND` keyword (Session 159): FTS5
+/// rejects bare juxtaposition between parenthesised groups, so `(a OR b) (c OR d)`
+/// must render as `(a OR b) AND (c OR d)`. Operators are case-insensitive.
 struct FTS5InlineQueryParserTests {
 
-    // MARK: - Plain Keywords (back-compat with the old whitespace-split path)
+    // MARK: - Plain Keywords
 
-    @Test("Plain keywords render as implicit AND of quoted words")
+    @Test("Plain keywords render as an explicit AND of quoted words")
     func plainKeywords() {
-        #expect(FTS5InlineQueryParser.parse("cold war") == "\"cold\" \"war\"")
+        #expect(FTS5InlineQueryParser.parse("cold war") == "\"cold\" AND \"war\"")
     }
 
     @Test("Single keyword keeps its original word form — the tokenizer stems, not the app")
@@ -46,9 +51,9 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("\"cold war\"") == "\"cold war\"")
     }
 
-    @Test("Quoted phrase combines with bare words via implicit AND")
+    @Test("Quoted phrase combines with bare words via explicit AND")
     func phraseWithKeyword() {
-        #expect(FTS5InlineQueryParser.parse("\"cold war\" negotiations") == "\"cold war\" \"negotiations\"")
+        #expect(FTS5InlineQueryParser.parse("\"cold war\" negotiations") == "\"cold war\" AND \"negotiations\"")
     }
 
     @Test("Unterminated quote is treated as a phrase running to end of input")
@@ -64,7 +69,7 @@ struct FTS5InlineQueryParserTests {
 
     // MARK: - OR
 
-    @Test("Uppercase OR between two terms renders as FTS5 OR")
+    @Test("OR between two terms renders as FTS5 OR")
     func orOperator() {
         #expect(FTS5InlineQueryParser.parse("Rusk OR Bundy") == "\"rusk\" OR \"bundy\"")
     }
@@ -74,28 +79,32 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("\"cold war\" OR detente") == "\"cold war\" OR \"detente\"")
     }
 
-    @Test("Lowercase 'or' is treated as a literal search word, not an operator")
-    func lowercaseOrIsLiteral() {
-        // "cold", "or", and "war" are ANDed together as literal quoted words —
-        // matching Google's and FTS5's own convention that only uppercase OR is an operator.
-        #expect(FTS5InlineQueryParser.parse("cold or war") == "\"cold\" \"or\" \"war\"")
+    @Test("Lowercase 'or' is recognised as the OR operator (case-insensitive)")
+    func lowercaseOrIsOperator() {
+        // Session 159: operators are case-insensitive, matching history.state.gov.
+        #expect(FTS5InlineQueryParser.parse("cold or war") == "\"cold\" OR \"war\"")
     }
 
-    @Test("Leading OR with no left operand is searched for as the literal word 'or'")
+    @Test("Mixed-case 'Or' is recognised as the OR operator")
+    func mixedCaseOrIsOperator() {
+        #expect(FTS5InlineQueryParser.parse("cold Or war") == "\"cold\" OR \"war\"")
+    }
+
+    @Test("Leading OR with no left operand is demoted to the literal word 'or'")
     func leadingOrIsLiteral() {
-        #expect(FTS5InlineQueryParser.parse("OR cold") == "\"or\" \"cold\"")
+        #expect(FTS5InlineQueryParser.parse("OR cold") == "\"or\" AND \"cold\"")
     }
 
-    @Test("Trailing OR with no right operand is searched for as the literal word 'or'")
+    @Test("Trailing OR with no right operand is demoted to the literal word 'or'")
     func trailingOrIsLiteral() {
-        #expect(FTS5InlineQueryParser.parse("cold OR") == "\"cold\" \"or\"")
+        #expect(FTS5InlineQueryParser.parse("cold OR") == "\"cold\" AND \"or\"")
     }
 
-    @Test("Doubled OR collapses to a single operator with the stray treated as a literal")
+    @Test("Doubled OR collapses to a single operator with the stray demoted to a literal")
     func doubledOr() {
         // First OR: left="cold" (operand), right=second OR (not yet an operand) → demoted to "or".
         // Second OR: left=demoted "or" (now an operand), right="war" (operand) → stays operator.
-        #expect(FTS5InlineQueryParser.parse("cold OR OR war") == "\"cold\" \"or\" OR \"war\"")
+        #expect(FTS5InlineQueryParser.parse("cold OR OR war") == "\"cold\" AND \"or\" OR \"war\"")
     }
 
     // MARK: - Exclusion (leading "-" and NOT)
@@ -110,14 +119,15 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("blockade -\"naval quarantine\"") == "\"blockade\" NOT \"naval quarantine\"")
     }
 
-    @Test("Uppercase NOT excludes the following term")
+    @Test("NOT (any case) excludes the following term")
     func notOperator() {
         #expect(FTS5InlineQueryParser.parse("cold NOT korea") == "\"cold\" NOT \"korea\"")
+        #expect(FTS5InlineQueryParser.parse("cold not korea") == "\"cold\" NOT \"korea\"")
     }
 
     @Test("A bare hyphen with nothing attached is dropped, not treated as negation")
     func bareHyphenDropped() {
-        #expect(FTS5InlineQueryParser.parse("cold - war") == "\"cold\" \"war\"")
+        #expect(FTS5InlineQueryParser.parse("cold - war") == "\"cold\" AND \"war\"")
     }
 
     @Test("A query consisting only of excluded terms returns nil (no positive content)")
@@ -127,9 +137,9 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("NOT korea") == nil)
     }
 
-    @Test("A bare NOT with nothing to negate is searched for as the literal word 'not'")
+    @Test("A bare NOT with nothing to negate is demoted to the literal word 'not'")
     func bareNotIsLiteral() {
-        #expect(FTS5InlineQueryParser.parse("cold NOT") == "\"cold\" \"not\"")
+        #expect(FTS5InlineQueryParser.parse("cold NOT") == "\"cold\" AND \"not\"")
     }
 
     // MARK: - Prefix Wildcard
@@ -154,17 +164,18 @@ struct FTS5InlineQueryParserTests {
     @Test("Realistic combined query renders with correct operator structure")
     func combinedQuery() {
         // "cold war" OR detente -korea negoti*
-        //   → ("cold war" phrase) OR (detente) [implicit AND with] NOT korea [and] negoti*
-        // FTS5 precedence (NOT > AND > OR) groups this as:
-        //   "cold war" OR (detente AND NOT korea AND negoti*)
-        // which is exactly what the space-joined rendering below expresses.
+        //   → ("cold war") OR ("detente" NOT "korea" AND "negoti"*)
+        // FTS5 precedence is NOT > AND > OR, so the space-joined rendering below means
+        // `"cold war" OR (("detente" NOT "korea") AND "negoti"*)`.
         let result = FTS5InlineQueryParser.parse("\"cold war\" OR detente -korea negoti*")
-        #expect(result == "\"cold war\" OR \"detente\" NOT \"korea\" \"negoti\"*")
+        #expect(result == "\"cold war\" OR \"detente\" NOT \"korea\" AND \"negoti\"*")
     }
 
-    @Test("Mixed-case operator words are not mistaken for operators")
-    func mixedCaseOperatorsAreLiteral() {
-        #expect(FTS5InlineQueryParser.parse("Or And Not") == "\"or\" \"and\" \"not\"")
+    @Test("Operators with no operands to bind are demoted to literal words (any case)")
+    func orphanedOperatorsDemoteToLiterals() {
+        // With case-insensitive operators, `Or And Not` are all recognised as operators,
+        // but none has the operands it needs, so each is demoted to its literal word.
+        #expect(FTS5InlineQueryParser.parse("Or And Not") == "\"or\" AND \"and\" AND \"not\"")
     }
 
     // MARK: - Column Scoping
@@ -173,14 +184,14 @@ struct FTS5InlineQueryParserTests {
     func columnPrefixApplied() {
         let prefix = "{header body_text}:"
         #expect(FTS5InlineQueryParser.parse("cold war", columnPrefix: prefix)
-                == "\(prefix)\"cold\" \(prefix)\"war\"")
+                == "\(prefix)\"cold\" AND \(prefix)\"war\"")
     }
 
     @Test("Column prefix is not applied inside quoted phrases (matches FTS5Query's documented limitation)")
     func columnPrefixSkipsPhrases() {
         let prefix = "{header body_text}:"
         #expect(FTS5InlineQueryParser.parse("\"cold war\" detente", columnPrefix: prefix)
-                == "\"cold war\" \(prefix)\"detente\"")
+                == "\"cold war\" AND \(prefix)\"detente\"")
     }
 
     @Test("Column prefix is applied to wildcard prefixes and to NOT-excluded operands")
@@ -217,25 +228,25 @@ struct FTS5InlineQueryParserTests {
 
     // MARK: - Parenthetical Grouping
 
-    @Test("Parenthesised groups of OR-terms combine via implicit AND, preserving the user's intended grouping")
+    @Test("Parenthesised groups combine via an explicit AND, preserving the user's intended grouping")
     func basicGrouping() {
-        // The motivating example: "(aqaba OR tiran) AND (navigation OR passage OR transit)"
-        // — without grouping support this collapsed to a single flat OR-chain whose
-        // FTS5 NOT > AND > OR precedence read completely differently than intended.
+        // The motivating example. The explicit AND keyword between the two groups is
+        // required — FTS5 rejects `(...) (...)` as a syntax error (the Session 159 bug).
         #expect(FTS5InlineQueryParser.parse("(aqaba OR tiran) AND (navigation OR passage OR transit)")
-                == "(\"aqaba\" OR \"tiran\") (\"navigation\" OR \"passage\" OR \"transit\")")
+                == "(\"aqaba\" OR \"tiran\") AND (\"navigation\" OR \"passage\" OR \"transit\")")
     }
 
-    @Test("Adjacent groups combine via implicit AND with no explicit AND keyword")
+    @Test("Adjacent groups with no explicit operator still combine via an explicit AND")
     func implicitAndBetweenGroups() {
         #expect(FTS5InlineQueryParser.parse("(aqaba OR tiran) (navigation OR passage OR transit)")
-                == "(\"aqaba\" OR \"tiran\") (\"navigation\" OR \"passage\" OR \"transit\")")
+                == "(\"aqaba\" OR \"tiran\") AND (\"navigation\" OR \"passage\" OR \"transit\")")
     }
 
-    @Test("Lowercase 'or'/'and' inside parens are still literal words — grouping doesn't change operator casing rules")
-    func groupingDoesNotRelaxCasingRules() {
+    @Test("Lowercase operators inside and around parens act as operators (case-insensitive)")
+    func lowercaseOperatorsWithGroups() {
+        // The user's reported query, verbatim — lowercase `or`/`and` are operators.
         #expect(FTS5InlineQueryParser.parse("(aqaba or tiran) and (navigation or passage or transit)")
-                == "(\"aqaba\" \"or\" \"tiran\") \"and\" (\"navigation\" \"or\" \"passage\" \"or\" \"transit\")")
+                == "(\"aqaba\" OR \"tiran\") AND (\"navigation\" OR \"passage\" OR \"transit\")")
     }
 
     @Test("NOT can exclude an entire parenthesised group")
@@ -253,7 +264,7 @@ struct FTS5InlineQueryParserTests {
     func nestedGroups() {
         // "navig*" renders as a quoted prefix wildcard — sanitised but never stemmed.
         #expect(FTS5InlineQueryParser.parse("((aqaba OR tiran) AND navig*) OR (suez NOT canal)")
-                == "((\"aqaba\" OR \"tiran\") \"navig\"*) OR (\"suez\" NOT \"canal\")")
+                == "((\"aqaba\" OR \"tiran\") AND \"navig\"*) OR (\"suez\" NOT \"canal\")")
     }
 
     @Test("Phrases and column-prefix scoping work the same inside groups as at the top level")
@@ -267,7 +278,7 @@ struct FTS5InlineQueryParserTests {
 
     @Test("Orphaned operators inside a group are demoted to literals, just like at the top level")
     func orphanDemotionInsideGroup() {
-        #expect(FTS5InlineQueryParser.parse("(cold OR)") == "(\"cold\" \"or\")")
+        #expect(FTS5InlineQueryParser.parse("(cold OR)") == "(\"cold\" AND \"or\")")
     }
 
     @Test("A group with no positive content is dropped entirely rather than rendered empty")
@@ -280,8 +291,8 @@ struct FTS5InlineQueryParserTests {
 
     @Test("Unmatched parentheses degrade gracefully to dropped punctuation rather than malformed output")
     func unmatchedParenDegradesGracefully() {
-        #expect(FTS5InlineQueryParser.parse("cold (war") == "\"cold\" \"war\"")
-        #expect(FTS5InlineQueryParser.parse("cold war)") == "\"cold\" \"war\"")
+        #expect(FTS5InlineQueryParser.parse("cold (war") == "\"cold\" AND \"war\"")
+        #expect(FTS5InlineQueryParser.parse("cold war)") == "\"cold\" AND \"war\"")
         #expect(FTS5InlineQueryParser.parse("cold )(") == "\"cold\"")
     }
 
@@ -291,7 +302,7 @@ struct FTS5InlineQueryParserTests {
         // an ordinary, positive group — not as "exclude this group". Users must spell
         // out "NOT (...)" to negate a group.
         #expect(FTS5InlineQueryParser.parse("cold -(korea OR vietnam)")
-                == "\"cold\" (\"korea\" OR \"vietnam\")")
+                == "\"cold\" AND (\"korea\" OR \"vietnam\")")
     }
 
     @Test("A balanced group containing further unbalanced inner parens still extracts correctly")
@@ -299,6 +310,91 @@ struct FTS5InlineQueryParserTests {
         // "(a (b) c)" is one balanced outer group containing "a (b) c"; the inner
         // "(b)" nests as its own group, so the whole thing renders as nested groups.
         #expect(FTS5InlineQueryParser.parse("(cold (war) korea)")
-                == "(\"cold\" (\"war\") \"korea\")")
+                == "(\"cold\" AND (\"war\") AND \"korea\")")
+    }
+
+    // MARK: - Execution Against a Real FTS5 Table
+    //
+    // The string-match tests above pin the *shape* of the rendered expression; these
+    // execute it against an actual `porter unicode61` FTS5 table. This is the safety net
+    // that was missing when the "grouped query → bare juxtaposition → FTS5 syntax error →
+    // zero results" bug shipped: a rendered string can look right yet be rejected by
+    // SQLite. `runMatch` throws on any FTS5 syntax error, so an invalid expression fails
+    // the test instead of silently returning nothing.
+
+    /// Two FRUS-flavoured documents used by the execution tests.
+    private static let corpus: [String] = [
+        // d0 — contains aqaba + navigation; also the literal word "and".
+        "Free navigation through the Strait of Tiran and the Gulf of Aqaba was at issue.",
+        // d1 — contains aqaba + passage/transit; no standalone word "and".
+        "The blockade of Aqaba raised questions of innocent passage, transit rights, Israel.",
+    ]
+
+    /// Builds an in-memory `porter unicode61` FTS5 table, seeds `Self.corpus`, runs the
+    /// parser's rendered expression as a `MATCH`, and returns the match count. Throws if
+    /// SQLite rejects the expression (a syntax error) — turning "invalid FTS5" into a test
+    /// failure rather than a silently-empty result.
+    private func runMatch(_ rawQuery: String) throws -> Int {
+        let expr = try #require(FTS5InlineQueryParser.parse(rawQuery),
+                                "parser returned nil for: \(rawQuery)")
+        var db: OpaquePointer?
+        #expect(sqlite3_open(":memory:", &db) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+
+        #expect(sqlite3_exec(db,
+            "CREATE VIRTUAL TABLE d USING fts5(body, tokenize='porter unicode61');",
+            nil, nil, nil) == SQLITE_OK)
+        for body in Self.corpus {
+            var ins: OpaquePointer?
+            #expect(sqlite3_prepare_v2(db, "INSERT INTO d(body) VALUES (?);", -1, &ins, nil) == SQLITE_OK)
+            sqlite3_bind_text(ins, 1, body, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            #expect(sqlite3_step(ins) == SQLITE_DONE)
+            sqlite3_finalize(ins)
+        }
+
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT count(*) FROM d WHERE d MATCH ?;", -1, &stmt, nil) == SQLITE_OK else {
+            throw FTS5ExecError.prepareFailed(String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, expr, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        let rc = sqlite3_step(stmt)
+        guard rc == SQLITE_ROW else {
+            // FTS5 syntax errors surface here as the step failing.
+            throw FTS5ExecError.stepFailed(String(cString: sqlite3_errmsg(db)))
+        }
+        return Int(sqlite3_column_int(stmt, 0))
+    }
+
+    private enum FTS5ExecError: Error { case prepareFailed(String), stepFailed(String) }
+
+    @Test("The user's reported grouped query executes and matches both documents")
+    func userGroupedQueryExecutes() throws {
+        // The exact reported input (uppercase OR, lowercase and). Before Session 159 this
+        // rendered to `(...) (...)` and FTS5 rejected it → zero results.
+        let count = try runMatch("(aqaba OR tiran) and (navigation OR passage OR transit)")
+        #expect(count == 2)
+    }
+
+    @Test("Uppercase grouped AND executes and matches")
+    func uppercaseGroupedQueryExecutes() throws {
+        let count = try runMatch("(aqaba OR tiran) AND (navigation OR passage OR transit)")
+        #expect(count == 2)
+    }
+
+    @Test("Grouped AND still narrows correctly — a non-matching right group yields zero")
+    func groupedQueryNarrows() throws {
+        // Neither document mentions Suez or a canal, so the AND must exclude both.
+        let count = try runMatch("(aqaba OR tiran) AND (suez OR canal)")
+        #expect(count == 0)
+    }
+
+    @Test("Plain multi-word, OR, NOT, wildcards, and nested groups all execute as valid FTS5")
+    func assortedQueriesExecute() throws {
+        #expect(try runMatch("aqaba navigation") == 1)            // d0 only (both words)
+        #expect(try runMatch("passage OR navigation") == 2)       // d0 + d1
+        #expect(try runMatch("aqaba NOT passage") == 1)           // d0 only (d1 has passage)
+        #expect(try runMatch("navig*") == 1)                      // d0 (navigation)
+        #expect(try runMatch("((aqaba OR tiran) AND navig*) OR (suez AND canal)") == 1)
     }
 }

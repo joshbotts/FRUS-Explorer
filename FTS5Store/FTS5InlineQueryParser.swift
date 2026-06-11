@@ -26,20 +26,28 @@
 ///
 /// | Syntax | Meaning | Example |
 /// |---|---|---|
-/// | bare words | implicit AND (juxtaposition) | `cold war` → both required |
+/// | bare words | AND (rendered as an explicit `AND` keyword) | `cold war` → both required |
 /// | `"quoted phrase"` | exact word-order phrase match | `"cold war"` |
-/// | `OR` (uppercase only) | either side matches | `Rusk OR Bundy` |
-/// | `AND` (uppercase only) | both sides match (same as juxtaposition) | `cold AND war` |
+/// | `OR` (any case) | either side matches | `Rusk OR Bundy` |
+/// | `AND` (any case) | both sides match | `cold and war` |
 /// | leading `-` | exclude a term or phrase | `-quarantine`, `-"naval blockade"` |
-/// | `NOT` (uppercase only) | exclude the following term/phrase, group, or wildcard | `cold NOT korea`, `NOT (korea OR vietnam)` |
+/// | `NOT` (any case) | exclude the following term/phrase, group, or wildcard | `cold NOT korea`, `not (korea OR vietnam)` |
 /// | trailing `*` | prefix wildcard | `negoti*` |
 /// | `( ... )` | groups a sub-expression; combines with the rest of the query like any operand | `(aqaba OR tiran) AND (navigation OR passage OR transit)` |
 ///
-/// Operator keywords are recognised **only in uppercase** and **only when they sit
-/// between valid operands** (matching both Google's and FTS5's own convention) — e.g.
-/// lowercase `or`, or a leading/trailing/doubled `OR`/`AND`/`NOT`, is searched for as a
-/// literal word instead of mis-parsed into invalid syntax. This guarantees the renderer
-/// never emits a MATCH expression SQLite would reject (no orphaned operators).
+/// Operator keywords are recognised **in any case** (`and`/`And`/`AND` all act as the
+/// operator, matching history.state.gov) and **only when they sit between valid
+/// operands** — a leading/trailing/doubled `OR`/`AND`/`NOT`, or an operator with no
+/// operand to bind, is demoted back to a literal search word for that same term instead
+/// of being mis-parsed into invalid syntax. This guarantees the renderer never emits a
+/// MATCH expression SQLite would reject (no orphaned operators). To search for the
+/// literal word "and"/"or"/"not", quote it: `"war and peace"`.
+///
+/// Adjacent operands (juxtaposition, an explicit `AND`, or a parenthesised group next to
+/// another operand) are always joined with an **explicit `AND` keyword**, never bare
+/// concatenation. FTS5 permits implicit-AND only between bare phrases — `(a OR b) (c OR
+/// d)` is a hard syntax error — so emitting the keyword is what keeps grouped queries
+/// valid (this was the "grouped boolean query returns zero results" bug).
 ///
 /// Each bare word and phrase word is sanitised and Porter-stemmed exactly as
 /// `FTS5Query` does today, so results match the stemmed index identically regardless
@@ -83,6 +91,15 @@
 ///          (including `NOT (...)`) and nest to arbitrary depth; unmatched/empty
 ///          groups degrade gracefully (dropped/`nil`) rather than producing
 ///          malformed output
+///   3.0 — Session 159: (1) fixed a latent bug where adjacent operands were joined by
+///          bare juxtaposition, which FTS5 rejects between parenthesised groups
+///          (`(a OR b) (c OR d)` → syntax error) — so every grouped boolean query
+///          (e.g. `(aqaba OR tiran) AND (navigation OR passage OR transit)`) failed and
+///          surfaced as zero results. Operands are now joined with an explicit `AND`.
+///          (2) Operators are now case-insensitive (`and`/`or`/`not` work, not only
+///          uppercase), matching history.state.gov. The parser tests now also *execute*
+///          their rendered output against a real FTS5 table so invalid output can no
+///          longer pass.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -198,25 +215,38 @@ public enum FTS5InlineQueryParser {
         // alone would be miscounted as having positive content and incorrectly produce
         // a MATCH expression instead of `nil`.
         var precededByNot = false
+        // Whether the previously appended piece rendered an operand (vs. an operator
+        // keyword). Two operands with no operator between them are *juxtaposed*; FTS5
+        // only permits implicit-AND between bare phrases (`"a" "b"`), NOT between
+        // parenthesised groups — `(a OR b) (c OR d)` is a hard syntax error. Relying on
+        // juxtaposition therefore silently produced invalid MATCH expressions for every
+        // grouped query (e.g. `(aqaba OR tiran) AND (navigation OR passage)`), which
+        // SQLite rejected and the search surfaced as zero results. So an explicit `AND`
+        // is inserted between juxtaposed positive operands.
+        var previousWasOperand = false
         for token in resolved {
             switch token {
             case .operand(let rendered, let isPositive):
+                // Insert an explicit AND between two juxtaposed operands when this one is
+                // positive. A negated operand renders as `NOT x`, which forms the valid
+                // binary `X NOT x`, so it must NOT be prefixed with AND (`X AND NOT x` is
+                // itself an FTS5 syntax error).
+                if previousWasOperand && isPositive {
+                    pieces.append(Operator.and.fts5Keyword)
+                }
                 pieces.append(rendered)
                 if isPositive && !precededByNot { hasPositiveOperand = true }
                 precededByNot = false
+                previousWasOperand = true
             case .opCandidate(let kind):
-                // Explicit "AND" is rendered as plain juxtaposition (implicit AND) —
-                // not the literal keyword "AND". FTS5's documented standard syntax
-                // guarantees implicit-AND-via-concatenation works; whether the bare
-                // "AND" keyword is accepted as an operator (vs. a literal search term)
-                // depends on the build's syntax mode, and `FTS5Query` itself never
-                // emits it (see its `.and` `booleanMode` rendering). Omitting the
-                // keyword here sidesteps that ambiguity entirely while producing the
-                // exact same match set.
-                if kind != .and {
-                    pieces.append(kind.fts5Keyword)
-                }
+                // Every surviving operator — including AND — is emitted as a real FTS5
+                // keyword. AND used to be dropped in favour of juxtaposition, but that
+                // is invalid between groups (see `previousWasOperand` above). `AND` is a
+                // documented standard-syntax keyword and is accepted wherever the OR
+                // this builder already emits is.
+                pieces.append(kind.fts5Keyword)
                 precededByNot = (kind == .not)
+                previousWasOperand = false
             }
         }
 
@@ -316,9 +346,12 @@ public enum FTS5InlineQueryParser {
     /// `-word*` both negate correctly), then phrase / wildcard / bare-word in that order.
     /// Returns `nil` for tokens that carry no usable content (e.g. a bare `-`, `*`, `""`).
     private static func classify(_ token: String) -> ClassifiedToken? {
-        // Operator keywords — recognised only in exact uppercase, matching both
-        // Google's and FTS5's own convention (lowercase "or" is a literal search word).
-        switch token {
+        // Operator keywords — recognised in any case (`and`, `And`, `AND` all act as
+        // the operator), matching history.state.gov and most users' expectations. To
+        // search for the literal word "and"/"or"/"not", quote it (`"and"`). An
+        // operator that lacks the operand(s) it needs is demoted back to a literal of
+        // that word by `demoteOrphanedOperators`, so this never produces invalid syntax.
+        switch token.uppercased() {
         case "AND": return .op(.and)
         case "OR":  return .op(.or)
         case "NOT": return .op(.not)
