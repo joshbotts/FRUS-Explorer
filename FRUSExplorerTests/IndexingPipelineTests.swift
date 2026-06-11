@@ -2242,6 +2242,50 @@ struct RealCorpusEncodingTests {
             #expect(terms.canReadDirectly, "terms glossary should open directly in DocumentView")
         }
     }
+
+    @Test("Collection Zotero export resolves editorial-note flags from the index")
+    func collectionZoteroExportFlagsEditorialNotes() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            try writeRealEncodingVolume(to: url, volumeId: "frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // The flag map the collection resolve paths feed into makeItem:
+            // d1 (subtype="editorial-note") flagged, d2 (historical document) absent.
+            let flags = await ZoteroJSONExporter.editorialNoteFlags(
+                volumeIds: ["frus1969-76v01"], pipeline: pipeline)
+            #expect(flags["frus1969-76v01/d1"] == true,
+                    "editorial notes must be flagged from document_cache.is_editorial_note")
+            #expect(flags["frus1969-76v01/d2"] == nil)
+
+            // An unindexed volume contributes no entries — the flag degrades to false.
+            let unindexed = await ZoteroJSONExporter.editorialNoteFlags(
+                volumeIds: ["frus1861"], pipeline: pipeline)
+            #expect(unindexed.isEmpty)
+
+            // End to end: items built the way resolveDocuments()/resolveSmartDocuments()
+            // build them carry "Editorial note" in extra for d1 only — parity with the
+            // document-level export path (DocumentViewModel.zoteroItem).
+            let volume = FRUSVolumeMetadata(
+                title: "Test Volume", editors: [], generalEditor: nil,
+                publicationDate: "2010", publicationPlace: "Washington", publisher: "GPO")
+            let items = ["d1", "d2"].map { documentId in
+                ZoteroJSONExporter.makeItem(
+                    document: FRUSDocumentMetadata(
+                        documentId: documentId, documentNumber: nil,
+                        header: "Heading", dateline: nil),
+                    volume: volume,
+                    year: "2010",
+                    url: nil,
+                    isEditorialNote: flags["frus1969-76v01/\(documentId)"] ?? false
+                )
+            }
+            #expect(items[0].extra == "Editorial note")
+            #expect(items[1].extra == nil)
+        }
+    }
 }
 
 // MARK: - IndexIntegrityTests

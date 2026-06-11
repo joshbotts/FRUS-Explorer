@@ -239,4 +239,34 @@ public struct ZoteroJSONExporter: Sendable {
         let noteBodies = notes.map(\.bodyText).filter { !$0.isEmpty }
         return (tags: tagNames.sorted(), notes: noteBodies)
     }
+
+    // MARK: - Editorial-Note Flags
+
+    /// Resolves which documents in `volumeIds` are editorial notes, from the
+    /// `document_cache.is_editorial_note` column via
+    /// `IndexingPipeline.documents(forVolume:)`.
+    ///
+    /// Returns a map keyed `"<volumeId>/<documentId>"` holding `true` for
+    /// editorial notes only — look up with `flags[key] ?? false`. Volumes that
+    /// are not indexed (or when `pipeline` is `nil`) contribute no entries, so
+    /// the flag degrades to `false` for them, mirroring how the document-level
+    /// export path only knows `isEditorialNote` for indexed documents.
+    ///
+    /// Shared by `resolveDocuments()` and `resolveSmartDocuments()` in the
+    /// collection export flow so collection-level items carry the same
+    /// "Editorial note" `extra` line as document-level exports.
+    public static func editorialNoteFlags(
+        volumeIds: some Sequence<String>,
+        pipeline: IndexingPipeline?
+    ) async -> [String: Bool] {
+        guard let pipeline else { return [:] }
+        var flags: [String: Bool] = [:]
+        for volumeId in volumeIds {
+            guard let docs = try? await pipeline.documents(forVolume: volumeId) else { continue }
+            for doc in docs where doc.isEditorialNote {
+                flags["\(volumeId)/\(doc.documentId)"] = true
+            }
+        }
+        return flags
+    }
 }

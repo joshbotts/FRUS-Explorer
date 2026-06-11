@@ -48,6 +48,9 @@ import SwiftData
 ///   1.6 — Session 129: `AddByTagSheet` and `LinkSavedSearchSheet` split into macOS/iOS bodies;
 ///          macOS uses VStack + button-bar to prevent NavigationStack sidebar from hiding list
 ///          content inside a `.sheet()` presentation
+///   1.7 — Session 157: collection Zotero items resolve `isEditorialNote` from the index
+///          (`ZoteroJSONExporter.editorialNoteFlags`) instead of hardcoding `false`,
+///          restoring parity with the document-level export path
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -1511,6 +1514,11 @@ struct ExportSheetView: View {
             }
         }
 
+        // Editorial-note flags from the index, so collection-level Zotero items
+        // carry the same "Editorial note" extra line as document-level exports.
+        let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
+            volumeIds: volumeIds, pipeline: appState.indexingPipeline)
+
         return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
@@ -1578,7 +1586,7 @@ struct ExportSheetView: View {
                     volume: volMeta,
                     year: year,
                     url: urlString,
-                    isEditorialNote: false,
+                    isEditorialNote: editorialNoteFlags[key] ?? false,
                     tags: tags,
                     notes: resolvedNoteTexts
                 )
@@ -1790,6 +1798,11 @@ struct ExportSheetView: View {
             }
         }
 
+        // Editorial-note flags from the index, so collection-level Zotero items
+        // carry the same "Editorial note" extra line as document-level exports.
+        let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
+            volumeIds: volumeIds, pipeline: appState.indexingPipeline)
+
         return smartEntries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
@@ -1820,7 +1833,7 @@ struct ExportSheetView: View {
                     volume: volMeta,
                     year: year,
                     url: urlString,
-                    isEditorialNote: false,
+                    isEditorialNote: editorialNoteFlags[key] ?? false,
                     tags: tags,
                     notes: notes
                 )
