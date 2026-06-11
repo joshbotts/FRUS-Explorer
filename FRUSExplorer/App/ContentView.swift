@@ -14,7 +14,9 @@ import SwiftUI
 ///
 /// Routes to `OnboardingView` unless BOTH of these conditions are true:
 /// - `appState.hasCompletedOnboarding == true` (UserDefaults flag set at wizard completion)
-/// - At least one `.xml` volume file exists on disk, OR a download is actively queued
+/// - At least one `.xml` volume file exists on disk, OR a download is actively queued,
+///   OR the process is running under `FRUS_UI_TEST_MODE` (UI tests have no downloaded
+///   volumes but still need to reach the main UI)
 ///
 /// Using AND (not OR) means no volumes → always show onboarding, even if the user
 /// previously completed it. `downloadQueue` prevents a mid-download flicker: the flag
@@ -38,6 +40,9 @@ import SwiftUI
 ///   2.0 — New UI: macOS routes to MainWindowView (window-based navigation)
 ///   2.1 — Routing changed from OR to AND: no volumes → always show onboarding even if
 ///          flag is true; downloadQueue prevents flicker during active downloads
+///   2.2 — Session 156: FRUS_UI_TEST_MODE bypasses the volumes/downloadQueue check, so
+///          `-hasCompletedOnboarding 1` reaches MainTabView/MainWindowView in UI tests
+///          (the AND-based check in 2.1 had made that launch argument a no-op)
 struct ContentView: View {
 
     @Environment(AppState.self) private var appState
@@ -45,7 +50,8 @@ struct ContentView: View {
     var body: some View {
         let hasVolumes = OnboardingViewModel.hasDownloadedVolumes(in: appState.downloadManager?.volumesDirectory)
         let hasActiveDownloads = !appState.downloadQueue.isEmpty
-        if appState.hasCompletedOnboarding && (hasVolumes || hasActiveDownloads) {
+        let isUITestMode = ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
+        if appState.hasCompletedOnboarding && (hasVolumes || hasActiveDownloads || isUITestMode) {
             #if os(iOS)
             MainTabView()
             #else

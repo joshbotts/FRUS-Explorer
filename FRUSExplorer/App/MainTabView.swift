@@ -212,41 +212,28 @@ struct BrowserTabView: View {
 
 /// Search tab root on iOS.
 ///
-/// Embeds `SearchView` directly (no sheet wrapper). A Citation Lookup toolbar
-/// button opens `CitationLookupView` as a local sheet — the sheet is tied to
-/// the Search tab rather than the Browse tab so it stays in context.
+/// Embeds `SearchView` directly (no sheet wrapper). `SearchView` owns its own
+/// "Find by citation" entry (in its "More" overflow menu) and presents
+/// `CitationLookupView` as a local sheet.
 ///
 /// When `appState.searchService` is unavailable (database not yet opened),
 /// a `ContentUnavailableView` placeholder is shown instead.
 ///
 /// Version history:
 ///   1.0 — Session 44: initial implementation
+///   1.1 — Session 156: removed the Citation Lookup toolbar button/sheet — it was
+///          applied outside `SearchView`'s own `NavigationStack` and never reached
+///          the nav bar (silently unreachable). Moved into `SearchView` itself
+///          (its "More" overflow menu).
 private struct SearchTabView: View {
 
     @Environment(AppState.self) private var appState
-    @State private var showCitationLookup = false
 
     var body: some View {
         if let service = appState.searchService {
             SearchView(
                 searchService: service
             )
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showCitationLookup = true
-                    } label: {
-                        Image(systemName: "text.magnifyingglass")
-                    }
-                    .accessibilityLabel(
-                        String(localized: "search.citationLookup.a11y",
-                               defaultValue: "Find by citation")
-                    )
-                }
-            }
-            .sheet(isPresented: $showCitationLookup) {
-                CitationLookupView()
-            }
         } else {
             ContentUnavailableView(
                 String(localized: "search.unavailable.title",

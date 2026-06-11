@@ -48,6 +48,11 @@ import SwiftData
 ///          a single "More" overflow `Menu`, and Filter/Timeline stay as compact
 ///          icons — keeping everything in the nav bar at every size class so there
 ///          is no second bottom bar to collide with the tab bar.
+///   1.11 — Session 156: "Find by citation" added to the "More" overflow `Menu` and
+///          its sheet moved here from `SearchTabView`. `SearchView` owns its own
+///          `NavigationStack`/toolbar (since 1.10), so a `.toolbar` modifier applied
+///          outside it (as `SearchTabView` previously did) never reaches the nav
+///          bar — the button was silently unreachable on iOS.
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -60,6 +65,7 @@ struct SearchView: View {
     @State private var showTimeline = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
+    @State private var showCitationLookup = false
     @State private var saveSearchName = ""
     private let initialParameters: SearchParameters?
 
@@ -169,6 +175,16 @@ struct SearchView: View {
                                     systemImage: "bookmark.fill"
                                 )
                             }
+
+                            Button {
+                                showCitationLookup = true
+                            } label: {
+                                Label(
+                                    String(localized: "search.citationLookup.a11y",
+                                           defaultValue: "Find by citation"),
+                                    systemImage: "text.magnifyingglass"
+                                )
+                            }
                         } label: {
                             Image(systemName: "ellipsis.circle")
                         }
@@ -194,6 +210,9 @@ struct SearchView: View {
                         Task { await vm.search() }
                     }
                     .modelContainer(modelContext.container)
+                }
+                .sheet(isPresented: $showCitationLookup) {
+                    CitationLookupView()
                 }
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)
