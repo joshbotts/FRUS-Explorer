@@ -225,29 +225,39 @@ struct CollectionExportOptions: Sendable {
 /// Version history:
 ///   1.0 — Session 22: initial implementation
 ///   1.1 — Session 82: added `.docx` backed by `DocxCollectionExporter`
+///   1.2 — Session 155: added `.zoteroJSON` backed by `ZoteroCollectionExporter`
+///          (Zotero JSON exchange format, one item per document)
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
     case docx
+    case zoteroJSON
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .pdf:  return "PDF"
-        case .html: return "HTML"
-        case .docx: return "DOCX"
+        case .pdf:        return "PDF"
+        case .html:       return "HTML"
+        case .docx:       return "DOCX"
+        case .zoteroJSON: return String(localized: "export.format.zotero", defaultValue: "Zotero")
         }
     }
 
-    var fileExtension: String { rawValue }
+    var fileExtension: String {
+        switch self {
+        case .zoteroJSON: return "json"
+        default:          return rawValue
+        }
+    }
 
     /// Returns a fresh exporter instance for this format.
     func makeExporter() -> any CollectionExporter {
         switch self {
-        case .pdf:  return PDFCollectionExporter()
-        case .html: return HTMLCollectionExporter()
-        case .docx: return DocxCollectionExporter()
+        case .pdf:        return PDFCollectionExporter()
+        case .html:       return HTMLCollectionExporter()
+        case .docx:       return DocxCollectionExporter()
+        case .zoteroJSON: return ZoteroCollectionExporter()
         }
     }
 }
@@ -274,6 +284,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 ///   1.3 — Session 128: added `header`, `dateline` (for headerAndDateline ToC style);
 ///          replaced single `noteText` with `noteTexts: [String]` (multi-note per entry);
 ///          added `includeDocumentBody: Bool`; `noteText` retained as computed backward-compat accessor
+///   1.4 — Session 155: added `zoteroItem: ZoteroJSONExporter.Item?` for `.zoteroJSON` export
 struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     let documentId: String
@@ -309,6 +320,9 @@ struct CollectionExportDocument: Sendable {
     /// Raw archival source note text. Populated when
     /// `options.footnoteStyle == .sourceNoteOnly`; `nil` otherwise.
     let sourceNoteText: String?
+    /// Pre-built Zotero JSON item for `.zoteroJSON` export. `nil` if volume
+    /// metadata was unavailable when this document was resolved.
+    let zoteroItem: ZoteroJSONExporter.Item?
 
     /// Backward-compatible single-note accessor.
     var noteText: String? { noteTexts.first }
@@ -341,7 +355,8 @@ struct CollectionExportDocument: Sendable {
         dateline: String? = nil,
         summaryText: String? = nil,
         highlights: [ExportHighlight] = [],
-        sourceNoteText: String? = nil
+        sourceNoteText: String? = nil,
+        zoteroItem: ZoteroJSONExporter.Item? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -364,6 +379,7 @@ struct CollectionExportDocument: Sendable {
         self.summaryText = summaryText
         self.highlights = highlights
         self.sourceNoteText = sourceNoteText
+        self.zoteroItem = zoteroItem
     }
 }
 

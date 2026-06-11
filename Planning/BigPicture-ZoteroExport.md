@@ -8,7 +8,7 @@
 
 # Zotero Export
 
-**Status:** Planning  
+**Status:** Options A and B implemented (Session 155, see `155-Zotero-Export.md`); Option C still planning.
 **Priority:** Medium (near-term backlog)  
 **Estimated effort:** 1–3 sessions (depends on scope chosen)
 

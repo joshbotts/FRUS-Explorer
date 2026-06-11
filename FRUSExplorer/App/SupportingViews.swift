@@ -11,6 +11,7 @@
 import AppKit
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - HighlightCoordinator
 
@@ -1505,10 +1506,14 @@ private struct MacIndexingQueuePanel: View {
 ///         combining the formatted citation and its canonical
 ///         history.state.gov URL (`shareableCitationMessage`), mirroring
 ///         the new "Share Citation" toolbar item on iOS.
+///   1.3 — Session 155: Export menu gained "Send to Zotero (BibTeX)…" and
+///         "Send to Zotero (JSON)…" — saves a file via `NSSavePanel`, then
+///         opens it in Zotero (if installed) or reveals it in Finder.
 struct CitationPopoverView: View {
     let entry: DocumentBrowserEntry
 
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
     /// Initial selection mirrors the user's persisted preference
     /// (Settings → Display → Citations); the segmented control below lets the
     /// user switch styles per-presentation for comparison without changing
@@ -1655,6 +1660,17 @@ struct CitationPopoverView: View {
                         if let vol = volumeEntry { saveBibFile(bibtexString(vol: vol)) }
                     } label: {
                         Label("Save as .bib\u{2026}", systemImage: "square.and.arrow.down")
+                    }
+                    Divider()
+                    Button {
+                        if let vol = volumeEntry { sendToZoteroBibtex(vol: vol) }
+                    } label: {
+                        Label("Send to Zotero (BibTeX)\u{2026}", systemImage: "square.and.arrow.up")
+                    }
+                    Button {
+                        if let vol = volumeEntry { sendToZoteroJSON(vol: vol) }
+                    } label: {
+                        Label("Send to Zotero (JSON)\u{2026}", systemImage: "square.and.arrow.up")
                     }
                     Divider()
                     ShareLink(item: shareableCitationMessage) {
@@ -1835,6 +1851,64 @@ struct CitationPopoverView: View {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             try? content.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    // MARK: - Send to Zotero
+
+    /// Builds a Zotero JSON item for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    @MainActor
+    private func sendToZoteroJSON(vol: VolumeManifestEntry) {
+        let docMeta = FRUSDocumentMetadata(entry)
+        var volMeta = FRUSVolumeMetadata(vol)
+        if let liveYear = parsedPublicationYear {
+            volMeta = volMeta.overridingPublicationYear(liveYear)
+        }
+        let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            context: modelContext
+        )
+        let item = ZoteroJSONExporter.makeItem(
+            document: docMeta,
+            volume: volMeta,
+            year: effectiveYear(for: vol),
+            url: canonicalURL,
+            isEditorialNote: entry.isEditorialNote,
+            tags: tags,
+            notes: notes
+        )
+        guard let data = try? ZoteroJSONExporter().exportData(items: [item]) else { return }
+        sendToZotero(data: data, suggestedName: "\(entry.volumeId)-\(entry.documentId)-zotero.json", contentType: .json)
+    }
+
+    /// Builds a BibTeX record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    @MainActor
+    private func sendToZoteroBibtex(vol: VolumeManifestEntry) {
+        guard let data = bibtexString(vol: vol).data(using: .utf8) else { return }
+        sendToZotero(data: data, suggestedName: "\(entry.volumeId)-\(entry.documentId).bib", contentType: .init(filenameExtension: "bib") ?? .data)
+    }
+
+    /// Saves `data` to a user-chosen location via `NSSavePanel`, then opens the
+    /// saved file in Zotero (if installed) or reveals it in Finder.
+    @MainActor
+    private func sendToZotero(data: Data, suggestedName: String, contentType: UTType) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [contentType]
+        panel.nameFieldStringValue = suggestedName
+        panel.title = "Send to Zotero"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                return
+            }
+            if let zoteroURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.zotero.zotero") {
+                NSWorkspace.shared.open([url], withApplicationAt: zoteroURL, configuration: NSWorkspace.OpenConfiguration())
+            } else {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
         }
     }
 

@@ -44,6 +44,8 @@ import SwiftData
 ///   1.4 — Session 66: `documentTitle` stored property added; set from first `<head>` element
 ///          after load so cross-reference targets (created with `header: ""`) can supply
 ///          a meaningful navigation title once the document has been parsed
+///   1.5 — Session 155: `bibtexCitation`, `risCitation`, `zoteroItem(tags:notes:)` added for
+///          the citation Export menu's "Send to Zotero" actions
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -214,6 +216,70 @@ public final class DocumentViewModel {
         guard let citation = plainTextFormattedCitation,
               let url = canonicalDocumentURL else { return nil }
         return "\(citation)\n\n\(url.absoluteString)"
+    }
+
+    /// The document's citation formatted as a BibTeX `@incollection` record,
+    /// for "Copy BibTeX" and "Send to Zotero (BibTeX)…" actions. `nil` until a
+    /// volume entry is available.
+    public var bibtexCitation: String? {
+        guard let volumeEntry else { return nil }
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = effectiveVolumeMetadata(volumeEntry)
+        return BibtexExporter().export(
+            volumeId: entry.volumeId,
+            document: docMeta,
+            volume: volMeta,
+            year: effectivePublicationYear(volMeta: volMeta),
+            url: canonicalDocumentURL?.absoluteString
+        )
+    }
+
+    /// The document's citation formatted as a RIS record, for "Copy RIS".
+    /// `nil` until a volume entry is available.
+    public var risCitation: String? {
+        guard let volumeEntry else { return nil }
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = effectiveVolumeMetadata(volumeEntry)
+        return RISExporter().export(
+            document: docMeta,
+            volume: volMeta,
+            year: effectivePublicationYear(volMeta: volMeta),
+            url: canonicalDocumentURL?.absoluteString
+        )
+    }
+
+    /// Builds a Zotero JSON `bookSection` item for this document, attaching
+    /// the supplied `tags` and `notes` (typically resolved via
+    /// `ZoteroJSONExporter.fetchTagsAndNotes`). `nil` until a volume entry is
+    /// available.
+    public func zoteroItem(tags: [String], notes: [String]) -> ZoteroJSONExporter.Item? {
+        guard let volumeEntry else { return nil }
+        let docMeta = FRUSDocumentMetadata(entry)
+        let volMeta = effectiveVolumeMetadata(volumeEntry)
+        return ZoteroJSONExporter.makeItem(
+            document: docMeta,
+            volume: volMeta,
+            year: effectivePublicationYear(volMeta: volMeta),
+            url: canonicalDocumentURL?.absoluteString,
+            isEditorialNote: entry.isEditorialNote,
+            tags: tags,
+            notes: notes
+        )
+    }
+
+    /// Returns `volumeEntry`'s metadata with the publication year overridden by
+    /// `parsedPublicationYear` when available — see `formattedCitation`.
+    private func effectiveVolumeMetadata(_ volumeEntry: VolumeManifestEntry) -> FRUSVolumeMetadata {
+        var volMeta = FRUSVolumeMetadata(volumeEntry)
+        if let liveYear = parsedPublicationYear {
+            volMeta = volMeta.overridingPublicationYear(liveYear)
+        }
+        return volMeta
+    }
+
+    /// Extracts a display year from `volMeta.publicationDate`, falling back to "n.d.".
+    private func effectivePublicationYear(volMeta: FRUSVolumeMetadata) -> String {
+        FRUSVolumeMetadata.firstYear(in: volMeta.publicationDate).map(String.init) ?? "n.d."
     }
 
     /// Reads the volume's downloaded TEI XML and extracts the live publication

@@ -28,7 +28,7 @@ import SwiftData
 enum DocumentSheet: Identifiable {
     case personDetail(PersonEntry)
     case glossDetail(GlossEntry)
-    case citation(String)
+    case citation
     case noteEditor
     case noteEditorForHighlight(UUID)
     case crossReferenceGraph
@@ -400,8 +400,8 @@ struct DocumentView: View {
                 )
             case .glossDetail(let gloss):
                 GlossDetailSheet(gloss: gloss)
-            case .citation(let text):
-                CitationSheetView(citation: text)
+            case .citation:
+                CitationSheetView(vm: vm)
             case .noteEditor:
                 ResearchNoteEditorView(
                     documentId: entry.documentId,
@@ -799,9 +799,7 @@ struct DocumentView: View {
 
             // 5. View Citation
             Button {
-                if let citation = vm.formattedCitation {
-                    activeSheet = .citation(citation)
-                }
+                activeSheet = .citation
             } label: {
                 Label(
                     String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
@@ -1625,7 +1623,8 @@ struct DocumentView: View {
 
 // MARK: - CitationSheetView
 
-/// Displays a formatted citation string in a sheet with Copy/Done actions.
+/// Displays a formatted citation string in a sheet with Copy/Done actions and
+/// an Export menu (BibTeX/RIS copy plus "Send to Zotero" share actions).
 ///
 /// `formattedCitation` wraps the FRUS series title in Markdown italic syntax
 /// (`_Foreign Relations of the United States_…`, see
@@ -1633,9 +1632,22 @@ struct DocumentView: View {
 /// does not interpret Markdown for runtime strings, so the underscores would
 /// render literally; parsing into an `AttributedString` first renders the
 /// series title in actual italics — mirroring `CitationPopoverView` on macOS.
+///
+/// Version history:
+///   1.0 — Session 59: initial implementation
+///   1.1 — Session 155: added Export menu (Copy BibTeX/RIS, "Send to Zotero"
+///          BibTeX/JSON share actions); takes `vm` instead of a raw string
 private struct CitationSheetView: View {
-    let citation: String
+    let vm: DocumentViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var bibtexFileURL: URL?
+    @State private var zoteroJSONFileURL: URL?
+
+    private var citation: String {
+        vm.formattedCitation ?? ""
+    }
 
     /// The citation parsed as inline Markdown so `_…_` renders as italics;
     /// falls back to the raw string if parsing fails.
@@ -1649,11 +1661,15 @@ private struct CitationSheetView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                Text(attributedCitation)
-                    .font(.body)
-                    .textSelection(.enabled)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(attributedCitation)
+                        .font(.body)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    exportMenu
+                }
+                .padding()
             }
             .navigationTitle(
                 String(localized: "document.citation.title", defaultValue: "Citation")
@@ -1674,6 +1690,83 @@ private struct CitationSheetView: View {
         #endif
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 220)
+        #endif
+        .task {
+            prepareExportFiles()
+        }
+    }
+
+    // MARK: - Export Menu
+
+    @ViewBuilder
+    private var exportMenu: some View {
+        Menu {
+            Button {
+                if let bibtex = vm.bibtexCitation {
+                    copyToPasteboard(bibtex)
+                }
+            } label: {
+                Label(String(localized: "document.citation.copyBibtex", defaultValue: "Copy BibTeX"), systemImage: "doc.on.clipboard")
+            }
+            .disabled(vm.bibtexCitation == nil)
+
+            Button {
+                if let ris = vm.risCitation {
+                    copyToPasteboard(ris)
+                }
+            } label: {
+                Label(String(localized: "document.citation.copyRis", defaultValue: "Copy RIS"), systemImage: "doc.on.clipboard")
+            }
+            .disabled(vm.risCitation == nil)
+
+            Divider()
+
+            if let bibtexFileURL {
+                ShareLink(item: bibtexFileURL) {
+                    Label(String(localized: "document.citation.sendZoteroBibtex", defaultValue: "Send to Zotero (BibTeX)…"), systemImage: "square.and.arrow.up")
+                }
+            }
+
+            if let zoteroJSONFileURL {
+                ShareLink(item: zoteroJSONFileURL) {
+                    Label(String(localized: "document.citation.sendZoteroJSON", defaultValue: "Send to Zotero (JSON)…"), systemImage: "square.and.arrow.up")
+                }
+            }
+        } label: {
+            Label(String(localized: "document.citation.export", defaultValue: "Export"), systemImage: "square.and.arrow.up.on.square")
+        }
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        UIPasteboard.general.string = text
+    }
+
+    /// Writes the BibTeX and Zotero JSON exports to temporary files for `ShareLink`.
+    private func prepareExportFiles() {
+        if let bibtex = vm.bibtexCitation {
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId).bib")
+            if (try? bibtex.write(to: url, atomically: true, encoding: .utf8)) != nil {
+                bibtexFileURL = url
+            }
+        }
+
+        let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: vm.entry.documentId,
+            volumeId: vm.entry.volumeId,
+            context: modelContext
+        )
+        if let item = vm.zoteroItem(tags: tags, notes: notes),
+           let data = try? ZoteroJSONExporter().exportData(items: [item]) {
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId)-zotero.json")
+            if (try? data.write(to: url, options: .atomic)) != nil {
+                zoteroJSONFileURL = url
+            }
+        }
+
+        #if DEBUG
+        print("[CitationSheetView] export files prepared: bibtex=\(bibtexFileURL != nil), zoteroJSON=\(zoteroJSONFileURL != nil)")
         #endif
     }
 }
