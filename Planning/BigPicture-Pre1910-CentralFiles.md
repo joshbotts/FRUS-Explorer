@@ -207,6 +207,55 @@ Upgrade `centralFilesPanel` (`SourceExplorerView` / `MacSourceExplorerView`) for
 
 ---
 
+## Extension: bundled index for the existing Source Explorer scope
+
+Assessed 2026-06-11 (follow-up question). The harvest-tool → bundled JSON → key-less
+runtime pattern generalizes to the **entire** Source Explorer scope, because the
+citation key universe is small and closed. Measured on the user's fully-indexed corpus
+(552 volumes, 191,922 document-source rows; note the index predates the Session 130/151
+parser, so era labels are stale but raw text is complete):
+
+| Key universe | Measured | Notes |
+|---|---|---|
+| Distinct lot numbers (doc + front-matter union) | 984 (~1,200–1,500 after current parser catches the 5,240 `unrecognized` rows containing "Lot") | The single biggest runtime API consumer today (`resolveLotFileVariants`, 2–4 calls each) |
+| Distinct front-matter collections (repository, RG, series) | 965 | `volume_sources` — the natural normalized key set; the 87,923 noisy doc-level (RG, series) strings map onto these locally via string matching, zero API calls |
+| Distinct record groups | 35 | |
+| Distinct repositories | 32 | Presidential libraries mostly resolve to static finding-aid URLs anyway |
+| Presidential library (library, collection) pairs | ~600–1,000 est. | Most return zero catalog hits; static fallbacks remain |
+
+**Citations outside source notes** resolve through the same index because the index is
+keyed by *normalized citation*, not citation location. Already extracted at index time:
+editorial-note body citations (`document_sources.citation_era='footnote'`, currently
+first-citation-only) and front-matter sources (`volume_sources`). Gaps requiring
+indexer work before they can feed the index:
+1. `extractCitations` runs only on editorial-note bodies — extend to footnote text of
+   all documents.
+2. `document_sources` PK is `(volume_id, document_id)` — one citation per document.
+   Multiple embedded citations need a separate table (cf. the `external_citations`
+   sketch in `130-ExternalRefs-GraphFeasibility.md`) or a relaxed key.
+
+### API call budget (one-time initial harvest)
+
+| Component | Keys | Calls/key | Subtotal |
+|---|---|---|---|
+| Pre-1910 series enumeration (~16 series, ~10–11k descriptions) | — | paged | 120–500 (page size 100 vs 25) |
+| Lot files (`variantControlNumber_is` ladder) | ~1,200–1,500 | 2–4 | 3,000–6,000 |
+| Front-matter collections (RG + series keywords) | ~1,000 | 1 | ~1,000 |
+| Presidential library pairs | ~600–1,000 | 1 | ~1,000 |
+| Decimal / subject-numeric / CFPF series-level descriptions | — | — | ~100 |
+| **Subtotal** | | | **~5,200–8,600** |
+| Development re-runs / retries (×1.5 with response caching) | | | **~8,000–13,000** |
+
+NARA's default API limit is **10,000 queries per month per key**; exceeding it blocks
+the key until the 1st of the next month ([API help](https://www.archives.gov/research/catalog/help/api)).
+The initial harvest straddles that ceiling, so: (a) the harvest tool **must cache raw
+JSON responses to disk** so parser iterations never re-query, and (b) a higher limit
+should be requested from **Catalog_API@nara.gov** before the first full run (~50k/month
+temporary, citing the one-time bulk-description harvest for an open-source research
+app). Post-initial refreshes are incremental and fit comfortably in the default limit.
+
+---
+
 ## Validation plan
 
 User-provided reference data for 10 manually-traced documents — collection template
