@@ -168,6 +168,12 @@ enum DocumentSheet: Identifiable {
 ///          can be disabled (`edgeTapNavigationEnabled`), and a default
 ///          document mode (Read/Research/remember-last) is applied to
 ///          `panelVisible` once per document open.
+///   3.5 — Session 159: "Open in New Window" gated on
+///          `@Environment(\.supportsMultipleWindows)` instead of
+///          `sizeClass == .regular` (iPad/Mac parity Phase 5). The size-class
+///          proxy is true on every iPad, so the button previously appeared for
+///          all iPad users but `openWindow` silently no-ops without Stage
+///          Manager; the new gate offers it only when a second window can open.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -206,6 +212,12 @@ struct DocumentView: View {
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
+    /// `true` only when the platform can actually open a second window — Stage
+    /// Manager on iPad; never on iPhone or a non-Stage-Manager iPad. Gates the
+    /// "Open in New Window" affordance so it isn't offered where `openWindow`
+    /// would silently no-op. `sizeClass == .regular` is true on *all* iPads and
+    /// is therefore the wrong proxy for multi-window capability.
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
 
     @Query private var highlights:             [DocumentHighlight]
     @Query private var documentNotes:          [ResearchNote]
@@ -878,8 +890,11 @@ struct DocumentView: View {
                 )
             }
 
-            // 11. Open in New Window — iPad Stage Manager only
-            if sizeClass == .regular {
+            // 11. Open in New Window — only when the platform can actually open a
+            // second window (Stage Manager on iPad). Gating on supportsMultipleWindows
+            // instead of sizeClass == .regular stops the button from appearing on
+            // every iPad and then doing nothing when Stage Manager is off.
+            if supportsMultipleWindows {
                 Button {
                     openWindow(value: DocumentWindowID(
                         volumeId: entry.volumeId,

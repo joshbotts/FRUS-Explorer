@@ -23,9 +23,9 @@ other sessions. Actual state:
 |---|---|---|
 | 1 — iPad sidebar root | 1–2 sessions | **Done (Session 159)** — realized via `.tabViewStyle(.sidebarAdaptable)` on the existing `MainTabView` `TabView`, *not* a custom `iPadRootView` (see below) |
 | 2 — Inspector panel | 1 session | **Done (Session 110)** — `DocumentView` uses `.inspector(isPresented:)` on iPad |
-| 3 — Tools in detail pane | 1 session | Not done — remaining backlog |
+| 3 — Tools in detail pane | 1 session | **Satisfied under `.sidebarAdaptable` (Session 159)** — Person Index is a `BrowserView` destination; Analytics, Source Explorer, and Cross-Reference Graph work as sheets on iPad (the "Source Explorer no visible action" bug is already fixed). The detail-pane-vs-sheet premise was tied to the superseded `iPadRootView`; no refactor needed |
 | 4 — iOS settings indexing controls | 0.5 session | **Done** — `StorageManagementView` has "Index Remaining" + "Delete Index & Rebuild" mirroring macOS |
-| 5 — Stage Manager multi-window | 1–2 sessions | **Partial (Session 108)** — `UIApplicationSupportsMultipleScenes`, `WindowGroup(for: DocumentWindowID.self)`, Source Explorer window; cross-ref-graph window + `supportsMultipleWindows` cleanup remain |
+| 5 — Stage Manager multi-window | 1–2 sessions | **Partial** — Session 108 added `UIApplicationSupportsMultipleScenes`, `WindowGroup(for: DocumentWindowID.self)`, Source Explorer window. Session 159 fixed the "Open in New Window" gate (`supportsMultipleWindows` instead of `sizeClass == .regular`, which appeared on all iPads but no-opped without Stage Manager). Optional remaining: dedicated Stage-Manager *windows* for the Cross-Reference Graph and Source Explorer (currently sheets — needs new iOS `WindowGroup`s + a design decision) |
 
 **Why `.sidebarAdaptable` instead of a custom `iPadRootView` (Session 159):**
 `BrowserView` (`splitLayout`) and `ResearchView` already use their own
