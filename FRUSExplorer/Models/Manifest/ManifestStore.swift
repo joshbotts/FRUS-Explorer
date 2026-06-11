@@ -274,8 +274,12 @@ public final class ManifestStore {
 
         var liveInfoByVolumeId: [String: LiveVolumeInfo] = [:]
         for entry in known {
-            guard let liveEntry = liveByFilename[entry.filename] else { continue }
-            liveInfoByVolumeId[entry.volumeId] = LiveVolumeInfo(sha: liveEntry.sha, sizeBytes: liveEntry.size)
+            // `sha` is optional in the decode so one anomalous listing entry can't
+            // fail the whole live manifest; a volume without it simply has no
+            // update detection until the listing carries the field again.
+            guard let liveEntry = liveByFilename[entry.filename],
+                  let sha = liveEntry.sha else { continue }
+            liveInfoByVolumeId[entry.volumeId] = LiveVolumeInfo(sha: sha, sizeBytes: liveEntry.size)
         }
 
         return ManifestDiffResult(
@@ -354,7 +358,9 @@ private struct GitHubLiveEntry: Codable {
     let downloadUrl: String
     /// Git blob SHA-1 of the file's current contents, used by `VolumeUpdateChecker`
     /// to detect upstream corrections to already-downloaded volumes (Session 154).
-    let sha: String
+    /// Optional so a listing entry that ever omits it degrades to "no update
+    /// detection for that volume" instead of failing the whole manifest decode.
+    let sha: String?
 
     enum CodingKeys: String, CodingKey {
         case name, size, sha

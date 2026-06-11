@@ -208,7 +208,9 @@ struct ResearchDataExporterTests {
         #expect(export.content.contains("documentId: d1"))
         #expect(export.content.contains("volumeId: frus1969-76v01"))
         #expect(export.content.contains("url: https://history.state.gov/historicaldocuments/frus1969-76v01/d1"))
-        #expect(export.content.contains("tags: [Primary Source]"))
+        // Tag names are quoted YAML scalars (Session 158): user-authored names
+        // can contain ':'/'"'/']', which break unquoted flow-sequence entries.
+        #expect(export.content.contains("tags: [\"Primary Source\"]"))
         #expect(export.content.contains("Key turning point in the negotiations."))
         #expect(!export.content.contains("citation:"))
     }

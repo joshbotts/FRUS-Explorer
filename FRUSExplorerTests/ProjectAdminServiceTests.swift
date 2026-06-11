@@ -103,7 +103,7 @@ struct ProjectAdminServiceTests {
         #expect(remaining.map(\.id) == [target.id])
     }
 
-    @Test("Merge reassigns GeneratedSummary and ReadingHistoryEntry projectId")
+    @Test("Merge reassigns GeneratedSummary, ReadingHistoryEntry, and SearchHistoryEntry projectId")
     func mergeReassignsScalarProjectIds() throws {
         let container = try ModelContainer.makeTestContainer()
         let ctx = container.mainContext
@@ -124,11 +124,18 @@ struct ProjectAdminServiceTests {
         ctx.insert(summary)
         let history = ReadingHistoryEntry(documentId: "d1", volumeId: "frus1969-76v01", projectId: source.id)
         ctx.insert(history)
+        let searchHistory = SearchHistoryEntry(queryText: "détente", resultCount: 3, projectId: source.id)
+        ctx.insert(searchHistory)
+        // A search made in another project must keep its own reference.
+        let unrelatedSearch = SearchHistoryEntry(queryText: "berlin", resultCount: 1, projectId: target.id)
+        ctx.insert(unrelatedSearch)
 
         ProjectAdminService.merge(source, into: target, context: ctx, appState: appState)
 
         #expect(summary.projectId == target.id)
         #expect(history.projectId == target.id)
+        #expect(searchHistory.projectId == target.id)
+        #expect(unrelatedSearch.projectId == target.id)
     }
 
     @Test("Merging the active project redirects AppState.activeProjectId to the target")

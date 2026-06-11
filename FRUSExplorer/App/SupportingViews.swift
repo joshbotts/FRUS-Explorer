@@ -1902,6 +1902,13 @@ struct CitationPopoverView: View {
             do {
                 try data.write(to: url, options: .atomic)
             } catch {
+                // The user explicitly chose a destination — a silent failure
+                // here looks like the export worked.
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = "Could Not Save File"
+                alert.informativeText = error.localizedDescription
+                alert.runModal()
                 return
             }
             if let zoteroURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.zotero.zotero") {

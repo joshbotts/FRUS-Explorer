@@ -2061,7 +2061,6 @@ private struct SettingsAddVolumesPane: View {
         .task {
             if appState.isOnline { await appState.manifestStore.refresh() }
         }
-        // Phase 1: storage limit warning before batch download
     }
 
     // MARK: - Sideload Section

@@ -92,6 +92,23 @@ struct IndexingSummaryCardTests {
         return (pipeline, store)
     }
 
+    /// Polls the main actor until `appState.completedIndexingMetadata` is non-nil,
+    /// up to `timeout`. The pipeline's progress stream delivers the `.complete`
+    /// update asynchronously after `indexVolume` returns; a fixed sleep flaked
+    /// under full-suite load (observed 2026-06-11), so wait on the observable
+    /// state instead. On timeout the caller's own assertion reports the failure.
+    private func waitForCompletedMetadata(
+        in appState: AppState,
+        timeout: Duration = .seconds(5)
+    ) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            let done = await MainActor.run { appState.completedIndexingMetadata != nil }
+            if done { return }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+    }
+
     // MARK: - Tests
 
     @Test("completedIndexingMetadata is set when pipeline emits .complete")
@@ -110,7 +127,7 @@ struct IndexingSummaryCardTests {
             await MainActor.run { appState.connectIndexingProgress(pipeline: pipeline) }
 
             try await pipeline.indexVolume("frus1969-76v01")
-            try await Task.sleep(for: .milliseconds(50))
+            try await waitForCompletedMetadata(in: appState)
 
             let completed = await MainActor.run { appState.completedIndexingMetadata }
             #expect(completed != nil, "completedIndexingMetadata must be non-nil after indexing completes")
@@ -134,7 +151,7 @@ struct IndexingSummaryCardTests {
             await MainActor.run { appState.connectIndexingProgress(pipeline: pipeline) }
 
             try await pipeline.indexVolume("frus1969-76v01")
-            try await Task.sleep(for: .milliseconds(50))
+            try await waitForCompletedMetadata(in: appState)
 
             let (progress, completed) = await MainActor.run {
                 (appState.currentIndexingProgress, appState.completedIndexingMetadata)
@@ -175,7 +192,7 @@ struct IndexingSummaryCardTests {
             await MainActor.run { appState.connectIndexingProgress(pipeline: pipeline) }
 
             try await pipeline.indexVolume("frus1969-76v01")
-            try await Task.sleep(for: .milliseconds(50))
+            try await waitForCompletedMetadata(in: appState)
 
             let totalDocs = await MainActor.run { appState.completedIndexingMetadata?.totalDocuments }
             #expect(totalDocs == 7,
@@ -199,7 +216,7 @@ struct IndexingSummaryCardTests {
             await MainActor.run { appState.connectIndexingProgress(pipeline: pipeline) }
 
             try await pipeline.indexVolume("frus1969-76v01")
-            try await Task.sleep(for: .milliseconds(50))
+            try await waitForCompletedMetadata(in: appState)
 
             let meta = await MainActor.run { appState.completedIndexingMetadata }
             guard let meta else {
