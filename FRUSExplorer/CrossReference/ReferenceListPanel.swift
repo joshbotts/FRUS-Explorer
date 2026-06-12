@@ -58,7 +58,8 @@ struct ReferenceListPanel: View {
             if let edge = vm.selectedEdge(), let context = edge.combinedContext {
                 GraphEdgeDetailView(vm: vm, edge: edge, context: context)
             } else if let key = vm.resolvedNodeKey,
-                      let node = vm.displayNodes.first(where: { $0.id == key }) {
+                      let node = vm.displayNodes.first(where: { $0.id == key })
+                        ?? vm.baseDisplayNodes.first(where: { $0.id == key }) {
                 GraphNodeDetailView(
                     vm: vm,
                     node: node,
@@ -118,9 +119,11 @@ struct ReferenceListPanel: View {
 
     // MARK: - Sections
 
-    /// Non-central display nodes matching `predicate`, in display order.
+    /// Non-central nodes matching `predicate`, in display order. Reads the
+    /// *base* (unclustered) nodes so the list always shows real documents,
+    /// even while the canvas folds some into timeline date clusters.
     private func nodes(matching predicate: (DisplayNode) -> Bool) -> [DisplayNode] {
-        vm.displayNodes.filter { !$0.isCentral && predicate($0) }
+        vm.baseDisplayNodes.filter { !$0.isCentral && predicate($0) }
     }
 
     @ViewBuilder
@@ -152,6 +155,11 @@ struct ReferenceListPanel: View {
             Button {
                 vm.selectedEdgeKey = nil
                 vm.selectedNodeKey = isSelected ? nil : node.id
+                if vm.selectedNodeKey == node.id {
+                    // If the canvas has folded this document into a collapsed
+                    // date cluster, expand it so the highlight is visible.
+                    vm.expandDateClusterContaining(node.id)
+                }
             } label: {
                 rowContent(node: node, edge: edge)
             }
@@ -359,11 +367,20 @@ struct GraphNodeDetailView: View {
                 EdgeContextView(context: context, directionLabel: directionLabel)
             }
 
-            if !node.isDownloaded && !node.isCentral {
+            if !node.isDownloaded && !node.isCentral && !node.isDateCluster {
                 downloadSection
             }
 
-            if node.isCluster {
+            if node.isDateCluster {
+                Button {
+                    vm.toggleDateCluster(node.id)
+                    vm.selectedNodeKey = nil
+                } label: {
+                    Text(String(localized: "graph.dateCluster.expand",
+                                defaultValue: "Expand Date Group"))
+                }
+                .buttonStyle(.bordered)
+            } else if node.isCluster {
                 Button {
                     vm.toggleCluster(node.id)
                     vm.selectedNodeKey = nil

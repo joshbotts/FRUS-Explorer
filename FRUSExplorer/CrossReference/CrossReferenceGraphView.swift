@@ -371,17 +371,19 @@ struct CrossReferenceGraphView: View {
 
     @ViewBuilder
     private var graphAccessibilityList: some View {
-        let inbound = vm.displayNodes.filter {
+        // Reads the *base* nodes so VoiceOver always lists real documents, even
+        // while the canvas folds some of them into timeline date clusters.
+        let inbound = vm.baseDisplayNodes.filter {
             if case .inbound = $0.kind { return true }
             if case .clusterInbound = $0.kind { return true }
             return false
         }
-        let outbound = vm.displayNodes.filter {
+        let outbound = vm.baseDisplayNodes.filter {
             if case .outbound = $0.kind { return true }
             if case .clusterOutbound = $0.kind { return true }
             return false
         }
-        let extended = vm.displayNodes.filter {
+        let extended = vm.baseDisplayNodes.filter {
             if case .extended = $0.kind { return true }
             return false
         }
@@ -628,11 +630,23 @@ struct CrossReferenceGraphView: View {
         }
     }
 
+    /// Accessibility hint matching the node's interaction (expand vs. details).
+    private func nodeHitAreaHint(for node: DisplayNode) -> String {
+        if node.isDateCluster {
+            return String(localized: "graph.node.dateCluster.hint",
+                          defaultValue: "Tap to expand this date group")
+        }
+        if node.isCluster {
+            return String(localized: "graph.node.cluster.hint",
+                          defaultValue: "Right-click or long-press for options")
+        }
+        return String(localized: "graph.node.hint",
+                      defaultValue: "Tap to see details; right-click or long-press for actions")
+    }
+
     @ViewBuilder
     private func nodeHitArea(node: DisplayNode, at pos: CGPoint) -> some View {
-        let isHint = node.isCluster
-            ? String(localized: "graph.node.cluster.hint", defaultValue: "Right-click or long-press for options")
-            : String(localized: "graph.node.hint", defaultValue: "Tap to see details; right-click or long-press for actions")
+        let isHint = nodeHitAreaHint(for: node)
         // Using Button (not Circle+onTapGesture) so the hit area participates in the
         // SwiftUI focus system. Tab-key and Full Keyboard Access users can now navigate
         // between nodes without VoiceOver (F-018).
@@ -692,7 +706,18 @@ struct CrossReferenceGraphView: View {
 
     @ViewBuilder
     private func nodeContextMenuItems(for node: DisplayNode) -> some View {
-        if node.isCluster {
+        if node.isDateCluster {
+            Button {
+                vm.toggleDateCluster(node.id)
+                vm.selectedNodeKey = nil
+            } label: {
+                Label(
+                    String(localized: "graph.contextMenu.expandDateCluster",
+                           defaultValue: "Expand Date Group"),
+                    systemImage: "arrow.up.left.and.arrow.down.right"
+                )
+            }
+        } else if node.isCluster {
             Button {
                 vm.toggleCluster(node.id)
                 vm.selectedNodeKey = nil
@@ -942,11 +967,20 @@ struct CrossReferenceGraphView: View {
                     )
                 }
 
-                if !node.isDownloaded && !node.isCentral {
+                if !node.isDownloaded && !node.isCentral && !node.isDateCluster {
                     undownloadedSection(for: node)
                 }
 
-                if node.isCluster {
+                if node.isDateCluster {
+                    Button {
+                        vm.toggleDateCluster(key)
+                        vm.selectedNodeKey = nil
+                    } label: {
+                        Text(String(localized: "graph.dateCluster.expand",
+                                    defaultValue: "Expand Date Group"))
+                    }
+                    .buttonStyle(.bordered)
+                } else if node.isCluster {
                     Button {
                         vm.toggleCluster(key)
                         vm.selectedNodeKey = nil
@@ -1541,6 +1575,7 @@ struct CrossReferenceGraphView: View {
         case .extended:                    fillColor = isSelected ? .secondary.opacity(0.5) : .secondary.opacity(0.2)
         case .clusterInbound:              fillColor = isSelected ? .blue.opacity(0.5) : .blue.opacity(0.2)
         case .clusterOutbound:             fillColor = isSelected ? .orange.opacity(0.5) : .orange.opacity(0.2)
+        case .dateCluster:                 fillColor = isSelected ? .purple.opacity(0.5) : .purple.opacity(0.25)
         }
         ctx.fill(Path(ellipseIn: rect), with: .color(fillColor))
 
@@ -1563,7 +1598,9 @@ struct CrossReferenceGraphView: View {
 
         // SF Symbol icon
         let symbolName: String
-        if node.isCluster {
+        if node.isDateCluster {
+            symbolName = "calendar"
+        } else if node.isCluster {
             symbolName = "folder"
         } else if !node.isDownloaded {
             symbolName = "icloud.slash"
@@ -1591,6 +1628,12 @@ struct CrossReferenceGraphView: View {
                 format: String(localized: "graph.node.cluster.docsLabel %lld",
                                defaultValue: "%lld docs"),
                 Int64(count)
+            )
+        case .dateCluster(let periodLabel, let count, _):
+            labelText = String(
+                format: String(localized: "graph.node.dateCluster.label %lld %@",
+                               defaultValue: "%lld docs · %@"),
+                Int64(count), periodLabel
             )
         default:
             if let num = node.metadata?.documentNumber {

@@ -21,6 +21,10 @@ struct DisplayNode: Identifiable, Sendable {
         case extended
         case clusterInbound(volumeId: String, count: Int)
         case clusterOutbound(volumeId: String, count: Int)
+        /// Timeline-mode grouping of documents whose dates land within the same
+        /// narrow x-window (Session 162): `label` is the period ("Jun 1967"),
+        /// `memberKeys` the hidden document node keys. Tap expands in place.
+        case dateCluster(label: String, count: Int, memberKeys: [String])
     }
 
     let id: String   // nodeKey ("volId/docId") or cluster key ("cluster/inbound/volId")
@@ -53,6 +57,13 @@ struct DisplayNode: Identifiable, Sendable {
         case .clusterInbound, .clusterOutbound: true
         default: false
         }
+    }
+
+    /// `true` for timeline-mode date-group clusters (distinct from volume
+    /// clusters: they expand via `toggleDateCluster`, a layout-level operation).
+    var isDateCluster: Bool {
+        if case .dateCluster = kind { return true }
+        return false
     }
 
     /// Best-effort volume ID for this node: from metadata, the cluster kind, or
@@ -99,6 +110,12 @@ struct DisplayNode: Identifiable, Sendable {
                 format: String(localized: "graph.a11y.clusterOutbound %lld %@",
                                defaultValue: "%lld outbound documents to volume %@"),
                 Int64(count), vol
+            )
+        case .dateCluster(let label, let count, _):
+            String(
+                format: String(localized: "graph.a11y.dateCluster %lld %@",
+                               defaultValue: "%lld documents around %@ — expands"),
+                Int64(count), label
             )
         }
     }
@@ -271,9 +288,18 @@ final class CrossReferenceGraphViewModel {
 
     // MARK: - Display
 
+    /// Nodes currently rendered by the canvas. In timeline mode these may
+    /// contain `.dateCluster` placeholders standing in for groups of
+    /// `baseDisplayNodes`; in network mode they equal the base arrays.
     var displayNodes: [DisplayNode] = []
     var displayEdges: [DisplayEdge] = []
     var nodePositions: [String: CGPoint] = [:]
+
+    /// The unclustered build output: every real document node and aggregated
+    /// edge, regardless of timeline date-clustering. The reference list panel
+    /// reads these so it always lists actual documents.
+    private(set) var baseDisplayNodes: [DisplayNode] = []
+    private(set) var baseDisplayEdges: [DisplayEdge] = []
 
     /// Total corpus-wide reference count per node key (inbound + outbound), loaded
     /// after the graph itself so the layout appears immediately and node sizes
@@ -416,6 +442,45 @@ final class CrossReferenceGraphViewModel {
 
     var expandedClusterKeys: Set<String> = []
 
+    /// Date clusters the user has expanded in place (timeline mode). Layout-level
+    /// state: toggling re-runs the layout pass, not the data build.
+    private(set) var expandedDateClusterKeys: Set<String> = []
+
+    /// Expands or collapses a timeline date cluster in place.
+    func toggleDateCluster(_ key: String) {
+        if expandedDateClusterKeys.contains(key) {
+            expandedDateClusterKeys.remove(key)
+        } else {
+            expandedDateClusterKeys.insert(key)
+        }
+        refreshLayout()
+    }
+
+    /// If `nodeKey` is currently hidden inside a collapsed date cluster, expands
+    /// that cluster so the node becomes visible (used when the reference list
+    /// selects a document the canvas has folded away).
+    func expandDateClusterContaining(_ nodeKey: String) {
+        guard layoutMode == .timeline,
+              !displayNodes.contains(where: { $0.id == nodeKey }) else { return }
+        let containing = displayNodes.first { node in
+            if case .dateCluster(_, _, let members) = node.kind {
+                return members.contains(nodeKey)
+            }
+            return false
+        }
+        guard let cluster = containing else { return }
+        expandedDateClusterKeys.insert(cluster.id)
+        refreshLayout()
+    }
+
+    /// Re-runs the current layout (without re-querying the store) when layout
+    /// inputs like date-cluster expansion or the timeline brush change.
+    func refreshLayout() {
+        if canvasSize.width > 0 && canvasSize.height > 0 {
+            rerunLayout(reduceMotion: true)
+        }
+    }
+
     // MARK: - Degree Expansion
 
     /// Number of reference hops to display (1 = direct neighbours only, 2 or 3 = extended).
@@ -549,6 +614,10 @@ final class CrossReferenceGraphViewModel {
     func nodeRadius(for node: DisplayNode) -> CGFloat {
         if node.isCentral { return 24 }
         if node.isCluster { return 18 }
+        if case .dateCluster(_, let count, _) = node.kind {
+            // Slightly larger than a document node, growing gently with size.
+            return min(16 + 2 * log2(CGFloat(max(count, 2))), 24)
+        }
         let count  = max(nodeConnectionCounts[node.id] ?? 1, 1)
         let radius = 12.0 + 3.0 * log2(CGFloat(count) + 1)
         let cap: CGFloat
@@ -571,6 +640,10 @@ final class CrossReferenceGraphViewModel {
     /// The info panel's "View Document" button remains the path for inline document navigation.
     func tapNode(_ key: String, reduceMotion: Bool) {
         guard let node = displayNodes.first(where: { $0.id == key }) else { return }
+        if node.isDateCluster {
+            toggleDateCluster(key)
+            return
+        }
         if node.isCluster {
             toggleCluster(key)
             return
@@ -588,6 +661,10 @@ final class CrossReferenceGraphViewModel {
     /// Cluster nodes still expand/collapse rather than re-centring.
     func navigateToNode(_ key: String) {
         guard let node = displayNodes.first(where: { $0.id == key }) else { return }
+        if node.isDateCluster {
+            toggleDateCluster(key)
+            return
+        }
         if node.isCluster {
             toggleCluster(key)
             return
@@ -629,10 +706,13 @@ final class CrossReferenceGraphViewModel {
         nodeConnectionCounts = [:]
         nodeDateLabels      = [:]
         nodeDateValues      = [:]
+        baseDisplayNodes    = []
+        baseDisplayEdges    = []
         timelineTicks       = []
         timelineHasParkedNodes = false
         autoExpandedSparseGraph = false
         expandedClusterKeys = []
+        expandedDateClusterKeys = []
         // layoutMode and userPickedLayoutMode survive re-centring, like graphDegree:
         // an explicit Timeline/Network choice is a session preference.
         layoutTask?.cancel()
@@ -780,15 +860,18 @@ final class CrossReferenceGraphViewModel {
     /// The aggregated edge that links `nodeKey` to the central document — the
     /// inbound edge first, then the outbound one, then (for extended nodes) any
     /// edge touching the node. Used by the reference list to show per-row
-    /// context snippets and reference counts.
+    /// context snippets and reference counts. Searches the *base* (unclustered)
+    /// edges so list rows keep their context even while their node is folded
+    /// into a timeline date cluster.
     func primaryEdge(for nodeKey: String) -> DisplayEdge? {
-        if let edge = displayEdges.first(where: { $0.source == nodeKey && $0.target == centralKey }) {
+        let edges = baseDisplayEdges.isEmpty ? displayEdges : baseDisplayEdges
+        if let edge = edges.first(where: { $0.source == nodeKey && $0.target == centralKey }) {
             return edge
         }
-        if let edge = displayEdges.first(where: { $0.source == centralKey && $0.target == nodeKey }) {
+        if let edge = edges.first(where: { $0.source == centralKey && $0.target == nodeKey }) {
             return edge
         }
-        return displayEdges.first { $0.source == nodeKey || $0.target == nodeKey }
+        return edges.first { $0.source == nodeKey || $0.target == nodeKey }
     }
 
     /// Returns the node key for the first node whose centre is within its hit radius of `point`.
@@ -807,6 +890,7 @@ final class CrossReferenceGraphViewModel {
     func rebuildDisplay() {
         guard let graph else {
             displayNodes = []; displayEdges = []; nodePositions = [:]
+            baseDisplayNodes = []; baseDisplayEdges = []
             nodeDateLabels = [:]
             return
         }
@@ -816,6 +900,8 @@ final class CrossReferenceGraphViewModel {
             expandedClusterKeys: expandedClusterKeys,
             downloadedVolumeIds: downloadedVolumeIds
         )
+        baseDisplayNodes = nodes
+        baseDisplayEdges = edges
         displayNodes = nodes
         displayEdges = edges
         nodeDateLabels = Self.buildDateLabels(for: nodes)
@@ -879,12 +965,23 @@ final class CrossReferenceGraphViewModel {
 
         // Timeline mode: deterministic chronological placement, no settling
         // animation needed (and therefore Reduce Motion is trivially respected).
-        // Falls through to the network layout when the data can't support it
-        // (e.g. the user picked Timeline before re-centring onto an undated doc).
+        // Same-date pileups collapse into expandable date clusters first
+        // (Session 162). Falls through to the network layout when the data
+        // can't support chronology.
         if layoutMode == .timeline && timelineEligible {
+            let clustered = Self.dateClusteredDisplay(
+                nodes: baseDisplayNodes,
+                edges: baseDisplayEdges,
+                dateValues: nodeDateValues,
+                canvasWidth: canvasSize.width,
+                expandedKeys: expandedDateClusterKeys
+            )
+            displayNodes = clustered.nodes
+            displayEdges = clustered.edges
+            let layoutDates = nodeDateValues.merging(clustered.clusterDateValues) { base, _ in base }
             let result = Self.timelineLayout(
                 nodes: displayNodes,
-                dateValues: nodeDateValues,
+                dateValues: layoutDates,
                 centralKey: centralKey,
                 canvasSize: canvasSize
             )
@@ -894,6 +991,8 @@ final class CrossReferenceGraphViewModel {
             timelineHasParkedNodes = result.hasParkedNodes
             return
         }
+        displayNodes = baseDisplayNodes
+        displayEdges = baseDisplayEdges
         timelineTicks = []
         timelineHasParkedNodes = false
 
@@ -1107,6 +1206,145 @@ final class CrossReferenceGraphViewModel {
             ? Int(parts[2].prefix(2)).flatMap { (1...31).contains($0) ? $0 : nil } ?? 1
             : 1
         return calendar.date(from: comps)
+    }
+
+    // MARK: - Date clustering (static for testability)
+
+    /// Collapses same-date pileups into expandable `.dateCluster` nodes for the
+    /// timeline layout (Session 162).
+    ///
+    /// Dated, non-central document nodes are swept in date order; nodes whose x
+    /// positions (under the timeline's standard margins) fall within a 52 pt
+    /// window form a group, and groups of four or more collapse into one cluster
+    /// node labelled with the group's period ("Jun 1967"). Edges touching hidden
+    /// members are rerouted to the cluster and re-aggregated so identifiers stay
+    /// unique; edges between two members of the same cluster disappear.
+    /// Clusters listed in `expandedKeys` stay expanded (their members render
+    /// individually). Output is deterministic for a given input.
+    static func dateClusteredDisplay(
+        nodes: [DisplayNode],
+        edges: [DisplayEdge],
+        dateValues: [String: TimeInterval],
+        canvasWidth: CGFloat,
+        expandedKeys: Set<String>
+    ) -> (nodes: [DisplayNode], edges: [DisplayEdge], clusterDateValues: [String: TimeInterval]) {
+        let clusterThreshold = 4
+        let xWindow: CGFloat = 52
+        let padLeading: CGFloat = 56
+        let padTrailing: CGFloat = 96
+        let plotWidth = max(canvasWidth - padLeading - padTrailing, 1)
+
+        let candidates = nodes
+            .filter { !$0.isCentral && !$0.isCluster && dateValues[$0.id] != nil }
+            .sorted {
+                let a = dateValues[$0.id] ?? 0, b = dateValues[$1.id] ?? 0
+                return a == b ? $0.id < $1.id : a < b
+            }
+        guard candidates.count >= clusterThreshold,
+              let minT = candidates.compactMap({ dateValues[$0.id] }).min(),
+              let maxT = candidates.compactMap({ dateValues[$0.id] }).max(),
+              maxT > minT else {
+            return (nodes, edges, [:])
+        }
+
+        func xPosition(_ t: TimeInterval) -> CGFloat {
+            padLeading + CGFloat((t - minT) / (maxT - minT)) * plotWidth
+        }
+
+        // Sweep into x-window groups.
+        var groups: [[DisplayNode]] = []
+        var current: [DisplayNode] = []
+        var groupStartX: CGFloat = -.greatestFiniteMagnitude
+        for node in candidates {
+            let x = xPosition(dateValues[node.id] ?? 0)
+            if current.isEmpty || x - groupStartX <= xWindow {
+                if current.isEmpty { groupStartX = x }
+                current.append(node)
+            } else {
+                groups.append(current)
+                current = [node]
+                groupStartX = x
+            }
+        }
+        if !current.isEmpty { groups.append(current) }
+
+        // Period label formatter ("Jun 1967" for the group's mean date).
+        let calendar = Calendar(identifier: .gregorian)
+        let periodFormatter = DateFormatter()
+        periodFormatter.calendar = calendar
+        periodFormatter.setLocalizedDateFormatFromTemplate("MMM y")
+
+        var hiddenMemberToCluster: [String: String] = [:]
+        var clusterNodes: [DisplayNode] = []
+        var clusterDateValues: [String: TimeInterval] = [:]
+
+        for group in groups where group.count >= clusterThreshold {
+            let clusterKey = "datecluster/\(group[0].id)"
+            guard !expandedKeys.contains(clusterKey) else { continue }
+            let memberKeys = group.map(\.id)
+            let meanDate = group.compactMap { dateValues[$0.id] }.reduce(0, +)
+                / Double(group.count)
+            let label = periodFormatter.string(
+                from: Date(timeIntervalSinceReferenceDate: meanDate))
+            clusterNodes.append(DisplayNode(
+                id: clusterKey,
+                kind: .dateCluster(label: label, count: group.count, memberKeys: memberKeys),
+                metadata: nil,
+                isDownloaded: group.allSatisfy(\.isDownloaded),
+                degree: 1
+            ))
+            clusterDateValues[clusterKey] = meanDate
+            for key in memberKeys { hiddenMemberToCluster[key] = clusterKey }
+        }
+        guard !clusterNodes.isEmpty else { return (nodes, edges, [:]) }
+
+        // Visible nodes: everything not hidden, plus the cluster placeholders.
+        let visibleNodes = nodes.filter { hiddenMemberToCluster[$0.id] == nil } + clusterNodes
+
+        // Reroute edges to cluster endpoints, drop intra-cluster edges, and
+        // re-aggregate per (source, target) pair so `DisplayEdge.id` stays unique.
+        struct PairAccumulator {
+            var referenceType: ReferenceType
+            var contexts: [String] = []
+            var referenceCount = 0
+            var degree = Int.max
+        }
+        var pairs: [String: PairAccumulator] = [:]
+        var pairOrder: [String] = []
+        for edge in edges {
+            let source = hiddenMemberToCluster[edge.source] ?? edge.source
+            let target = hiddenMemberToCluster[edge.target] ?? edge.target
+            guard source != target else { continue }
+            let pairKey = "\(source)->\(target)"
+            var accumulator: PairAccumulator
+            if let existing = pairs[pairKey] {
+                accumulator = existing
+            } else {
+                accumulator = PairAccumulator(referenceType: edge.referenceType)
+                pairOrder.append(pairKey)
+            }
+            accumulator.contexts.append(contentsOf: edge.contexts)
+            accumulator.referenceCount += edge.referenceCount
+            accumulator.degree = min(accumulator.degree, edge.degree)
+            if edge.referenceType != .editorialNote {
+                accumulator.referenceType = .footnote
+            }
+            pairs[pairKey] = accumulator
+        }
+        let visibleEdges: [DisplayEdge] = pairOrder.compactMap { pairKey in
+            guard let acc = pairs[pairKey] else { return nil }
+            let parts = pairKey.components(separatedBy: "->")
+            guard parts.count == 2 else { return nil }
+            return DisplayEdge(
+                source: parts[0], target: parts[1],
+                referenceType: acc.referenceType,
+                contexts: acc.contexts,
+                referenceCount: acc.referenceCount,
+                degree: acc.degree == Int.max ? 1 : acc.degree
+            )
+        }
+
+        return (visibleNodes, visibleEdges, clusterDateValues)
     }
 
     // MARK: - Timeline layout (nonisolated static for testability)
