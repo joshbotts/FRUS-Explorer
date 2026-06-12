@@ -1103,13 +1103,9 @@ private struct StorageManagementView: View {
     /// Tracks an individual interrupted-volume re-index; `"all"` when doing the bulk sweep.
     @State private var reindexingInterruptedId: String? = nil
 
-    // MARK: Diagnostics state (Session 154)
+    // MARK: Diagnostics state (Session 154; integrity check moved into
+    // IndexHealthView in Session 162)
 
-    /// `true` while `checkIndexIntegrity()` is running.
-    @State private var integrityCheckRunning = false
-    /// Result of the most recent integrity check: `nil` before the first run,
-    /// empty when no problems were found, or one description per problem.
-    @State private var integrityCheckResult: [String]? = nil
     /// `true` while `rebuildSpotlightIndex()` is running.
     @State private var spotlightRebuildRunning = false
     /// `true` once a Spotlight rebuild has completed successfully.
@@ -1326,53 +1322,16 @@ private struct StorageManagementView: View {
             }
 
             Section {
-                Button {
-                    Task { await runIndexIntegrityCheck() }
-                } label: {
-                    if integrityCheckRunning {
-                        HStack {
-                            ProgressView().padding(.trailing, 4)
-                            Text(String(localized: "settings.storage.integrity.running",
-                                        defaultValue: "Checking…")).font(.callout)
-                        }
-                    } else {
-                        Label(
-                            String(localized: "settings.storage.integrity.button",
-                                   defaultValue: "Check Index Integrity"),
-                            systemImage: "stethoscope"
-                        )
-                    }
-                }
-                .disabled(isAnythingIndexing || integrityCheckRunning || appState.indexingPipeline == nil)
-                .accessibilityLabel(
-                    String(localized: "settings.storage.integrity.a11y",
-                           defaultValue: "Check the search index for corruption")
-                )
+                IndexHealthView(actionsDisabled: isAnythingIndexing)
+            } header: {
+                Text(String(localized: "settings.storage.indexHealth.header",
+                            defaultValue: "Index Health"))
+            } footer: {
+                Text(String(localized: "settings.storage.indexHealth.footer",
+                            defaultValue: "The index updates itself automatically when a new version of the app improves indexing. Check Integrity runs the full corruption diagnostic on demand."))
+            }
 
-                if let result = integrityCheckResult {
-                    if result.isEmpty {
-                        Label(
-                            String(localized: "settings.storage.integrity.ok",
-                                   defaultValue: "No problems found"),
-                            systemImage: "checkmark.circle"
-                        )
-                        .foregroundStyle(.green)
-                        .font(.callout)
-                    } else {
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(result, id: \.self) { problem in
-                                Label(problem, systemImage: "exclamationmark.triangle")
-                                    .foregroundStyle(.red)
-                                    .font(.callout)
-                            }
-                            Text(String(localized: "settings.storage.integrity.suggestion",
-                                        defaultValue: "Try \"Delete Index & Rebuild\" above to fix these problems."))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
+            Section {
                 Button {
                     Task { await runRebuildSpotlightIndex() }
                 } label: {
@@ -1800,26 +1759,7 @@ private struct StorageManagementView: View {
         }
     }
 
-    // MARK: - Diagnostics (Session 154)
-
-    /// Runs `IndexingPipeline.checkIndexIntegrity()` and stores the result for display.
-    ///
-    /// An empty result renders as a green "No problems found" row; a non-empty
-    /// result lists each problem with a suggestion to run "Delete Index & Rebuild".
-    private func runIndexIntegrityCheck() async {
-        guard let pipeline = appState.indexingPipeline else { return }
-        integrityCheckRunning = true
-        integrityCheckResult = nil
-        do {
-            integrityCheckResult = try await pipeline.checkIndexIntegrity()
-        } catch {
-            integrityCheckResult = [error.localizedDescription]
-            #if DEBUG
-            print("[Settings] checkIndexIntegrity failed: \(error)")
-            #endif
-        }
-        integrityCheckRunning = false
-    }
+    // MARK: - Diagnostics (Session 154; integrity check moved into IndexHealthView)
 
     /// Runs `IndexingPipeline.rebuildSpotlightIndex()`, clearing and re-submitting
     /// the system Spotlight index from `document_cache` without re-parsing XML.

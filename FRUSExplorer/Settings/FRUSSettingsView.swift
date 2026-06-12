@@ -1014,13 +1014,9 @@ private struct SettingsStoragePane: View {
     /// Controls the Manage Storage sheet.
     @State private var showManageStorageSheet = false
 
-    // MARK: Diagnostics state (Session 154)
+    // MARK: Diagnostics state (Session 154; integrity check moved into
+    // IndexHealthView in Session 162)
 
-    /// `true` while `checkIndexIntegrity()` is running.
-    @State private var integrityCheckRunning = false
-    /// Result of the most recent integrity check: `nil` before the first run,
-    /// empty when no problems were found, or one description per problem.
-    @State private var integrityCheckResult: [String]? = nil
     /// `true` while `rebuildSpotlightIndex()` is running.
     @State private var spotlightRebuildRunning = false
     /// `true` once a Spotlight rebuild has completed successfully.
@@ -1395,25 +1391,11 @@ private struct SettingsStoragePane: View {
     @ViewBuilder
     private var diagnosticsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Button {
-                    Task { await runIndexIntegrityCheck() }
-                } label: {
-                    if integrityCheckRunning {
-                        HStack(spacing: 4) {
-                            ProgressView().controlSize(.small)
-                            Text("Checking…")
-                        }
-                        .font(.system(size: 12))
-                    } else {
-                        Label("Check Index Integrity", systemImage: "stethoscope")
-                            .font(.system(size: 12))
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(settingsBatch != nil || integrityCheckRunning || appState.indexingPipeline == nil)
-                .help("Run a SQLite and FTS5 integrity check on the search index.")
+            // Index Health (Session 162): status + format version + the manual
+            // integrity check, shared with the iOS Storage pane.
+            IndexHealthView(actionsDisabled: settingsBatch != nil)
 
+            HStack(spacing: 8) {
                 Button {
                     Task { await runRebuildSpotlightIndex() }
                 } label: {
@@ -1433,25 +1415,6 @@ private struct SettingsStoragePane: View {
                 .help("Clear and re-submit the system Spotlight index from cached document text, without re-parsing volume XML.")
             }
 
-            if let result = integrityCheckResult {
-                if result.isEmpty {
-                    Label("No problems found", systemImage: "checkmark.circle")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.green)
-                } else {
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(result, id: \.self) { problem in
-                            Label(problem, systemImage: "exclamationmark.triangle")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.red)
-                        }
-                        Text("Try \"Delete Index & Rebuild\" above to fix these problems.")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
             if spotlightRebuildSucceeded {
                 Label("Spotlight index rebuilt", systemImage: "checkmark.circle")
                     .font(.system(size: 11))
@@ -1464,19 +1427,6 @@ private struct SettingsStoragePane: View {
             }
         }
         .padding(.bottom, 4)
-    }
-
-    /// Runs `IndexingPipeline.checkIndexIntegrity()` and stores the result for display.
-    private func runIndexIntegrityCheck() async {
-        guard let pipeline = appState.indexingPipeline else { return }
-        integrityCheckRunning = true
-        integrityCheckResult = nil
-        do {
-            integrityCheckResult = try await pipeline.checkIndexIntegrity()
-        } catch {
-            integrityCheckResult = [error.localizedDescription]
-        }
-        integrityCheckRunning = false
     }
 
     /// Runs `IndexingPipeline.rebuildSpotlightIndex()`, clearing and re-submitting
