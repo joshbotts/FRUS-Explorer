@@ -219,6 +219,12 @@ struct CrossReferenceGraphView: View {
                 }
             }
 
+            // Compact legend pinned to the bottom-leading corner.
+            legendOverlay
+                .padding(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity,
+                       alignment: .bottomLeading)
+
             // Info / edge-context panel floats above the canvas at a fixed location.
             infoPanel
                 .padding()
@@ -310,6 +316,10 @@ struct CrossReferenceGraphView: View {
 
     private var graphCanvas: some View {
         Canvas { context, size in
+            // Radii lookup so edges can stop their arrowheads at the target rim.
+            let radii = Dictionary(uniqueKeysWithValues: vm.displayNodes.map {
+                ($0.id, vm.nodeRadius(for: $0))
+            })
             // Draw edges first (below nodes). Context snippets are no longer drawn inline;
             // they appear in the info panel when the user hovers over or taps an edge midpoint.
             for edge in vm.displayEdges {
@@ -319,7 +329,9 @@ struct CrossReferenceGraphView: View {
                 drawEdge(&context, from: from, to: to,
                          referenceType: edge.referenceType,
                          degree: edge.degree,
-                         isSelected: isSelected)
+                         isSelected: isSelected,
+                         referenceCount: edge.referenceCount,
+                         targetRadius: radii[edge.target] ?? 18)
             }
             // Draw nodes on top
             for node in vm.displayNodes {
@@ -520,6 +532,58 @@ struct CrossReferenceGraphView: View {
         }
     }
 
+    // MARK: - Legend
+
+    /// Compact always-visible legend decoding node colour, the arrow convention,
+    /// and node size — knowledge that previously lived only behind the info button.
+    private var legendOverlay: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            legendRow(color: .blue, text: String(
+                localized: "graph.legend.inbound",
+                defaultValue: "Cites this document"))
+            legendRow(color: .orange, text: String(
+                localized: "graph.legend.outbound",
+                defaultValue: "Cited by this document"))
+            if vm.graphDegree > 1 {
+                legendRow(color: .secondary.opacity(0.5), text: String(
+                    localized: "graph.legend.extended",
+                    defaultValue: "Further hops"))
+            }
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 8)
+                Text(String(localized: "graph.legend.arrow",
+                            defaultValue: "Arrow points to the cited document"))
+            }
+            HStack(spacing: 5) {
+                Circle()
+                    .strokeBorder(Color.secondary, style: StrokeStyle(lineWidth: 1, dash: [2, 1.5]))
+                    .frame(width: 8, height: 8)
+                Text(String(localized: "graph.legend.size",
+                            defaultValue: "Size = connection count"))
+            }
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .padding(8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(localized: "graph.legend.a11y",
+                                   defaultValue: "Graph legend"))
+    }
+
+    /// One colour-swatch row of the legend.
+    private func legendRow(color: Color, text: String) -> some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color.opacity(0.45))
+                .frame(width: 8, height: 8)
+            Text(text)
+        }
+    }
+
     // MARK: - Info Panel
 
     /// Unified info panel: shows node details when a node is active, or edge
@@ -555,6 +619,16 @@ struct CrossReferenceGraphView: View {
                         .lineLimit(1)
                 }
                 .foregroundStyle(.secondary)
+
+                if edge.referenceCount > 1 {
+                    Text(String(
+                        format: String(localized: "graph.edge.refCount %lld",
+                                       defaultValue: "%lld separate references"),
+                        Int64(edge.referenceCount)
+                    ))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                }
 
                 Divider()
 
@@ -599,6 +673,16 @@ struct CrossReferenceGraphView: View {
                     Text(volId)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
+                }
+
+                // On-device summary, when the user has generated one — lets each
+                // node visit answer "is this document worth opening?" in place.
+                if let summary = node.metadata?.summary,
+                   !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(4)
                 }
 
                 // Context passage — shown only when the edge carries footnote text.
@@ -856,13 +940,13 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.what.title",
                               defaultValue: "What the graph shows"),
                 body:  String(localized: "graph.info.what.body",
-                              defaultValue: "Each node is a FRUS document. Blue nodes reference the central document (inbound); green nodes are referenced by the central document (outbound). Grey nodes are 2nd- or 3rd-degree neighbours.")
+                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document; orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus, and each arrow points at the document being cited.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.edges.title",
                               defaultValue: "Edge context"),
                 body:  String(localized: "graph.info.edges.body",
-                              defaultValue: "Many edges carry the original footnote or editorial-note text where the reference appeared. Hover over (or tap) a line between nodes to read that text.")
+                              defaultValue: "Many edges carry the original footnote or editorial-note text where the reference appeared — hover over (or tap) the middle of a line to read it. Thicker lines mean the pair is linked by several separate references.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
@@ -880,7 +964,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.undownloaded.title",
                               defaultValue: "Undownloaded volumes"),
                 body:  String(localized: "graph.info.undownloaded.body",
-                              defaultValue: "References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with an orange border and no title or date, and cannot be opened until the volume is downloaded.\n\nReferences from volumes you haven't indexed yet are not shown at all, because those volumes have never been parsed. An orange banner at the top of the graph appears when your inbound connections may be incomplete for this reason. Download and index additional volumes to fill in the missing edges.")
+                              defaultValue: "References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with a dashed border and a struck-through cloud icon; select one to download its volume directly from the info panel.\n\nReferences from volumes you haven't indexed yet are not shown at all, because those volumes have never been parsed. An orange banner at the top of the graph appears when your inbound connections may be incomplete for this reason. Download and index additional volumes to fill in the missing edges.")
             )
         }
         .padding(16)
@@ -982,18 +1066,36 @@ struct CrossReferenceGraphView: View {
 
     // MARK: - Canvas Drawing Helpers
 
-    /// Draws a single directed edge as an S-curve Bézier.
+    /// Point on a cubic Bézier at parameter `t`.
+    private func cubicPoint(
+        _ t: CGFloat, _ p0: CGPoint, _ p1: CGPoint, _ p2: CGPoint, _ p3: CGPoint
+    ) -> CGPoint {
+        let mt = 1 - t
+        let a = mt * mt * mt, b = 3 * mt * mt * t, c = 3 * mt * t * t, d = t * t * t
+        return CGPoint(
+            x: a * p0.x + b * p1.x + c * p2.x + d * p3.x,
+            y: a * p0.y + b * p1.y + c * p2.y + d * p3.y
+        )
+    }
+
+    /// Draws a single directed edge as an S-curve Bézier with an arrowhead at the
+    /// target node's rim.
     ///
-    /// When `isSelected` is `true` (the edge's midpoint hit area is being hovered or
-    /// was tapped), the stroke is drawn slightly brighter to provide visual feedback.
-    /// Context text is no longer drawn inline; it appears in the info panel instead.
+    /// - Thickness encodes `referenceCount` — an edge aggregating three footnote
+    ///   references draws heavier than a single reference.
+    /// - The arrowhead always points at the *cited* document, making direction
+    ///   readable without relying on node colour alone.
+    /// - When `isSelected` is `true` (the edge's midpoint hit area is hovered or
+    ///   pinned), the stroke is drawn brighter for feedback.
     private func drawEdge(
         _ ctx: inout GraphicsContext,
         from: CGPoint,
         to: CGPoint,
         referenceType: ReferenceType,
         degree: Int,
-        isSelected: Bool
+        isSelected: Bool,
+        referenceCount: Int,
+        targetRadius: CGFloat
     ) {
         let cp1 = CGPoint(x: from.x + (to.x - from.x) * 0.5, y: from.y)
         let cp2 = CGPoint(x: to.x   - (to.x - from.x) * 0.5, y: to.y)
@@ -1002,18 +1104,40 @@ struct CrossReferenceGraphView: View {
         path.addCurve(to: to, control1: cp1, control2: cp2)
 
         let isExtended = degree > 1
-        let lineWidth: CGFloat = isSelected ? 2.5 : (isExtended ? 1.0 : 1.5)
+        let baseWidth: CGFloat = isSelected ? 2.5 : (isExtended ? 1.0 : 1.5)
+        let lineWidth = baseWidth + min(CGFloat(referenceCount - 1) * 0.5, 2.0)
         let color: Color
         if isSelected {
             color = .accentColor.opacity(0.7)
         } else if isExtended {
-            color = .secondary.opacity(0.2)
+            color = .secondary.opacity(0.25)
         } else if referenceType == .editorialNote {
             color = .accentColor.opacity(0.4)
         } else {
-            color = .secondary.opacity(0.35)
+            color = .secondary.opacity(0.4)
         }
         ctx.stroke(path, with: .color(color), lineWidth: lineWidth)
+
+        // Arrowhead: walk back along the curve from the target until just outside
+        // its rim, then draw a chevron oriented along the local tangent.
+        guard hypot(to.x - from.x, to.y - from.y) > targetRadius * 2 else { return }
+        var tHit: CGFloat = 1.0
+        while tHit > 0.5 {
+            let p = cubicPoint(tHit, from, cp1, cp2, to)
+            if hypot(p.x - to.x, p.y - to.y) >= targetRadius + 2 { break }
+            tHit -= 0.02
+        }
+        let tip  = cubicPoint(tHit, from, cp1, cp2, to)
+        let back = cubicPoint(max(tHit - 0.05, 0), from, cp1, cp2, to)
+        let angle = atan2(tip.y - back.y, tip.x - back.x)
+        let arm: CGFloat = 5 + lineWidth
+        var head = Path()
+        head.move(to: CGPoint(x: tip.x - arm * cos(angle - 0.5),
+                              y: tip.y - arm * sin(angle - 0.5)))
+        head.addLine(to: tip)
+        head.addLine(to: CGPoint(x: tip.x - arm * cos(angle + 0.5),
+                                 y: tip.y - arm * sin(angle + 0.5)))
+        ctx.stroke(head, with: .color(color), lineWidth: max(lineWidth, 1.5))
     }
 
     private func drawNode(
@@ -1022,44 +1146,55 @@ struct CrossReferenceGraphView: View {
         at pos: CGPoint,
         isSelected: Bool
     ) {
-        let r: CGFloat
-        switch node.kind {
-        case .central:                     r = 24
-        case .inbound, .outbound:          r = 18
-        case .extended:                    r = 14
-        case .clusterInbound, .clusterOutbound: r = 18
-        }
+        let r = vm.nodeRadius(for: node)
         let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
 
-        // Background circle
+        // Background circle. Outbound nodes are orange (not green) so the
+        // inbound/outbound distinction survives red-green colour blindness;
+        // edge arrowheads carry direction redundantly.
         let fillColor: Color
         switch node.kind {
         case .central:                     fillColor = .accentColor
         case .inbound:                     fillColor = isSelected ? .blue.opacity(0.7) : .blue.opacity(0.3)
-        case .outbound:                    fillColor = isSelected ? .green.opacity(0.7) : .green.opacity(0.3)
+        case .outbound:                    fillColor = isSelected ? .orange.opacity(0.7) : .orange.opacity(0.3)
         case .extended:                    fillColor = isSelected ? .secondary.opacity(0.5) : .secondary.opacity(0.2)
         case .clusterInbound:              fillColor = isSelected ? .blue.opacity(0.5) : .blue.opacity(0.2)
-        case .clusterOutbound:             fillColor = isSelected ? .green.opacity(0.5) : .green.opacity(0.2)
+        case .clusterOutbound:             fillColor = isSelected ? .orange.opacity(0.5) : .orange.opacity(0.2)
         }
         ctx.fill(Path(ellipseIn: rect), with: .color(fillColor))
 
-        // Border ring for selected / undownloaded
-        if isSelected || !node.isDownloaded {
-            let borderColor: Color = !node.isDownloaded ? .orange : .white
+        // Border ring: solid white when selected; dashed grey when the node's
+        // volume is not downloaded (dashed = "outline only", reinforced by the
+        // icloud.slash icon below — colour is not the only carrier).
+        if isSelected {
             ctx.stroke(
                 Path(ellipseIn: rect.insetBy(dx: -1.5, dy: -1.5)),
-                with: .color(borderColor),
+                with: .color(.white),
                 lineWidth: 2
+            )
+        } else if !node.isDownloaded {
+            ctx.stroke(
+                Path(ellipseIn: rect.insetBy(dx: -1.5, dy: -1.5)),
+                with: .color(.secondary.opacity(0.8)),
+                style: StrokeStyle(lineWidth: 1.5, dash: [3, 2.5])
             )
         }
 
         // SF Symbol icon
-        let symbolName = node.isCluster ? "folder" : "doc.text"
+        let symbolName: String
+        if node.isCluster {
+            symbolName = "folder"
+        } else if !node.isDownloaded {
+            symbolName = "icloud.slash"
+        } else {
+            symbolName = "doc.text"
+        }
         let symbolRect = rect.insetBy(dx: r * 0.3, dy: r * 0.3)
         let image = Image(systemName: symbolName)
         ctx.draw(image, in: symbolRect)
 
-        // Node label — document number or truncated header drawn below the circle.
+        // Node label — document number or truncated header drawn below the circle,
+        // with the document date (when known) on a second line.
         let labelText: String
         switch node.kind {
         case .clusterInbound(_, let count):
@@ -1091,16 +1226,27 @@ struct CrossReferenceGraphView: View {
             }
         }
 
+        let isExtendedNode: Bool
+        if case .extended = node.kind { isExtendedNode = true } else { isExtendedNode = false }
+        let primaryStyle: AnyShapeStyle = isExtendedNode
+            ? AnyShapeStyle(Color.secondary.opacity(0.6))
+            : AnyShapeStyle(Color.primary.opacity(0.75))
+        let fontSize: CGFloat = node.isCentral ? 10 : 8
+        var labelY = pos.y + r + 4
+
         if !labelText.isEmpty {
-            let isExtendedNode: Bool
-            if case .extended = node.kind { isExtendedNode = true } else { isExtendedNode = false }
-            let labelStyle: AnyShapeStyle = isExtendedNode
-                ? AnyShapeStyle(Color.secondary.opacity(0.6))
-                : AnyShapeStyle(Color.primary.opacity(0.75))
             let label = Text(verbatim: labelText)
-                .font(.system(size: node.isCentral ? 10 : 8))
-                .foregroundStyle(labelStyle)
-            ctx.draw(label, at: CGPoint(x: pos.x, y: pos.y + r + 4), anchor: .top)
+                .font(.system(size: fontSize))
+                .foregroundStyle(primaryStyle)
+            ctx.draw(label, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
+            labelY += fontSize + 3
+        }
+
+        if let dateText = vm.nodeDateLabels[node.id] {
+            let dateLabel = Text(verbatim: dateText)
+                .font(.system(size: fontSize - 1))
+                .foregroundStyle(Color.secondary.opacity(isExtendedNode ? 0.6 : 0.9))
+            ctx.draw(dateLabel, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
         }
     }
 }

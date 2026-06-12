@@ -239,6 +239,16 @@ final class CrossReferenceGraphViewModel {
     var displayEdges: [DisplayEdge] = []
     var nodePositions: [String: CGPoint] = [:]
 
+    /// Total corpus-wide reference count per node key (inbound + outbound), loaded
+    /// after the graph itself so the layout appears immediately and node sizes
+    /// refine when the counts arrive. Drives `nodeRadius(for:)`.
+    private(set) var nodeConnectionCounts: [String: Int] = [:]
+
+    /// Pre-formatted short date label per node key ("Mar 4, 1962", "Mar 1962", or
+    /// "1962"), derived from `CrossReferenceNodeMetadata.dateISO` once per rebuild
+    /// so the Canvas draw loop never touches a `DateFormatter`.
+    private(set) var nodeDateLabels: [String: String] = [:]
+
     // MARK: - Interaction
 
     /// Key of the node the user has *pinned* by clicking (macOS) or tapping (iOS).
@@ -395,6 +405,30 @@ final class CrossReferenceGraphViewModel {
         #if DEBUG
         print("[CrossReferenceGraph] Loaded \(displayNodes.count) nodes, \(displayEdges.count) edges (degree=\(degree)) for \(centralKey)")
         #endif
+
+        // Connection counts arrive after the layout is already on screen; node
+        // radii refine in place when the dictionary updates.
+        if let graph {
+            let keys = graph.nodeMetadata.values.map {
+                (volumeId: $0.volumeId, documentId: $0.documentId)
+            }
+            nodeConnectionCounts = (try? await store.connectionCounts(forKeys: keys)) ?? [:]
+        }
+    }
+
+    // MARK: - Node sizing
+
+    /// Visual radius for a node. Central and cluster nodes have fixed sizes;
+    /// document nodes scale logarithmically with their corpus-wide connection
+    /// count so heavily referenced documents read as hubs at a glance.
+    func nodeRadius(for node: DisplayNode) -> CGFloat {
+        if node.isCentral { return 24 }
+        if node.isCluster { return 18 }
+        let count  = max(nodeConnectionCounts[node.id] ?? 1, 1)
+        let radius = 12.0 + 3.0 * log2(CGFloat(count) + 1)
+        let cap: CGFloat
+        if case .extended = node.kind { cap = 18 } else { cap = 22 }
+        return min(max(radius, 12), cap)
     }
 
     func onCanvasSizeChanged(_ size: CGSize, reduceMotion: Bool) {
@@ -467,6 +501,8 @@ final class CrossReferenceGraphViewModel {
         selectedEdgeKey     = nil
         hoveredNodeKey      = nil
         hoveredEdgeKey      = nil
+        nodeConnectionCounts = [:]
+        nodeDateLabels      = [:]
         expandedClusterKeys = []
         layoutTask?.cancel()
         isAnimatingLayout   = false
@@ -614,7 +650,7 @@ final class CrossReferenceGraphViewModel {
     func nodeAt(point: CGPoint) -> String? {
         for node in displayNodes {
             guard let pos = nodePositions[node.id] else { continue }
-            let r: CGFloat = node.isCentral ? 24 : 18
+            let r = nodeRadius(for: node)
             let dx = pos.x - point.x, dy = pos.y - point.y
             if sqrt(dx * dx + dy * dy) <= r + 4 { return node.id }
         }
@@ -625,7 +661,9 @@ final class CrossReferenceGraphViewModel {
 
     func rebuildDisplay() {
         guard let graph else {
-            displayNodes = []; displayEdges = []; nodePositions = [:]; return
+            displayNodes = []; displayEdges = []; nodePositions = [:]
+            nodeDateLabels = [:]
+            return
         }
         let (nodes, edges) = Self.buildDisplayNodesAndEdges(
             graph: graph,
@@ -635,10 +673,50 @@ final class CrossReferenceGraphViewModel {
         )
         displayNodes = nodes
         displayEdges = edges
+        nodeDateLabels = Self.buildDateLabels(for: nodes)
 
         if canvasSize.width > 0 && canvasSize.height > 0 {
             rerunLayout(reduceMotion: true)
         }
+    }
+
+    // MARK: - Date labels
+
+    /// Formats each node's `dateISO` into a short localized label, handling full
+    /// dates, year-month, and year-only values. Runs once per rebuild.
+    static func buildDateLabels(for nodes: [DisplayNode]) -> [String: String] {
+        let calendar = Calendar(identifier: .gregorian)
+        let dayFormatter = DateFormatter()
+        dayFormatter.calendar = calendar
+        dayFormatter.setLocalizedDateFormatFromTemplate("MMM d y")
+        let monthFormatter = DateFormatter()
+        monthFormatter.calendar = calendar
+        monthFormatter.setLocalizedDateFormatFromTemplate("MMM y")
+
+        var labels: [String: String] = [:]
+        for node in nodes {
+            guard let iso = node.metadata?.dateISO, !iso.isEmpty else { continue }
+            let parts = iso.split(separator: "-").map(String.init)
+            guard let yearText = parts.first, let year = Int(yearText) else { continue }
+            var comps = DateComponents()
+            comps.year = year
+            if parts.count >= 2, let month = Int(parts[1]), (1...12).contains(month) {
+                comps.month = month
+            }
+            if parts.count >= 3, let day = Int(parts[2].prefix(2)), (1...31).contains(day) {
+                comps.day = day
+            }
+            if comps.month == nil {
+                labels[node.id] = yearText
+            } else if let date = calendar.date(from: comps) {
+                labels[node.id] = comps.day != nil
+                    ? dayFormatter.string(from: date)
+                    : monthFormatter.string(from: date)
+            } else {
+                labels[node.id] = yearText
+            }
+        }
+        return labels
     }
 
     // MARK: - Private layout

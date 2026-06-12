@@ -59,17 +59,26 @@ public struct CrossReferenceEdge: Sendable {
 
 /// Display-ready metadata for a single node (document) in the cross-reference graph.
 ///
-/// Loaded from `document_cache` when building a `CrossReferenceGraph`. Fields may be
-/// nil for documents whose volumes have not been downloaded and indexed.
+/// Loaded from `document_cache` (joined with `document_dates`) when building a
+/// `CrossReferenceGraph`. Fields may be nil for documents whose volumes have not
+/// been downloaded and indexed.
 ///
 /// Version history:
 ///   1.0 — Session 17: initial implementation
+///   1.1 — Session 161: `dateISO` (timeline layout, node date labels) and `summary`
+///          (on-device summary surfaced in the node info panel)
 public struct CrossReferenceNodeMetadata: Sendable {
     public let documentId: String
     public let volumeId: String
     public let documentNumber: String?
     public let header: String?
     public let dateline: String?
+    /// ISO-8601 document date from `document_dates.date_iso` (`yyyy-MM-dd`, possibly
+    /// truncated to `yyyy-MM` or `yyyy`). `nil` for unindexed or undated documents.
+    public let dateISO: String?
+    /// On-device generated summary from `document_cache.summary_text`, if the user
+    /// has summarized this document. `nil` otherwise.
+    public let summary: String?
 
     /// Stable dictionary key: `"volumeId/documentId"`.
     public var nodeKey: String { "\(volumeId)/\(documentId)" }
@@ -79,13 +88,17 @@ public struct CrossReferenceNodeMetadata: Sendable {
         volumeId: String,
         documentNumber: String?,
         header: String?,
-        dateline: String?
+        dateline: String?,
+        dateISO: String? = nil,
+        summary: String? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
         self.documentNumber = documentNumber
         self.header = header
         self.dateline = dateline
+        self.dateISO = dateISO
+        self.summary = summary
     }
 }
 
