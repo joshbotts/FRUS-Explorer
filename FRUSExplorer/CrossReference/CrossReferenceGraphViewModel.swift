@@ -375,24 +375,28 @@ final class CrossReferenceGraphViewModel {
 
     /// The edge key the info panel and canvas highlighting should treat as active.
     ///
-    /// Hover always wins over pinned state (it is the more recent, more local
-    /// signal); a hovered *node* suppresses any pinned edge so only one element is
-    /// highlighted at a time. When nothing is hovered, the pinned edge (if any)
-    /// is active.
+    /// **Pinned state always wins over hover.** Live testing (Session 162) showed
+    /// the opposite priority made the UI feel dead: a hover that never received
+    /// its exit event — synthetic pointer moves, or the pointer parking on a hit
+    /// area — masked every subsequent click. Hover is a preview that only applies
+    /// when nothing is pinned; clicks additionally clear hover state at the call
+    /// sites so a stale hover can never linger past an explicit action.
     var resolvedEdgeKey: String? {
+        if selectedEdgeKey != nil { return selectedEdgeKey }
+        if selectedNodeKey != nil { return nil }
         if let hovered = hoveredEdgeKey { return hovered }
-        if hoveredNodeKey != nil { return nil }
-        return selectedEdgeKey
+        return nil
     }
 
     /// The node key the info panel and canvas highlighting should treat as active.
-    /// Mirror of `resolvedEdgeKey`: hover wins, then pinned state, and an active
-    /// edge suppresses the node so the two are mutually exclusive.
+    /// Mirror of `resolvedEdgeKey`: pinned wins, hover previews only when nothing
+    /// is pinned, and an active edge suppresses the node so the two are mutually
+    /// exclusive.
     var resolvedNodeKey: String? {
-        if hoveredEdgeKey != nil { return nil }
-        if let hovered = hoveredNodeKey { return hovered }
         if selectedEdgeKey != nil { return nil }
-        return selectedNodeKey
+        if let pinned = selectedNodeKey { return pinned }
+        if hoveredEdgeKey != nil { return nil }
+        return hoveredNodeKey
     }
 
     // MARK: - Cluster

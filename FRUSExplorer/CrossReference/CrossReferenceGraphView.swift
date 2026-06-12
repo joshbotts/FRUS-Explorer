@@ -240,7 +240,7 @@ struct CrossReferenceGraphView: View {
             if compactContentMode == .list {
                 ReferenceListPanel(vm: vm, openDocument: openDocument)
             } else {
-                graphContentArea
+                graphWithLegend
             }
         } else {
             regularContentArea
@@ -250,10 +250,19 @@ struct CrossReferenceGraphView: View {
         #endif
     }
 
+    /// Canvas with the legend strip docked beneath it (outside the canvas, so it
+    /// can never obscure nodes).
+    private var graphWithLegend: some View {
+        VStack(spacing: 0) {
+            graphContentArea
+            legendFooter
+        }
+    }
+
     /// Canvas with the optional reference-list side panel (regular widths).
     private var regularContentArea: some View {
         HStack(spacing: 0) {
-            graphContentArea
+            graphWithLegend
             if showReferenceList {
                 Divider()
                 ReferenceListPanel(vm: vm, openDocument: openDocument)
@@ -305,15 +314,14 @@ struct CrossReferenceGraphView: View {
                 #endif
             }
 
-            // Compact legend pinned to the bottom-leading corner.
-            legendOverlay
-                .padding(10)
-                .frame(maxWidth: .infinity, maxHeight: .infinity,
-                       alignment: .bottomLeading)
-
-            // Info / edge-context panel floats above the canvas at a fixed location.
+            // Info / edge-context panel floats above the canvas, anchored to the
+            // bottom-trailing corner — the least node-dense region in both layout
+            // modes (top-leading collided with the timeline's early-date lanes;
+            // Session 162 live-testing feedback).
             infoPanel
                 .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity,
+                       alignment: .bottomTrailing)
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
                     value: vm.resolvedNodeKey
@@ -405,36 +413,122 @@ struct CrossReferenceGraphView: View {
         }
     }
 
+    // MARK: - Render Snapshot
+
+    /// Immutable copy of everything the canvas draws, captured during body
+    /// evaluation.
+    ///
+    /// Reads inside a `Canvas` rendering closure are **not** tracked by
+    /// Observation — the closure runs at render time, outside body — so a canvas
+    /// that reads the view model directly never invalidates when hover or
+    /// selection change. That was the "hovering and clicking does nothing" bug
+    /// found in live testing (Session 162): every interaction mutated the view
+    /// model, but nothing re-rendered until an unrelated change forced it.
+    /// Building this snapshot in body registers all the dependencies and hands
+    /// the renderer stable value types.
+    private struct GraphRenderSnapshot {
+        let nodes: [DisplayNode]
+        let edges: [DisplayEdge]
+        let positions: [String: CGPoint]
+        let radii: [String: CGFloat]
+        let dateLabels: [String: String]
+        let resolvedNodeKey: String?
+        let resolvedEdgeKey: String?
+        let isTimeline: Bool
+        let ticks: [TimelineTick]
+        let axisY: CGFloat
+        let hasParkedNodes: Bool
+        /// Below this node count every node gets its text labels; above it only
+        /// the central, focused, and cluster nodes do (dense-graph thinning).
+        let showAllLabels: Bool
+        /// When the user has a node or edge active: that element's key set plus
+        /// every adjacent node. Everything outside the set draws dimmed so the
+        /// active neighbourhood pops out of a dense graph. `nil` = no focus.
+        let focusKeys: Set<String>?
+
+        /// `true` when `key` should draw at full strength.
+        func isFocused(_ key: String) -> Bool {
+            focusKeys?.contains(key) ?? true
+        }
+    }
+
+    /// Captures the render snapshot. Every `vm` read here is intentional: it
+    /// registers the Observation dependency that keeps the canvas live.
+    private func makeRenderSnapshot() -> GraphRenderSnapshot {
+        let resolvedNode = vm.resolvedNodeKey
+        let resolvedEdge = vm.resolvedEdgeKey
+
+        var focusKeys: Set<String>? = nil
+        if let key = resolvedNode {
+            var keys: Set<String> = [key]
+            for edge in vm.displayEdges where edge.source == key || edge.target == key {
+                keys.insert(edge.source)
+                keys.insert(edge.target)
+            }
+            focusKeys = keys
+        } else if let edgeKey = resolvedEdge,
+                  let edge = vm.displayEdges.first(where: { $0.id == edgeKey }) {
+            focusKeys = [edge.source, edge.target]
+        }
+
+        return GraphRenderSnapshot(
+            nodes: vm.displayNodes,
+            edges: vm.displayEdges,
+            positions: vm.nodePositions,
+            radii: Dictionary(uniqueKeysWithValues: vm.displayNodes.map {
+                ($0.id, vm.nodeRadius(for: $0))
+            }),
+            dateLabels: vm.nodeDateLabels,
+            resolvedNodeKey: resolvedNode,
+            resolvedEdgeKey: resolvedEdge,
+            isTimeline: vm.layoutMode == .timeline && !vm.timelineTicks.isEmpty,
+            ticks: vm.timelineTicks,
+            axisY: vm.timelineAxisY,
+            hasParkedNodes: vm.timelineHasParkedNodes,
+            showAllLabels: vm.displayNodes.count <= 40,
+            focusKeys: focusKeys
+        )
+    }
+
     // MARK: - Canvas
 
     private var graphCanvas: some View {
-        Canvas { context, size in
+        let snapshot = makeRenderSnapshot()
+        return Canvas { context, size in
             // Date axis first so nodes and labels draw above it (timeline mode only).
-            if vm.layoutMode == .timeline && !vm.timelineTicks.isEmpty {
-                drawTimelineAxis(&context, size: size)
+            if snapshot.isTimeline {
+                drawTimelineAxis(snapshot, in: &context, size: size)
             }
-            // Radii lookup so edges can stop their arrowheads at the target rim.
-            let radii = Dictionary(uniqueKeysWithValues: vm.displayNodes.map {
-                ($0.id, vm.nodeRadius(for: $0))
-            })
             // Draw edges first (below nodes). Context snippets are no longer drawn inline;
             // they appear in the info panel when the user hovers over or taps an edge midpoint.
-            for edge in vm.displayEdges {
-                guard let from = vm.nodePositions[edge.source],
-                      let to   = vm.nodePositions[edge.target] else { continue }
-                let isSelected = vm.resolvedEdgeKey == edge.id
-                drawEdge(&context, from: from, to: to,
+            for edge in snapshot.edges {
+                guard let from = snapshot.positions[edge.source],
+                      let to   = snapshot.positions[edge.target] else { continue }
+                let isFocused = snapshot.isFocused(edge.source) && snapshot.isFocused(edge.target)
+                var edgeContext = context
+                if !isFocused { edgeContext.opacity = 0.15 }
+                drawEdge(&edgeContext, from: from, to: to,
                          referenceType: edge.referenceType,
                          degree: edge.degree,
-                         isSelected: isSelected,
+                         isSelected: snapshot.resolvedEdgeKey == edge.id,
                          referenceCount: edge.referenceCount,
-                         targetRadius: radii[edge.target] ?? 18)
+                         targetRadius: snapshot.radii[edge.target] ?? 18)
             }
             // Draw nodes on top
-            for node in vm.displayNodes {
-                guard let pos = vm.nodePositions[node.id] else { continue }
-                drawNode(&context, node: node, at: pos,
-                         isSelected: vm.resolvedNodeKey == node.id)
+            for node in snapshot.nodes {
+                guard let pos = snapshot.positions[node.id] else { continue }
+                let isFocused = snapshot.isFocused(node.id)
+                var nodeContext = context
+                if !isFocused { nodeContext.opacity = 0.3 }
+                let showLabels = snapshot.showAllLabels
+                    || node.isCentral
+                    || node.isCluster
+                    || (snapshot.focusKeys?.contains(node.id) ?? false)
+                drawNode(&nodeContext, node: node, at: pos,
+                         isSelected: snapshot.resolvedNodeKey == node.id,
+                         radius: snapshot.radii[node.id] ?? 18,
+                         dateLabel: snapshot.dateLabels[node.id],
+                         showLabels: showLabels)
             }
         }
         .accessibilityHidden(true)
@@ -460,8 +554,11 @@ struct CrossReferenceGraphView: View {
     @ViewBuilder
     private func edgeHitArea(edge: DisplayEdge, at pos: CGPoint) -> some View {
         Button {
-            // Tap/click toggles edge context panel; clears any node selection.
+            // Tap/click toggles edge context panel; clears any node selection and
+            // any stale hover (pinned state wins in resolution).
             let key = edge.id
+            vm.hoveredEdgeKey = nil
+            vm.hoveredNodeKey = nil
             if vm.selectedEdgeKey == key {
                 vm.selectedEdgeKey = nil
             } else {
@@ -516,8 +613,11 @@ struct CrossReferenceGraphView: View {
         Button {
             #if os(macOS)
             // Toggle selection so the info panel stays visible until dismissed.
-            // Re-centre action has moved to the context menu and the info panel.
+            // Hover state is cleared too: pinned wins in resolution, and a stale
+            // hover must never resurface after an explicit click (Session 162).
             vm.selectedEdgeKey = nil
+            vm.hoveredEdgeKey = nil
+            vm.hoveredNodeKey = nil
             vm.selectedNodeKey = (vm.selectedNodeKey == node.id) ? nil : node.id
             #else
             vm.tapNode(node.id, reduceMotion: reduceMotion)
@@ -638,51 +738,60 @@ struct CrossReferenceGraphView: View {
 
     // MARK: - Legend
 
-    /// Compact always-visible legend decoding node colour, the arrow convention,
-    /// and node size — knowledge that previously lived only behind the info button.
-    private var legendOverlay: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            legendRow(color: .blue, text: String(
-                localized: "graph.legend.inbound",
-                defaultValue: "Cites this document"))
-            legendRow(color: .orange, text: String(
-                localized: "graph.legend.outbound",
-                defaultValue: "Cited by this document"))
-            if vm.displayNodes.contains(where: {
-                if case .extended = $0.kind { return true } else { return false }
-            }) {
-                legendRow(color: .secondary.opacity(0.5), text: String(
+    /// One-line legend strip rendered *below* the canvas (never over it —
+    /// the floating overlay version obscured nodes; Session 162 live-testing
+    /// feedback). Decodes node colour, the arrow convention, and node size.
+    private var legendFooter: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                legendItem(color: .blue, text: String(
+                    localized: "graph.legend.inbound",
+                    defaultValue: "Cites this document"))
+                legendItem(color: .orange, text: String(
+                    localized: "graph.legend.outbound",
+                    defaultValue: "Cited by this document"))
+                legendItem(color: .secondary.opacity(0.5), text: String(
                     localized: "graph.legend.extended",
                     defaultValue: "Further hops"))
-            }
-            HStack(spacing: 5) {
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 8)
-                Text(String(localized: "graph.legend.arrow",
-                            defaultValue: "Arrow points to the cited document"))
-            }
-            HStack(spacing: 5) {
-                Circle()
-                    .strokeBorder(Color.secondary, style: StrokeStyle(lineWidth: 1, dash: [2, 1.5]))
-                    .frame(width: 8, height: 8)
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 8, weight: .semibold))
+                    Text(String(localized: "graph.legend.arrow.short",
+                                defaultValue: "Points to the cited document"))
+                }
                 Text(String(localized: "graph.legend.size",
                             defaultValue: "Size = connection count"))
+            }
+            // Narrow fallback (iPhone graph mode): colours + arrow only.
+            HStack(spacing: 12) {
+                legendItem(color: .blue, text: String(
+                    localized: "graph.legend.inbound.short",
+                    defaultValue: "Cites"))
+                legendItem(color: .orange, text: String(
+                    localized: "graph.legend.outbound.short",
+                    defaultValue: "Cited by"))
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 8, weight: .semibold))
+                    Text(String(localized: "graph.legend.arrow.shorter",
+                                defaultValue: "To the cited document"))
+                }
             }
         }
         .font(.caption2)
         .foregroundStyle(.secondary)
-        .padding(8)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "graph.legend.a11y",
                                    defaultValue: "Graph legend"))
     }
 
-    /// One colour-swatch row of the legend.
-    private func legendRow(color: Color, text: String) -> some View {
-        HStack(spacing: 5) {
+    /// One colour-swatch item of the legend strip.
+    private func legendItem(color: Color, text: String) -> some View {
+        HStack(spacing: 4) {
             Circle()
                 .fill(color.opacity(0.45))
                 .frame(width: 8, height: 8)
@@ -747,6 +856,8 @@ struct CrossReferenceGraphView: View {
 
                 Button {
                     vm.selectedEdgeKey = nil
+                    vm.hoveredEdgeKey = nil
+                    vm.hoveredNodeKey = nil
                 } label: {
                     Text(String(localized: "graph.edge.dismiss", defaultValue: "Dismiss"))
                 }
@@ -758,7 +869,7 @@ struct CrossReferenceGraphView: View {
         .fixedSize()
         .transition(reduceMotion
             ? .opacity
-            : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+            : .opacity.combined(with: .scale(scale: 0.95, anchor: .bottomTrailing)))
     }
 
     @ViewBuilder
@@ -843,9 +954,33 @@ struct CrossReferenceGraphView: View {
         }
         .frame(maxWidth: 280)
         .fixedSize()
+        .overlay(alignment: .topTrailing) { panelCloseButton }
         .transition(reduceMotion
             ? .opacity
-            : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+            : .opacity.combined(with: .scale(scale: 0.95, anchor: .bottomTrailing)))
+    }
+
+    /// Small dismiss control in the node info panel's corner — clears the pinned
+    /// selection (and any hover) so the panel can always be put away explicitly.
+    private var panelCloseButton: some View {
+        Button {
+            vm.selectedNodeKey = nil
+            vm.selectedEdgeKey = nil
+            vm.hoveredNodeKey = nil
+            vm.hoveredEdgeKey = nil
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .padding(6)
+        .controlHelp(
+            String(localized: "graph.panel.close.a11y", defaultValue: "Close details"),
+            detail: String(localized: "graph.panel.close.help",
+                           defaultValue: "Hide this document's details panel"),
+            systemImage: "xmark.circle.fill"
+        )
     }
 
     // MARK: - Undownloaded Volume Section
@@ -1256,15 +1391,20 @@ struct CrossReferenceGraphView: View {
 
     /// Draws the timeline layout's date axis: a horizontal baseline near the
     /// bottom edge, adaptive tick marks with labels, and — when undated nodes are
-    /// parked at the trailing edge — a caption above that column.
-    private func drawTimelineAxis(_ ctx: inout GraphicsContext, size: CGSize) {
-        let axisY = vm.timelineAxisY
+    /// parked at the trailing edge — a caption above that column. Reads only the
+    /// snapshot (never the view model) so Observation tracking stays in body.
+    private func drawTimelineAxis(
+        _ snapshot: GraphRenderSnapshot,
+        in ctx: inout GraphicsContext,
+        size: CGSize
+    ) {
+        let axisY = snapshot.axisY
         var axis = Path()
         axis.move(to: CGPoint(x: 40, y: axisY))
         axis.addLine(to: CGPoint(x: size.width - 64, y: axisY))
         ctx.stroke(axis, with: .color(.secondary.opacity(0.35)), lineWidth: 0.75)
 
-        for tick in vm.timelineTicks {
+        for tick in snapshot.ticks {
             var mark = Path()
             mark.move(to: CGPoint(x: tick.x, y: axisY - 4))
             mark.addLine(to: CGPoint(x: tick.x, y: axisY + 4))
@@ -1275,7 +1415,7 @@ struct CrossReferenceGraphView: View {
             ctx.draw(label, at: CGPoint(x: tick.x, y: axisY + 7), anchor: .top)
         }
 
-        if vm.timelineHasParkedNodes {
+        if snapshot.hasParkedNodes {
             let caption = Text(String(localized: "graph.timeline.undated",
                                       defaultValue: "Undated"))
                 .font(.system(size: 9, weight: .medium))
@@ -1362,9 +1502,12 @@ struct CrossReferenceGraphView: View {
         _ ctx: inout GraphicsContext,
         node: DisplayNode,
         at pos: CGPoint,
-        isSelected: Bool
+        isSelected: Bool,
+        radius: CGFloat,
+        dateLabel: String?,
+        showLabels: Bool
     ) {
-        let r = vm.nodeRadius(for: node)
+        let r = radius
         let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
 
         // Background circle. Outbound nodes are orange (not green) so the
@@ -1412,7 +1555,9 @@ struct CrossReferenceGraphView: View {
         ctx.draw(image, in: symbolRect)
 
         // Node label — document number or truncated header drawn below the circle,
-        // with the document date (when known) on a second line.
+        // with the document date (when known) on a second line. Suppressed on
+        // dense graphs except for central/cluster/focused nodes (`showLabels`).
+        guard showLabels else { return }
         let labelText: String
         switch node.kind {
         case .clusterInbound(_, let count):
@@ -1460,11 +1605,11 @@ struct CrossReferenceGraphView: View {
             labelY += fontSize + 3
         }
 
-        if let dateText = vm.nodeDateLabels[node.id] {
-            let dateLabel = Text(verbatim: dateText)
+        if let dateText = dateLabel {
+            let dateLabelText = Text(verbatim: dateText)
                 .font(.system(size: fontSize - 1))
                 .foregroundStyle(Color.secondary.opacity(isExtendedNode ? 0.6 : 0.9))
-            ctx.draw(dateLabel, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
+            ctx.draw(dateLabelText, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
         }
     }
 }
