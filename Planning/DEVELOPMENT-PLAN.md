@@ -436,6 +436,23 @@ Reported: `(aqaba OR tiran) and (navigation OR passage OR transit)` returned **n
 - **New safety net** — `FTS5InlineQueryParserTests` now *executes* rendered expressions against a real in-memory `porter unicode61` FTS5 table (throws on syntax error), covering the user's exact query, uppercase/lowercase grouped AND, narrowing, OR/NOT/wildcards, and nested groups — so invalid output can no longer pass as a green test.
 - **Verification**: 47/47 `FTS5InlineQueryParserTests` (swift test, incl. the execution tests); full app `FRUSExplorerTests` green; iPad + macOS build clean.
 
+### Session 2026-06-11 — Pre-1910 Central Files / NARA Catalog feasibility (planning only)
+Assessed expanding Source Explorer to resolve pre-1910 documents to their digitized
+archival copies in the NARA Catalog (the entire State Dept. Central Files 1789–1910 are
+online). **Verdict: feasible, high confidence.** Pre-1906 TEI carries explicitly tagged
+sender/recipient direction (`persName type="from"/"to"`), dateline office+place, ISO
+dates, and country chapters — enough to classify documents into Central Files components
+deterministically in most cases; the catalog exposes a uniform series → file-unit
+(country/post) → item (roll, JPEGs + consolidated PDF) hierarchy enumerable via the v2
+API's `ancestorNaId` parameter. Proposed: a `CentralFilesIndexGenerator` SPM harvest tool
+emitting a bundled `central-files-index.json` (runtime then needs **no API key** — links
+are static `/id/<naid>` URLs), a `CentralFilesClassifier`, and an upgraded
+`centralFilesPanel` showing the inferred roll-level link with confidence, alternates, and
+a date-interpolation verification hint. Phased: (1) Numerical File 1906–1910 ("File No."
+→ case → M862 roll, near-deterministic), (2) country-arranged diplomatic series,
+(3) consular + chronological-run series. No code changes this session.
+- New: `Planning/BigPicture-Pre1910-CentralFiles.md` (full assessment, series NAID table, architecture, risks)
+- New: `Planning/Pre1910-CentralFiles-Reference-Data.md` (template for 10 user-traced reference documents; doubles as the acceptance fixture — target ≥8/10 reproduced)
 ### Session 160 — macOS testing fixes: in-document links, front-matter one-tap, complete Prev/Next
 Three issues reported from macOS testing.
 - **In-document person/term links never fired (both platforms; surfaced on macOS).** Links are `<a href="frusexplorer://…">`. The shared web-view coordinator's `decidePolicyFor` returned `.cancel` for the `frusexplorer` scheme — which is required so the scheme handler's empty response can't replace the document, but cancelling also **prevents `WKURLSchemeHandler.webView(_:start:)` from running**, and that `start` method was the *only* place person/gloss/cross-ref taps were dispatched. So the callbacks never fired. **Fix:** dispatch moved into `FRUSURLSchemeHandler.dispatch(url:)`, now called from `_FRUSWebViewCoordinator.webView(_:decidePolicyFor:)` (on the main actor) before returning `.cancel`. `start` now only responds with an empty 200. Single dispatch, deterministic on both platforms. `FRUSURLSchemeHandler` 1.1.
