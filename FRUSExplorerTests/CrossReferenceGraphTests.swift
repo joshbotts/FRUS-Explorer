@@ -377,6 +377,99 @@ struct CrossReferenceGraphTests {
         }
     }
 
+    // MARK: - AggregationTest
+
+    @Test("AggregationTest: parallel references collapse into one weighted edge; node and edge IDs are unique")
+    func parallelReferencesAggregate() throws {
+        let centralKey = "vol1/d0"
+        var meta: [String: CrossReferenceNodeMetadata] = [:]
+        meta[centralKey] = CrossReferenceNodeMetadata(
+            documentId: "d0", volumeId: "vol1",
+            documentNumber: "0", header: "Central Document", dateline: nil
+        )
+        meta["vol-src/dA"] = CrossReferenceNodeMetadata(
+            documentId: "dA", volumeId: "vol-src",
+            documentNumber: "1", header: "Document A", dateline: nil
+        )
+
+        // Document A references the centre in two separate footnotes (two raw rows),
+        // and the centre also references document A back (bidirectional pair).
+        let inbound = [
+            CrossReferenceEdge(
+                sourceDocumentId: "dA", sourceVolumeId: "vol-src",
+                targetDocumentId: "d0", targetVolumeId: "vol1",
+                context: "First footnote.", referenceType: .footnote
+            ),
+            CrossReferenceEdge(
+                sourceDocumentId: "dA", sourceVolumeId: "vol-src",
+                targetDocumentId: "d0", targetVolumeId: "vol1",
+                context: "Second footnote.", referenceType: .footnote
+            ),
+        ]
+        let outbound = [
+            CrossReferenceEdge(
+                sourceDocumentId: "d0", sourceVolumeId: "vol1",
+                targetDocumentId: "dA", targetVolumeId: "vol-src",
+                context: nil, referenceType: .footnote
+            ),
+        ]
+        let graph = CrossReferenceGraph(
+            centralDocumentId: "d0", centralVolumeId: "vol1",
+            inboundEdges: inbound, outboundEdges: outbound,
+            hasUndownloadedSources: false, nodeMetadata: meta
+        )
+
+        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph,
+            centralKey: centralKey,
+            expandedClusterKeys: [],
+            downloadedVolumeIds: ["vol1", "vol-src"]
+        )
+
+        // Document A must appear exactly once even though it is inbound twice and
+        // outbound once; node and edge identifiers must be unique (ForEach contract).
+        #expect(nodes.count == 2, "Expected central + 1 unique neighbour, got \(nodes.count)")
+        #expect(Set(nodes.map(\.id)).count == nodes.count, "Node IDs must be unique")
+        #expect(Set(edges.map(\.id)).count == edges.count, "Edge IDs must be unique")
+
+        // The two inbound rows aggregate into one edge with both context passages.
+        let inEdge = try #require(edges.first { $0.source == "vol-src/dA" && $0.target == centralKey })
+        #expect(inEdge.referenceCount == 2)
+        #expect(inEdge.contexts == ["First footnote.", "Second footnote."])
+        #expect(inEdge.combinedContext == "First footnote.\n\nSecond footnote.")
+
+        // The reverse direction stays a separate edge (distinct id).
+        let outEdge = try #require(edges.first { $0.source == centralKey && $0.target == "vol-src/dA" })
+        #expect(outEdge.referenceCount == 1)
+        #expect(outEdge.contexts.isEmpty)
+    }
+
+    // MARK: - DeterminismTest
+
+    @Test("DeterminismTest: display build output is stable across repeated invocations")
+    func displayBuildIsDeterministic() throws {
+        let graph = makeTestGraph(
+            inboundCount: 8, outboundCount: 7,
+            inboundVolumeIds: ["vol-b", "vol-a"], outboundVolumeIds: ["vol-d", "vol-c"]
+        )
+        let centralKey = "vol1/d0"
+
+        let first = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: centralKey,
+            expandedClusterKeys: [], downloadedVolumeIds: []
+        )
+        for _ in 0..<5 {
+            let again = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+                graph: graph, centralKey: centralKey,
+                expandedClusterKeys: [], downloadedVolumeIds: []
+            )
+            #expect(again.nodes.map(\.id) == first.nodes.map(\.id),
+                    "Node order must be deterministic so layouts are stable across visits")
+            #expect(again.edges.map(\.id) == first.edges.map(\.id),
+                    "Edge order must be deterministic")
+        }
+    }
+
     // MARK: - NodeDegreeTest
 
     @Test("NodeDegreeTest: degree-1 nodes carry degree 1; central node carries degree 0")

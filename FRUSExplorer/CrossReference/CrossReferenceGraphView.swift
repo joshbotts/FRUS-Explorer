@@ -70,6 +70,10 @@ import SwiftUI
 ///            re-centre moved to context menu and info panel
 ///          • Info button added (popover explaining the graph)
 ///          • `GraphFilterMode` removed; `filterMode` state dropped
+///   1.8 — Session 161:
+///          • Hover and pinned selection separated (macOS): hovering previews the
+///            info panel; clicking pins it so its buttons are reachable by mouse
+///          • Pan/zoom gestures accumulate across gestures instead of snapping back
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -80,6 +84,9 @@ struct CrossReferenceGraphView: View {
     @State private var showInfoPopover = false
     /// When set, presents the "Documents from Same Lot File" discovery sheet.
     @State private var lotFileSheetTarget: (nodeKey: String, lotFile: String, repository: String?)? = nil
+    /// Volumes the user queued for download from this graph during the current
+    /// presentation; drives the "Download queued" state in the node info panel.
+    @State private var requestedDownloadVolumeIds: Set<String> = []
 
     init(
         entry: DocumentBrowserEntry,
@@ -217,11 +224,11 @@ struct CrossReferenceGraphView: View {
                 .padding()
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
-                    value: vm.selectedNodeKey
+                    value: vm.resolvedNodeKey
                 )
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
-                    value: vm.selectedEdgeKey
+                    value: vm.resolvedEdgeKey
                 )
         }
         // Q3: VoiceOver alternative — structured inbound/outbound reference list
@@ -308,7 +315,7 @@ struct CrossReferenceGraphView: View {
             for edge in vm.displayEdges {
                 guard let from = vm.nodePositions[edge.source],
                       let to   = vm.nodePositions[edge.target] else { continue }
-                let isSelected = vm.selectedEdgeKey == edge.id
+                let isSelected = vm.resolvedEdgeKey == edge.id
                 drawEdge(&context, from: from, to: to,
                          referenceType: edge.referenceType,
                          degree: edge.degree,
@@ -318,7 +325,7 @@ struct CrossReferenceGraphView: View {
             for node in vm.displayNodes {
                 guard let pos = vm.nodePositions[node.id] else { continue }
                 drawNode(&context, node: node, at: pos,
-                         isSelected: vm.selectedNodeKey == node.id)
+                         isSelected: vm.resolvedNodeKey == node.id)
             }
         }
         .accessibilityHidden(true)
@@ -362,8 +369,14 @@ struct CrossReferenceGraphView: View {
         .position(pos)
         #if os(macOS)
         .onHover { hovering in
-            vm.selectedEdgeKey = hovering ? edge.id : nil
-            if hovering { vm.selectedNodeKey = nil }
+            // Transient hover preview only — pinned selections are untouched, so
+            // a panel the user clicked open survives the pointer moving on.
+            if hovering {
+                vm.hoveredEdgeKey = edge.id
+                vm.hoveredNodeKey = nil
+            } else if vm.hoveredEdgeKey == edge.id {
+                vm.hoveredEdgeKey = nil
+            }
         }
         .help(edge.context ?? "")
         #endif
@@ -410,12 +423,15 @@ struct CrossReferenceGraphView: View {
         .position(pos)
         #if os(macOS)
         .onHover { hovering in
-            // Show info panel transiently on hover; respect a click-pinned selection.
+            // Transient hover preview. Pinned state (`selectedNodeKey`) is managed
+            // exclusively by clicks, so the panel a user pins stays put while the
+            // pointer travels to its buttons (the pre-1.5 behaviour cleared the
+            // pinned key on un-hover, making those buttons unreachable).
             if hovering {
-                vm.selectedEdgeKey = nil
-                if vm.selectedNodeKey == nil { vm.selectedNodeKey = node.id }
-            } else if vm.selectedNodeKey == node.id {
-                vm.selectedNodeKey = nil
+                vm.hoveredNodeKey = node.id
+                vm.hoveredEdgeKey = nil
+            } else if vm.hoveredNodeKey == node.id {
+                vm.hoveredNodeKey = nil
             }
         }
         #endif
@@ -506,14 +522,15 @@ struct CrossReferenceGraphView: View {
 
     // MARK: - Info Panel
 
-    /// Unified info panel: shows node details when a node is selected, or edge
-    /// context when an edge midpoint is hovered / tapped. Edge selection takes
-    /// priority over node selection (they are mutually exclusive in practice).
+    /// Unified info panel: shows node details when a node is active, or edge
+    /// context when an edge midpoint is hovered / pinned. The view model's
+    /// `resolvedEdgeKey`/`resolvedNodeKey` guarantee the two are mutually
+    /// exclusive (hover wins over pinned state).
     @ViewBuilder
     private var infoPanel: some View {
-        if let edge = vm.selectedEdge(), let context = edge.context {
+        if let edge = vm.selectedEdge(), let context = edge.combinedContext {
             edgeInfoPanel(edge: edge, context: context)
-        } else if let key = vm.selectedNodeKey,
+        } else if let key = vm.resolvedNodeKey,
                   let node = vm.displayNodes.first(where: { $0.id == key }) {
             nodeInfoPanel(node: node, key: key)
         }
@@ -593,13 +610,7 @@ struct CrossReferenceGraphView: View {
                 }
 
                 if !node.isDownloaded && !node.isCentral {
-                    Label(
-                        String(localized: "graph.node.notDownloaded",
-                               defaultValue: "Volume not downloaded"),
-                        systemImage: "icloud.slash"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+                    undownloadedSection(for: node)
                 }
 
                 if node.isCluster {
@@ -645,6 +656,79 @@ struct CrossReferenceGraphView: View {
         .transition(reduceMotion
             ? .opacity
             : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
+    }
+
+    // MARK: - Undownloaded Volume Section
+
+    /// Info-panel block for nodes whose volume is not downloaded: a status label plus
+    /// a "Download Volume" action (spec Section 11: navigating to a node in an
+    /// undownloaded volume initiates download). Once tapped, shows a queued state —
+    /// the graph itself refreshes only after the volume downloads and is indexed.
+    @ViewBuilder
+    private func undownloadedSection(for node: DisplayNode) -> some View {
+        Label(
+            String(localized: "graph.node.notDownloaded",
+                   defaultValue: "Volume not downloaded"),
+            systemImage: "icloud.slash"
+        )
+        .font(.caption)
+        .foregroundStyle(.orange)
+
+        if let volumeId = volumeId(for: node) {
+            if requestedDownloadVolumeIds.contains(volumeId) {
+                Label(
+                    String(localized: "graph.node.downloadQueued",
+                           defaultValue: "Download queued"),
+                    systemImage: "arrow.down.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                Text(String(localized: "graph.node.downloadQueued.detail",
+                            defaultValue: "This document becomes available here after the volume downloads and is indexed."))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let entry = manifestEntry(for: volumeId),
+                      let downloadManager = appState.downloadManager {
+                Button {
+                    requestedDownloadVolumeIds.insert(volumeId)
+                    Task {
+                        await downloadManager.enqueueDownload(
+                            volumeId: volumeId,
+                            downloadUrl: entry.downloadUrl
+                        )
+                    }
+                } label: {
+                    Label(
+                        String(localized: "graph.node.downloadVolume",
+                               defaultValue: "Download Volume"),
+                        systemImage: "arrow.down.circle"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .help(String(localized: "graph.node.downloadVolume.help",
+                             defaultValue: "Download and index this volume so its documents can be opened from the graph"))
+            }
+        }
+    }
+
+    /// Volume ID for a display node — from metadata, the cluster kind, or the
+    /// `"volumeId/documentId"` node key as a last resort.
+    private func volumeId(for node: DisplayNode) -> String? {
+        if let vol = node.metadata?.volumeId { return vol }
+        switch node.kind {
+        case .clusterInbound(let vol, _), .clusterOutbound(let vol, _):
+            return vol
+        default:
+            return node.id.split(separator: "/", maxSplits: 1).first.map(String.init)
+        }
+    }
+
+    /// Manifest entry for `volumeId`, if the manifest knows it.
+    private func manifestEntry(for volumeId: String) -> VolumeManifestEntry? {
+        let entries = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        return entries.first { $0.volumeId == volumeId }
     }
 
     // MARK: - Node Edge Context Helper
@@ -838,14 +922,20 @@ struct CrossReferenceGraphView: View {
     private var magnificationGesture: some Gesture {
         MagnificationGesture()
             .onChanged { value in
-                vm.scale = max(0.25, min(4.0, value))
+                vm.magnificationChanged(value)
+            }
+            .onEnded { _ in
+                vm.magnificationEnded()
             }
     }
 
     private var panGesture: some Gesture {
         DragGesture(minimumDistance: 5)
             .onChanged { value in
-                vm.panOffset = value.translation
+                vm.panChanged(value.translation)
+            }
+            .onEnded { _ in
+                vm.panEnded()
             }
     }
 
@@ -974,14 +1064,14 @@ struct CrossReferenceGraphView: View {
         switch node.kind {
         case .clusterInbound(_, let count):
             labelText = String(
-                format: String(localized: "graph.node.cluster.label %lld",
-                               defaultValue: "%lld refs"),
+                format: String(localized: "graph.node.cluster.docsLabel %lld",
+                               defaultValue: "%lld docs"),
                 Int64(count)
             )
         case .clusterOutbound(_, let count):
             labelText = String(
-                format: String(localized: "graph.node.cluster.label %lld",
-                               defaultValue: "%lld refs"),
+                format: String(localized: "graph.node.cluster.docsLabel %lld",
+                               defaultValue: "%lld docs"),
                 Int64(count)
             )
         default:

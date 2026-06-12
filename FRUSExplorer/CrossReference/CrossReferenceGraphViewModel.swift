@@ -92,20 +92,59 @@ struct DisplayNode: Identifiable, Sendable {
 }
 
 /// A directed edge to render in the cross-reference graph canvas.
+///
+/// One `DisplayEdge` aggregates *all* individual references between the same
+/// (source, target) document pair — a FRUS document routinely cites the same
+/// target in several footnotes, and the `cross_references` table stores one row
+/// per occurrence. Aggregation keeps `id` unique (a `ForEach` requirement) and
+/// lets the renderer encode `referenceCount` as edge thickness.
 struct DisplayEdge: Identifiable, Sendable {
     /// Stable identity for use in `ForEach` and `selectedEdgeKey` lookups.
+    /// Unique because edges are aggregated per (source, target) pair.
     var id: String { "\(source)->\(target)" }
     let source: String
     let target: String
+    /// `.editorialNote` only when *every* aggregated reference is an editorial
+    /// note; mixed groups fall back to `.footnote`.
     let referenceType: ReferenceType
-    /// Plain text of the footnote or editorial note that contained the `<ref>`.
-    /// `nil` when the reference was not inside a note block, or for edges indexed
-    /// before Session 37 populated this column.
-    let context: String?
+    /// Plain text of every footnote or editorial note that contained a `<ref>`
+    /// between this pair. Empty when no reference was inside a note block, or for
+    /// edges indexed before Session 37 populated the context column.
+    let contexts: [String]
+    /// Number of individual references aggregated into this edge (≥ 1).
+    let referenceCount: Int
     /// The degree of this edge: 1 for direct (inbound/outbound), 2+ for extended.
-    /// Defaults to 1 so pre-existing call sites remain valid.
     let degree: Int
 
+    /// First context passage, if any. Convenience for call sites that only need
+    /// to know whether *some* context exists.
+    var context: String? { contexts.first }
+
+    /// All context passages joined into one displayable block, or `nil` when the
+    /// edge carries no context at all.
+    var combinedContext: String? {
+        contexts.isEmpty ? nil : contexts.joined(separator: "\n\n")
+    }
+
+    /// Aggregating initializer.
+    init(
+        source: String,
+        target: String,
+        referenceType: ReferenceType,
+        contexts: [String],
+        referenceCount: Int,
+        degree: Int = 1
+    ) {
+        self.source = source
+        self.target = target
+        self.referenceType = referenceType
+        self.contexts = contexts
+        self.referenceCount = max(1, referenceCount)
+        self.degree = degree
+    }
+
+    /// Single-reference convenience initializer; keeps pre-aggregation call sites
+    /// (tests, fixtures) valid.
     init(
         source: String,
         target: String,
@@ -113,11 +152,14 @@ struct DisplayEdge: Identifiable, Sendable {
         context: String?,
         degree: Int = 1
     ) {
-        self.source = source
-        self.target = target
-        self.referenceType = referenceType
-        self.context = context
-        self.degree = degree
+        self.init(
+            source: source,
+            target: target,
+            referenceType: referenceType,
+            contexts: context.map { [$0] } ?? [],
+            referenceCount: 1,
+            degree: degree
+        )
     }
 }
 
@@ -171,6 +213,10 @@ struct NavigationHistoryEntry: Sendable {
 ///          edge context-snippet labels; `DisplayNode.Kind.extended`; `DisplayEdge.degree`
 ///   1.4 — Session 130: removed `GraphFilterMode`/`filterMode`; added `selectedEdgeKey`;
 ///          fixed `rerunLayout` to force-direct whenever extended nodes are present
+///   1.5 — Session 161: hover state (`hoveredNodeKey`/`hoveredEdgeKey`) separated from
+///          pinned click selection so the macOS info panel survives the pointer
+///          travelling to its buttons; cumulative pan/zoom (`steadyScale`/
+///          `steadyPanOffset`) so consecutive gestures no longer snap back
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -195,33 +241,77 @@ final class CrossReferenceGraphViewModel {
 
     // MARK: - Interaction
 
+    /// Key of the node the user has *pinned* by clicking (macOS) or tapping (iOS).
+    /// A pinned selection keeps the info panel visible until explicitly dismissed,
+    /// so the pointer can travel to the panel's buttons without losing it.
+    /// Transient pointer-hover state lives in `hoveredNodeKey` instead.
     var selectedNodeKey: String?
 
-    /// Pinch-to-zoom magnification applied to the canvas, clamped to `0.25...4.0`
-    /// by `magnificationGesture`. `1.0` is the neutral/initial value — the layout's
-    /// own coordinates (in `nodePositions`) are rendered at their natural scale.
+    /// Key of the node currently under the pointer (macOS hover). Transient: cleared
+    /// as soon as the pointer leaves the node. Never set on iOS. Display code should
+    /// read `resolvedNodeKey`, which combines hover and pinned state.
+    var hoveredNodeKey: String?
+
+    /// Pinch-to-zoom magnification applied to the canvas, clamped to `0.25...4.0`.
+    /// `1.0` is the neutral/initial value — the layout's own coordinates (in
+    /// `nodePositions`) are rendered at their natural scale.
     ///
-    /// Unlike `nodePositions` (which the layout engine recomputes from scratch on
-    /// every relayout and which always keeps the central node pinned to the canvas
-    /// centre), `scale` and `panOffset` are pure view-transform state: nothing ever
-    /// resets them automatically, so an inadvertent pinch/drag can leave the central
-    /// node arbitrarily off-screen with no built-in way back. `resetViewport()`
-    /// is the recovery path — see its doc comment.
+    /// During a pinch this holds `steadyScale × gestureValue` (see
+    /// `magnificationChanged(_:)`); `magnificationEnded()` commits it back into
+    /// `steadyScale` so consecutive pinches accumulate instead of snapping back
+    /// to the 1.0 baseline.
     var scale: CGFloat = 1.0
 
-    /// Pan translation applied to the canvas via `panGesture`, in canvas points.
-    /// `.zero` is the neutral/initial value (canvas centred on the pinned central
-    /// node). See `scale`'s doc comment for why this can drift indefinitely and
-    /// how `resetViewport()` recovers from it.
+    /// Pan translation applied to the canvas, in canvas points. `.zero` is the
+    /// neutral/initial value (canvas centred on the pinned central node).
+    /// During a drag this holds `steadyPanOffset + gestureTranslation` (see
+    /// `panChanged(_:)`); `panEnded()` commits it so consecutive drags accumulate.
     var panOffset: CGSize = .zero
+
+    /// Committed zoom level carried between magnification gestures. See `scale`.
+    private(set) var steadyScale: CGFloat = 1.0
+
+    /// Committed pan offset carried between drag gestures. See `panOffset`.
+    private(set) var steadyPanOffset: CGSize = .zero
 
     var navigationPath: [DocumentBrowserEntry] = []
 
     // MARK: - Selection
 
-    /// Key of the edge currently selected (hovered or tapped). Format: `"src->tgt"`.
-    /// `nil` when no edge is selected. Setting this clears `selectedNodeKey`.
+    /// Key of the edge the user has *pinned* by clicking/tapping its midpoint hit
+    /// area. Format: `"src->tgt"`. `nil` when no edge is pinned. Setting this should
+    /// be accompanied by clearing `selectedNodeKey` (they are mutually exclusive).
+    /// Transient pointer-hover state lives in `hoveredEdgeKey` instead.
     var selectedEdgeKey: String?
+
+    /// Key of the edge whose midpoint hit area is currently under the pointer
+    /// (macOS hover). Transient; never set on iOS. Display code should read
+    /// `resolvedEdgeKey`.
+    var hoveredEdgeKey: String?
+
+    // MARK: - Resolved selection
+
+    /// The edge key the info panel and canvas highlighting should treat as active.
+    ///
+    /// Hover always wins over pinned state (it is the more recent, more local
+    /// signal); a hovered *node* suppresses any pinned edge so only one element is
+    /// highlighted at a time. When nothing is hovered, the pinned edge (if any)
+    /// is active.
+    var resolvedEdgeKey: String? {
+        if let hovered = hoveredEdgeKey { return hovered }
+        if hoveredNodeKey != nil { return nil }
+        return selectedEdgeKey
+    }
+
+    /// The node key the info panel and canvas highlighting should treat as active.
+    /// Mirror of `resolvedEdgeKey`: hover wins, then pinned state, and an active
+    /// edge suppresses the node so the two are mutually exclusive.
+    var resolvedNodeKey: String? {
+        if hoveredEdgeKey != nil { return nil }
+        if let hovered = hoveredNodeKey { return hovered }
+        if selectedEdgeKey != nil { return nil }
+        return selectedNodeKey
+    }
 
     // MARK: - Cluster
 
@@ -375,6 +465,8 @@ final class CrossReferenceGraphViewModel {
         nodePositions       = [:]
         selectedNodeKey     = nil
         selectedEdgeKey     = nil
+        hoveredNodeKey      = nil
+        hoveredEdgeKey      = nil
         expandedClusterKeys = []
         layoutTask?.cancel()
         isAnimatingLayout   = false
@@ -393,14 +485,12 @@ final class CrossReferenceGraphViewModel {
     /// `panOffset = .zero` — re-centring the canvas on the (always-pinned) central
     /// node at its natural size.
     ///
-    /// This is the recovery path for the gap described in `scale`'s doc comment:
-    /// `magnificationGesture`/`panGesture` have no bounds-clamping or rubber-banding,
+    /// `magnificationChanged`/`panChanged` have no bounds-clamping or rubber-banding,
     /// so an inadvertent pinch or drag can leave the central node arbitrarily far
-    /// off-screen with no way back short of dismissing and reopening the graph.
-    /// Note that the underlying *layout* (`nodePositions`) never needs touching —
-    /// the central node is always pinned to the canvas centre by the layout engine;
-    /// only the view-level transform drifts, so resetting these two values is
-    /// sufficient and exact (no coordinate math required).
+    /// off-screen; this is the recovery path. Note that the underlying *layout*
+    /// (`nodePositions`) never needs touching — the central node is always pinned
+    /// to the canvas centre by the layout engine; only the view-level transform
+    /// drifts, so resetting the transform state is sufficient and exact.
     ///
     /// - Parameter animated: When `true`, the change is wrapped in a gentle spring
     ///   animation so the view glides back rather than snapping; pass `false` for
@@ -408,7 +498,10 @@ final class CrossReferenceGraphViewModel {
     ///   re-centring on a new document, where an additional animation would be
     ///   redundant with the graph-rebuild transition already underway).
     func resetViewport(animated: Bool) {
-        guard scale != 1.0 || panOffset != .zero else { return }
+        guard scale != 1.0 || panOffset != .zero
+                || steadyScale != 1.0 || steadyPanOffset != .zero else { return }
+        steadyScale = 1.0
+        steadyPanOffset = .zero
         if animated {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 scale = 1.0
@@ -418,6 +511,48 @@ final class CrossReferenceGraphViewModel {
             scale = 1.0
             panOffset = .zero
         }
+    }
+
+    // MARK: - Viewport gestures
+
+    /// Applies an in-flight pinch gesture value on top of the committed zoom level.
+    /// Called from the magnification gesture's `onChanged`.
+    func magnificationChanged(_ value: CGFloat) {
+        scale = Self.clampScale(steadyScale * value)
+    }
+
+    /// Commits the current zoom level so the next pinch starts from it rather than
+    /// snapping back to the previous baseline. Called from `onEnded`.
+    func magnificationEnded() {
+        steadyScale = scale
+    }
+
+    /// Applies an in-flight drag translation on top of the committed pan offset.
+    /// Called from the drag gesture's `onChanged`.
+    func panChanged(_ translation: CGSize) {
+        panOffset = CGSize(
+            width:  steadyPanOffset.width  + translation.width,
+            height: steadyPanOffset.height + translation.height
+        )
+    }
+
+    /// Commits the current pan offset so the next drag continues from it.
+    /// Called from `onEnded`.
+    func panEnded() {
+        steadyPanOffset = panOffset
+    }
+
+    /// Multiplies the committed zoom level by `factor` and applies it immediately.
+    /// Used by discrete zoom inputs (scroll wheel on macOS) that have no
+    /// changed/ended gesture phases.
+    func zoom(by factor: CGFloat) {
+        steadyScale = Self.clampScale(steadyScale * factor)
+        scale = steadyScale
+    }
+
+    /// Clamps a zoom level to the supported `0.25...4.0` range.
+    private static func clampScale(_ value: CGFloat) -> CGFloat {
+        max(0.25, min(4.0, value))
     }
 
     func toggleCluster(_ key: String) {
@@ -442,7 +577,7 @@ final class CrossReferenceGraphViewModel {
         )
     }
 
-    /// Returns the edge context text for the currently selected node, if any.
+    /// Returns the edge context text for the currently active node, if any.
     ///
     /// For inbound nodes the context is the text of the footnote in the source document
     /// that contained the `<ref>` pointing to the central document.
@@ -450,27 +585,28 @@ final class CrossReferenceGraphViewModel {
     /// For extended nodes, returns the context of any edge that connects to or from the node.
     /// Returns `nil` for cluster nodes, the central node, or edges without context.
     func contextForSelectedNode() -> String? {
-        guard let key = selectedNodeKey,
+        guard let key = resolvedNodeKey,
               let node = displayNodes.first(where: { $0.id == key }),
               !node.isCentral, !node.isCluster else { return nil }
         switch node.kind {
         case .inbound:
-            return displayEdges.first(where: { $0.source == key && $0.target == centralKey })?.context
+            return displayEdges.first(where: { $0.source == key && $0.target == centralKey })?.combinedContext
         case .outbound:
-            return displayEdges.first(where: { $0.source == centralKey && $0.target == key })?.context
+            return displayEdges.first(where: { $0.source == centralKey && $0.target == key })?.combinedContext
         case .extended:
             // Return context from any edge touching this node that has context available.
             return displayEdges.first(where: {
-                ($0.source == key || $0.target == key) && $0.context != nil
-            })?.context
+                ($0.source == key || $0.target == key) && !$0.contexts.isEmpty
+            })?.combinedContext
         default:
             return nil
         }
     }
 
-    /// Returns the edge whose `id` matches `selectedEdgeKey`, or `nil` if none.
+    /// Returns the edge whose `id` matches `resolvedEdgeKey` (hovered, else pinned),
+    /// or `nil` if no edge is active.
     func selectedEdge() -> DisplayEdge? {
-        guard let key = selectedEdgeKey else { return nil }
+        guard let key = resolvedEdgeKey else { return nil }
         return displayEdges.first { $0.id == key }
     }
 
@@ -696,8 +832,20 @@ final class CrossReferenceGraphViewModel {
     // MARK: - Display node builder (static for testability)
 
     /// Computes the `DisplayNode` and `DisplayEdge` arrays from a `CrossReferenceGraph`.
-    /// When `totalEdges > 30`, same-volume nodes are collapsed into cluster nodes unless
-    /// their key is in `expandedClusterKeys`.
+    /// When the raw degree-1 reference count exceeds 30, same-volume nodes are collapsed
+    /// into cluster nodes unless their key is in `expandedClusterKeys`.
+    ///
+    /// **Aggregation & uniqueness** — the `cross_references` table stores one row per
+    /// `<ref>` occurrence, so the same (source, target) document pair can appear many
+    /// times and the same document can appear as both an inbound and an outbound
+    /// neighbour. This builder:
+    ///   - groups raw edges by (source, target) into a single `DisplayEdge` carrying
+    ///     `referenceCount` and all context passages,
+    ///   - emits each node key exactly once (first kind encountered wins; a document
+    ///     that both cites and is cited by the centre keeps `.inbound`, and the two
+    ///     directed edges still convey the bidirectionality),
+    ///   - sorts groups by key so the output (and therefore the layout seeded from
+    ///     it) is deterministic across visits.
     ///
     /// Extended edges (degree ≥ 2) are added after degree-1 edges. Extended nodes
     /// not already present in the degree-1 set are given `.extended` kind.
@@ -719,79 +867,101 @@ final class CrossReferenceGraphViewModel {
             )
         ]
         var edges: [DisplayEdge] = []
+        var seenNodeKeys: Set<String> = [centralKey]
+
+        /// Appends a node for `key` unless one already exists (dedupe across
+        /// repeated references and across the inbound/outbound boundary).
+        func appendNodeIfNeeded(key: String, kind: DisplayNode.Kind, volumeId: String) {
+            guard seenNodeKeys.insert(key).inserted else { return }
+            nodes.append(DisplayNode(
+                id: key, kind: kind,
+                metadata: graph.nodeMetadata[key],
+                isDownloaded: downloadedVolumeIds.contains(volumeId),
+                degree: 1
+            ))
+        }
+
+        /// `.editorialNote` only when every aggregated reference is one.
+        func aggregatedType(_ group: [CrossReferenceEdge]) -> ReferenceType {
+            group.allSatisfy { $0.referenceType == .editorialNote } ? .editorialNote : .footnote
+        }
+
+        /// Adds one node + one aggregated edge per unique source document.
+        func addAggregatedInbound(_ rawEdges: [CrossReferenceEdge]) {
+            let bySource = Dictionary(grouping: rawEdges) {
+                "\($0.sourceVolumeId)/\($0.sourceDocumentId)"
+            }
+            for (key, group) in bySource.sorted(by: { $0.key < $1.key }) {
+                appendNodeIfNeeded(key: key, kind: .inbound, volumeId: group[0].sourceVolumeId)
+                edges.append(DisplayEdge(
+                    source: key, target: centralKey,
+                    referenceType: aggregatedType(group),
+                    contexts: group.compactMap(\.context),
+                    referenceCount: group.count,
+                    degree: 1
+                ))
+            }
+        }
+
+        /// Adds one node + one aggregated edge per unique target document.
+        func addAggregatedOutbound(_ rawEdges: [CrossReferenceEdge]) {
+            let byTarget = Dictionary(grouping: rawEdges) {
+                "\($0.targetVolumeId)/\($0.targetDocumentId)"
+            }
+            for (key, group) in byTarget.sorted(by: { $0.key < $1.key }) {
+                appendNodeIfNeeded(key: key, kind: .outbound, volumeId: group[0].targetVolumeId)
+                edges.append(DisplayEdge(
+                    source: centralKey, target: key,
+                    referenceType: aggregatedType(group),
+                    contexts: group.compactMap(\.context),
+                    referenceCount: group.count,
+                    degree: 1
+                ))
+            }
+        }
 
         func addInbound(_ inboundEdges: [CrossReferenceEdge]) {
-            if useClusters {
-                let byVol = Dictionary(grouping: inboundEdges, by: \.sourceVolumeId)
-                for (vol, volEdges) in byVol.sorted(by: { $0.key < $1.key }) {
-                    let clusterKey = "cluster/inbound/\(vol)"
-                    if expandedClusterKeys.contains(clusterKey) {
-                        for e in volEdges {
-                            let key = "\(e.sourceVolumeId)/\(e.sourceDocumentId)"
-                            nodes.append(DisplayNode(id: key, kind: .inbound,
-                                metadata: graph.nodeMetadata[key],
-                                isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId),
-                                degree: 1))
-                            edges.append(DisplayEdge(source: key, target: centralKey,
-                                referenceType: e.referenceType, context: e.context, degree: 1))
-                        }
-                    } else {
-                        nodes.append(DisplayNode(id: clusterKey,
-                            kind: .clusterInbound(volumeId: vol, count: volEdges.count),
-                            metadata: nil,
-                            isDownloaded: downloadedVolumeIds.contains(vol),
-                            degree: 1))
-                        edges.append(DisplayEdge(source: clusterKey, target: centralKey,
-                            referenceType: .footnote, context: nil, degree: 1))
-                    }
-                }
-            } else {
-                for e in inboundEdges {
-                    let key = "\(e.sourceVolumeId)/\(e.sourceDocumentId)"
-                    nodes.append(DisplayNode(id: key, kind: .inbound,
-                        metadata: graph.nodeMetadata[key],
-                        isDownloaded: downloadedVolumeIds.contains(e.sourceVolumeId),
+            guard useClusters else { return addAggregatedInbound(inboundEdges) }
+            let byVol = Dictionary(grouping: inboundEdges, by: \.sourceVolumeId)
+            for (vol, volEdges) in byVol.sorted(by: { $0.key < $1.key }) {
+                let clusterKey = "cluster/inbound/\(vol)"
+                if expandedClusterKeys.contains(clusterKey) {
+                    addAggregatedInbound(volEdges)
+                } else {
+                    let docCount = Set(volEdges.map {
+                        "\($0.sourceVolumeId)/\($0.sourceDocumentId)"
+                    }).count
+                    nodes.append(DisplayNode(id: clusterKey,
+                        kind: .clusterInbound(volumeId: vol, count: docCount),
+                        metadata: nil,
+                        isDownloaded: downloadedVolumeIds.contains(vol),
                         degree: 1))
-                    edges.append(DisplayEdge(source: key, target: centralKey,
-                        referenceType: e.referenceType, context: e.context, degree: 1))
+                    edges.append(DisplayEdge(source: clusterKey, target: centralKey,
+                        referenceType: .footnote, contexts: [],
+                        referenceCount: volEdges.count, degree: 1))
                 }
             }
         }
 
         func addOutbound(_ outboundEdges: [CrossReferenceEdge]) {
-            if useClusters {
-                let byVol = Dictionary(grouping: outboundEdges, by: \.targetVolumeId)
-                for (vol, volEdges) in byVol.sorted(by: { $0.key < $1.key }) {
-                    let clusterKey = "cluster/outbound/\(vol)"
-                    if expandedClusterKeys.contains(clusterKey) {
-                        for e in volEdges {
-                            let key = "\(e.targetVolumeId)/\(e.targetDocumentId)"
-                            nodes.append(DisplayNode(id: key, kind: .outbound,
-                                metadata: graph.nodeMetadata[key],
-                                isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId),
-                                degree: 1))
-                            edges.append(DisplayEdge(source: centralKey, target: key,
-                                referenceType: e.referenceType, context: e.context, degree: 1))
-                        }
-                    } else {
-                        nodes.append(DisplayNode(id: clusterKey,
-                            kind: .clusterOutbound(volumeId: vol, count: volEdges.count),
-                            metadata: nil,
-                            isDownloaded: downloadedVolumeIds.contains(vol),
-                            degree: 1))
-                        edges.append(DisplayEdge(source: centralKey, target: clusterKey,
-                            referenceType: .footnote, context: nil, degree: 1))
-                    }
-                }
-            } else {
-                for e in outboundEdges {
-                    let key = "\(e.targetVolumeId)/\(e.targetDocumentId)"
-                    nodes.append(DisplayNode(id: key, kind: .outbound,
-                        metadata: graph.nodeMetadata[key],
-                        isDownloaded: downloadedVolumeIds.contains(e.targetVolumeId),
+            guard useClusters else { return addAggregatedOutbound(outboundEdges) }
+            let byVol = Dictionary(grouping: outboundEdges, by: \.targetVolumeId)
+            for (vol, volEdges) in byVol.sorted(by: { $0.key < $1.key }) {
+                let clusterKey = "cluster/outbound/\(vol)"
+                if expandedClusterKeys.contains(clusterKey) {
+                    addAggregatedOutbound(volEdges)
+                } else {
+                    let docCount = Set(volEdges.map {
+                        "\($0.targetVolumeId)/\($0.targetDocumentId)"
+                    }).count
+                    nodes.append(DisplayNode(id: clusterKey,
+                        kind: .clusterOutbound(volumeId: vol, count: docCount),
+                        metadata: nil,
+                        isDownloaded: downloadedVolumeIds.contains(vol),
                         degree: 1))
-                    edges.append(DisplayEdge(source: centralKey, target: key,
-                        referenceType: e.referenceType, context: e.context, degree: 1))
+                    edges.append(DisplayEdge(source: centralKey, target: clusterKey,
+                        referenceType: .footnote, contexts: [],
+                        referenceCount: volEdges.count, degree: 1))
                 }
             }
         }
@@ -800,34 +970,34 @@ final class CrossReferenceGraphViewModel {
         addOutbound(graph.outboundEdges)
 
         // --- Extended edges (degree 2+) ---
+        // Aggregated by (source, target) pair just like degree-1 edges. A node that
+        // was already present at degree 1 keeps its degree-1 kind; new nodes become
+        // `.extended`.
         if !graph.extendedEdges.isEmpty {
-            var addedNodeKeys: Set<String> = Set(nodes.map(\.id))
+            let byPair = Dictionary(grouping: graph.extendedEdges) {
+                "\($0.sourceVolumeId)/\($0.sourceDocumentId)->\($0.targetVolumeId)/\($0.targetDocumentId)"
+            }
+            for (_, group) in byPair.sorted(by: { $0.key < $1.key }) {
+                let first  = group[0]
+                let srcKey = "\(first.sourceVolumeId)/\(first.sourceDocumentId)"
+                let tgtKey = "\(first.targetVolumeId)/\(first.targetDocumentId)"
 
-            for extEdge in graph.extendedEdges {
-                let srcKey = "\(extEdge.sourceVolumeId)/\(extEdge.sourceDocumentId)"
-                let tgtKey = "\(extEdge.targetVolumeId)/\(extEdge.targetDocumentId)"
-
-                // Determine degree of each endpoint.
-                // A node that was already present at degree 1 is still degree 1.
-                // A new node connected to a degree-1 node is degree 2.
-                // A new node connected only to other new nodes is degree 3+.
-                for key in [srcKey, tgtKey] where !addedNodeKeys.contains(key) {
-                    addedNodeKeys.insert(key)
+                for (key, vol) in [(srcKey, first.sourceVolumeId), (tgtKey, first.targetVolumeId)]
+                where !seenNodeKeys.contains(key) {
+                    seenNodeKeys.insert(key)
                     nodes.append(DisplayNode(
                         id: key, kind: .extended,
                         metadata: graph.nodeMetadata[key],
-                        isDownloaded: {
-                            let vPart = key.split(separator: "/", maxSplits: 1).first.map(String.init) ?? ""
-                            return downloadedVolumeIds.contains(vPart)
-                        }(),
+                        isDownloaded: downloadedVolumeIds.contains(vol),
                         degree: graph.fetchedDegree
                     ))
                 }
 
-                // Only add the edge if both endpoints are present.
                 edges.append(DisplayEdge(
                     source: srcKey, target: tgtKey,
-                    referenceType: extEdge.referenceType, context: extEdge.context,
+                    referenceType: aggregatedType(group),
+                    contexts: group.compactMap(\.context),
+                    referenceCount: group.count,
                     degree: graph.fetchedDegree
                 ))
             }
