@@ -292,6 +292,17 @@ struct CrossReferenceGraphView: View {
                 .onChange(of: geo.size, initial: true) { _, size in
                     vm.onCanvasSizeChanged(size, reduceMotion: reduceMotion)
                 }
+                #if os(macOS)
+                .background {
+                    // Scroll-wheel / trackpad-scroll zoom (spec Section 11:
+                    // "Pinch or scroll wheel"). Event-monitor based, so it never
+                    // intercepts clicks, drags, or hover.
+                    ScrollWheelZoomCatcher { factor in
+                        vm.zoom(by: factor)
+                    }
+                    .allowsHitTesting(false)
+                }
+                #endif
             }
 
             // Compact legend pinned to the bottom-leading corner.
@@ -314,6 +325,13 @@ struct CrossReferenceGraphView: View {
         }
         // Q3: VoiceOver alternative — structured inbound/outbound reference list
         .accessibilityRepresentation { graphAccessibilityList }
+        #if os(macOS)
+        // Escape clears any pinned node/edge selection (and dismisses the panel).
+        .onExitCommand {
+            vm.selectedNodeKey = nil
+            vm.selectedEdgeKey = nil
+        }
+        #endif
     }
 
     // MARK: - Accessibility List Representation (Q3)
@@ -513,6 +531,13 @@ struct CrossReferenceGraphView: View {
         .buttonStyle(.plain)
         .position(pos)
         #if os(macOS)
+        // Double-click re-centres directly (single click pins the info panel;
+        // the same action also lives in the context menu and the panel button).
+        .simultaneousGesture(TapGesture(count: 2).onEnded {
+            if !node.isCentral {
+                vm.navigateToNode(node.id)
+            }
+        })
         .onHover { hovering in
             // Transient hover preview. Pinned state (`selectedNodeKey`) is managed
             // exclusively by clicks, so the panel a user pins stays put while the
@@ -995,33 +1020,33 @@ struct CrossReferenceGraphView: View {
             Divider()
                 .frame(height: 16)
 
-            Text(String(localized: "graph.degree.label", defaultValue: "Neighbourhood:"))
+            Text(String(localized: "graph.degree.depthLabel", defaultValue: "Depth:"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             Picker(
-                String(localized: "graph.degree.a11y", defaultValue: "Neighbourhood degree"),
+                String(localized: "graph.degree.a11y", defaultValue: "Reference depth"),
                 selection: Binding(
                     get: { vm.graphDegree },
                     set: { vm.graphDegree = $0 }
                 )
             ) {
-                Text(String(localized: "graph.degree.1", defaultValue: "1°"))
+                Text(String(localized: "graph.degree.oneHop", defaultValue: "1 hop"))
                     .tag(1)
                     .help(String(localized: "graph.degree.1.help",
                                  defaultValue: "Direct inbound and outbound references only"))
-                Text(String(localized: "graph.degree.2", defaultValue: "2°"))
+                Text(String(localized: "graph.degree.twoHops", defaultValue: "2 hops"))
                     .tag(2)
                     .help(String(localized: "graph.degree.2.help",
                                  defaultValue: "Add references to and from each direct neighbour"))
-                Text(String(localized: "graph.degree.3", defaultValue: "3°"))
+                Text(String(localized: "graph.degree.threeHops", defaultValue: "3 hops"))
                     .tag(3)
                     .help(String(localized: "graph.degree.3.help",
                                  defaultValue: "Extend one further hop from each 2nd-degree node"))
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: 140)
+            .frame(maxWidth: 190)
             .help(String(localized: "graph.degree.picker.help",
                          defaultValue: "Choose how many hops of cross-references to display"))
 
@@ -1431,6 +1456,79 @@ struct CrossReferenceGraphView: View {
         }
     }
 }
+
+#if os(macOS)
+
+// MARK: - ScrollWheelZoomCatcher
+
+/// Invisible AppKit view that converts scroll-wheel (and trackpad scroll)
+/// deltas over the graph canvas into multiplicative zoom commands — the
+/// "scroll wheel" half of spec Section 11's "Pinch or scroll wheel" zoom row.
+///
+/// Implemented with a local `NSEvent` monitor instead of overriding
+/// `scrollWheel(with:)` so the view never has to win hit-testing: clicks,
+/// drags, and hover continue to reach the SwiftUI layer beneath. Scroll events
+/// outside this view's bounds (or in other windows) pass through untouched.
+private struct ScrollWheelZoomCatcher: NSViewRepresentable {
+
+    /// Receives a multiplicative zoom factor (> 1 zooms in).
+    let onZoom: (CGFloat) -> Void
+
+    func makeNSView(context: Context) -> TrackingView {
+        let view = TrackingView()
+        view.onZoom = onZoom
+        return view
+    }
+
+    func updateNSView(_ nsView: TrackingView, context: Context) {
+        nsView.onZoom = onZoom
+    }
+
+    /// NSView that owns the event monitor for its window's lifetime.
+    final class TrackingView: NSView {
+        /// Forwarded zoom callback; set by the representable.
+        var onZoom: ((CGFloat) -> Void)?
+        /// Local scroll-wheel monitor token; installed while in a window.
+        private var monitor: Any?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window == nil {
+                removeMonitorIfNeeded()
+            } else if monitor == nil {
+                monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                    // The monitor runs on the main thread; assumeIsolated lets us
+                    // touch MainActor-isolated NSView state. NSEvent itself is not
+                    // Sendable, so only a Bool decision crosses the boundary.
+                    let consumed = MainActor.assumeIsolated { () -> Bool in
+                        guard let self,
+                              let window = self.window,
+                              event.window === window else { return false }
+                        let location = self.convert(event.locationInWindow, from: nil)
+                        guard self.bounds.contains(location),
+                              event.scrollingDeltaY != 0 else { return false }
+                        self.onZoom?(1 + event.scrollingDeltaY * 0.0035)
+                        return true
+                    }
+                    return consumed ? nil : event
+                }
+            }
+        }
+
+        /// Never participates in hit testing; interaction stays with SwiftUI.
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        /// Removes the event monitor; safe to call repeatedly.
+        private func removeMonitorIfNeeded() {
+            if let monitor {
+                NSEvent.removeMonitor(monitor)
+                self.monitor = nil
+            }
+        }
+    }
+}
+
+#endif // os(macOS)
 
 // MARK: - EdgeContextView
 

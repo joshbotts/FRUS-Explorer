@@ -184,6 +184,9 @@ struct DocumentView: View {
     @State private var vm: DocumentViewModel?
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
     @State private var activeSheet: DocumentSheet?
+    /// Selected detent for the cross-reference graph sheet; starts at `.large`
+    /// so the graph never opens half-height (Session 161).
+    @State private var graphSheetDetent: PresentationDetent = .large
 
     // MARK: Highlight state
     @State private var showHighlightColorPicker = false
@@ -446,11 +449,10 @@ struct DocumentView: View {
                     )
                     // The graph benefits from extra vertical room — large layouts and
                     // the force-directed simulation are easier to read at full height.
-                    // Letting the user drag between .medium/.large (mirrors the
-                    // pattern used for PromptEditorView/ProjectEditorView/
-                    // SearchFilterView sheets) makes that resize a system gesture
-                    // instead of requiring a dismiss-and-reopen at a different size.
-                    .presentationDetents([.medium, .large])
+                    // Opens at .large (Session 161: a half-height canvas was the
+                    // weakest first impression of the feature); the user can still
+                    // drag down to .medium as a system gesture.
+                    .presentationDetents([.medium, .large], selection: $graphSheetDetent)
                 }
             case .summarizePromptPicker:
                 SummarizationPromptPickerSheet(
