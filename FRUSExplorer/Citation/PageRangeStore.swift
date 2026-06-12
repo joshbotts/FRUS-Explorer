@@ -141,8 +141,19 @@ public actor PageRangeStore {
     /// Returns the documentId whose span contains `target`, or `nil` if none.
     ///
     /// `rows` must be sorted by page number ascending (as provided by the SQL query).
-    /// The span for document D is [D.firstPage, nextDoc.firstPage − 1].
+    /// The span for document D is [D.firstPage, nextDoc.firstPage − 1]; the final
+    /// document's span is **closed** at the section's highest recorded page
+    /// (every printed page carries a `<pb>` marker, so the maximum row is the
+    /// section's last real page).
+    ///
+    /// Session 162 link audit: the final span used to extend to `Int.max`, so a
+    /// section whose pagination ends early (e.g. front matter ending at page 9)
+    /// claimed every later page of the volume — and because sections are probed
+    /// in dictionary order, page lookups could return a document from the wrong
+    /// section entirely (p. 313 of frus1955-57v17 resolved to a page-9 document).
     private func span(containing target: Int, in rows: [(documentId: String, pageInt: Int)]) -> String? {
+        guard let maxPage = rows.map(\.pageInt).max() else { return nil }
+
         // Deduplicate: keep only first occurrence of each document (its first <pb>)
         var seen = Set<String>()
         var boundaries: [(documentId: String, firstPage: Int)] = []
@@ -155,7 +166,7 @@ public actor PageRangeStore {
 
         for i in 0..<boundaries.count {
             let start = boundaries[i].firstPage
-            let end   = i + 1 < boundaries.count ? boundaries[i + 1].firstPage - 1 : Int.max
+            let end   = i + 1 < boundaries.count ? boundaries[i + 1].firstPage - 1 : maxPage
             if target >= start && target <= end {
                 return boundaries[i].documentId
             }

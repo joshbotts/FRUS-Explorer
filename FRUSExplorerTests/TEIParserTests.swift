@@ -1496,3 +1496,98 @@ struct ParseVolumeFullTests {
                 "Expected document ID 'd1'")
     }
 }
+
+// MARK: - TermsDefinitionTests (Session 162)
+
+/// Covers the terms-list definition extraction fixed in the Session 162 link
+/// audit: FRUS separates term and definition with a comma after the nested
+/// `<term>` element, not with a colon.
+struct TermsDefinitionTests {
+
+    @Test("Terms parser captures the definition text after the nested <term> element")
+    func definitionsAreCaptured() async throws {
+        let xml = """
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <text><body>
+            <div type="section" xml:id="terms">
+              <list>
+                <item><hi rend="strong"><term xml:id="t_POL1">POL</term>,</hi> petroleum, oil, lubricants; political</item>
+                <item><hi rend="strong"><term xml:id="t_UAR1">UAR</term>,</hi> United Arab Republic</item>
+                <item><term xml:id="t_BARE1">BARE</term></item>
+              </list>
+            </div>
+          </body></text>
+        </TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("terms-test-\(UUID().uuidString).xml")
+        try xml.data(using: .utf8)!.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        let terms = try await parser.parseTerms(volumeURL: url)
+
+        let pol = try #require(terms.first { $0.ref == "t_POL1" })
+        #expect(pol.term == "POL")
+        #expect(pol.definition == "petroleum, oil, lubricants; political")
+
+        let uar = try #require(terms.first { $0.ref == "t_UAR1" })
+        #expect(uar.definition == "United Arab Republic")
+
+        let bare = try #require(terms.first { $0.ref == "t_BARE1" })
+        #expect(bare.definition == nil, "No trailing text means no definition")
+    }
+}
+
+// MARK: - CrossRefResolverTests (Session 162)
+
+/// Covers `FRUSURLSchemeHandler.resolveCrossRefTarget` — the normaliser behind
+/// every in-document cross-reference tap (Session 162 link audit).
+struct CrossRefResolverTests {
+
+    @Test("Same-volume document anchors resolve with the caller's volume untouched")
+    func sameVolumeDocument() {
+        let dest = FRUSURLSchemeHandler.resolveCrossRefTarget("#d80", volumeId: nil)
+        #expect(dest == .document(volumeId: nil, documentId: "d80"))
+    }
+
+    @Test("Cross-volume targets extract both volume and document, even with no volume hint")
+    func crossVolumeDocument() {
+        // macOS used to pass the raw target through and navigate to
+        // "frus1964-68v18#d65" as a document ID.
+        let dest = FRUSURLSchemeHandler.resolveCrossRefTarget("frus1964-68v18#d65", volumeId: nil)
+        #expect(dest == .document(volumeId: "frus1964-68v18", documentId: "d65"))
+
+        let withHint = FRUSURLSchemeHandler.resolveCrossRefTarget(
+            "frus1964-68v18#d65", volumeId: "frus1964-68v18")
+        #expect(withHint == .document(volumeId: "frus1964-68v18", documentId: "d65"))
+    }
+
+    @Test("Footnote-suffixed document ids resolve to the base document")
+    func footnoteSuffixedDocument() {
+        let dest = FRUSURLSchemeHandler.resolveCrossRefTarget("#d100fn2", volumeId: nil)
+        #expect(dest == .document(volumeId: nil, documentId: "d100"))
+    }
+
+    @Test("Printed-page anchors resolve to page numbers; roman numerals are unresolved")
+    func pageAnchors() {
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#pg_313", volumeId: nil)
+                == .page(volumeId: nil, page: 313))
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("frus1955-57v17#pg_313", volumeId: nil)
+                == .page(volumeId: "frus1955-57v17", page: 313))
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#pg_XIII", volumeId: nil)
+                == .unresolved)
+    }
+
+    @Test("Bare footnote/figure anchors and external URLs classify correctly")
+    func otherAnchors() {
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#fn3", volumeId: nil) == .unresolved)
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("", volumeId: nil) == .unresolved)
+        if case .external(let url) = FRUSURLSchemeHandler.resolveCrossRefTarget(
+            "http://bookstore.gpo.gov", volumeId: nil) {
+            #expect(url.host == "bookstore.gpo.gov")
+        } else {
+            Issue.record("Expected .external for an http target")
+        }
+    }
+}

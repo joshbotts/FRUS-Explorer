@@ -629,6 +629,7 @@ struct FRUSExplorerApp: App {
             )
             appState.analyticsService = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
             let pageRangeStore = try? PageRangeStore(databaseURL: dbURL)
+            appState.pageRangeStore = pageRangeStore
             let downloadedIds = Set(
                 (try? FileManager.default.contentsOfDirectory(
                     at: volumesDir, includingPropertiesForKeys: nil

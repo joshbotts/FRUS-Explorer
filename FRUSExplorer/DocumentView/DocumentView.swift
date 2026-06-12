@@ -216,6 +216,8 @@ struct DocumentView: View {
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
+    /// Opens external (non-FRUS) cross-reference URLs in the system browser.
+    @Environment(\.openURL) private var openURL
     /// `true` only when the platform can actually open a second window — Stage
     /// Manager on iPad; never on iPhone or a non-Stage-Manager iPad. Gates the
     /// "Open in New Window" affordance so it isn't offered where `openWindow`
@@ -683,32 +685,48 @@ struct DocumentView: View {
     ///
     /// Version history:
     ///   1.0 — Session 44: initial implementation
+    /// Routes a tapped in-document cross-reference through
+    /// `FRUSURLSchemeHandler.resolveCrossRefTarget` (Session 162): documents
+    /// navigate (footnote-suffixed ids resolve to their base document), printed
+    /// pages resolve via `PageRangeStore`, and absolute URLs open externally.
     private func handleCrossRefTap(target: String, targetVolumeId: String?) {
-        let docId: String
-        if target.hasPrefix("#") {
-            docId = String(target.dropFirst())
-        } else {
-            docId = target.components(separatedBy: "#").last ?? target
-        }
-        guard !docId.isEmpty else { return }
-        let volId = targetVolumeId ?? entry.volumeId
+        switch FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
+        case .document(let volumeId, let documentId):
+            navigateToCrossRef(documentId: documentId, volumeId: volumeId ?? entry.volumeId)
 
-        guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volId) else {
+        case .page(let volumeId, let page):
+            resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId)
+
+        case .external(let url):
+            openURL(url)
+
+        case .unresolved:
+            #if DEBUG
+            print("[DocumentView] Cross-ref skipped (unresolvable target): \(target)")
+            #endif
+        }
+    }
+
+    /// Opens `documentId` in `volumeId`, or the cross-reference graph when the
+    /// volume isn't downloaded.
+    private func navigateToCrossRef(documentId: String, volumeId: String) {
+        guard !documentId.isEmpty else { return }
+        guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volumeId) else {
             activeSheet = .crossReferenceGraph
             #if DEBUG
-            print("[DocumentView] Cross-ref: \(volId) not downloaded, opening graph")
+            print("[DocumentView] Cross-ref: \(volumeId) not downloaded, opening graph")
             #endif
             return
         }
 
         let crossEntry = DocumentBrowserEntry(
-            documentId: docId,
-            volumeId: volId,
+            documentId: documentId,
+            volumeId: volumeId,
             documentNumber: nil,
-            // Use docId as a non-empty placeholder so the breadcrumb label is
+            // Use documentId as a non-empty placeholder so the breadcrumb label is
             // visible while the document loads. DocumentView replaces the navigation
             // title with vm.documentTitle once the XML has been parsed.
-            header: docId,
+            header: documentId,
             dateline: nil,
             sourceNote: nil
         )
@@ -718,8 +736,30 @@ struct DocumentView: View {
         appState.pendingBrowseDocument = crossEntry
 
         #if DEBUG
-        print("[DocumentView] Cross-ref tap → \(volId)/\(docId)")
+        print("[DocumentView] Cross-ref tap → \(volumeId)/\(documentId)")
         #endif
+    }
+
+    /// Resolves a printed-page reference to its containing document and opens it.
+    private func resolvePageReference(page: Int, volumeId: String) {
+        guard let store = appState.pageRangeStore else {
+            #if DEBUG
+            print("[DocumentView] Page ref: PageRangeStore unavailable")
+            #endif
+            return
+        }
+        Task {
+            let documentId = (try? await store.document(forPage: page, inVolume: volumeId)) ?? nil
+            await MainActor.run {
+                if let documentId {
+                    navigateToCrossRef(documentId: documentId, volumeId: volumeId)
+                } else {
+                    #if DEBUG
+                    print("[DocumentView] Page ref: p. \(page) of \(volumeId) not in page index")
+                    #endif
+                }
+            }
+        }
     }
 
     // MARK: - Toolbar

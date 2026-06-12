@@ -57,6 +57,8 @@ struct MacDocumentView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    /// Opens external (non-FRUS) cross-reference URLs in the system browser.
+    @Environment(\.openURL) private var openURL
 
     @State private var vm: DocumentViewModel
     @State private var prevEntry: DocumentBrowserEntry? = nil
@@ -748,45 +750,75 @@ struct MacDocumentView: View {
         #endif
     }
 
+    /// Routes a tapped in-document cross-reference through
+    /// `FRUSURLSchemeHandler.resolveCrossRefTarget` (Session 162). The previous
+    /// implementation only stripped a *leading* `#`, so cross-volume targets
+    /// (`frus1964-68v18#d65`) navigated to a bogus document ID, and it silently
+    /// skipped printed-page references instead of resolving them.
     private func handleCrossRefTap(target: String, volumeId: String?) {
-        let stripped = target.hasPrefix("#") ? String(target.dropFirst()) : target
-        let lower = stripped.lowercased()
+        switch FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId) {
+        case .document(let targetVolumeId, let documentId):
+            navigateToCrossRef(documentId: documentId,
+                               volumeId: targetVolumeId ?? entry.volumeId)
 
-        // Skip non-document anchors: external URLs, page refs, footnote anchors,
-        // and figure/table refs that encode position rather than a document ID.
-        guard !stripped.hasPrefix("http"),
-              !lower.hasPrefix("page"),
-              !lower.hasPrefix("pg"),
-              !lower.hasPrefix("fn"),
-              !lower.hasPrefix("note"),
-              !lower.hasPrefix("fig"),
-              !lower.hasPrefix("tbl"),
-              !stripped.isEmpty
-        else {
+        case .page(let targetVolumeId, let page):
+            resolvePageReference(page: page,
+                                 volumeId: targetVolumeId ?? entry.volumeId)
+
+        case .external(let url):
+            openURL(url)
+
+        case .unresolved:
             #if DEBUG
-            print("[MacDocumentView] Cross-ref skipped (non-document target): \(target)")
+            print("[MacDocumentView] Cross-ref skipped (unresolvable target): \(target)")
             #endif
-            return
         }
+    }
 
-        let resolvedVolumeId = volumeId ?? entry.volumeId
+    /// Pushes `documentId` in `volumeId` onto the navigation stack.
+    private func navigateToCrossRef(documentId: String, volumeId: String) {
+        guard !documentId.isEmpty else { return }
         let dest = DocumentBrowserEntry(
-            documentId: stripped,
-            volumeId: resolvedVolumeId,
-            // Use stripped ID as placeholder header — loadDocument() fills the real title
+            documentId: documentId,
+            volumeId: volumeId,
+            // Use the ID as placeholder header — loadDocument() fills the real title
             // after parsing, matching the breadcrumb approach.
-            header: stripped
+            header: documentId
         )
         navigationPath.append(dest)
 
         #if DEBUG
-        print("[MacDocumentView] Cross-ref tap → \(resolvedVolumeId)/\(stripped)")
+        print("[MacDocumentView] Cross-ref tap → \(volumeId)/\(documentId)")
         #endif
+    }
+
+    /// Resolves a printed-page reference to its containing document and opens it.
+    private func resolvePageReference(page: Int, volumeId: String) {
+        guard let store = appState.pageRangeStore else {
+            #if DEBUG
+            print("[MacDocumentView] Page ref: PageRangeStore unavailable")
+            #endif
+            return
+        }
+        Task {
+            let documentId = (try? await store.document(forPage: page, inVolume: volumeId)) ?? nil
+            await MainActor.run {
+                if let documentId {
+                    navigateToCrossRef(documentId: documentId, volumeId: volumeId)
+                } else {
+                    #if DEBUG
+                    print("[MacDocumentView] Page ref: p. \(page) of \(volumeId) not in page index")
+                    #endif
+                }
+            }
+        }
     }
 
     private func handlePersonTap(_ person: PersonEntry) {
         vm.selectedPerson = person
-        // Mention count loaded by .task(id: vm.selectedPerson?.ref) in future session.
+        // Session 162 link audit: the count was never loaded on macOS, so the
+        // person sheet always claimed "Not found in indexed documents".
+        Task { await vm.loadPersonMentionCount(for: person) }
     }
 
     private func handleGlossTap(_ gloss: GlossEntry) {

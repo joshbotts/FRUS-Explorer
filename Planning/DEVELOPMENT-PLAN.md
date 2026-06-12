@@ -485,3 +485,29 @@ All three previously deferred recommendations implemented (user request), each v
 - **Time-range brush** — `TimelineBrushView` strip between canvas and legend: full date extent with one density mark per dated document; drag to create a window, drag inside to move, edges to resize, ✕ to clear. While active the axis zooms to the window (`timelineLayout(domain:)`), out-of-domain dated nodes hide (never parked — and the **central document hides too** when excluded, rather than extrapolating off-plot), and clusters recompute on the zoomed scale so zooming in dissolves them (verified live: brushing Jun–Oct 1967 dissolved the 17-doc cluster into clean lanes with re-ticked Jun/Jul/Aug/Sep/Oct axis).
 - **Regression caught by the full suite**: `rerunLayout`'s new base→display assignment emptied graphs for callers that seed `displayNodes` directly (the ReduceMotion accessibility tests) — fixed with a base-empty fallback. The brush test also exposed the central-extrapolation flaw above (its first version used the wrong fixture year, 1967 vs 1962 — both corrected).
 - **Verification**: full `FRUSExplorerTests` green (777 tests; +2 new: date clustering, brush domain filtering); macOS + iOS builds clean; live checks — sidebar auto-open at 3 hops, cluster pin → Expand Date Group, brush drag/zoom/clear, detail header shows the descriptive cluster label rather than the raw `datecluster/…` key.
+
+### Session 162 (cont.) — In-document link audit: assessed live, six defects found and repaired
+Drove the running macOS app via computer use, clicking every link type in real documents (frus1964-68v19 d94/d13/d69/d100, chosen by grepping the volume XML for each ref-target flavour). Assessment → repair → live re-verification.
+
+| Link type | Before | After |
+|---|---|---|
+| Person link (body) | ✅ opens sheet | ✅ |
+| Person "In Indexed Documents" count | ❌ always "Not found" on macOS | ✅ "Mentioned in 1,408 indexed documents" (Nasser) |
+| Person/term link **inside a footnote** | ❌ resolved nil → error alert | ✅ |
+| Term/gloss definition | ❌ sheet always empty | parser fixed; populates on re-index (v8) |
+| Heading `<gloss type="from">` | ❌ dead `href="#"` links | ✅ plain text |
+| Footnote marker popover | ✅ | ✅ |
+| Same-volume doc ref `#dNN` | ✅ | ✅ |
+| Footnote-suffixed ref `#d100fn2` | ❌ "Document 'd100fn2' was not found" | ✅ opens d100 |
+| Cross-volume ref `vol#dNN` | ❌ macOS navigated to raw target → not found | ✅ opens d65 in frus1964-68v18 |
+| Printed-page ref `vol#pg_313` | ❌ macOS silent no-op; iOS would 404 | ✅ navigates; exact doc fixed by PageRangeStore repair |
+| External `http(s)` ref | ❌ no-op / bogus nav | ✅ opens in browser via `openURL` |
+
+Root causes and fixes:
+- **`FRUSURLSchemeHandler.register(model:)` scanned only `model.bodyNodes`** — footnote bodies live in `model.footnotes`, so every person/term link inside a footnote resolved nil. Now scans both.
+- **New `CrossRefDestination` + `resolveCrossRefTarget(_:volumeId:)`** (nonisolated static; the default-MainActor inference initially trapped the off-actor test — instructive crash via `dispatch_assert_queue` inside a `drop(while:)` closure): classifies raw `<ref>` targets into document (with `dNNfnM`→`dNN` normalisation), page (`pg_…`; roman numerals unresolved), external URL, or unresolved. Both platform `handleCrossRefTap`s now route through it; `PageRangeStore` resolves pages to containing documents (`AppState.pageRangeStore` added at boot); `openURL` handles externals.
+- **`PageRangeStore.span` open-ended final span** — the last document of *every* section claimed pages to `Int.max`, so a section whose pagination ends early (front matter ending at p. 9) could win the dictionary-ordered race and resolve p. 313 of frus1955-57v17 to a page-9 document. Final spans now close at the section's highest recorded page; regression test added.
+- **Terms parser discarded every definition in the corpus** — it split item text on ":" but FRUS uses `<term>POL</term>, definition`. Fixed (with no-`<term>` fallback retained); `currentDateIndexVersion` → **8** so the boot re-index repopulates `terms.definition` corpus-wide.
+- **Heading metadata glosses** (`<gloss type="from">` with no target) no longer render as links.
+- **macOS never called `loadPersonMentionCount`** (stale "future session" comment) — wired in `handlePersonTap`.
+- **Verification**: full suite green (785 tests; +5 new: 4 resolver classifications, terms definitions, early-section page spans); both builds clean; live re-checks confirmed each repaired path. **Caveats**: term definitions appear after the v8 re-index completes (launch-triggered, Index Health shows progress); same-document `#pg_XIII`-style roman/front-matter page anchors remain unresolved by design; cross-document footnote-anchor scroll (landing on d100 *at* fn2) is a possible future enhancement.
