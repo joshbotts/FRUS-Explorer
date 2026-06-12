@@ -8,6 +8,18 @@
 
 import SwiftUI
 
+// MARK: - CompactGraphContent
+
+#if os(iOS)
+/// What the compact-width (iPhone) graph sheet shows: the reference list or the
+/// canvas. The list is the default — it is the more usable presentation on a
+/// small screen — with the canvas one tap away.
+private enum CompactGraphContent {
+    case graph
+    case list
+}
+#endif
+
 // MARK: - CrossReferenceGraphView
 
 /// Cross-reference graph renderer for a single FRUS document.
@@ -87,6 +99,15 @@ struct CrossReferenceGraphView: View {
     /// Volumes the user queued for download from this graph during the current
     /// presentation; drives the "Download queued" state in the node info panel.
     @State private var requestedDownloadVolumeIds: Set<String> = []
+    /// Whether the regular-width layout shows the reference list side panel.
+    @State private var showReferenceList = false
+    #if os(iOS)
+    /// Compact-width content choice. The list is the default on iPhone, where
+    /// the canvas is hardest to read and operate; the Graph/List picker in the
+    /// filter bar switches between them.
+    @State private var compactContentMode: CompactGraphContent = .list
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     init(
         entry: DocumentBrowserEntry,
@@ -132,7 +153,7 @@ struct CrossReferenceGraphView: View {
                     )
                     Spacer()
                 } else {
-                    graphContentArea
+                    contentArea
                 }
             }
             .navigationTitle(
@@ -142,6 +163,15 @@ struct CrossReferenceGraphView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    #if os(iOS)
+                    if horizontalSizeClass != .compact {
+                        referenceListToggleButton
+                    }
+                    #else
+                    referenceListToggleButton
+                    #endif
+                }
                 ToolbarItem(placement: .primaryAction) {
                     resetViewportButton
                 }
@@ -182,7 +212,7 @@ struct CrossReferenceGraphView: View {
         #endif
         .task { await vm.loadGraph() }
         .onChange(of: vm.graphDegree) {
-            Task { await vm.loadGraph() }
+            vm.degreePickerChanged()
         }
         .sheet(item: Binding(
             get: { lotFileSheetTarget.map { LotFileSheetID(nodeKey: $0.nodeKey, lotFile: $0.lotFile, repository: $0.repository) } },
@@ -196,6 +226,51 @@ struct CrossReferenceGraphView: View {
             )
             .environment(appState)
         }
+    }
+
+    // MARK: - Content Area
+
+    /// Chooses between canvas, list, or side-by-side presentation based on
+    /// platform width and user toggles. On compact widths (iPhone) the list and
+    /// canvas are alternatives; on regular widths the list is a trailing panel.
+    @ViewBuilder
+    private var contentArea: some View {
+        #if os(iOS)
+        if horizontalSizeClass == .compact {
+            if compactContentMode == .list {
+                ReferenceListPanel(vm: vm, openDocument: openDocument)
+            } else {
+                graphContentArea
+            }
+        } else {
+            regularContentArea
+        }
+        #else
+        regularContentArea
+        #endif
+    }
+
+    /// Canvas with the optional reference-list side panel (regular widths).
+    private var regularContentArea: some View {
+        HStack(spacing: 0) {
+            graphContentArea
+            if showReferenceList {
+                Divider()
+                ReferenceListPanel(vm: vm, openDocument: openDocument)
+                    .frame(width: 320)
+            }
+        }
+    }
+
+    /// Opens a document using the platform's navigation convention and clears
+    /// any pinned selection. macOS opens in the main window; iOS pushes inline.
+    private func openDocument(_ entry: DocumentBrowserEntry) {
+        #if os(macOS)
+        appState.pendingBrowseDocument = entry
+        #else
+        vm.navigationPath.append(entry)
+        #endif
+        vm.selectedNodeKey = nil
     }
 
     // MARK: - Graph Content
@@ -548,7 +623,9 @@ struct CrossReferenceGraphView: View {
             legendRow(color: .orange, text: String(
                 localized: "graph.legend.outbound",
                 defaultValue: "Cited by this document"))
-            if vm.graphDegree > 1 {
+            if vm.displayNodes.contains(where: {
+                if case .extended = $0.kind { return true } else { return false }
+            }) {
                 legendRow(color: .secondary.opacity(0.5), text: String(
                     localized: "graph.legend.extended",
                     defaultValue: "Further hops"))
@@ -948,10 +1025,52 @@ struct CrossReferenceGraphView: View {
             .help(String(localized: "graph.degree.picker.help",
                          defaultValue: "Choose how many hops of cross-references to display"))
 
+            if vm.autoExpandedSparseGraph {
+                Text(String(localized: "graph.autoExpanded.note",
+                            defaultValue: "Few direct references — showing 2 hops"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
             Spacer()
+
+            #if os(iOS)
+            if horizontalSizeClass == .compact {
+                Picker(
+                    String(localized: "graph.content.a11y", defaultValue: "Content style"),
+                    selection: $compactContentMode
+                ) {
+                    Image(systemName: "list.bullet")
+                        .tag(CompactGraphContent.list)
+                        .accessibilityLabel(String(localized: "graph.content.list",
+                                                   defaultValue: "List"))
+                    Image(systemName: "point.3.connected.trianglepath.dotted")
+                        .tag(CompactGraphContent.graph)
+                        .accessibilityLabel(String(localized: "graph.content.graph",
+                                                   defaultValue: "Graph"))
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 100)
+            }
+            #endif
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+    }
+
+    /// Toolbar button toggling the reference-list side panel (regular widths).
+    private var referenceListToggleButton: some View {
+        Button {
+            withAnimation { showReferenceList.toggle() }
+        } label: {
+            Image(systemName: "sidebar.trailing")
+                .accessibilityLabel(String(localized: "graph.list.toggle.a11y",
+                                           defaultValue: "Toggle reference list"))
+        }
+        .help(String(localized: "graph.list.toggle.help",
+                     defaultValue: "Show or hide the reference list panel"))
     }
 
     // MARK: - Info Popover

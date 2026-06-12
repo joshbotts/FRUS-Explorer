@@ -404,6 +404,23 @@ final class CrossReferenceGraphViewModel {
     /// Number of reference hops to display (1 = direct neighbours only, 2 or 3 = extended).
     var graphDegree: Int = 1
 
+    /// `true` when the current graph was automatically widened to 2 hops because
+    /// the direct neighbourhood was sparse (1–3 references). The degree picker
+    /// still shows the user's chosen value; a toolbar note explains the expansion.
+    private(set) var autoExpandedSparseGraph = false
+
+    /// Set once the user manually changes the degree picker; disables sparse
+    /// auto-expansion for the rest of the session so the picker is never
+    /// second-guessed.
+    private var userAdjustedDegree = false
+
+    /// Called by the view when the degree picker changes. Records that the user
+    /// has taken manual control of the degree, then reloads.
+    func degreePickerChanged() {
+        userAdjustedDegree = true
+        Task { await loadGraph() }
+    }
+
     // MARK: - Navigation History
 
     /// Documents visited before the current central document, oldest-first.
@@ -462,12 +479,31 @@ final class CrossReferenceGraphViewModel {
         error = nil
         let degree = graphDegree
         do {
-            graph = try await store.expandedGraph(
+            var loaded = try await store.expandedGraph(
                 forDocumentId: centralDocumentId,
                 volumeId: centralVolumeId,
                 degree: degree,
                 downloadedVolumeIds: downloadedVolumeIds
             )
+            // Sparse auto-expansion: a 1–3 reference star is the most common (and
+            // least informative) first impression, so widen it one hop. The degree
+            // *picker* keeps showing the user's chosen value — this only affects
+            // the loaded data, and never fires once the user has touched the picker.
+            var autoExpanded = false
+            if degree == 1, !userAdjustedDegree, (1...3).contains(loaded.edgeCount) {
+                let widened = try await store.expandedGraph(
+                    forDocumentId: centralDocumentId,
+                    volumeId: centralVolumeId,
+                    degree: 2,
+                    downloadedVolumeIds: downloadedVolumeIds
+                )
+                if widened.totalEdgeCount > loaded.totalEdgeCount {
+                    loaded = widened
+                    autoExpanded = true
+                }
+            }
+            graph = loaded
+            autoExpandedSparseGraph = autoExpanded
             rebuildDisplay()
         } catch {
             self.error = error.localizedDescription
@@ -578,6 +614,7 @@ final class CrossReferenceGraphViewModel {
         nodeDateValues      = [:]
         timelineTicks       = []
         timelineHasParkedNodes = false
+        autoExpandedSparseGraph = false
         expandedClusterKeys = []
         // layoutMode and userPickedLayoutMode survive re-centring, like graphDegree:
         // an explicit Timeline/Network choice is a session preference.
@@ -721,6 +758,20 @@ final class CrossReferenceGraphViewModel {
     func selectedEdge() -> DisplayEdge? {
         guard let key = resolvedEdgeKey else { return nil }
         return displayEdges.first { $0.id == key }
+    }
+
+    /// The aggregated edge that links `nodeKey` to the central document — the
+    /// inbound edge first, then the outbound one, then (for extended nodes) any
+    /// edge touching the node. Used by the reference list to show per-row
+    /// context snippets and reference counts.
+    func primaryEdge(for nodeKey: String) -> DisplayEdge? {
+        if let edge = displayEdges.first(where: { $0.source == nodeKey && $0.target == centralKey }) {
+            return edge
+        }
+        if let edge = displayEdges.first(where: { $0.source == centralKey && $0.target == nodeKey }) {
+            return edge
+        }
+        return displayEdges.first { $0.source == nodeKey || $0.target == nodeKey }
     }
 
     /// Returns the node key for the first node whose centre is within its hit radius of `point`.
