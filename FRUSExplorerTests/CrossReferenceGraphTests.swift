@@ -465,6 +465,44 @@ struct CrossReferenceGraphTests {
                 "Central node must sit on the centre lane")
     }
 
+    @Test("TimelineBrushTest: a brush domain hides out-of-range dated nodes without parking them")
+    func timelineBrushFiltersDomain() throws {
+        let graph = makeDatedGraph()  // Mar 4 … Nov 2, 1962; one undated node
+        let centralKey = "vol1/d0"
+        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: centralKey,
+            expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
+        )
+        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        let calendar = Calendar(identifier: .gregorian)
+        let domainStart = try #require(
+            CrossReferenceGraphViewModel.date(fromISO: "1962-05-01", calendar: calendar)
+        ).timeIntervalSinceReferenceDate
+        let domainEnd = try #require(
+            CrossReferenceGraphViewModel.date(fromISO: "1962-08-01", calendar: calendar)
+        ).timeIntervalSinceReferenceDate
+
+        let result = CrossReferenceGraphViewModel.timelineLayout(
+            nodes: nodes, dateValues: dateValues,
+            centralKey: centralKey, canvasSize: canvasSize,
+            domain: domainStart...domainEnd
+        )
+
+        // In-domain: dMid (May 30) and central (Jul 25). Out: dEarly (Mar 4),
+        // dLate (Nov 2) — hidden, NOT parked. Undated still parks.
+        #expect(result.positions["vol1/dMid"] != nil)
+        #expect(result.positions[centralKey] != nil)
+        #expect(result.positions["vol1/dEarly"] == nil, "Out-of-domain node must be hidden")
+        #expect(result.positions["vol1/dLate"] == nil, "Out-of-domain node must be hidden")
+        #expect(result.positions["vol1/dUndated"] != nil, "Undated node still parks")
+        #expect(result.hasParkedNodes)
+
+        // The axis spans the brushed window, not the full extent.
+        let xMid = try #require(result.positions["vol1/dMid"]?.x)
+        let xCentral = try #require(result.positions[centralKey]?.x)
+        #expect(xCentral > xMid, "Chronological order preserved inside the domain")
+    }
+
     @Test("TimelineLayoutTest: layout is empty when dates are missing or identical")
     func timelineLayoutRequiresDateSpan() throws {
         let graph = makeTestGraph(inboundCount: 3, outboundCount: 2)  // no dateISO values
@@ -499,6 +537,91 @@ struct CrossReferenceGraphTests {
                 "Partial dates resolve to the start of their period")
         #expect(calendar.component(.year, from: fullDate) == 1962)
         #expect(calendar.component(.day,  from: fullDate) == 25)
+    }
+
+    // MARK: - DateClusterTest
+
+    @Test("DateClusterTest: four-plus docs in one x-window collapse into an expandable cluster with rerouted, aggregated edges")
+    func dateClusteringCollapsesPileups() throws {
+        let centralKey = "vol1/d0"
+        var meta: [String: CrossReferenceNodeMetadata] = [:]
+        meta[centralKey] = CrossReferenceNodeMetadata(
+            documentId: "d0", volumeId: "vol1",
+            documentNumber: "0", header: "Central", dateline: nil,
+            dateISO: "1967-08-15"
+        )
+        // Five inbound documents dated within four days (a pileup), plus one
+        // outbound document months later that must stay individual.
+        var inbound: [CrossReferenceEdge] = []
+        for (index, day) in [4, 5, 5, 6, 8].enumerated() {
+            let doc = "m\(index)"
+            inbound.append(CrossReferenceEdge(
+                sourceDocumentId: doc, sourceVolumeId: "vol1",
+                targetDocumentId: "d0", targetVolumeId: "vol1",
+                context: "Context \(index).", referenceType: .footnote
+            ))
+            meta["vol1/\(doc)"] = CrossReferenceNodeMetadata(
+                documentId: doc, volumeId: "vol1",
+                documentNumber: "\(index + 1)", header: "Member \(index)", dateline: nil,
+                dateISO: String(format: "1967-06-%02d", day)
+            )
+        }
+        let outbound = [CrossReferenceEdge(
+            sourceDocumentId: "d0", sourceVolumeId: "vol1",
+            targetDocumentId: "far", targetVolumeId: "vol1",
+            context: nil, referenceType: .footnote
+        )]
+        meta["vol1/far"] = CrossReferenceNodeMetadata(
+            documentId: "far", volumeId: "vol1",
+            documentNumber: "99", header: "Far Document", dateline: nil,
+            dateISO: "1967-11-04"
+        )
+        let graph = CrossReferenceGraph(
+            centralDocumentId: "d0", centralVolumeId: "vol1",
+            inboundEdges: inbound, outboundEdges: outbound,
+            hasUndownloadedSources: false, nodeMetadata: meta
+        )
+        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: centralKey,
+            expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
+        )
+        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+
+        let clustered = CrossReferenceGraphViewModel.dateClusteredDisplay(
+            nodes: nodes, edges: edges, dateValues: dateValues,
+            canvasWidth: 800, expandedKeys: []
+        )
+
+        // One date cluster replaces the five members; central + far survive.
+        let clusterNode = try #require(clustered.nodes.first { $0.isDateCluster })
+        guard case .dateCluster(let label, let count, let members) = clusterNode.kind else {
+            Issue.record("Expected dateCluster kind")
+            return
+        }
+        #expect(count == 5)
+        #expect(members.count == 5)
+        #expect(!label.isEmpty)
+        #expect(clustered.nodes.count == 3, "central + far + cluster, got \(clustered.nodes.count)")
+        #expect(!clustered.nodes.contains { $0.id == "vol1/m0" }, "Members must be hidden")
+        #expect(clustered.clusterDateValues[clusterNode.id] != nil,
+                "Cluster needs a date value for x placement")
+
+        // The five member→central edges aggregate into one cluster→central edge.
+        let clusterEdge = try #require(clustered.edges.first {
+            $0.source == clusterNode.id && $0.target == centralKey
+        })
+        #expect(clusterEdge.referenceCount == 5)
+        #expect(clusterEdge.contexts.count == 5)
+        #expect(Set(clustered.edges.map(\.id)).count == clustered.edges.count,
+                "Edge IDs must stay unique after rerouting")
+
+        // Expanding the cluster restores the original display.
+        let expanded = CrossReferenceGraphViewModel.dateClusteredDisplay(
+            nodes: nodes, edges: edges, dateValues: dateValues,
+            canvasWidth: 800, expandedKeys: [clusterNode.id]
+        )
+        #expect(!expanded.nodes.contains { $0.isDateCluster })
+        #expect(expanded.nodes.count == nodes.count)
     }
 
     // MARK: - AggregationTest

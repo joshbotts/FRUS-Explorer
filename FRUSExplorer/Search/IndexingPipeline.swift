@@ -284,7 +284,12 @@ public actor IndexingPipeline {
     ///   sources section, and `volume_structures` rows gain the full front/back
     ///   hierarchy. All of these live in parse output, so a full XML re-parse is
     ///   required to repopulate them.
-    public static let currentDateIndexVersion: Int = 7
+    /// - Version 8: terms-list definitions fix (Session 162 link audit). The terms
+    ///   parser split item text on ":" but FRUS separates term and definition with
+    ///   a comma after the nested `<term>` element, so every glossary definition in
+    ///   the corpus was stored as NULL. A full re-parse repopulates the `terms`
+    ///   table's `definition` column so tapped term links show real definitions.
+    public static let currentDateIndexVersion: Int = 8
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
