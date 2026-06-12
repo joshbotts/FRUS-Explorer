@@ -316,6 +316,10 @@ struct CrossReferenceGraphView: View {
 
     private var graphCanvas: some View {
         Canvas { context, size in
+            // Date axis first so nodes and labels draw above it (timeline mode only).
+            if vm.layoutMode == .timeline && !vm.timelineTicks.isEmpty {
+                drawTimelineAxis(&context, size: size)
+            }
             // Radii lookup so edges can stop their arrowheads at the target rim.
             let radii = Dictionary(uniqueKeysWithValues: vm.displayNodes.map {
                 ($0.id, vm.nodeRadius(for: $0))
@@ -892,6 +896,28 @@ struct CrossReferenceGraphView: View {
 
     private var filterToolbar: some View {
         HStack(spacing: 8) {
+            Picker(
+                String(localized: "graph.layout.a11y", defaultValue: "Graph layout"),
+                selection: Binding(
+                    get: { vm.layoutMode },
+                    set: { vm.setLayoutMode($0, reduceMotion: reduceMotion) }
+                )
+            ) {
+                Text(String(localized: "graph.layout.timeline", defaultValue: "Timeline"))
+                    .tag(GraphLayoutMode.timeline)
+                Text(String(localized: "graph.layout.network", defaultValue: "Network"))
+                    .tag(GraphLayoutMode.network)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 170)
+            .disabled(!vm.timelineEligible)
+            .help(String(localized: "graph.layout.help",
+                         defaultValue: "Timeline arranges documents chronologically along a date axis; Network uses the spring layout. Timeline is unavailable when too few documents have dates."))
+
+            Divider()
+                .frame(height: 16)
+
             Text(String(localized: "graph.degree.label", defaultValue: "Neighbourhood:"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -947,6 +973,12 @@ struct CrossReferenceGraphView: View {
                               defaultValue: "Edge context"),
                 body:  String(localized: "graph.info.edges.body",
                               defaultValue: "Many edges carry the original footnote or editorial-note text where the reference appeared — hover over (or tap) the middle of a line to read it. Thicker lines mean the pair is linked by several separate references.")
+            )
+            graphInfoRow(
+                title: String(localized: "graph.info.timeline.title",
+                              defaultValue: "Timeline and Network layouts"),
+                body:  String(localized: "graph.info.timeline.body",
+                              defaultValue: "Timeline places each document at its date along a time axis — documents this one cites usually sit to the left (earlier), documents citing it to the right (later). Documents without a recorded date park in the Undated column. Network uses a spring layout based purely on connections.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
@@ -1065,6 +1097,36 @@ struct CrossReferenceGraphView: View {
     }
 
     // MARK: - Canvas Drawing Helpers
+
+    /// Draws the timeline layout's date axis: a horizontal baseline near the
+    /// bottom edge, adaptive tick marks with labels, and — when undated nodes are
+    /// parked at the trailing edge — a caption above that column.
+    private func drawTimelineAxis(_ ctx: inout GraphicsContext, size: CGSize) {
+        let axisY = vm.timelineAxisY
+        var axis = Path()
+        axis.move(to: CGPoint(x: 40, y: axisY))
+        axis.addLine(to: CGPoint(x: size.width - 64, y: axisY))
+        ctx.stroke(axis, with: .color(.secondary.opacity(0.35)), lineWidth: 0.75)
+
+        for tick in vm.timelineTicks {
+            var mark = Path()
+            mark.move(to: CGPoint(x: tick.x, y: axisY - 4))
+            mark.addLine(to: CGPoint(x: tick.x, y: axisY + 4))
+            ctx.stroke(mark, with: .color(.secondary.opacity(0.5)), lineWidth: 0.75)
+            let label = Text(verbatim: tick.label)
+                .font(.system(size: 9))
+                .foregroundStyle(Color.secondary)
+            ctx.draw(label, at: CGPoint(x: tick.x, y: axisY + 7), anchor: .top)
+        }
+
+        if vm.timelineHasParkedNodes {
+            let caption = Text(String(localized: "graph.timeline.undated",
+                                      defaultValue: "Undated"))
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(Color.secondary)
+            ctx.draw(caption, at: CGPoint(x: size.width - 44, y: 46), anchor: .center)
+        }
+    }
 
     /// Point on a cubic Bézier at parameter `t`.
     private func cubicPoint(

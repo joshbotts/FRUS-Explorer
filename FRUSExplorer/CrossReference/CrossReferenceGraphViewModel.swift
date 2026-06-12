@@ -163,6 +163,29 @@ struct DisplayEdge: Identifiable, Sendable {
     }
 }
 
+// MARK: - GraphLayoutMode
+
+/// How the cross-reference graph arranges its nodes.
+enum GraphLayoutMode: String, Sendable, CaseIterable {
+    /// Chronological: x position encodes the document date along a time axis,
+    /// so antecedents sit left of the central document and later documents sit
+    /// right. Undated nodes (and volume clusters) park in a column at the
+    /// trailing edge.
+    case timeline
+    /// Topological: the original three-column / force-directed spring layout.
+    case network
+}
+
+// MARK: - TimelineTick
+
+/// One labelled tick on the timeline layout's date axis.
+struct TimelineTick: Sendable, Equatable {
+    /// X position in canvas coordinates.
+    let x: CGFloat
+    /// Short localized label ("1962", "Mar 1962", "Mar 4").
+    let label: String
+}
+
 // MARK: - CrossReferenceGraphViewModel
 
 // MARK: - NavigationHistoryEntry
@@ -248,6 +271,55 @@ final class CrossReferenceGraphViewModel {
     /// "1962"), derived from `CrossReferenceNodeMetadata.dateISO` once per rebuild
     /// so the Canvas draw loop never touches a `DateFormatter`.
     private(set) var nodeDateLabels: [String: String] = [:]
+
+    /// Numeric date per node key (`timeIntervalSinceReferenceDate`), parsed from
+    /// `dateISO` once per rebuild. Drives the timeline layout's x positions.
+    /// Year-only and year-month dates resolve to the start of their period.
+    private(set) var nodeDateValues: [String: TimeInterval] = [:]
+
+    // MARK: - Layout mode
+
+    /// Current layout mode. Defaults to `.timeline` when the loaded graph has
+    /// enough dated nodes (see `timelineEligible`); the user's explicit choice
+    /// (via `setLayoutMode`) is respected across re-centres.
+    var layoutMode: GraphLayoutMode = .network
+
+    /// `true` once the user has explicitly chosen a layout mode, which stops
+    /// `rebuildDisplay` from auto-selecting one.
+    private var userPickedLayoutMode = false
+
+    /// Ticks for the timeline layout's date axis; empty in network mode.
+    private(set) var timelineTicks: [TimelineTick] = []
+
+    /// Y position of the timeline layout's date axis in canvas coordinates.
+    private(set) var timelineAxisY: CGFloat = 0
+
+    /// `true` when the timeline layout has parked undated/cluster nodes in the
+    /// trailing-edge column (the canvas draws an "Undated" caption above it).
+    private(set) var timelineHasParkedNodes = false
+
+    /// Whether the current graph can be laid out chronologically: the central
+    /// document and at least two other non-cluster nodes need parseable dates
+    /// spanning a non-zero interval.
+    var timelineEligible: Bool {
+        guard let centralValue = nodeDateValues[centralKey] else { return false }
+        let others = displayNodes.filter { !$0.isCentral && !$0.isCluster }
+            .compactMap { nodeDateValues[$0.id] }
+        guard others.count >= 2 else { return false }
+        let all = others + [centralValue]
+        guard let minValue = all.min(), let maxValue = all.max() else { return false }
+        return maxValue > minValue
+    }
+
+    /// Sets the layout mode from the toolbar picker and re-runs the layout.
+    func setLayoutMode(_ mode: GraphLayoutMode, reduceMotion: Bool) {
+        guard mode != layoutMode else { return }
+        layoutMode = mode
+        userPickedLayoutMode = true
+        if canvasSize.width > 0 && canvasSize.height > 0 {
+            rerunLayout(reduceMotion: reduceMotion)
+        }
+    }
 
     // MARK: - Interaction
 
@@ -503,7 +575,12 @@ final class CrossReferenceGraphViewModel {
         hoveredEdgeKey      = nil
         nodeConnectionCounts = [:]
         nodeDateLabels      = [:]
+        nodeDateValues      = [:]
+        timelineTicks       = []
+        timelineHasParkedNodes = false
         expandedClusterKeys = []
+        // layoutMode and userPickedLayoutMode survive re-centring, like graphDegree:
+        // an explicit Timeline/Network choice is a session preference.
         layoutTask?.cancel()
         isAnimatingLayout   = false
         // graphDegree is intentionally preserved so the user's expansion preference
@@ -674,6 +751,13 @@ final class CrossReferenceGraphViewModel {
         displayNodes = nodes
         displayEdges = edges
         nodeDateLabels = Self.buildDateLabels(for: nodes)
+        nodeDateValues = Self.buildDateValues(for: nodes)
+
+        // Chronology is the more meaningful default whenever the data supports it;
+        // an explicit user choice (toolbar picker) is never overridden.
+        if !userPickedLayoutMode {
+            layoutMode = timelineEligible ? .timeline : .network
+        }
 
         if canvasSize.width > 0 && canvasSize.height > 0 {
             rerunLayout(reduceMotion: true)
@@ -724,6 +808,26 @@ final class CrossReferenceGraphViewModel {
     private func rerunLayout(reduceMotion: Bool) {
         layoutTask?.cancel()
         isAnimatingLayout = false
+
+        // Timeline mode: deterministic chronological placement, no settling
+        // animation needed (and therefore Reduce Motion is trivially respected).
+        // Falls through to the network layout when the data can't support it
+        // (e.g. the user picked Timeline before re-centring onto an undated doc).
+        if layoutMode == .timeline && timelineEligible {
+            let result = Self.timelineLayout(
+                nodes: displayNodes,
+                dateValues: nodeDateValues,
+                centralKey: centralKey,
+                canvasSize: canvasSize
+            )
+            nodePositions          = result.positions
+            timelineTicks          = result.ticks
+            timelineAxisY          = result.axisY
+            timelineHasParkedNodes = result.hasParkedNodes
+            return
+        }
+        timelineTicks = []
+        timelineHasParkedNodes = false
 
         // Use force-directed layout when the graph is large OR when extended (degree 2+)
         // nodes are present.  The three-column `standardLayout` does not place extended
@@ -905,6 +1009,226 @@ final class CrossReferenceGraphViewModel {
             }
         }
         return pos
+    }
+
+    /// Parses each node's `dateISO` into a numeric value for the timeline layout.
+    /// Year-only and year-month dates resolve to the start of their period.
+    static func buildDateValues(for nodes: [DisplayNode]) -> [String: TimeInterval] {
+        let calendar = Calendar(identifier: .gregorian)
+        var values: [String: TimeInterval] = [:]
+        for node in nodes {
+            guard !node.isCluster,
+                  let iso = node.metadata?.dateISO,
+                  let date = Self.date(fromISO: iso, calendar: calendar) else { continue }
+            values[node.id] = date.timeIntervalSinceReferenceDate
+        }
+        return values
+    }
+
+    /// Lenient ISO date parser accepting `yyyy`, `yyyy-MM`, and `yyyy-MM-dd`.
+    /// Missing components default to the start of the period.
+    static func date(fromISO iso: String, calendar: Calendar) -> Date? {
+        let parts = iso.split(separator: "-").map(String.init)
+        guard let yearText = parts.first, let year = Int(yearText), year > 0 else { return nil }
+        var comps = DateComponents()
+        comps.year  = year
+        comps.month = parts.count >= 2
+            ? Int(parts[1]).flatMap { (1...12).contains($0) ? $0 : nil } ?? 1
+            : 1
+        comps.day   = parts.count >= 3
+            ? Int(parts[2].prefix(2)).flatMap { (1...31).contains($0) ? $0 : nil } ?? 1
+            : 1
+        return calendar.date(from: comps)
+    }
+
+    // MARK: - Timeline layout (nonisolated static for testability)
+
+    /// Chronological layout: x encodes the document date along a bottom axis;
+    /// y is assigned greedily to nearby lanes so labels don't collide.
+    ///
+    /// - Dated nodes are placed left-to-right between fixed margins, the central
+    ///   document on the middle lane at its own date.
+    /// - Undated nodes and volume clusters park in a column at the trailing edge
+    ///   (`hasParkedNodes` tells the canvas to caption that column).
+    /// - Axis ticks adapt to the span: years for multi-year graphs, months for
+    ///   multi-month, days for tighter spans.
+    ///
+    /// The output is fully deterministic for a given node set and canvas size —
+    /// no randomness, no iteration-order dependence — so the same document always
+    /// produces the same picture.
+    static func timelineLayout(
+        nodes: [DisplayNode],
+        dateValues: [String: TimeInterval],
+        centralKey: String,
+        canvasSize: CGSize
+    ) -> (positions: [String: CGPoint], ticks: [TimelineTick], axisY: CGFloat, hasParkedNodes: Bool) {
+        var positions: [String: CGPoint] = [:]
+
+        let padLeading: CGFloat  = 56
+        let padTrailing: CGFloat = 96
+        let axisY   = max(canvasSize.height - 34, 80)
+        let yTop    = CGFloat(64)
+        let yBottom = max(axisY - 60, yTop + 1)
+        let cy      = (yTop + yBottom) / 2
+        let plotWidth = max(canvasSize.width - padLeading - padTrailing, 1)
+
+        let dated = nodes.filter { dateValues[$0.id] != nil }
+        let datedValues = dated.compactMap { dateValues[$0.id] }
+        guard let minT = datedValues.min(), let maxT = datedValues.max(), maxT > minT else {
+            return ([:], [], axisY, false)
+        }
+
+        func xPosition(_ t: TimeInterval) -> CGFloat {
+            padLeading + CGFloat((t - minT) / (maxT - minT)) * plotWidth
+        }
+
+        // --- Lane assignment ---
+        // Lane 0 is the vertical centre; lanes alternate above/below in 58 pt
+        // steps. A node joins the innermost lane where it keeps ≥ 76 pt of
+        // horizontal clearance from every node already in that lane (enough for
+        // its two-line label); failing that, the lane with the most clearance.
+        let laneSpacing: CGFloat = 58
+        let lanesPerSide = max(1, Int((cy - yTop) / laneSpacing))
+        var laneOffsets: [CGFloat] = [0]
+        for i in 1...lanesPerSide {
+            laneOffsets.append(-CGFloat(i) * laneSpacing)
+            laneOffsets.append(CGFloat(i) * laneSpacing)
+        }
+        var laneOccupiedXs: [[CGFloat]] = Array(repeating: [], count: laneOffsets.count)
+
+        func assignLane(x: CGFloat, forceCentre: Bool) -> CGFloat {
+            if forceCentre {
+                laneOccupiedXs[0].append(x)
+                return cy
+            }
+            var bestLane = 0
+            var bestClearance: CGFloat = -1
+            for (lane, occupied) in laneOccupiedXs.enumerated() {
+                let clearance = occupied.map { abs($0 - x) }.min() ?? .greatestFiniteMagnitude
+                if clearance >= 76 {
+                    laneOccupiedXs[lane].append(x)
+                    return cy + laneOffsets[lane]
+                }
+                if clearance > bestClearance {
+                    bestClearance = clearance
+                    bestLane = lane
+                }
+            }
+            laneOccupiedXs[bestLane].append(x)
+            return cy + laneOffsets[bestLane]
+        }
+
+        // Central first so it owns the middle lane at its own date.
+        if let centralT = dateValues[centralKey] {
+            let x = xPosition(centralT)
+            positions[centralKey] = CGPoint(x: x, y: assignLane(x: x, forceCentre: true))
+        }
+
+        let sortedDated = dated
+            .filter { $0.id != centralKey }
+            .sorted {
+                let a = dateValues[$0.id] ?? 0, b = dateValues[$1.id] ?? 0
+                return a == b ? $0.id < $1.id : a < b
+            }
+        for node in sortedDated {
+            guard let t = dateValues[node.id] else { continue }
+            let x = xPosition(t)
+            positions[node.id] = CGPoint(x: x, y: assignLane(x: x, forceCentre: false))
+        }
+
+        // --- Parking column for undated nodes and clusters ---
+        let parked = nodes.filter { positions[$0.id] == nil }.sorted { $0.id < $1.id }
+        var parkX = canvasSize.width - 44
+        var parkY = yTop + 8
+        for node in parked {
+            positions[node.id] = CGPoint(x: parkX, y: parkY)
+            parkY += 52
+            if parkY > yBottom {
+                parkY = yTop + 8
+                parkX -= 46
+            }
+        }
+
+        // --- Axis ticks ---
+        let ticks = Self.timelineTicks(
+            minT: minT, maxT: maxT,
+            xPosition: xPosition,
+            visibleRange: (padLeading - 8)...(canvasSize.width - padTrailing + 28)
+        )
+
+        return (positions, ticks, axisY, !parked.isEmpty)
+    }
+
+    /// Builds adaptive axis ticks for the timeline layout: yearly ticks for
+    /// multi-year spans, monthly for multi-month, daily for tighter spans.
+    private static func timelineTicks(
+        minT: TimeInterval,
+        maxT: TimeInterval,
+        xPosition: (TimeInterval) -> CGFloat,
+        visibleRange: ClosedRange<CGFloat>
+    ) -> [TimelineTick] {
+        let calendar = Calendar(identifier: .gregorian)
+        let minDate = Date(timeIntervalSinceReferenceDate: minT)
+        let maxDate = Date(timeIntervalSinceReferenceDate: maxT)
+        let spanDays = (maxT - minT) / 86_400
+
+        var ticks: [TimelineTick] = []
+
+        func append(_ date: Date, label: String) {
+            let x = xPosition(date.timeIntervalSinceReferenceDate)
+            guard visibleRange.contains(x) else { return }
+            ticks.append(TimelineTick(x: x, label: label))
+        }
+
+        if spanDays > 1_100 {
+            // Year ticks (≈3+ years of span).
+            let minYear = calendar.component(.year, from: minDate)
+            let maxYear = calendar.component(.year, from: maxDate)
+            let step = max(1, Int(ceil(Double(maxYear - minYear + 1) / 6.0)))
+            var year = minYear
+            while year <= maxYear + 1 {
+                if let date = calendar.date(from: DateComponents(year: year, month: 1, day: 1)) {
+                    append(date, label: String(year))
+                }
+                year += step
+            }
+        } else if spanDays > 45 {
+            // Month ticks.
+            let monthFormatter = DateFormatter()
+            monthFormatter.calendar = calendar
+            monthFormatter.setLocalizedDateFormatFromTemplate("MMM")
+            let monthYearFormatter = DateFormatter()
+            monthYearFormatter.calendar = calendar
+            monthYearFormatter.setLocalizedDateFormatFromTemplate("MMM y")
+
+            var monthStarts: [Date] = []
+            var cursorComps = calendar.dateComponents([.year, .month], from: minDate)
+            cursorComps.day = 1
+            var cursor = calendar.date(from: cursorComps) ?? minDate
+            while cursor <= maxDate, monthStarts.count < 240 {
+                monthStarts.append(cursor)
+                cursor = calendar.date(byAdding: .month, value: 1, to: cursor) ?? maxDate.addingTimeInterval(1)
+            }
+            let step = [1, 2, 3, 6].first { monthStarts.count / $0 <= 7 } ?? 12
+            for (index, date) in monthStarts.enumerated() where index % step == 0 {
+                let isJanuary = calendar.component(.month, from: date) == 1
+                let formatter = (index == 0 || isJanuary) ? monthYearFormatter : monthFormatter
+                append(date, label: formatter.string(from: date))
+            }
+        } else {
+            // Day ticks.
+            let dayFormatter = DateFormatter()
+            dayFormatter.calendar = calendar
+            dayFormatter.setLocalizedDateFormatFromTemplate("MMM d")
+            let stepDays = max(1, Int(ceil(spanDays / 6.0)))
+            var cursor = calendar.startOfDay(for: minDate)
+            while cursor <= maxDate {
+                append(cursor, label: dayFormatter.string(from: cursor))
+                cursor = calendar.date(byAdding: .day, value: stepDays, to: cursor)
+                    ?? maxDate.addingTimeInterval(1)
+            }
+        }
+        return ticks
     }
 
     // MARK: - Display node builder (static for testability)

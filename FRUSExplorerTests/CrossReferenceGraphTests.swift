@@ -377,6 +377,130 @@ struct CrossReferenceGraphTests {
         }
     }
 
+    // MARK: - TimelineLayoutTest
+
+    /// Builds a small graph whose nodes carry ISO dates for timeline-layout tests.
+    private func makeDatedGraph() -> CrossReferenceGraph {
+        let centralKey = "vol1/d0"
+        var meta: [String: CrossReferenceNodeMetadata] = [:]
+        meta[centralKey] = CrossReferenceNodeMetadata(
+            documentId: "d0", volumeId: "vol1",
+            documentNumber: "168", header: "Central Document", dateline: nil,
+            dateISO: "1962-07-25"
+        )
+        meta["vol1/dEarly"] = CrossReferenceNodeMetadata(
+            documentId: "dEarly", volumeId: "vol1",
+            documentNumber: "95", header: "Early Document", dateline: nil,
+            dateISO: "1962-03-04"
+        )
+        meta["vol1/dMid"] = CrossReferenceNodeMetadata(
+            documentId: "dMid", volumeId: "vol1",
+            documentNumber: "142", header: "Mid Document", dateline: nil,
+            dateISO: "1962-05-30"
+        )
+        meta["vol1/dLate"] = CrossReferenceNodeMetadata(
+            documentId: "dLate", volumeId: "vol1",
+            documentNumber: "201", header: "Late Document", dateline: nil,
+            dateISO: "1962-11-02"
+        )
+        meta["vol1/dUndated"] = CrossReferenceNodeMetadata(
+            documentId: "dUndated", volumeId: "vol1",
+            documentNumber: "7", header: "Undated Document", dateline: nil,
+            dateISO: nil
+        )
+
+        func edge(_ src: String, _ tgt: String) -> CrossReferenceEdge {
+            CrossReferenceEdge(
+                sourceDocumentId: src, sourceVolumeId: "vol1",
+                targetDocumentId: tgt, targetVolumeId: "vol1",
+                context: nil, referenceType: .footnote
+            )
+        }
+        return CrossReferenceGraph(
+            centralDocumentId: "d0", centralVolumeId: "vol1",
+            inboundEdges:  [edge("dLate", "d0"), edge("dUndated", "d0")],
+            outboundEdges: [edge("d0", "dEarly"), edge("d0", "dMid")],
+            hasUndownloadedSources: false, nodeMetadata: meta
+        )
+    }
+
+    @Test("TimelineLayoutTest: dated nodes order left-to-right by date; undated nodes park at the trailing edge")
+    func timelineLayoutOrdersByDate() throws {
+        let graph = makeDatedGraph()
+        let centralKey = "vol1/d0"
+        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: centralKey,
+            expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
+        )
+        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        let result = CrossReferenceGraphViewModel.timelineLayout(
+            nodes: nodes, dateValues: dateValues,
+            centralKey: centralKey, canvasSize: canvasSize
+        )
+
+        let xEarly   = try #require(result.positions["vol1/dEarly"]?.x)
+        let xMid     = try #require(result.positions["vol1/dMid"]?.x)
+        let xCentral = try #require(result.positions[centralKey]?.x)
+        let xLate    = try #require(result.positions["vol1/dLate"]?.x)
+        let parked   = try #require(result.positions["vol1/dUndated"])
+
+        #expect(xEarly < xMid,     "Mar 4 must sit left of May 30")
+        #expect(xMid < xCentral,   "May 30 must sit left of Jul 25")
+        #expect(xCentral < xLate,  "Jul 25 must sit left of Nov 2")
+        #expect(parked.x > xLate,  "Undated node must park right of all dated nodes")
+        #expect(result.hasParkedNodes, "Parking flag must be set when undated nodes exist")
+        #expect(!result.ticks.isEmpty, "A multi-month span must produce axis ticks")
+
+        // All positions stay within the canvas and above the axis label area.
+        for (_, pos) in result.positions {
+            #expect(pos.x >= 0 && pos.x <= canvasSize.width)
+            #expect(pos.y >= 0 && pos.y <= result.axisY)
+        }
+
+        // The central document owns the middle lane of the usable vertical band.
+        let yCentral = try #require(result.positions[centralKey]?.y)
+        let yTop: CGFloat = 64
+        let yBottom = result.axisY - 60
+        #expect(abs(yCentral - (yTop + yBottom) / 2) < 0.5,
+                "Central node must sit on the centre lane")
+    }
+
+    @Test("TimelineLayoutTest: layout is empty when dates are missing or identical")
+    func timelineLayoutRequiresDateSpan() throws {
+        let graph = makeTestGraph(inboundCount: 3, outboundCount: 2)  // no dateISO values
+        let centralKey = "vol1/d0"
+        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: centralKey,
+            expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
+        )
+        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        #expect(dateValues.isEmpty)
+        let result = CrossReferenceGraphViewModel.timelineLayout(
+            nodes: nodes, dateValues: dateValues,
+            centralKey: centralKey, canvasSize: canvasSize
+        )
+        #expect(result.positions.isEmpty, "Undated graphs cannot be laid out chronologically")
+        #expect(result.ticks.isEmpty)
+    }
+
+    @Test("TimelineLayoutTest: lenient ISO parsing accepts year, year-month, and full dates")
+    func dateParsingHandlesPartialISO() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let full  = CrossReferenceGraphViewModel.date(fromISO: "1962-07-25", calendar: calendar)
+        let month = CrossReferenceGraphViewModel.date(fromISO: "1962-07", calendar: calendar)
+        let year  = CrossReferenceGraphViewModel.date(fromISO: "1962", calendar: calendar)
+        let bad   = CrossReferenceGraphViewModel.date(fromISO: "n.d.", calendar: calendar)
+
+        let fullDate = try #require(full)
+        let monthDate = try #require(month)
+        let yearDate = try #require(year)
+        #expect(bad == nil)
+        #expect(yearDate <= monthDate && monthDate <= fullDate,
+                "Partial dates resolve to the start of their period")
+        #expect(calendar.component(.year, from: fullDate) == 1962)
+        #expect(calendar.component(.day,  from: fullDate) == 25)
+    }
+
     // MARK: - AggregationTest
 
     @Test("AggregationTest: parallel references collapse into one weighted edge; node and edge IDs are unique")
