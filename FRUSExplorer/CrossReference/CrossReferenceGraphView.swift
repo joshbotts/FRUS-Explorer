@@ -213,6 +213,10 @@ struct CrossReferenceGraphView: View {
         .task { await vm.loadGraph() }
         .onChange(of: vm.graphDegree) {
             vm.degreePickerChanged()
+            // Deep neighbourhoods read better as a list — surface it alongside.
+            if vm.graphDegree >= 3 {
+                revealDetailPanelIfNeeded()
+            }
         }
         .sheet(item: Binding(
             get: { lotFileSheetTarget.map { LotFileSheetID(nodeKey: $0.nodeKey, lotFile: $0.lotFile, repository: $0.repository) } },
@@ -248,6 +252,25 @@ struct CrossReferenceGraphView: View {
         #else
         regularContentArea
         #endif
+    }
+
+    /// `true` when node/edge details belong in the reference side panel instead
+    /// of a floating card over the canvas (Session 162: regular widths fold
+    /// details into the panel; compact iPhone keeps the floating card because
+    /// there is no side panel real estate).
+    private var usesSidePanelForDetails: Bool {
+        #if os(iOS)
+        return horizontalSizeClass != .compact
+        #else
+        return true
+        #endif
+    }
+
+    /// Pins are most useful when their details are visible — called after any
+    /// pinning interaction to reveal the side panel on regular widths.
+    private func revealDetailPanelIfNeeded() {
+        guard usesSidePanelForDetails, !showReferenceList else { return }
+        withAnimation { showReferenceList = true }
     }
 
     /// Canvas with the legend strip docked beneath it (outside the canvas, so it
@@ -314,22 +337,24 @@ struct CrossReferenceGraphView: View {
                 #endif
             }
 
-            // Info / edge-context panel floats above the canvas, anchored to the
-            // bottom-trailing corner — the least node-dense region in both layout
-            // modes (top-leading collided with the timeline's early-date lanes;
-            // Session 162 live-testing feedback).
-            infoPanel
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity,
-                       alignment: .bottomTrailing)
-                .animation(
-                    reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
-                    value: vm.resolvedNodeKey
-                )
-                .animation(
-                    reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
-                    value: vm.resolvedEdgeKey
-                )
+            // Compact widths only: details float over the canvas at the
+            // bottom-trailing corner (the least node-dense region). On regular
+            // widths details live in the reference side panel instead, which
+            // auto-opens on click (Session 162) — nothing floats over the graph.
+            if !usesSidePanelForDetails {
+                infoPanel
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity,
+                           alignment: .bottomTrailing)
+                    .animation(
+                        reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
+                        value: vm.resolvedNodeKey
+                    )
+                    .animation(
+                        reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
+                        value: vm.resolvedEdgeKey
+                    )
+            }
         }
         // Q3: VoiceOver alternative — structured inbound/outbound reference list
         .accessibilityRepresentation { graphAccessibilityList }
@@ -564,6 +589,7 @@ struct CrossReferenceGraphView: View {
             } else {
                 vm.selectedEdgeKey = key
                 vm.selectedNodeKey = nil
+                revealDetailPanelIfNeeded()
             }
         } label: {
             Circle()
@@ -612,15 +638,21 @@ struct CrossReferenceGraphView: View {
         // between nodes without VoiceOver (F-018).
         Button {
             #if os(macOS)
-            // Toggle selection so the info panel stays visible until dismissed.
+            // Toggle selection so the details stay visible until dismissed.
             // Hover state is cleared too: pinned wins in resolution, and a stale
             // hover must never resurface after an explicit click (Session 162).
             vm.selectedEdgeKey = nil
             vm.hoveredEdgeKey = nil
             vm.hoveredNodeKey = nil
             vm.selectedNodeKey = (vm.selectedNodeKey == node.id) ? nil : node.id
+            if vm.selectedNodeKey != nil {
+                revealDetailPanelIfNeeded()
+            }
             #else
             vm.tapNode(node.id, reduceMotion: reduceMotion)
+            if vm.selectedNodeKey == node.id {
+                revealDetailPanelIfNeeded()
+            }
             #endif
         } label: {
             Circle()
@@ -999,7 +1031,7 @@ struct CrossReferenceGraphView: View {
         .font(.caption)
         .foregroundStyle(.orange)
 
-        if let volumeId = volumeId(for: node) {
+        if let volumeId = node.volumeId {
             if requestedDownloadVolumeIds.contains(volumeId) {
                 Label(
                     String(localized: "graph.node.downloadQueued",
@@ -1034,18 +1066,6 @@ struct CrossReferenceGraphView: View {
                 .help(String(localized: "graph.node.downloadVolume.help",
                              defaultValue: "Download and index this volume so its documents can be opened from the graph"))
             }
-        }
-    }
-
-    /// Volume ID for a display node — from metadata, the cluster kind, or the
-    /// `"volumeId/documentId"` node key as a last resort.
-    private func volumeId(for node: DisplayNode) -> String? {
-        if let vol = node.metadata?.volumeId { return vol }
-        switch node.kind {
-        case .clusterInbound(let vol, _), .clusterOutbound(let vol, _):
-            return vol
-        default:
-            return node.id.split(separator: "/", maxSplits: 1).first.map(String.init)
         }
     }
 
@@ -1697,7 +1717,9 @@ private struct ScrollWheelZoomCatcher: NSViewRepresentable {
 ///
 /// Version history:
 ///   1.0 — Session 37: initial implementation
-private struct EdgeContextView: View {
+///   1.1 — Session 162: made internal so the reference side panel's detail
+///          section (ReferenceListPanel) can reuse it
+struct EdgeContextView: View {
 
     let context: String
     let directionLabel: String

@@ -55,6 +55,19 @@ struct DisplayNode: Identifiable, Sendable {
         }
     }
 
+    /// Best-effort volume ID for this node: from metadata, the cluster kind, or
+    /// the `"volumeId/documentId"` node key as a last resort. Used by detail
+    /// panels for manifest lookups (e.g. the Download Volume action).
+    var volumeId: String? {
+        if let vol = metadata?.volumeId { return vol }
+        switch kind {
+        case .clusterInbound(let vol, _), .clusterOutbound(let vol, _):
+            return vol
+        default:
+            return id.split(separator: "/", maxSplits: 1).first.map(String.init)
+        }
+    }
+
     var accessibilityLabel: String {
         switch kind {
         case .central:
