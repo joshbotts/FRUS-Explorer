@@ -1692,6 +1692,23 @@ components:
             - string
             - "null"
           description: Dateline string, or null if the volume is not indexed.
+        dateISO:
+          type:
+            - string
+            - "null"
+          description: |
+            ISO-8601 document date from `document_dates.date_iso` (`yyyy-MM-dd`,
+            possibly truncated to `yyyy-MM` or `yyyy`). Null for unindexed or
+            undated documents. Added in Session 161 for the timeline layout and
+            node date labels.
+        summary:
+          type:
+            - string
+            - "null"
+          description: |
+            On-device generated summary from `document_cache.summary_text`, when
+            the user has summarized this document. Added in Session 161 so the
+            graph's node info panel can preview a document without opening it.
 
     ReferenceType:
       type: string

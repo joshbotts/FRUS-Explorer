@@ -7,6 +7,19 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import TipKit
+
+// MARK: - CompactGraphContent
+
+#if os(iOS)
+/// What the compact-width (iPhone) graph sheet shows: the reference list or the
+/// canvas. The list is the default — it is the more usable presentation on a
+/// small screen — with the canvas one tap away.
+private enum CompactGraphContent {
+    case graph
+    case list
+}
+#endif
 
 // MARK: - CrossReferenceGraphView
 
@@ -70,6 +83,10 @@ import SwiftUI
 ///            re-centre moved to context menu and info panel
 ///          • Info button added (popover explaining the graph)
 ///          • `GraphFilterMode` removed; `filterMode` state dropped
+///   1.8 — Session 161:
+///          • Hover and pinned selection separated (macOS): hovering previews the
+///            info panel; clicking pins it so its buttons are reachable by mouse
+///          • Pan/zoom gestures accumulate across gestures instead of snapping back
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -80,6 +97,18 @@ struct CrossReferenceGraphView: View {
     @State private var showInfoPopover = false
     /// When set, presents the "Documents from Same Lot File" discovery sheet.
     @State private var lotFileSheetTarget: (nodeKey: String, lotFile: String, repository: String?)? = nil
+    /// Volumes the user queued for download from this graph during the current
+    /// presentation; drives the "Download queued" state in the node info panel.
+    @State private var requestedDownloadVolumeIds: Set<String> = []
+    /// Whether the regular-width layout shows the reference list side panel.
+    @State private var showReferenceList = false
+    #if os(iOS)
+    /// Compact-width content choice. The list is the default on iPhone, where
+    /// the canvas is hardest to read and operate; the Graph/List picker in the
+    /// filter bar switches between them.
+    @State private var compactContentMode: CompactGraphContent = .list
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     init(
         entry: DocumentBrowserEntry,
@@ -125,7 +154,7 @@ struct CrossReferenceGraphView: View {
                     )
                     Spacer()
                 } else {
-                    graphContentArea
+                    contentArea
                 }
             }
             .navigationTitle(
@@ -136,6 +165,15 @@ struct CrossReferenceGraphView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    #if os(iOS)
+                    if horizontalSizeClass != .compact {
+                        referenceListToggleButton
+                    }
+                    #else
+                    referenceListToggleButton
+                    #endif
+                }
+                ToolbarItem(placement: .primaryAction) {
                     resetViewportButton
                 }
                 ToolbarItem(placement: .primaryAction) {
@@ -143,15 +181,14 @@ struct CrossReferenceGraphView: View {
                         showInfoPopover.toggle()
                     } label: {
                         Image(systemName: "info.circle")
-                            .accessibilityLabel(
-                                String(localized: "graph.info.a11y",
-                                       defaultValue: "About this graph")
-                            )
                     }
-                    .help(String(
-                        localized: "graph.info.help",
-                        defaultValue: "Learn what this graph shows and how to interact with it"
-                    ))
+                    .controlHelp(
+                        String(localized: "graph.info.a11y",
+                               defaultValue: "About this graph"),
+                        detail: String(localized: "graph.info.help",
+                                       defaultValue: "Learn what this graph shows and how to interact with it"),
+                        systemImage: "info.circle"
+                    )
                     .popover(isPresented: $showInfoPopover, arrowEdge: .top) {
                         graphInfoPopoverContent
                     }
@@ -175,7 +212,7 @@ struct CrossReferenceGraphView: View {
         #endif
         .task { await vm.loadGraph() }
         .onChange(of: vm.graphDegree) {
-            Task { await vm.loadGraph() }
+            vm.degreePickerChanged()
         }
         .sheet(item: Binding(
             get: { lotFileSheetTarget.map { LotFileSheetID(nodeKey: $0.nodeKey, lotFile: $0.lotFile, repository: $0.repository) } },
@@ -189,6 +226,51 @@ struct CrossReferenceGraphView: View {
             )
             .environment(appState)
         }
+    }
+
+    // MARK: - Content Area
+
+    /// Chooses between canvas, list, or side-by-side presentation based on
+    /// platform width and user toggles. On compact widths (iPhone) the list and
+    /// canvas are alternatives; on regular widths the list is a trailing panel.
+    @ViewBuilder
+    private var contentArea: some View {
+        #if os(iOS)
+        if horizontalSizeClass == .compact {
+            if compactContentMode == .list {
+                ReferenceListPanel(vm: vm, openDocument: openDocument)
+            } else {
+                graphContentArea
+            }
+        } else {
+            regularContentArea
+        }
+        #else
+        regularContentArea
+        #endif
+    }
+
+    /// Canvas with the optional reference-list side panel (regular widths).
+    private var regularContentArea: some View {
+        HStack(spacing: 0) {
+            graphContentArea
+            if showReferenceList {
+                Divider()
+                ReferenceListPanel(vm: vm, openDocument: openDocument)
+                    .frame(width: 320)
+            }
+        }
+    }
+
+    /// Opens a document using the platform's navigation convention and clears
+    /// any pinned selection. macOS opens in the main window; iOS pushes inline.
+    private func openDocument(_ entry: DocumentBrowserEntry) {
+        #if os(macOS)
+        appState.pendingBrowseDocument = entry
+        #else
+        vm.navigationPath.append(entry)
+        #endif
+        vm.selectedNodeKey = nil
     }
 
     // MARK: - Graph Content
@@ -210,22 +292,46 @@ struct CrossReferenceGraphView: View {
                 .onChange(of: geo.size, initial: true) { _, size in
                     vm.onCanvasSizeChanged(size, reduceMotion: reduceMotion)
                 }
+                #if os(macOS)
+                .background {
+                    // Scroll-wheel / trackpad-scroll zoom (spec Section 11:
+                    // "Pinch or scroll wheel"). Event-monitor based, so it never
+                    // intercepts clicks, drags, or hover.
+                    ScrollWheelZoomCatcher { factor in
+                        vm.zoom(by: factor)
+                    }
+                    .allowsHitTesting(false)
+                }
+                #endif
             }
+
+            // Compact legend pinned to the bottom-leading corner.
+            legendOverlay
+                .padding(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity,
+                       alignment: .bottomLeading)
 
             // Info / edge-context panel floats above the canvas at a fixed location.
             infoPanel
                 .padding()
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
-                    value: vm.selectedNodeKey
+                    value: vm.resolvedNodeKey
                 )
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8),
-                    value: vm.selectedEdgeKey
+                    value: vm.resolvedEdgeKey
                 )
         }
         // Q3: VoiceOver alternative — structured inbound/outbound reference list
         .accessibilityRepresentation { graphAccessibilityList }
+        #if os(macOS)
+        // Escape clears any pinned node/edge selection (and dismisses the panel).
+        .onExitCommand {
+            vm.selectedNodeKey = nil
+            vm.selectedEdgeKey = nil
+        }
+        #endif
     }
 
     // MARK: - Accessibility List Representation (Q3)
@@ -303,22 +409,32 @@ struct CrossReferenceGraphView: View {
 
     private var graphCanvas: some View {
         Canvas { context, size in
+            // Date axis first so nodes and labels draw above it (timeline mode only).
+            if vm.layoutMode == .timeline && !vm.timelineTicks.isEmpty {
+                drawTimelineAxis(&context, size: size)
+            }
+            // Radii lookup so edges can stop their arrowheads at the target rim.
+            let radii = Dictionary(uniqueKeysWithValues: vm.displayNodes.map {
+                ($0.id, vm.nodeRadius(for: $0))
+            })
             // Draw edges first (below nodes). Context snippets are no longer drawn inline;
             // they appear in the info panel when the user hovers over or taps an edge midpoint.
             for edge in vm.displayEdges {
                 guard let from = vm.nodePositions[edge.source],
                       let to   = vm.nodePositions[edge.target] else { continue }
-                let isSelected = vm.selectedEdgeKey == edge.id
+                let isSelected = vm.resolvedEdgeKey == edge.id
                 drawEdge(&context, from: from, to: to,
                          referenceType: edge.referenceType,
                          degree: edge.degree,
-                         isSelected: isSelected)
+                         isSelected: isSelected,
+                         referenceCount: edge.referenceCount,
+                         targetRadius: radii[edge.target] ?? 18)
             }
             // Draw nodes on top
             for node in vm.displayNodes {
                 guard let pos = vm.nodePositions[node.id] else { continue }
                 drawNode(&context, node: node, at: pos,
-                         isSelected: vm.selectedNodeKey == node.id)
+                         isSelected: vm.resolvedNodeKey == node.id)
             }
         }
         .accessibilityHidden(true)
@@ -362,8 +478,14 @@ struct CrossReferenceGraphView: View {
         .position(pos)
         #if os(macOS)
         .onHover { hovering in
-            vm.selectedEdgeKey = hovering ? edge.id : nil
-            if hovering { vm.selectedNodeKey = nil }
+            // Transient hover preview only — pinned selections are untouched, so
+            // a panel the user clicked open survives the pointer moving on.
+            if hovering {
+                vm.hoveredEdgeKey = edge.id
+                vm.hoveredNodeKey = nil
+            } else if vm.hoveredEdgeKey == edge.id {
+                vm.hoveredEdgeKey = nil
+            }
         }
         .help(edge.context ?? "")
         #endif
@@ -409,13 +531,23 @@ struct CrossReferenceGraphView: View {
         .buttonStyle(.plain)
         .position(pos)
         #if os(macOS)
+        // Double-click re-centres directly (single click pins the info panel;
+        // the same action also lives in the context menu and the panel button).
+        .simultaneousGesture(TapGesture(count: 2).onEnded {
+            if !node.isCentral {
+                vm.navigateToNode(node.id)
+            }
+        })
         .onHover { hovering in
-            // Show info panel transiently on hover; respect a click-pinned selection.
+            // Transient hover preview. Pinned state (`selectedNodeKey`) is managed
+            // exclusively by clicks, so the panel a user pins stays put while the
+            // pointer travels to its buttons (the pre-1.5 behaviour cleared the
+            // pinned key on un-hover, making those buttons unreachable).
             if hovering {
-                vm.selectedEdgeKey = nil
-                if vm.selectedNodeKey == nil { vm.selectedNodeKey = node.id }
-            } else if vm.selectedNodeKey == node.id {
-                vm.selectedNodeKey = nil
+                vm.hoveredNodeKey = node.id
+                vm.hoveredEdgeKey = nil
+            } else if vm.hoveredNodeKey == node.id {
+                vm.hoveredNodeKey = nil
             }
         }
         #endif
@@ -504,16 +636,71 @@ struct CrossReferenceGraphView: View {
         }
     }
 
+    // MARK: - Legend
+
+    /// Compact always-visible legend decoding node colour, the arrow convention,
+    /// and node size — knowledge that previously lived only behind the info button.
+    private var legendOverlay: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            legendRow(color: .blue, text: String(
+                localized: "graph.legend.inbound",
+                defaultValue: "Cites this document"))
+            legendRow(color: .orange, text: String(
+                localized: "graph.legend.outbound",
+                defaultValue: "Cited by this document"))
+            if vm.displayNodes.contains(where: {
+                if case .extended = $0.kind { return true } else { return false }
+            }) {
+                legendRow(color: .secondary.opacity(0.5), text: String(
+                    localized: "graph.legend.extended",
+                    defaultValue: "Further hops"))
+            }
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 8)
+                Text(String(localized: "graph.legend.arrow",
+                            defaultValue: "Arrow points to the cited document"))
+            }
+            HStack(spacing: 5) {
+                Circle()
+                    .strokeBorder(Color.secondary, style: StrokeStyle(lineWidth: 1, dash: [2, 1.5]))
+                    .frame(width: 8, height: 8)
+                Text(String(localized: "graph.legend.size",
+                            defaultValue: "Size = connection count"))
+            }
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .padding(8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(localized: "graph.legend.a11y",
+                                   defaultValue: "Graph legend"))
+    }
+
+    /// One colour-swatch row of the legend.
+    private func legendRow(color: Color, text: String) -> some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color.opacity(0.45))
+                .frame(width: 8, height: 8)
+            Text(text)
+        }
+    }
+
     // MARK: - Info Panel
 
-    /// Unified info panel: shows node details when a node is selected, or edge
-    /// context when an edge midpoint is hovered / tapped. Edge selection takes
-    /// priority over node selection (they are mutually exclusive in practice).
+    /// Unified info panel: shows node details when a node is active, or edge
+    /// context when an edge midpoint is hovered / pinned. The view model's
+    /// `resolvedEdgeKey`/`resolvedNodeKey` guarantee the two are mutually
+    /// exclusive (hover wins over pinned state).
     @ViewBuilder
     private var infoPanel: some View {
-        if let edge = vm.selectedEdge(), let context = edge.context {
+        if let edge = vm.selectedEdge(), let context = edge.combinedContext {
             edgeInfoPanel(edge: edge, context: context)
-        } else if let key = vm.selectedNodeKey,
+        } else if let key = vm.resolvedNodeKey,
                   let node = vm.displayNodes.first(where: { $0.id == key }) {
             nodeInfoPanel(node: node, key: key)
         }
@@ -538,6 +725,16 @@ struct CrossReferenceGraphView: View {
                         .lineLimit(1)
                 }
                 .foregroundStyle(.secondary)
+
+                if edge.referenceCount > 1 {
+                    Text(String(
+                        format: String(localized: "graph.edge.refCount %lld",
+                                       defaultValue: "%lld separate references"),
+                        Int64(edge.referenceCount)
+                    ))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                }
 
                 Divider()
 
@@ -584,6 +781,16 @@ struct CrossReferenceGraphView: View {
                         .foregroundStyle(.tertiary)
                 }
 
+                // On-device summary, when the user has generated one — lets each
+                // node visit answer "is this document worth opening?" in place.
+                if let summary = node.metadata?.summary,
+                   !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(4)
+                }
+
                 // Context passage — shown only when the edge carries footnote text.
                 if let context = vm.contextForSelectedNode() {
                     EdgeContextView(
@@ -593,13 +800,7 @@ struct CrossReferenceGraphView: View {
                 }
 
                 if !node.isDownloaded && !node.isCentral {
-                    Label(
-                        String(localized: "graph.node.notDownloaded",
-                               defaultValue: "Volume not downloaded"),
-                        systemImage: "icloud.slash"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+                    undownloadedSection(for: node)
                 }
 
                 if node.isCluster {
@@ -647,6 +848,79 @@ struct CrossReferenceGraphView: View {
             : .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
     }
 
+    // MARK: - Undownloaded Volume Section
+
+    /// Info-panel block for nodes whose volume is not downloaded: a status label plus
+    /// a "Download Volume" action (spec Section 11: navigating to a node in an
+    /// undownloaded volume initiates download). Once tapped, shows a queued state —
+    /// the graph itself refreshes only after the volume downloads and is indexed.
+    @ViewBuilder
+    private func undownloadedSection(for node: DisplayNode) -> some View {
+        Label(
+            String(localized: "graph.node.notDownloaded",
+                   defaultValue: "Volume not downloaded"),
+            systemImage: "icloud.slash"
+        )
+        .font(.caption)
+        .foregroundStyle(.orange)
+
+        if let volumeId = volumeId(for: node) {
+            if requestedDownloadVolumeIds.contains(volumeId) {
+                Label(
+                    String(localized: "graph.node.downloadQueued",
+                           defaultValue: "Download queued"),
+                    systemImage: "arrow.down.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                Text(String(localized: "graph.node.downloadQueued.detail",
+                            defaultValue: "This document becomes available here after the volume downloads and is indexed."))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let entry = manifestEntry(for: volumeId),
+                      let downloadManager = appState.downloadManager {
+                Button {
+                    requestedDownloadVolumeIds.insert(volumeId)
+                    Task {
+                        await downloadManager.enqueueDownload(
+                            volumeId: volumeId,
+                            downloadUrl: entry.downloadUrl
+                        )
+                    }
+                } label: {
+                    Label(
+                        String(localized: "graph.node.downloadVolume",
+                               defaultValue: "Download Volume"),
+                        systemImage: "arrow.down.circle"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .help(String(localized: "graph.node.downloadVolume.help",
+                             defaultValue: "Download and index this volume so its documents can be opened from the graph"))
+            }
+        }
+    }
+
+    /// Volume ID for a display node — from metadata, the cluster kind, or the
+    /// `"volumeId/documentId"` node key as a last resort.
+    private func volumeId(for node: DisplayNode) -> String? {
+        if let vol = node.metadata?.volumeId { return vol }
+        switch node.kind {
+        case .clusterInbound(let vol, _), .clusterOutbound(let vol, _):
+            return vol
+        default:
+            return node.id.split(separator: "/", maxSplits: 1).first.map(String.init)
+        }
+    }
+
+    /// Manifest entry for `volumeId`, if the manifest knows it.
+    private func manifestEntry(for volumeId: String) -> VolumeManifestEntry? {
+        let entries = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        return entries.first { $0.volumeId == volumeId }
+    }
+
     // MARK: - Node Edge Context Helper
 
     private func nodeEdgeContextLabel(for node: DisplayNode) -> String {
@@ -685,7 +959,12 @@ struct CrossReferenceGraphView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Go back")
+                .controlHelp(
+                    String(localized: "graph.breadcrumb.back", defaultValue: "Go back"),
+                    detail: String(localized: "graph.breadcrumb.back.help",
+                                   defaultValue: "Return to the previous document in the graph's history"),
+                    systemImage: "chevron.left"
+                )
 
                 ForEach(Array(vm.history.enumerated()), id: \.offset) { index, entry in
                     Button {
@@ -724,40 +1003,113 @@ struct CrossReferenceGraphView: View {
 
     private var filterToolbar: some View {
         HStack(spacing: 8) {
-            Text(String(localized: "graph.degree.label", defaultValue: "Neighbourhood:"))
+            Picker(
+                String(localized: "graph.layout.a11y", defaultValue: "Graph layout"),
+                selection: Binding(
+                    get: { vm.layoutMode },
+                    set: {
+                        TimelineLayoutTip().invalidate(reason: .actionPerformed)
+                        vm.setLayoutMode($0, reduceMotion: reduceMotion)
+                    }
+                )
+            ) {
+                Text(String(localized: "graph.layout.timeline", defaultValue: "Timeline"))
+                    .tag(GraphLayoutMode.timeline)
+                Text(String(localized: "graph.layout.network", defaultValue: "Network"))
+                    .tag(GraphLayoutMode.network)
+            }
+            .popoverTip(TimelineLayoutTip())
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 170)
+            .disabled(!vm.timelineEligible)
+            .help(String(localized: "graph.layout.help",
+                         defaultValue: "Timeline arranges documents chronologically along a date axis; Network uses the spring layout. Timeline is unavailable when too few documents have dates."))
+
+            Divider()
+                .frame(height: 16)
+
+            Text(String(localized: "graph.degree.depthLabel", defaultValue: "Depth:"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             Picker(
-                String(localized: "graph.degree.a11y", defaultValue: "Neighbourhood degree"),
+                String(localized: "graph.degree.a11y", defaultValue: "Reference depth"),
                 selection: Binding(
                     get: { vm.graphDegree },
                     set: { vm.graphDegree = $0 }
                 )
             ) {
-                Text(String(localized: "graph.degree.1", defaultValue: "1°"))
+                Text(String(localized: "graph.degree.oneHop", defaultValue: "1 hop"))
                     .tag(1)
                     .help(String(localized: "graph.degree.1.help",
                                  defaultValue: "Direct inbound and outbound references only"))
-                Text(String(localized: "graph.degree.2", defaultValue: "2°"))
+                Text(String(localized: "graph.degree.twoHops", defaultValue: "2 hops"))
                     .tag(2)
                     .help(String(localized: "graph.degree.2.help",
                                  defaultValue: "Add references to and from each direct neighbour"))
-                Text(String(localized: "graph.degree.3", defaultValue: "3°"))
+                Text(String(localized: "graph.degree.threeHops", defaultValue: "3 hops"))
                     .tag(3)
                     .help(String(localized: "graph.degree.3.help",
                                  defaultValue: "Extend one further hop from each 2nd-degree node"))
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: 140)
+            .frame(maxWidth: 190)
             .help(String(localized: "graph.degree.picker.help",
                          defaultValue: "Choose how many hops of cross-references to display"))
 
+            if vm.autoExpandedSparseGraph {
+                Text(String(localized: "graph.autoExpanded.note",
+                            defaultValue: "Few direct references — showing 2 hops"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
             Spacer()
+
+            #if os(iOS)
+            if horizontalSizeClass == .compact {
+                Picker(
+                    String(localized: "graph.content.a11y", defaultValue: "Content style"),
+                    selection: $compactContentMode
+                ) {
+                    Image(systemName: "list.bullet")
+                        .tag(CompactGraphContent.list)
+                        .accessibilityLabel(String(localized: "graph.content.list",
+                                                   defaultValue: "List"))
+                    Image(systemName: "point.3.connected.trianglepath.dotted")
+                        .tag(CompactGraphContent.graph)
+                        .accessibilityLabel(String(localized: "graph.content.graph",
+                                                   defaultValue: "Graph"))
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 100)
+            }
+            #endif
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+    }
+
+    /// Toolbar button toggling the reference-list side panel (regular widths).
+    private var referenceListToggleButton: some View {
+        Button {
+            GraphReferenceListTip().invalidate(reason: .actionPerformed)
+            withAnimation { showReferenceList.toggle() }
+        } label: {
+            Image(systemName: "sidebar.trailing")
+        }
+        .popoverTip(GraphReferenceListTip())
+        .controlHelp(
+            String(localized: "graph.list.toggle.a11y",
+                   defaultValue: "Toggle reference list"),
+            detail: String(localized: "graph.list.toggle.help",
+                           defaultValue: "Show or hide the reference list panel"),
+            systemImage: "sidebar.trailing"
+        )
     }
 
     // MARK: - Info Popover
@@ -772,13 +1124,19 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.what.title",
                               defaultValue: "What the graph shows"),
                 body:  String(localized: "graph.info.what.body",
-                              defaultValue: "Each node is a FRUS document. Blue nodes reference the central document (inbound); green nodes are referenced by the central document (outbound). Grey nodes are 2nd- or 3rd-degree neighbours.")
+                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document; orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus, and each arrow points at the document being cited.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.edges.title",
                               defaultValue: "Edge context"),
                 body:  String(localized: "graph.info.edges.body",
-                              defaultValue: "Many edges carry the original footnote or editorial-note text where the reference appeared. Hover over (or tap) a line between nodes to read that text.")
+                              defaultValue: "Many edges carry the original footnote or editorial-note text where the reference appeared — hover over (or tap) the middle of a line to read it. Thicker lines mean the pair is linked by several separate references.")
+            )
+            graphInfoRow(
+                title: String(localized: "graph.info.timeline.title",
+                              defaultValue: "Timeline and Network layouts"),
+                body:  String(localized: "graph.info.timeline.body",
+                              defaultValue: "Timeline places each document at its date along a time axis — documents this one cites usually sit to the left (earlier), documents citing it to the right (later). Documents without a recorded date park in the Undated column. Network uses a spring layout based purely on connections.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
@@ -796,7 +1154,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.undownloaded.title",
                               defaultValue: "Undownloaded volumes"),
                 body:  String(localized: "graph.info.undownloaded.body",
-                              defaultValue: "References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with an orange border and no title or date, and cannot be opened until the volume is downloaded.\n\nReferences from volumes you haven't indexed yet are not shown at all, because those volumes have never been parsed. An orange banner at the top of the graph appears when your inbound connections may be incomplete for this reason. Download and index additional volumes to fill in the missing edges.")
+                              defaultValue: "References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with a dashed border and a struck-through cloud icon; select one to download its volume directly from the info panel.\n\nReferences from volumes you haven't indexed yet are not shown at all, because those volumes have never been parsed. An orange banner at the top of the graph appears when your inbound connections may be incomplete for this reason. Download and index additional volumes to fill in the missing edges.")
             )
         }
         .padding(16)
@@ -838,14 +1196,20 @@ struct CrossReferenceGraphView: View {
     private var magnificationGesture: some Gesture {
         MagnificationGesture()
             .onChanged { value in
-                vm.scale = max(0.25, min(4.0, value))
+                vm.magnificationChanged(value)
+            }
+            .onEnded { _ in
+                vm.magnificationEnded()
             }
     }
 
     private var panGesture: some Gesture {
         DragGesture(minimumDistance: 5)
             .onChanged { value in
-                vm.panOffset = value.translation
+                vm.panChanged(value.translation)
+            }
+            .onEnded { _ in
+                vm.panEnded()
             }
     }
 
@@ -879,31 +1243,77 @@ struct CrossReferenceGraphView: View {
             vm.resetViewport(animated: !reduceMotion)
         } label: {
             Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
-                .accessibilityLabel(
-                    String(localized: "graph.resetView.a11y",
-                           defaultValue: "Reset view")
-                )
         }
-        .help(String(
-            localized: "graph.resetView.help",
-            defaultValue: "Restore the graph's pan and zoom to their original position"
-        ))
+        .controlHelp(
+            String(localized: "graph.resetView.a11y", defaultValue: "Reset view"),
+            detail: String(localized: "graph.resetView.help",
+                           defaultValue: "Restore the graph's pan and zoom to their original position"),
+            systemImage: "arrow.up.left.and.down.right.magnifyingglass"
+        )
     }
 
     // MARK: - Canvas Drawing Helpers
 
-    /// Draws a single directed edge as an S-curve Bézier.
+    /// Draws the timeline layout's date axis: a horizontal baseline near the
+    /// bottom edge, adaptive tick marks with labels, and — when undated nodes are
+    /// parked at the trailing edge — a caption above that column.
+    private func drawTimelineAxis(_ ctx: inout GraphicsContext, size: CGSize) {
+        let axisY = vm.timelineAxisY
+        var axis = Path()
+        axis.move(to: CGPoint(x: 40, y: axisY))
+        axis.addLine(to: CGPoint(x: size.width - 64, y: axisY))
+        ctx.stroke(axis, with: .color(.secondary.opacity(0.35)), lineWidth: 0.75)
+
+        for tick in vm.timelineTicks {
+            var mark = Path()
+            mark.move(to: CGPoint(x: tick.x, y: axisY - 4))
+            mark.addLine(to: CGPoint(x: tick.x, y: axisY + 4))
+            ctx.stroke(mark, with: .color(.secondary.opacity(0.5)), lineWidth: 0.75)
+            let label = Text(verbatim: tick.label)
+                .font(.system(size: 9))
+                .foregroundStyle(Color.secondary)
+            ctx.draw(label, at: CGPoint(x: tick.x, y: axisY + 7), anchor: .top)
+        }
+
+        if vm.timelineHasParkedNodes {
+            let caption = Text(String(localized: "graph.timeline.undated",
+                                      defaultValue: "Undated"))
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(Color.secondary)
+            ctx.draw(caption, at: CGPoint(x: size.width - 44, y: 46), anchor: .center)
+        }
+    }
+
+    /// Point on a cubic Bézier at parameter `t`.
+    private func cubicPoint(
+        _ t: CGFloat, _ p0: CGPoint, _ p1: CGPoint, _ p2: CGPoint, _ p3: CGPoint
+    ) -> CGPoint {
+        let mt = 1 - t
+        let a = mt * mt * mt, b = 3 * mt * mt * t, c = 3 * mt * t * t, d = t * t * t
+        return CGPoint(
+            x: a * p0.x + b * p1.x + c * p2.x + d * p3.x,
+            y: a * p0.y + b * p1.y + c * p2.y + d * p3.y
+        )
+    }
+
+    /// Draws a single directed edge as an S-curve Bézier with an arrowhead at the
+    /// target node's rim.
     ///
-    /// When `isSelected` is `true` (the edge's midpoint hit area is being hovered or
-    /// was tapped), the stroke is drawn slightly brighter to provide visual feedback.
-    /// Context text is no longer drawn inline; it appears in the info panel instead.
+    /// - Thickness encodes `referenceCount` — an edge aggregating three footnote
+    ///   references draws heavier than a single reference.
+    /// - The arrowhead always points at the *cited* document, making direction
+    ///   readable without relying on node colour alone.
+    /// - When `isSelected` is `true` (the edge's midpoint hit area is hovered or
+    ///   pinned), the stroke is drawn brighter for feedback.
     private func drawEdge(
         _ ctx: inout GraphicsContext,
         from: CGPoint,
         to: CGPoint,
         referenceType: ReferenceType,
         degree: Int,
-        isSelected: Bool
+        isSelected: Bool,
+        referenceCount: Int,
+        targetRadius: CGFloat
     ) {
         let cp1 = CGPoint(x: from.x + (to.x - from.x) * 0.5, y: from.y)
         let cp2 = CGPoint(x: to.x   - (to.x - from.x) * 0.5, y: to.y)
@@ -912,18 +1322,40 @@ struct CrossReferenceGraphView: View {
         path.addCurve(to: to, control1: cp1, control2: cp2)
 
         let isExtended = degree > 1
-        let lineWidth: CGFloat = isSelected ? 2.5 : (isExtended ? 1.0 : 1.5)
+        let baseWidth: CGFloat = isSelected ? 2.5 : (isExtended ? 1.0 : 1.5)
+        let lineWidth = baseWidth + min(CGFloat(referenceCount - 1) * 0.5, 2.0)
         let color: Color
         if isSelected {
             color = .accentColor.opacity(0.7)
         } else if isExtended {
-            color = .secondary.opacity(0.2)
+            color = .secondary.opacity(0.25)
         } else if referenceType == .editorialNote {
             color = .accentColor.opacity(0.4)
         } else {
-            color = .secondary.opacity(0.35)
+            color = .secondary.opacity(0.4)
         }
         ctx.stroke(path, with: .color(color), lineWidth: lineWidth)
+
+        // Arrowhead: walk back along the curve from the target until just outside
+        // its rim, then draw a chevron oriented along the local tangent.
+        guard hypot(to.x - from.x, to.y - from.y) > targetRadius * 2 else { return }
+        var tHit: CGFloat = 1.0
+        while tHit > 0.5 {
+            let p = cubicPoint(tHit, from, cp1, cp2, to)
+            if hypot(p.x - to.x, p.y - to.y) >= targetRadius + 2 { break }
+            tHit -= 0.02
+        }
+        let tip  = cubicPoint(tHit, from, cp1, cp2, to)
+        let back = cubicPoint(max(tHit - 0.05, 0), from, cp1, cp2, to)
+        let angle = atan2(tip.y - back.y, tip.x - back.x)
+        let arm: CGFloat = 5 + lineWidth
+        var head = Path()
+        head.move(to: CGPoint(x: tip.x - arm * cos(angle - 0.5),
+                              y: tip.y - arm * sin(angle - 0.5)))
+        head.addLine(to: tip)
+        head.addLine(to: CGPoint(x: tip.x - arm * cos(angle + 0.5),
+                                 y: tip.y - arm * sin(angle + 0.5)))
+        ctx.stroke(head, with: .color(color), lineWidth: max(lineWidth, 1.5))
     }
 
     private func drawNode(
@@ -932,56 +1364,67 @@ struct CrossReferenceGraphView: View {
         at pos: CGPoint,
         isSelected: Bool
     ) {
-        let r: CGFloat
-        switch node.kind {
-        case .central:                     r = 24
-        case .inbound, .outbound:          r = 18
-        case .extended:                    r = 14
-        case .clusterInbound, .clusterOutbound: r = 18
-        }
+        let r = vm.nodeRadius(for: node)
         let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
 
-        // Background circle
+        // Background circle. Outbound nodes are orange (not green) so the
+        // inbound/outbound distinction survives red-green colour blindness;
+        // edge arrowheads carry direction redundantly.
         let fillColor: Color
         switch node.kind {
         case .central:                     fillColor = .accentColor
         case .inbound:                     fillColor = isSelected ? .blue.opacity(0.7) : .blue.opacity(0.3)
-        case .outbound:                    fillColor = isSelected ? .green.opacity(0.7) : .green.opacity(0.3)
+        case .outbound:                    fillColor = isSelected ? .orange.opacity(0.7) : .orange.opacity(0.3)
         case .extended:                    fillColor = isSelected ? .secondary.opacity(0.5) : .secondary.opacity(0.2)
         case .clusterInbound:              fillColor = isSelected ? .blue.opacity(0.5) : .blue.opacity(0.2)
-        case .clusterOutbound:             fillColor = isSelected ? .green.opacity(0.5) : .green.opacity(0.2)
+        case .clusterOutbound:             fillColor = isSelected ? .orange.opacity(0.5) : .orange.opacity(0.2)
         }
         ctx.fill(Path(ellipseIn: rect), with: .color(fillColor))
 
-        // Border ring for selected / undownloaded
-        if isSelected || !node.isDownloaded {
-            let borderColor: Color = !node.isDownloaded ? .orange : .white
+        // Border ring: solid white when selected; dashed grey when the node's
+        // volume is not downloaded (dashed = "outline only", reinforced by the
+        // icloud.slash icon below — colour is not the only carrier).
+        if isSelected {
             ctx.stroke(
                 Path(ellipseIn: rect.insetBy(dx: -1.5, dy: -1.5)),
-                with: .color(borderColor),
+                with: .color(.white),
                 lineWidth: 2
+            )
+        } else if !node.isDownloaded {
+            ctx.stroke(
+                Path(ellipseIn: rect.insetBy(dx: -1.5, dy: -1.5)),
+                with: .color(.secondary.opacity(0.8)),
+                style: StrokeStyle(lineWidth: 1.5, dash: [3, 2.5])
             )
         }
 
         // SF Symbol icon
-        let symbolName = node.isCluster ? "folder" : "doc.text"
+        let symbolName: String
+        if node.isCluster {
+            symbolName = "folder"
+        } else if !node.isDownloaded {
+            symbolName = "icloud.slash"
+        } else {
+            symbolName = "doc.text"
+        }
         let symbolRect = rect.insetBy(dx: r * 0.3, dy: r * 0.3)
         let image = Image(systemName: symbolName)
         ctx.draw(image, in: symbolRect)
 
-        // Node label — document number or truncated header drawn below the circle.
+        // Node label — document number or truncated header drawn below the circle,
+        // with the document date (when known) on a second line.
         let labelText: String
         switch node.kind {
         case .clusterInbound(_, let count):
             labelText = String(
-                format: String(localized: "graph.node.cluster.label %lld",
-                               defaultValue: "%lld refs"),
+                format: String(localized: "graph.node.cluster.docsLabel %lld",
+                               defaultValue: "%lld docs"),
                 Int64(count)
             )
         case .clusterOutbound(_, let count):
             labelText = String(
-                format: String(localized: "graph.node.cluster.label %lld",
-                               defaultValue: "%lld refs"),
+                format: String(localized: "graph.node.cluster.docsLabel %lld",
+                               defaultValue: "%lld docs"),
                 Int64(count)
             )
         default:
@@ -1001,19 +1444,103 @@ struct CrossReferenceGraphView: View {
             }
         }
 
+        let isExtendedNode: Bool
+        if case .extended = node.kind { isExtendedNode = true } else { isExtendedNode = false }
+        let primaryStyle: AnyShapeStyle = isExtendedNode
+            ? AnyShapeStyle(Color.secondary.opacity(0.6))
+            : AnyShapeStyle(Color.primary.opacity(0.75))
+        let fontSize: CGFloat = node.isCentral ? 10 : 8
+        var labelY = pos.y + r + 4
+
         if !labelText.isEmpty {
-            let isExtendedNode: Bool
-            if case .extended = node.kind { isExtendedNode = true } else { isExtendedNode = false }
-            let labelStyle: AnyShapeStyle = isExtendedNode
-                ? AnyShapeStyle(Color.secondary.opacity(0.6))
-                : AnyShapeStyle(Color.primary.opacity(0.75))
             let label = Text(verbatim: labelText)
-                .font(.system(size: node.isCentral ? 10 : 8))
-                .foregroundStyle(labelStyle)
-            ctx.draw(label, at: CGPoint(x: pos.x, y: pos.y + r + 4), anchor: .top)
+                .font(.system(size: fontSize))
+                .foregroundStyle(primaryStyle)
+            ctx.draw(label, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
+            labelY += fontSize + 3
+        }
+
+        if let dateText = vm.nodeDateLabels[node.id] {
+            let dateLabel = Text(verbatim: dateText)
+                .font(.system(size: fontSize - 1))
+                .foregroundStyle(Color.secondary.opacity(isExtendedNode ? 0.6 : 0.9))
+            ctx.draw(dateLabel, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
         }
     }
 }
+
+#if os(macOS)
+
+// MARK: - ScrollWheelZoomCatcher
+
+/// Invisible AppKit view that converts scroll-wheel (and trackpad scroll)
+/// deltas over the graph canvas into multiplicative zoom commands — the
+/// "scroll wheel" half of spec Section 11's "Pinch or scroll wheel" zoom row.
+///
+/// Implemented with a local `NSEvent` monitor instead of overriding
+/// `scrollWheel(with:)` so the view never has to win hit-testing: clicks,
+/// drags, and hover continue to reach the SwiftUI layer beneath. Scroll events
+/// outside this view's bounds (or in other windows) pass through untouched.
+private struct ScrollWheelZoomCatcher: NSViewRepresentable {
+
+    /// Receives a multiplicative zoom factor (> 1 zooms in).
+    let onZoom: (CGFloat) -> Void
+
+    func makeNSView(context: Context) -> TrackingView {
+        let view = TrackingView()
+        view.onZoom = onZoom
+        return view
+    }
+
+    func updateNSView(_ nsView: TrackingView, context: Context) {
+        nsView.onZoom = onZoom
+    }
+
+    /// NSView that owns the event monitor for its window's lifetime.
+    final class TrackingView: NSView {
+        /// Forwarded zoom callback; set by the representable.
+        var onZoom: ((CGFloat) -> Void)?
+        /// Local scroll-wheel monitor token; installed while in a window.
+        private var monitor: Any?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window == nil {
+                removeMonitorIfNeeded()
+            } else if monitor == nil {
+                monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                    // The monitor runs on the main thread; assumeIsolated lets us
+                    // touch MainActor-isolated NSView state. NSEvent itself is not
+                    // Sendable, so only a Bool decision crosses the boundary.
+                    let consumed = MainActor.assumeIsolated { () -> Bool in
+                        guard let self,
+                              let window = self.window,
+                              event.window === window else { return false }
+                        let location = self.convert(event.locationInWindow, from: nil)
+                        guard self.bounds.contains(location),
+                              event.scrollingDeltaY != 0 else { return false }
+                        self.onZoom?(1 + event.scrollingDeltaY * 0.0035)
+                        return true
+                    }
+                    return consumed ? nil : event
+                }
+            }
+        }
+
+        /// Never participates in hit testing; interaction stays with SwiftUI.
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        /// Removes the event monitor; safe to call repeatedly.
+        private func removeMonitorIfNeeded() {
+            if let monitor {
+                NSEvent.removeMonitor(monitor)
+                self.monitor = nil
+            }
+        }
+    }
+}
+
+#endif // os(macOS)
 
 // MARK: - EdgeContextView
 
