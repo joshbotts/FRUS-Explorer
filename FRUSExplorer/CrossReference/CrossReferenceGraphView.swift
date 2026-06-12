@@ -273,11 +273,14 @@ struct CrossReferenceGraphView: View {
         withAnimation { showReferenceList = true }
     }
 
-    /// Canvas with the legend strip docked beneath it (outside the canvas, so it
-    /// can never obscure nodes).
+    /// Canvas with the time brush and legend strip docked beneath it (outside
+    /// the canvas, so they can never obscure nodes).
     private var graphWithLegend: some View {
         VStack(spacing: 0) {
             graphContentArea
+            if vm.layoutMode == .timeline && vm.timelineEligible {
+                TimelineBrushView(vm: vm)
+            }
             legendFooter
         }
     }
@@ -1674,6 +1677,189 @@ struct CrossReferenceGraphView: View {
                 .foregroundStyle(Color.secondary.opacity(isExtendedNode ? 0.6 : 0.9))
             ctx.draw(dateLabelText, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
         }
+    }
+}
+
+// MARK: - TimelineBrushView
+
+/// Interactive time-range brush docked beneath the timeline canvas
+/// (Session 162, dense-graph deconfliction recommendation 2).
+///
+/// The strip shows the graph's full date extent with a faint density mark per
+/// dated document. Dragging across empty space selects a window; dragging
+/// inside the window moves it; dragging its edges resizes it. While a window
+/// is active the timeline axis zooms to it, dated nodes outside disappear,
+/// and date clusters recompute on the zoomed scale — zooming in naturally
+/// dissolves them. The clear button (and a brush narrower than 2% of the
+/// range) resets to the full extent.
+struct TimelineBrushView: View {
+
+    @Bindable var vm: CrossReferenceGraphViewModel
+
+    /// Drag interpretation, chosen from the gesture's start location.
+    private enum DragMode {
+        case create(anchor: TimeInterval)
+        case move(offset: TimeInterval)
+        case resizeLower
+        case resizeUpper
+    }
+    @State private var dragMode: DragMode? = nil
+
+    var body: some View {
+        if let fullRange = vm.timelineFullDateRange {
+            HStack(spacing: 8) {
+                Text(Self.endpointLabel(fullRange.lowerBound))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                brushTrack(fullRange: fullRange)
+                    .frame(height: 22)
+                Text(Self.endpointLabel(fullRange.upperBound))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                if vm.timelineBrushRange != nil {
+                    Button {
+                        vm.setTimelineBrush(nil)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .controlHelp(
+                        String(localized: "graph.brush.clear.a11y",
+                               defaultValue: "Clear time range"),
+                        detail: String(localized: "graph.brush.clear.help",
+                                       defaultValue: "Show the full date range again"),
+                        systemImage: "xmark.circle.fill"
+                    )
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(.bar)
+            .overlay(alignment: .top) { Divider() }
+        }
+    }
+
+    /// The draggable track: density marks, the selection window, edge handles.
+    private func brushTrack(fullRange: ClosedRange<TimeInterval>) -> some View {
+        // Captured in body so the Canvas closure never reads the view model.
+        let dates = Array(vm.nodeDateValues.values)
+        let brush = vm.timelineBrushRange
+        let fullSpan = fullRange.upperBound - fullRange.lowerBound
+
+        return GeometryReader { geo in
+            let width = max(geo.size.width, 1)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color.secondary.opacity(0.1))
+
+                // Density marks — one faint tick per dated document.
+                Canvas { ctx, size in
+                    for t in dates {
+                        let x = CGFloat((t - fullRange.lowerBound) / fullSpan) * size.width
+                        var line = Path()
+                        line.move(to: CGPoint(x: x, y: 4))
+                        line.addLine(to: CGPoint(x: x, y: size.height - 4))
+                        ctx.stroke(line, with: .color(.secondary.opacity(0.45)), lineWidth: 1)
+                    }
+                }
+
+                if let brush {
+                    let lowerX = CGFloat((brush.lowerBound - fullRange.lowerBound) / fullSpan) * width
+                    let upperX = CGFloat((brush.upperBound - fullRange.lowerBound) / fullSpan) * width
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(Color.accentColor.opacity(0.2))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5)
+                                .strokeBorder(Color.accentColor.opacity(0.6), lineWidth: 1)
+                        )
+                        .frame(width: max(upperX - lowerX, 4))
+                        .offset(x: lowerX)
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(brushGesture(fullRange: fullRange, width: width))
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "graph.brush.a11y",
+                                   defaultValue: "Timeline range filter"))
+        .accessibilityHint(String(localized: "graph.brush.a11y.hint",
+                                  defaultValue: "Drag to zoom the timeline to a date range; use the clear button to reset"))
+    }
+
+    /// Create / move / resize gesture over the track.
+    private func brushGesture(
+        fullRange: ClosedRange<TimeInterval>,
+        width: CGFloat
+    ) -> some Gesture {
+        let fullSpan = fullRange.upperBound - fullRange.lowerBound
+        let minSpan = fullSpan * 0.02
+
+        func time(atX x: CGFloat) -> TimeInterval {
+            fullRange.lowerBound + Double(min(max(x / width, 0), 1)) * fullSpan
+        }
+        func xPosition(_ t: TimeInterval) -> CGFloat {
+            CGFloat((t - fullRange.lowerBound) / fullSpan) * width
+        }
+
+        return DragGesture(minimumDistance: 2)
+            .onChanged { value in
+                if dragMode == nil {
+                    let startX = value.startLocation.x
+                    if let brush = vm.timelineBrushRange {
+                        let lowerX = xPosition(brush.lowerBound)
+                        let upperX = xPosition(brush.upperBound)
+                        if abs(startX - lowerX) < 10 {
+                            dragMode = .resizeLower
+                        } else if abs(startX - upperX) < 10 {
+                            dragMode = .resizeUpper
+                        } else if startX > lowerX && startX < upperX {
+                            dragMode = .move(offset: time(atX: startX) - brush.lowerBound)
+                        } else {
+                            dragMode = .create(anchor: time(atX: startX))
+                        }
+                    } else {
+                        dragMode = .create(anchor: time(atX: startX))
+                    }
+                }
+                let current = time(atX: value.location.x)
+                switch dragMode {
+                case .create(let anchor):
+                    let lower = min(anchor, current)
+                    let upper = max(anchor, current)
+                    if upper - lower >= minSpan {
+                        vm.setTimelineBrush(lower...upper)
+                    }
+                case .move(let offset):
+                    guard let brush = vm.timelineBrushRange else { return }
+                    let span = brush.upperBound - brush.lowerBound
+                    var lower = current - offset
+                    lower = min(max(lower, fullRange.lowerBound),
+                                fullRange.upperBound - span)
+                    vm.setTimelineBrush(lower...(lower + span))
+                case .resizeLower:
+                    guard let brush = vm.timelineBrushRange else { return }
+                    let lower = max(min(current, brush.upperBound - minSpan),
+                                    fullRange.lowerBound)
+                    vm.setTimelineBrush(lower...brush.upperBound)
+                case .resizeUpper:
+                    guard let brush = vm.timelineBrushRange else { return }
+                    let upper = min(max(current, brush.lowerBound + minSpan),
+                                    fullRange.upperBound)
+                    vm.setTimelineBrush(brush.lowerBound...upper)
+                case nil:
+                    break
+                }
+            }
+            .onEnded { _ in dragMode = nil }
+    }
+
+    /// Short month-year label for the strip's endpoints.
+    private static func endpointLabel(_ t: TimeInterval) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.setLocalizedDateFormatFromTemplate("MMM y")
+        return formatter.string(from: Date(timeIntervalSinceReferenceDate: t))
     }
 }
 

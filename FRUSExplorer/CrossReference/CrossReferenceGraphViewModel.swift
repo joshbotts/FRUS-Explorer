@@ -481,6 +481,29 @@ final class CrossReferenceGraphViewModel {
         }
     }
 
+    // MARK: - Timeline brush
+
+    /// Date window the user has brushed (timeline mode, Session 162): the layout
+    /// restricts its x-domain to this range — the axis zooms in and dated nodes
+    /// outside the window disappear. `nil` shows the full range.
+    private(set) var timelineBrushRange: ClosedRange<TimeInterval>?
+
+    /// Full extent of the graph's dated nodes; the brush strip maps against
+    /// this regardless of the current zoom.
+    var timelineFullDateRange: ClosedRange<TimeInterval>? {
+        let values = nodeDateValues.values
+        guard let lower = values.min(), let upper = values.max(), upper > lower else {
+            return nil
+        }
+        return lower...upper
+    }
+
+    /// Sets (or clears, with `nil`) the brushed date window and re-lays-out.
+    func setTimelineBrush(_ range: ClosedRange<TimeInterval>?) {
+        timelineBrushRange = range
+        refreshLayout()
+    }
+
     // MARK: - Degree Expansion
 
     /// Number of reference hops to display (1 = direct neighbours only, 2 or 3 = extended).
@@ -713,6 +736,7 @@ final class CrossReferenceGraphViewModel {
         autoExpandedSparseGraph = false
         expandedClusterKeys = []
         expandedDateClusterKeys = []
+        timelineBrushRange  = nil
         // layoutMode and userPickedLayoutMode survive re-centring, like graphDegree:
         // an explicit Timeline/Network choice is a session preference.
         layoutTask?.cancel()
@@ -974,7 +998,8 @@ final class CrossReferenceGraphViewModel {
                 edges: baseDisplayEdges,
                 dateValues: nodeDateValues,
                 canvasWidth: canvasSize.width,
-                expandedKeys: expandedDateClusterKeys
+                expandedKeys: expandedDateClusterKeys,
+                domain: timelineBrushRange
             )
             displayNodes = clustered.nodes
             displayEdges = clustered.edges
@@ -983,7 +1008,8 @@ final class CrossReferenceGraphViewModel {
                 nodes: displayNodes,
                 dateValues: layoutDates,
                 centralKey: centralKey,
-                canvasSize: canvasSize
+                canvasSize: canvasSize,
+                domain: timelineBrushRange
             )
             nodePositions          = result.positions
             timelineTicks          = result.ticks
@@ -1226,7 +1252,8 @@ final class CrossReferenceGraphViewModel {
         edges: [DisplayEdge],
         dateValues: [String: TimeInterval],
         canvasWidth: CGFloat,
-        expandedKeys: Set<String>
+        expandedKeys: Set<String>,
+        domain: ClosedRange<TimeInterval>? = nil
     ) -> (nodes: [DisplayNode], edges: [DisplayEdge], clusterDateValues: [String: TimeInterval]) {
         let clusterThreshold = 4
         let xWindow: CGFloat = 52
@@ -1234,16 +1261,32 @@ final class CrossReferenceGraphViewModel {
         let padTrailing: CGFloat = 96
         let plotWidth = max(canvasWidth - padLeading - padTrailing, 1)
 
+        // When a brush domain is active, clustering works on the zoomed scale —
+        // zooming in naturally dissolves clusters as their members spread apart.
         let candidates = nodes
-            .filter { !$0.isCentral && !$0.isCluster && dateValues[$0.id] != nil }
+            .filter { node in
+                guard !node.isCentral, !node.isCluster,
+                      let t = dateValues[node.id] else { return false }
+                return domain.map { $0.contains(t) } ?? true
+            }
             .sorted {
                 let a = dateValues[$0.id] ?? 0, b = dateValues[$1.id] ?? 0
                 return a == b ? $0.id < $1.id : a < b
             }
-        guard candidates.count >= clusterThreshold,
-              let minT = candidates.compactMap({ dateValues[$0.id] }).min(),
-              let maxT = candidates.compactMap({ dateValues[$0.id] }).max(),
-              maxT > minT else {
+        let minT: TimeInterval
+        let maxT: TimeInterval
+        if let domain {
+            minT = domain.lowerBound
+            maxT = domain.upperBound
+        } else {
+            guard let lower = candidates.compactMap({ dateValues[$0.id] }).min(),
+                  let upper = candidates.compactMap({ dateValues[$0.id] }).max() else {
+                return (nodes, edges, [:])
+            }
+            minT = lower
+            maxT = upper
+        }
+        guard candidates.count >= clusterThreshold, maxT > minT else {
             return (nodes, edges, [:])
         }
 
@@ -1366,7 +1409,8 @@ final class CrossReferenceGraphViewModel {
         nodes: [DisplayNode],
         dateValues: [String: TimeInterval],
         centralKey: String,
-        canvasSize: CGSize
+        canvasSize: CGSize,
+        domain: ClosedRange<TimeInterval>? = nil
     ) -> (positions: [String: CGPoint], ticks: [TimelineTick], axisY: CGFloat, hasParkedNodes: Bool) {
         var positions: [String: CGPoint] = [:]
 
@@ -1378,9 +1422,27 @@ final class CrossReferenceGraphViewModel {
         let cy      = (yTop + yBottom) / 2
         let plotWidth = max(canvasSize.width - padLeading - padTrailing, 1)
 
-        let dated = nodes.filter { dateValues[$0.id] != nil }
-        let datedValues = dated.compactMap { dateValues[$0.id] }
-        guard let minT = datedValues.min(), let maxT = datedValues.max(), maxT > minT else {
+        // With a brush domain the axis zooms to the brushed window and dated
+        // nodes outside it disappear entirely (they are *not* parked — the
+        // Undated column is only for genuinely undated nodes).
+        let dated = nodes.filter { node in
+            guard let t = dateValues[node.id] else { return false }
+            return domain.map { $0.contains(t) } ?? true
+        }
+        let minT: TimeInterval
+        let maxT: TimeInterval
+        if let domain {
+            minT = domain.lowerBound
+            maxT = domain.upperBound
+        } else {
+            let datedValues = dated.compactMap { dateValues[$0.id] }
+            guard let lower = datedValues.min(), let upper = datedValues.max() else {
+                return ([:], [], axisY, false)
+            }
+            minT = lower
+            maxT = upper
+        }
+        guard maxT > minT, domain != nil || dated.count >= 2 else {
             return ([:], [], axisY, false)
         }
 
@@ -1443,7 +1505,11 @@ final class CrossReferenceGraphViewModel {
         }
 
         // --- Parking column for undated nodes and clusters ---
-        let parked = nodes.filter { positions[$0.id] == nil }.sorted { $0.id < $1.id }
+        // Dated nodes without a position were excluded by the brush domain and
+        // must stay hidden, not parked.
+        let parked = nodes
+            .filter { positions[$0.id] == nil && dateValues[$0.id] == nil }
+            .sorted { $0.id < $1.id }
         var parkX = canvasSize.width - 44
         var parkY = yTop + 8
         for node in parked {

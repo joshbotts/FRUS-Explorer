@@ -465,6 +465,44 @@ struct CrossReferenceGraphTests {
                 "Central node must sit on the centre lane")
     }
 
+    @Test("TimelineBrushTest: a brush domain hides out-of-range dated nodes without parking them")
+    func timelineBrushFiltersDomain() throws {
+        let graph = makeDatedGraph()  // Mar 4 … Nov 2, 1967; one undated node
+        let centralKey = "vol1/d0"
+        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: centralKey,
+            expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
+        )
+        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        let calendar = Calendar(identifier: .gregorian)
+        let domainStart = try #require(
+            CrossReferenceGraphViewModel.date(fromISO: "1967-05-01", calendar: calendar)
+        ).timeIntervalSinceReferenceDate
+        let domainEnd = try #require(
+            CrossReferenceGraphViewModel.date(fromISO: "1967-08-01", calendar: calendar)
+        ).timeIntervalSinceReferenceDate
+
+        let result = CrossReferenceGraphViewModel.timelineLayout(
+            nodes: nodes, dateValues: dateValues,
+            centralKey: centralKey, canvasSize: canvasSize,
+            domain: domainStart...domainEnd
+        )
+
+        // In-domain: dMid (May 30) and central (Jul 25). Out: dEarly (Mar 4),
+        // dLate (Nov 2) — hidden, NOT parked. Undated still parks.
+        #expect(result.positions["vol1/dMid"] != nil)
+        #expect(result.positions[centralKey] != nil)
+        #expect(result.positions["vol1/dEarly"] == nil, "Out-of-domain node must be hidden")
+        #expect(result.positions["vol1/dLate"] == nil, "Out-of-domain node must be hidden")
+        #expect(result.positions["vol1/dUndated"] != nil, "Undated node still parks")
+        #expect(result.hasParkedNodes)
+
+        // The axis spans the brushed window, not the full extent.
+        let xMid = try #require(result.positions["vol1/dMid"]?.x)
+        let xCentral = try #require(result.positions[centralKey]?.x)
+        #expect(xCentral > xMid, "Chronological order preserved inside the domain")
+    }
+
     @Test("TimelineLayoutTest: layout is empty when dates are missing or identical")
     func timelineLayoutRequiresDateSpan() throws {
         let graph = makeTestGraph(inboundCount: 3, outboundCount: 2)  // no dateISO values
