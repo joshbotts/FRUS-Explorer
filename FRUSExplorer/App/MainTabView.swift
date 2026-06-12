@@ -196,9 +196,12 @@ struct BrowserTabView: View {
                     } label: {
                         Image(systemName: "chart.bar.xaxis")
                     }
-                    .accessibilityLabel(
+                    .controlHelp(
                         String(localized: "browse.analytics.a11y",
-                               defaultValue: "Corpus Analytics")
+                               defaultValue: "Corpus Analytics"),
+                        detail: String(localized: "browse.analytics.help",
+                                       defaultValue: "Chart term frequencies across your downloaded volumes"),
+                        systemImage: "chart.bar.xaxis"
                     )
                 }
             }

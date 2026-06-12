@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import TipKit
 
 // MARK: - CompactGraphContent
 
@@ -180,15 +181,14 @@ struct CrossReferenceGraphView: View {
                         showInfoPopover.toggle()
                     } label: {
                         Image(systemName: "info.circle")
-                            .accessibilityLabel(
-                                String(localized: "graph.info.a11y",
-                                       defaultValue: "About this graph")
-                            )
                     }
-                    .help(String(
-                        localized: "graph.info.help",
-                        defaultValue: "Learn what this graph shows and how to interact with it"
-                    ))
+                    .controlHelp(
+                        String(localized: "graph.info.a11y",
+                               defaultValue: "About this graph"),
+                        detail: String(localized: "graph.info.help",
+                                       defaultValue: "Learn what this graph shows and how to interact with it"),
+                        systemImage: "info.circle"
+                    )
                     .popover(isPresented: $showInfoPopover, arrowEdge: .top) {
                         graphInfoPopoverContent
                     }
@@ -959,7 +959,12 @@ struct CrossReferenceGraphView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Go back")
+                .controlHelp(
+                    String(localized: "graph.breadcrumb.back", defaultValue: "Go back"),
+                    detail: String(localized: "graph.breadcrumb.back.help",
+                                   defaultValue: "Return to the previous document in the graph's history"),
+                    systemImage: "chevron.left"
+                )
 
                 ForEach(Array(vm.history.enumerated()), id: \.offset) { index, entry in
                     Button {
@@ -1002,7 +1007,10 @@ struct CrossReferenceGraphView: View {
                 String(localized: "graph.layout.a11y", defaultValue: "Graph layout"),
                 selection: Binding(
                     get: { vm.layoutMode },
-                    set: { vm.setLayoutMode($0, reduceMotion: reduceMotion) }
+                    set: {
+                        TimelineLayoutTip().invalidate(reason: .actionPerformed)
+                        vm.setLayoutMode($0, reduceMotion: reduceMotion)
+                    }
                 )
             ) {
                 Text(String(localized: "graph.layout.timeline", defaultValue: "Timeline"))
@@ -1010,6 +1018,7 @@ struct CrossReferenceGraphView: View {
                 Text(String(localized: "graph.layout.network", defaultValue: "Network"))
                     .tag(GraphLayoutMode.network)
             }
+            .popoverTip(TimelineLayoutTip())
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(maxWidth: 170)
@@ -1088,14 +1097,19 @@ struct CrossReferenceGraphView: View {
     /// Toolbar button toggling the reference-list side panel (regular widths).
     private var referenceListToggleButton: some View {
         Button {
+            GraphReferenceListTip().invalidate(reason: .actionPerformed)
             withAnimation { showReferenceList.toggle() }
         } label: {
             Image(systemName: "sidebar.trailing")
-                .accessibilityLabel(String(localized: "graph.list.toggle.a11y",
-                                           defaultValue: "Toggle reference list"))
         }
-        .help(String(localized: "graph.list.toggle.help",
-                     defaultValue: "Show or hide the reference list panel"))
+        .popoverTip(GraphReferenceListTip())
+        .controlHelp(
+            String(localized: "graph.list.toggle.a11y",
+                   defaultValue: "Toggle reference list"),
+            detail: String(localized: "graph.list.toggle.help",
+                           defaultValue: "Show or hide the reference list panel"),
+            systemImage: "sidebar.trailing"
+        )
     }
 
     // MARK: - Info Popover
@@ -1229,15 +1243,13 @@ struct CrossReferenceGraphView: View {
             vm.resetViewport(animated: !reduceMotion)
         } label: {
             Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
-                .accessibilityLabel(
-                    String(localized: "graph.resetView.a11y",
-                           defaultValue: "Reset view")
-                )
         }
-        .help(String(
-            localized: "graph.resetView.help",
-            defaultValue: "Restore the graph's pan and zoom to their original position"
-        ))
+        .controlHelp(
+            String(localized: "graph.resetView.a11y", defaultValue: "Reset view"),
+            detail: String(localized: "graph.resetView.help",
+                           defaultValue: "Restore the graph's pan and zoom to their original position"),
+            systemImage: "arrow.up.left.and.down.right.magnifyingglass"
+        )
     }
 
     // MARK: - Canvas Drawing Helpers

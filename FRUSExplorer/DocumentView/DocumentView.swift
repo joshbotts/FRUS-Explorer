@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import TipKit
 
 // DocumentView and all its supporting types are iOS-only.
 // macOS uses MacDocumentView (App/MacDocumentView.swift) with the new window-based architecture.
@@ -593,6 +594,8 @@ struct DocumentView: View {
     /// scene alongside the document via `appState.currentGraphEntry`; otherwise it
     /// presents the in-place sheet so the graph is reachable on every device.
     private func openCrossReferenceGraph() {
+        // The user found the feature — retire its discovery tip.
+        ExploreCrossReferencesTip().invalidate(reason: .actionPerformed)
         if supportsMultipleWindows {
             appState.currentGraphEntry = entry
             openWindow(id: "frus.crossReferenceGraph.ios")
@@ -755,8 +758,11 @@ struct DocumentView: View {
                     systemImage: "note.text.badge.plus"
                 )
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note")
+            .controlHelp(
+                String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note"),
+                detail: String(localized: "document.toolbar.addNote.help",
+                               defaultValue: "Write a research note attached to this document"),
+                systemImage: "note.text.badge.plus"
             )
 
             // 2. Tag document
@@ -768,8 +774,11 @@ struct DocumentView: View {
                     systemImage: "tag"
                 )
             }
-            .accessibilityLabel(
-                String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document")
+            .controlHelp(
+                String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document"),
+                detail: String(localized: "document.toolbar.addTag.help",
+                               defaultValue: "Apply your subject tags to this document"),
+                systemImage: "tag"
             )
 
             // 3. Create highlight — enabled when text is selected in the web view
@@ -779,9 +788,12 @@ struct DocumentView: View {
                 Image(systemName: "paintbrush.pointed")
             }
             .disabled(webKitSelectionRange == nil)
-            .accessibilityLabel(
+            .controlHelp(
                 String(localized: "document.toolbar.createHighlight.a11y",
-                       defaultValue: "Create highlight")
+                       defaultValue: "Create highlight"),
+                detail: String(localized: "document.toolbar.createHighlight.help",
+                               defaultValue: "Highlight the selected passage — select text in the document first"),
+                systemImage: "paintbrush.pointed"
             )
             // The colour-picker sheet is presented from the main content chain
             // (single `.sheet(isPresented:)` for this binding) so it works for
@@ -802,9 +814,12 @@ struct DocumentView: View {
                         systemImage: "note.text.badge.plus"
                     )
                 }
-                .accessibilityLabel(
-                    String(localized: "document.toolbar.noteForHighlight.a11y",
-                           defaultValue: "Add a research note to the highlight you just created")
+                .controlHelp(
+                    String(localized: "document.toolbar.noteForHighlight",
+                           defaultValue: "Add Note to Highlight"),
+                    detail: String(localized: "document.toolbar.noteForHighlight.a11y",
+                                   defaultValue: "Add a research note to the highlight you just created"),
+                    systemImage: "note.text.badge.plus"
                 )
             }
 
@@ -850,6 +865,12 @@ struct DocumentView: View {
                 )
             }
             .disabled(vm.formattedCitation == nil)
+            .controlHelp(
+                String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
+                detail: String(localized: "document.toolbar.viewCitation.help",
+                               defaultValue: "Show the formatted citation for this document"),
+                systemImage: "doc.text"
+            )
 
             // 6. Copy Citation — uses plain text so _..._ italic markers are
             // not pasted as raw underscores. View Citation (above) still uses
@@ -865,6 +886,12 @@ struct DocumentView: View {
                 )
             }
             .disabled(vm.plainTextFormattedCitation == nil)
+            .controlHelp(
+                String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
+                detail: String(localized: "document.toolbar.copyCitation.help",
+                               defaultValue: "Copy the formatted citation to the clipboard"),
+                systemImage: "doc.on.clipboard"
+            )
 
             // 6b. Share Citation — system share sheet with the formatted citation
             // and the canonical history.state.gov URL combined into one message.
@@ -875,6 +902,12 @@ struct DocumentView: View {
                 )
             }
             .disabled(vm.shareableCitationMessage == nil)
+            .controlHelp(
+                String(localized: "document.toolbar.shareCitation", defaultValue: "Share Citation"),
+                detail: String(localized: "document.toolbar.shareCitation.help",
+                               defaultValue: "Share the citation and a link to this document on history.state.gov"),
+                systemImage: "square.and.arrow.up"
+            )
 
             // 7. Add to Collection
             Button {
@@ -886,9 +919,12 @@ struct DocumentView: View {
                     systemImage: "folder.badge.plus"
                 )
             }
-            .accessibilityLabel(
+            .controlHelp(
                 String(localized: "document.toolbar.addToCollection.a11y",
-                       defaultValue: "Add document to a collection")
+                       defaultValue: "Add document to a collection"),
+                detail: String(localized: "document.toolbar.addToCollection.help",
+                               defaultValue: "Add this document to a new or existing collection"),
+                systemImage: "folder.badge.plus"
             )
 
             // 8. Cross-references — opens alongside the document as a Stage Manager
@@ -901,6 +937,13 @@ struct DocumentView: View {
                     systemImage: "arrow.triangle.branch"
                 )
             }
+            .controlHelp(
+                String(localized: "document.toolbar.crossRef", defaultValue: "Cross-References"),
+                detail: String(localized: "document.toolbar.crossRef.help",
+                               defaultValue: "Explore the documents this one cites and the documents that cite it, on a timeline"),
+                systemImage: "arrow.triangle.branch"
+            )
+            .popoverTip(ExploreCrossReferencesTip())
 
             // 9. NARA Catalog Lookup moved to the text-selection edit menu
             // (see .onEditMenuNARALookup on the web view) — the conditional
@@ -920,6 +963,13 @@ struct DocumentView: View {
                     systemImage: "archivebox"
                 )
             }
+            .controlHelp(
+                String(localized: "document.toolbar.sourceExplorer",
+                       defaultValue: "Source Explorer"),
+                detail: String(localized: "document.toolbar.sourceExplorer.help",
+                               defaultValue: "Trace this document's archival source in the National Archives catalog"),
+                systemImage: "archivebox"
+            )
 
             // 11. Open in New Window — only when the platform can actually open a
             // second window (Stage Manager on iPad). Gating on supportsMultipleWindows
@@ -939,6 +989,13 @@ struct DocumentView: View {
                         systemImage: "square.on.square"
                     )
                 }
+                .controlHelp(
+                    String(localized: "document.toolbar.openInNewWindow",
+                           defaultValue: "Open in New Window"),
+                    detail: String(localized: "document.toolbar.openInNewWindow.help",
+                                   defaultValue: "Open this document in a separate window alongside the current one"),
+                    systemImage: "square.on.square"
+                )
             }
 
             // 12. Summarize — only when Apple Intelligence is available
@@ -962,6 +1019,13 @@ struct DocumentView: View {
                     }
                 }
                 .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
+                .controlHelp(
+                    String(localized: "document.toolbar.summarize",
+                           defaultValue: "Summarize with AI"),
+                    detail: String(localized: "document.toolbar.summarize.help",
+                                   defaultValue: "Generate an on-device summary of this document with Apple Intelligence"),
+                    systemImage: "sparkles"
+                )
             }
         }
         // Notes panel toggle — leading nav bar position on iPad
@@ -973,12 +1037,15 @@ struct DocumentView: View {
                     Image(systemName: "note.text")
                         .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
                 }
-                .accessibilityLabel(
+                .controlHelp(
                     showNotesPanel
                         ? String(localized: "document.toolbar.notesPanel.hide.a11y",
                                  defaultValue: "Hide notes panel")
                         : String(localized: "document.toolbar.notesPanel.show.a11y",
-                                 defaultValue: "Show notes panel")
+                                 defaultValue: "Show notes panel"),
+                    detail: String(localized: "document.toolbar.notesPanel.help",
+                                   defaultValue: "Show or hide the research notes panel beside the document"),
+                    systemImage: "note.text"
                 )
             }
         }

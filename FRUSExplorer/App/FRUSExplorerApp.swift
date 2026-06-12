@@ -17,6 +17,7 @@ import SwiftData
 import CoreData       // NSPersistentCloudKitContainer for sync-event monitoring
 import CloudKit       // CKError codes, CKPartialErrorsByItemIDKey for detailed diagnostics
 import CoreSpotlight
+import TipKit
 #if os(iOS)
 import BackgroundTasks
 import os
@@ -144,6 +145,31 @@ struct FRUSExplorerApp: App {
     private let _containerSetup = ModelContainer.makeFRUSContainer()
     private var modelContainer: ModelContainer { _containerSetup.container }
 
+    // MARK: - TipKit
+
+    /// One-time TipKit bootstrap shared by both platform inits. Drives the
+    /// curated discovery tips in `DiscoveryTips.swift`. Failure is non-fatal —
+    /// the tips simply never appear.
+    private static func configureTipKit() {
+        do {
+            try Tips.configure([
+                .displayFrequency(.immediate),
+                .datastoreLocation(.applicationDefault),
+            ])
+        } catch {
+            #if DEBUG
+            print("[FRUSExplorerApp] TipKit configuration failed: \(error)")
+            #endif
+        }
+    }
+
+    #if os(macOS)
+    /// macOS launch setup: TipKit only (no background-task registration).
+    init() {
+        Self.configureTipKit()
+    }
+    #endif
+
     // MARK: - Background Task Registration (iOS)
 
     #if os(iOS)
@@ -156,6 +182,7 @@ struct FRUSExplorerApp: App {
     /// @Observable class; capturing it here is safe because the App struct is instantiated
     /// exactly once per process lifetime and @State persists the same instance.
     init() {
+        Self.configureTipKit()
         let state = appState
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: Self.indexingBGTaskID,

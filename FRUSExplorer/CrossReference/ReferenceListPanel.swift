@@ -127,10 +127,12 @@ struct ReferenceListPanel: View {
             }
             .buttonStyle(.borderless)
             .disabled(!node.isDownloaded || vm.makeEntry(for: node.id) == nil)
-            .accessibilityLabel(String(localized: "graph.list.open.a11y",
-                                       defaultValue: "Open document"))
-            .help(String(localized: "graph.list.open.help",
-                         defaultValue: "Open this document"))
+            .controlHelp(
+                String(localized: "graph.list.open.a11y", defaultValue: "Open document"),
+                detail: String(localized: "graph.list.open.help",
+                               defaultValue: "Open this document"),
+                systemImage: "arrow.up.right.square"
+            )
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
