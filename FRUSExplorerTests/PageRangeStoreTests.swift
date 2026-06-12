@@ -139,6 +139,33 @@ struct PageRangeStoreTests {
         #expect(result == nil)
     }
 
+    // MARK: - EarlySectionTest (Session 162)
+
+    @Test("PageRangeStoreTest: a section whose pagination ends early cannot claim later pages")
+    func earlySectionDoesNotAbsorbLaterPages() async throws {
+        let (db, url) = try Self.makeDB()
+        // Front-matter-like section ending at page 9 (the shape that made
+        // p. 313 of frus1955-57v17 resolve to a page-9 document pre-fix).
+        for p in 1...9 {
+            Self.insert(db: db, volumeId: "v1", documentId: "dfront", sectionId: "s0", type: "arabic", intVal: p, raw: "\(p)")
+        }
+        // Body section: d166 owns 310-311, d167 owns 312-315.
+        for p in 310...311 {
+            Self.insert(db: db, volumeId: "v1", documentId: "d166", sectionId: "s1", type: "arabic", intVal: p, raw: "\(p)")
+        }
+        for p in 312...315 {
+            Self.insert(db: db, volumeId: "v1", documentId: "d167", sectionId: "s1", type: "arabic", intVal: p, raw: "\(p)")
+        }
+        let store = try Self.closeAndMakeStore(db: db, url: url)
+
+        let inBody = try await store.document(forPage: 313, inVolume: "v1")
+        #expect(inBody == "d167")
+        // Beyond every section's recorded pages: no match, never the early
+        // section's last document.
+        let beyond = try await store.document(forPage: 999, inVolume: "v1")
+        #expect(beyond == nil)
+    }
+
     // MARK: - PageRangeForDocumentTest
 
     @Test("PageRangeStoreTest: pageRange(forDocument:inVolume:) returns correct (first, last) tuple")

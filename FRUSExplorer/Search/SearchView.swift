@@ -137,9 +137,12 @@ struct SearchView: View {
                                   ? "line.3.horizontal.decrease.circle.fill"
                                   : "line.3.horizontal.decrease.circle")
                         }
-                        .accessibilityLabel(
+                        .controlHelp(
                             String(localized: "search.filters.toggle.a11y",
-                                   defaultValue: "Toggle filters")
+                                   defaultValue: "Toggle filters"),
+                            detail: String(localized: "search.filters.toggle.help",
+                                           defaultValue: "Filter results by volume, date range, document type, or tags"),
+                            systemImage: "line.3.horizontal.decrease.circle"
                         )
                     }
                     ToolbarItem(placement: .primaryAction) {
@@ -148,12 +151,15 @@ struct SearchView: View {
                         } label: {
                             Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
                         }
-                        .accessibilityLabel(
+                        .controlHelp(
                             showTimeline
                                 ? String(localized: "search.timeline.hide.a11y",
                                          defaultValue: "Hide timeline")
                                 : String(localized: "search.timeline.show.a11y",
-                                         defaultValue: "Show timeline")
+                                         defaultValue: "Show timeline"),
+                            detail: String(localized: "search.timeline.help",
+                                           defaultValue: "Chart how the search results distribute over time"),
+                            systemImage: "chart.bar"
                         )
                         .disabled(vm.results.isEmpty)
                     }
@@ -201,9 +207,12 @@ struct SearchView: View {
                         } label: {
                             Image(systemName: "ellipsis.circle")
                         }
-                        .accessibilityLabel(
+                        .controlHelp(
                             String(localized: "search.moreActions.a11y",
-                                   defaultValue: "More search actions")
+                                   defaultValue: "More search actions"),
+                            detail: String(localized: "search.moreActions.help",
+                                           defaultValue: "Save this search, revisit saved searches, or find a document by citation"),
+                            systemImage: "ellipsis.circle"
                         )
                     }
                 }

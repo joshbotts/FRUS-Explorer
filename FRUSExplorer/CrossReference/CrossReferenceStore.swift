@@ -551,6 +551,22 @@ public actor CrossReferenceStore {
         return edges
     }
 
+    /// Returns the total reference count (inbound + outbound) for each of `keys`,
+    /// keyed by `"volumeId/documentId"`.
+    ///
+    /// Used by the graph renderer to scale node size with connectivity. Each key
+    /// costs one indexed `COUNT(*)` query; callers pass the (small) node set of a
+    /// single ego graph.
+    public func connectionCounts(
+        forKeys keys: [(volumeId: String, documentId: String)]
+    ) throws -> [String: Int] {
+        var result: [String: Int] = [:]
+        for (vol, doc) in keys {
+            result["\(vol)/\(doc)"] = try edgeCount(forDocumentId: doc, volumeId: vol)
+        }
+        return result
+    }
+
     /// Returns the total number of inbound + outbound edges for the given document.
     public func edgeCount(
         forDocumentId documentId: String,
@@ -578,9 +594,11 @@ public actor CrossReferenceStore {
         documentId: String
     ) throws -> CrossReferenceNodeMetadata? {
         let sql = """
-            SELECT document_number, header, dateline
-            FROM document_cache
-            WHERE volume_id = ? AND document_id = ?
+            SELECT dc.document_number, dc.header, dc.dateline, dd.date_iso, dc.summary_text
+            FROM document_cache dc
+            LEFT JOIN document_dates dd
+                   ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            WHERE dc.volume_id = ? AND dc.document_id = ?
             LIMIT 1
             """
         let stmt = try prepare(sql)
@@ -593,7 +611,9 @@ public actor CrossReferenceStore {
             volumeId:   volumeId,
             documentNumber: columnString(stmt, 0),
             header:     columnString(stmt, 1),
-            dateline:   columnString(stmt, 2)
+            dateline:   columnString(stmt, 2),
+            dateISO:    columnString(stmt, 3),
+            summary:    columnString(stmt, 4)
         )
     }
 

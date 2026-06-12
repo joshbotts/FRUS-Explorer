@@ -1417,15 +1417,32 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
             let id = currentId ?? (currentTerm ?? raw)
             if !id.isEmpty {
-                let parts = raw.components(separatedBy: ":")
-                let term = currentTerm
-                    ?? parts.first?.trimmingCharacters(in: .whitespacesAndNewlines)
-                    ?? raw
-                let def = parts.count > 1
-                    ? parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
-                    : nil
+                let term: String
+                let def: String?
+                if let captured = currentTerm {
+                    // Canonical FRUS shape: <item><term xml:id="t_POL1">POL</term>,
+                    // petroleum, oil, lubricants</item> — after </term> resets the
+                    // buffer, everything left in `raw` IS the definition, prefixed
+                    // by separator punctuation. The previous code split `raw` on
+                    // ":" (a separator FRUS never uses here), so every definition
+                    // in the corpus was discarded (Session 162 link audit: all 214
+                    // terms of frus1964-68v19 carried NULL definitions).
+                    term = captured
+                    let separators = CharacterSet(charactersIn: ",;:—–-")
+                        .union(.whitespacesAndNewlines)
+                    let trimmedDef = raw.trimmingCharacters(in: separators)
+                    def = trimmedDef.isEmpty ? nil : trimmedDef
+                } else {
+                    // Fallback shape without a nested <term>: "TERM: definition".
+                    let parts = raw.components(separatedBy: ":")
+                    term = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? raw
+                    let joined = parts.count > 1
+                        ? parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
+                        : ""
+                    def = joined.isEmpty ? nil : joined
+                }
                 if !term.isEmpty {
-                    entries.append(GlossEntry(ref: id, term: term, definition: def?.isEmpty == true ? nil : def))
+                    entries.append(GlossEntry(ref: id, term: term, definition: def))
                 }
             }
             inItem = false

@@ -225,8 +225,15 @@ public struct ASTToRenderNodeConverter {
             return [.persNameLink(ref: normRef, children: convertNodes(children), person: person)]
 
         case .gloss(let ref, let children):
-            let normRef = ref.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
-            let entry   = normRef.flatMap { glossLookup?($0) }
+            // Heading-metadata glosses (`<gloss type="from">Department of State</gloss>`
+            // etc.) carry no target — they are not glossary terms and must not
+            // render as tappable links (Session 162 link audit: they produced
+            // dead `href="#"` anchors in document headings).
+            guard let rawRef = ref else {
+                return convertNodes(children)
+            }
+            let normRef = rawRef.hasPrefix("#") ? String(rawRef.dropFirst()) : rawRef
+            let entry   = glossLookup?(normRef)
             return [.glossLink(ref: normRef, children: convertNodes(children), entry: entry)]
 
         case .crossReference(let target, let volumeId, let children):

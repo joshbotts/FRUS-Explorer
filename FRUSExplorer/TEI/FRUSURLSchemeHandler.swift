@@ -9,6 +9,27 @@
 import Foundation
 import WebKit
 
+// MARK: - CrossRefDestination
+
+/// Classified destination of a tapped in-document `<ref>` target (Session 162).
+///
+/// FRUS TEI ref targets come in several flavours that previously all funnelled
+/// into "treat the anchor as a document ID":
+/// `#d80` · `frus1964-68v20#d104` · `#d100fn2` (footnote of another document) ·
+/// `#pg_313` / `frus1955-57v17#pg_313` (printed page) · `http://…`.
+enum CrossRefDestination: Equatable {
+    /// A FRUS document (footnote-suffixed ids are normalised to the base doc).
+    case document(volumeId: String?, documentId: String)
+    /// A printed page in a volume; resolve to its containing document via
+    /// `PageRangeStore.document(forPage:inVolume:)`.
+    case page(volumeId: String?, page: Int)
+    /// A non-FRUS absolute URL — open in the browser.
+    case external(URL)
+    /// Nothing navigable: same-document footnote/figure/table anchors, roman-
+    /// numeral page anchors, or an empty target.
+    case unresolved
+}
+
 // MARK: - FRUSURLSchemeHandler
 
 /// `WKURLSchemeHandler` that dispatches `frusexplorer://` navigations to Swift callbacks.
@@ -39,6 +60,10 @@ import WebKit
 ///
 /// ## Session history
 ///   1.0 — Session 142: initial implementation; replaces `StubFRUSURLSchemeHandler`
+///   1.1 — Session 160: dispatch moved into `dispatch(url:)`, called from the
+///          navigation delegate's `decidePolicyFor`. `webView(_:start:)` no longer
+///          dispatches — cancelling the navigation there suppresses the scheme task
+///          on macOS, which is why in-document person/term links never fired.
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -59,7 +84,14 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
 
     // MARK: - Registration
 
-    /// Rebuilds the person and gloss ref→entry lookup tables from `model.bodyNodes`.
+    /// Rebuilds the person and gloss ref→entry lookup tables from the model's
+    /// body nodes **and** its footnotes.
+    ///
+    /// Footnote bodies live in `model.footnotes`, not `model.bodyNodes` — the
+    /// converter hoists them out and leaves only markers in the body. Scanning
+    /// only the body (the pre–Session 162 behaviour) meant every person and term
+    /// link inside a footnote resolved to `nil` and surfaced as "not found",
+    /// even though the entries were correctly indexed.
     ///
     /// Call this whenever a new document is loaded (before `loadHTMLString`) so
     /// tapped links can be resolved to their full entry objects.
@@ -67,6 +99,7 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         var persons: [String: PersonEntry] = [:]
         var gloss:   [String: GlossEntry]  = [:]
         Self.scan(nodes: model.bodyNodes, persons: &persons, gloss: &gloss)
+        Self.scan(nodes: model.footnotes, persons: &persons, gloss: &gloss)
         personsByRef = persons
         glossByRef   = gloss
 
@@ -76,14 +109,21 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         #endif
     }
 
-    // MARK: - WKURLSchemeHandler
+    // MARK: - Dispatch
 
-    func webView(_ webView: WKWebView, start urlSchemeTask: any WKURLSchemeTask) {
-        // Always respond so WebKit does not report a load error.
-        defer { respond(to: urlSchemeTask) }
-
-        guard let url = urlSchemeTask.request.url else { return }
-
+    /// Resolves a `frusexplorer://` URL to its `PersonEntry` / `GlossEntry` /
+    /// cross-reference target and invokes the matching callback.
+    ///
+    /// This is called from the navigation delegate
+    /// (`_FRUSWebViewCoordinator.webView(_:decidePolicyFor:)`) when an interactive
+    /// link is tapped — **not** from `webView(_:start:)`. The navigation delegate
+    /// cancels `frusexplorer://` navigations so the scheme handler's empty response
+    /// can never replace the document, but cancelling also prevents
+    /// `webView(_:start:)` from running (notably on macOS). Dispatching here, in a
+    /// single place, keeps person/gloss/cross-ref taps working deterministically on
+    /// both platforms without any double dispatch.
+    @MainActor
+    func dispatch(url: URL) {
         // Path components with leading "/" filtered out; values are percent-decoded.
         let parts = url.pathComponents
             .filter { $0 != "/" }
@@ -108,6 +148,68 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         default:
             break
         }
+    }
+
+    // MARK: - Target resolution
+
+    /// Splits a raw TEI ref target into a navigable destination, normalising the
+    /// quirks found across the corpus (Session 162 link audit):
+    ///
+    /// - `vol#anchor` prefixes override `volumeId`; bare `#anchor` keeps it.
+    /// - `dNNNfnM` footnote-suffixed ids resolve to the base document `dNNN`.
+    /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number;
+    ///   roman-numeral pages (`pg_XIII`, front matter) are `.unresolved`.
+    /// - Bare `fn…`/`note…`/`fig…`/`tbl…` anchors point within the current
+    ///   document and are `.unresolved` (footnote popovers already cover them).
+    /// - Absolute `http(s)` URLs are `.external`.
+    ///
+    /// `nonisolated`: a pure string transformation, callable from any context
+    /// (the default-MainActor inference otherwise traps when tests call it off
+    /// the main actor).
+    nonisolated static func resolveCrossRefTarget(
+        _ rawTarget: String,
+        volumeId: String?
+    ) -> CrossRefDestination {
+        let target = rawTarget.trimmingCharacters(in: .whitespaces)
+        if target.hasPrefix("http://") || target.hasPrefix("https://") {
+            return URL(string: target).map { .external($0) } ?? .unresolved
+        }
+
+        var vol = volumeId
+        var anchor = target
+        if let hash = target.firstIndex(of: "#") {
+            let prefix = String(target[..<hash])
+            if !prefix.isEmpty { vol = prefix }
+            anchor = String(target[target.index(after: hash)...])
+        }
+        guard !anchor.isEmpty else { return .unresolved }
+
+        let lower = anchor.lowercased()
+        if lower.hasPrefix("pg") || lower.hasPrefix("page") {
+            let digits = anchor.drop { !$0.isNumber }
+            if !digits.isEmpty, digits.allSatisfy(\.isNumber), let page = Int(digits) {
+                return .page(volumeId: vol, page: page)
+            }
+            return .unresolved
+        }
+        if lower.hasPrefix("fn") || lower.hasPrefix("note")
+            || lower.hasPrefix("fig") || lower.hasPrefix("tbl") {
+            return .unresolved
+        }
+        if let match = anchor.wholeMatch(of: /(d\d+[A-Za-z]?)fn\d+/) {
+            return .document(volumeId: vol, documentId: String(match.1))
+        }
+        return .document(volumeId: vol, documentId: anchor)
+    }
+
+    // MARK: - WKURLSchemeHandler
+
+    func webView(_ webView: WKWebView, start urlSchemeTask: any WKURLSchemeTask) {
+        // Respond with an empty 200 so WebKit never reports a load error if it ever
+        // does start this task. The actual tap dispatch happens in the navigation
+        // delegate's decidePolicyFor (see `dispatch(url:)`), because cancelling the
+        // navigation there prevents this method from running on macOS.
+        respond(to: urlSchemeTask)
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: any WKURLSchemeTask) {}

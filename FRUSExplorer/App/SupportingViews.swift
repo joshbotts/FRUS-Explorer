@@ -3108,6 +3108,27 @@ private struct CorpusVolumeDetailSheet: View {
         return items
     }
 
+    /// Handles a tap on a section row in the volume structure list.
+    ///
+    /// Prose-readable sections (preface, introduction, errata, etc.) open straight
+    /// into the main window on the first tap — the same one-tap behaviour as a
+    /// numbered document — by posting to `AppState.pendingBrowseDocument` and
+    /// dismissing the sheet. Sections that need an intermediate list or a structured
+    /// view (compilations with documents, the Persons glossary, the Sources list)
+    /// present the `CorpusSectionDocumentListView` sheet instead.
+    private func openSection(_ section: VolumeSection) {
+        if section.canReadDirectly {
+            appState.pendingBrowseDocument = DocumentBrowserEntry(
+                documentId: section.sectionId,
+                volumeId: volume.volumeId,
+                header: section.title
+            )
+            dismiss()
+        } else {
+            selectedSection = section
+        }
+    }
+
     @ViewBuilder
     private func structureView(_ structure: VolumeStructure) -> some View {
         if structure.isEmpty {
@@ -3126,7 +3147,7 @@ private struct CorpusVolumeDetailSheet: View {
                 if !frontMatterItems.isEmpty {
                     Section("Front Matter") {
                         ForEach(frontMatterItems) { section in
-                            Button { selectedSection = section } label: {
+                            Button { openSection(section) } label: {
                                 SectionRowLabel(section: section)
                             }
                             .buttonStyle(.plain)
@@ -3136,7 +3157,7 @@ private struct CorpusVolumeDetailSheet: View {
                 if !contentSections.isEmpty {
                     Section("Contents") {
                         ForEach(contentSections) { section in
-                            Button { selectedSection = section } label: {
+                            Button { openSection(section) } label: {
                                 SectionRowLabel(section: section)
                             }
                             .buttonStyle(.plain)
@@ -3146,7 +3167,7 @@ private struct CorpusVolumeDetailSheet: View {
                 if !backMatterItems.isEmpty {
                     Section("Back Matter") {
                         ForEach(backMatterItems) { section in
-                            Button { selectedSection = section } label: {
+                            Button { openSection(section) } label: {
                                 SectionRowLabel(section: section)
                             }
                             .buttonStyle(.plain)

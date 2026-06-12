@@ -50,8 +50,21 @@ final class VolumeConnectionGraphViewModel {
     // MARK: - Interaction
 
     var selectedPartnerId: String? = nil
+
+    /// Pinch-to-zoom magnification applied to the canvas; `1.0` is neutral.
+    /// Holds `steadyScale × gestureValue` during a pinch (see `magnificationChanged(_:)`).
     var scale: CGFloat    = 1.0
+
+    /// Pan translation applied to the canvas; `.zero` is neutral.
+    /// Holds `steadyPanOffset + gestureTranslation` during a drag (see `panChanged(_:)`).
     var panOffset: CGSize = .zero
+
+    /// Committed zoom level carried between magnification gestures, so consecutive
+    /// pinches accumulate instead of snapping back to the 1.0 baseline.
+    private(set) var steadyScale: CGFloat = 1.0
+
+    /// Committed pan offset carried between drag gestures.
+    private(set) var steadyPanOffset: CGSize = .zero
 
     // MARK: - Layout
 
@@ -98,6 +111,50 @@ final class VolumeConnectionGraphViewModel {
 
     var canNavigateBack: Bool { !history.isEmpty }
 
+    // MARK: - Viewport gestures
+
+    /// Applies an in-flight pinch gesture value on top of the committed zoom level.
+    func magnificationChanged(_ value: CGFloat) {
+        scale = max(0.25, min(4.0, steadyScale * value))
+    }
+
+    /// Commits the current zoom level so the next pinch starts from it.
+    func magnificationEnded() {
+        steadyScale = scale
+    }
+
+    /// Applies an in-flight drag translation on top of the committed pan offset.
+    func panChanged(_ translation: CGSize) {
+        panOffset = CGSize(
+            width:  steadyPanOffset.width  + translation.width,
+            height: steadyPanOffset.height + translation.height
+        )
+    }
+
+    /// Commits the current pan offset so the next drag continues from it.
+    func panEnded() {
+        steadyPanOffset = panOffset
+    }
+
+    /// Restores the pan/zoom viewport to its neutral state. The layout itself never
+    /// needs touching — the central volume node is pinned to the canvas centre.
+    /// - Parameter animated: When `true`, the change glides back with a spring.
+    func resetViewport(animated: Bool) {
+        guard scale != 1.0 || panOffset != .zero
+                || steadyScale != 1.0 || steadyPanOffset != .zero else { return }
+        steadyScale = 1.0
+        steadyPanOffset = .zero
+        if animated {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                scale = 1.0
+                panOffset = .zero
+            }
+        } else {
+            scale = 1.0
+            panOffset = .zero
+        }
+    }
+
     // MARK: - Load
 
     func load(from store: CrossReferenceStore) async {
@@ -107,6 +164,9 @@ final class VolumeConnectionGraphViewModel {
         outboundEdges = []
         nodePositions = [:]
         selectedPartnerId = nil
+        // A stale pinch/pan transform from the previous volume would otherwise be
+        // applied on top of the freshly built layout.
+        resetViewport(animated: false)
         do {
             let ego = try await store.volumeEgoGraph(forVolumeId: centralVolumeId)
             inboundEdges  = ego.inboundEdges
@@ -338,6 +398,7 @@ struct VolumeConnectionGraphView: View {
                 .offset(vm.panOffset)
                 .gesture(magnificationGesture)
                 .gesture(panGesture)
+                .gesture(resetViewportGesture)
                 .onChange(of: geo.size, initial: true) { _, size in
                     vm.onCanvasSizeChanged(size, reduceMotion: reduceMotion)
                 }
@@ -469,6 +530,23 @@ struct VolumeConnectionGraphView: View {
     @ViewBuilder
     private var overlayControls: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if vm.scale != 1.0 || vm.panOffset != .zero {
+                Button {
+                    vm.resetViewport(animated: !reduceMotion)
+                } label: {
+                    Label(String(localized: "volumeGraph.resetView", defaultValue: "Reset View"),
+                          systemImage: "arrow.up.left.and.down.right.magnifyingglass")
+                        .font(.system(size: 13, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.regularMaterial, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "volumeGraph.resetView.help",
+                             defaultValue: "Restore the graph's pan and zoom to their original position"))
+                .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .topLeading)))
+            }
+
             if vm.canNavigateBack {
                 Button {
                     if let store = appState.crossReferenceStore {
@@ -551,11 +629,20 @@ struct VolumeConnectionGraphView: View {
 
     private var magnificationGesture: some Gesture {
         MagnificationGesture()
-            .onChanged { vm.scale = max(0.25, min(4.0, $0)) }
+            .onChanged { vm.magnificationChanged($0) }
+            .onEnded { _ in vm.magnificationEnded() }
     }
 
     private var panGesture: some Gesture {
         DragGesture(minimumDistance: 5)
-            .onChanged { vm.panOffset = $0.translation }
+            .onChanged { vm.panChanged($0.translation) }
+            .onEnded { _ in vm.panEnded() }
+    }
+
+    /// Double-tap anywhere on the canvas restores the neutral viewport — the same
+    /// recovery convention as the document-level graph.
+    private var resetViewportGesture: some Gesture {
+        TapGesture(count: 2)
+            .onEnded { vm.resetViewport(animated: !reduceMotion) }
     }
 }

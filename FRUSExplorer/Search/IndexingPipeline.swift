@@ -284,7 +284,12 @@ public actor IndexingPipeline {
     ///   sources section, and `volume_structures` rows gain the full front/back
     ///   hierarchy. All of these live in parse output, so a full XML re-parse is
     ///   required to repopulate them.
-    public static let currentDateIndexVersion: Int = 7
+    /// - Version 8: terms-list definitions fix (Session 162 link audit). The terms
+    ///   parser split item text on ":" but FRUS separates term and definition with
+    ///   a comma after the nested `<term>` element, so every glossary definition in
+    ///   the corpus was stored as NULL. A full re-parse repopulates the `terms`
+    ///   table's `definition` column so tapped term links show real definitions.
+    public static let currentDateIndexVersion: Int = 8
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -1034,6 +1039,83 @@ public actor IndexingPipeline {
             ))
         }
         return entries
+    }
+
+    /// Returns the complete, in-order reading sequence for a volume: every front- and
+    /// back-matter section plus every numbered document, in source order.
+    ///
+    /// `documents(forVolume:)` reads only `document_cache`, which deliberately omits the
+    /// structured / navigation sections kept out of the search index — Persons, Sources,
+    /// Table of Contents, and Index. Prev/Next navigation built on that list therefore
+    /// skips exactly those sections. This method instead walks the persisted
+    /// `VolumeStructure`, enriching body documents with their cached metadata and
+    /// synthesising entries for sections absent from `document_cache` so they open as
+    /// quasi-documents by `xml:id`.
+    ///
+    /// Falls back to `documents(forVolume:)` order when no structure is cached. Body
+    /// documents the structure walk doesn't reach are appended so the sequence never
+    /// loses a document relative to `document_cache`.
+    ///
+    /// - Parameter volumeId: The volume to build the sequence for.
+    /// - Returns: Reading-ordered `DocumentBrowserEntry` values spanning front matter,
+    ///   body, and back matter.
+    public func readingSequence(forVolume volumeId: String) throws -> [DocumentBrowserEntry] {
+        let cached = try documents(forVolume: volumeId)
+        guard let structure = try cachedVolumeStructure(forVolumeId: volumeId),
+              !structure.isEmpty else {
+            return cached
+        }
+        return Self.mergeReadingSequence(structure: structure, cached: cached, volumeId: volumeId)
+    }
+
+    /// Merges a `VolumeStructure` with the volume's `document_cache` rows into a single
+    /// reading-ordered list. Pure (no I/O) so it is unit-testable without a database.
+    ///
+    /// Walks `structure.sections` depth-first in source order. Container sections
+    /// (compilations, chapters, the `<front>`/`<back>` wrappers) contribute their direct
+    /// documents and then their subsections; leaf sections contribute themselves. Each
+    /// id is enriched from `cached` when present, otherwise synthesised from the
+    /// section's title. Sections without an explicit `xml:id` are skipped — they can't
+    /// be reopened by id. Any cached document the walk doesn't reach is appended last so
+    /// the result never loses a document relative to `cached`.
+    nonisolated static func mergeReadingSequence(
+        structure: VolumeStructure,
+        cached: [DocumentBrowserEntry],
+        volumeId: String
+    ) -> [DocumentBrowserEntry] {
+        let byId = Dictionary(cached.map { ($0.documentId, $0) }) { first, _ in first }
+        var result: [DocumentBrowserEntry] = []
+        var seen = Set<String>()
+
+        func append(id: String, fallbackTitle: String) {
+            guard !id.isEmpty, !seen.contains(id) else { return }
+            seen.insert(id)
+            result.append(byId[id] ?? DocumentBrowserEntry(
+                documentId: id, volumeId: volumeId, header: fallbackTitle))
+        }
+
+        func walk(_ sections: [VolumeSection]) {
+            for section in sections {
+                if !section.documentIds.isEmpty || !section.subsections.isEmpty {
+                    // Container: direct documents first, then nested subsections.
+                    for docId in section.documentIds { append(id: docId, fallbackTitle: "") }
+                    walk(section.subsections)
+                } else if section.hasExplicitSectionId {
+                    // Leaf section: prose front/back matter, or a structured / navigation
+                    // section (Persons, Sources, TOC, Index) opened as a quasi-document.
+                    append(id: section.sectionId, fallbackTitle: section.title)
+                }
+            }
+        }
+        walk(structure.sections)
+
+        // Safety net: include any cached document the walk didn't reach so Prev/Next
+        // never loses a body document even if the persisted structure is incomplete.
+        for entry in cached where !seen.contains(entry.documentId) {
+            seen.insert(entry.documentId)
+            result.append(entry)
+        }
+        return result
     }
 
     /// Returns `true` if `document_cache` has at least one row for the given volume.

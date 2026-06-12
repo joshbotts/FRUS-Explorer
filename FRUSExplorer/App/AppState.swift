@@ -437,6 +437,12 @@ final class AppState {
     /// `nil` if the database could not be opened.
     var personMentionStore: PersonMentionStore?
 
+    /// The shared printed-page lookup store (page_ranges table). Created at boot;
+    /// used by document views to resolve printed-page cross-references
+    /// (`#pg_313`) to their containing document (Session 162). `nil` if the
+    /// database could not be opened.
+    var pageRangeStore: PageRangeStore?
+
     /// Directory containing the SQLite index databases (frus.db). Set at boot;
     /// used by `StorageManagementView` to report index disk usage.
     var indexDirectory: URL?
