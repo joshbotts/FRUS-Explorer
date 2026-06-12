@@ -467,7 +467,7 @@ struct CrossReferenceGraphTests {
 
     @Test("TimelineBrushTest: a brush domain hides out-of-range dated nodes without parking them")
     func timelineBrushFiltersDomain() throws {
-        let graph = makeDatedGraph()  // Mar 4 … Nov 2, 1967; one undated node
+        let graph = makeDatedGraph()  // Mar 4 … Nov 2, 1962; one undated node
         let centralKey = "vol1/d0"
         let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
             graph: graph, centralKey: centralKey,
@@ -476,10 +476,10 @@ struct CrossReferenceGraphTests {
         let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
         let calendar = Calendar(identifier: .gregorian)
         let domainStart = try #require(
-            CrossReferenceGraphViewModel.date(fromISO: "1967-05-01", calendar: calendar)
+            CrossReferenceGraphViewModel.date(fromISO: "1962-05-01", calendar: calendar)
         ).timeIntervalSinceReferenceDate
         let domainEnd = try #require(
-            CrossReferenceGraphViewModel.date(fromISO: "1967-08-01", calendar: calendar)
+            CrossReferenceGraphViewModel.date(fromISO: "1962-08-01", calendar: calendar)
         ).timeIntervalSinceReferenceDate
 
         let result = CrossReferenceGraphViewModel.timelineLayout(

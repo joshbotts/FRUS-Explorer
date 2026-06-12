@@ -936,7 +936,8 @@ struct CrossReferenceGraphView: View {
     private func nodeInfoPanel(node: DisplayNode, key: String) -> some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 6) {
-                Text(node.metadata?.header ?? key)
+                Text(node.metadata?.header
+                     ?? ((node.isCluster || node.isDateCluster) ? node.accessibilityLabel : key))
                     .font(.headline)
                     .lineLimit(2)
 

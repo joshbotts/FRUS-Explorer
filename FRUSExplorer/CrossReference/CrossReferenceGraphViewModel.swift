@@ -992,10 +992,16 @@ final class CrossReferenceGraphViewModel {
         // Same-date pileups collapse into expandable date clusters first
         // (Session 162). Falls through to the network layout when the data
         // can't support chronology.
+        // Tests (and any caller that seeds `displayNodes` directly) may not have
+        // populated the base arrays; fall back to the current display set so a
+        // relayout never silently empties the graph.
+        let sourceNodes = baseDisplayNodes.isEmpty ? displayNodes : baseDisplayNodes
+        let sourceEdges = baseDisplayEdges.isEmpty ? displayEdges : baseDisplayEdges
+
         if layoutMode == .timeline && timelineEligible {
             let clustered = Self.dateClusteredDisplay(
-                nodes: baseDisplayNodes,
-                edges: baseDisplayEdges,
+                nodes: sourceNodes,
+                edges: sourceEdges,
                 dateValues: nodeDateValues,
                 canvasWidth: canvasSize.width,
                 expandedKeys: expandedDateClusterKeys,
@@ -1017,8 +1023,8 @@ final class CrossReferenceGraphViewModel {
             timelineHasParkedNodes = result.hasParkedNodes
             return
         }
-        displayNodes = baseDisplayNodes
-        displayEdges = baseDisplayEdges
+        displayNodes = sourceNodes
+        displayEdges = sourceEdges
         timelineTicks = []
         timelineHasParkedNodes = false
 
@@ -1486,8 +1492,11 @@ final class CrossReferenceGraphViewModel {
             return cy + laneOffsets[bestLane]
         }
 
-        // Central first so it owns the middle lane at its own date.
-        if let centralT = dateValues[centralKey] {
+        // Central first so it owns the middle lane at its own date. Like every
+        // dated node, it hides when a brush domain excludes its date — placing
+        // it anyway would extrapolate its x off the plot.
+        if let centralT = dateValues[centralKey],
+           domain.map({ $0.contains(centralT) }) ?? true {
             let x = xPosition(centralT)
             positions[centralKey] = CGPoint(x: x, y: assignLane(x: x, forceCentre: true))
         }

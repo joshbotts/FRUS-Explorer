@@ -321,7 +321,7 @@ struct GraphNodeDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 6) {
-                Text(node.metadata?.header ?? node.id)
+                Text(detailTitle)
                     .font(.headline)
                     .lineLimit(3)
                 Spacer(minLength: 4)
@@ -413,6 +413,14 @@ struct GraphNodeDetailView: View {
                 .padding(.top, 2)
             }
         }
+    }
+
+    /// Title for the detail header: document header when known, the descriptive
+    /// cluster label for cluster nodes (never the raw "datecluster/…" key).
+    private var detailTitle: String {
+        if let header = node.metadata?.header { return header }
+        if node.isCluster || node.isDateCluster { return node.accessibilityLabel }
+        return node.id
     }
 
     /// Direction label for the context passage (mirrors the floating panel's).
