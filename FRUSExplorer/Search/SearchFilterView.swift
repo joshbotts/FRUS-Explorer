@@ -44,6 +44,10 @@ import SwiftData
 ///   1.1 — Session 2026-06-08: removed Advanced Text section (Phrase, Prefix
 ///          wildcard, Excluded terms, Keyword-mode picker) — superseded by
 ///          `FTS5InlineQueryParser` inline syntax in the main search box
+///   1.2 — Session 163: added the Volume & Subseries scope section — two combining
+///          multi-select pickers (iOS push-in `NavigationLink` lists; macOS inline
+///          `DisclosureGroup` checkboxes) writing `vm.selectedSubseriesIds` /
+///          `vm.selectedVolumeIds`. Shown only when `vm.availableVolumes` is non-empty.
 struct SearchFilterView: View {
 
     @Bindable var vm: SearchViewModel
@@ -92,6 +96,7 @@ struct SearchFilterView: View {
 
             Form {
                 dateRangeSection
+                if !vm.availableVolumes.isEmpty     { volumeScopeSectionMac }
                 documentTypeSection
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
@@ -121,6 +126,7 @@ struct SearchFilterView: View {
         NavigationStack {
             Form {
                 dateRangeSection
+                if !vm.availableVolumes.isEmpty     { volumeScopeSectioniOS }
                 documentTypeSection
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
@@ -340,6 +346,224 @@ struct SearchFilterView: View {
             Text(String(localized: "search.section.usertags",
                         defaultValue: "My Tags"))
         }
+    }
+
+    // MARK: - Volume & Subseries Scope
+
+    /// Indexed volumes grouped by subseries, sorted chronologically (subseries IDs
+    /// begin with a year, so a string sort is chronological). Drives both the iOS
+    /// push-in pickers and the macOS disclosure pickers.
+    private var subseriesGroups: [(subseries: String, volumes: [VolumeManifestEntry])] {
+        Dictionary(grouping: vm.availableVolumes, by: { $0.subseries })
+            .map { (subseries: $0.key, volumes: $0.value.sorted { $0.volumeId < $1.volumeId }) }
+            .sorted { $0.subseries < $1.subseries }
+    }
+
+    /// "<n> selected" / "Any" trailing summary for a picker row.
+    private func selectionSummary(_ count: Int) -> String {
+        count == 0
+            ? String(localized: "search.scope.any", defaultValue: "Any")
+            : String(format: String(localized: "search.scope.selectedCount %lld",
+                                    defaultValue: "%lld selected"), Int64(count))
+    }
+
+    /// Explanatory footer shared by both platforms: the two pickers combine as a union.
+    private var volumeScopeFooter: Text {
+        Text(String(localized: "search.scope.volume.footer",
+                    defaultValue: "Subseries and volumes combine: results include every document in the chosen subseries plus any individually chosen volumes. Only indexed volumes are listed."))
+    }
+
+    // MARK: iOS — push-in pickers
+
+    /// iOS volume-scope section: two `NavigationLink` rows that push multi-select
+    /// lists. Idiomatic for the iOS filter sheet's `NavigationStack`.
+    private var volumeScopeSectioniOS: some View {
+        Section {
+            NavigationLink {
+                subseriesSelectionList
+            } label: {
+                HStack {
+                    Text(String(localized: "search.section.subseries", defaultValue: "Subseries"))
+                    Spacer()
+                    Text(selectionSummary(vm.selectedSubseriesIds.count))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            NavigationLink {
+                volumeSelectionList
+            } label: {
+                HStack {
+                    Text(String(localized: "search.section.volumes", defaultValue: "Volumes"))
+                    Spacer()
+                    Text(selectionSummary(vm.selectedVolumeIds.count))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text(String(localized: "search.section.volumeScope", defaultValue: "Limit to Volumes"))
+        } footer: {
+            volumeScopeFooter
+        }
+    }
+
+    /// Pushed multi-select list of subseries (each toggles a whole subseries).
+    private var subseriesSelectionList: some View {
+        List {
+            ForEach(subseriesGroups, id: \.subseries) { group in
+                Button {
+                    toggleSubseries(group.subseries)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(group.subseries)
+                                .foregroundStyle(.primary)
+                            Text(String(format: String(localized: "search.scope.volumeCount %lld",
+                                                        defaultValue: "%lld volumes"),
+                                        Int64(group.volumes.count)))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if vm.selectedSubseriesIds.contains(group.subseries) {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(group.subseries)
+                .accessibilityAddTraits(
+                    vm.selectedSubseriesIds.contains(group.subseries) ? .isSelected : []
+                )
+            }
+        }
+        .navigationTitle(String(localized: "search.section.subseries", defaultValue: "Subseries"))
+    }
+
+    /// Pushed multi-select list of individual volumes, grouped under subseries headers.
+    private var volumeSelectionList: some View {
+        List {
+            ForEach(subseriesGroups, id: \.subseries) { group in
+                Section(group.subseries) {
+                    ForEach(group.volumes) { volume in
+                        Button {
+                            toggleVolume(volume.volumeId)
+                        } label: {
+                            HStack {
+                                Text(volume.title)
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
+                                Spacer()
+                                if vm.selectedVolumeIds.contains(volume.volumeId) {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(Color.accentColor)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(volume.title)
+                        .accessibilityAddTraits(
+                            vm.selectedVolumeIds.contains(volume.volumeId) ? .isSelected : []
+                        )
+                    }
+                }
+            }
+        }
+        .navigationTitle(String(localized: "search.section.volumes", defaultValue: "Volumes"))
+    }
+
+    // MARK: macOS — disclosure pickers
+
+    /// macOS volume-scope section: two `DisclosureGroup`s of checkbox toggles. The
+    /// macOS filter sheet deliberately avoids `NavigationStack`, so selection stays
+    /// inline within the fixed-frame sheet instead of pushing.
+    private var volumeScopeSectionMac: some View {
+        Section {
+            DisclosureGroup {
+                ForEach(subseriesGroups, id: \.subseries) { group in
+                    Toggle(isOn: subseriesBinding(group.subseries)) {
+                        Text(verbatim: "\(group.subseries) (\(group.volumes.count))")
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(String(localized: "search.section.subseries", defaultValue: "Subseries"))
+                    Spacer()
+                    Text(selectionSummary(vm.selectedSubseriesIds.count))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            DisclosureGroup {
+                ForEach(subseriesGroups, id: \.subseries) { group in
+                    ForEach(group.volumes) { volume in
+                        Toggle(isOn: volumeBinding(volume.volumeId)) {
+                            Text(volume.title)
+                        }
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(String(localized: "search.section.volumes", defaultValue: "Volumes"))
+                    Spacer()
+                    Text(selectionSummary(vm.selectedVolumeIds.count))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text(String(localized: "search.section.volumeScope", defaultValue: "Limit to Volumes"))
+        } footer: {
+            volumeScopeFooter
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: Selection mutation helpers
+
+    /// Toggles a subseries in/out of `vm.selectedSubseriesIds`.
+    private func toggleSubseries(_ id: String) {
+        if vm.selectedSubseriesIds.contains(id) {
+            vm.selectedSubseriesIds.remove(id)
+        } else {
+            vm.selectedSubseriesIds.insert(id)
+        }
+    }
+
+    /// Toggles an individual volume in/out of `vm.selectedVolumeIds`.
+    private func toggleVolume(_ id: String) {
+        if let index = vm.selectedVolumeIds.firstIndex(of: id) {
+            vm.selectedVolumeIds.remove(at: index)
+        } else {
+            vm.selectedVolumeIds.append(id)
+        }
+    }
+
+    /// Checkbox binding for a subseries toggle (macOS disclosure picker).
+    private func subseriesBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { vm.selectedSubseriesIds.contains(id) },
+            set: { isOn in
+                if isOn { vm.selectedSubseriesIds.insert(id) }
+                else    { vm.selectedSubseriesIds.remove(id) }
+            }
+        )
+    }
+
+    /// Checkbox binding for an individual-volume toggle (macOS disclosure picker).
+    private func volumeBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { vm.selectedVolumeIds.contains(id) },
+            set: { isOn in
+                if isOn {
+                    if !vm.selectedVolumeIds.contains(id) { vm.selectedVolumeIds.append(id) }
+                } else {
+                    vm.selectedVolumeIds.removeAll { $0 == id }
+                }
+            }
+        )
     }
 
     // MARK: - Search Scope

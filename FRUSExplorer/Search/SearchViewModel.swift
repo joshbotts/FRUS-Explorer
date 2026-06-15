@@ -46,6 +46,10 @@ import Observation
 ///          inline syntax in the main search box. The properties remain solely so
 ///          `applyParameters(_:)` can restore older `SavedSearch`/`pendingSearch`
 ///          snapshots without data loss.
+///   1.7 — Session 163: add `selectedSubseriesIds` + `availableVolumes` for the
+///          advanced-filter volume/subseries pickers; `effectiveVolumeIds` unions the
+///          two selections; `applyParameters`/`reconstructScope` round-trip a flat
+///          `volumeIds` scope back into the two pickers.
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -130,17 +134,30 @@ final class SearchViewModel {
     /// that mention a specific person. Empty string means no filter.
     var personRefText: String = ""
 
-    // MARK: - Volume Filter
+    // MARK: - Volume & Subseries Filter
 
-    /// Volume IDs that restrict results to specific volumes/subseries.
+    /// **Individually** selected volume IDs (the Volumes picker), distinct from the
+    /// subseries selection below.
     ///
-    /// Empty = search the whole indexed corpus. Populated by the post-indexing
+    /// Empty = no individual-volume constraint. Populated by the post-indexing
     /// "Search this volume" handoff (`IndexingSummaryCard.onSearchVolume` →
-    /// `AppState.pendingSearch` → `applyParameters(_:)`) and surfaced as a
-    /// dismissible scope banner in `SearchView`. Forwarded to `SearchService`
-    /// via `searchParameters`, which applies it SQL-side
-    /// (see `IndexingPipeline.searchDocuments`).
+    /// `AppState.pendingSearch` → `applyParameters(_:)`), by the Volumes picker in
+    /// `SearchFilterView`, and by analytics drill-in handoffs. The *effective* scope
+    /// forwarded to `SearchService` is `effectiveVolumeIds` (the union with the
+    /// subseries selection), which `IndexingPipeline.searchDocuments` applies SQL-side.
     var selectedVolumeIds: [String] = []
+
+    /// Selected subseries identifiers (the Subseries picker), e.g. `"1969-76"`.
+    ///
+    /// Each selected subseries expands to all of its **indexed** volumes (from
+    /// `availableVolumes`) when computing `effectiveVolumeIds`. Kept separate from
+    /// `selectedVolumeIds` so the two pickers round-trip independently.
+    var selectedSubseriesIds: Set<String> = []
+
+    /// Indexed volumes available to the volume/subseries pickers, loaded via
+    /// `loadAvailableVolumes(allEntries:indexedIds:)`. Only indexed volumes appear so
+    /// users cannot scope to a volume that can never return results.
+    var availableVolumes: [VolumeManifestEntry] = []
 
     // MARK: - Results
 
@@ -189,6 +206,20 @@ final class SearchViewModel {
         availableUserTags = (try? context.fetch(
             FetchDescriptor<UserTag>(sortBy: [SortDescriptor(\.name)])
         )) ?? []
+    }
+
+    /// Populates `availableVolumes` with the indexed subset of `allEntries`, sorted by
+    /// volume ID, for the volume/subseries pickers in `SearchFilterView`.
+    ///
+    /// - Parameters:
+    ///   - allEntries: Every known volume (typically `manifestStore.diffResult?.known
+    ///     ?? manifestStore.bundledEntries`).
+    ///   - indexedIds: The set of volume IDs that have been indexed
+    ///     (`AppState.indexedVolumeIds`).
+    func loadAvailableVolumes(allEntries: [VolumeManifestEntry], indexedIds: Set<String>) {
+        availableVolumes = allEntries
+            .filter { indexedIds.contains($0.volumeId) }
+            .sorted { $0.volumeId < $1.volumeId }
     }
 
     func applyProjectDefaults(_ project: Project?) {
@@ -257,6 +288,7 @@ final class SearchViewModel {
         selectedSubjectTagIds = []
         selectedUserTagIds = []
         selectedVolumeIds = []
+        selectedSubseriesIds = []
         includeDocumentText = SearchDefaults.scopeDocuments
         includeSummaries = SearchDefaults.scopeSummaries
         includeNotes = SearchDefaults.scopeNotes
@@ -274,6 +306,22 @@ final class SearchViewModel {
     }
 
     // MARK: - Computed Properties
+
+    /// The effective volume scope forwarded to `SearchService`: the de-duplicated
+    /// union of the individually-selected volumes (`selectedVolumeIds`) and every
+    /// indexed volume belonging to a selected subseries (`selectedSubseriesIds`).
+    ///
+    /// Empty when no volume or subseries filter is active, in which case
+    /// `searchParameters` passes `nil` (search the whole indexed corpus).
+    var effectiveVolumeIds: [String] {
+        var ids = Set(selectedVolumeIds)
+        if !selectedSubseriesIds.isEmpty {
+            for entry in availableVolumes where selectedSubseriesIds.contains(entry.subseries) {
+                ids.insert(entry.volumeId)
+            }
+        }
+        return ids.sorted()
+    }
 
     var searchParameters: SearchParameters {
         let kw = keywords.trimmingCharacters(in: .whitespaces)
@@ -298,7 +346,7 @@ final class SearchViewModel {
             dateRange: range,
             subjectTagIds: Array(selectedSubjectTagIds),
             userTagIds: selectedUserTagIds.map(\.uuidString),
-            volumeIds: selectedVolumeIds.isEmpty ? nil : selectedVolumeIds,
+            volumeIds: effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds,
             includeDocumentText: includeDocumentText,
             includeSummaries: includeSummaries,
             includeNotes: includeNotes,
@@ -326,6 +374,7 @@ final class SearchViewModel {
         if !personRefText.trimmingCharacters(in: .whitespaces).isEmpty { return true }
         if dateRangeEnabled { return true }
         if !selectedVolumeIds.isEmpty { return true }
+        if !selectedSubseriesIds.isEmpty { return true }
         if !selectedSubjectTagIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
         if !excludedTermsText.isEmpty { return true }
@@ -374,12 +423,49 @@ final class SearchViewModel {
         }
         selectedSubjectTagIds = Set(params.subjectTagIds)
         selectedUserTagIds    = Set(params.userTagIds.compactMap { UUID(uuidString: $0) })
-        selectedVolumeIds     = params.volumeIds ?? []
+        let scope = Self.reconstructScope(from: params.volumeIds ?? [], available: availableVolumes)
+        selectedSubseriesIds  = scope.subseries
+        selectedVolumeIds     = scope.volumes
         includeDocumentText   = params.includeDocumentText
         includeSummaries      = params.includeSummaries
         includeNotes          = params.includeNotes
         includeFrontMatter    = params.includeFrontMatter
         documentTypeFilter    = params.documentTypeFilter
+    }
+
+    // MARK: - Scope Reconstruction
+
+    /// Splits a flat `volumeIds` scope back into a subseries selection plus a set of
+    /// individually-selected volumes, so a scope round-tripped through
+    /// `SearchParameters` (the analytics drill-in, a `SavedSearch`, or a pending
+    /// handoff) repopulates the two pickers faithfully.
+    ///
+    /// A subseries is treated as "selected as a whole" only when *every* one of its
+    /// indexed volumes appears in `volumeIds`; those volumes are then removed from the
+    /// individual set. Volumes belonging to a partially-covered subseries remain
+    /// individual selections. When `available` is empty (manifest not yet loaded) every
+    /// id is returned as an individual selection — the effective scope is identical,
+    /// only the picker labelling differs.
+    ///
+    /// Shared by `applyParameters(_:)` here and `MacSearchViewModel.syncToFilterVM`.
+    static func reconstructScope(
+        from volumeIds: [String],
+        available: [VolumeManifestEntry]
+    ) -> (subseries: Set<String>, volumes: [String]) {
+        guard !volumeIds.isEmpty, !available.isEmpty else { return ([], volumeIds) }
+        let idSet = Set(volumeIds)
+        let bySubseries = Dictionary(grouping: available, by: { $0.subseries })
+        var subseries: Set<String> = []
+        var consumed: Set<String> = []
+        for (sub, entries) in bySubseries {
+            let subVolumeIds = Set(entries.map(\.volumeId))
+            if !subVolumeIds.isEmpty, subVolumeIds.isSubset(of: idSet) {
+                subseries.insert(sub)
+                consumed.formUnion(subVolumeIds)
+            }
+        }
+        let individual = volumeIds.filter { !consumed.contains($0) }
+        return (subseries, individual)
     }
 
     // MARK: - Private Helpers
