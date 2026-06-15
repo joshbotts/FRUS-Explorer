@@ -289,7 +289,13 @@ public actor IndexingPipeline {
     ///   a comma after the nested `<term>` element, so every glossary definition in
     ///   the corpus was stored as NULL. A full re-parse repopulates the `terms`
     ///   table's `definition` column so tapped term links show real definitions.
-    public static let currentDateIndexVersion: Int = 8
+    /// - Version 9: date precision/certainty (Session 163). `document_dates` gains
+    ///   `date_precision` (day/month/year — the original TEI granularity before the
+    ///   `date_iso` value is padded to a full day) and `date_certainty`
+    ///   (exact/range/approximate/textOnly). Both are computed during the XML parse by
+    ///   `extractDateMetadata`, so a full re-parse is required to populate them. Lets
+    ///   date features render year-only documents honestly instead of as January 1.
+    public static let currentDateIndexVersion: Int = 9
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -1463,6 +1469,136 @@ public actor IndexingPipeline {
         return keys
     }
 
+    // MARK: - Chronology Queries (used by ChronologyView)
+
+    /// Returns the documents whose date interval overlaps `range`, ordered by date,
+    /// joined with `document_cache` for display fields — the corpus-wide date browser's
+    /// primary query.
+    ///
+    /// Uses the same interval-overlap semantics as `documentKeysInDateRange` (so multi-day
+    /// and imprecise documents are included), but returns hydrated rows ordered by
+    /// `date_iso` and capped at `limit`. The date range bounds the working set; callers
+    /// should always pass a bounded `range`.
+    ///
+    /// - Parameters:
+    ///   - range: Inclusive ISO date window. Either bound may be `nil` (open-ended).
+    ///   - scopeVolumeIds: Optional volume restriction (e.g. a subseries expansion); `nil`
+    ///     searches the whole corpus.
+    ///   - ascending: Sort oldest-first when `true`, newest-first when `false`.
+    ///   - limit: Hard cap on rows returned.
+    func documentsInDateRange(
+        _ range: DateRange,
+        scopeVolumeIds: [String]?,
+        ascending: Bool,
+        limit: Int
+    ) throws -> [ChronologyRow] {
+        var parts: [String] = ["dd.date_iso IS NOT NULL"]
+        var args: [String] = []
+        if let e = range.earliest {
+            parts.append("COALESCE(dd.date_iso_max, dd.date_iso) >= ?")
+            args.append(e)
+        }
+        if let l = range.latest {
+            parts.append("dd.date_iso <= ?")
+            args.append(l)
+        }
+        if let vids = scopeVolumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            parts.append("dd.volume_id IN (\(placeholders))")
+            args.append(contentsOf: vids)
+        }
+
+        let order = ascending ? "ASC" : "DESC"
+        let sql = """
+            SELECT dd.volume_id, dd.document_id, dc.header, dc.dateline, dc.summary_text,
+                   dd.date_iso, dd.date_iso_max, dd.date_precision, dd.date_certainty,
+                   dc.is_editorial_note, dc.is_front_matter, dc.document_number
+            FROM document_dates dd
+            JOIN document_cache dc
+              ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
+            WHERE \(parts.joined(separator: " AND "))
+            ORDER BY dd.date_iso \(order), dc.document_number IS NULL, dd.document_id ASC
+            LIMIT \(limit)
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, arg) in args.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), arg, -1, SQLITE_TRANSIENT_IP)
+        }
+
+        var rows: [ChronologyRow] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            guard let vid = auxColumnString(stmt, 0),
+                  let did = auxColumnString(stmt, 1),
+                  let iso = auxColumnString(stmt, 5)
+            else { continue }
+            rows.append(ChronologyRow(
+                volumeId: vid,
+                documentId: did,
+                header: auxColumnString(stmt, 2) ?? "",
+                dateline: auxColumnString(stmt, 3),
+                summary: auxColumnString(stmt, 4),
+                dateISO: iso,
+                dateISOMax: auxColumnString(stmt, 6),
+                precision: DatePrecision(rawValue: auxColumnString(stmt, 7) ?? ""),
+                certainty: DateCertainty(storageValue: auxColumnString(stmt, 8)),
+                isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
+                isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
+                documentNumber: auxColumnString(stmt, 11)
+            ))
+        }
+        return rows
+    }
+
+    /// Returns `(bucketKey, count)` pairs for documents overlapping `range`, grouped by a
+    /// truncated `date_iso` prefix — `yyyy` (year), `yyyy-MM` (month), or `yyyy-MM-dd` (day).
+    ///
+    /// A cheap `GROUP BY` that powers section count badges, the auto-coarsening decision,
+    /// and the optional density chart without materializing every row. Counts bucket each
+    /// document at its `date_iso` (start) bucket.
+    func dateBucketCounts(
+        _ range: DateRange,
+        bucket: DateBucket,
+        scopeVolumeIds: [String]?
+    ) throws -> [(key: String, count: Int)] {
+        var parts: [String] = ["date_iso IS NOT NULL"]
+        var args: [String] = []
+        if let e = range.earliest {
+            parts.append("COALESCE(date_iso_max, date_iso) >= ?")
+            args.append(e)
+        }
+        if let l = range.latest {
+            parts.append("date_iso <= ?")
+            args.append(l)
+        }
+        if let vids = scopeVolumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            parts.append("volume_id IN (\(placeholders))")
+            args.append(contentsOf: vids)
+        }
+
+        let sql = """
+            SELECT substr(date_iso, 1, \(bucket.prefixLength)) AS bucket, COUNT(*)
+            FROM document_dates
+            WHERE \(parts.joined(separator: " AND "))
+            GROUP BY bucket
+            ORDER BY bucket ASC
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, arg) in args.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), arg, -1, SQLITE_TRANSIENT_IP)
+        }
+
+        var result: [(key: String, count: Int)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let key = auxColumnString(stmt, 0) {
+                result.append((key: key, count: Int(sqlite3_column_int(stmt, 1))))
+            }
+        }
+        return result
+    }
+
     // MARK: - Date Lookup (used by DocumentTimelineView)
 
     /// Returns ISO date strings keyed by `"volumeId/documentId"` for the given document pairs.
@@ -1501,6 +1637,49 @@ public actor IndexingPipeline {
                 if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
                     result[k] = d
                 }
+            }
+        }
+        return result
+    }
+
+    /// Returns full date metadata (interval + precision + certainty) keyed by
+    /// `"volumeId/documentId"` for the given document pairs.
+    ///
+    /// Like `datesByDocumentKey` but also carries `date_iso_max`, `date_precision`, and
+    /// `date_certainty` so callers can render dates at their true granularity (e.g. show
+    /// "1969" for a year-only document rather than the padded "1969-01-01"). Rows with a
+    /// `NULL` `date_iso` are excluded. `precision`/`certainty` are `nil` for rows indexed
+    /// before version 9.
+    public func dateMetadataByDocumentKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: DocumentDateMetadata] {
+        guard !docs.isEmpty else { return [:] }
+        let chunkSize = 499
+        let allKeys = docs.map { "\($0.volumeId)/\($0.documentId)" }
+        var result: [String: DocumentDateMetadata] = [:]
+        for chunk in stride(from: 0, to: allKeys.count, by: chunkSize)
+                .map({ Array(allKeys[$0..<min($0 + chunkSize, allKeys.count)]) }) {
+            let placeholders = chunk.map { _ in "?" }.joined(separator: ", ")
+            let sql = """
+                SELECT volume_id || '/' || document_id, date_iso, date_iso_max,
+                       date_precision, date_certainty
+                FROM document_dates
+                WHERE volume_id || '/' || document_id IN (\(placeholders))
+                AND date_iso IS NOT NULL
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, key) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let k = auxColumnString(stmt, 0), let iso = auxColumnString(stmt, 1) else { continue }
+                result[k] = DocumentDateMetadata(
+                    dateISO: iso,
+                    dateISOMax: auxColumnString(stmt, 2),
+                    precision: DatePrecision(rawValue: auxColumnString(stmt, 3) ?? ""),
+                    certainty: DateCertainty(storageValue: auxColumnString(stmt, 4))
+                )
             }
         }
         return result
@@ -1590,14 +1769,16 @@ public actor IndexingPipeline {
                     volumeId: volumeId, documentId: did, personRef: ref))
             }
 
-            let (dateMin, dateMax) = Self.extractDateRange(
+            let dateMeta = Self.extractDateMetadata(
                 from: astDoc.nodes,
                 dateTimeMin: astDoc.dateTimeMin,
                 dateTimeMax: astDoc.dateTimeMax
             )
             dateRows.append(DocumentDateRow(
                 volumeId: volumeId, documentId: did,
-                dateISOMin: dateMin, dateISOMax: dateMax
+                dateISOMin: dateMeta.min, dateISOMax: dateMeta.max,
+                precision: dateMeta.precision?.rawValue,
+                certainty: dateMeta.certainty?.storageValue
             ))
             cacheRows.append(DocumentCacheRow(
                 volumeId: volumeId, documentId: did, documentNumber: docNumber,
@@ -2248,6 +2429,81 @@ public actor IndexingPipeline {
         return (min: min, max: max)
     }
 
+    /// Extracts the document's date interval **and** its original precision/certainty.
+    ///
+    /// `min`/`max` are identical to `extractDateRange` (the normalized full `yyyy-MM-dd`
+    /// interval stored in `date_iso`/`date_iso_max`). `precision`/`certainty` are the new
+    /// metadata: they describe the *original* TEI encoding before normalization, so the UI
+    /// can render a year-only document as "1969" rather than the false "January 1, 1969"
+    /// that the padded `date_iso` implies.
+    ///
+    /// - `precision` is derived from the component count of the raw `<date>` attribute that
+    ///   wins the MIN selection (the same priority as `extractStructuredDate`). When the
+    ///   value comes only from the authoritative `frus:doc-dateTime-*` attributes (no
+    ///   `<date>` node), precision is `.day`. When it comes from the plain-text heuristic,
+    ///   precision is `nil`.
+    /// - `certainty` reflects which attribute drove the date: `.exact` (`@when`), `.range`
+    ///   (`@from`/`@to`, or differing `doc-dateTime` bounds), `.approximate`
+    ///   (`@notBefore`/`@notAfter`), or `.textOnly` (heuristic fallback).
+    nonisolated static func extractDateMetadata(
+        from nodes: [FRUSASTNode],
+        dateTimeMin: String? = nil,
+        dateTimeMax: String? = nil
+    ) -> (min: String?, max: String?, precision: DatePrecision?, certainty: DateCertainty?) {
+        let (minISO, maxISO) = extractDateRange(from: nodes, dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax)
+
+        // Prefer the granularity of an explicit <date> attribute — it carries the editors'
+        // original precision, which the resolved doc-dateTime bounds do not.
+        let dateNodes = collectDateNodes(nodes, inDateline: false)
+        if let win = winningMinDateAttribute(from: dateNodes) {
+            return (minISO, maxISO, precisionOf(win.raw), win.certainty)
+        }
+        // Authoritative editorial bounds with no <date> attribute: day-precise; a range
+        // when the two bounds resolve to different days.
+        if let dtMin = dateTimeMin {
+            let minDay = normalizeToFullDate(dtMin)
+            let maxDay = dateTimeMax.map(normalizeToFullDate) ?? minDay
+            return (minISO, maxISO, .day, minDay == maxDay ? .exact : .range)
+        }
+        // Date (if any) came from the plain-text heuristic on the dateline string.
+        if minISO != nil {
+            return (minISO, maxISO, nil, .textOnly)
+        }
+        return (nil, nil, nil, nil)
+    }
+
+    /// Returns the raw (un-normalized) date string and certainty that drive the document's
+    /// MIN date, following the same priority order as `extractStructuredDate`.
+    nonisolated private static func winningMinDateAttribute(
+        from dateNodes: [DateNodeInfo]
+    ) -> (raw: String, certainty: DateCertainty)? {
+        if let n = dateNodes.first(where: { $0.inDateline && $0.when != nil }), let v = n.when {
+            return (v, .exact)
+        }
+        if let n = dateNodes.first(where: { $0.inDateline && $0.from != nil }), let v = n.from {
+            return (v, .range)
+        }
+        if let n = dateNodes.first(where: { $0.inDateline && $0.notBefore != nil }), let v = n.notBefore {
+            return (v, .approximate)
+        }
+        if let n = dateNodes.first(where: { $0.when != nil }), let v = n.when {
+            return (v, .exact)
+        }
+        return nil
+    }
+
+    /// Derives `DatePrecision` from the component count of a raw ISO date string
+    /// (`"1969"` → `.year`, `"1969-02"` → `.month`, `"1969-02-15"` → `.day`). Any
+    /// `xs:dateTime` time portion is stripped first.
+    nonisolated private static func precisionOf(_ raw: String) -> DatePrecision {
+        let dateOnly = raw.contains("T") ? String(raw.prefix(10)) : raw
+        switch dateOnly.split(separator: "-", omittingEmptySubsequences: false).count {
+        case 1:  return .year
+        case 2:  return .month
+        default: return .day
+        }
+    }
+
     /// Pads a partial ISO 8601 date string to full `yyyy-MM-dd` precision.
     ///
     /// TEI `@when`/`@from`/`@to` attributes may contain year-only ("1982") or
@@ -2435,11 +2691,16 @@ public actor IndexingPipeline {
                 document_id TEXT NOT NULL,
                 date_iso TEXT,
                 date_iso_max TEXT,
+                date_precision TEXT,
+                date_certainty TEXT,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
         // Idempotent migration for databases that predate Session 76.
         try? exec("ALTER TABLE document_dates ADD COLUMN date_iso_max TEXT")
+        // Idempotent migration for databases that predate Session 163 (precision/certainty).
+        try? exec("ALTER TABLE document_dates ADD COLUMN date_precision TEXT")
+        try? exec("ALTER TABLE document_dates ADD COLUMN date_certainty TEXT")
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_dates ON document_dates(date_iso)")
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_dates_max ON document_dates(date_iso_max)")
         try exec("""
@@ -2614,8 +2875,8 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO document_dates
-            (volume_id, document_id, date_iso, date_iso_max)
-            VALUES (?, ?, ?, ?)
+            (volume_id, document_id, date_iso, date_iso_max, date_precision, date_certainty)
+            VALUES (?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -2625,6 +2886,8 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 3, row.dateISOMin)
                 auxBindOptional(stmt, 4, row.dateISOMax)
+                auxBindOptional(stmt, 5, row.precision)
+                auxBindOptional(stmt, 6, row.certainty)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -3676,6 +3939,33 @@ struct PageRangeRow: Sendable {
     let pageNumberRaw: String
 }
 
+/// Full date metadata for a single document, returned by
+/// `IndexingPipeline.dateMetadataByDocumentKey`.
+///
+/// Carries the stored `[dateISO, dateISOMax]` interval plus the original `precision`
+/// and `certainty` (both `nil` for rows indexed before version 9) so date-based UI can
+/// render and place dates at their true granularity.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation
+public struct DocumentDateMetadata: Sendable {
+    /// Earliest bound (`date_iso`), normalized to `yyyy-MM-dd`.
+    public let dateISO: String
+    /// Latest bound (`date_iso_max`), normalized to `yyyy-MM-dd`; `nil` for legacy rows.
+    public let dateISOMax: String?
+    /// Original granularity of the source date; `nil` when unknown / heuristic-derived.
+    public let precision: DatePrecision?
+    /// Nature of the source date; `nil` for legacy rows.
+    public let certainty: DateCertainty?
+
+    public init(dateISO: String, dateISOMax: String?, precision: DatePrecision?, certainty: DateCertainty?) {
+        self.dateISO = dateISO
+        self.dateISOMax = dateISOMax
+        self.precision = precision
+        self.certainty = certainty
+    }
+}
+
 private struct DocumentDateRow: Sendable {
     let volumeId: String
     let documentId: String
@@ -3685,6 +3975,12 @@ private struct DocumentDateRow: Sendable {
     /// Latest bound of the document date range, normalized to `yyyy-MM-dd`.
     /// Stored in the `date_iso_max` column added in version 5.
     let dateISOMax: String?
+    /// Original granularity of the source date (`day`/`month`/`year`), stored in
+    /// `date_precision`. `nil` when the date came from the plain-text heuristic.
+    let precision: String?
+    /// Nature of the source date (`exact`/`range`/`approximate`/`textOnly`), stored in
+    /// `date_certainty`. `nil` when no date could be extracted.
+    let certainty: String?
 }
 
 struct DocumentCacheRow: Sendable {

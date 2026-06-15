@@ -462,6 +462,15 @@ final class AppState {
     /// it — mirroring the `pendingSearch` pattern.
     var pendingAnalytics: AnalyticsParameters? = nil
 
+    /// Cross-view handoff into the corpus Chronology browser.
+    ///
+    /// Set when another surface wants to open Chronology pre-seeded with a date range
+    /// (e.g. a future "browse this range chronologically" affordance from Search or
+    /// Corpus Analytics). `BrowserTabView` (iOS sheet) and `ChronologyView` (macOS
+    /// `frus.chronology` window) observe this via `.onChange`, apply it, and clear it —
+    /// mirroring the `pendingSearch` / `pendingAnalytics` pattern.
+    var pendingChronology: ChronologyParameters? = nil
+
     /// Set by cross-reference navigation to push a document into the Browse tab's
     /// NavigationStack/NavigationSplitView. `BrowserView` observes via `.onChange`
     /// and appends the entry to its path, then this property is cleared.

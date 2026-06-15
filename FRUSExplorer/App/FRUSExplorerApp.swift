@@ -409,6 +409,15 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 760, height: 560)
 
+        // MARK: - Chronology Window
+        Window(String(localized: "chronology.window.title", defaultValue: "Chronology"),
+               id: "frus.chronology") {
+            ChronologyView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 720, height: 600)
+
         // MARK: - Research Window
         Window(String(localized: "research.window.title", defaultValue: "Research"),
                id: "frus.research") {
