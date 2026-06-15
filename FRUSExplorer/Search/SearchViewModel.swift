@@ -196,7 +196,14 @@ final class SearchViewModel {
 
     func search() async {
         let params = searchParameters
-        let hasPositiveTerm = params.keywords != nil || params.phrase != nil || params.prefixWildcard != nil
+        // A person filter is a valid standalone constraint — `SearchService`
+        // applies it SQL-side, so "Find all mentions" handoffs (which carry only
+        // a `personRef`) can run without a keyword. Before Session 162 this guard
+        // rejected them, so the person handoff surfaced an error instead of results.
+        let hasPositiveTerm = params.keywords != nil
+            || params.phrase != nil
+            || params.prefixWildcard != nil
+            || params.personRef != nil
         guard hasPositiveTerm else {
             searchError = String(
                 localized: "search.error.empty",

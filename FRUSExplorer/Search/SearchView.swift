@@ -102,8 +102,15 @@ struct SearchView: View {
                 #endif
                 // System search bar — integrates with the navigation bar on iOS
                 // and the toolbar area on macOS (inspector context).
+                // `.navigationBarDrawer(.always)` pins the search field in its own
+                // row beneath the nav bar on iOS, so it never expands into the bar
+                // and suppresses the trailing `.primaryAction` toolbar items
+                // (filters, timeline, the Save/Saved/Citation overflow menu) on the
+                // compact-width results screen. With the default placement + inline
+                // title those buttons were unreachable on iPhone (Session 162).
                 .searchable(
                     text: $vm.keywords,
+                    placement: searchFieldPlacement,
                     prompt: String(localized: "search.keywords.placeholder",
                                    defaultValue: "Keywords…")
                 )
@@ -260,6 +267,48 @@ struct SearchView: View {
                 let project = try? modelContext.fetch(descriptor).first
                 vm.applyProjectDefaults(project)
             }
+            // Consume a handoff that was already pending when this tab first
+            // appeared (e.g. the user opened Analytics, tapped "open matching
+            // documents", and the Search tab is being created for the first time).
+            consumePendingSearch()
+        }
+        // Consume handoffs that arrive while the Search tab is already alive —
+        // `AppState.pendingSearch` is set by Corpus Analytics, "Find all mentions",
+        // and the indexing banners, which also switch `activeTab` to `.search`.
+        // Before Session 162 nothing on iOS read `pendingSearch`, so every one of
+        // those handoffs silently did nothing.
+        .onChange(of: appState.pendingSearch) { _, params in
+            if params != nil { consumePendingSearch() }
+        }
+    }
+
+    /// Placement for the `.searchable` field — a pinned drawer on iOS so the
+    /// nav-bar toolbar stays reachable (see the `.searchable` call site), and the
+    /// system default on macOS where the field lives in the inspector toolbar.
+    private var searchFieldPlacement: SearchFieldPlacement {
+        #if os(iOS)
+        .navigationBarDrawer(displayMode: .always)
+        #else
+        .automatic
+        #endif
+    }
+
+    /// Applies and runs a `pendingSearch` handoff, then clears it so it fires once.
+    ///
+    /// Runs the search immediately when the parameters carry a positive
+    /// constraint (keywords/phrase/prefix, or a person filter) so the user lands
+    /// on results rather than a pre-filled-but-unexecuted form. Volume-only
+    /// snapshots just pre-fill (they have no executable term on iOS yet).
+    private func consumePendingSearch() {
+        guard let params = appState.pendingSearch else { return }
+        appState.pendingSearch = nil
+        vm.applyParameters(params)
+        let canRun = !(params.keywords ?? "").isEmpty
+            || !(params.phrase ?? "").isEmpty
+            || !(params.prefixWildcard ?? "").isEmpty
+            || !(params.personRef ?? "").isEmpty
+        if canRun {
+            Task { await vm.search() }
         }
     }
 
