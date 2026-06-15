@@ -127,6 +127,13 @@ struct SearchView: View {
                         vm.searchError = nil
                     }
                 }
+                // Active volume scope (e.g. the post-indexing "Search this volume"
+                // handoff) is surfaced as a dismissible banner pinned above the
+                // results. `.safeAreaInset` reserves no height when no scope is
+                // active because `volumeScopeBanner` resolves to `EmptyView`.
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    volumeScopeBanner
+                }
                 .toolbar {
                     #if !os(iOS)
                     ToolbarItem(placement: .confirmationAction) {
@@ -297,8 +304,10 @@ struct SearchView: View {
     ///
     /// Runs the search immediately when the parameters carry a positive
     /// constraint (keywords/phrase/prefix, or a person filter) so the user lands
-    /// on results rather than a pre-filled-but-unexecuted form. Volume-only
-    /// snapshots just pre-fill (they have no executable term on iOS yet).
+    /// on results rather than a pre-filled-but-unexecuted form. A volume-only
+    /// snapshot ("Search this volume") has no executable FTS term, so it just
+    /// applies the volume scope — surfaced as the dismissible `volumeScopeBanner`
+    /// — and waits for the user to type a query that will be scoped to it.
     private func consumePendingSearch() {
         guard let params = appState.pendingSearch else { return }
         appState.pendingSearch = nil
@@ -308,6 +317,69 @@ struct SearchView: View {
             || !(params.prefixWildcard ?? "").isEmpty
             || !(params.personRef ?? "").isEmpty
         if canRun {
+            Task { await vm.search() }
+        }
+    }
+
+    // MARK: - Volume Scope Banner
+
+    /// A dismissible banner pinned above the results whenever the search is
+    /// scoped to one or more volumes. Lets the user see the active scope (the
+    /// volume's title) and clear it. Resolves to `EmptyView` when no scope is
+    /// active so the enclosing `.safeAreaInset` reserves no height.
+    @ViewBuilder
+    private var volumeScopeBanner: some View {
+        if !vm.selectedVolumeIds.isEmpty {
+            HStack(spacing: 8) {
+                Image(systemName: "books.vertical.fill")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(volumeScopeLabel)
+                    .font(.footnote)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 8)
+                Button {
+                    clearVolumeScope()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "search.volumeScope.clear.a11y",
+                                           defaultValue: "Clear volume filter"))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+            .overlay(alignment: .bottom) { Divider() }
+        }
+    }
+
+    /// Human-readable label for the active volume scope — the volume's title
+    /// (resolved from the manifest) when a single volume is selected, otherwise
+    /// a count. Falls back to the raw volume ID if the manifest lacks an entry.
+    private var volumeScopeLabel: String {
+        let ids = vm.selectedVolumeIds
+        if ids.count == 1 {
+            let title = appState.manifestStore.entry(forVolumeId: ids[0])?.title ?? ids[0]
+            return String(format: String(localized: "search.volumeScope.single %@",
+                                          defaultValue: "Scoped to %@"), title)
+        } else {
+            return String(format: String(localized: "search.volumeScope.multiple %lld",
+                                          defaultValue: "Scoped to %lld volumes"),
+                          Int64(ids.count))
+        }
+    }
+
+    /// Clears the active volume scope and re-runs the current query (if one is
+    /// active) so the results immediately widen to the full corpus.
+    private func clearVolumeScope() {
+        vm.selectedVolumeIds = []
+        let hasQuery = !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty
+            || !vm.personRefText.trimmingCharacters(in: .whitespaces).isEmpty
+        if vm.hasSearched && hasQuery {
             Task { await vm.search() }
         }
     }
@@ -355,15 +427,21 @@ struct SearchView: View {
                 resultsList
             }
         } else {
-            // Initial prompt — no search has been performed yet.
+            // Initial prompt — no search has been performed yet. When a volume
+            // scope is active (e.g. just arrived via "Search this volume"), the
+            // prompt reflects that the next query will be scoped to that volume.
             VStack(spacing: 8) {
                 Image(systemName: "doc.text.magnifyingglass")
                     .font(.system(size: 48))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
-                Text(String(localized: "search.prompt",
-                            defaultValue: "Enter keywords to search the FRUS corpus."))
+                Text(vm.selectedVolumeIds.isEmpty
+                     ? String(localized: "search.prompt",
+                              defaultValue: "Enter keywords to search the FRUS corpus.")
+                     : String(localized: "search.prompt.scoped",
+                              defaultValue: "Enter keywords to search within this volume."))
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

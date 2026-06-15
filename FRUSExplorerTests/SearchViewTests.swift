@@ -334,13 +334,66 @@ struct PersonFilterTests {
         let vm = SearchViewModel(searchService: service)
         let params = SearchParameters(
             keywords: "détente",
+            volumeIds: ["frus1969-76v01"],
             personRef: "kissinger-henry-a"
         )
         vm.applyParameters(params)
 
         #expect(vm.keywords == "détente")
         #expect(vm.personRefText == "kissinger-henry-a")
+        #expect(vm.selectedVolumeIds == ["frus1969-76v01"])
         #expect(vm.searchParameters.personRef == "kissinger-henry-a")
+        #expect(vm.searchParameters.volumeIds == ["frus1969-76v01"])
+    }
+
+    // MARK: - VolumeScopeTest
+
+    /// Verifies the "Search this volume" handoff round-trips through the view model:
+    /// `applyParameters` stores the volume scope, `searchParameters` forwards it to
+    /// `SearchService`, `hasActiveFilters` reflects it, and `clearFilters` resets it.
+    ///
+    /// Regression guard for the Session 162 gap where the iOS view model had no
+    /// volume concept at all, so the volume-only handoff was silently dropped at
+    /// `applyParameters` and never reached the search query.
+    @Test("Volume scope round-trips through applyParameters / searchParameters and clears")
+    func volumeScopeRoundTripsAndClears() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSVolScope-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dbURL = dir.appendingPathComponent("vs.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let subjectStore = SubjectTagStore(entries: [], appearances: [])
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            subjectTagStore: subjectStore, concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+        let vm = SearchViewModel(searchService: service)
+
+        // A baseline keyword search carries no volume filter.
+        vm.keywords = "détente"
+        #expect(vm.searchParameters.volumeIds == nil)
+        #expect(vm.hasActiveFilters == false)
+
+        // The volume-only handoff applies the scope without an executable term.
+        vm.applyParameters(SearchParameters(volumeIds: ["frus1969-76v01"]))
+        #expect(vm.selectedVolumeIds == ["frus1969-76v01"])
+        #expect(vm.hasActiveFilters == true)
+
+        // A query typed afterward is forwarded to the service scoped to the volume.
+        vm.keywords = "détente"
+        #expect(vm.searchParameters.keywords == "détente")
+        #expect(vm.searchParameters.volumeIds == ["frus1969-76v01"])
+
+        // Clearing filters resets the scope back to the whole corpus.
+        vm.clearFilters()
+        #expect(vm.selectedVolumeIds.isEmpty)
+        #expect(vm.searchParameters.volumeIds == nil)
     }
 
     // MARK: - UnstemmedHeaderDisplayTest

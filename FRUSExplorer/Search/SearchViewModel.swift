@@ -130,6 +130,18 @@ final class SearchViewModel {
     /// that mention a specific person. Empty string means no filter.
     var personRefText: String = ""
 
+    // MARK: - Volume Filter
+
+    /// Volume IDs that restrict results to specific volumes/subseries.
+    ///
+    /// Empty = search the whole indexed corpus. Populated by the post-indexing
+    /// "Search this volume" handoff (`IndexingSummaryCard.onSearchVolume` →
+    /// `AppState.pendingSearch` → `applyParameters(_:)`) and surfaced as a
+    /// dismissible scope banner in `SearchView`. Forwarded to `SearchService`
+    /// via `searchParameters`, which applies it SQL-side
+    /// (see `IndexingPipeline.searchDocuments`).
+    var selectedVolumeIds: [String] = []
+
     // MARK: - Results
 
     var results: [SearchResult] = []
@@ -244,6 +256,7 @@ final class SearchViewModel {
         dateRangeEnabled = false
         selectedSubjectTagIds = []
         selectedUserTagIds = []
+        selectedVolumeIds = []
         includeDocumentText = SearchDefaults.scopeDocuments
         includeSummaries = SearchDefaults.scopeSummaries
         includeNotes = SearchDefaults.scopeNotes
@@ -285,6 +298,7 @@ final class SearchViewModel {
             dateRange: range,
             subjectTagIds: Array(selectedSubjectTagIds),
             userTagIds: selectedUserTagIds.map(\.uuidString),
+            volumeIds: selectedVolumeIds.isEmpty ? nil : selectedVolumeIds,
             includeDocumentText: includeDocumentText,
             includeSummaries: includeSummaries,
             includeNotes: includeNotes,
@@ -311,6 +325,7 @@ final class SearchViewModel {
         if documentTypeFilter != .all { return true }
         if !personRefText.trimmingCharacters(in: .whitespaces).isEmpty { return true }
         if dateRangeEnabled { return true }
+        if !selectedVolumeIds.isEmpty { return true }
         if !selectedSubjectTagIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
         if !excludedTermsText.isEmpty { return true }
@@ -359,6 +374,7 @@ final class SearchViewModel {
         }
         selectedSubjectTagIds = Set(params.subjectTagIds)
         selectedUserTagIds    = Set(params.userTagIds.compactMap { UUID(uuidString: $0) })
+        selectedVolumeIds     = params.volumeIds ?? []
         includeDocumentText   = params.includeDocumentText
         includeSummaries      = params.includeSummaries
         includeNotes          = params.includeNotes
