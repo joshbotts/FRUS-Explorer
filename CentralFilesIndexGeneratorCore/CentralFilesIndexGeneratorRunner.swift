@@ -158,16 +158,24 @@ public struct CentralFilesIndexGeneratorRunner {
             }
         }
 
+        // 4b. Phase 3 — pre-resolve lot files from the citations CSV (optional). Preserves
+        // any previously-harvested lot files when CITATIONS_CSV is not supplied this run.
+        var lotFiles: [LotFileEntry] = (try? CentralFilesIndexWriter.read(from: outputPath))?.lotFiles ?? []
+        if let csvPath = env["CITATIONS_CSV"], !csvPath.isEmpty {
+            lotFiles = await harvestLotFiles(csvPath: csvPath, client: client)
+        }
+
         // 5. Write the combined index.
         let index = CentralFilesIndex(
             generated: isoToday(),
             numericalFile: result.index,
-            countrySeries: seriesIndexes)
+            countrySeries: seriesIndexes,
+            lotFiles: lotFiles)
         do {
             try CentralFilesIndexWriter.write(index, to: outputPath)
             let countryRolls = seriesIndexes.reduce(0) { $0 + $1.rolls.count }
             print("[CentralFilesIndexGenerator] ✓ wrote \(result.matchedRolls) numerical rolls "
-                  + "+ \(countryRolls) country rolls to \(outputPath)")
+                  + "+ \(countryRolls) country rolls + \(lotFiles.count) lot files to \(outputPath)")
         } catch {
             print("[CentralFilesIndexGenerator] ✗ Failed to write index: \(error)")
             exit(1)
@@ -181,6 +189,67 @@ public struct CentralFilesIndexGeneratorRunner {
             exit(1)
         }
         print("[CentralFilesIndexGenerator] ✓ Done.")
+    }
+
+    // MARK: Phase 3 — Lot files
+
+    /// Extracts every distinct lot file from the citations CSV and resolves each to its
+    /// NARA Catalog series record (cached per lot). Prints a survey.
+    private static func harvestLotFiles(csvPath: String, client: NARACatalogHarvestClient) async -> [LotFileEntry] {
+        print("\n[CentralFilesIndexGenerator] Phase 3 — lot files (CSV: \(csvPath))")
+
+        // 1. Extract distinct lots (offline).
+        var distinct: [String: LotFileCitation] = [:]
+        do {
+            try CitationCSVReader.forEachPlainText(path: csvPath) { plainText in
+                for citation in LotFileCitationExtractor.citations(in: plainText) {
+                    distinct[citation.normalizedLot] = citation
+                }
+            }
+        } catch {
+            print("[CentralFilesIndexGenerator] ✗ Could not read citations CSV: \(error)")
+            return []
+        }
+        let citations = distinct.values.sorted { $0.normalizedLot < $1.normalizedLot }
+        print("  distinct lot numbers: \(citations.count)")
+
+        // 2. Resolve each (cached per lot).
+        var entries: [LotFileEntry] = []
+        var resolved = 0, missed = 0
+        for (i, citation) in citations.enumerated() {
+            do {
+                if let record = try await client.resolveLotFile(
+                    normalized: citation.normalizedLot, recordGroup: citation.recordGroup) {
+                    entries.append(LotFileEntry(
+                        lotNumber: citation.normalizedLot,
+                        recordGroup: citation.recordGroup,
+                        naId: record.naId,
+                        title: record.title,
+                        catalogURL: NARACatalogHarvestClient.catalogIDBase + record.naId))
+                    resolved += 1
+                } else {
+                    missed += 1
+                }
+            } catch {
+                missed += 1
+                #if DEBUG
+                print("[CentralFilesIndexGenerator] lot \(citation.normalizedLot) errored: \(error)")
+                #endif
+            }
+            if (i + 1) % 100 == 0 {
+                print("  …\(i + 1)/\(citations.count) (\(resolved) resolved)")
+            }
+        }
+
+        let rg59 = entries.filter { $0.recordGroup == "59" }.count
+        let rg84 = entries.filter { $0.recordGroup == "84" }.count
+        print("""
+          Lot-file survey:
+            distinct:  \(citations.count)
+            resolved:  \(resolved)  (RG 59: \(rg59), RG 84: \(rg84))
+            unresolved:\(missed)
+        """)
+        return entries.sorted { $0.lotNumber < $1.lotNumber }
     }
 
     // MARK: Reporting

@@ -197,6 +197,95 @@ public actor NARACatalogHarvestClient {
         return data
     }
 
+    // MARK: Lot-file resolution (variantControlNumber_is)
+
+    /// One cached lot resolution. `naId` empty marks a confirmed miss (so it isn't re-queried).
+    private struct LotResolution: Codable { let naId: String; let title: String }
+
+    /// Resolves a normalized lot number to its NARA Catalog series record by matching
+    /// `variantControlNumber_is` against NARA's indexed lot identifiers — the same approach
+    /// the app uses at runtime, but harvested once and bundled.
+    ///
+    /// Tries the compact, spaced, and mixed spellings (`63D135`, `63 D 135`, `63 D135`);
+    /// the first non-empty hit wins. The outcome (hit or confirmed miss) is cached to disk
+    /// per lot, so re-runs and partial failures never re-query.
+    ///
+    /// - Returns: the resolved record, or `nil` when no spelling matched.
+    public func resolveLotFile(normalized: String, recordGroup: String) async throws -> CatalogRecord? {
+        if let cached = cachedLot(normalized: normalized, recordGroup: recordGroup), !refresh {
+            return cached.naId.isEmpty ? nil
+                : CatalogRecord(naId: cached.naId, title: cached.title)
+        }
+        for form in Self.lotVariants(normalized) {
+            if let record = try await searchVariant(form, recordGroup: recordGroup) {
+                writeLotCache(LotResolution(naId: record.naId, title: record.title),
+                              normalized: normalized, recordGroup: recordGroup)
+                return record
+            }
+        }
+        writeLotCache(LotResolution(naId: "", title: ""), normalized: normalized, recordGroup: recordGroup)
+        return nil
+    }
+
+    /// Generates compact / spaced / mixed spellings from a compact lot (`63D135`).
+    static func lotVariants(_ compact: String) -> [String] {
+        guard let r = compact.range(of: #"^(\d{2,3})([A-Z])(\d+)$"#, options: .regularExpression) else {
+            return [compact]
+        }
+        let s = String(compact[r])
+        // Re-split via the same pattern groups.
+        let scalars = Array(s)
+        guard let letterIdx = scalars.firstIndex(where: { $0.isLetter }) else { return [compact] }
+        let digits1 = String(scalars[..<letterIdx])
+        let letter = String(scalars[letterIdx])
+        let digits2 = String(scalars[(letterIdx + 1)...])
+        return ["\(digits1)\(letter)\(digits2)",
+                "\(digits1) \(letter) \(digits2)",
+                "\(digits1) \(letter)\(digits2)"]
+    }
+
+    private func searchVariant(_ form: String, recordGroup: String) async throws -> CatalogRecord? {
+        guard var components = URLComponents(string: Self.searchEndpoint) else {
+            throw NARACatalogHarvestError.invalidURL
+        }
+        components.queryItems = [
+            URLQueryItem(name: "variantControlNumber_is",       value: form),
+            URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
+            URLQueryItem(name: "resultType",                    value: "description"),
+            URLQueryItem(name: "rows",                          value: "1"),
+        ]
+        guard let url = components.url else { throw NARACatalogHarvestError.invalidURL }
+        var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("FRUSExplorer/CentralFilesIndexGenerator 1.0", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 30
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw NARACatalogHarvestError.unexpectedResponseType }
+        guard (200..<300).contains(http.statusCode) else { throw NARACatalogHarvestError.badHTTPStatus(http.statusCode) }
+        return try Self.decodePage(data).records.first
+    }
+
+    private func lotCacheURL(normalized: String, recordGroup: String) -> URL? {
+        cacheDirectory?
+            .appendingPathComponent("lots", isDirectory: true)
+            .appendingPathComponent("\(recordGroup)_\(normalized).json")
+    }
+
+    private func cachedLot(normalized: String, recordGroup: String) -> LotResolution? {
+        guard let url = lotCacheURL(normalized: normalized, recordGroup: recordGroup),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(LotResolution.self, from: data)
+    }
+
+    private func writeLotCache(_ resolution: LotResolution, normalized: String, recordGroup: String) {
+        guard let url = lotCacheURL(normalized: normalized, recordGroup: recordGroup) else { return }
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(resolution) { try? data.write(to: url, options: .atomic) }
+    }
+
     // MARK: Cache helpers
 
     private func cacheURL(ancestorNaId: String, pageIndex: Int) -> URL? {

@@ -22,6 +22,14 @@ public enum CentralFilesIndexWriterError: Error, Sendable {
 ///   1.0 — Session 2026-06-15: initial implementation
 public enum CentralFilesIndexWriter {
 
+    /// Reads and decodes an existing index file, or returns `nil` if absent/unreadable.
+    /// Used to preserve previously-harvested sections across partial runs.
+    public static func read(from path: String) throws -> CentralFilesIndex? {
+        let url = URL(fileURLWithPath: path)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(CentralFilesIndex.self, from: data)
+    }
+
     /// Writes the index to `outputPath`, creating intermediate directories.
     public static func write(_ index: CentralFilesIndex, to outputPath: String) throws {
         let encoder = JSONEncoder()

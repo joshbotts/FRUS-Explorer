@@ -41,19 +41,57 @@ public struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// still decodes.
     public var countrySeries: [CountrySeriesIndex]
 
-    /// The current schema version emitted by this generator. Bumped to 2 with Phase 2.
-    public static let currentSchemaVersion = 2
+    /// Pre-resolved State Department lot files (Phase 3): normalized lot number → NARA
+    /// Catalog series record, so the app links a later-volume lot citation with no API call.
+    public var lotFiles: [LotFileEntry]
+
+    /// The current schema version emitted by this generator. Bumped to 3 with Phase 3.
+    public static let currentSchemaVersion = 3
 
     public init(
         schemaVersion: Int = CentralFilesIndex.currentSchemaVersion,
         generated: String,
         numericalFile: NumericalFileIndex,
-        countrySeries: [CountrySeriesIndex] = []
+        countrySeries: [CountrySeriesIndex] = [],
+        lotFiles: [LotFileEntry] = []
     ) {
         self.schemaVersion = schemaVersion
         self.generated = generated
         self.numericalFile = numericalFile
         self.countrySeries = countrySeries
+        self.lotFiles = lotFiles
+    }
+
+    /// Returns the resolved lot-file entry for a normalized lot number (`63D135`), if any.
+    public func lotFile(normalized: String) -> LotFileEntry? {
+        lotFiles.first { $0.lotNumber == normalized }
+    }
+}
+
+// MARK: - LotFileEntry
+
+/// A State Department lot file resolved to its NARA Catalog series record.
+///
+/// Version history:
+///   1.0 — Session 2026-06-15: Phase 3
+public struct LotFileEntry: Codable, Sendable, Equatable {
+    /// Normalized (compact, upper-cased) lot number, e.g. `63D135`.
+    public var lotNumber: String
+    /// Record group: `59` (D-designator) or `84` (F-designator).
+    public var recordGroup: String
+    /// NARA NAID of the resolved series record.
+    public var naId: String
+    /// Series title from the catalog.
+    public var title: String
+    /// Deep link to the NARA Catalog record.
+    public var catalogURL: String
+
+    public init(lotNumber: String, recordGroup: String, naId: String, title: String, catalogURL: String) {
+        self.lotNumber = lotNumber
+        self.recordGroup = recordGroup
+        self.naId = naId
+        self.title = title
+        self.catalogURL = catalogURL
     }
 }
 

@@ -771,3 +771,29 @@ resolves to its diplomatic-series roll(s):
   `currentSourceNote{Header,Dateline,VolumeId,DocId}` primed + a `countrySeriesBox` in
   `MacSourceExplorerView`); iPad Stage-Manager `frus.sourceExplorer.ios` scene similarly
   needs the doc context; enclosure dual-home (Finding 4); live UI walkthrough.
+
+### Session 2026-06-15 (cont.) — Phase 3 generator: pre-resolve lot files (later volumes)
+Extend the bundled, key-less approach to State Department lot file citations in later
+volumes so researchers get a NARA Catalog starting point without their own API key. Analyzed
+a 1.1M-row citations export (`citations2.csv`, 196 MB): **1,743 distinct lot numbers**
+(1,553 D-designator RG 59 + 190 F-designator RG 84) across 298 volumes; one-time harvest
+~3.5–7k API calls. Built the generator side (app integration next):
+- `LotFileCitationExtractor` — parse + normalize lot numbers (compact upper-case key,
+  matching the app's runtime form); RG 59 (D) / RG 84 (F) by designator.
+- `CitationCSVReader` — streaming byte-level CSV parser (only buffers `plain_text`) that
+  survives the 196 MB RFC-4180 export (embedded commas/newlines/`""`). Validated offline
+  against the real file (~5 s, 1,500–3,000 distinct lots).
+- `NARACatalogHarvestClient.resolveLotFile(normalized:recordGroup:)` — `variantControlNumber_is`
+  with compact/spaced/mixed spellings (the proven runtime method), **cached per lot** (hits
+  and confirmed misses) so re-runs/partial failures never re-query.
+- `LotFileEntry` + `lotFiles` in `CentralFilesIndex` (schemaVersion → 3) + `lotFile(normalized:)`.
+- Runner Phase 3: when `CITATIONS_CSV` is set, extract distinct lots, resolve each, merge
+  into the index (preserves prior `lotFiles` when the CSV isn't supplied); prints a survey
+  (distinct / resolved / unresolved, by RG). `CentralFilesIndexWriter.read` added.
+- 59→ now more generator tests green (extractor, CSV reader incl. tricky quoting + a guarded
+  real-file check, lot variants, index lookup).
+- **Next**: user runs `CATALOG_API_KEY=… CITATIONS_CSV=…/citations2.csv swift run CentralFilesIndexGenerator`
+  (the resolved/unresolved survey is the validation gate; spot-check a few well-known lots).
+  Then app integration: add `lotFiles` to the app-side `CentralFilesIndex`; in the Source
+  Explorer `lotFilePanel`, resolve from the bundle **first** (key-less) and fall back to the
+  live API only on a miss.
