@@ -618,6 +618,10 @@ struct DocumentView: View {
         if supportsMultipleWindows {
             appState.currentSourceNote = vm.sourceNote ?? ""
             appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
+            appState.currentSourceNoteHeader = entry.header
+            appState.currentSourceNoteDateline = entry.dateline
+            appState.currentSourceNoteVolumeId = entry.volumeId
+            appState.currentSourceNoteDocumentId = entry.documentId
             openWindow(id: "frus.sourceExplorer.ios")
         } else {
             activeSheet = .sourceExplorer(vm.sourceNote ?? "")
