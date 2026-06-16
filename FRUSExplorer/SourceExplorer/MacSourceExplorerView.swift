@@ -191,6 +191,10 @@ struct MacSourceExplorerView: View {
                 if showsManualSearch {
                     manualSearchField
                 }
+                if case .lotFile(_, let lot, _) = parsed,
+                   let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
+                    bundledLotBox(entry)
+                }
                 if let parsed {
                     naraBox(for: parsed)
                 } else {
@@ -473,6 +477,32 @@ struct MacSourceExplorerView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+    }
+
+    // MARK: - Bundled Lot File Box
+
+    /// A bundled, key-less link to a lot file's resolved NARA Catalog series record.
+    @ViewBuilder
+    private func bundledLotBox(_ entry: LotFileEntry) -> some View {
+        GroupBox(String(localized: "source.explorer.lotFile.bundled.header",
+                        defaultValue: "NARA Catalog Record")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(entry.title).font(.callout)
+                Button {
+                    if let url = URL(string: entry.catalogURL) { openURL(url) }
+                } label: {
+                    Label(String(localized: "source.explorer.lotFile.bundled.open",
+                                 defaultValue: "Open Series in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+                Text(String(localized: "source.explorer.lotFile.bundled.note",
+                            defaultValue: "Resolved from the bundled index — no API key required. Records may be described at the series level rather than digitized page-by-page."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

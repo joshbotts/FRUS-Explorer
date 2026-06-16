@@ -652,6 +652,13 @@ struct SourceExplorerView: View {
             }
         }
 
+        // Bundle-first: a pre-resolved lot file links straight to its NARA Catalog series
+        // record with no API key. Shown above the live lookup; the live path remains as a
+        // fallback for lots not in the bundle.
+        if let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lotNumber) {
+            bundledLotSection(entry)
+        }
+
         // Fallback: pre-scoped NARA Catalog search for the lot number.
         // Use RG 84 fallback URL for F-designator (post record) lot files.
         let fb: URL = {
@@ -662,6 +669,27 @@ struct SourceExplorerView: View {
             return client.resolveRG59CentralFiles(fileIdentifier: "Lot \(lotNumber)")
         }()
         naraResultSection(requiresKey: true, fallbackURL: fb)
+    }
+
+    /// A bundled, key-less link to a lot file's resolved NARA Catalog series record.
+    @ViewBuilder
+    private func bundledLotSection(_ entry: LotFileEntry) -> some View {
+        Section(String(localized: "source.explorer.lotFile.bundled.header",
+                       defaultValue: "NARA Catalog Record")) {
+            Text(entry.title)
+                .font(.callout)
+            Button {
+                if let url = URL(string: entry.catalogURL) { openURL(url) }
+            } label: {
+                Label(String(localized: "source.explorer.lotFile.bundled.open",
+                             defaultValue: "Open Series in NARA Catalog"),
+                      systemImage: "arrow.up.right.square")
+            }
+            Text(String(localized: "source.explorer.lotFile.bundled.note",
+                        defaultValue: "Resolved from the bundled index — no API key required. Records may be described at the series level rather than digitized page-by-page."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Presidential Library Panel

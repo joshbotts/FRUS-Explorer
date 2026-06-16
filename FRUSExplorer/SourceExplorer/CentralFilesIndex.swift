@@ -39,6 +39,10 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// The country-arranged diplomatic series (Phase 2). Empty for a Phase 1-only index.
     var countrySeries: [CountrySeriesIndex]
 
+    /// Pre-resolved State Department lot files (Phase 3): normalized lot number → NARA
+    /// Catalog series record. Empty for an index that predates Phase 3.
+    var lotFiles: [LotFileEntry]
+
     // The generator defaults newer fields; tolerate their absence for forward safety.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -46,11 +50,53 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
         generated = try container.decodeIfPresent(String.self, forKey: .generated) ?? ""
         numericalFile = try container.decode(NumericalFileIndex.self, forKey: .numericalFile)
         countrySeries = try container.decodeIfPresent([CountrySeriesIndex].self, forKey: .countrySeries) ?? []
+        lotFiles = try container.decodeIfPresent([LotFileEntry].self, forKey: .lotFiles) ?? []
     }
 
     /// Returns the country series for `category`, if present.
     func series(category: CentralFilesSeriesCategory) -> CountrySeriesIndex? {
         countrySeries.first { $0.category == category.rawValue }
+    }
+
+    /// Returns the pre-resolved lot file for a raw lot number from a source note, or `nil`.
+    /// The raw form (`"63 D 135"`, `"61-D 146"`) is normalized to the bundle's compact key.
+    func lotFile(forRawLot raw: String) -> LotFileEntry? {
+        let key = CentralFilesIndex.normalizeLot(raw)
+        return lotFiles.first { $0.lotNumber == key }
+    }
+
+    /// Compact upper-cased lot key (`61–D 146` → `61D146`), matching the generator's form.
+    static func normalizeLot(_ raw: String) -> String {
+        raw.uppercased()
+            .replacingOccurrences(of: "LOT ", with: "")
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "–", with: "")
+            .replacingOccurrences(of: "—", with: "")
+    }
+}
+
+// MARK: - LotFileEntry
+
+/// A State Department lot file resolved to its NARA Catalog series record (bundled,
+/// key-less). The bundle contains only exact control-number matches, so each is
+/// high-confidence (`matchType` == `control`).
+struct LotFileEntry: Codable, Sendable, Equatable {
+    var lotNumber: String
+    var recordGroup: String
+    var naId: String
+    var title: String
+    var catalogURL: String
+    var matchType: String
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        lotNumber = try c.decode(String.self, forKey: .lotNumber)
+        recordGroup = try c.decode(String.self, forKey: .recordGroup)
+        naId = try c.decode(String.self, forKey: .naId)
+        title = try c.decode(String.self, forKey: .title)
+        catalogURL = try c.decode(String.self, forKey: .catalogURL)
+        matchType = try c.decodeIfPresent(String.self, forKey: .matchType) ?? "control"
     }
 }
 

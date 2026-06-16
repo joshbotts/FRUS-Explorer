@@ -84,6 +84,34 @@ struct CentralFilesIndexTests {
         #expect(index.numericalFile.rolls(forFileNumber: "5000").isEmpty)  // between 699 and 7179
     }
 
+    @Test("Lot file decodes and resolves from a raw source-note lot number")
+    func lotFileLookup() throws {
+        let json = """
+        {
+          "schemaVersion": 3, "generated": "2026-06-16",
+          "numericalFile": { "microfilm": "M862", "seriesNaId": "654171", "rolls": [] },
+          "lotFiles": [
+            { "lotNumber": "64D199", "recordGroup": "59", "naId": "602231",
+              "title": "The Secretary's Memorandums of Conversation",
+              "catalogURL": "https://catalog.archives.gov/id/602231", "matchType": "control" }
+          ]
+        }
+        """
+        let index = try JSONDecoder().decode(CentralFilesIndex.self, from: Data(json.utf8))
+        // Raw spellings from source notes normalize to the bundle's compact key.
+        #expect(index.lotFile(forRawLot: "64 D 199")?.naId == "602231")
+        #expect(index.lotFile(forRawLot: "Lot 64-D 199")?.naId == "602231")
+        #expect(index.lotFile(forRawLot: "64D199")?.matchType == "control")
+        #expect(index.lotFile(forRawLot: "99Z9") == nil)
+    }
+
+    @Test("normalizeLot matches the generator's compact form")
+    func normalizesLot() {
+        #expect(CentralFilesIndex.normalizeLot("63 D 135") == "63D135")
+        #expect(CentralFilesIndex.normalizeLot("61–D 146") == "61D146")
+        #expect(CentralFilesIndex.normalizeLot("Lot 56 F 28") == "56F28")
+    }
+
     @Test("The bundled index loads, parses, and resolves the golden citations")
     func bundledIndexResolvesGolden() throws {
         // Guards against the resource being dropped from the bundle or the schema drifting.
