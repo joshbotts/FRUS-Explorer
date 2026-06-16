@@ -253,17 +253,15 @@ public actor NARACatalogHarvestClient {
             return ResolvedLot(record: record, matchType: matchType)
         }
 
-        // 1. Exact match on NARA's indexed control number, across spellings.
+        // Exact match on NARA's indexed control number, across spellings. The bundled
+        // index is control-only: a free-text phrase fallback was tried but produced mostly
+        // false positives even after RG verification (RG-59/84 records that coincidentally
+        // contain the lot token), which is unacceptable for a trusted, unattended index.
+        // The app keeps its live phrase fallback at runtime for bundle misses, where a
+        // human evaluates the result.
         for form in Self.lotVariants(normalized) {
             if let record = firstAccepted(try await searchVariant(form, recordGroup: recordGroup)) {
                 return cache(record, "control")
-            }
-        }
-        // 2. Free-text phrase fallback (mirrors the app's runtime safety net): the bare,
-        //    quoted lot number — compact then spaced — within the record group.
-        for phrase in Self.lotVariants(normalized).prefix(2) {  // compact, spaced
-            if let record = firstAccepted(try await searchLotPhrase(phrase, recordGroup: recordGroup)) {
-                return cache(record, "phrase")
             }
         }
         writeLotCache(LotResolution(naId: "", title: "", matchType: nil),
@@ -295,18 +293,6 @@ public actor NARACatalogHarvestClient {
     private func searchVariant(_ form: String, recordGroup: String) async throws -> [CatalogRecord] {
         try await search(queryItems: [
             URLQueryItem(name: "variantControlNumber_is",       value: form),
-            URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
-            URLQueryItem(name: "resultType",                    value: "description"),
-            URLQueryItem(name: "rows",                          value: Self.lotSearchRows),
-        ])
-    }
-
-    /// Free-text phrase fallback: searches the bare quoted lot number (`"63 D 135"`)
-    /// within the record group — the app's runtime safety net for lots not indexed under a
-    /// control number.
-    private func searchLotPhrase(_ form: String, recordGroup: String) async throws -> [CatalogRecord] {
-        try await search(queryItems: [
-            URLQueryItem(name: "q",                             value: "\"\(form)\""),
             URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
             URLQueryItem(name: "resultType",                    value: "description"),
             URLQueryItem(name: "rows",                          value: Self.lotSearchRows),

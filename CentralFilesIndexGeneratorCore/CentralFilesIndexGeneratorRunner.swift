@@ -223,9 +223,11 @@ public struct CentralFilesIndexGeneratorRunner {
         var resolved = 0, missed = 0
         for (i, citation) in citations.enumerated() {
             do {
+                // Control-only bundle: skip any stale phrase hits left in the cache from
+                // earlier runs (the resolver no longer produces them).
                 if let resolved0 = try await client.resolveLotFile(
                     normalized: citation.normalizedLot, recordGroup: citation.recordGroup,
-                    retryMisses: retryMisses) {
+                    retryMisses: retryMisses), resolved0.matchType == "control" {
                     entries.append(LotFileEntry(
                         lotNumber: citation.normalizedLot,
                         recordGroup: citation.recordGroup,
