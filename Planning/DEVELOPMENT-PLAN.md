@@ -744,3 +744,30 @@ Goal: deepen the app's use of FRUS document dates. A date audit found the index 
 - `ChronologyModels` (`ChronologyRow`, `ChronologyParameters`, `DateBucket`), `ChronologyViewModel` (groups rows into date sections, auto-coarsening day→month→year by span and **never rendering a row finer than its own stored precision**, so year-only docs form an honest year section instead of piling onto Jan 1), and `ChronologyView`: From/To pickers + Show, sectioned list with **dense-date collapse + "Show all N"**, section headers showing count badge + "N volumes · M subseries · K editorial notes" + inline density bar, rows showing summary-or-header snippet + volume chip + dateline + editorial/front-matter/`~`approximate badges, tap-to-open, and a "Search in this range" handoff (`pendingSearch` with a date filter).
 - Integration mirrors Corpus Analytics: iOS calendar toolbar button + sheet in `BrowserTabView` with a `pendingChronology` `onChange` handoff (new `AppState.pendingChronology`); macOS `frus.chronology` `Window` scene + a sidebar tool button in `MainWindowView`.
 - **Verification**: new `DateMetadataIndexingTests` (precision/certainty for exact/range/year/month/approximate) and `ChronologyQueryTests` (range ordering, interval overlap of a multi-day doc, month bucket counts, volume scoping) pass; full `IndexingPipelineTests` + `CodingStandardsAuditTests` green (no date-filter regression); iOS **and** macOS builds clean (project regenerated for the 4 new files; schemes restored). **Caveats**: the live UI flows (dense-date collapse against a real summit date) were verified by unit test + green builds, not on-device (the sim has no indexed corpus); the density chart, tappable-volume-chip-into-volume, per-date person chips, and a `footnote_dates` table were intentionally deferred to keep v1 tight.
+
+### Session 2026-06-15 (cont.) — caught up with v2; Phase 2 app integration (iOS)
+First merged `origin/v2` (Sessions 162–163: Search/Analytics coupling, Chronology browser,
+date precision in the index). Only two conflicts — DEVELOPMENT-PLAN.md (kept both) and
+project.pbxproj (regenerated via xcodegen). Builds clean; v2's new suites green alongside ours.
+
+Then wired Phase 2 into the **iOS** Source Explorer so a pre-1906 document (no source note)
+resolves to its diplomatic-series roll(s):
+- App model: `CentralFilesIndex` gains `countrySeries` (+ `CountrySeriesIndex`, `CountryRoll`,
+  `CentralFilesSeriesCategory`, `rolls(geoKey:dateISO:)`); decodes the schema-2 bundle.
+- `GeoKeyNormalizer` mirrored into the app target (kept in sync with the generator) so a
+  FRUS chapter name normalizes to the same key as the index.
+- `CentralFilesClassifier`: dateline + heading + FRUS chapter → candidate series (Finding 5):
+  U.S. mission abroad → Despatches (high); foreign legation in Washington → Notes from (high);
+  Department of State outbound → **Instructions + Notes-to** (medium — ambiguous from the
+  document alone); consular → none (Phase 3). Plus `datelineDateISO` and
+  `chapterCountry(in:documentId:)` (top-level section title from the cached `VolumeStructure`).
+- `SourceExplorerView.countrySeriesSection` — for `documentYear < 1906`, classifies and
+  resolves each candidate to roll links (confidence chip + rationale); hides the empty
+  raw-note section. `DocumentView` passes header/dateline/volumeId/documentId.
+- Tests: `CentralFilesClassifierTests` (all 5 reference docs, dateline date, chapter
+  resolution, **end-to-end against the real bundled index**). 29 app tests green; iOS+macOS
+  build clean.
+- **Remaining**: **macOS parity** (Mac Source Explorer is an AppState-driven window — needs
+  `currentSourceNote{Header,Dateline,VolumeId,DocId}` primed + a `countrySeriesBox` in
+  `MacSourceExplorerView`); iPad Stage-Manager `frus.sourceExplorer.ios` scene similarly
+  needs the doc context; enclosure dual-home (Finding 4); live UI walkthrough.

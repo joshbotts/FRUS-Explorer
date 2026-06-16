@@ -470,7 +470,11 @@ struct DocumentView: View {
                     indexingPipeline: appState.indexingPipeline,
                     onRelatedDocumentTapped: { [self] vid, did in
                         handleCrossRefTap(target: did, targetVolumeId: vid)
-                    }
+                    },
+                    documentHeader: entry.header,
+                    documentDateline: entry.dateline,
+                    documentVolumeId: entry.volumeId,
+                    documentId: entry.documentId
                 )
             case .tagPicker:
                 TagPickerSheetView(

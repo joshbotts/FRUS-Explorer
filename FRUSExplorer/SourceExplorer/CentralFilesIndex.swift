@@ -36,12 +36,92 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// The 1906–1910 Numerical File component.
     var numericalFile: NumericalFileIndex
 
-    // The generator defaults `schemaVersion`; tolerate its absence for forward safety.
+    /// The country-arranged diplomatic series (Phase 2). Empty for a Phase 1-only index.
+    var countrySeries: [CountrySeriesIndex]
+
+    // The generator defaults newer fields; tolerate their absence for forward safety.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         generated = try container.decodeIfPresent(String.self, forKey: .generated) ?? ""
         numericalFile = try container.decode(NumericalFileIndex.self, forKey: .numericalFile)
+        countrySeries = try container.decodeIfPresent([CountrySeriesIndex].self, forKey: .countrySeries) ?? []
+    }
+
+    /// Returns the country series for `category`, if present.
+    func series(category: CentralFilesSeriesCategory) -> CountrySeriesIndex? {
+        countrySeries.first { $0.category == category.rawValue }
+    }
+}
+
+// MARK: - CentralFilesSeriesCategory
+
+/// The Phase 2 country-arranged diplomatic series, mirroring the generator's categories.
+enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
+    case despatches = "diplomaticDespatches"
+    case instructions = "diplomaticInstructions"
+    case notesFrom = "notesFromForeignMissions"
+    case notesTo = "notesToForeignMissions"
+
+    /// Human-readable series name.
+    var displayName: String {
+        switch self {
+        case .despatches:   return String(localized: "centralFiles.series.despatches",
+                                          defaultValue: "Diplomatic Despatches")
+        case .instructions: return String(localized: "centralFiles.series.instructions",
+                                          defaultValue: "Diplomatic Instructions")
+        case .notesFrom:    return String(localized: "centralFiles.series.notesFrom",
+                                          defaultValue: "Notes from Foreign Missions")
+        case .notesTo:      return String(localized: "centralFiles.series.notesTo",
+                                          defaultValue: "Notes to Foreign Missions")
+        }
+    }
+}
+
+// MARK: - CountrySeriesIndex
+
+/// One country-arranged diplomatic series, flattened to a single list of rolls.
+struct CountrySeriesIndex: Codable, Sendable, Equatable {
+    /// Category key (e.g. `diplomaticDespatches`).
+    var category: String
+    /// NARA series NAID.
+    var seriesNaId: String
+    /// Human-readable series name from the generator.
+    var displayName: String
+    /// All resolution rolls.
+    var rolls: [CountryRoll]
+
+    /// Returns rolls serving `geoKey` that contain `dateISO` (or all for the country when
+    /// `dateISO` is nil), ascending by start date.
+    func rolls(geoKey: String, dateISO: String?) -> [CountryRoll] {
+        rolls.filter { $0.matches(geoKey: geoKey, dateISO: dateISO) }
+    }
+}
+
+// MARK: - CountryRoll
+
+/// One page-by-page resolution target in a country-arranged series.
+struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
+    var naId: String
+    var title: String
+    var geoKeys: [String]
+    var startISO: String?
+    var endISO: String?
+    var catalogURL: String
+    var fileUnitNaId: String?
+    var fileUnitTitle: String?
+
+    var id: String { naId }
+
+    /// Returns `true` when `geoKey` is served and `dateISO` falls within the roll's range.
+    /// A dateless roll is excluded from date-filtered queries; a nil query date matches any.
+    func matches(geoKey: String, dateISO: String?) -> Bool {
+        guard geoKeys.contains(geoKey) else { return false }
+        guard let dateISO else { return true }
+        guard startISO != nil || endISO != nil else { return false }
+        if let start = startISO, dateISO < start { return false }
+        if let end = endISO, dateISO > end { return false }
+        return true
     }
 }
 

@@ -69,6 +69,17 @@ struct SourceExplorerView: View {
     /// The sheet dismisses itself before calling this closure.
     var onRelatedDocumentTapped: ((String, String) -> Void)? = nil
 
+    /// Document heading — a classifier cue for pre-1906 documents (which carry no source note).
+    var documentHeader: String? = nil
+
+    /// Document dateline — the primary classifier cue (originating office + date).
+    var documentDateline: String? = nil
+
+    /// The document's volume and `xml:id`, used to resolve its FRUS chapter (country) from
+    /// the cached volume structure for pre-1906 series classification.
+    var documentVolumeId: String? = nil
+    var documentId: String? = nil
+
     // MARK: - Dependencies
 
     private let parser = SourceNoteParser()
@@ -89,6 +100,9 @@ struct SourceExplorerView: View {
     /// True while the related-documents query is running.
     @State private var relatedLoading: Bool = false
 
+    /// Pre-1906 country-series classifications + the rolls each resolves to (Phase 2).
+    @State private var countryResolutions: [CountrySeriesResolution] = []
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(AppState.self) private var appState
@@ -98,10 +112,16 @@ struct SourceExplorerView: View {
     var body: some View {
         NavigationStack {
             Form {
-                rawNoteSection
+                if !rawSourceNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    rawNoteSection
+                }
 
                 if let parsed {
                     provenanceSection(parsed: parsed)
+                }
+
+                if !countryResolutions.isEmpty {
+                    countrySeriesSection
                 }
 
                 if indexingPipeline != nil {
@@ -329,6 +349,84 @@ struct SourceExplorerView: View {
         // catalog.archives.gov/search returns no useful results for decimal file numbers.
         if recordGroup == "RG-59" || recordGroup == "59" {
             centralFilesPeriodSection(fileIdentifier: fileIdentifier)
+        }
+    }
+
+    // MARK: - Country-Series Resolution (pre-1906, Phase 2)
+
+    /// One classification candidate paired with the rolls it resolves to in the index.
+    struct CountrySeriesResolution: Identifiable {
+        let classification: CentralFilesClassification
+        let rolls: [CountryRoll]
+        var id: String { classification.category.rawValue }
+    }
+
+    /// Classifies a pre-1906 document (which carries no source note) from its dateline,
+    /// heading, and FRUS chapter, and resolves each candidate series to its roll(s) in the
+    /// bundled index. Populates `countryResolutions`; a no-op when inputs are missing or
+    /// the document is 1906 or later (handled by the Numerical File / decimal paths).
+    private func resolveCountrySeries() async {
+        guard let dateline = documentDateline,
+              let year = documentYear, year < 1906,
+              let index = CentralFilesIndexStore.shared else { return }
+
+        // Resolve the FRUS chapter (country) from the cached volume structure.
+        var chapterCountry: String? = nil
+        if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId,
+           let structure = try? await pipeline.cachedVolumeStructure(forVolumeId: volumeId) {
+            chapterCountry = CentralFilesClassifier.chapterCountry(in: structure, documentId: docId)
+        }
+
+        let classifications = CentralFilesClassifier.classify(
+            header: documentHeader ?? "", dateline: dateline, chapterCountry: chapterCountry)
+        guard !classifications.isEmpty else { return }
+
+        let dateISO = CentralFilesClassifier.datelineDateISO(from: dateline)
+        var resolutions: [CountrySeriesResolution] = []
+        for classification in classifications {
+            guard let geoKey = classification.geoKeys.first,
+                  let series = index.series(category: classification.category) else { continue }
+            let rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
+            if !rolls.isEmpty {
+                resolutions.append(CountrySeriesResolution(classification: classification, rolls: rolls))
+            }
+        }
+        countryResolutions = resolutions
+    }
+
+    @ViewBuilder
+    private var countrySeriesSection: some View {
+        Section {
+            Text(String(localized: "source.explorer.countrySeries.intro",
+                        defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document's date."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(countryResolutions) { resolution in
+                let c = resolution.classification
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(c.category.displayName).font(.callout.weight(.semibold))
+                        Text(c.confidence.label)
+                            .font(.caption2)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(c.confidence == .high ? Color.green.opacity(0.18)
+                                                              : Color.orange.opacity(0.18),
+                                        in: Capsule())
+                    }
+                    Text(c.rationale).font(.caption).foregroundStyle(.secondary)
+                    ForEach(resolution.rolls) { roll in
+                        Button {
+                            if let url = URL(string: roll.catalogURL) { openURL(url) }
+                        } label: {
+                            Label(roll.title, systemImage: "film")
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        } header: {
+            Text(String(localized: "source.explorer.countrySeries.header",
+                        defaultValue: "Digitized Diplomatic Records (pre-1906)"))
         }
     }
 
@@ -803,6 +901,10 @@ struct SourceExplorerView: View {
     private func load() async {
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
+
+        // Pre-1906 country-series resolution (no source note; no API key). Runs first so
+        // the resolved roll links appear even without a NARA Catalog key.
+        await resolveCountrySeries()
 
         // Local related-documents query — runs unconditionally; no API key needed.
         // Must be called before the hasAPIKey guard so it runs even for users
