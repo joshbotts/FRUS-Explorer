@@ -210,18 +210,32 @@ public actor NARACatalogHarvestClient {
     /// the first non-empty hit wins. The outcome (hit or confirmed miss) is cached to disk
     /// per lot, so re-runs and partial failures never re-query.
     ///
+    /// - Parameter retryMisses: when `true`, a cached *miss* is ignored and re-queried
+    ///   (cached hits are still reused) — use after improving the resolver to re-attempt
+    ///   only the previously-unresolved lots without re-querying the resolved ones.
     /// - Returns: the resolved record, or `nil` when no spelling matched.
-    public func resolveLotFile(normalized: String, recordGroup: String) async throws -> CatalogRecord? {
+    public func resolveLotFile(normalized: String, recordGroup: String,
+                               retryMisses: Bool = false) async throws -> CatalogRecord? {
         if let cached = cachedLot(normalized: normalized, recordGroup: recordGroup), !refresh {
-            return cached.naId.isEmpty ? nil
-                : CatalogRecord(naId: cached.naId, title: cached.title)
+            if cached.naId.isEmpty {
+                if !retryMisses { return nil }   // else fall through and re-query
+            } else {
+                return CatalogRecord(naId: cached.naId, title: cached.title)
+            }
         }
+        // 1. Exact match on NARA's indexed control number, across spellings.
         for form in Self.lotVariants(normalized) {
             if let record = try await searchVariant(form, recordGroup: recordGroup) {
                 writeLotCache(LotResolution(naId: record.naId, title: record.title),
                               normalized: normalized, recordGroup: recordGroup)
                 return record
             }
+        }
+        // 2. Free-text phrase fallback (the app's runtime safety net), e.g. "Lot 63 D 135".
+        if let record = try await searchLotPhrase(normalized, recordGroup: recordGroup) {
+            writeLotCache(LotResolution(naId: record.naId, title: record.title),
+                          normalized: normalized, recordGroup: recordGroup)
+            return record
         }
         writeLotCache(LotResolution(naId: "", title: ""), normalized: normalized, recordGroup: recordGroup)
         return nil
@@ -245,15 +259,32 @@ public actor NARACatalogHarvestClient {
     }
 
     private func searchVariant(_ form: String, recordGroup: String) async throws -> CatalogRecord? {
-        guard var components = URLComponents(string: Self.searchEndpoint) else {
-            throw NARACatalogHarvestError.invalidURL
-        }
-        components.queryItems = [
+        try await search(queryItems: [
             URLQueryItem(name: "variantControlNumber_is",       value: form),
             URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
             URLQueryItem(name: "resultType",                    value: "description"),
             URLQueryItem(name: "rows",                          value: "1"),
-        ]
+        ]).first
+    }
+
+    /// Free-text phrase fallback: searches `"Lot <spaced form>"` within the record group.
+    /// Mirrors the app's runtime safety net for lots not indexed under a control number.
+    private func searchLotPhrase(_ normalized: String, recordGroup: String) async throws -> CatalogRecord? {
+        let spaced = Self.lotVariants(normalized).dropFirst().first ?? normalized  // "63 D 135"
+        return try await search(queryItems: [
+            URLQueryItem(name: "q",                             value: "\"Lot \(spaced)\""),
+            URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
+            URLQueryItem(name: "resultType",                    value: "description"),
+            URLQueryItem(name: "rows",                          value: "1"),
+        ]).first
+    }
+
+    /// Runs a v2 search with retry-and-backoff on transient 503/429 responses.
+    private func search(queryItems: [URLQueryItem]) async throws -> [CatalogRecord] {
+        guard var components = URLComponents(string: Self.searchEndpoint) else {
+            throw NARACatalogHarvestError.invalidURL
+        }
+        components.queryItems = queryItems
         guard let url = components.url else { throw NARACatalogHarvestError.invalidURL }
         var request = URLRequest(url: url)
         request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
@@ -261,10 +292,29 @@ public actor NARACatalogHarvestClient {
         request.setValue("FRUSExplorer/CentralFilesIndexGenerator 1.0", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30
 
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw NARACatalogHarvestError.unexpectedResponseType }
-        guard (200..<300).contains(http.statusCode) else { throw NARACatalogHarvestError.badHTTPStatus(http.statusCode) }
-        return try Self.decodePage(data).records.first
+        // Gentle baseline throttle on every live lot query — rapid-fire requests drew a
+        // wall of 503s from the catalog. Only affects network calls (cached lots skip this).
+        try? await Task.sleep(nanoseconds: 60_000_000)  // 60 ms
+
+        let maxAttempts = 4
+        var lastStatus = 0
+        for attempt in 0..<maxAttempts {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                throw NARACatalogHarvestError.unexpectedResponseType
+            }
+            if (200..<300).contains(http.statusCode) {
+                return try Self.decodePage(data).records
+            }
+            lastStatus = http.statusCode
+            // Retry transient server/throttle errors with exponential backoff.
+            guard http.statusCode == 503 || http.statusCode == 429, attempt < maxAttempts - 1 else {
+                throw NARACatalogHarvestError.badHTTPStatus(http.statusCode)
+            }
+            let backoffMs = UInt64(500 * (1 << attempt))  // 0.5s, 1s, 2s
+            try? await Task.sleep(nanoseconds: backoffMs * 1_000_000)
+        }
+        throw NARACatalogHarvestError.badHTTPStatus(lastStatus)
     }
 
     private func lotCacheURL(normalized: String, recordGroup: String) -> URL? {

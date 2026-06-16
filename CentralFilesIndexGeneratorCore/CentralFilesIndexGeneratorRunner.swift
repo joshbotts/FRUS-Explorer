@@ -213,13 +213,18 @@ public struct CentralFilesIndexGeneratorRunner {
         let citations = distinct.values.sorted { $0.normalizedLot < $1.normalizedLot }
         print("  distinct lot numbers: \(citations.count)")
 
-        // 2. Resolve each (cached per lot).
+        // 2. Resolve each (cached per lot). RETRY_LOT_MISSES re-attempts only the
+        //    previously-unresolved lots (keeps cached hits) — for use after improving the
+        //    resolver or after a transient-503 run.
+        let retryMisses = ["1", "true", "yes"].contains(
+            (ProcessInfo.processInfo.environment["RETRY_LOT_MISSES"] ?? "").lowercased())
         var entries: [LotFileEntry] = []
         var resolved = 0, missed = 0
         for (i, citation) in citations.enumerated() {
             do {
                 if let record = try await client.resolveLotFile(
-                    normalized: citation.normalizedLot, recordGroup: citation.recordGroup) {
+                    normalized: citation.normalizedLot, recordGroup: citation.recordGroup,
+                    retryMisses: retryMisses) {
                     entries.append(LotFileEntry(
                         lotNumber: citation.normalizedLot,
                         recordGroup: citation.recordGroup,
