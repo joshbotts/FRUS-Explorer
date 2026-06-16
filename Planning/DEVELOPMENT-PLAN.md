@@ -797,3 +797,27 @@ a 1.1M-row citations export (`citations2.csv`, 196 MB): **1,743 distinct lot num
   Then app integration: add `lotFiles` to the app-side `CentralFilesIndex`; in the Source
   Explorer `lotFilePanel`, resolve from the bundle **first** (key-less) and fall back to the
   live API only on a miss.
+
+### Session 2026-06-16 — Lot-file quality (RG verification, match type) + Archival Neighbors
+**Lot harvest quality.** First lot runs resolved 948→1578, but ~174+ were false positives
+(Census RG 29, Morning Reports RG 407, Criminal Dockets RG 21) — NARA's RG query filter
+doesn't constrain free-text results. Fixes: verify each result's *own* record group (from
+its recordGroup ancestor) and reject non-59/84; align the phrase fallback to the app's
+proven bare-quoted-lot form (this lifted resolution to ~1578 before the RG fix); retry
+503/429 with backoff + 60 ms throttle; `RETRY_LOT_MISSES`; emit `unresolved-lots.txt`;
+and track `matchType` (control vs phrase) for an app confidence cue. Re-harvest required
+(cache stored only naId+title). Expect ~1,300–1,450 trustworthy lots after RG verification.
+**Archival Neighbors** (Source Explorer, no harvest needed) — extends `relatedDocuments`:
+- `DecimalFileSegment` (new): location (before `/`) + period segment from the suffix year
+  (1940+ date form) or the doc's indexed year (pre-1940 sequential).
+- `relatedByDecimal` segment-filters same-location candidates in Swift; `relatedByCollection`
+  matches non-RG-59 collections on exact (record_group, series_name); lot matching gains
+  self-exclusion; `documentYear` + volume/doc ids threaded from both views.
+- UI relabeled "Archival Neighbors" with a basis caption (lot / collection / decimal
+  location+segment); viewed document excluded from its own neighbors. iOS + macOS.
+- 811 tests (+5 DecimalFileSegment); both platforms build clean.
+**Remaining**: (1) user runs the clean lot re-harvest (`rm -rf .cache/central-files/lots`
+then the CITATIONS_CSV run) → final index with RG-verified lots + matchType; (2) lot-file
+*app* integration — add `lotFiles` to the app-side `CentralFilesIndex`, resolve the lot
+panel from the bundle first (key-less) with a confidence chip, fall back to live API on miss;
+commit the final index.
