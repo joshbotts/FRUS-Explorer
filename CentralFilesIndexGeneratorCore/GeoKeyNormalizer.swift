@@ -25,25 +25,89 @@ import Foundation
 public enum GeoKeyNormalizer {
 
     /// Maps a normalized variant → preferred canonical key.
+    ///
+    /// Canonical keys use the **historical** names that appear in pre-1910 FRUS chapter
+    /// headings (Persia not Iran, Siam not Thailand), because the app's classifier derives
+    /// the lookup key from the FRUS chapter — both sides must converge on the same key.
+    ///
+    /// Variants come from the four diplomatic series' real vocabularies (harvested
+    /// 2026-06-15): country names (Despatches, Notes to), demonyms (Notes from —
+    /// `Venezuelan` → venezuela), and FRUS chapter spellings (`Argentine Republic`, `Hayti`,
+    /// `Servia`, `Corea`). Combined names (`Sweden and Norway`) are split before lookup.
     static let aliases: [String: String] = [
-        "argentine republic": "argentina",
+        // Argentina
+        "argentine": "argentina", "argentine republic": "argentina",
         "argentine confederation": "argentina",
-        "hawaiian islands": "hawaii",
-        "sandwich islands": "hawaii",
-        "the netherlands": "netherlands",
-        "great britain and ireland": "great britain",
-        "united kingdom": "great britain",
-        "two sicilies": "two sicilies",
-        "kingdom of the two sicilies": "two sicilies",
-        "german empire": "germany",
-        "german states": "germany",
-        "ottoman empire": "turkey",
-        "ottoman porte": "turkey",
-        "persia": "iran",
-        "siam": "thailand",
-        "corea": "korea",
-        "santo domingo": "dominican republic",
-        "san domingo": "dominican republic",
+        // Austria(-Hungary)
+        "austrian": "austria", "austria-hungary": "austria", "austria hungary": "austria",
+        // Belgium
+        "belgian": "belgium",
+        // Bolivia / Brazil / Chile
+        "bolivian": "bolivia", "brazilian": "brazil", "chilean": "chile", "chilian": "chile",
+        // China / Colombia
+        "chinese": "china",
+        "colombian": "colombia", "new granada": "colombia",
+        "united states of colombia": "colombia",
+        // Costa Rica / Cuba / Denmark
+        "costa rican": "costa rica", "cuban": "cuba", "danish": "denmark",
+        // Ecuador
+        "ecuadorean": "ecuador", "ecuadorian": "ecuador",
+        // El Salvador
+        "salvador": "el salvador", "salvadoran": "el salvador", "salvadorean": "el salvador",
+        // France
+        "french": "france",
+        // Germany / German States / Prussia / Hanseatic
+        "german empire": "germany", "german": "germany",
+        "the german states": "german states", "prussian": "prussia",
+        "hanse towns": "hanseatic cities", "hanseatic republics": "hanseatic cities",
+        // Great Britain
+        "british": "great britain", "great britain and ireland": "great britain",
+        "united kingdom": "great britain", "england": "great britain",
+        // Greece
+        "greek": "greece",
+        // Haiti / Hawaii
+        "haitian": "haiti", "hayti": "haiti", "haytian": "haiti",
+        "hawaiian": "hawaii", "hawaiian islands": "hawaii", "sandwich islands": "hawaii",
+        // Honduras
+        "honduran": "honduras",
+        // Italy / Italian States / Sardinia / Two Sicilies
+        "italian": "italy", "the italian states": "italian states",
+        "sardinian": "sardinia",
+        "two sicilies": "two sicilies", "the two sicilies": "two sicilies",
+        "kingdom of the two sicilies": "two sicilies", "naples": "two sicilies",
+        // Japan / Korea
+        "japanese": "japan",
+        "korean": "korea", "corea": "korea", "corean": "korea",
+        // Liberia / Madagascar / Mexico / Montenegro
+        "liberian": "liberia", "madagascan": "madagascar", "malagasy": "madagascar",
+        "mexican": "mexico", "montenegrin": "montenegro",
+        // Netherlands
+        "the netherlands": "netherlands", "dutch": "netherlands", "holland": "netherlands",
+        // Norway / Panama / Paraguay
+        "norwegian": "norway", "panamanian": "panama", "paraguayan": "paraguay",
+        // Persia (historical) / Peru / Portugal
+        "persian": "persia",
+        "peruvian": "peru", "portuguese": "portugal",
+        // Russia / Samoa / Siam (historical)
+        "russian": "russia", "samoan": "samoa",
+        "siamese": "siam",
+        // Spain / Sweden / Switzerland
+        "spanish": "spain", "swedish": "sweden", "swiss": "switzerland",
+        // Texas / Tunisia / Turkey
+        "texan": "texas", "tunisian": "tunisia",
+        "turkish": "turkey", "ottoman empire": "turkey", "ottoman porte": "turkey",
+        "sublime porte": "turkey",
+        // Uruguay / Venezuela / Nicaragua
+        "uruguayan": "uruguay", "venezuelan": "venezuela", "nicaraguan": "nicaragua",
+        // Dominican Republic
+        "the dominican republic": "dominican republic", "dominican": "dominican republic",
+        "santo domingo": "dominican republic", "san domingo": "dominican republic",
+        // Romania / Serbia (historical spellings)
+        "romania": "rumania", "romanian": "rumania", "rumanian": "rumania",
+        "roumania": "rumania",
+        "serbian": "serbia", "servia": "serbia", "servian": "serbia",
+        // Central America
+        "central american": "central america", "central american states": "central america",
     ]
 
     /// Returns the canonical geographic key(s) for a raw country/post string.

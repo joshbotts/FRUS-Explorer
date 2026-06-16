@@ -70,6 +70,21 @@ public struct CentralFilesIndexGeneratorRunner {
         GoldenCheck(fileNumber: "697/43", expectedRollNaId: "19174810", source: "frus1909/d299"),
     ]
 
+    /// Phase 2 golden checks (Docs 1–5): a `(category, geoKey, date)` lookup must surface
+    /// the roll the user reached by hand.
+    public static let countryGoldenChecks: [CountryGoldenCheck] = [
+        CountryGoldenCheck(category: .instructions, geoKey: "great britain", dateISO: "1863-07-06",
+                           expectedNaId: "149311973", source: "frus1863p1/d229"),
+        CountryGoldenCheck(category: .notesFrom, geoKey: "venezuela", dateISO: "1893-10-26",
+                           expectedNaId: "188287901", source: "frus1894/d815"),
+        CountryGoldenCheck(category: .notesTo, geoKey: "paraguay", dateISO: "1878-11-13",
+                           expectedNaId: "216926854", source: "frus1878/d412"),
+        CountryGoldenCheck(category: .despatches, geoKey: "japan", dateISO: "1905-03-14",
+                           expectedNaId: "188401761", source: "frus1905/d544"),
+        CountryGoldenCheck(category: .despatches, geoKey: "switzerland", dateISO: "1875-09-28",
+                           expectedNaId: "189376306", source: "frus1876/d311"),
+    ]
+
     private init() {}
 
     /// Runs the Phase 1 harvest. Calls `exit(1)` on a fatal error or golden-check failure.
@@ -126,21 +141,42 @@ public struct CentralFilesIndexGeneratorRunner {
         printSurvey(result)
 
         // 3. Golden checks.
-        let passed = runGoldenChecks(against: result.index)
+        let numericalPassed = runGoldenChecks(against: result.index)
 
-        // 4. Write.
+        // 4. Phase 2 — country-arranged diplomatic series.
+        print("\n[CentralFilesIndexGenerator] Phase 2 — country-arranged diplomatic series")
+        var seriesIndexes: [CountrySeriesIndex] = []
+        for category in CountrySeriesCategory.allCases {
+            do {
+                let recs = try await client.enumerateDescendants(ancestorNaId: category.seriesNaId)
+                let r = CountrySeriesIndexBuilder.build(category: category, records: recs)
+                printCountrySurvey(category, r)
+                seriesIndexes.append(r.index)
+            } catch {
+                print("[CentralFilesIndexGenerator] ✗ \(category.displayName) enumeration failed: \(error)")
+                exit(1)
+            }
+        }
+
+        // 5. Write the combined index.
         let index = CentralFilesIndex(
             generated: isoToday(),
-            numericalFile: result.index)
+            numericalFile: result.index,
+            countrySeries: seriesIndexes)
         do {
             try CentralFilesIndexWriter.write(index, to: outputPath)
-            print("[CentralFilesIndexGenerator] ✓ wrote \(result.matchedRolls) rolls to \(outputPath)")
+            let countryRolls = seriesIndexes.reduce(0) { $0 + $1.rolls.count }
+            print("[CentralFilesIndexGenerator] ✓ wrote \(result.matchedRolls) numerical rolls "
+                  + "+ \(countryRolls) country rolls to \(outputPath)")
         } catch {
             print("[CentralFilesIndexGenerator] ✗ Failed to write index: \(error)")
             exit(1)
         }
 
-        if !passed {
+        // 6. Phase 2 golden checks.
+        let countryPassed = runCountryGoldenChecks(against: index)
+
+        if !numericalPassed || !countryPassed {
             print("[CentralFilesIndexGenerator] ✗ One or more golden checks failed — see above.")
             exit(1)
         }
@@ -190,11 +226,69 @@ public struct CentralFilesIndexGeneratorRunner {
         return allPassed
     }
 
+    private static func printCountrySurvey(_ category: CountrySeriesCategory,
+                                           _ r: CountrySeriesHarvestResult) {
+        let distinctGeo = Set(r.index.rolls.flatMap(\.geoKeys)).count
+        print("""
+          ── \(category.displayName) (\(category.seriesNaId)) ──
+            total records:     \(r.totalRecords)
+            resolution rolls:  \(r.rollCount)  (distinct countries: \(distinctGeo))
+            without geo key:   \(r.rollsWithoutGeo)
+            without date:      \(r.rollsWithoutDate)
+        """)
+        if !r.sampleNoGeo.isEmpty {
+            print("    sample no-geo titles:")
+            for t in r.sampleNoGeo.prefix(6) { print("      • \(t)") }
+        }
+        if !r.sampleNoDate.isEmpty {
+            print("    sample no-date titles:")
+            for t in r.sampleNoDate.prefix(6) { print("      • \(t)") }
+        }
+    }
+
+    private static func runCountryGoldenChecks(against index: CentralFilesIndex) -> Bool {
+        var allPassed = true
+        print("[CentralFilesIndexGenerator] Phase 2 golden checks (from reference data):")
+        for check in countryGoldenChecks {
+            let matches = index.series(category: check.category.rawValue)?
+                .rolls(geoKey: check.geoKey, dateISO: check.dateISO) ?? []
+            let ok = matches.contains { $0.naId == check.expectedNaId }
+            allPassed = allPassed && ok
+            let mark = ok ? "✓" : "✗"
+            let got = matches.isEmpty ? "no roll"
+                : matches.map(\.naId).joined(separator: ", ")
+            print("    \(mark) \(check.source): \(check.category.displayName) / "
+                  + "\(check.geoKey) / \(check.dateISO) → \(got)"
+                  + (ok ? "" : "  [expected \(check.expectedNaId)]"))
+        }
+        return allPassed
+    }
+
     private static func isoToday() -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
+    }
+}
+
+// MARK: - CountryGoldenCheck
+
+/// A known-correct `(category, country, date)` lookup from the reference data (Docs 1–5).
+public struct CountryGoldenCheck: Sendable, Equatable {
+    public let category: CountrySeriesCategory
+    public let geoKey: String
+    public let dateISO: String
+    public let expectedNaId: String
+    public let source: String
+
+    public init(category: CountrySeriesCategory, geoKey: String, dateISO: String,
+                expectedNaId: String, source: String) {
+        self.category = category
+        self.geoKey = geoKey
+        self.dateISO = dateISO
+        self.expectedNaId = expectedNaId
+        self.source = source
     }
 }

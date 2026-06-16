@@ -53,23 +53,28 @@ public enum HistoricalDateParser {
     private static let separators = CharacterSet(charactersIn: "-–—‐\u{FFFD}_")
 
     /// Parses a date range (or single date) from `text`. Returns `nil` only when no year
-    /// can be found at all.
+    /// can be found at all (after correction and year-sharing).
     public static func parse(_ text: String) -> DateRangeISO? {
         let (lhs, rhs) = splitOnSeparator(text)
 
-        let start = parseSingleDate(lhs)
-        let end = rhs.flatMap(parseSingleDate)
+        var start = parseComponents(lhs)
+        var end = rhs.flatMap(parseComponents)
 
-        // A single date with no separator → start only.
+        // Year-sharing: a day-range roll like "Apr. 16-Aug. 23, 1881" gives the year only
+        // on one side — borrow it for the other.
+        if start?.year == nil, let y = end?.year { start?.year = y }
+        if end?.year == nil, let y = start?.year { end?.year = y }
+
+        let startISO = start?.iso()
+        let endISO = end?.iso()
+
         if rhs == nil {
-            guard let start else { return nil }
-            return DateRangeISO(startISO: start.iso, endISO: nil, plausible: start.plausible)
+            guard let startISO else { return nil }
+            return DateRangeISO(startISO: startISO, endISO: nil, plausible: start?.plausible ?? true)
         }
-
-        // A range: tolerate one side failing to parse.
-        guard start != nil || end != nil else { return nil }
+        guard startISO != nil || endISO != nil else { return nil }
         let plausible = (start?.plausible ?? true) && (end?.plausible ?? true)
-        return DateRangeISO(startISO: start?.iso, endISO: end?.iso, plausible: plausible)
+        return DateRangeISO(startISO: startISO, endISO: endISO, plausible: plausible)
     }
 
     // MARK: - Range splitting
@@ -98,32 +103,61 @@ public enum HistoricalDateParser {
         return (lhs, rhs.isEmpty ? nil : rhs)
     }
 
-    // MARK: - Single date
+    // MARK: - Single date (component-based)
 
-    private struct ParsedDate { let iso: String; let plausible: Bool }
+    /// Partially-parsed date components. `year` may be filled in later by year-sharing.
+    private struct DateComponents {
+        var month: Int?
+        var day: Int?
+        var year: Int?
 
-    private static let monthRegex = try? NSRegularExpression(
-        pattern: #"([A-Za-z]+)\.?\s+(\d{1,2})\s*,?\s*(\d{4})"#)
-    private static let yearOnlyRegex = try? NSRegularExpression(pattern: #"(\d{4})"#)
+        /// Whether the (corrected) year sits in the plausible band.
+        var plausible: Bool { year.map(plausibleYears.contains) ?? true }
 
-    /// Parses `Month D, YYYY` (preferred) or, failing that, a bare year.
-    private static func parseSingleDate(_ text: String) -> ParsedDate? {
-        let ns = text as NSString
-        if let regex = monthRegex,
-           let m = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
-           let month = monthNumber(ns.substring(with: m.range(at: 1))),
-           let day = Int(ns.substring(with: m.range(at: 2))),
-           let year = Int(ns.substring(with: m.range(at: 3))) {
-            let iso = String(format: "%04d-%02d-%02d", year, month, min(max(day, 1), 31))
-            return ParsedDate(iso: iso, plausible: plausibleYears.contains(year))
+        /// ISO `yyyy-MM-dd`, defaulting a missing month/day to January 1. `nil` without a year.
+        func iso() -> String? {
+            guard let year else { return nil }
+            return String(format: "%04d-%02d-%02d", year, month ?? 1, min(max(day ?? 1, 1), 31))
         }
-        if let regex = yearOnlyRegex,
-           let m = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
-           let year = Int(ns.substring(with: m.range(at: 1))) {
-            return ParsedDate(iso: String(format: "%04d-01-01", year),
-                              plausible: plausibleYears.contains(year))
+    }
+
+    // Tried in priority order; each may leave fields nil.
+    private static let monthDayYear = try? NSRegularExpression(pattern: #"([A-Za-z]+)\.?\s+(\d{1,2})\s*,?\s*(\d{4})"#)
+    private static let monthYear    = try? NSRegularExpression(pattern: #"([A-Za-z]+)\.?\s+(\d{4})"#)
+    private static let monthDay     = try? NSRegularExpression(pattern: #"([A-Za-z]+)\.?\s+(\d{1,2})\b"#)
+    private static let yearOnly     = try? NSRegularExpression(pattern: #"(\d{4})"#)
+
+    /// Parses a single date side into components. Applies the `16xx`→`18xx` OCR correction.
+    private static func parseComponents(_ text: String) -> DateComponents? {
+        let ns = text as NSString
+        let full = NSRange(location: 0, length: ns.length)
+
+        if let m = monthDayYear?.firstMatch(in: text, range: full),
+           let month = monthNumber(ns.substring(with: m.range(at: 1))) {
+            return DateComponents(month: month, day: Int(ns.substring(with: m.range(at: 2))),
+                                  year: correctYear(Int(ns.substring(with: m.range(at: 3)))))
+        }
+        if let m = monthYear?.firstMatch(in: text, range: full),
+           let month = monthNumber(ns.substring(with: m.range(at: 1))) {
+            return DateComponents(month: month, day: nil,
+                                  year: correctYear(Int(ns.substring(with: m.range(at: 2)))))
+        }
+        if let m = monthDay?.firstMatch(in: text, range: full),
+           let month = monthNumber(ns.substring(with: m.range(at: 1))) {
+            return DateComponents(month: month, day: Int(ns.substring(with: m.range(at: 2))), year: nil)
+        }
+        if let m = yearOnly?.firstMatch(in: text, range: full) {
+            return DateComponents(month: nil, day: nil, year: correctYear(Int(ns.substring(with: m.range(at: 1)))))
         }
         return nil
+    }
+
+    /// Corrects the dominant catalog OCR error in these 1780–1906 series: a `16xx`/`15xx`
+    /// year (the "18"/"17" prefix misread) is shifted up by 200 (1675→1875, 1656→1856).
+    /// Years already in or above the plausible band are left untouched.
+    static func correctYear(_ year: Int?) -> Int? {
+        guard let year else { return nil }
+        return year < plausibleYears.lowerBound ? year + 200 : year
     }
 
     /// Maps a full or abbreviated month name to 1–12. Handles `Sept` and common forms.

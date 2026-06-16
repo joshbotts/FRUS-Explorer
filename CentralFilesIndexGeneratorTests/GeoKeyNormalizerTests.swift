@@ -27,8 +27,24 @@ struct GeoKeyNormalizerTests {
     func appliesAliases() {
         #expect(GeoKeyNormalizer.keys(from: "Argentine Republic") == ["argentina"])
         #expect(GeoKeyNormalizer.canonicalize("Argentine Republic") == "argentina")
-        #expect(GeoKeyNormalizer.canonicalize("Persia") == "iran")
-        #expect(GeoKeyNormalizer.canonicalize("Siam") == "thailand")
+        // Historical names are canonical (the app classifies from FRUS chapters).
+        #expect(GeoKeyNormalizer.canonicalize("Persia") == "persia")
+        #expect(GeoKeyNormalizer.canonicalize("Siam") == "siam")
+    }
+
+    @Test("Maps Notes-from demonyms and FRUS chapter spellings to the country key")
+    func mapsDemonymsAndSpellings() {
+        // Notes-from demonyms (parent file-unit titles).
+        #expect(GeoKeyNormalizer.canonicalize("Venezuelan") == "venezuela")
+        #expect(GeoKeyNormalizer.canonicalize("Turkish") == "turkey")
+        #expect(GeoKeyNormalizer.canonicalize("Swiss") == "switzerland")
+        #expect(GeoKeyNormalizer.canonicalize("Ecuadorean") == "ecuador")
+        #expect(GeoKeyNormalizer.canonicalize("Persian") == "persia")
+        // FRUS chapter spellings converge with NARA forms.
+        #expect(GeoKeyNormalizer.canonicalize("Hayti") == "haiti")
+        #expect(GeoKeyNormalizer.canonicalize("Servia") == "serbia")
+        #expect(GeoKeyNormalizer.canonicalize("Corea") == "korea")
+        #expect(GeoKeyNormalizer.canonicalize("Santo Domingo") == "dominican republic")
     }
 
     @Test("Splits conjunction forms")

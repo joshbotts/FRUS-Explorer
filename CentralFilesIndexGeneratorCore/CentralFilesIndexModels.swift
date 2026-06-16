@@ -37,17 +37,118 @@ public struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// The 1906–1910 Numerical File component (Phase 1).
     public var numericalFile: NumericalFileIndex
 
-    /// The current schema version emitted by this generator.
-    public static let currentSchemaVersion = 1
+    /// The country-arranged diplomatic series (Phase 2). Optional so a Phase 1-only index
+    /// still decodes.
+    public var countrySeries: [CountrySeriesIndex]
+
+    /// The current schema version emitted by this generator. Bumped to 2 with Phase 2.
+    public static let currentSchemaVersion = 2
 
     public init(
         schemaVersion: Int = CentralFilesIndex.currentSchemaVersion,
         generated: String,
-        numericalFile: NumericalFileIndex
+        numericalFile: NumericalFileIndex,
+        countrySeries: [CountrySeriesIndex] = []
     ) {
         self.schemaVersion = schemaVersion
         self.generated = generated
         self.numericalFile = numericalFile
+        self.countrySeries = countrySeries
+    }
+}
+
+// MARK: - CountrySeriesIndex
+
+/// One country-arranged diplomatic series, flattened to a single list of rolls regardless
+/// of whether the source hierarchy resolved country at the file-unit or roll-title level.
+///
+/// Version history:
+///   1.0 — Session 2026-06-15: Phase 2
+public struct CountrySeriesIndex: Codable, Sendable, Equatable {
+    /// Category key (e.g. `diplomaticDespatches`).
+    public var category: String
+    /// NARA series NAID.
+    public var seriesNaId: String
+    /// Human-readable series name.
+    public var displayName: String
+    /// All resolution rolls, ascending by `startISO` (nils last).
+    public var rolls: [CountryRoll]
+
+    public init(category: String, seriesNaId: String, displayName: String, rolls: [CountryRoll]) {
+        self.category = category
+        self.seriesNaId = seriesNaId
+        self.displayName = displayName
+        self.rolls = rolls.sorted { ($0.startISO ?? "9999") < ($1.startISO ?? "9999") }
+    }
+}
+
+// MARK: - CountryRoll
+
+/// One page-by-page resolution target in a country-arranged series, with the canonical
+/// country key(s) it serves and its inclusive date range.
+///
+/// Version history:
+///   1.0 — Session 2026-06-15: Phase 2
+public struct CountryRoll: Codable, Sendable, Equatable {
+    /// NARA NAID of the resolution record (item or file unit, per series).
+    public var naId: String
+    /// Title exactly as shown in the catalog.
+    public var title: String
+    /// Canonical country/place keys this roll serves (≥1; combined rolls have several).
+    public var geoKeys: [String]
+    /// Inclusive start date, `yyyy-MM-dd`, when parseable.
+    public var startISO: String?
+    /// Inclusive end date, `yyyy-MM-dd`, when parseable.
+    public var endISO: String?
+    /// Deep link to the NARA Catalog record (page-by-page viewer).
+    public var catalogURL: String
+    /// Parent file-unit NAID, when the roll resolved from an item under a file unit.
+    public var fileUnitNaId: String?
+    /// Parent file-unit title (the country grouping), when present.
+    public var fileUnitTitle: String?
+
+    public init(
+        naId: String, title: String, geoKeys: [String],
+        startISO: String?, endISO: String?, catalogURL: String,
+        fileUnitNaId: String? = nil, fileUnitTitle: String? = nil
+    ) {
+        self.naId = naId
+        self.title = title
+        self.geoKeys = geoKeys
+        self.startISO = startISO
+        self.endISO = endISO
+        self.catalogURL = catalogURL
+        self.fileUnitNaId = fileUnitNaId
+        self.fileUnitTitle = fileUnitTitle
+    }
+
+    /// Returns `true` when `geoKey` is served and `dateISO` falls within the roll's range.
+    ///
+    /// A `nil` query date matches any roll for the country. With a query date, a roll must
+    /// carry at least one date bound — a roll whose title yielded no date at all (garbled
+    /// OCR) is excluded from date-filtered results rather than matching everything.
+    public func matches(geoKey: String, dateISO: String?) -> Bool {
+        guard geoKeys.contains(geoKey) else { return false }
+        guard let dateISO else { return true }
+        guard startISO != nil || endISO != nil else { return false }
+        if let start = startISO, dateISO < start { return false }
+        if let end = endISO, dateISO > end { return false }
+        return true
+    }
+}
+
+public extension CountrySeriesIndex {
+    /// Returns rolls serving `geoKey` that contain `dateISO` (or all for the country when
+    /// `dateISO` is nil), ascending by start date.
+    func rolls(geoKey: String, dateISO: String?) -> [CountryRoll] {
+        rolls.filter { $0.matches(geoKey: geoKey, dateISO: dateISO) }
+    }
+}
+
+public extension CentralFilesIndex {
+    /// Returns the country series for `category`, if present.
+    func series(category: String) -> CountrySeriesIndex? {
+        countrySeries.first { $0.category == category }
     }
 }
 

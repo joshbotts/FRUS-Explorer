@@ -38,14 +38,34 @@ struct HistoricalDateParserTests {
         #expect(d4.endISO == "1905-08-31")
     }
 
-    @Test("Flags a catalog year typo but still parses the range")
-    func flagsYearTypo() throws {
-        // Doc 5: Diplomatic Despatches, Switzerland — NARA title typo "1675" for "1875".
+    @Test("Corrects the dominant 16xx→18xx OCR year error")
+    func correctsOCRYear() throws {
+        // Doc 5: Switzerland — NARA title OCR'd "1675" for "1875"; corrected by +200.
         let d5 = try #require(HistoricalDateParser.parse("July 2, 1675-Dec. 18, 1876"))
-        #expect(d5.startISO == "1675-07-02")
+        #expect(d5.startISO == "1875-07-02")
         #expect(d5.endISO == "1876-12-18")
-        #expect(d5.plausible == false)  // 1675 is outside 1780–1915
-        // A too-wide low bound still contains real 1875/1876 documents, so lookups hold.
+        #expect(d5.plausible)
+        // Other real Switzerland OCR years.
+        #expect(HistoricalDateParser.parse("Jan. 7, 1656-Mar. 10, 1857")?.startISO == "1856-01-07")
+        #expect(HistoricalDateParser.parse("July 2, 1661-Oct. 16, 1865")?.startISO == "1861-07-02")
+        #expect(HistoricalDateParser.correctYear(1695) == 1895)
+        #expect(HistoricalDateParser.correctYear(1881) == 1881)  // already plausible
+    }
+
+    @Test("Shares a year across a day-range roll")
+    func sharesYearAcrossRange() throws {
+        // "Apr. 16-Aug. 23, 1881": start has no year — borrow 1881 from the end.
+        let r = try #require(HistoricalDateParser.parse("Apr. 16-Aug. 23, 1881"))
+        #expect(r.startISO == "1881-04-16")
+        #expect(r.endISO == "1881-08-23")
+    }
+
+    @Test("Parses a month-year side with no day")
+    func parsesMonthYear() throws {
+        // "Dec. 6, 1695-Aug. 1897" → corrected, end has no day (defaults to the 1st).
+        let r = try #require(HistoricalDateParser.parse("Dec. 6, 1695-Aug. 1897"))
+        #expect(r.startISO == "1895-12-06")
+        #expect(r.endISO == "1897-08-01")
     }
 
     @Test("Parses a single date and a bare year")

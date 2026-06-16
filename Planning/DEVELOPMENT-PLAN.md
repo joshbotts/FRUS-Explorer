@@ -665,3 +665,41 @@ parsers until real diplomatic titles are seen.
   golden checks (Docs 1–5); then the app-side `CentralFilesClassifier` + Source Explorer
   integration for pre-1906 documents (which have no source note — needs header/dateline/
   chapter plumbed into the panel).
+
+### Session 2026-06-15 (cont.) — Phase 2 harvest complete: country-arranged diplomatic series
+Surveys run; the 4 series' real structures matched the findings (Despatches/Notes-from =
+item rolls under country file units; Instructions/Notes-to = fileUnit rolls with country in
+the title). Built the full Phase 2 harvest; **all 5 country golden checks pass** with tight
+result sets, plus both Phase 1 checks. Index now ships 1,261 numerical + 2,963 country
+rolls (1.5 MB, schemaVersion 2).
+- **`CountrySeriesParser`** — per-series geo + date extraction: Despatches/Notes-from take
+  country from the parent file-unit title (`…Ministers to {Country}, …` incl. `Diplomatic
+  Officers, {Country}`; Notes-from demonyms `the {Demonym} Legation` / `Legation of
+  {Country}` / `Central American Legations` / `Foreign Missions, {Country}`, `T## -` prefix
+  stripped, Miscellaneous → no geo); Instructions/Notes-to parse `Volume {n}: {Country}:
+  {dates}` / `{Country[ and …]}: {dates}` from their own title. Resolution level differs
+  per series (item vs fileUnit).
+- **`GeoKeyNormalizer`** — comprehensive alias table built from the full harvested
+  vocabulary (all Notes-from demonyms + FRUS chapter spellings). **Canonical keys are the
+  historical FRUS names** (Persia not Iran, Siam not Thailand) so the app's chapter-derived
+  key matches.
+- **`HistoricalDateParser`** — rewritten component-based; handles the pervasive catalog OCR
+  errors: **`16xx`→`18xx` year correction (+200)** (1675→1875, 1656→1856, …) and
+  **year-sharing** for day-range rolls (`Apr. 16-Aug. 23, 1881`). This collapsed e.g.
+  Switzerland 1875-09-28 from 8 noisy matches to the 1 correct roll. `CountryRoll.matches`
+  excludes dateless (garbled) rolls from date-filtered queries.
+- Flattened `countrySeries` index model (`CountrySeriesIndex`/`CountryRoll`,
+  `rolls(geoKey:dateISO:)`); builder with per-series survey diagnostics; runner enumerates
+  all 4 series and validates the country golden checks. 51 generator tests pass; the app
+  still decodes the upgraded bundled index (extra keys ignored).
+- **Known residue (acceptable)**: ~73/2160 Despatches rolls have un-parseable dates
+  (heavy OCR like `1S45`, `No Title`) — still country-discoverable; Instructions/Notes-to
+  no-geo cases are the legit early country-less chronological volumes; Notes-from misc
+  alphabetical rolls (`Rumania-Zanzibar`) carry no single country. A date query may return
+  2 overlapping rolls (e.g. Japan) — fine as candidate links.
+- **Next (app integration, the remaining Phase 2 work)**: add `countrySeries` to the
+  app-side `CentralFilesIndex` model; build `CentralFilesClassifier` (dateline/heading +
+  FRUS chapter → category + geoKey, per the Finding-5 rules); plumb document header/
+  dateline/chapter into Source Explorer (pre-1906 docs have **no source note**, so the
+  current `.centralFiles`-only trigger doesn't fire); render resolved roll links +
+  confidence + the enclosure dual-home case (Finding 4).
