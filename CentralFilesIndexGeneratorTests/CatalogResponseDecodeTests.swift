@@ -48,6 +48,26 @@ struct CatalogResponseDecodeTests {
         #expect(page.nextCursor == "abc123")
     }
 
+    @Test("Extracts the record group number from the recordGroup-level ancestor")
+    func decodesRecordGroup() throws {
+        let json = """
+        { "statusCode": 200, "body": { "hits": { "hits": [
+          { "_source": { "record": {
+              "naId": 602231, "title": "The Secretary's Memorandums of Conversation",
+              "levelOfDescription": "series",
+              "ancestors": [
+                { "naId": 10, "levelOfDescription": "recordGroup", "recordGroupNumber": 59,
+                  "title": "General Records of the Department of State", "distance": 1 }
+              ] } }, "sort": [1] }
+        ] } } }
+        """
+        let page = try NARACatalogHarvestClient.decodePage(Data(json.utf8))
+        #expect(page.records.first?.recordGroupNumber == "59")
+        // A record with no recordGroup ancestor exposes nil (trusted by the lot verifier).
+        let plain = try NARACatalogHarvestClient.decodePage(Data(pageJSON.utf8))
+        #expect(plain.records.first?.recordGroupNumber == nil)
+    }
+
     @Test("Empty hits list yields no records and no cursor (end of pagination)")
     func decodesEmptyPage() throws {
         let json = #"{ "statusCode": 200, "body": { "hits": { "hits": [] } } }"#

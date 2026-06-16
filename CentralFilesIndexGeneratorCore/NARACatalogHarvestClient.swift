@@ -29,19 +29,25 @@ public struct CatalogRecord: Sendable, Equatable {
     public let parentFileUnitNaId: String?
     /// Title of the immediate parent file unit, when present.
     public let parentFileUnitTitle: String?
+    /// The record's own record group number (from its `recordGroup`-level ancestor), used
+    /// to verify a lot-file match really belongs to RG 59/84 rather than a coincidental
+    /// free-text hit in another record group (census, military, court records).
+    public let recordGroupNumber: String?
 
     public init(
         naId: String,
         title: String,
         levelOfDescription: String? = nil,
         parentFileUnitNaId: String? = nil,
-        parentFileUnitTitle: String? = nil
+        parentFileUnitTitle: String? = nil,
+        recordGroupNumber: String? = nil
     ) {
         self.naId = naId
         self.title = title
         self.levelOfDescription = levelOfDescription
         self.parentFileUnitNaId = parentFileUnitNaId
         self.parentFileUnitTitle = parentFileUnitTitle
+        self.recordGroupNumber = recordGroupNumber
     }
 }
 
@@ -223,9 +229,19 @@ public actor NARACatalogHarvestClient {
                 return CatalogRecord(naId: cached.naId, title: cached.title)
             }
         }
+        // Accept a candidate only when its own record group matches the expected one — the
+        // catalog's RG query filter does not constrain free-text results, so a phrase hit
+        // can land on a census/military/court record in another RG. A nil RG (not exposed)
+        // is trusted (real lot-file series carry the RG ancestor).
+        func accepted(_ record: CatalogRecord?) -> CatalogRecord? {
+            guard let record else { return nil }
+            if let rg = record.recordGroupNumber, rg != recordGroup { return nil }
+            return record
+        }
+
         // 1. Exact match on NARA's indexed control number, across spellings.
         for form in Self.lotVariants(normalized) {
-            if let record = try await searchVariant(form, recordGroup: recordGroup) {
+            if let record = accepted(try await searchVariant(form, recordGroup: recordGroup)) {
                 writeLotCache(LotResolution(naId: record.naId, title: record.title),
                               normalized: normalized, recordGroup: recordGroup)
                 return record
@@ -234,7 +250,7 @@ public actor NARACatalogHarvestClient {
         // 2. Free-text phrase fallback (mirrors the app's runtime safety net): the bare,
         //    quoted lot number — compact then spaced — within the record group.
         for phrase in Self.lotVariants(normalized).prefix(2) {  // compact, spaced
-            if let record = try await searchLotPhrase(phrase, recordGroup: recordGroup) {
+            if let record = accepted(try await searchLotPhrase(phrase, recordGroup: recordGroup)) {
                 writeLotCache(LotResolution(naId: record.naId, title: record.title),
                               normalized: normalized, recordGroup: recordGroup)
                 return record
@@ -395,12 +411,17 @@ public actor NARACatalogHarvestClient {
             let parent = record.ancestors?.first {
                 $0.distance == 1 && $0.levelOfDescription == "fileUnit"
             }
+            // The record's record group: the recordGroup-level ancestor's number.
+            let rg = record.ancestors?.first {
+                $0.levelOfDescription == "recordGroup"
+            }?.recordGroupNumber?.stringValue
             return CatalogRecord(
                 naId: naId,
                 title: title,
                 levelOfDescription: record.levelOfDescription,
                 parentFileUnitNaId: parent?.naId?.stringValue,
-                parentFileUnitTitle: parent?.title)
+                parentFileUnitTitle: parent?.title,
+                recordGroupNumber: rg)
         }
         let nextCursor = hits.last?.sort?.first?.stringValue
         return DecodedPage(records: records, nextCursor: nextCursor)
@@ -429,6 +450,7 @@ public actor NARACatalogHarvestClient {
             let title: String?
             let distance: Int?
             let levelOfDescription: String?
+            let recordGroupNumber: CatalogScalar?
         }
     }
 }
