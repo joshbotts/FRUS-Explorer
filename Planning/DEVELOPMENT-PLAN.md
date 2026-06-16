@@ -583,3 +583,30 @@ New SPM command-line tool (sibling of ManifestGenerator/TaxonomyGenerator), Core
   Tool is self-validating against the golden traces, so a bad parse/missing roll fails
   loudly. App-side consumption of the index is a later phase. **Open**: confirm the v2
   `limit` max page size from the first run's cached pages (try PAGE_SIZE=100).
+
+### Session 2026-06-15 (cont.) — Phase 1 harvest run; parser hardened against real M862 titles
+User ran the harvest (rate limit granted); 1,286 records over 52 pages, cached to disk.
+The first run exposed that the clean `N-N` title is only ~55% of rolls, and a naive parse
+produced bogus cross-case ranges (golden checks failed). Iterated the parser **against the
+cached pages** (zero further API calls) until both golden checks pass:
+- Real title forms now handled: single-case (`22346`), sub-document boundaries
+  (`21701-21740/125`, `…/126-End of case`), roll-split `(R)`/`(S)` markers, en-dashes
+  corrupted to **U+FFFD**/underscore, and stray-leading-dash space ranges (`-25101 25240`).
+- **Sub-document hyphen disambiguation** (the key bug): in `18036/9-11Exhibit GG-End of
+  Case` the first hyphen separates sub-documents, not cases — an end integer **below** the
+  start case is a sub-document, so the roll is a single case (prevents bogus wide ranges
+  like (11,18036) that were swallowing the golden cases). Cases run strictly ascending.
+- Require a leading digit after `Numerical File:` → rejects annex/reference records
+  (`Annex to 760928`, `Annexes to case 426`). Pure-space ranges only when the start token
+  is a bare case (`15779 15820` ✓ vs `552/201 42006` → single case 552).
+- Added `rolls(containingCaseNumber:)` (plural): a case is routinely split across 2–3
+  rolls, so the app should surface all of them as page targets.
+- **Result**: 1,261/1,286 parsed (98%); the 25 unmatched are all correctly non-case
+  records (6 name/place rolls, ~14 annex/enclosure supplements, 5 individually-described
+  documents). **Both golden checks pass.** 43 small coverage gaps + 417 overlaps are
+  mostly legitimate case-splitting/boundary-sharing. One harmless outlier roll (case
+  42273). Generated `FRUSExplorer/Resources/central-files-index.json` (272 KB) committed.
+- **Page size**: harvested fine at the default 25. PAGE_SIZE=100 still untried (would cut
+  enumeration ~4×) — non-blocking.
+- **Next**: wire the index into the Source Explorer `centralFilesPanel` (1906–1910 "File
+  No." → roll link(s) + Card Index M1889 fallback for gaps); then Phase 2.

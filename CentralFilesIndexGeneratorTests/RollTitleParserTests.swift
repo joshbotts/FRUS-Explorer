@@ -37,11 +37,12 @@ struct RollTitleParserTests {
         #expect(cased == (5275, 5300))
     }
 
-    @Test("Normalises reversed ranges so start <= end")
-    func normalisesReversedRange() throws {
+    @Test("An end value below the start case is a sub-document, yielding a single case")
+    func endBelowStartIsSingleCase() throws {
+        // Cases run strictly ascending, so an apparent "reverse range" is really a
+        // sub-document number within the start case (e.g. 7179 < 7187).
         let r = try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 7187-7179"))
-        #expect(r.start == 7179)
-        #expect(r.end == 7187)
+        #expect(r == (7187, 7187))
     }
 
     @Test("Rejects non-roll titles (series, file units, finding aids)")
@@ -99,5 +100,30 @@ struct RollTitleParserTests {
         #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: -25101 25240")) == (25101, 25240))
         #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: -23046 23120")) == (23046, 23120))
         #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: -19132 19153")) == (19132, 19153))
+    }
+
+    @Test("Sub-document hyphen does not create a bogus cross-case range")
+    func subDocumentHyphenNotARange() throws {
+        // The first hyphen separates sub-documents within one case; end < start case.
+        // Real harvest titles that previously produced bogus wide ranges.
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 18036/9-11Exhibit GG-End of Case")) == (18036, 18036))
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 18036/9-11 – Exhibit FFFFF")) == (18036, 18036))
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 16111/26-28")) == (16111, 16111))
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 16111/29-30(Annex)")) == (16111, 16111))
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 14319/51-14319/120")) == (14319, 14319))
+    }
+
+    @Test("Genuine cross-case ranges where the start side has a sub-document still parse")
+    func crossCaseRangeWithSubDocStart() throws {
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 14319/121-14330")) == (14319, 14330))
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 34/40-39/175")) == (34, 39))
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 40/795-47")) == (40, 47))
+        #expect(try #require(RollTitleParser.numericalFileCaseRange(from: "Numerical File: 1-27/200")) == (1, 27))
+    }
+
+    @Test("Rejects annex/reference records whose digits are not a leading case number")
+    func rejectsAnnexRecords() {
+        // "760928" is a referenced document, not a case; the body does not start with it.
+        #expect(RollTitleParser.numericalFileCaseRange(from: "Numerical File: Annex to 760928") == nil)
     }
 }

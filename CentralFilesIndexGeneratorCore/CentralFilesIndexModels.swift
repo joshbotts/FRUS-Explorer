@@ -123,13 +123,23 @@ public struct NumericalFileRoll: Codable, Sendable, Equatable {
 
 public extension NumericalFileIndex {
 
-    /// Returns the roll whose case-number range contains `caseNumber`, or `nil`.
+    /// Returns the first roll whose case-number range contains `caseNumber`, or `nil`.
     ///
-    /// Case ranges are expected to be contiguous and non-overlapping; if ranges do
-    /// overlap, the roll with the lowest `caseStart` that contains the number wins
-    /// (rolls are sorted ascending). `nil` means the number falls in a coverage gap.
+    /// A single case is frequently split across two or three consecutive rolls (when its
+    /// sub-documents overflow a roll), so ranges legitimately share boundary cases. This
+    /// returns the lowest-`caseStart` roll containing the number; use
+    /// `rolls(containingCaseNumber:)` to get every roll holding the case. `nil` means the
+    /// number falls in a coverage gap.
     func roll(forCaseNumber caseNumber: Int) -> NumericalFileRoll? {
         rolls.first { $0.contains(caseNumber: caseNumber) }
+    }
+
+    /// Returns every roll whose case-number range contains `caseNumber`, ascending.
+    ///
+    /// Because a case's documents can span multiple rolls, the app should surface all of
+    /// these as page-by-page targets rather than only the first.
+    func rolls(containingCaseNumber caseNumber: Int) -> [NumericalFileRoll] {
+        rolls.filter { $0.contains(caseNumber: caseNumber) }
     }
 
     /// Returns the roll for a FRUS-style "File No." string, parsing the leading integer

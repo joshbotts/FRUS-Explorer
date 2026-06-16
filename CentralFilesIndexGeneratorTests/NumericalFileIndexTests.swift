@@ -64,6 +64,28 @@ struct NumericalFileIndexTests {
         #expect(index.roll(forFileNumber: "700/12") == nil)
     }
 
+    @Test("Returns all rolls containing a case split across rolls")
+    func returnsAllRollsForSplitCase() {
+        // Case 14319 is split: sub-docs 51–120 on one roll, 121+ on the next.
+        let index = NumericalFileIndex(
+            seriesNaId: "654171", microfilm: "M862",
+            rolls: [
+                NumericalFileRoll(naId: "r1", title: "Numerical File: 14319/51-14319/120",
+                                  caseStart: 14319, caseEnd: 14319, catalogURL: ""),
+                NumericalFileRoll(naId: "r2", title: "Numerical File: 14319/121-14330",
+                                  caseStart: 14319, caseEnd: 14330, catalogURL: ""),
+                NumericalFileRoll(naId: "r3", title: "Numerical File: 14331-14400",
+                                  caseStart: 14331, caseEnd: 14400, catalogURL: ""),
+            ])
+        let matches = index.rolls(containingCaseNumber: 14319)
+        #expect(matches.map(\.naId) == ["r1", "r2"])
+        // The singular accessor returns the first (lowest caseStart) match.
+        #expect(index.roll(forCaseNumber: 14319)?.naId == "r1")
+        // 14325 is only on r2 (14319–14330); 14350 is only on r3 (14331–14400).
+        #expect(index.rolls(containingCaseNumber: 14325).map(\.naId) == ["r2"])
+        #expect(index.rolls(containingCaseNumber: 14350).map(\.naId) == ["r3"])
+    }
+
     @Test("Init sorts rolls ascending by caseStart even when given out of order")
     func initSortsRolls() {
         let index = NumericalFileIndex(
