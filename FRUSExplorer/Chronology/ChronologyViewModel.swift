@@ -66,9 +66,23 @@ final class ChronologyViewModel {
 
     // MARK: - Output
 
-    /// Loaded, date-bucketed sections in display order.
+    /// Loaded, date-bucketed sections in display order. Contains only **placed**
+    /// documents (those whose date interval is narrow enough to sit on a day/period).
     var groups: [ChronologyDateGroup] = []
-    /// Total documents currently shown across all sections.
+
+    /// Documents whose date interval is too wide to place on a specific day — chiefly
+    /// editorial notes that FRUS stamps with the whole span of dates they discuss
+    /// (often years). Surfaced in a separate "spans this period" section rather than
+    /// smeared across the day-level list and chart. Sorted by start date.
+    var spanningRows: [ChronologyRow] = []
+
+    /// Per-bucket, per-volume counts backing the distribution chart (placed docs only).
+    var chartBuckets: [ChronologyChartBucket] = []
+
+    /// Chart legend series (coloured volumes + an optional folded "Other"), largest first.
+    var chartSeries: [ChronologyChartSeries] = []
+
+    /// Total **placed** documents currently shown across all sections.
     var totalShown: Int = 0
     /// `true` once a load has completed (drives the prompt vs results state).
     var hasLoaded: Bool = false
@@ -89,6 +103,16 @@ final class ChronologyViewModel {
     /// Days above which day-grouping coarsens to month, and (×8) to year.
     nonisolated static let dayGroupingMaxDays = 366
     nonisolated static let monthGroupingMaxDays = 366 * 8
+
+    /// A document whose interval spans more than this many days is treated as
+    /// "spanning" (not placed on a day) — set just above a year so genuine multi-day
+    /// meetings and year-only documents stay in the list while multi-year editorial
+    /// notes are separated out.
+    nonisolated static let maxSpanDaysForPlacement = 366
+
+    /// Maximum distinct chart series (coloured volumes). Beyond this the smallest
+    /// volumes fold into a single "Other" series so the legend and palette stay legible.
+    nonisolated static let maxChartSeries = 8
 
     // MARK: - Init
 
@@ -123,12 +147,27 @@ final class ChronologyViewModel {
                 limit: Self.loadLimit
             )
             isCapped = rows.count >= Self.loadLimit
-            totalShown = rows.count
-            groups = Self.group(rows, viewBucket: Self.bucket(forDaysBetween: startDay, and: endDay, calendar: cal), ascending: ascending)
+
+            // Separate wide-span documents (multi-year editorial notes) from the
+            // day-placeable set before grouping, so they neither pollute the date
+            // sections nor the distribution chart.
+            let (placed, spanning) = Self.partition(rows)
+            totalShown = placed.count
+            spanningRows = spanning.sorted { $0.dateISO < $1.dateISO }
+
+            let viewBucket = Self.bucket(forDaysBetween: startDay, and: endDay, calendar: cal)
+            groups = Self.group(placed, viewBucket: viewBucket, ascending: ascending)
+
+            let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
+            chartBuckets = chart.buckets
+            chartSeries = chart.series
             hasLoaded = true
         } catch {
             errorMessage = error.localizedDescription
             groups = []
+            spanningRows = []
+            chartBuckets = []
+            chartSeries = []
             totalShown = 0
             hasLoaded = true
         }
@@ -168,6 +207,76 @@ final class ChronologyViewModel {
             )
         }
         return groups.sorted { ascending ? $0.sortDate < $1.sortDate : $0.sortDate > $1.sortDate }
+    }
+
+    /// Splits loaded rows into day-placeable documents and wide-span ("spanning")
+    /// documents using `maxSpanDaysForPlacement`.
+    nonisolated static func partition(
+        _ rows: [ChronologyRow]
+    ) -> (placed: [ChronologyRow], spanning: [ChronologyRow]) {
+        var placed: [ChronologyRow] = []
+        var spanning: [ChronologyRow] = []
+        for row in rows {
+            if row.spanDays > maxSpanDaysForPlacement {
+                spanning.append(row)
+            } else {
+                placed.append(row)
+            }
+        }
+        return (placed, spanning)
+    }
+
+    /// Builds the stacked-distribution chart data from the placed date groups: one bucket
+    /// per group, segmented by volume. When more than `maxSeries` distinct volumes appear,
+    /// the smallest fold into a single `chronologyOtherSeriesKey` series so the legend
+    /// stays legible. Series are returned largest-first for stable colour assignment.
+    nonisolated static func makeChart(
+        from groups: [ChronologyDateGroup],
+        maxSeries: Int
+    ) -> (buckets: [ChronologyChartBucket], series: [ChronologyChartSeries]) {
+        var volumeTotals: [String: Int] = [:]
+        for group in groups {
+            for row in group.rows { volumeTotals[row.volumeId, default: 0] += 1 }
+        }
+        guard !volumeTotals.isEmpty else { return ([], []) }
+
+        // Largest volume first; ties broken by ID for determinism.
+        let ranked = volumeTotals.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+        let topKeys: Set<String>
+        let usesOther: Bool
+        if ranked.count <= maxSeries {
+            topKeys = Set(ranked.map(\.key))
+            usesOther = false
+        } else {
+            topKeys = Set(ranked.prefix(maxSeries - 1).map(\.key))
+            usesOther = true
+        }
+        func seriesKey(for volumeId: String) -> String {
+            topKeys.contains(volumeId) ? volumeId : chronologyOtherSeriesKey
+        }
+
+        let buckets: [ChronologyChartBucket] = groups.map { group in
+            var counts: [String: Int] = [:]
+            for row in group.rows { counts[seriesKey(for: row.volumeId), default: 0] += 1 }
+            let segments = counts
+                .map { ChronologyChartSegment(seriesKey: $0.key, count: $0.value) }
+                .sorted { $0.seriesKey < $1.seriesKey }
+            return ChronologyChartBucket(
+                bucketKey: group.bucketKey,
+                label: group.displayLabel,
+                date: group.sortDate,
+                segments: segments
+            )
+        }
+
+        var series = ranked
+            .filter { topKeys.contains($0.key) }
+            .map { ChronologyChartSeries(key: $0.key, total: $0.value) }
+        if usesOther {
+            let otherTotal = ranked.filter { !topKeys.contains($0.key) }.reduce(0) { $0 + $1.value }
+            series.append(ChronologyChartSeries(key: chronologyOtherSeriesKey, total: otherTotal))
+        }
+        return (buckets, series)
     }
 
     /// The coarser (fewer-component) of two buckets.
