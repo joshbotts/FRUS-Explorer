@@ -238,14 +238,14 @@ public actor NARACatalogHarvestClient {
                                    matchType: cached.matchType ?? "control")
             }
         }
-        // Accept a candidate only when its own record group matches the expected one — the
-        // catalog's RG query filter does not constrain free-text results, so a phrase hit
-        // can land on a census/military/court record in another RG. A nil RG (not exposed)
-        // is trusted (real lot-file series carry the RG ancestor).
-        func accepted(_ record: CatalogRecord?) -> CatalogRecord? {
-            guard let record else { return nil }
-            if let rg = record.recordGroupNumber, rg != recordGroup { return nil }
-            return record
+        // Pick the first result whose own record group matches the expected one. NARA's
+        // RG query filter does not constrain free-text results, and the top hit for a lot
+        // string is often a giant wrong-RG series (census/military/court) — so we scan the
+        // page and take the first RG-59/84 record, not blindly the #1 result. A result with
+        // no exposed RG is trusted only as a last resort.
+        func firstAccepted(_ results: [CatalogRecord]) -> CatalogRecord? {
+            results.first { $0.recordGroupNumber == recordGroup }
+                ?? results.first { $0.recordGroupNumber == nil }
         }
         func cache(_ record: CatalogRecord, _ matchType: String) -> ResolvedLot {
             writeLotCache(LotResolution(naId: record.naId, title: record.title, matchType: matchType),
@@ -255,14 +255,14 @@ public actor NARACatalogHarvestClient {
 
         // 1. Exact match on NARA's indexed control number, across spellings.
         for form in Self.lotVariants(normalized) {
-            if let record = accepted(try await searchVariant(form, recordGroup: recordGroup)) {
+            if let record = firstAccepted(try await searchVariant(form, recordGroup: recordGroup)) {
                 return cache(record, "control")
             }
         }
         // 2. Free-text phrase fallback (mirrors the app's runtime safety net): the bare,
         //    quoted lot number — compact then spaced — within the record group.
         for phrase in Self.lotVariants(normalized).prefix(2) {  // compact, spaced
-            if let record = accepted(try await searchLotPhrase(phrase, recordGroup: recordGroup)) {
+            if let record = firstAccepted(try await searchLotPhrase(phrase, recordGroup: recordGroup)) {
                 return cache(record, "phrase")
             }
         }
@@ -288,25 +288,29 @@ public actor NARACatalogHarvestClient {
                 "\(digits1) \(letter)\(digits2)"]
     }
 
-    private func searchVariant(_ form: String, recordGroup: String) async throws -> CatalogRecord? {
+    /// Rows fetched per lot query — enough to scan past wrong-RG free-text hits to the
+    /// genuine RG-59/84 record (the caller selects the first record-group match).
+    private static let lotSearchRows = "20"
+
+    private func searchVariant(_ form: String, recordGroup: String) async throws -> [CatalogRecord] {
         try await search(queryItems: [
             URLQueryItem(name: "variantControlNumber_is",       value: form),
             URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
             URLQueryItem(name: "resultType",                    value: "description"),
-            URLQueryItem(name: "rows",                          value: "1"),
-        ]).first
+            URLQueryItem(name: "rows",                          value: Self.lotSearchRows),
+        ])
     }
 
     /// Free-text phrase fallback: searches the bare quoted lot number (`"63 D 135"`)
     /// within the record group — the app's runtime safety net for lots not indexed under a
     /// control number.
-    private func searchLotPhrase(_ form: String, recordGroup: String) async throws -> CatalogRecord? {
+    private func searchLotPhrase(_ form: String, recordGroup: String) async throws -> [CatalogRecord] {
         try await search(queryItems: [
             URLQueryItem(name: "q",                             value: "\"\(form)\""),
             URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
             URLQueryItem(name: "resultType",                    value: "description"),
-            URLQueryItem(name: "rows",                          value: "1"),
-        ]).first
+            URLQueryItem(name: "rows",                          value: Self.lotSearchRows),
+        ])
     }
 
     /// Runs a v2 search with retry-and-backoff on transient 503/429 responses.
@@ -337,8 +341,9 @@ public actor NARACatalogHarvestClient {
                 return try Self.decodePage(data).records
             }
             lastStatus = http.statusCode
-            // Retry transient server/throttle errors with exponential backoff.
-            guard http.statusCode == 503 || http.statusCode == 429, attempt < maxAttempts - 1 else {
+            // Retry transient gateway/throttle errors with exponential backoff.
+            let transient: Set<Int> = [429, 502, 503, 504]
+            guard transient.contains(http.statusCode), attempt < maxAttempts - 1 else {
                 throw NARACatalogHarvestError.badHTTPStatus(http.statusCode)
             }
             let backoffMs = UInt64(500 * (1 << attempt))  // 0.5s, 1s, 2s
