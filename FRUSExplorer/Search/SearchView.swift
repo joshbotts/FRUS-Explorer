@@ -102,8 +102,15 @@ struct SearchView: View {
                 #endif
                 // System search bar — integrates with the navigation bar on iOS
                 // and the toolbar area on macOS (inspector context).
+                // `.navigationBarDrawer(.always)` pins the search field in its own
+                // row beneath the nav bar on iOS, so it never expands into the bar
+                // and suppresses the trailing `.primaryAction` toolbar items
+                // (filters, timeline, the Save/Saved/Citation overflow menu) on the
+                // compact-width results screen. With the default placement + inline
+                // title those buttons were unreachable on iPhone (Session 162).
                 .searchable(
                     text: $vm.keywords,
+                    placement: searchFieldPlacement,
                     prompt: String(localized: "search.keywords.placeholder",
                                    defaultValue: "Keywords…")
                 )
@@ -119,6 +126,13 @@ struct SearchView: View {
                         vm.hasSearched = false
                         vm.searchError = nil
                     }
+                }
+                // Active volume scope (e.g. the post-indexing "Search this volume"
+                // handoff) is surfaced as a dismissible banner pinned above the
+                // results. `.safeAreaInset` reserves no height when no scope is
+                // active because `volumeScopeBanner` resolves to `EmptyView`.
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    volumeScopeBanner
                 }
                 .toolbar {
                     #if !os(iOS)
@@ -248,11 +262,19 @@ struct SearchView: View {
         .frame(minWidth: 680, minHeight: 520)
         #endif
         .task {
+            vm.appState = appState
+            vm.loadAvailableUserTags(context: modelContext)
+            // Load the volume/subseries picker options before applying any incoming
+            // parameters so `applyParameters` can reconstruct the subseries selection
+            // from a flat `volumeIds` scope (see `SearchViewModel.reconstructScope`).
+            vm.loadAvailableVolumes(
+                allEntries: appState.manifestStore.diffResult?.known
+                    ?? appState.manifestStore.bundledEntries,
+                indexedIds: appState.indexedVolumeIds
+            )
             if let params = initialParameters {
                 vm.applyParameters(params)
             }
-            vm.appState = appState
-            vm.loadAvailableUserTags(context: modelContext)
             if let pid = appState.activeProjectId {
                 let descriptor = FetchDescriptor<Project>(
                     predicate: #Predicate { $0.id == pid }
@@ -260,6 +282,117 @@ struct SearchView: View {
                 let project = try? modelContext.fetch(descriptor).first
                 vm.applyProjectDefaults(project)
             }
+            // Consume a handoff that was already pending when this tab first
+            // appeared (e.g. the user opened Analytics, tapped "open matching
+            // documents", and the Search tab is being created for the first time).
+            consumePendingSearch()
+        }
+        // Consume handoffs that arrive while the Search tab is already alive —
+        // `AppState.pendingSearch` is set by Corpus Analytics, "Find all mentions",
+        // and the indexing banners, which also switch `activeTab` to `.search`.
+        // Before Session 162 nothing on iOS read `pendingSearch`, so every one of
+        // those handoffs silently did nothing.
+        .onChange(of: appState.pendingSearch) { _, params in
+            if params != nil { consumePendingSearch() }
+        }
+    }
+
+    /// Placement for the `.searchable` field — a pinned drawer on iOS so the
+    /// nav-bar toolbar stays reachable (see the `.searchable` call site), and the
+    /// system default on macOS where the field lives in the inspector toolbar.
+    private var searchFieldPlacement: SearchFieldPlacement {
+        #if os(iOS)
+        .navigationBarDrawer(displayMode: .always)
+        #else
+        .automatic
+        #endif
+    }
+
+    /// Applies and runs a `pendingSearch` handoff, then clears it so it fires once.
+    ///
+    /// Runs the search immediately when the parameters carry a positive
+    /// constraint (keywords/phrase/prefix, or a person filter) so the user lands
+    /// on results rather than a pre-filled-but-unexecuted form. A volume-only
+    /// snapshot ("Search this volume") has no executable FTS term, so it just
+    /// applies the volume scope — surfaced as the dismissible `volumeScopeBanner`
+    /// — and waits for the user to type a query that will be scoped to it.
+    private func consumePendingSearch() {
+        guard let params = appState.pendingSearch else { return }
+        appState.pendingSearch = nil
+        vm.applyParameters(params)
+        let canRun = !(params.keywords ?? "").isEmpty
+            || !(params.phrase ?? "").isEmpty
+            || !(params.prefixWildcard ?? "").isEmpty
+            || !(params.personRef ?? "").isEmpty
+        if canRun {
+            Task { await vm.search() }
+        }
+    }
+
+    // MARK: - Volume Scope Banner
+
+    /// A dismissible banner pinned above the results whenever the search is
+    /// scoped to one or more volumes. Lets the user see the active scope (the
+    /// volume's title) and clear it. Resolves to `EmptyView` when no scope is
+    /// active so the enclosing `.safeAreaInset` reserves no height.
+    @ViewBuilder
+    private var volumeScopeBanner: some View {
+        if !vm.effectiveVolumeIds.isEmpty {
+            HStack(spacing: 8) {
+                Image(systemName: "books.vertical.fill")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(volumeScopeLabel)
+                    .font(.footnote)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 8)
+                Button {
+                    clearVolumeScope()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "search.volumeScope.clear.a11y",
+                                           defaultValue: "Clear volume filter"))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+            .overlay(alignment: .bottom) { Divider() }
+        }
+    }
+
+    /// Human-readable label for the active volume scope — the volume's title
+    /// (resolved from the manifest) when the effective scope is a single volume,
+    /// otherwise a count of the effective volumes (the union of the individually
+    /// selected volumes and every volume in the selected subseries). Falls back to
+    /// the raw volume ID if the manifest lacks an entry.
+    private var volumeScopeLabel: String {
+        let ids = vm.effectiveVolumeIds
+        if ids.count == 1 {
+            let title = appState.manifestStore.entry(forVolumeId: ids[0])?.title ?? ids[0]
+            return String(format: String(localized: "search.volumeScope.single %@",
+                                          defaultValue: "Scoped to %@"), title)
+        } else {
+            return String(format: String(localized: "search.volumeScope.multiple %lld",
+                                          defaultValue: "Scoped to %lld volumes"),
+                          Int64(ids.count))
+        }
+    }
+
+    /// Clears the active volume scope (both the individual-volume and subseries
+    /// selections) and re-runs the current query (if one is active) so the results
+    /// immediately widen to the full corpus.
+    private func clearVolumeScope() {
+        vm.selectedVolumeIds = []
+        vm.selectedSubseriesIds = []
+        let hasQuery = !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty
+            || !vm.personRefText.trimmingCharacters(in: .whitespaces).isEmpty
+        if vm.hasSearched && hasQuery {
+            Task { await vm.search() }
         }
     }
 
@@ -306,15 +439,21 @@ struct SearchView: View {
                 resultsList
             }
         } else {
-            // Initial prompt — no search has been performed yet.
+            // Initial prompt — no search has been performed yet. When a volume
+            // scope is active (e.g. just arrived via "Search this volume"), the
+            // prompt reflects that the next query will be scoped to that volume.
             VStack(spacing: 8) {
                 Image(systemName: "doc.text.magnifyingglass")
                     .font(.system(size: 48))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
-                Text(String(localized: "search.prompt",
-                            defaultValue: "Enter keywords to search the FRUS corpus."))
+                Text(vm.effectiveVolumeIds.isEmpty
+                     ? String(localized: "search.prompt",
+                              defaultValue: "Enter keywords to search the FRUS corpus.")
+                     : String(localized: "search.prompt.scoped",
+                              defaultValue: "Enter keywords to search within the selected volumes."))
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

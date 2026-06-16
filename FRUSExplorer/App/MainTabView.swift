@@ -185,10 +185,27 @@ struct BrowserTabView: View {
     @Environment(AppState.self) private var appState
     @State private var showAnalytics = false
     @State private var analyticsParameters: AnalyticsParameters? = nil
+    @State private var showChronology = false
+    @State private var chronologyParameters: ChronologyParameters? = nil
 
     var body: some View {
         BrowserView()
             .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        chronologyParameters = nil
+                        showChronology = true
+                    } label: {
+                        Image(systemName: "calendar.day.timeline.left")
+                    }
+                    .controlHelp(
+                        String(localized: "browse.chronology.a11y",
+                               defaultValue: "Chronology"),
+                        detail: String(localized: "browse.chronology.help",
+                                       defaultValue: "Browse every corpus document within a date range"),
+                        systemImage: "calendar.day.timeline.left"
+                    )
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         analyticsParameters = nil
@@ -209,6 +226,10 @@ struct BrowserTabView: View {
                 AnalyticsView(initialParameters: analyticsParameters)
                     .environment(appState)
             }
+            .sheet(isPresented: $showChronology) {
+                ChronologyView(initialParameters: chronologyParameters)
+                    .environment(appState)
+            }
             // Search → Analytics handoff: a capped search offered to "Visualize
             // in Corpus Analytics". Captured into local state before presenting —
             // `AnalyticsView` reads it once at init (a fresh sheet instance is
@@ -219,6 +240,13 @@ struct BrowserTabView: View {
                 analyticsParameters = params
                 appState.pendingAnalytics = nil
                 showAnalytics = true
+            }
+            // Cross-view → Chronology handoff, mirroring the Analytics block above.
+            .onChange(of: appState.pendingChronology) { _, params in
+                guard let params else { return }
+                chronologyParameters = params
+                appState.pendingChronology = nil
+                showChronology = true
             }
     }
 }

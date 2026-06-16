@@ -26,8 +26,9 @@ enum AnalyticsViewMode: String, CaseIterable {
 /// Version history:
 ///   1.0 — Session 99: initial implementation
 ///   1.1 — Session 121: add `byDecade`, `byMonth`, and `byDay` granularity options
+///   1.2 — Session 163: add `byVolume` axis (per-individual-volume breakdown)
 enum AnalyticsChartAxis: String, CaseIterable {
-    case byDecade, byYear, byMonth, byDay, bySubseries
+    case byDecade, byYear, byMonth, byDay, bySubseries, byVolume
 
     /// Short label for the toolbar picker.
     var pickerLabel: String {
@@ -37,13 +38,21 @@ enum AnalyticsChartAxis: String, CaseIterable {
         case .byMonth:     return String(localized: "analytics.axis.byMonth",     defaultValue: "By Month")
         case .byDay:       return String(localized: "analytics.axis.byDay",       defaultValue: "By Day")
         case .bySubseries: return String(localized: "analytics.axis.bySubseries", defaultValue: "By Subseries")
+        case .byVolume:    return String(localized: "analytics.axis.byVolume",    defaultValue: "By Volume")
         }
     }
 
     /// `true` when this axis is date-based (uses `yearRangeStart`...`yearRangeEnd`
-    /// for filtering). Subseries view ignores the year-range bar.
+    /// for filtering). The categorical Subseries and Volume views ignore the
+    /// year-range bar.
     var isDateBased: Bool {
-        self != .bySubseries
+        self != .bySubseries && self != .byVolume
+    }
+
+    /// `true` for the categorical axes (subseries / volume) whose rows and bars can
+    /// be tapped to open Search scoped to that subseries or volume.
+    var isCategorical: Bool {
+        self == .bySubseries || self == .byVolume
     }
 }
 
@@ -88,6 +97,10 @@ enum AnalyticsChartAxis: String, CaseIterable {
 ///          handoff (Search's over-cap "Visualize in Corpus Analytics" suggestion);
 ///          `searchHandoffBar` lets the user jump from a committed term/year-range
 ///          straight to Search, pre-filled via `pendingSearch`
+///   1.4 — Session 163: add the `byVolume` axis (per-volume breakdown) and make the
+///          categorical By-Subseries / By-Volume charts and table rows tappable —
+///          each opens Search scoped to that subseries/volume via
+///          `openScopedDocumentsInSearch(volumeIds:)`
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -102,6 +115,7 @@ struct AnalyticsView: View {
     @State private var monthData: [MonthFrequency] = []
     @State private var dayData: [DayFrequency] = []
     @State private var subseriesData: [SubseriesFrequency] = []
+    @State private var volumeData: [VolumeFrequency] = []
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var viewMode: AnalyticsViewMode = .chart
@@ -278,17 +292,51 @@ struct AnalyticsView: View {
         #if DEBUG
         print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range))")
         #endif
+        navigateToSearch()
+    }
+
+    /// Direction-A drill-in handoff: open Search scoped to a specific subseries or
+    /// volume (the `volumeIds` of a single tapped bar/row), carrying the committed
+    /// term along. Used by the tappable By-Subseries / By-Volume charts and tables so
+    /// the researcher can go straight from "this subseries/volume has N matches" to
+    /// the documents themselves. No date range is applied — these axes are not
+    /// date-based.
+    private func openScopedDocumentsInSearch(volumeIds: [String]) {
+        guard !volumeIds.isEmpty else { return }
+        appState.pendingSearch = SearchParameters(keywords: committedTerm, volumeIds: volumeIds)
+        #if DEBUG
+        print("[AnalyticsView] Scoped handoff to Search — term: \"\(committedTerm)\", volumes: \(volumeIds.count)")
+        #endif
+        navigateToSearch()
+    }
+
+    /// Shared navigation tail for both handoff paths.
+    ///
+    /// On iOS, Analytics is a sheet over the Browse tab — switch to the Search tab
+    /// (now pre-filled via `pendingSearch`) and dismiss the sheet. On macOS, Analytics
+    /// is a standalone `frus.analytics` Window; setting `pendingSearch` is enough —
+    /// `MainWindowView`/`BrowserView` open the search window/inspector and apply the
+    /// parameters, and the analytics window stays open for side-by-side comparison.
+    private func navigateToSearch() {
         #if os(iOS)
-        // iOS: Analytics is a sheet over the Browse tab — switch tabs and dismiss
-        // so the Search tab (now pre-filled via `pendingSearch`) is visible.
         appState.activeTab = .search
         dismiss()
-        #else
-        // macOS: Analytics is a standalone `frus.analytics` Window. Setting
-        // `pendingSearch` is enough — `MainWindowView`/`BrowserView` open the
-        // search window/inspector and apply the parameters; the analytics
-        // window stays open so the user can keep comparing views side by side.
         #endif
+    }
+
+    /// Resolves the indexed volume IDs belonging to a subseries label, using the same
+    /// parsing the chart itself used to bucket documents (`CorpusAnalyticsService
+    /// .subseries(fromVolumeId:)`) so the handoff scope matches the bar exactly.
+    private func indexedVolumeIds(forSubseries subseries: String) -> [String] {
+        appState.indexedVolumeIds
+            .filter { CorpusAnalyticsService.subseries(fromVolumeId: $0) == subseries }
+            .sorted()
+    }
+
+    /// Human-readable title for a volume ID, resolved from the manifest. Falls back
+    /// to the raw volume ID when the manifest has no entry.
+    private func volumeTitle(_ volumeId: String) -> String {
+        appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
     }
 
     // MARK: - Year Range Bar
@@ -464,6 +512,7 @@ struct AnalyticsView: View {
             && monthData.isEmpty
             && dayData.isEmpty
             && subseriesData.isEmpty
+            && volumeData.isEmpty
     }
 
     // MARK: - Chart Content
@@ -477,6 +526,7 @@ struct AnalyticsView: View {
             case .byMonth:     monthChartSection
             case .byDay:       dayChartSection
             case .bySubseries: subseriesChartSection
+            case .byVolume:    volumeChartSection
             }
         }
     }
@@ -850,13 +900,108 @@ struct AnalyticsView: View {
                 String(localized: "analytics.axis.documents", defaultValue: "Documents"),
                 alignment: .center
             )
+            .chartOverlay { proxy in categoryTapOverlay(proxy) { subseries in
+                openScopedDocumentsInSearch(volumeIds: indexedVolumeIds(forSubseries: subseries))
+            } }
             .frame(height: max(240, CGFloat(subseriesData.count) * 28))
             .padding(.horizontal)
+
+            drillInHint
+                .padding(.horizontal)
 
             totalFootnote(count: subseriesData.reduce(0) { $0 + $1.count })
                 .padding(.horizontal)
         }
         .padding(.vertical)
+    }
+
+    // MARK: - Volume Chart
+
+    private var volumeChartSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(
+                String(localized: "analytics.chart.volume.heading",
+                       defaultValue: "\"\(committedTerm)\" \u{2014} by Volume")
+            )
+            .font(.headline)
+            .padding(.horizontal)
+
+            // Horizontal bar chart so volume titles remain legible. The bar's
+            // category is the resolved title; the tap handler maps it back to its
+            // volume ID for the scoped Search handoff.
+            Chart {
+                ForEach(volumeData) { point in
+                    BarMark(
+                        x: .value(
+                            String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                            point.count
+                        ),
+                        y: .value(
+                            String(localized: "analytics.axis.volume", defaultValue: "Volume"),
+                            volumeTitle(point.volumeId)
+                        )
+                    )
+                    .foregroundStyle(Color.accentColor.opacity(0.65))
+                }
+            }
+            .chartXAxisLabel(
+                String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                alignment: .center
+            )
+            .chartOverlay { proxy in categoryTapOverlay(proxy) { title in
+                // Reverse-resolve the tapped title to its volume ID.
+                if let match = volumeData.first(where: { volumeTitle($0.volumeId) == title }) {
+                    openScopedDocumentsInSearch(volumeIds: [match.volumeId])
+                }
+            } }
+            .frame(height: max(240, CGFloat(volumeData.count) * 28))
+            .padding(.horizontal)
+
+            drillInHint
+                .padding(.horizontal)
+
+            totalFootnote(count: volumeData.reduce(0) { $0 + $1.count })
+                .padding(.horizontal)
+        }
+        .padding(.vertical)
+    }
+
+    // MARK: - Drill-in Helpers
+
+    /// Caption shown beneath the categorical (subseries / volume) charts telling the
+    /// user the bars are tappable.
+    private var drillInHint: some View {
+        Label(
+            String(localized: "analytics.drillIn.hint",
+                   defaultValue: "Tap a bar to open the matching documents in Search."),
+            systemImage: "hand.tap"
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    /// Transparent overlay that maps a tap on a horizontal bar chart to the category
+    /// (string value on the Y axis) under the tap, invoking `onSelect` with it.
+    ///
+    /// Shared by the By-Subseries and By-Volume charts. The plot frame is resolved via
+    /// `GeometryReader` so the tap location is converted into plot-area coordinates
+    /// before `proxy.value(atY:)` looks up the nearest category.
+    private func categoryTapOverlay(
+        _ proxy: ChartProxy,
+        onSelect: @escaping (String) -> Void
+    ) -> some View {
+        GeometryReader { geo in
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+                .onTapGesture { location in
+                    guard let plotAnchor = proxy.plotFrame else { return }
+                    let plotRect = geo[plotAnchor]
+                    let relativeY = location.y - plotRect.origin.y
+                    guard let category = proxy.value(atY: relativeY, as: String.self) else { return }
+                    onSelect(category)
+                }
+        }
     }
 
     private func totalFootnote(count: Int) -> some View {
@@ -877,43 +1022,60 @@ struct AnalyticsView: View {
     private var tableContent: some View {
         switch chartAxis {
         case .byDecade:
-            tableList(rows: filteredDecadeData) { d in
-                "\(d.decadeStart)s"
-            } countOf: { $0.count }
+            tableList(rows: filteredDecadeData,
+                      label: { "\($0.decadeStart)s" },
+                      countOf: { $0.count })
 
         case .byYear:
-            tableList(rows: filteredYearData) { y in
-                String(y.year)
-            } countOf: { $0.count }
+            tableList(rows: filteredYearData,
+                      label: { String($0.year) },
+                      countOf: { $0.count })
 
         case .byMonth:
-            tableList(rows: filteredMonthData) { $0.label } countOf: { $0.count }
+            tableList(rows: filteredMonthData,
+                      label: { $0.label },
+                      countOf: { $0.count })
 
         case .byDay:
-            tableList(rows: filteredDayData) { d in
-                Self.isoDayFormatter.string(from: d.date)
-            } countOf: { $0.count }
+            tableList(rows: filteredDayData,
+                      label: { Self.isoDayFormatter.string(from: $0.date) },
+                      countOf: { $0.count })
 
         case .bySubseries:
-            tableList(rows: subseriesData) { $0.subseries } countOf: { $0.count }
+            tableList(rows: subseriesData,
+                      label: { $0.subseries },
+                      countOf: { $0.count },
+                      onTap: { openScopedDocumentsInSearch(volumeIds: indexedVolumeIds(forSubseries: $0.subseries)) })
+
+        case .byVolume:
+            tableList(rows: volumeData,
+                      label: { volumeTitle($0.volumeId) },
+                      countOf: { $0.count },
+                      onTap: { openScopedDocumentsInSearch(volumeIds: [$0.volumeId]) })
         }
     }
 
     /// Generic two-column row list used by every table-mode granularity.
+    ///
+    /// When `onTap` is non-nil (the categorical subseries / volume axes) each row is a
+    /// button that opens Search scoped to that row; otherwise rows are static.
     @ViewBuilder
     private func tableList<Row: Identifiable>(
         rows: [Row],
         label: @escaping (Row) -> String,
-        countOf: @escaping (Row) -> Int
+        countOf: @escaping (Row) -> Int,
+        onTap: ((Row) -> Void)? = nil
     ) -> some View {
         List(rows) { row in
-            HStack {
-                Text(label(row))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(verbatim: "\(countOf(row))")
-                    .fontWeight(.medium)
-                    .monospacedDigit()
+            if let onTap {
+                Button {
+                    onTap(row)
+                } label: {
+                    tableRow(label: label(row), count: countOf(row), tappable: true)
+                }
+                .buttonStyle(.plain)
+            } else {
+                tableRow(label: label(row), count: countOf(row), tappable: false)
             }
         }
         #if os(iOS)
@@ -921,6 +1083,27 @@ struct AnalyticsView: View {
         #else
         .listStyle(.inset)
         #endif
+    }
+
+    /// One row of the analytics data table: a label on the left and a right-aligned
+    /// count. Tappable rows (subseries / volume) add a trailing chevron to advertise
+    /// the drill-in affordance.
+    @ViewBuilder
+    private func tableRow(label: String, count: Int, tappable: Bool) -> some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(verbatim: "\(count)")
+                .fontWeight(.medium)
+                .monospacedDigit()
+            if tappable {
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .contentShape(Rectangle())
     }
 
     /// Shared yyyy-MM-dd formatter for the by-day table.
@@ -1117,6 +1300,7 @@ struct AnalyticsView: View {
         monthData = []
         dayData = []
         subseriesData = []
+        volumeData = []
         Task {
             do {
                 // Fetch every granularity in parallel so switching between
@@ -1127,11 +1311,13 @@ struct AnalyticsView: View {
                 async let months    = service.termFrequencyByMonth(term: term)
                 async let days      = service.termFrequencyByDay(term: term)
                 async let subseries = service.termFrequencyBySubseries(term: term)
+                async let volumes   = service.termFrequencyByVolume(term: term)
                 yearData      = try await years
                 decadeData    = try await decades
                 monthData     = try await months
                 dayData       = try await days
                 subseriesData = try await subseries
+                volumeData    = try await volumes
             } catch {
                 errorMessage = error.localizedDescription
             }
