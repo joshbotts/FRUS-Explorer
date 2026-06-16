@@ -528,3 +528,26 @@ Root causes and fixes:
 - **Heading metadata glosses** (`<gloss type="from">` with no target) no longer render as links.
 - **macOS never called `loadPersonMentionCount`** (stale "future session" comment) — wired in `handlePersonTap`.
 - **Verification**: full suite green (785 tests; +5 new: 4 resolver classifications, terms definitions, early-section page spans); both builds clean; live re-checks confirmed each repaired path. **Caveats**: term definitions appear after the v8 re-index completes (launch-triggered, Index Health shows progress); same-document `#pg_XIII`-style roman/front-matter page anchors remain unresolved by design; cross-document footnote-anchor scroll (landing on d100 *at* fn2) is a possible future enhancement.
+
+### Session 2026-06-15 — Pre-1910 Central Files: reference data received + architecture revised
+NARA higher rate limit granted (2026-06-12) and user delivered 9 hand-traced reference
+documents (`Pre1910-CentralFiles-Reference-Data.md`, now filled in and committed). The
+traces confirm feasibility but **revise the architecture** — captured in a new "Findings
+from reference data" section in `BigPicture-Pre1910-CentralFiles.md`:
+- **Hierarchy depth varies by series** (the biggest change): Diplomatic Instructions
+  (593313) and Notes to Foreign Missions (597272) have **no file-unit level** — country
+  is encoded in the roll/item title; Despatches (603720), Notes from (594363), and
+  Consular Despatches (302031) keep the 3-level series→file-unit(country)→roll shape;
+  Numerical File (654171) is 2-level by case number. Index schema gains a per-component
+  `geoGranularity` flag + per-series `rollTitleGrammar`.
+- Roll titles are heterogeneous and contain **typos including in dates** (1675 for 1875);
+  date parsing must clamp implausible years.
+- **Multi-country, non-chronological rolls** exist ("Uruguay and Paraguay") → `geoKeys`
+  is an array, `chronological:false` suppresses the date-interpolation hint there.
+- **Enclosures are dual-homed**: the printed text physically lives in its originating
+  series (from the enclosure's own dateline); the covering doc's roll only references it.
+- Country should be resolved from the **FRUS chapter head**, not name-parsing.
+- FRUS file-number annotations can be imprecise/wrong, but the **integer case number
+  still selects the right Numerical File roll** — Phase 1 keying is robust.
+- No code yet. Next: build Phase 1 (`CentralFilesIndexGenerator` Numerical File survey +
+  harvest, case→roll lookup) using the verified golden NAIDs as parser fixtures.

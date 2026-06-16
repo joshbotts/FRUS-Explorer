@@ -82,7 +82,115 @@ Foreign Missions 183303919. Example item (roll) NAID: 188543169 (cited in the om
 
 ---
 
+## Findings from reference data (2026-06-15)
+
+User traced 9 documents (`Pre1910-CentralFiles-Reference-Data.md`). These confirm the
+approach but **revise the architecture in several ways**. Each finding below carries
+verified golden-target NAIDs for the harvest-tool parser.
+
+### Finding 1 (architecture-changing): hierarchy depth varies by series
+
+The plan assumed a uniform three-level `series → file-unit (country) → item (roll)`.
+Reality is mixed: some series have **no file-unit level** and encode the country in the
+roll (item) title instead. The index schema needs a per-component `geoGranularity`
+flag and the roll-title parser needs per-series grammars.
+
+| Component | Series NAID | Levels | Geo resolved at | Roll-title grammar | Verified example (roll NAID) |
+|---|---|---|---|---|---|
+| Diplomatic Instructions | 593313 | **2** | roll title | `Volume {n}: {country}: {date} - {date}` | "Volume 18: Great Britain: Aug. 17, 1861 - Sept. 2, 1863" (149311973) |
+| Notes to Foreign Missions | 597272 | **2** | roll title (**may combine countries**) | `{country[ and country]}: {date} - {date}` | "Uruguay and Paraguay: July 7, 1834 - June 26, 1906" (216926854) |
+| Notes from Foreign Missions | 594363 | 3 | file unit (country) | `{date} - {date}` | file-unit 183303942 → roll "Apr. 19, 1893-Mar. 28, 1896" (188287901) |
+| Diplomatic Despatches | 603720 | 3 | file unit (country) | `{date} - {date}` | file-unit 5716479 (Japan) → roll "Mar. 4, 1905-Aug. 31, 1905" (188401761) |
+| Consular Despatches | 302031 | 3 | file unit (post city) | `Despatches: {date} - {date}` | file-unit 196006797 (Havana) → roll "Despatches: April 1 - August 31, 1895" (211373468) |
+| Numerical File | 654171 | **2** | n/a (case number) | `Numerical File: {caseStart}-{caseEnd}` | "Numerical File: 7179-7187" (19779414); "Numerical File: 682-699" (19174810) |
+
+### Finding 2: roll-title formats are heterogeneous and dirty
+
+- Per-series grammars (above) — no single regex. Some carry a `Volume {n}:` prefix.
+- **NARA roll titles contain typos**, including in the date range: Switzerland roll
+  189376306 reads "July 2, **1675**-Dec. 18, 1876" (1675 = 1875). Date parsing must
+  clamp/flag years implausibly far from the series era and from adjacent rolls.
+- Date forms vary ("Aug. 17, 1861", "April 1 - August 31, 1895", "Apr. 19, 1893-Mar.
+  28, 1896" with and without spaces around the hyphen).
+
+### Finding 3: multi-country and non-chronological rolls weaken date interpolation
+
+Notes-to/from rolls can hold **several countries on one roll** ("Uruguay and Paraguay")
+and the per-country section is **not internally chronological** (Doc 3). So the
+"% into the roll" date-interpolation hint is unreliable for these. Revised UX: show it
+only for single-country chronological rolls (Despatches, Consular, Instructions); for
+combined/Notes rolls, show date range + correspondents + document number and a note to
+scan the country's section.
+
+### Finding 4 (architecture-changing): enclosures have *two* archival homes
+
+Docs 8 & 9 trace the **same FRUS-printed text** (frus1895p2/d464, an enclosure):
+- As an **enclosure**, the actual document physically lives in its **originating
+  series** — Consular Despatches, Havana (roll 211373468), found exact at frame 290.
+- The **covering instruction** that enclosed it lives in Diplomatic Instructions,
+  Spain (roll 149334619) — but there the enclosure is only **referenced, not filmed**.
+
+Implication: for an enclosure, the better page-by-page target is derived from the
+**enclosure's own dateline** (→ its originating series), not the parent document's
+series. The classifier should offer both, labelling which roll physically holds the
+text vs. which only references it. TEI nests enclosures in the parent `<div>`, so both
+the parent metadata and the enclosure's own `<dateline>` are available at index time.
+
+### Finding 5: classifier cues, confirmed and expanded
+
+Observed datelines/headings refine the rules:
+- US post datelines appear in **two forms** — older "Legation of the United States,
+  {city}" and newer "American Legation/Embassy, {city}". Both → Despatches.
+- "{Foreign country} Legation, Washington" / "Legation of {country}, Washington" →
+  Notes **from** Foreign Missions.
+- "Department of State, Washington" + recipient is a US minister abroad → Instructions;
+  + recipient is a foreign rep in Washington → Notes **to** Foreign Missions.
+- Heading pattern "X to the Secretary of State" / "Secretary of State to X" is a strong
+  direction signal alongside the dateline.
+- **Country often must come from the FRUS chapter, not the document**: Doc 3 needed the
+  *previous* document (d410) to identify the recipient's country. The volume chapter
+  head is the reliable geo key; resolve country from chapter, not from parsing the name.
+
+### Finding 6: FRUS annotations and the archival copy can disagree
+
+- Doc 6: FRUS cites "File No. 7187"; the actual filing is 7187/19-76. The **integer
+  case number still selects the right roll** ("7179-7187"), so Phase 1 keying on the
+  leading integer (ignoring the `/NN` suffix) is robust even when FRUS is imprecise.
+- Doc 7: case 697 → roll "682-699"; the `/43` is a within-case document number.
+- Translations: Doc 2's FRUS text is an English translation; NARA holds the Spanish
+  original. Text-matching to auto-verify a hit will fail for translated/extracted docs —
+  rely on date + correspondents + position, never on body-text equality.
+
+### Finding 7: microfilm prefixes vary (display only)
+
+Observed: M77, M99, M133, M862, T20, T93, T98, FM77. The "T"/"FM"/"M" prefix is
+citation metadata; NAID-based deep links don't depend on it. Capture it for display.
+
+### Practical notes for the harvest tool
+
+- Verified golden targets (series → file-unit → roll NAIDs above) become the parser's
+  acceptance fixtures — the harvest output must reproduce each.
+- Frames found were deep in rolls (294, 521, 860, …), confirming page-by-page is real
+  and a good frame estimate is worth the effort where the roll is chronological.
+- "NARA Catalog website delays and failures" (Doc 2) reinforce the **bundle-the-index,
+  no-runtime-API** design — the live site is too flaky for an interactive lookup path.
+
+### Non-blocking gaps in the fixture (harvest survey will resolve)
+
+- No telegram trace (FRUS paraphrases them; they're filed within their parent series
+  regardless, so no separate handling).
+- No clean "not found" failure (Docs 3/6 friction partially cover the fallback UX).
+- Only one consular post and one country per 2-level series sampled — the harvest's
+  first survey run enumerates the full country/post vocabulary and validates that
+  file-unit / roll titles parse across all of them.
+
+---
+
 ## Proposed architecture
+
+> **Revised by the 2026-06-15 findings above** — note especially the per-component
+> `geoGranularity` flag (Finding 1), per-series roll-title grammars (Finding 2), and
+> enclosure dual-homing (Finding 4).
 
 Three components, each matching an existing pattern in the repo:
 
@@ -96,35 +204,65 @@ Sibling of `ManifestGenerator` / `TaxonomyGenerator`. Offline, occasional harves
 - Parse **item titles** → roll number + date range (or case-number range for M862).
 - Emit `Resources/central-files-index.json`.
 
-Sketch of the bundled index:
+Sketch of the bundled index (revised for variable hierarchy — Finding 1):
 
 ```json
 {
-  "generated": "2026-06-11",
+  "generated": "2026-06-15",
   "components": [
     {
       "category": "diplomaticDespatches",
       "seriesNaId": "603720",
+      "geoGranularity": "fileUnit",          // country resolved at file-unit level
+      "rollTitleGrammar": "dateRange",
       "fileUnits": [
         {
-          "geoKey": "argentina",
-          "displayName": "Despatches from U.S. Ministers to Argentina",
-          "microfilm": "M69",
-          "naId": "…",
+          "geoKeys": ["japan"],
+          "displayName": "Despatches from U.S. Ministers to Japan",
+          "microfilm": "M133",
+          "naId": "5716479",
           "rolls": [
-            { "naId": "…", "title": "Roll 30", "start": "1899-01-01",
-              "end": "1900-12-31", "frames": 980 }
+            { "naId": "188401761", "title": "Mar. 4, 1905-Aug. 31, 1905",
+              "start": "1905-03-04", "end": "1905-08-31", "frames": null }
           ]
         }
+      ]
+    },
+    {
+      "category": "diplomaticInstructions",
+      "seriesNaId": "593313",
+      "geoGranularity": "rollTitle",         // no file units; country in roll title
+      "rollTitleGrammar": "volumeCountryDateRange",
+      "rolls": [
+        { "naId": "149311973", "title": "Volume 18: Great Britain: Aug. 17, 1861 - Sept. 2, 1863",
+          "geoKeys": ["great britain"], "start": "1861-08-17", "end": "1863-09-02" }
+      ]
+    },
+    {
+      "category": "notesToForeignMissions",
+      "seriesNaId": "597272",
+      "geoGranularity": "rollTitle",
+      "rollTitleGrammar": "countriesDateRange",  // may list >1 country
+      "rolls": [
+        { "naId": "216926854", "title": "Uruguay and Paraguay: July 7, 1834 - June 26, 1906",
+          "geoKeys": ["uruguay", "paraguay"], "chronological": false,
+          "start": "1834-07-07", "end": "1906-06-26" }
       ]
     }
   ],
   "numericalFileCases": [
-    { "rollNaId": "…", "caseStart": 5727, "caseEnd": 5740 }
+    { "rollNaId": "19779414", "caseStart": 7179, "caseEnd": 7187 }
   ],
   "geoAliases": { "argentine republic": "argentina", "buenos ayres": "argentina" }
 }
 ```
+
+Per-component fields driven by the findings:
+- `geoGranularity`: `fileUnit` | `rollTitle` | `none` (Numerical File).
+- `rollTitleGrammar`: selects the per-series title parser (Finding 2).
+- `geoKeys` is an **array** — a roll can serve multiple countries (Finding 3).
+- `chronological: false` suppresses the date-interpolation hint (Finding 3).
+- Date parser clamps implausible years against the series era (Finding 2 typo).
 
 **Because the index ships in the bundle and resolved links are static
 `catalog.archives.gov/id/<naid>` URLs, the runtime feature requires no API key.**
@@ -140,9 +278,9 @@ Decision rules (first match wins; all string checks on normalized text):
 | Rule | Category |
 |---|---|
 | Era 2 source note "File No. N[/n]" (1906–1910) | Numerical File — case → roll lookup, near-deterministic |
-| Dateline "Department of State" + recipient at a foreign post (chapter country) | Diplomatic Instructions to [country] |
-| Dateline "Legation/Embassy of the United States, [city]" | Despatches from [chapter country] |
-| Dateline "Consulate[-General] of the United States, [city]" | Consular Despatches from [post city] |
+| Dateline "Department of State" + recipient is a US minister abroad (chapter country) | Diplomatic Instructions to [country] |
+| Dateline "Legation/Embassy of the United States, [city]" **or** "American Legation/Embassy, [city]" | Despatches from [chapter country] |
+| Dateline "Consulate[-General], of the United States, [city]" | Consular Despatches from [post city] |
 | Dateline = foreign legation in Washington (e.g. "Chinese Legation, Washington") or sender is the foreign minister resident in Washington | Notes **from** Foreign Missions, [country] |
 | Dateline Washington + recipient is a foreign legation/minister in Washington | Notes **to** Foreign Missions, [country] |
 | Sender is a special agent / commissioner on mission | Despatches from Special Agents |
@@ -151,9 +289,15 @@ Decision rules (first match wins; all string checks on normalized text):
 Notes:
 - Telegrams were filed with their parent series (instructions/despatches) — no
   separate handling needed beyond stripping "[Telegram]" markers.
-- **Enclosures**: FRUS frequently prints enclosures; TEI nests them inside the parent
-  document `<div>`, so the parent's metadata drives the lookup — handled naturally.
-  The archival location shown should mention "filed with covering despatch No. N".
+- **Enclosures (dual-homed — Finding 4)**: a printed enclosure physically lives in its
+  **own originating series** (derive from the *enclosure's* dateline), while the
+  covering document's roll only *references* it. Offer both targets, labelled "holds the
+  document" vs. "references it (filed with covering No. N)". TEI nests the enclosure in
+  the parent `<div>`, so both the parent metadata and the enclosure's own `<dateline>`
+  are available.
+- **Country from chapter, not name parsing (Finding 5)**: resolve the geo key from the
+  FRUS chapter head rather than parsing the correspondent's name — the recipient's
+  country is sometimes only identifiable from an adjacent document.
 - Geographic normalization needs an alias table (FRUS "Argentine Republic" vs. NARA
   "Argentina"; historical entities — Two Sicilies, Hawaii, German States, Texas; city
   spellings — "Buenos Ayres", "Canton", "Amoy"). Seed from harvest output + FRUS
@@ -170,7 +314,9 @@ Upgrade `centralFilesPanel` (`SourceExplorerView` / `MacSourceExplorerView`) for
 - **Adjacent rolls (±1)** as a hedge against filed-by-receipt-date drift.
 - **Verification hint**: "Look for despatch No. 769, Feb 3, 1900. Chronological
   filing places it roughly 55% into this roll" (linear date interpolation across the
-  roll's range — cheap and genuinely useful for the page-by-page step).
+  roll's range — cheap and useful for the page-by-page step). **Only shown for
+  single-country chronological rolls** (Finding 3); for combined / Notes rolls, show the
+  date range + correspondents + document number and a "scan this country's section" note.
 - **Confidence + rationale** displayed; alternates listed when the classifier is
   uncertain. Keep the existing period-page link as the fallback row.
 - For Era 2: case-number lookup against `numericalFileCases` + a Card Index (M1889)
