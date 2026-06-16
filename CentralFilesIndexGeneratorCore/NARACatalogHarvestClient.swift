@@ -231,11 +231,14 @@ public actor NARACatalogHarvestClient {
                 return record
             }
         }
-        // 2. Free-text phrase fallback (the app's runtime safety net), e.g. "Lot 63 D 135".
-        if let record = try await searchLotPhrase(normalized, recordGroup: recordGroup) {
-            writeLotCache(LotResolution(naId: record.naId, title: record.title),
-                          normalized: normalized, recordGroup: recordGroup)
-            return record
+        // 2. Free-text phrase fallback (mirrors the app's runtime safety net): the bare,
+        //    quoted lot number — compact then spaced — within the record group.
+        for phrase in Self.lotVariants(normalized).prefix(2) {  // compact, spaced
+            if let record = try await searchLotPhrase(phrase, recordGroup: recordGroup) {
+                writeLotCache(LotResolution(naId: record.naId, title: record.title),
+                              normalized: normalized, recordGroup: recordGroup)
+                return record
+            }
         }
         writeLotCache(LotResolution(naId: "", title: ""), normalized: normalized, recordGroup: recordGroup)
         return nil
@@ -267,12 +270,12 @@ public actor NARACatalogHarvestClient {
         ]).first
     }
 
-    /// Free-text phrase fallback: searches `"Lot <spaced form>"` within the record group.
-    /// Mirrors the app's runtime safety net for lots not indexed under a control number.
-    private func searchLotPhrase(_ normalized: String, recordGroup: String) async throws -> CatalogRecord? {
-        let spaced = Self.lotVariants(normalized).dropFirst().first ?? normalized  // "63 D 135"
-        return try await search(queryItems: [
-            URLQueryItem(name: "q",                             value: "\"Lot \(spaced)\""),
+    /// Free-text phrase fallback: searches the bare quoted lot number (`"63 D 135"`)
+    /// within the record group — the app's runtime safety net for lots not indexed under a
+    /// control number.
+    private func searchLotPhrase(_ form: String, recordGroup: String) async throws -> CatalogRecord? {
+        try await search(queryItems: [
+            URLQueryItem(name: "q",                             value: "\"\(form)\""),
             URLQueryItem(name: "description.recordGroupNumber", value: recordGroup),
             URLQueryItem(name: "resultType",                    value: "description"),
             URLQueryItem(name: "rows",                          value: "1"),

@@ -219,6 +219,7 @@ public struct CentralFilesIndexGeneratorRunner {
         let retryMisses = ["1", "true", "yes"].contains(
             (ProcessInfo.processInfo.environment["RETRY_LOT_MISSES"] ?? "").lowercased())
         var entries: [LotFileEntry] = []
+        var unresolvedLots: [String] = []
         var resolved = 0, missed = 0
         for (i, citation) in citations.enumerated() {
             do {
@@ -234,9 +235,11 @@ public struct CentralFilesIndexGeneratorRunner {
                     resolved += 1
                 } else {
                     missed += 1
+                    unresolvedLots.append("\(citation.normalizedLot)\tRG \(citation.recordGroup)")
                 }
             } catch {
                 missed += 1
+                unresolvedLots.append("\(citation.normalizedLot)\tRG \(citation.recordGroup)\t(error)")
                 #if DEBUG
                 print("[CentralFilesIndexGenerator] lot \(citation.normalizedLot) errored: \(error)")
                 #endif
@@ -254,6 +257,17 @@ public struct CentralFilesIndexGeneratorRunner {
             resolved:  \(resolved)  (RG 59: \(rg59), RG 84: \(rg84))
             unresolved:\(missed)
         """)
+        // Emit the unresolved list next to the cache for spot-checking which lots are
+        // genuinely uncatalogued vs. a fixable format/RG issue.
+        if !unresolvedLots.isEmpty {
+            let cacheDir = URL(fileURLWithPath:
+                ProcessInfo.processInfo.environment["CACHE_DIR"] ?? defaultCacheDir, isDirectory: true)
+            try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+            let url = cacheDir.appendingPathComponent("unresolved-lots.txt")
+            try? unresolvedLots.sorted().joined(separator: "\n")
+                .write(to: url, atomically: true, encoding: .utf8)
+            print("  unresolved lots written to \(url.path)")
+        }
         return entries.sorted { $0.lotNumber < $1.lotNumber }
     }
 
