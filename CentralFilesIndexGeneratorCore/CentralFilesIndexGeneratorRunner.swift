@@ -223,15 +223,16 @@ public struct CentralFilesIndexGeneratorRunner {
         var resolved = 0, missed = 0
         for (i, citation) in citations.enumerated() {
             do {
-                if let record = try await client.resolveLotFile(
+                if let resolved0 = try await client.resolveLotFile(
                     normalized: citation.normalizedLot, recordGroup: citation.recordGroup,
                     retryMisses: retryMisses) {
                     entries.append(LotFileEntry(
                         lotNumber: citation.normalizedLot,
                         recordGroup: citation.recordGroup,
-                        naId: record.naId,
-                        title: record.title,
-                        catalogURL: NARACatalogHarvestClient.catalogIDBase + record.naId))
+                        naId: resolved0.record.naId,
+                        title: resolved0.record.title,
+                        catalogURL: NARACatalogHarvestClient.catalogIDBase + resolved0.record.naId,
+                        matchType: resolved0.matchType))
                     resolved += 1
                 } else {
                     missed += 1
@@ -251,10 +252,13 @@ public struct CentralFilesIndexGeneratorRunner {
 
         let rg59 = entries.filter { $0.recordGroup == "59" }.count
         let rg84 = entries.filter { $0.recordGroup == "84" }.count
+        let control = entries.filter { $0.matchType == "control" }.count
+        let phrase = entries.filter { $0.matchType == "phrase" }.count
         print("""
           Lot-file survey:
             distinct:  \(citations.count)
             resolved:  \(resolved)  (RG 59: \(rg59), RG 84: \(rg84))
+              by match: control \(control), phrase \(phrase)
             unresolved:\(missed)
         """)
         // Emit the unresolved list next to the cache for spot-checking which lots are

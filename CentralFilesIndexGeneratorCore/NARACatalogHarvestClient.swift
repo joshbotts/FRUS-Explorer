@@ -205,8 +205,16 @@ public actor NARACatalogHarvestClient {
 
     // MARK: Lot-file resolution (variantControlNumber_is)
 
+    /// How a lot resolved, for the app's confidence cue. `control` is an exact match on
+    /// NARA's indexed control number (high confidence); `phrase` is the free-text fallback
+    /// (lower confidence — still RG-verified).
+    public struct ResolvedLot: Sendable, Equatable {
+        public let record: CatalogRecord
+        public let matchType: String   // "control" | "phrase"
+    }
+
     /// One cached lot resolution. `naId` empty marks a confirmed miss (so it isn't re-queried).
-    private struct LotResolution: Codable { let naId: String; let title: String }
+    private struct LotResolution: Codable { let naId: String; let title: String; let matchType: String? }
 
     /// Resolves a normalized lot number to its NARA Catalog series record by matching
     /// `variantControlNumber_is` against NARA's indexed lot identifiers — the same approach
@@ -219,14 +227,15 @@ public actor NARACatalogHarvestClient {
     /// - Parameter retryMisses: when `true`, a cached *miss* is ignored and re-queried
     ///   (cached hits are still reused) — use after improving the resolver to re-attempt
     ///   only the previously-unresolved lots without re-querying the resolved ones.
-    /// - Returns: the resolved record, or `nil` when no spelling matched.
+    /// - Returns: the resolved record + match type, or `nil` when no spelling matched.
     public func resolveLotFile(normalized: String, recordGroup: String,
-                               retryMisses: Bool = false) async throws -> CatalogRecord? {
+                               retryMisses: Bool = false) async throws -> ResolvedLot? {
         if let cached = cachedLot(normalized: normalized, recordGroup: recordGroup), !refresh {
             if cached.naId.isEmpty {
                 if !retryMisses { return nil }   // else fall through and re-query
             } else {
-                return CatalogRecord(naId: cached.naId, title: cached.title)
+                return ResolvedLot(record: CatalogRecord(naId: cached.naId, title: cached.title),
+                                   matchType: cached.matchType ?? "control")
             }
         }
         // Accept a candidate only when its own record group matches the expected one — the
@@ -238,25 +247,27 @@ public actor NARACatalogHarvestClient {
             if let rg = record.recordGroupNumber, rg != recordGroup { return nil }
             return record
         }
+        func cache(_ record: CatalogRecord, _ matchType: String) -> ResolvedLot {
+            writeLotCache(LotResolution(naId: record.naId, title: record.title, matchType: matchType),
+                          normalized: normalized, recordGroup: recordGroup)
+            return ResolvedLot(record: record, matchType: matchType)
+        }
 
         // 1. Exact match on NARA's indexed control number, across spellings.
         for form in Self.lotVariants(normalized) {
             if let record = accepted(try await searchVariant(form, recordGroup: recordGroup)) {
-                writeLotCache(LotResolution(naId: record.naId, title: record.title),
-                              normalized: normalized, recordGroup: recordGroup)
-                return record
+                return cache(record, "control")
             }
         }
         // 2. Free-text phrase fallback (mirrors the app's runtime safety net): the bare,
         //    quoted lot number — compact then spaced — within the record group.
         for phrase in Self.lotVariants(normalized).prefix(2) {  // compact, spaced
             if let record = accepted(try await searchLotPhrase(phrase, recordGroup: recordGroup)) {
-                writeLotCache(LotResolution(naId: record.naId, title: record.title),
-                              normalized: normalized, recordGroup: recordGroup)
-                return record
+                return cache(record, "phrase")
             }
         }
-        writeLotCache(LotResolution(naId: "", title: ""), normalized: normalized, recordGroup: recordGroup)
+        writeLotCache(LotResolution(naId: "", title: "", matchType: nil),
+                      normalized: normalized, recordGroup: recordGroup)
         return nil
     }
 

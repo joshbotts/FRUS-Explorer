@@ -85,13 +85,18 @@ public struct LotFileEntry: Codable, Sendable, Equatable {
     public var title: String
     /// Deep link to the NARA Catalog record.
     public var catalogURL: String
+    /// How the lot resolved: `control` (exact control-number match, high confidence) or
+    /// `phrase` (free-text fallback, lower confidence — still record-group-verified).
+    public var matchType: String
 
-    public init(lotNumber: String, recordGroup: String, naId: String, title: String, catalogURL: String) {
+    public init(lotNumber: String, recordGroup: String, naId: String, title: String,
+                catalogURL: String, matchType: String = "control") {
         self.lotNumber = lotNumber
         self.recordGroup = recordGroup
         self.naId = naId
         self.title = title
         self.catalogURL = catalogURL
+        self.matchType = matchType
     }
 }
 
