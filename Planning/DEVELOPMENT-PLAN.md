@@ -551,3 +551,35 @@ from reference data" section in `BigPicture-Pre1910-CentralFiles.md`:
   still selects the right Numerical File roll** — Phase 1 keying is robust.
 - No code yet. Next: build Phase 1 (`CentralFilesIndexGenerator` Numerical File survey +
   harvest, case→roll lookup) using the verified golden NAIDs as parser fixtures.
+
+### Session 2026-06-15 (cont.) — Phase 1 built: CentralFilesIndexGenerator (Numerical File)
+New SPM command-line tool (sibling of ManifestGenerator/TaxonomyGenerator), Core library
++ thin executable + 21 unit tests, all green; full package builds clean.
+- **Targets** (`Package.swift`): `CentralFilesIndexGeneratorCore`, `CentralFilesIndexGenerator`,
+  `CentralFilesIndexGeneratorTests`.
+- **Core files** (`CentralFilesIndexGeneratorCore/`):
+  - `CentralFilesIndexModels.swift` — `CentralFilesIndex` (bundled JSON, `schemaVersion`),
+    `NumericalFileIndex`/`NumericalFileRoll`, and the lookup: `roll(forCaseNumber:)` and
+    `roll(forFileNumber:)` (parses the leading integer case number, drops the `/NN`
+    sub-document suffix — robust to FRUS's imprecise annotations, per Finding 6).
+  - `RollTitleParser.swift` — `numericalFileCaseRange(from:)` parses `Numerical File: N-N`
+    (hyphen/en-dash/whitespace/trailing-period tolerant); non-roll titles → nil (this is
+    how series/file-unit/finding-aid records are filtered out).
+  - `NARACatalogHarvestClient.swift` — actor; pages the v2 `records/search` API
+    (`ancestorNaId` + `availableOnline=true`, cursor via `searchAfter`/`sort[0]`, shape
+    `body.hits.hits[]._source.record` — matches NARA's own bulk scripts). **Caches every
+    raw page to disk** (the required no-re-query design); `CatalogScalar` normalises
+    number-or-string `naId`/cursor.
+  - `NumericalFileIndexBuilder.swift` — pure build + self-survey (matched/unmatched
+    counts, sample unmatched titles, coverage gaps, range overlaps).
+  - `CentralFilesIndexWriter.swift` — deterministic pretty JSON (sorted keys, rolls
+    sorted by caseStart).
+  - `CentralFilesIndexGeneratorRunner.swift` — orchestration; prints the survey and
+    **validates against golden checks from the reference data** (Doc 6 File No. 7187 →
+    roll 19779414; Doc 7 File No. 697/43 → roll 19174810); non-zero exit on failure.
+- **Run**: `CATALOG_API_KEY=<key> swift run CentralFilesIndexGenerator` (env: OUTPUT_PATH,
+  CACHE_DIR, PAGE_SIZE, REFRESH). Writes `FRUSExplorer/Resources/central-files-index.json`.
+- **Status**: harvest not yet run (no API key in the dev environment — user runs it).
+  Tool is self-validating against the golden traces, so a bad parse/missing roll fails
+  loudly. App-side consumption of the index is a later phase. **Open**: confirm the v2
+  `limit` max page size from the first run's cached pages (try PAGE_SIZE=100).
