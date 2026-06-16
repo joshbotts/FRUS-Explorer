@@ -470,7 +470,11 @@ struct DocumentView: View {
                     indexingPipeline: appState.indexingPipeline,
                     onRelatedDocumentTapped: { [self] vid, did in
                         handleCrossRefTap(target: did, targetVolumeId: vid)
-                    }
+                    },
+                    documentHeader: entry.header,
+                    documentDateline: entry.dateline,
+                    documentVolumeId: entry.volumeId,
+                    documentId: entry.documentId
                 )
             case .tagPicker:
                 TagPickerSheetView(
@@ -614,6 +618,10 @@ struct DocumentView: View {
         if supportsMultipleWindows {
             appState.currentSourceNote = vm.sourceNote ?? ""
             appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
+            appState.currentSourceNoteHeader = entry.header
+            appState.currentSourceNoteDateline = entry.dateline
+            appState.currentSourceNoteVolumeId = entry.volumeId
+            appState.currentSourceNoteDocumentId = entry.documentId
             openWindow(id: "frus.sourceExplorer.ios")
         } else {
             activeSheet = .sourceExplorer(vm.sourceNote ?? "")

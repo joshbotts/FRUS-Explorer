@@ -45,6 +45,9 @@ xcodebuild test \
 ```bash
 swift run ManifestGenerator   # Regenerate manifest.json from GitHub FRUS TEI headers
 swift run TaxonomyGenerator   # Regenerate volume-tag-taxonomy.json
+CATALOG_API_KEY=<key> swift run CentralFilesIndexGenerator   # Harvest NARA Catalog → central-files-index.json (Phase 1: 1906–1910 Numerical File; Phase 2: diplomatic series)
+CATALOG_API_KEY=<key> SURVEY_SERIES=603720 swift run CentralFilesIndexGenerator   # Phase 2 survey: report a diplomatic series' structure (603720/593313/594363/597272)
+CATALOG_API_KEY=<key> CITATIONS_CSV=/path/to/citations.csv swift run CentralFilesIndexGenerator   # Phase 3: pre-resolve distinct lot files (variantControlNumber_is) into the bundled index
 ```
 
 **macOS Direct Distribution (notarize + DMG):**

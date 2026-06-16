@@ -62,6 +62,12 @@ struct MacSourceExplorerView: View {
     /// Passes `(volumeId, documentId)`.
     var onRelatedDocumentTapped: ((String, String) -> Void)? = nil
 
+    /// Document classifier cues for pre-1906 country-series resolution (no source note).
+    var documentHeader: String? = nil
+    var documentDateline: String? = nil
+    var documentVolumeId: String? = nil
+    var documentId: String? = nil
+
     // MARK: - Dependencies
 
     private let client = NARACatalogClient()
@@ -80,6 +86,8 @@ struct MacSourceExplorerView: View {
     @State private var relatedTotalCount: Int = 0
     /// True while the related-documents query is running.
     @State private var relatedLoading: Bool = false
+    /// Pre-1906 country-series classifications + resolved rolls (Phase 2).
+    @State private var countryResolutions: [CountrySeriesResolution] = []
 
     @Environment(\.openURL)  private var openURL
     @Environment(AppState.self) private var appState
@@ -183,12 +191,19 @@ struct MacSourceExplorerView: View {
                 if showsManualSearch {
                     manualSearchField
                 }
+                if case .lotFile(_, let lot, _) = parsed,
+                   let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
+                    bundledLotBox(entry)
+                }
                 if let parsed {
                     naraBox(for: parsed)
                 } else {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(40)
+                }
+                if !countryResolutions.isEmpty {
+                    countrySeriesBox
                 }
                 if indexingPipeline != nil {
                     relatedDocumentsBox
@@ -359,11 +374,19 @@ struct MacSourceExplorerView: View {
 
         switch parsed {
 
-        case .centralFiles:
+        case .centralFiles(_, let fileId):
             // Period-based routing replaces the old resolveRG59CentralFiles catalog-search
-            // URL, which returned empty results for decimal file numbers.
+            // URL, which returned empty results for decimal file numbers. For 1906–1910
+            // documents, the bundled index resolves the exact digitized roll first.
             GroupBox(header) {
-                centralFilesPeriodBox
+                VStack(alignment: .leading, spacing: 10) {
+                    if let fileId, let year = documentYear, (1906...1910).contains(year) {
+                        numericalFileBox(fileIdentifier: fileId)
+                        Divider()
+                    }
+                    centralFilesPeriodBox
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
         case .ciaCollection:
@@ -457,6 +480,32 @@ struct MacSourceExplorerView: View {
         }
     }
 
+    // MARK: - Bundled Lot File Box
+
+    /// A bundled, key-less link to a lot file's resolved NARA Catalog series record.
+    @ViewBuilder
+    private func bundledLotBox(_ entry: LotFileEntry) -> some View {
+        GroupBox(String(localized: "source.explorer.lotFile.bundled.header",
+                        defaultValue: "NARA Catalog Record")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(entry.title).font(.callout)
+                Button {
+                    if let url = URL(string: entry.catalogURL) { openURL(url) }
+                } label: {
+                    Label(String(localized: "source.explorer.lotFile.bundled.open",
+                                 defaultValue: "Open Series in NARA Catalog"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+                Text(String(localized: "source.explorer.lotFile.bundled.note",
+                            defaultValue: "Resolved from the bundled index — no API key required. Records may be described at the series level rather than digitized page-by-page."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     // MARK: - No API Key View
 
     private var noAPIKeyView: some View {
@@ -511,12 +560,91 @@ struct MacSourceExplorerView: View {
         }
     }
 
+    // MARK: - Country-Series Resolution (pre-1906, Phase 2)
+
+    /// One classification candidate paired with the rolls it resolves to.
+    struct CountrySeriesResolution: Identifiable {
+        let classification: CentralFilesClassification
+        let rolls: [CountryRoll]
+        var id: String { classification.category.rawValue }
+    }
+
+    /// Classifies a pre-1906 document (no source note) from its dateline, heading, and
+    /// FRUS chapter, and resolves each candidate series to its roll(s) in the bundled index.
+    private func resolveCountrySeries() async {
+        guard let dateline = documentDateline,
+              let year = documentYear, year < 1906,
+              let index = CentralFilesIndexStore.shared else { return }
+
+        var chapterCountry: String? = nil
+        if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId,
+           let structure = try? await pipeline.cachedVolumeStructure(forVolumeId: volumeId) {
+            chapterCountry = CentralFilesClassifier.chapterCountry(in: structure, documentId: docId)
+        }
+
+        let classifications = CentralFilesClassifier.classify(
+            header: documentHeader ?? "", dateline: dateline, chapterCountry: chapterCountry)
+        guard !classifications.isEmpty else { return }
+
+        let dateISO = CentralFilesClassifier.datelineDateISO(from: dateline)
+        var resolutions: [CountrySeriesResolution] = []
+        for classification in classifications {
+            guard let geoKey = classification.geoKeys.first,
+                  let series = index.series(category: classification.category) else { continue }
+            let rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
+            if !rolls.isEmpty {
+                resolutions.append(CountrySeriesResolution(classification: classification, rolls: rolls))
+            }
+        }
+        countryResolutions = resolutions
+    }
+
+    @ViewBuilder
+    private var countrySeriesBox: some View {
+        GroupBox(String(localized: "source.explorer.countrySeries.header",
+                        defaultValue: "Digitized Diplomatic Records (pre-1906)")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(String(localized: "source.explorer.countrySeries.intro",
+                            defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document's date."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(countryResolutions) { resolution in
+                    let c = resolution.classification
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text(c.category.displayName).font(.callout.weight(.semibold))
+                            Text(c.confidence.label)
+                                .font(.caption2)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(c.confidence == .high ? Color.green.opacity(0.18)
+                                                                  : Color.orange.opacity(0.18),
+                                            in: Capsule())
+                        }
+                        Text(c.rationale).font(.caption).foregroundStyle(.secondary)
+                        ForEach(resolution.rolls) { roll in
+                            Button {
+                                if let url = URL(string: roll.catalogURL) { openURL(url) }
+                            } label: {
+                                Label(roll.title, systemImage: "film")
+                            }
+                            .buttonStyle(.link)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     // MARK: - Load
 
     private func load() async {
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
         hasAPIKey = await client.hasAPIKey()
+
+        // Pre-1906 country-series resolution (no source note; no API key).
+        await resolveCountrySeries()
 
         // Local related-documents query — runs unconditionally; no API key needed.
         // Must be called before the per-case hasAPIKey guards that return early.
@@ -562,7 +690,9 @@ struct MacSourceExplorerView: View {
         guard let pipeline = indexingPipeline else { return }
         relatedLoading = true
         do {
-            let result = try await pipeline.relatedDocuments(for: note, limit: 30)
+            let result = try await pipeline.relatedDocuments(
+                for: note, limit: 30, documentYear: documentYear,
+                excludingVolumeId: documentVolumeId, excludingDocumentId: documentId)
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
         } catch {
@@ -611,6 +741,60 @@ struct MacSourceExplorerView: View {
             guard response == .OK, let url = panel.url else { return }
             try? naraExportText(result).write(to: url, atomically: true, encoding: .utf8)
         }
+    }
+
+    // MARK: - Numerical File Roll Box (1906–1910)
+
+    /// Resolves a 1906–1910 "File No." to the digitized Numerical File roll(s) holding its
+    /// case, from the bundled `central-files-index.json` (no API key, no network). Mirrors
+    /// `SourceExplorerView.numericalFileSection`. Falls back to the Card Index (M1889) and
+    /// the series link when the case is in a coverage gap or filed on a name/place roll.
+    @ViewBuilder
+    private func numericalFileBox(fileIdentifier: String) -> some View {
+        let rolls = CentralFilesIndexStore.shared?
+            .numericalFile.rolls(forFileNumber: fileIdentifier) ?? []
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "source.explorer.numericalFile.header",
+                        defaultValue: "Digitized Numerical File (M862)"))
+                .font(.headline)
+            if rolls.isEmpty {
+                Text(String(localized: "source.explorer.numericalFile.gap",
+                            defaultValue: "No digitized roll directly covers this file number. Use the Card Index to confirm the case number, then browse the Numerical File series."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button {
+                    openURL(CentralFilesIndexStore.cardIndexURL)
+                } label: {
+                    Label(String(localized: "source.explorer.numericalFile.cardIndex",
+                                 defaultValue: "Open Card Index (M1889) in NARA Catalog"),
+                          systemImage: "rectangle.stack.badge.person.crop")
+                }
+                .buttonStyle(.link)
+                Button {
+                    openURL(CentralFilesIndexStore.numericalFileSeriesURL)
+                } label: {
+                    Label(String(localized: "source.explorer.numericalFile.series",
+                                 defaultValue: "Browse the Numerical File series"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+            } else {
+                Text(String(localized: "source.explorer.numericalFile.found",
+                            defaultValue: "These digitized rolls hold File No. \(fileIdentifier). Open one and review the images page by page — documents are filed in numeric order by case."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(rolls) { roll in
+                    Button {
+                        if let url = URL(string: roll.catalogURL) { openURL(url) }
+                    } label: {
+                        Label(roll.title, systemImage: "film")
+                    }
+                    .buttonStyle(.link)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Central Files Period Box
@@ -720,7 +904,7 @@ struct MacSourceExplorerView: View {
     private var relatedDocumentsBox: some View {
         if relatedLoading {
             GroupBox(String(localized: "source.explorer.related.header",
-                            defaultValue: "Documents from This Collection")) {
+                            defaultValue: "Archival Neighbors")) {
                 HStack {
                     ProgressView().controlSize(.small).padding(.trailing, 6)
                     Text(String(localized: "source.explorer.related.loading",
@@ -755,7 +939,7 @@ struct MacSourceExplorerView: View {
             } label: {
                 HStack {
                     Text(String(localized: "source.explorer.related.header",
-                                defaultValue: "Documents from This Collection"))
+                                defaultValue: "Archival Neighbors"))
                         .font(.headline.weight(.semibold))
                     Spacer()
                     Text("\(relatedTotalCount)")

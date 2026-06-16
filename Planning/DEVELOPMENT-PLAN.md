@@ -529,6 +529,180 @@ Root causes and fixes:
 - **macOS never called `loadPersonMentionCount`** (stale "future session" comment) — wired in `handlePersonTap`.
 - **Verification**: full suite green (785 tests; +5 new: 4 resolver classifications, terms definitions, early-section page spans); both builds clean; live re-checks confirmed each repaired path. **Caveats**: term definitions appear after the v8 re-index completes (launch-triggered, Index Health shows progress); same-document `#pg_XIII`-style roman/front-matter page anchors remain unresolved by design; cross-document footnote-anchor scroll (landing on d100 *at* fn2) is a possible future enhancement.
 
+### Session 2026-06-15 — Pre-1910 Central Files: reference data received + architecture revised
+NARA higher rate limit granted (2026-06-12) and user delivered 9 hand-traced reference
+documents (`Pre1910-CentralFiles-Reference-Data.md`, now filled in and committed). The
+traces confirm feasibility but **revise the architecture** — captured in a new "Findings
+from reference data" section in `BigPicture-Pre1910-CentralFiles.md`:
+- **Hierarchy depth varies by series** (the biggest change): Diplomatic Instructions
+  (593313) and Notes to Foreign Missions (597272) have **no file-unit level** — country
+  is encoded in the roll/item title; Despatches (603720), Notes from (594363), and
+  Consular Despatches (302031) keep the 3-level series→file-unit(country)→roll shape;
+  Numerical File (654171) is 2-level by case number. Index schema gains a per-component
+  `geoGranularity` flag + per-series `rollTitleGrammar`.
+- Roll titles are heterogeneous and contain **typos including in dates** (1675 for 1875);
+  date parsing must clamp implausible years.
+- **Multi-country, non-chronological rolls** exist ("Uruguay and Paraguay") → `geoKeys`
+  is an array, `chronological:false` suppresses the date-interpolation hint there.
+- **Enclosures are dual-homed**: the printed text physically lives in its originating
+  series (from the enclosure's own dateline); the covering doc's roll only references it.
+- Country should be resolved from the **FRUS chapter head**, not name-parsing.
+- FRUS file-number annotations can be imprecise/wrong, but the **integer case number
+  still selects the right Numerical File roll** — Phase 1 keying is robust.
+- No code yet. Next: build Phase 1 (`CentralFilesIndexGenerator` Numerical File survey +
+  harvest, case→roll lookup) using the verified golden NAIDs as parser fixtures.
+
+### Session 2026-06-15 (cont.) — Phase 1 built: CentralFilesIndexGenerator (Numerical File)
+New SPM command-line tool (sibling of ManifestGenerator/TaxonomyGenerator), Core library
++ thin executable + 21 unit tests, all green; full package builds clean.
+- **Targets** (`Package.swift`): `CentralFilesIndexGeneratorCore`, `CentralFilesIndexGenerator`,
+  `CentralFilesIndexGeneratorTests`.
+- **Core files** (`CentralFilesIndexGeneratorCore/`):
+  - `CentralFilesIndexModels.swift` — `CentralFilesIndex` (bundled JSON, `schemaVersion`),
+    `NumericalFileIndex`/`NumericalFileRoll`, and the lookup: `roll(forCaseNumber:)` and
+    `roll(forFileNumber:)` (parses the leading integer case number, drops the `/NN`
+    sub-document suffix — robust to FRUS's imprecise annotations, per Finding 6).
+  - `RollTitleParser.swift` — `numericalFileCaseRange(from:)` parses `Numerical File: N-N`
+    (hyphen/en-dash/whitespace/trailing-period tolerant); non-roll titles → nil (this is
+    how series/file-unit/finding-aid records are filtered out).
+  - `NARACatalogHarvestClient.swift` — actor; pages the v2 `records/search` API
+    (`ancestorNaId` + `availableOnline=true`, cursor via `searchAfter`/`sort[0]`, shape
+    `body.hits.hits[]._source.record` — matches NARA's own bulk scripts). **Caches every
+    raw page to disk** (the required no-re-query design); `CatalogScalar` normalises
+    number-or-string `naId`/cursor.
+  - `NumericalFileIndexBuilder.swift` — pure build + self-survey (matched/unmatched
+    counts, sample unmatched titles, coverage gaps, range overlaps).
+  - `CentralFilesIndexWriter.swift` — deterministic pretty JSON (sorted keys, rolls
+    sorted by caseStart).
+  - `CentralFilesIndexGeneratorRunner.swift` — orchestration; prints the survey and
+    **validates against golden checks from the reference data** (Doc 6 File No. 7187 →
+    roll 19779414; Doc 7 File No. 697/43 → roll 19174810); non-zero exit on failure.
+- **Run**: `CATALOG_API_KEY=<key> swift run CentralFilesIndexGenerator` (env: OUTPUT_PATH,
+  CACHE_DIR, PAGE_SIZE, REFRESH). Writes `FRUSExplorer/Resources/central-files-index.json`.
+- **Status**: harvest not yet run (no API key in the dev environment — user runs it).
+  Tool is self-validating against the golden traces, so a bad parse/missing roll fails
+  loudly. App-side consumption of the index is a later phase. **Open**: confirm the v2
+  `limit` max page size from the first run's cached pages (try PAGE_SIZE=100).
+
+### Session 2026-06-15 (cont.) — Phase 1 harvest run; parser hardened against real M862 titles
+User ran the harvest (rate limit granted); 1,286 records over 52 pages, cached to disk.
+The first run exposed that the clean `N-N` title is only ~55% of rolls, and a naive parse
+produced bogus cross-case ranges (golden checks failed). Iterated the parser **against the
+cached pages** (zero further API calls) until both golden checks pass:
+- Real title forms now handled: single-case (`22346`), sub-document boundaries
+  (`21701-21740/125`, `…/126-End of case`), roll-split `(R)`/`(S)` markers, en-dashes
+  corrupted to **U+FFFD**/underscore, and stray-leading-dash space ranges (`-25101 25240`).
+- **Sub-document hyphen disambiguation** (the key bug): in `18036/9-11Exhibit GG-End of
+  Case` the first hyphen separates sub-documents, not cases — an end integer **below** the
+  start case is a sub-document, so the roll is a single case (prevents bogus wide ranges
+  like (11,18036) that were swallowing the golden cases). Cases run strictly ascending.
+- Require a leading digit after `Numerical File:` → rejects annex/reference records
+  (`Annex to 760928`, `Annexes to case 426`). Pure-space ranges only when the start token
+  is a bare case (`15779 15820` ✓ vs `552/201 42006` → single case 552).
+- Added `rolls(containingCaseNumber:)` (plural): a case is routinely split across 2–3
+  rolls, so the app should surface all of them as page targets.
+- **Result**: 1,261/1,286 parsed (98%); the 25 unmatched are all correctly non-case
+  records (6 name/place rolls, ~14 annex/enclosure supplements, 5 individually-described
+  documents). **Both golden checks pass.** 43 small coverage gaps + 417 overlaps are
+  mostly legitimate case-splitting/boundary-sharing. One harmless outlier roll (case
+  42273). Generated `FRUSExplorer/Resources/central-files-index.json` (272 KB) committed.
+- **Page size**: harvested fine at the default 25. PAGE_SIZE=100 still untried (would cut
+  enumeration ~4×) — non-blocking.
+- **Next**: wire the index into the Source Explorer `centralFilesPanel` (1906–1910 "File
+  No." → roll link(s) + Card Index M1889 fallback for gaps); then Phase 2.
+
+### Session 2026-06-15 (cont.) — Phase 1 app integration: Numerical File roll resolution in Source Explorer
+Wired the bundled index into both Source Explorer views so a 1906–1910 "File No." citation
+resolves to its digitized roll(s) with no API key / no network.
+- **New `FRUSExplorer/SourceExplorer/CentralFilesIndex.swift`** — app-side mirror of the
+  generator's Codable models (the app can't import the SPM tool target; the JSON is the
+  contract). `CentralFilesIndexStore.shared` lazy-loads/caches the bundled
+  `central-files-index.json`; `rolls(forFileNumber:)` returns every roll holding the case
+  (a case can span 2–3 rolls); static `cardIndexURL` (M1889) + `numericalFileSeriesURL`
+  for the gap fallback.
+- **iOS `SourceExplorerView`** — new `numericalFileSection(fileIdentifier:)` shown for
+  `.centralFiles` notes when `documentYear ∈ 1906…1910`: lists each digitized roll with an
+  "Open in NARA Catalog" link + a page-by-page hint; falls back to Card Index + series
+  links when the case is in a coverage gap. Shown above the existing period-finding-aid
+  section (kept as general context).
+- **macOS `MacSourceExplorerView`** — same logic as `numericalFileBox(fileIdentifier:)`,
+  `.buttonStyle(.link)`, placed above `centralFilesPeriodBox` in the NARA box.
+- **`xcodegen generate`** run to register the new Swift file + bundle the JSON resource
+  (schemes restored per CLAUDE.md).
+- **Tests**: new `CentralFilesIndexTests` (6) — JSON-contract decode, golden File No.
+  resolution, case-number parsing, split-case multi-roll, gap → empty, and a
+  **bundled-index runtime test** proving the resource ships and both golden citations
+  (7187 → 19779414; 697/43 → 19174810) resolve in-app. iOS + macOS build clean;
+  SourceExplorerTests (37) and CodingStandardsAudit (15) green.
+- **Remaining manual check**: a live UI walkthrough (open a real 1906–1910 doc with a
+  "File No." note → Source Explorer → tap a roll link) — the data path is unit-verified;
+  the SwiftUI rendering is not exercised by the suite.
+
+### Session 2026-06-15 (cont.) — Phase 2 start: parsing core + survey (country-arranged diplomatic series)
+Began Phase 2 (Despatches 603720, Diplomatic Instructions 593313, Notes from 594363, Notes
+to 597272). Inspecting the cached catalog records revealed they carry `levelOfDescription`
+and `ancestors` (parent NAIDs + structured dates) — so the 3-level series' roll→country
+file-unit linkage is reconstructable, and the case-range "rolls" of Phase 1 are actually
+`fileUnit` records (Phase 1 still correct). **Only the Numerical File is cached**, so —
+applying the Phase 1 lesson (don't build parsers against 2 clean examples) — this turn
+delivers the reusable, fully-tested parsing core plus a survey, deferring final per-series
+parsers until real diplomatic titles are seen.
+- **`HistoricalDateParser`** — parses the title date ranges (`Aug. 17, 1861 - Sept. 2,
+  1863`, `Apr. 19, 1893-Mar. 28, 1896`, full/abbrev months incl. `Sept`, single date, bare
+  year) to ISO; flags implausible years (the `1675`-for-`1875` catalog typo) without
+  failing — a too-wide low bound never causes a missed lookup. 6 tests (real Doc 1–5 dates).
+- **`GeoKeyNormalizer`** — canonical country keys; strips `Volume N:` and trailing date
+  segments, splits combined rolls (`Uruguay and Paraguay` → 2 keys), seed alias table
+  (`Argentine Republic`→argentina, Persia→iran, …). Runs on both index and classifier
+  sides so they agree. 5 tests.
+- **Harvest client** extended to decode `levelOfDescription` + parent file unit (ancestor
+  distance 1) — Phase 1 decode/golden checks still green (41 generator tests pass).
+- **`CentralFilesSurveyRunner`** + `SURVEY_SERIES=<naId>` env switch: enumerates a series
+  and reports record levels, sample titles per level, item→parent linkage, and date
+  parseability. Run e.g. `CATALOG_API_KEY=… SURVEY_SERIES=603720 swift run …`.
+- **Next**: user runs the 4 surveys; finalize per-series geo/date parsers + file-unit
+  country extraction against real titles; build the flattened `countrySeries` index with
+  golden checks (Docs 1–5); then the app-side `CentralFilesClassifier` + Source Explorer
+  integration for pre-1906 documents (which have no source note — needs header/dateline/
+  chapter plumbed into the panel).
+
+### Session 2026-06-15 (cont.) — Phase 2 harvest complete: country-arranged diplomatic series
+Surveys run; the 4 series' real structures matched the findings (Despatches/Notes-from =
+item rolls under country file units; Instructions/Notes-to = fileUnit rolls with country in
+the title). Built the full Phase 2 harvest; **all 5 country golden checks pass** with tight
+result sets, plus both Phase 1 checks. Index now ships 1,261 numerical + 2,963 country
+rolls (1.5 MB, schemaVersion 2).
+- **`CountrySeriesParser`** — per-series geo + date extraction: Despatches/Notes-from take
+  country from the parent file-unit title (`…Ministers to {Country}, …` incl. `Diplomatic
+  Officers, {Country}`; Notes-from demonyms `the {Demonym} Legation` / `Legation of
+  {Country}` / `Central American Legations` / `Foreign Missions, {Country}`, `T## -` prefix
+  stripped, Miscellaneous → no geo); Instructions/Notes-to parse `Volume {n}: {Country}:
+  {dates}` / `{Country[ and …]}: {dates}` from their own title. Resolution level differs
+  per series (item vs fileUnit).
+- **`GeoKeyNormalizer`** — comprehensive alias table built from the full harvested
+  vocabulary (all Notes-from demonyms + FRUS chapter spellings). **Canonical keys are the
+  historical FRUS names** (Persia not Iran, Siam not Thailand) so the app's chapter-derived
+  key matches.
+- **`HistoricalDateParser`** — rewritten component-based; handles the pervasive catalog OCR
+  errors: **`16xx`→`18xx` year correction (+200)** (1675→1875, 1656→1856, …) and
+  **year-sharing** for day-range rolls (`Apr. 16-Aug. 23, 1881`). This collapsed e.g.
+  Switzerland 1875-09-28 from 8 noisy matches to the 1 correct roll. `CountryRoll.matches`
+  excludes dateless (garbled) rolls from date-filtered queries.
+- Flattened `countrySeries` index model (`CountrySeriesIndex`/`CountryRoll`,
+  `rolls(geoKey:dateISO:)`); builder with per-series survey diagnostics; runner enumerates
+  all 4 series and validates the country golden checks. 51 generator tests pass; the app
+  still decodes the upgraded bundled index (extra keys ignored).
+- **Known residue (acceptable)**: ~73/2160 Despatches rolls have un-parseable dates
+  (heavy OCR like `1S45`, `No Title`) — still country-discoverable; Instructions/Notes-to
+  no-geo cases are the legit early country-less chronological volumes; Notes-from misc
+  alphabetical rolls (`Rumania-Zanzibar`) carry no single country. A date query may return
+  2 overlapping rolls (e.g. Japan) — fine as candidate links.
+- **Next (app integration, the remaining Phase 2 work)**: add `countrySeries` to the
+  app-side `CentralFilesIndex` model; build `CentralFilesClassifier` (dateline/heading +
+  FRUS chapter → category + geoKey, per the Finding-5 rules); plumb document header/
+  dateline/chapter into Source Explorer (pre-1906 docs have **no source note**, so the
+  current `.centralFiles`-only trigger doesn't fire); render resolved roll links +
+  confidence + the enclosure dual-home case (Finding 4).
 ### Session 162 (cont.) — Two iPhone Search defects: dead Analytics→Search handoff and an unreachable results-screen toolbar
 User report: on iPhone, (1) Corpus Analytics' "open matching documents in Search" did nothing, and (2) the Search toolbar (Save/Saved/Find-by-citation overflow, filter, timeline) was unreachable from the results screen — making it impossible to save searches or reorder results. Investigated, fixed both, and live-confirmed on the iPhone 17 simulator.
 
@@ -570,3 +744,80 @@ Goal: deepen the app's use of FRUS document dates. A date audit found the index 
 - `ChronologyModels` (`ChronologyRow`, `ChronologyParameters`, `DateBucket`), `ChronologyViewModel` (groups rows into date sections, auto-coarsening day→month→year by span and **never rendering a row finer than its own stored precision**, so year-only docs form an honest year section instead of piling onto Jan 1), and `ChronologyView`: From/To pickers + Show, sectioned list with **dense-date collapse + "Show all N"**, section headers showing count badge + "N volumes · M subseries · K editorial notes" + inline density bar, rows showing summary-or-header snippet + volume chip + dateline + editorial/front-matter/`~`approximate badges, tap-to-open, and a "Search in this range" handoff (`pendingSearch` with a date filter).
 - Integration mirrors Corpus Analytics: iOS calendar toolbar button + sheet in `BrowserTabView` with a `pendingChronology` `onChange` handoff (new `AppState.pendingChronology`); macOS `frus.chronology` `Window` scene + a sidebar tool button in `MainWindowView`.
 - **Verification**: new `DateMetadataIndexingTests` (precision/certainty for exact/range/year/month/approximate) and `ChronologyQueryTests` (range ordering, interval overlap of a multi-day doc, month bucket counts, volume scoping) pass; full `IndexingPipelineTests` + `CodingStandardsAuditTests` green (no date-filter regression); iOS **and** macOS builds clean (project regenerated for the 4 new files; schemes restored). **Caveats**: the live UI flows (dense-date collapse against a real summit date) were verified by unit test + green builds, not on-device (the sim has no indexed corpus); the density chart, tappable-volume-chip-into-volume, per-date person chips, and a `footnote_dates` table were intentionally deferred to keep v1 tight.
+
+### Session 2026-06-15 (cont.) — caught up with v2; Phase 2 app integration (iOS)
+First merged `origin/v2` (Sessions 162–163: Search/Analytics coupling, Chronology browser,
+date precision in the index). Only two conflicts — DEVELOPMENT-PLAN.md (kept both) and
+project.pbxproj (regenerated via xcodegen). Builds clean; v2's new suites green alongside ours.
+
+Then wired Phase 2 into the **iOS** Source Explorer so a pre-1906 document (no source note)
+resolves to its diplomatic-series roll(s):
+- App model: `CentralFilesIndex` gains `countrySeries` (+ `CountrySeriesIndex`, `CountryRoll`,
+  `CentralFilesSeriesCategory`, `rolls(geoKey:dateISO:)`); decodes the schema-2 bundle.
+- `GeoKeyNormalizer` mirrored into the app target (kept in sync with the generator) so a
+  FRUS chapter name normalizes to the same key as the index.
+- `CentralFilesClassifier`: dateline + heading + FRUS chapter → candidate series (Finding 5):
+  U.S. mission abroad → Despatches (high); foreign legation in Washington → Notes from (high);
+  Department of State outbound → **Instructions + Notes-to** (medium — ambiguous from the
+  document alone); consular → none (Phase 3). Plus `datelineDateISO` and
+  `chapterCountry(in:documentId:)` (top-level section title from the cached `VolumeStructure`).
+- `SourceExplorerView.countrySeriesSection` — for `documentYear < 1906`, classifies and
+  resolves each candidate to roll links (confidence chip + rationale); hides the empty
+  raw-note section. `DocumentView` passes header/dateline/volumeId/documentId.
+- Tests: `CentralFilesClassifierTests` (all 5 reference docs, dateline date, chapter
+  resolution, **end-to-end against the real bundled index**). 29 app tests green; iOS+macOS
+  build clean.
+- **Remaining**: **macOS parity** (Mac Source Explorer is an AppState-driven window — needs
+  `currentSourceNote{Header,Dateline,VolumeId,DocId}` primed + a `countrySeriesBox` in
+  `MacSourceExplorerView`); iPad Stage-Manager `frus.sourceExplorer.ios` scene similarly
+  needs the doc context; enclosure dual-home (Finding 4); live UI walkthrough.
+
+### Session 2026-06-15 (cont.) — Phase 3 generator: pre-resolve lot files (later volumes)
+Extend the bundled, key-less approach to State Department lot file citations in later
+volumes so researchers get a NARA Catalog starting point without their own API key. Analyzed
+a 1.1M-row citations export (`citations2.csv`, 196 MB): **1,743 distinct lot numbers**
+(1,553 D-designator RG 59 + 190 F-designator RG 84) across 298 volumes; one-time harvest
+~3.5–7k API calls. Built the generator side (app integration next):
+- `LotFileCitationExtractor` — parse + normalize lot numbers (compact upper-case key,
+  matching the app's runtime form); RG 59 (D) / RG 84 (F) by designator.
+- `CitationCSVReader` — streaming byte-level CSV parser (only buffers `plain_text`) that
+  survives the 196 MB RFC-4180 export (embedded commas/newlines/`""`). Validated offline
+  against the real file (~5 s, 1,500–3,000 distinct lots).
+- `NARACatalogHarvestClient.resolveLotFile(normalized:recordGroup:)` — `variantControlNumber_is`
+  with compact/spaced/mixed spellings (the proven runtime method), **cached per lot** (hits
+  and confirmed misses) so re-runs/partial failures never re-query.
+- `LotFileEntry` + `lotFiles` in `CentralFilesIndex` (schemaVersion → 3) + `lotFile(normalized:)`.
+- Runner Phase 3: when `CITATIONS_CSV` is set, extract distinct lots, resolve each, merge
+  into the index (preserves prior `lotFiles` when the CSV isn't supplied); prints a survey
+  (distinct / resolved / unresolved, by RG). `CentralFilesIndexWriter.read` added.
+- 59→ now more generator tests green (extractor, CSV reader incl. tricky quoting + a guarded
+  real-file check, lot variants, index lookup).
+- **Next**: user runs `CATALOG_API_KEY=… CITATIONS_CSV=…/citations2.csv swift run CentralFilesIndexGenerator`
+  (the resolved/unresolved survey is the validation gate; spot-check a few well-known lots).
+  Then app integration: add `lotFiles` to the app-side `CentralFilesIndex`; in the Source
+  Explorer `lotFilePanel`, resolve from the bundle **first** (key-less) and fall back to the
+  live API only on a miss.
+
+### Session 2026-06-16 — Lot-file quality (RG verification, match type) + Archival Neighbors
+**Lot harvest quality.** First lot runs resolved 948→1578, but ~174+ were false positives
+(Census RG 29, Morning Reports RG 407, Criminal Dockets RG 21) — NARA's RG query filter
+doesn't constrain free-text results. Fixes: verify each result's *own* record group (from
+its recordGroup ancestor) and reject non-59/84; align the phrase fallback to the app's
+proven bare-quoted-lot form (this lifted resolution to ~1578 before the RG fix); retry
+503/429 with backoff + 60 ms throttle; `RETRY_LOT_MISSES`; emit `unresolved-lots.txt`;
+and track `matchType` (control vs phrase) for an app confidence cue. Re-harvest required
+(cache stored only naId+title). Expect ~1,300–1,450 trustworthy lots after RG verification.
+**Archival Neighbors** (Source Explorer, no harvest needed) — extends `relatedDocuments`:
+- `DecimalFileSegment` (new): location (before `/`) + period segment from the suffix year
+  (1940+ date form) or the doc's indexed year (pre-1940 sequential).
+- `relatedByDecimal` segment-filters same-location candidates in Swift; `relatedByCollection`
+  matches non-RG-59 collections on exact (record_group, series_name); lot matching gains
+  self-exclusion; `documentYear` + volume/doc ids threaded from both views.
+- UI relabeled "Archival Neighbors" with a basis caption (lot / collection / decimal
+  location+segment); viewed document excluded from its own neighbors. iOS + macOS.
+- 811 tests (+5 DecimalFileSegment); both platforms build clean.
+**Remaining**: (1) user runs the clean lot re-harvest (`rm -rf .cache/central-files/lots`
+then the CITATIONS_CSV run) → final index with RG-verified lots + matchType; (2) lot-file
+*app* integration — add `lotFiles` to the app-side `CentralFilesIndex`, resolve the lot
+panel from the bundle first (key-less) with a confidence chip, fall back to live API on miss;
+commit the final index.

@@ -23,6 +23,12 @@ import PackageDescription
 ///   `volume-tag-taxonomy.json`, which provides humanised display names and hierarchy for
 ///   volume-level subject tag slugs. Run manually when the taxonomy changes.
 ///
+/// - **CentralFilesIndexGenerator**: harvests the digitized pre-1910 State Dept. Central
+///   Files from the NARA Catalog v2 API and produces `central-files-index.json`, a bundled
+///   map from archival citations to roll-level catalog records. Phase 1 covers the
+///   1906–1910 Numerical File (microfilm M862). Requires `CATALOG_API_KEY`; caches raw
+///   pages to disk. Run when refreshing the bundled index.
+///
 /// ## Library Components
 ///
 /// - **FTS5Store**: Swift actor wrapping SQLite FTS5 for full-text search. Used by the
@@ -90,6 +96,35 @@ let package = Package(
             name: "TaxonomyGeneratorTests",
             dependencies: [.target(name: "TaxonomyGeneratorCore")],
             path: "TaxonomyGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - CentralFilesIndexGenerator
+
+        /// All Central Files index-harvest logic. Imported by the executable and tests.
+        /// Phase 1 covers the 1906–1910 Numerical File (microfilm M862, series NAID 654171):
+        /// it enumerates the digitized rolls in the NARA Catalog and builds a bundled
+        /// case-number → roll index so the app can resolve a State Dept. "File No." to the
+        /// exact roll for page-by-page review without any runtime API calls.
+        .target(
+            name: "CentralFilesIndexGeneratorCore",
+            path: "CentralFilesIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls CentralFilesIndexGeneratorRunner.run() and exits.
+        .executableTarget(
+            name: "CentralFilesIndexGenerator",
+            dependencies: [.target(name: "CentralFilesIndexGeneratorCore")],
+            path: "CentralFilesIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for CentralFilesIndexGeneratorCore logic.
+        .testTarget(
+            name: "CentralFilesIndexGeneratorTests",
+            dependencies: [.target(name: "CentralFilesIndexGeneratorCore")],
+            path: "CentralFilesIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

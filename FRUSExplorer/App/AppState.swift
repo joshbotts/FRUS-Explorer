@@ -492,6 +492,13 @@ final class AppState {
     /// Year of the FRUS document whose source note is currently displayed in Source Explorer.
     /// Used to route decimal-file citations to the correct NARA period finding-aid page.
     var currentSourceNoteYear: Int? = nil
+    /// Document context for the Source Explorer window, used to classify pre-1906 documents
+    /// (which carry no source note) into their diplomatic-series rolls. Set alongside
+    /// `currentSourceNote` at every open-site; read by the window scenes.
+    var currentSourceNoteHeader: String? = nil
+    var currentSourceNoteDateline: String? = nil
+    var currentSourceNoteVolumeId: String? = nil
+    var currentSourceNoteDocumentId: String? = nil
 
     /// `EducationPage.id` to open the Research Guide to directly, or `nil` to
     /// open at the first page.

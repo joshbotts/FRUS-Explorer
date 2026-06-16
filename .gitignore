@@ -10,6 +10,9 @@ xcuserdata/
 .build/
 .swiftpm/
 
+# CentralFilesIndexGenerator raw-page cache (regenerable harvest scratch)
+.cache/
+
 # macOS
 .DS_Store
 .AppleDouble

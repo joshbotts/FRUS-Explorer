@@ -689,6 +689,10 @@ struct MacDocumentView: View {
         // stale data from the previous document while the new one is loading.
         appState.currentSourceNote = nil
         appState.currentSourceNoteYear = nil
+        appState.currentSourceNoteHeader = nil
+        appState.currentSourceNoteDateline = nil
+        appState.currentSourceNoteVolumeId = nil
+        appState.currentSourceNoteDocumentId = nil
 
         // Wait for the download manager to be bootstrapped if it isn't yet.
         // This can happen when a document is opened very early in the app lifecycle
@@ -717,13 +721,18 @@ struct MacDocumentView: View {
         // ResearchStripView's Sources button always works, even when the DocumentBrowserEntry
         // was created via a cross-reference tap (which sets sourceNote: nil).
         // This ensures the macOS source explorer uses the same data source as iOS.
-        if let liveNote = vm.sourceNote {
-            appState.currentSourceNote = liveNote
-            appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
-        } else if let entryNote = entry.sourceNote {
-            // Fallback: entry had sourceNote from the corpus browser path.
-            appState.currentSourceNote = entryNote
-            appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
+        let year = Self.extractYear(from: entry.dateline)
+        appState.currentSourceNoteYear = year
+        appState.currentSourceNoteHeader = entry.header
+        appState.currentSourceNoteDateline = entry.dateline
+        appState.currentSourceNoteVolumeId = entry.volumeId
+        appState.currentSourceNoteDocumentId = entry.documentId
+        if let note = vm.sourceNote ?? entry.sourceNote {
+            appState.currentSourceNote = note
+        } else if let year, year < 1906 {
+            // Pre-1906 documents carry no source note; open the explorer anyway so the
+            // country-series classifier can resolve the archival roll.
+            appState.currentSourceNote = ""
         }
 
         vm.recordReadingHistory(projectId: appState.activeProjectId, in: modelContext)
