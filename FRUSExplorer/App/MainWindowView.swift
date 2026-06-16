@@ -280,6 +280,18 @@ struct MainWindowView: View {
                 localized: "mainwindow.tools.analytics.help",
                 defaultValue: "Open Corpus Analytics — chart term frequency over time"
             ))
+
+            // Chronology window
+            Button {
+                openWindow(id: "frus.chronology")
+            } label: {
+                Label(String(localized: "mainwindow.tools.chronology", defaultValue: "Chronology"),
+                      systemImage: "calendar.day.timeline.left")
+            }
+            .help(String(
+                localized: "mainwindow.tools.chronology.help",
+                defaultValue: "Browse every corpus document within a date range"
+            ))
         }
     }
 

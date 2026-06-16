@@ -2346,3 +2346,69 @@ struct IndexIntegrityTests {
         }
     }
 }
+
+// MARK: - DateMetadataIndexingTests
+
+/// Verifies that `extractDateMetadata` persists the original date precision and
+/// certainty (Session 163, date-index version 9) alongside the normalized interval.
+@Suite("DateMetadataIndexingTests")
+struct DateMetadataIndexingTests {
+
+    @Test("precision and certainty stored for exact, range, year-only, month-only, and approximate dates")
+    func precisionAndCertaintyStored() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<dateline><date when=\"1969-02-15\">February 15, 1969</date></dateline><head>1. Memo</head><p>Body.</p>"),
+                    ("d2", "<dateline><date from=\"1969-03-03\" to=\"1969-03-05\">March 3–5, 1969</date></dateline><head>2. Meeting</head><p>Body.</p>"),
+                    ("d3", "<dateline><date when=\"1969\">1969</date></dateline><head>3. Undated memo</head><p>Body.</p>"),
+                    ("d4", "<dateline><date when=\"1969-07\">July 1969</date></dateline><head>4. Monthly report</head><p>Body.</p>"),
+                    ("d5", "<dateline><date notBefore=\"1969-04-01\" notAfter=\"1969-04-30\">April 1969</date></dateline><head>5. Approximate</head><p>Body.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let pairs = (1...5).map { (volumeId: "frus1969-76v01", documentId: "d\($0)") }
+            let meta = try await pipeline.dateMetadataByDocumentKey(pairs)
+
+            // d1 — exact day.
+            let d1 = try #require(meta["frus1969-76v01/d1"])
+            #expect(d1.precision == .day)
+            #expect(d1.certainty == .exact)
+            #expect(d1.dateISO == "1969-02-15")
+            #expect(d1.dateISOMax == "1969-02-15")
+
+            // d2 — explicit multi-day range.
+            let d2 = try #require(meta["frus1969-76v01/d2"])
+            #expect(d2.precision == .day)
+            #expect(d2.certainty == .range)
+            #expect(d2.dateISO == "1969-03-03")
+            #expect(d2.dateISOMax == "1969-03-05")
+
+            // d3 — year-only: interval still spans the whole year, but precision records it.
+            let d3 = try #require(meta["frus1969-76v01/d3"])
+            #expect(d3.precision == .year)
+            #expect(d3.certainty == .exact)
+            #expect(d3.dateISO == "1969-01-01")
+            #expect(d3.dateISOMax == "1969-12-31")
+
+            // d4 — month precision.
+            let d4 = try #require(meta["frus1969-76v01/d4"])
+            #expect(d4.precision == .month)
+            #expect(d4.certainty == .exact)
+            #expect(d4.dateISO == "1969-07-01")
+            #expect(d4.dateISOMax == "1969-07-31")
+
+            // d5 — approximate bounds.
+            let d5 = try #require(meta["frus1969-76v01/d5"])
+            #expect(d5.certainty == .approximate)
+            #expect(d5.dateISO == "1969-04-01")
+            #expect(d5.dateISOMax == "1969-04-30")
+        }
+    }
+}

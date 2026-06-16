@@ -263,6 +263,61 @@ public enum DateCertainty: Sendable, Comparable {
     case approximate
     /// No machine-readable attributes; content is display text only.
     case textOnly
+
+    /// Stable lowercase string used to persist this value in the `document_dates`
+    /// table. Kept separate from the case names so the storage format is decoupled
+    /// from any future case renames.
+    public var storageValue: String {
+        switch self {
+        case .exact:       return "exact"
+        case .range:       return "range"
+        case .approximate: return "approximate"
+        case .textOnly:    return "textOnly"
+        }
+    }
+
+    /// Reconstructs a `DateCertainty` from its `storageValue`. Returns `nil` for an
+    /// unrecognized or `NULL` string (e.g. a row indexed before certainty was stored).
+    public init?(storageValue: String?) {
+        switch storageValue {
+        case "exact":       self = .exact
+        case "range":       self = .range
+        case "approximate": self = .approximate
+        case "textOnly":    self = .textOnly
+        default:            return nil
+        }
+    }
+}
+
+/// Granularity of a structured date value — how precisely the source TEI pinned the date.
+///
+/// Derived from the component count of the **raw** `<date>` attribute string before it
+/// is padded to a full `yyyy-MM-dd` by the indexing pipeline. Persisted in the
+/// `document_dates.date_precision` column so date features can render and place dates
+/// honestly (a year-only document should read "1969", not "January 1, 1969") instead of
+/// inheriting the false day-level precision created by normalization.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation
+public enum DatePrecision: String, Sendable, Comparable {
+    /// Full `yyyy-MM-dd` — an exact calendar day.
+    case day
+    /// `yyyy-MM` — month known, day unknown.
+    case month
+    /// `yyyy` — only the year is known.
+    case year
+
+    /// Coarse-to-fine ordering (`year < month < day`) so callers can compare precision.
+    public static func < (lhs: DatePrecision, rhs: DatePrecision) -> Bool {
+        func rank(_ p: DatePrecision) -> Int {
+            switch p {
+            case .year:  return 0
+            case .month: return 1
+            case .day:   return 2
+            }
+        }
+        return rank(lhs) < rank(rhs)
+    }
 }
 
 /// Classification of a `<note>` element by its `type` attribute.

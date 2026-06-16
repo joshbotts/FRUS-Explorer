@@ -262,11 +262,19 @@ struct SearchView: View {
         .frame(minWidth: 680, minHeight: 520)
         #endif
         .task {
+            vm.appState = appState
+            vm.loadAvailableUserTags(context: modelContext)
+            // Load the volume/subseries picker options before applying any incoming
+            // parameters so `applyParameters` can reconstruct the subseries selection
+            // from a flat `volumeIds` scope (see `SearchViewModel.reconstructScope`).
+            vm.loadAvailableVolumes(
+                allEntries: appState.manifestStore.diffResult?.known
+                    ?? appState.manifestStore.bundledEntries,
+                indexedIds: appState.indexedVolumeIds
+            )
             if let params = initialParameters {
                 vm.applyParameters(params)
             }
-            vm.appState = appState
-            vm.loadAvailableUserTags(context: modelContext)
             if let pid = appState.activeProjectId {
                 let descriptor = FetchDescriptor<Project>(
                     predicate: #Predicate { $0.id == pid }
@@ -329,7 +337,7 @@ struct SearchView: View {
     /// active so the enclosing `.safeAreaInset` reserves no height.
     @ViewBuilder
     private var volumeScopeBanner: some View {
-        if !vm.selectedVolumeIds.isEmpty {
+        if !vm.effectiveVolumeIds.isEmpty {
             HStack(spacing: 8) {
                 Image(systemName: "books.vertical.fill")
                     .foregroundStyle(.secondary)
@@ -358,10 +366,12 @@ struct SearchView: View {
     }
 
     /// Human-readable label for the active volume scope — the volume's title
-    /// (resolved from the manifest) when a single volume is selected, otherwise
-    /// a count. Falls back to the raw volume ID if the manifest lacks an entry.
+    /// (resolved from the manifest) when the effective scope is a single volume,
+    /// otherwise a count of the effective volumes (the union of the individually
+    /// selected volumes and every volume in the selected subseries). Falls back to
+    /// the raw volume ID if the manifest lacks an entry.
     private var volumeScopeLabel: String {
-        let ids = vm.selectedVolumeIds
+        let ids = vm.effectiveVolumeIds
         if ids.count == 1 {
             let title = appState.manifestStore.entry(forVolumeId: ids[0])?.title ?? ids[0]
             return String(format: String(localized: "search.volumeScope.single %@",
@@ -373,10 +383,12 @@ struct SearchView: View {
         }
     }
 
-    /// Clears the active volume scope and re-runs the current query (if one is
-    /// active) so the results immediately widen to the full corpus.
+    /// Clears the active volume scope (both the individual-volume and subseries
+    /// selections) and re-runs the current query (if one is active) so the results
+    /// immediately widen to the full corpus.
     private func clearVolumeScope() {
         vm.selectedVolumeIds = []
+        vm.selectedSubseriesIds = []
         let hasQuery = !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty
             || !vm.personRefText.trimmingCharacters(in: .whitespaces).isEmpty
         if vm.hasSearched && hasQuery {
@@ -435,11 +447,11 @@ struct SearchView: View {
                     .font(.system(size: 48))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
-                Text(vm.selectedVolumeIds.isEmpty
+                Text(vm.effectiveVolumeIds.isEmpty
                      ? String(localized: "search.prompt",
                               defaultValue: "Enter keywords to search the FRUS corpus.")
                      : String(localized: "search.prompt.scoped",
-                              defaultValue: "Enter keywords to search within this volume."))
+                              defaultValue: "Enter keywords to search within the selected volumes."))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

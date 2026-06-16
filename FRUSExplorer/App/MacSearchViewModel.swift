@@ -83,6 +83,10 @@ enum SearchSortOrder: CaseIterable {
 ///          `debouncedQuery` → `submittedQuery`; `performSearch` reads `submittedQuery`
 ///          so queries never fire before the user presses Return; filter/scope changes
 ///          re-run the previously submitted query (not the live text-field buffer)
+///   1.5 — Session 163: `syncToFilterVM` now loads the volume/subseries picker options
+///          and reconstructs the picker selection from `parameters.volumeIds`;
+///          `applyAdvancedFilters` writes `filterVM.effectiveVolumeIds` back into
+///          `parameters.volumeIds` so the new advanced-filter volume pickers apply.
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -322,11 +326,26 @@ final class MacSearchViewModel {
     /// Copies current `parameters` state into `filterVM` so the filter sheet
     /// shows the currently active values when presented. Creates `filterVM` on
     /// first call if `searchService` is available.
-    func syncToFilterVM(searchService: SearchService?) {
+    func syncToFilterVM(
+        searchService: SearchService?,
+        volumeEntries: [VolumeManifestEntry] = [],
+        indexedVolumeIds: Set<String> = []
+    ) {
         if filterVM == nil, let svc = searchService {
             filterVM = SearchViewModel(searchService: svc)
         }
         guard let filterVM else { return }
+
+        // Populate the volume/subseries picker options, then reconstruct the picker
+        // selection from the currently active flat `volumeIds` scope so the sheet
+        // shows what is actually applied.
+        filterVM.loadAvailableVolumes(allEntries: volumeEntries, indexedIds: indexedVolumeIds)
+        let scope = SearchViewModel.reconstructScope(
+            from: parameters.volumeIds ?? [],
+            available: filterVM.availableVolumes
+        )
+        filterVM.selectedSubseriesIds = scope.subseries
+        filterVM.selectedVolumeIds    = scope.volumes
 
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
@@ -385,6 +404,10 @@ final class MacSearchViewModel {
         parameters.includeDocumentText = filterVM.includeDocumentText
         parameters.includeSummaries = filterVM.includeSummaries
         parameters.includeNotes     = filterVM.includeNotes
+        // Volume/subseries scope: the filter VM unions the two pickers into
+        // `effectiveVolumeIds`, which is what the FTS5 layer filters on.
+        let effectiveVolumes = filterVM.effectiveVolumeIds
+        parameters.volumeIds        = effectiveVolumes.isEmpty ? nil : effectiveVolumes
 
         // Keep scope toggles in sync. Direct assignment to the backing storage
         // would skip the `didSet` observers (which bump `parametersVersion`), but

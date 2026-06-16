@@ -38,6 +38,21 @@ struct SubseriesFrequency: Sendable, Identifiable {
     var id: String { subseries }
 }
 
+/// Document frequency broken down by individual FRUS volume.
+///
+/// `volumeId` is the full volume identifier (e.g. `frus1969-76v01`). The display
+/// label (the human-readable volume title) is resolved by the view from the
+/// manifest — only the ID and count are computed here. Volumes in which the query
+/// term does not appear are omitted entirely, mirroring `SubseriesFrequency`.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation (By-Volume analytics axis)
+struct VolumeFrequency: Sendable, Identifiable {
+    let volumeId: String
+    let count: Int
+    var id: String { volumeId }
+}
+
 /// A term and its occurrence count within a scope (year, subseries, etc.).
 ///
 /// Version history:
@@ -168,6 +183,7 @@ struct AnalyticsParameters: Sendable, Equatable {
 /// ## Analytics Coverage
 /// - `termFrequencyByYear(term:)` — matching docs per year (actual document date)
 /// - `termFrequencyBySubseries(term:)` — matching docs per subseries (volume ID)
+/// - `termFrequencyByVolume(term:)` — matching docs per individual volume (volume ID)
 /// - `topTermsByYear(year:limit:)` — stub; returns empty array (FTS5 vocabulary
 ///   tables are implementation-specific and not available in the current schema)
 ///
@@ -182,6 +198,9 @@ struct AnalyticsParameters: Sendable, Equatable {
 ///          result types; multi-word queries are now split on whitespace and ANDed
 ///          (each word individually Porter-stemmed) rather than treated as a single
 ///          opaque keyword
+///   1.3 — Session 163: add `termFrequencyByVolume` (and `VolumeFrequency`) for the
+///          By-Volume analytics axis; mirrors `termFrequencyBySubseries` but buckets
+///          by full volume ID. New `volumeFrequencyCache` cleared in `invalidateCache()`.
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -193,6 +212,7 @@ actor CorpusAnalyticsService {
 
     private var yearFrequencyCache: [String: [YearFrequency]] = [:]
     private var subseriesFrequencyCache: [String: [SubseriesFrequency]] = [:]
+    private var volumeFrequencyCache: [String: [VolumeFrequency]] = [:]
     private var decadeFrequencyCache: [String: [DecadeFrequency]] = [:]
     private var monthFrequencyCache: [String: [MonthFrequency]] = [:]
     private var dayFrequencyCache: [String: [DayFrequency]] = [:]
@@ -217,6 +237,7 @@ actor CorpusAnalyticsService {
     func invalidateCache() {
         yearFrequencyCache.removeAll()
         subseriesFrequencyCache.removeAll()
+        volumeFrequencyCache.removeAll()
         decadeFrequencyCache.removeAll()
         monthFrequencyCache.removeAll()
         dayFrequencyCache.removeAll()
@@ -452,6 +473,38 @@ actor CorpusAnalyticsService {
             .sorted { $0.subseries < $1.subseries }
 
         insertIntoCache(&subseriesFrequencyCache, key: cacheKey, value: result)
+        return result
+    }
+
+    /// Returns the count of documents matching `term`, grouped by individual volume.
+    ///
+    /// Results are sorted by volume ID ascending. Volumes in which the term never
+    /// appears are omitted (the same zero-omission behaviour as
+    /// `termFrequencyBySubseries`). The caller resolves each `volumeId` to a display
+    /// title via the manifest.
+    ///
+    /// - Parameter term: One or more whitespace-separated keywords (AND-combined,
+    ///   individually Porter-stemmed — identical handling to the other axes).
+    /// - Returns: Array of `VolumeFrequency` sorted by `volumeId` ascending.
+    func termFrequencyByVolume(term: String) async throws -> [VolumeFrequency] {
+        let cacheKey = term
+        if let cached = volumeFrequencyCache[cacheKey] { return cached }
+
+        let words = Self.splitKeywords(term)
+        guard !words.isEmpty else { return [] }
+        let query = FTS5Query(keywords: words)
+        let keys = try await fts5Store.matchedDocumentKeys(query: query)
+
+        var counts: [String: Int] = [:]
+        for key in keys {
+            counts[key.volumeId, default: 0] += 1
+        }
+
+        let result = counts
+            .map { VolumeFrequency(volumeId: $0.key, count: $0.value) }
+            .sorted { $0.volumeId < $1.volumeId }
+
+        insertIntoCache(&volumeFrequencyCache, key: cacheKey, value: result)
         return result
     }
 
