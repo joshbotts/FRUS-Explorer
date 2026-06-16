@@ -143,4 +143,36 @@ struct CorpusAnalyticsServiceTests {
             #expect(result.isEmpty, "A blank term has no searchable keywords")
         }
     }
+
+    /// A quoted phrase must match only adjacent occurrences (like Search), where an
+    /// unquoted query is a loose AND of the words. Regression test for analytics
+    /// previously stripping quotes and over-reporting phrase queries.
+    @Test("quoted phrase matches adjacency only, unquoted is a loose AND")
+    func quotedPhraseMatchesAdjacencyOnly() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    // Adjacent phrase "second treaty".
+                    ("d1", "<head>1. Memo</head><p>The second treaty was signed in March.</p>"),
+                    // Both words present, but NOT adjacent / not in order.
+                    ("d2", "<head>2. Memo</head><p>The treaty came second on the agenda.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            let phrase = try await service.termFrequencyByVolume(term: "\"second treaty\"")
+            let phraseCount = phrase.first { $0.volumeId == "frus1969-76v01" }?.count ?? 0
+            #expect(phraseCount == 1, "Quoted phrase matches only the adjacent occurrence (d1)")
+
+            let loose = try await service.termFrequencyByVolume(term: "second treaty")
+            let looseCount = loose.first { $0.volumeId == "frus1969-76v01" }?.count ?? 0
+            #expect(looseCount == 2, "Unquoted query is a loose AND, matching both documents")
+        }
+    }
 }
