@@ -944,7 +944,9 @@ struct SourceExplorerView: View {
         guard let pipeline = indexingPipeline else { return }
         relatedLoading = true
         do {
-            let result = try await pipeline.relatedDocuments(for: note, limit: 30)
+            let result = try await pipeline.relatedDocuments(
+                for: note, limit: 30, documentYear: documentYear,
+                excludingVolumeId: documentVolumeId, excludingDocumentId: documentId)
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
         } catch {
@@ -968,6 +970,36 @@ struct SourceExplorerView: View {
         isLoading = false
     }
 
+    /// A short description of *why* the related documents are neighbors, shown atop the
+    /// section so the researcher understands the archival relationship.
+    private var archivalNeighborBasis: String? {
+        switch parsed {
+        case .lotFile(_, let lot, _):
+            return String(localized: "source.explorer.related.basis.lot",
+                          defaultValue: "Same lot file — \(lot)")
+        case .naraCollection(let rg, let series?, let lot, _):
+            if let lot {
+                return String(localized: "source.explorer.related.basis.lot",
+                              defaultValue: "Same lot file — \(lot)")
+            }
+            return String(localized: "source.explorer.related.basis.collection",
+                          defaultValue: "Same collection — RG \(rg), \(series)")
+        case .centralFiles(_, let fileId?) where fileId.contains("."):
+            let location = DecimalFileSegment.location(from: fileId)
+            if let segment = DecimalFileSegment.segment(for: fileId, fallbackYear: documentYear) {
+                return String(localized: "source.explorer.related.basis.decimalSegment",
+                              defaultValue: "Same decimal file — \(location), \(segment)")
+            }
+            return String(localized: "source.explorer.related.basis.decimal",
+                          defaultValue: "Same decimal file — \(location)")
+        case .presidentialLibrary(let library, _, _):
+            return String(localized: "source.explorer.related.basis.library",
+                          defaultValue: "Same collection — \(library)")
+        default:
+            return nil
+        }
+    }
+
     // MARK: - Related Documents Section
 
     /// Section displaying documents from the same archival collection or file series.
@@ -989,6 +1021,11 @@ struct SourceExplorerView: View {
             }
         } else if !relatedDocs.isEmpty {
             Section {
+                if let basis = archivalNeighborBasis {
+                    Text(basis)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 ForEach(relatedDocs, id: \.documentId) { doc in
                     Button {
                         dismiss()
@@ -1008,7 +1045,7 @@ struct SourceExplorerView: View {
             } header: {
                 HStack {
                     Text(String(localized: "source.explorer.related.header",
-                                defaultValue: "Documents from This Collection"))
+                                defaultValue: "Archival Neighbors"))
                     Spacer()
                     Text("\(relatedTotalCount)")
                         .font(.caption.monospacedDigit())

@@ -660,7 +660,9 @@ struct MacSourceExplorerView: View {
         guard let pipeline = indexingPipeline else { return }
         relatedLoading = true
         do {
-            let result = try await pipeline.relatedDocuments(for: note, limit: 30)
+            let result = try await pipeline.relatedDocuments(
+                for: note, limit: 30, documentYear: documentYear,
+                excludingVolumeId: documentVolumeId, excludingDocumentId: documentId)
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
         } catch {
@@ -872,7 +874,7 @@ struct MacSourceExplorerView: View {
     private var relatedDocumentsBox: some View {
         if relatedLoading {
             GroupBox(String(localized: "source.explorer.related.header",
-                            defaultValue: "Documents from This Collection")) {
+                            defaultValue: "Archival Neighbors")) {
                 HStack {
                     ProgressView().controlSize(.small).padding(.trailing, 6)
                     Text(String(localized: "source.explorer.related.loading",
@@ -907,7 +909,7 @@ struct MacSourceExplorerView: View {
             } label: {
                 HStack {
                     Text(String(localized: "source.explorer.related.header",
-                                defaultValue: "Documents from This Collection"))
+                                defaultValue: "Archival Neighbors"))
                         .font(.headline.weight(.semibold))
                     Spacer()
                     Text("\(relatedTotalCount)")
