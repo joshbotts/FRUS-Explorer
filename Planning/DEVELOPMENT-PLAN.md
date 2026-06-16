@@ -637,3 +637,31 @@ resolves to its digitized roll(s) with no API key / no network.
 - **Remaining manual check**: a live UI walkthrough (open a real 1906–1910 doc with a
   "File No." note → Source Explorer → tap a roll link) — the data path is unit-verified;
   the SwiftUI rendering is not exercised by the suite.
+
+### Session 2026-06-15 (cont.) — Phase 2 start: parsing core + survey (country-arranged diplomatic series)
+Began Phase 2 (Despatches 603720, Diplomatic Instructions 593313, Notes from 594363, Notes
+to 597272). Inspecting the cached catalog records revealed they carry `levelOfDescription`
+and `ancestors` (parent NAIDs + structured dates) — so the 3-level series' roll→country
+file-unit linkage is reconstructable, and the case-range "rolls" of Phase 1 are actually
+`fileUnit` records (Phase 1 still correct). **Only the Numerical File is cached**, so —
+applying the Phase 1 lesson (don't build parsers against 2 clean examples) — this turn
+delivers the reusable, fully-tested parsing core plus a survey, deferring final per-series
+parsers until real diplomatic titles are seen.
+- **`HistoricalDateParser`** — parses the title date ranges (`Aug. 17, 1861 - Sept. 2,
+  1863`, `Apr. 19, 1893-Mar. 28, 1896`, full/abbrev months incl. `Sept`, single date, bare
+  year) to ISO; flags implausible years (the `1675`-for-`1875` catalog typo) without
+  failing — a too-wide low bound never causes a missed lookup. 6 tests (real Doc 1–5 dates).
+- **`GeoKeyNormalizer`** — canonical country keys; strips `Volume N:` and trailing date
+  segments, splits combined rolls (`Uruguay and Paraguay` → 2 keys), seed alias table
+  (`Argentine Republic`→argentina, Persia→iran, …). Runs on both index and classifier
+  sides so they agree. 5 tests.
+- **Harvest client** extended to decode `levelOfDescription` + parent file unit (ancestor
+  distance 1) — Phase 1 decode/golden checks still green (41 generator tests pass).
+- **`CentralFilesSurveyRunner`** + `SURVEY_SERIES=<naId>` env switch: enumerates a series
+  and reports record levels, sample titles per level, item→parent linkage, and date
+  parseability. Run e.g. `CATALOG_API_KEY=… SURVEY_SERIES=603720 swift run …`.
+- **Next**: user runs the 4 surveys; finalize per-series geo/date parsers + file-unit
+  country extraction against real titles; build the flattened `countrySeries` index with
+  golden checks (Docs 1–5); then the app-side `CentralFilesClassifier` + Source Explorer
+  integration for pre-1906 documents (which have no source note — needs header/dateline/
+  chapter plumbed into the panel).

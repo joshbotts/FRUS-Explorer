@@ -90,6 +90,16 @@ public struct CentralFilesIndexGeneratorRunner {
         let pageSize = env["PAGE_SIZE"].flatMap(Int.init) ?? 25
         let refresh = ["1", "true", "yes"].contains((env["REFRESH"] ?? "").lowercased())
 
+        // Phase 2 survey mode: when SURVEY_SERIES is set, report that series' structure
+        // (record levels, sample titles, parent linkage, date parseability) and exit —
+        // used to finalize the diplomatic-series parsers before the full index build.
+        if let surveySeries = env["SURVEY_SERIES"], !surveySeries.isEmpty {
+            await CentralFilesSurveyRunner.run(
+                seriesNaId: surveySeries, apiKey: apiKey,
+                pageSize: pageSize, cacheDirectory: cacheDir, refresh: refresh)
+            return
+        }
+
         print("""
         [CentralFilesIndexGenerator] Phase 1 — Numerical File (series \(numericalFileSeriesNaId), \(numericalFileMicrofilm))
           page size: \(pageSize)   cache: \(cacheDir.path)   refresh: \(refresh)

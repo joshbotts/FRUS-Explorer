@@ -18,4 +18,12 @@ import CentralFilesIndexGeneratorCore
 /// CATALOG_API_KEY=<key> swift run CentralFilesIndexGenerator
 /// ```
 /// Optional environment variables: OUTPUT_PATH, CACHE_DIR, PAGE_SIZE, REFRESH.
+///
+/// Phase 2 survey mode — report a diplomatic series' structure (record levels, sample
+/// titles, parent linkage, date parseability) to finalize its parsers before building:
+/// ```
+/// CATALOG_API_KEY=<key> SURVEY_SERIES=603720 swift run CentralFilesIndexGenerator
+/// ```
+/// Diplomatic series NAIDs: 603720 Despatches · 593313 Instructions ·
+/// 594363 Notes from Foreign Missions · 597272 Notes to Foreign Missions.
 await CentralFilesIndexGeneratorRunner.run()

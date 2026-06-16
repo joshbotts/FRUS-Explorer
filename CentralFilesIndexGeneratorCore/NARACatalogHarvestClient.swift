@@ -15,17 +15,33 @@ import FoundationNetworking
 
 /// A single descendant record returned by the NARA Catalog v2 search.
 ///
-/// Only the fields the harvest needs are retained. `naId` and `title` are sufficient to
-/// identify and classify a roll; the catalog deep link is derived from `naId`.
+/// `naId` and `title` identify the record; the catalog deep link is derived from `naId`.
+/// `levelOfDescription` and the parent file-unit (from `ancestors`, distance 1) let the
+/// Phase 2 builder reconstruct the series → file-unit (country) → item (roll) hierarchy.
 public struct CatalogRecord: Sendable, Equatable {
     /// NARA unique identifier (always stringified, even when the API returns a number).
     public let naId: String
     /// Record title (e.g. `Numerical File: 7179-7187`).
     public let title: String
+    /// `series` / `fileUnit` / `item`, when present.
+    public let levelOfDescription: String?
+    /// NAID of the immediate parent file unit (ancestor at distance 1), when present.
+    public let parentFileUnitNaId: String?
+    /// Title of the immediate parent file unit, when present.
+    public let parentFileUnitTitle: String?
 
-    public init(naId: String, title: String) {
+    public init(
+        naId: String,
+        title: String,
+        levelOfDescription: String? = nil,
+        parentFileUnitNaId: String? = nil,
+        parentFileUnitTitle: String? = nil
+    ) {
         self.naId = naId
         self.title = title
+        self.levelOfDescription = levelOfDescription
+        self.parentFileUnitNaId = parentFileUnitNaId
+        self.parentFileUnitTitle = parentFileUnitTitle
     }
 }
 
@@ -232,7 +248,17 @@ public actor NARACatalogHarvestClient {
                   let naId = record.naId?.stringValue, !naId.isEmpty,
                   let title = record.title, !title.isEmpty
             else { return nil }
-            return CatalogRecord(naId: naId, title: title)
+            // The immediate parent file unit is the ancestor at distance 1 whose level is
+            // a file unit (the country/post grouping for the 3-level diplomatic series).
+            let parent = record.ancestors?.first {
+                $0.distance == 1 && $0.levelOfDescription == "fileUnit"
+            }
+            return CatalogRecord(
+                naId: naId,
+                title: title,
+                levelOfDescription: record.levelOfDescription,
+                parentFileUnitNaId: parent?.naId?.stringValue,
+                parentFileUnitTitle: parent?.title)
         }
         let nextCursor = hits.last?.sort?.first?.stringValue
         return DecodedPage(records: records, nextCursor: nextCursor)
@@ -253,6 +279,14 @@ public actor NARACatalogHarvestClient {
         struct Record: Decodable {
             let naId: CatalogScalar?
             let title: String?
+            let levelOfDescription: String?
+            let ancestors: [Ancestor]?
+        }
+        struct Ancestor: Decodable {
+            let naId: CatalogScalar?
+            let title: String?
+            let distance: Int?
+            let levelOfDescription: String?
         }
     }
 }
