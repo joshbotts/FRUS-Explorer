@@ -359,11 +359,19 @@ struct MacSourceExplorerView: View {
 
         switch parsed {
 
-        case .centralFiles:
+        case .centralFiles(_, let fileId):
             // Period-based routing replaces the old resolveRG59CentralFiles catalog-search
-            // URL, which returned empty results for decimal file numbers.
+            // URL, which returned empty results for decimal file numbers. For 1906–1910
+            // documents, the bundled index resolves the exact digitized roll first.
             GroupBox(header) {
-                centralFilesPeriodBox
+                VStack(alignment: .leading, spacing: 10) {
+                    if let fileId, let year = documentYear, (1906...1910).contains(year) {
+                        numericalFileBox(fileIdentifier: fileId)
+                        Divider()
+                    }
+                    centralFilesPeriodBox
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
         case .ciaCollection:
@@ -611,6 +619,60 @@ struct MacSourceExplorerView: View {
             guard response == .OK, let url = panel.url else { return }
             try? naraExportText(result).write(to: url, atomically: true, encoding: .utf8)
         }
+    }
+
+    // MARK: - Numerical File Roll Box (1906–1910)
+
+    /// Resolves a 1906–1910 "File No." to the digitized Numerical File roll(s) holding its
+    /// case, from the bundled `central-files-index.json` (no API key, no network). Mirrors
+    /// `SourceExplorerView.numericalFileSection`. Falls back to the Card Index (M1889) and
+    /// the series link when the case is in a coverage gap or filed on a name/place roll.
+    @ViewBuilder
+    private func numericalFileBox(fileIdentifier: String) -> some View {
+        let rolls = CentralFilesIndexStore.shared?
+            .numericalFile.rolls(forFileNumber: fileIdentifier) ?? []
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "source.explorer.numericalFile.header",
+                        defaultValue: "Digitized Numerical File (M862)"))
+                .font(.headline)
+            if rolls.isEmpty {
+                Text(String(localized: "source.explorer.numericalFile.gap",
+                            defaultValue: "No digitized roll directly covers this file number. Use the Card Index to confirm the case number, then browse the Numerical File series."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button {
+                    openURL(CentralFilesIndexStore.cardIndexURL)
+                } label: {
+                    Label(String(localized: "source.explorer.numericalFile.cardIndex",
+                                 defaultValue: "Open Card Index (M1889) in NARA Catalog"),
+                          systemImage: "rectangle.stack.badge.person.crop")
+                }
+                .buttonStyle(.link)
+                Button {
+                    openURL(CentralFilesIndexStore.numericalFileSeriesURL)
+                } label: {
+                    Label(String(localized: "source.explorer.numericalFile.series",
+                                 defaultValue: "Browse the Numerical File series"),
+                          systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.link)
+            } else {
+                Text(String(localized: "source.explorer.numericalFile.found",
+                            defaultValue: "These digitized rolls hold File No. \(fileIdentifier). Open one and review the images page by page — documents are filed in numeric order by case."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(rolls) { roll in
+                    Button {
+                        if let url = URL(string: roll.catalogURL) { openURL(url) }
+                    } label: {
+                        Label(roll.title, systemImage: "film")
+                    }
+                    .buttonStyle(.link)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Central Files Period Box

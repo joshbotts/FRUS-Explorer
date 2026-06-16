@@ -314,6 +314,13 @@ struct SourceExplorerView: View {
             }
         }
 
+        // 1906–1910 Numerical File: resolve the exact digitized roll(s) for this
+        // File No. from the bundled index — a direct, page-by-page-ready catalog link
+        // with no API key required.
+        if let fileIdentifier, let year = documentYear, (1906...1910).contains(year) {
+            numericalFileSection(fileIdentifier: fileIdentifier)
+        }
+
         // Period-specific NARA finding-aid routing — the primary resource for
         // State Dept. central files. Routes to archives.gov research pages for the
         // correct filing era (1789–1906, 1906–1910, decimal 1910–1963, or 1963–1973)
@@ -322,6 +329,54 @@ struct SourceExplorerView: View {
         // catalog.archives.gov/search returns no useful results for decimal file numbers.
         if recordGroup == "RG-59" || recordGroup == "59" {
             centralFilesPeriodSection(fileIdentifier: fileIdentifier)
+        }
+    }
+
+    /// Resolves a 1906–1910 "File No." to the digitized Numerical File roll(s) that hold
+    /// its case, from the bundled `central-files-index.json` (no API key, no network).
+    ///
+    /// A case can be split across two or three rolls, so all matching rolls are shown.
+    /// When the case falls in a coverage gap (or is filed on a name/place roll), the
+    /// section falls back to the Card Index (M1889) and the Numerical File series links.
+    @ViewBuilder
+    private func numericalFileSection(fileIdentifier: String) -> some View {
+        let rolls = CentralFilesIndexStore.shared?
+            .numericalFile.rolls(forFileNumber: fileIdentifier) ?? []
+
+        Section(String(localized: "source.explorer.numericalFile.header",
+                       defaultValue: "Digitized Numerical File (M862)")) {
+            if rolls.isEmpty {
+                Text(String(localized: "source.explorer.numericalFile.gap",
+                            defaultValue: "No digitized roll directly covers this file number. Use the Card Index to confirm the case number, then browse the Numerical File series."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button {
+                    openURL(CentralFilesIndexStore.cardIndexURL)
+                } label: {
+                    Label(String(localized: "source.explorer.numericalFile.cardIndex",
+                                 defaultValue: "Open Card Index (M1889) in NARA Catalog"),
+                          systemImage: "rectangle.stack.badge.person.crop")
+                }
+                Button {
+                    openURL(CentralFilesIndexStore.numericalFileSeriesURL)
+                } label: {
+                    Label(String(localized: "source.explorer.numericalFile.series",
+                                 defaultValue: "Browse the Numerical File series"),
+                          systemImage: "arrow.up.right.square")
+                }
+            } else {
+                Text(String(localized: "source.explorer.numericalFile.found",
+                            defaultValue: "These digitized rolls hold File No. \(fileIdentifier). Open one and review the images page by page — documents are filed in numeric order by case."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(rolls) { roll in
+                    Button {
+                        if let url = URL(string: roll.catalogURL) { openURL(url) }
+                    } label: {
+                        Label(roll.title, systemImage: "film")
+                    }
+                }
+            }
         }
     }
 

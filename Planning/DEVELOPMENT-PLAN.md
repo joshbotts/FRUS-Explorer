@@ -610,3 +610,30 @@ cached pages** (zero further API calls) until both golden checks pass:
   enumeration ~4×) — non-blocking.
 - **Next**: wire the index into the Source Explorer `centralFilesPanel` (1906–1910 "File
   No." → roll link(s) + Card Index M1889 fallback for gaps); then Phase 2.
+
+### Session 2026-06-15 (cont.) — Phase 1 app integration: Numerical File roll resolution in Source Explorer
+Wired the bundled index into both Source Explorer views so a 1906–1910 "File No." citation
+resolves to its digitized roll(s) with no API key / no network.
+- **New `FRUSExplorer/SourceExplorer/CentralFilesIndex.swift`** — app-side mirror of the
+  generator's Codable models (the app can't import the SPM tool target; the JSON is the
+  contract). `CentralFilesIndexStore.shared` lazy-loads/caches the bundled
+  `central-files-index.json`; `rolls(forFileNumber:)` returns every roll holding the case
+  (a case can span 2–3 rolls); static `cardIndexURL` (M1889) + `numericalFileSeriesURL`
+  for the gap fallback.
+- **iOS `SourceExplorerView`** — new `numericalFileSection(fileIdentifier:)` shown for
+  `.centralFiles` notes when `documentYear ∈ 1906…1910`: lists each digitized roll with an
+  "Open in NARA Catalog" link + a page-by-page hint; falls back to Card Index + series
+  links when the case is in a coverage gap. Shown above the existing period-finding-aid
+  section (kept as general context).
+- **macOS `MacSourceExplorerView`** — same logic as `numericalFileBox(fileIdentifier:)`,
+  `.buttonStyle(.link)`, placed above `centralFilesPeriodBox` in the NARA box.
+- **`xcodegen generate`** run to register the new Swift file + bundle the JSON resource
+  (schemes restored per CLAUDE.md).
+- **Tests**: new `CentralFilesIndexTests` (6) — JSON-contract decode, golden File No.
+  resolution, case-number parsing, split-case multi-roll, gap → empty, and a
+  **bundled-index runtime test** proving the resource ships and both golden citations
+  (7187 → 19779414; 697/43 → 19174810) resolve in-app. iOS + macOS build clean;
+  SourceExplorerTests (37) and CodingStandardsAudit (15) green.
+- **Remaining manual check**: a live UI walkthrough (open a real 1906–1910 doc with a
+  "File No." note → Source Explorer → tap a roll link) — the data path is unit-verified;
+  the SwiftUI rendering is not exercised by the suite.
