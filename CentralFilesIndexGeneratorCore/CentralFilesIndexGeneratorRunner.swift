@@ -146,14 +146,15 @@ public struct CentralFilesIndexGeneratorRunner {
         print("""
         [CentralFilesIndexGenerator] Survey:
           Total records:   \(result.totalRecords)
+          Duplicates:      \(result.duplicatesSkipped) (same NAID returned more than once)
           Parsed as rolls: \(result.matchedRolls)
-          Unmatched:       \(result.totalRecords - result.matchedRolls)
+          Unmatched:       \(result.unmatchedCount) (name/place rolls + non-case records)
           Case span:       \(caseSpan)
           Coverage gaps:   \(result.coverageGaps.count)
           Range overlaps:  \(result.overlaps.count)
         """)
         if !result.unmatchedTitles.isEmpty {
-            print("  Sample unmatched titles (filter check):")
+            print("  Sample unmatched titles (should be name/place or finding-aid records):")
             for title in result.unmatchedTitles { print("    • \(title)") }
         }
         for gap in result.coverageGaps.prefix(10) {

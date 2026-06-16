@@ -43,14 +43,18 @@ public struct CaseRangeOverlap: Sendable, Equatable {
 public struct NumericalFileHarvestResult: Sendable, Equatable {
     /// The assembled, sorted index.
     public let index: NumericalFileIndex
-    /// Total descendant records returned by the catalog.
+    /// Total descendant records returned by the catalog (including duplicates).
     public let totalRecords: Int
-    /// Titles that did not parse as a Numerical File case range (series/file-unit
-    /// descriptions, finding aids, or unexpected formats). Capped for logging.
+    /// Records skipped because their NAID had already been seen.
+    public let duplicatesSkipped: Int
+    /// Total distinct records that did not parse as a case range (name/place rolls,
+    /// finding aids, unexpected formats).
+    public let unmatchedCount: Int
+    /// A capped sample of unmatched titles, for logging.
     public let unmatchedTitles: [String]
     /// Spans of case numbers no roll covers (possible missing rolls).
     public let coverageGaps: [CaseCoverageGap]
-    /// Overlapping case ranges (expected empty).
+    /// Overlapping case ranges (roll-split `(R)`/`(S)` variants can legitimately overlap).
     public let overlaps: [CaseRangeOverlap]
 
     /// Number of records that parsed into rolls.
@@ -83,8 +87,18 @@ public enum NumericalFileIndexBuilder {
     ) -> NumericalFileHarvestResult {
         var rolls: [NumericalFileRoll] = []
         var unmatched: [String] = []
+        var seenNaIds = Set<String>()
+        var duplicatesSkipped = 0
 
         for record in records {
+            // The catalog occasionally returns the same item record more than once;
+            // dedupe by NAID so duplicates don't inflate the roll count or appear as
+            // spurious same-range overlaps.
+            guard seenNaIds.insert(record.naId).inserted else {
+                duplicatesSkipped += 1
+                continue
+            }
+
             if let range = RollTitleParser.numericalFileCaseRange(from: record.title) {
                 rolls.append(NumericalFileRoll(
                     naId: record.naId,
@@ -104,6 +118,8 @@ public enum NumericalFileIndexBuilder {
         return NumericalFileHarvestResult(
             index: index,
             totalRecords: records.count,
+            duplicatesSkipped: duplicatesSkipped,
+            unmatchedCount: unmatched.count,
             unmatchedTitles: Array(unmatched.prefix(maxUnmatchedSamples)),
             coverageGaps: gaps,
             overlaps: overlaps
