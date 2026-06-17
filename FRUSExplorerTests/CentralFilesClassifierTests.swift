@@ -1,0 +1,146 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Testing
+import Foundation
+@testable import FRUSExplorer
+
+// MARK: - CentralFilesClassifierTests
+
+/// Tests for classifying pre-1906 documents into a Central Files series and resolving the
+/// result against the bundled index, using the five reference-data documents (Docs 1–5).
+struct CentralFilesClassifierTests {
+
+    // MARK: Classification (dateline + chapter → series + country)
+
+    @Test("Despatch: U.S. mission abroad → high-confidence despatches")
+    func classifiesDespatch() throws {
+        // Doc 4 (frus1905/d544) and Doc 5 (frus1876/d311).
+        let d4 = CentralFilesClassifier.classify(
+            header: "Minister Griscom to the Secretary of State.",
+            dateline: "American Legation, Tokyo, March 14, 1905.",
+            chapterCountry: "Japan")
+        #expect(d4.count == 1)
+        #expect(d4.first?.category == .despatches)
+        #expect(d4.first?.geoKeys == ["japan"])
+        #expect(d4.first?.confidence == .high)
+
+        let d5 = CentralFilesClassifier.classify(
+            header: "No. 302. Mr. Rublee to Mr. Fish.",
+            dateline: "Legation of the United States, Berne, September 28, 1875.",
+            chapterCountry: "Switzerland")
+        #expect(d5.first?.category == .despatches)
+        #expect(d5.first?.geoKeys == ["switzerland"])
+    }
+
+    @Test("Note from: foreign legation in Washington → high-confidence notesFrom")
+    func classifiesNoteFrom() {
+        // Doc 2 (frus1894/d815).
+        let d2 = CentralFilesClassifier.classify(
+            header: "Dr. Lobo to Mr. Gresham.",
+            dateline: "Legation of Venezuela, Washington, October 26, 1893.",
+            chapterCountry: "Venezuela")
+        #expect(d2.count == 1)
+        #expect(d2.first?.category == .notesFrom)
+        #expect(d2.first?.geoKeys == ["venezuela"])
+        #expect(d2.first?.confidence == .high)
+    }
+
+    @Test("Department of State outbound → ambiguous instruction / note-to candidates")
+    func classifiesDeptOutbound() {
+        // Doc 1 (instruction) and Doc 3 (note to) both date from the Department of State.
+        let d1 = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Mr. Adams.",
+            dateline: "Department of State, Washington, July 6, 1863.",
+            chapterCountry: "Great Britain")
+        #expect(d1.map(\.category) == [.instructions, .notesTo])
+        #expect(d1.allSatisfy { $0.geoKeys == ["great britain"] })
+        #expect(d1.allSatisfy { $0.confidence == .medium })
+
+        let d3 = CentralFilesClassifier.classify(
+            header: "No. 407. Mr. Evarts to Dr. Aceval.",
+            dateline: "Department of State, Washington, November 13, 1878.",
+            chapterCountry: "Paraguay")
+        #expect(d3.map(\.category) == [.instructions, .notesTo])
+        #expect(d3.first?.geoKeys == ["paraguay"])
+    }
+
+    @Test("Consular despatch is not claimed (Phase 3)")
+    func skipsConsular() {
+        let c = CentralFilesClassifier.classify(
+            header: "Mr. Springer to Mr. Uhl.",
+            dateline: "Consulate-General of the United States, Havana, June 19, 1895.",
+            chapterCountry: "Spain")
+        #expect(c.isEmpty)
+    }
+
+    @Test("No resolvable country → no classification")
+    func noCountryNoClassification() {
+        let none = CentralFilesClassifier.classify(
+            header: "Mr. X to Mr. Y.",
+            dateline: "American Legation, Tokyo, March 14, 1905.",
+            chapterCountry: nil)
+        #expect(none.isEmpty)
+    }
+
+    // MARK: Dateline date parsing
+
+    @Test("Parses the sent date from a dateline, ignoring a Received clause")
+    func parsesDatelineDate() {
+        #expect(CentralFilesClassifier.datelineDateISO(
+            from: "Legation of the United States, Buenos Ayres, February 3, 1900.") == "1900-02-03")
+        #expect(CentralFilesClassifier.datelineDateISO(
+            from: "Legation of the United States, Berne, September 28, 1875. (Received October 14.)") == "1875-09-28")
+        #expect(CentralFilesClassifier.datelineDateISO(from: "no date here") == nil)
+    }
+
+    // MARK: Chapter-country resolution from volume structure
+
+    @Test("Resolves the top-level chapter title containing a document")
+    func resolvesChapterCountry() {
+        let chapter = VolumeSection(
+            sectionId: "c1", divType: "compilation", title: "Great Britain.",
+            documentIds: ["d229"], subsections: [])
+        let structure = VolumeStructure(volumeId: "frus1863p1", sections: [chapter])
+        #expect(CentralFilesClassifier.chapterCountry(in: structure, documentId: "d229") == "Great Britain")
+        #expect(CentralFilesClassifier.chapterCountry(in: structure, documentId: "d999") == nil)
+    }
+
+    // MARK: End-to-end against the bundled index
+
+    @Test("Classification + bundled index resolve the reference docs to their golden rolls")
+    func resolvesReferenceDocsEndToEnd() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+
+        // Doc 5: despatch / Switzerland / 1875-09-28 → roll 189376306.
+        let d5 = CentralFilesClassifier.classify(
+            header: "Mr. Rublee to Mr. Fish.",
+            dateline: "Legation of the United States, Berne, September 28, 1875.",
+            chapterCountry: "Switzerland").first
+        let d5cat = try #require(d5)
+        let d5rolls = index.series(category: d5cat.category)?
+            .rolls(geoKey: d5cat.geoKeys[0], dateISO: "1875-09-28") ?? []
+        #expect(d5rolls.contains { $0.naId == "189376306" })
+
+        // Doc 1: instruction / Great Britain / 1863-07-06 → roll 149311973 (the instruction
+        // candidate; the note-to candidate may also match a GB roll — both are shown).
+        let instr = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Mr. Adams.",
+            dateline: "Department of State, Washington, July 6, 1863.",
+            chapterCountry: "Great Britain").first { $0.category == .instructions }
+        let instrCat = try #require(instr)
+        let instrRolls = index.series(category: instrCat.category)?
+            .rolls(geoKey: "great britain", dateISO: "1863-07-06") ?? []
+        #expect(instrRolls.contains { $0.naId == "149311973" })
+
+        // Doc 2: note from / Venezuela / 1893-10-26 → roll 188287901.
+        let nf = index.series(category: .notesFrom)?
+            .rolls(geoKey: "venezuela", dateISO: "1893-10-26") ?? []
+        #expect(nf.contains { $0.naId == "188287901" })
+    }
+}

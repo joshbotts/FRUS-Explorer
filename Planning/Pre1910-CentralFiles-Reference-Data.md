@@ -17,16 +17,15 @@ roll-level link, or lists it among alternates, for ≥8 of 10).
 
 ## Coverage checklist (ideal mix — adjust to what you have)
 
-- [ ] Diplomatic despatch, high-volume country (e.g. Great Britain, Mexico, China)
-- [ ] Diplomatic despatch, low-volume country
-- [ ] Diplomatic instruction (Washington → post)
-- [ ] Note **from** a foreign mission in Washington
-- [ ] Note **to** a foreign mission in Washington
-- [ ] Consular despatch (post city)
-- [ ] A telegram (any series)
-- [ ] An enclosure printed in FRUS (located via its covering despatch)
-- [ ] Numerical File document, 1906–1910 ("File No." citation) — ideally two,
-      one with a sub-document number like `5275/2`
+- [ document 4 ] Diplomatic despatch, high-volume country (e.g. Great Britain, Mexico, China)
+- [ document 5 ] Diplomatic despatch, low-volume country
+- [ document 1 ] Diplomatic instruction (Washington → post)
+- [ document 2 ] Note **from** a foreign mission in Washington
+- [ document 3 ] Note **to** a foreign mission in Washington
+- [ document 8 ] Consular despatch (post city)
+- [ these are paraphrased in FRUS, so difficult to look up ] A telegram (any series)
+- [ document 9 ] An enclosure printed in FRUS (located via its covering despatch)
+- [ document 6 and document 7 ] Numerical File document, 1906–1910 ("File No." citation) — ideally two, one with a sub-document number like `5275/2`
 - [ ] One hard/failed lookup, if available
 
 ## Field definitions
@@ -85,228 +84,205 @@ Real FRUS metadata; **NARA values below are placeholders — replace with a real
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| FRUS volume | `frus1863p1` |
+| Document | No. 644. (`d229`) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1863p1/d229 |
+| Heading | Mr. Seward to Mr. Adams. |
+| Dateline | Department of State, Washington, July 6, 1863. |
+| Date | 1863-07-06 |
+| Component | Diplomatic Instructions |
+| Classification cue | Dateline names the Department of State; addressee (Adams) is U.S. minister in London |
+| Country / post | Great Britain |
+| Microfilm pub. | M77, Roll 77 |
+| Series URL | https://catalog.archives.gov/id/593313 |
+| File-unit URL | n/a |
+| Roll (item) URL | https://catalog.archives.gov/id/149311973 |
+| Roll title | Volume 18: Great Britain: Aug. 17, 1861 - Sept. 2, 1863 |
+| Found at | frame 294 |
+| Match quality | exact |
+| Friction notes | no separate per-country file units in the Diplomatic Instructions series. instead, recipients are segmented at the level of rolls in the series. |
+| Time spent | 25 minutes |
 
 ## Document 2
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| FRUS volume | `frus1894` |
+| Document | (`d815`) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1894/d815 |
+| Heading | Dr. Lobo to Mr. Gresham. |
+| Dateline | Legation of Venezuela, Washington, October 26, 1893. |
+| Date | 1893-10-26 |
+| Component | Notes from Foreign Missions |
+| Classification cue | Dateline names the Venezuelan legation in Washington |
+| Country / post | Venezuela |
+| Microfilm pub. | T93, Roll 7 |
+| Series URL | https://catalog.archives.gov/id/594363 |
+| File-unit URL | https://catalog.archives.gov/id/183303942 |
+| Roll (item) URL | https://catalog.archives.gov/id/188287901 |
+| Roll title | Apr. 19, 1893-Mar. 28, 1896 |
+| Found at | frame 69 |
+| Match quality | exact, but in spanish |
+| Friction notes | NARA Catalog website delays and failures. also document printed in FRUS was an english translation of the original document in spanish that is preserved at NARA |
+| Time spent | 25 minutes |
 
 ## Document 3
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| FRUS volume | `frus1878` |
+| Document | (`d412`) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1878/d412 |
+| Heading | No. 407. Mr. Evarts to Dr. Aceval. |
+| Dateline | Department of State, Washington, November 13, 1878. |
+| Date | 1878-11-13 |
+| Component | Notes to Foreign Missions |
+| Classification cue | Dateline names the Department of State and previous document (frus1878/d410) identifies recipient as Paraguayan representative at legation in Washington |
+| Country / post | Paraguay |
+| Microfilm pub. |  M99, Roll 98 |
+| Series URL | https://catalog.archives.gov/id/597272 |
+| File-unit URL | n/a |
+| Roll (item) URL | https://catalog.archives.gov/id/216926854 |
+| Roll title | Uruguay and Paraguay: July 7, 1834 - June 26, 1906 |
+| Found at | frame 76 |
+| Match quality | exact |
+| Friction notes | Paraguay combined with Uruguay on roll and documents in Paraguay section of roll are not in chronological order |
+| Time spent | 25 minutes |
 
 ## Document 4
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| FRUS volume | `frus1905` |
+| Document | No. 210 (`d544`) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1905/d544 |
+| Heading | Minister Griscom to the Secretary of State. |
+| Dateline | American Legation, Tokyo, March 14, 1905.|
+| Date | 1905-03-014 |
+| Component | Diplomatic Despatches |
+| Classification cue | To the Secretary of State from an American Legation |
+| Country / post | Japan/Tokyo |
+| Microfilm pub. | M133, Roll 80 |
+| Series URL | https://catalog.archives.gov/id/603720 |
+| File-unit URL | https://catalog.archives.gov/id/5716479 |
+| Roll (item) URL | https://catalog.archives.gov/id/188401761 |
+| Roll title | Mar. 4, 1905-Aug. 31, 1905 |
+| Found at | frame 101 |
+| Match quality | near exact |
+| Friction notes | minor editorial changes in document printed in FRUS |
+| Time spent | 15 minutes |
 
 ## Document 5
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| FRUS volume | `frus1876` |
+| Document | (`d311`) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1876/d311 |
+| Heading | No. 302. Mr. Rublee to Mr. Fish.|
+| Dateline | Legation of the United States, Berne, September 28, 1875. (Received October 14.) |
+| Date | 1875-09-28 |
+| Component | Diplomatic Despatches |
+| Classification cue | To the Secretary of State from an American Legation |
+| Country / post | Switzerland/Berne |
+| Microfilm pub. | T98, Roll 11 |
+| Series URL | https://catalog.archives.gov/id/603720 |
+| File-unit URL | https://catalog.archives.gov/id/177380756 |
+| Roll (item) URL | https://catalog.archives.gov/id/189376306 |
+| Roll title | July 2, 1675-Dec. 18, 1876 |
+| Found at | frame 93 |
+| Match quality | exact |
+| Friction notes | some roll titles in file unit have date types (1875 mistakenly identified as 1675 in roll title) |
+| Time spent | 15 minutes |
 
 ## Document 6
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| FRUS volume | `frus1907p2` |
+| Document | (`d246`) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1907p2/d246 |
+| Heading | Ambassador Thompson to the Secretary of State. |
+| Dateline | American Embassy, Mexico, October 22, 1907. |
+| Date | 1907-10-22 |
+| Component | Numerical File |
+| Classification cue | File No. 7187. |
+| Country / post | n/a |
+| Microfilm pub. | M862, Roll 550 |
+| Series URL | https://catalog.archives.gov/id/654171 |
+| File-unit URL | n/a |
+| Roll (item) URL | https://catalog.archives.gov/id/19779414 |
+| Roll title | Numerical File: 7179-7187 |
+| Found at | frame 521 |
+| Match quality | FRUS annotation incorrect |
+| Friction notes | wrong file number - actually 7187/19-76 on roll microfilm |
+| Time spent | 20 minutes |
 
 ## Document 7
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| FRUS volume | `frus1909` |
+| Document | (`d299`) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1909/d299 |
+| Heading | The Acting Secretary of State to Minister Moses. |
+| Dateline | Department of State, Washington, June 18, 1909. |
+| Date | 1909-06-18 |
+| Component | Numerical File |
+| Classification cue | File No. 697/43. |
+| Country / post | n/a |
+| Microfilm pub. | M862, Roll 99 |
+| Series URL | https://catalog.archives.gov/id/654171 |
+| File-unit URL | n/a |
+| Roll (item) URL | https://catalog.archives.gov/id/19174810 |
+| Roll title | Numerical File: 682-699 |
+| Found at | frame 860 |
+| Match quality | exact |
+| Friction notes | the document printed in FRUS is not only record filed at 697/43 |
+| Time spent | 10 minutes |
 
 ## Document 8
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
+| FRUS volume | `frus1895p2` |
+| Document | (`d463`) (enclosure 1) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1895p2/d464 |
+| Heading | [Inclosure 1 in No. 363.] Mr. Springer to Mr. Uhl. |
+| Dateline | Consulate-General, of the United States, Havana, June 19, 1895. |
+| Date | 1895-06-19 |
+| Component | Consular Despatches |
+| Classification cue | Dateline identifies Consulate-General as sender of message to Secretary of State |
+| Country / post | Havana |
+| Microfilm pub. | T20, Roll 121 |
+| Series URL | https://catalog.archives.gov/id/302031 |
+| File-unit URL | https://catalog.archives.gov/id/196006797 |
+| Roll (item) URL | https://catalog.archives.gov/id/211373468 |
+| Roll title | Despatches: April 1 - August 31, 1895 |
+| Found at | frame 290 |
+| Match quality | exact |
 | Friction notes | |
-| Time spent | |
+| Time spent | 10 minutes |
 
 ## Document 9
 
 | Field | Value |
 |---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
+| FRUS volume | `frus1895p2` |
+| Document | (`d463`) (enclosure 1) |
+| Permalink | https://history.state.gov/historicaldocuments/frus1895p2/d464 |
+| Heading | [Inclosure 1 in No. 363.] Mr. Springer to Mr. Uhl. |
+| Dateline | Consulate-General, of the United States, Havana, June 19, 1895. |
+| Date | 1895-06-19 |
+| Component | Diplomatic Instructions |
+| Classification cue | The enclosing message was sent by the Department to the Legation in Madrid |
+| Country / post | Spain /Madrid |
+| Microfilm pub. | FM77, Roll 150 |
+| Series URL | https://catalog.archives.gov/id/593313 |
+| File-unit URL | n/a |
+| Roll (item) URL | https://catalog.archives.gov/id/149334619 |
+| Roll title | Volume 22: Spain: June 17, 1895 - Mar. 9, 1900 |
+| Found at | frame 11 |
+| Match quality | exact for enclosing message, enclosure is referenced but not present on roll |
 | Friction notes | |
-| Time spent | |
-
-## Document 10
-
-| Field | Value |
-|---|---|
-| FRUS volume | |
-| Document | |
-| Permalink | |
-| Heading | |
-| Dateline | |
-| Date | |
-| Component | |
-| Classification cue | |
-| Country / post | |
-| Microfilm pub. | |
-| Series URL | |
-| File-unit URL | |
-| Roll (item) URL | |
-| Roll title | |
-| Found at | |
-| Match quality | |
-| Friction notes | |
-| Time spent | |
+| Time spent | 15 minutes |

@@ -3378,22 +3378,30 @@ public actor IndexingPipeline {
     ///   all matches in the index (may be larger than the returned slice).
     public func relatedDocuments(
         for parsed: ParsedSourceNote,
-        limit: Int = 30
+        limit: Int = 30,
+        documentYear: Int? = nil,
+        excludingVolumeId: String? = nil,
+        excludingDocumentId: String? = nil
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        let exclude = (excludingVolumeId, excludingDocumentId)
         switch parsed {
 
         case .lotFile(_, let lotNumber, _):
-            return try relatedByLotFile(lotNumber, limit: limit)
+            return try relatedByLotFile(lotNumber, limit: limit, excluding: exclude)
 
-        case .naraCollection(_, _, let lot, _) where lot != nil:
-            return try relatedByLotFile(lot!, limit: limit)
+        case .naraCollection(_, _, let lot?, _):
+            return try relatedByLotFile(lot, limit: limit, excluding: exclude)
+
+        // Non-RG-59 collection (e.g. RG 84, RG 306) with no lot: same (RG, series).
+        case .naraCollection(let rg, let series?, nil, _) where rg != "59" && rg != "RG-59":
+            return try relatedByCollection(recordGroup: rg, series: series,
+                                           limit: limit, excluding: exclude)
 
         case .centralFiles(_, let fileId?) where fileId.contains("."):
-            // Only attempt decimal-base matching when the identifier contains a period
-            // (distinguishes "862S.01/10-1646" from bare File No. values like "3767/5")
-            let base = fileId.components(separatedBy: "/").first?
-                .trimmingCharacters(in: .whitespaces) ?? fileId
-            return try relatedByDecimalBase(base, limit: limit)
+            // Only attempt decimal matching when the identifier contains a period
+            // (distinguishes "862S.01/10-1646" from bare File No. values like "3767/5").
+            return try relatedByDecimal(ref: fileId, currentYear: documentYear,
+                                        limit: limit, excluding: exclude)
 
         case .presidentialLibrary(let library, let collection, _):
             return try relatedByPresidentialLibrary(library: library,
@@ -3407,6 +3415,12 @@ public actor IndexingPipeline {
 
     // MARK: - Related Document Helpers
 
+    /// SQL fragment + params that exclude the document being viewed from its own neighbors.
+    private func exclusion(_ exclude: (String?, String?)) -> (clause: String, params: [String]) {
+        guard let v = exclude.0, let d = exclude.1 else { return ("", []) }
+        return (" AND NOT (ds.volume_id = ? AND ds.document_id = ?)", [v, d])
+    }
+
     /// Returns documents indexed with any normalized form of the given lot number.
     ///
     /// Queries `document_sources.lot_file` against four variants so that
@@ -3414,13 +3428,16 @@ public actor IndexingPipeline {
     /// raw-with-dashes (`"61-D 146"`) stored forms all match.
     private func relatedByLotFile(
         _ rawLot: String,
-        limit: Int
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let variants = Self.lotVariantsForQuery(rawLot)
         guard !variants.isEmpty else { return ([], 0) }
 
         let placeholders = variants.map { _ in "?" }.joined(separator: ", ")
-        let whereClause = "ds.lot_file IN (\(placeholders))"
+        let ex = exclusion(excluding)
+        let whereClause = "ds.lot_file IN (\(placeholders))\(ex.clause)"
+        let params = variants + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -3435,26 +3452,25 @@ public actor IndexingPipeline {
             """
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
-            countParams: variants, selectParams: variants,
+            countParams: params, selectParams: params,
             limit: limit
         )
     }
 
-    /// Returns documents indexed with the same decimal file base number.
-    ///
-    /// The `base` is everything before the first `/` in the decimal file identifier.
-    /// For `"862S.01/10-1646"` the base is `"862S.01"`. Matches stored series_names
-    /// of the form `"base"` (exact) or `"base/…"` (date suffix present).
-    private func relatedByDecimalBase(
-        _ base: String,
-        limit: Int
+    /// Returns documents from the same non-RG-59 archival collection — an exact match on
+    /// record group **and** series name (e.g. RG 306, "Office of Plans, General Subject
+    /// Files"). Exact series matching avoids lumping sibling series together.
+    private func relatedByCollection(
+        recordGroup: String,
+        series: String,
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
-        guard !base.isEmpty else { return ([], 0) }
-        let likePrefix = base + "/%"
-        let whereClause = """
-            ds.citation_era = 'decimal'
-            AND (ds.series_name = ? OR ds.series_name LIKE ?)
-            """
+        guard !series.isEmpty else { return ([], 0) }
+        let ex = exclusion(excluding)
+        let whereClause = "ds.record_group = ? AND ds.series_name = ?\(ex.clause)"
+        let params = [recordGroup, series] + ex.params
+
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
             SELECT ds.volume_id, ds.document_id,
@@ -3468,10 +3484,75 @@ public actor IndexingPipeline {
             """
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
-            countParams: [base, likePrefix],
-            selectParams: [base, likePrefix],
+            countParams: params, selectParams: params,
             limit: limit
         )
+    }
+
+    /// Returns documents from the same decimal-file **location and chronological segment**.
+    ///
+    /// Same location = the decimal classification before `/`. Same segment = the same
+    /// filing period, derived from each candidate's suffix year (1940+ date form) or, for
+    /// pre-1940 sequential refs, its own indexed document year. When the viewed document's
+    /// segment can't be determined, falls back to location-only matching.
+    ///
+    /// Candidates are fetched (capped) and segment-filtered in Swift, since the period
+    /// derivation isn't expressible in SQL.
+    private func relatedByDecimal(
+        ref: String,
+        currentYear: Int?,
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil)
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        let location = DecimalFileSegment.location(from: ref)
+        guard !location.isEmpty else { return ([], 0) }
+        let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear)
+        let likePrefix = location + "/%"
+        let ex = exclusion(excluding)
+
+        let sql = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note,
+                   ds.series_name, dd.date_iso
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            LEFT JOIN document_dates dd
+                ON dd.volume_id = ds.volume_id AND dd.document_id = ds.document_id
+            WHERE ds.citation_era = 'decimal'
+                AND (ds.series_name = ? OR ds.series_name LIKE ?)\(ex.clause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT 1000
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        let params = [location, likePrefix] + ex.params
+        for (i, p) in params.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
+        }
+
+        var matched: [RelatedDocument] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let vid = auxColumnString(stmt, 0) ?? ""
+            let did = auxColumnString(stmt, 1) ?? ""
+            guard !vid.isEmpty, !did.isEmpty else { continue }
+            // Segment-filter: keep when the viewed segment is unknown (location-only) or
+            // the candidate's segment equals it.
+            if let currentSegment {
+                let candRef = auxColumnString(stmt, 6) ?? ""
+                let candDateYear = (auxColumnString(stmt, 7)?.prefix(4)).flatMap { Int($0) }
+                let candSegment = DecimalFileSegment.segment(for: candRef, fallbackYear: candDateYear)
+                guard candSegment == currentSegment else { continue }
+            }
+            matched.append(RelatedDocument(
+                volumeId: vid, documentId: did,
+                header: auxColumnString(stmt, 2) ?? did,
+                dateline: auxColumnString(stmt, 3),
+                documentNumber: auxColumnString(stmt, 4),
+                isEditorialNote: sqlite3_column_int(stmt, 5) != 0
+            ))
+        }
+        return (Array(matched.prefix(limit)), matched.count)
     }
 
     /// Returns documents from the same presidential library collection.

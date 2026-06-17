@@ -287,7 +287,11 @@ struct FRUSExplorerApp: App {
                                     documentNumber: nil, header: did, dateline: nil, sourceNote: nil
                                 )
                                 appState.pendingBrowseDocument = entry
-                            }
+                            },
+                            documentHeader: appState.currentSourceNoteHeader,
+                            documentDateline: appState.currentSourceNoteDateline,
+                            documentVolumeId: appState.currentSourceNoteVolumeId,
+                            documentId: appState.currentSourceNoteDocumentId
                         )
                     }
                 } else {

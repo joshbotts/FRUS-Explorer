@@ -1,0 +1,215 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Foundation
+
+// MARK: - CountrySeriesCategory
+
+/// The four country-arranged diplomatic series (Phase 2), each with the structure its
+/// real catalog records exhibit (harvested 2026-06-15).
+///
+/// | Category | Resolution record | Geo source | Dates |
+/// |---|---|---|---|
+/// | `.despatches` | item | parent file-unit title (`…Ministers to {Country}, …`) | item title |
+/// | `.instructions` | fileUnit | own title (`Volume {n}: {Country}: {dates}`) | own title |
+/// | `.notesFrom` | item | parent file-unit title (`…the {Demonym} Legation…`) | item title |
+/// | `.notesTo` | fileUnit | own title (`{Country[ and …]}: {dates}`) | own title |
+public enum CountrySeriesCategory: String, Sendable, CaseIterable {
+    case despatches = "diplomaticDespatches"
+    case instructions = "diplomaticInstructions"
+    case notesFrom = "notesFromForeignMissions"
+    case notesTo = "notesToForeignMissions"
+
+    /// NARA series NAID.
+    public var seriesNaId: String {
+        switch self {
+        case .despatches:   return "603720"
+        case .instructions: return "593313"
+        case .notesFrom:    return "594363"
+        case .notesTo:      return "597272"
+        }
+    }
+
+    /// Human-readable series name for display.
+    public var displayName: String {
+        switch self {
+        case .despatches:   return "Diplomatic Despatches"
+        case .instructions: return "Diplomatic Instructions"
+        case .notesFrom:    return "Notes from Foreign Missions"
+        case .notesTo:      return "Notes to Foreign Missions"
+        }
+    }
+
+    /// The `levelOfDescription` of the records that are the page-by-page resolution
+    /// targets for this series (the rest are skipped during the build).
+    public var resolutionLevel: String {
+        switch self {
+        case .despatches, .notesFrom: return "item"
+        case .instructions, .notesTo: return "fileUnit"
+        }
+    }
+}
+
+// MARK: - ParsedCountryRoll
+
+/// The geo + date extraction result for one resolution record.
+public struct ParsedCountryRoll: Sendable, Equatable {
+    public let geoKeys: [String]
+    public let dateRange: DateRangeISO?
+}
+
+// MARK: - CountrySeriesParser
+
+/// Extracts canonical geographic keys and a date range from a catalog record, per series.
+///
+/// Version history:
+///   1.0 — Session 2026-06-15: Phase 2 — Despatches, Instructions, Notes from/to
+public enum CountrySeriesParser {
+
+    /// Parses a resolution record for `category`. Returns `nil` when the record is not a
+    /// resolution target (wrong level) for the series.
+    public static func parse(_ record: CatalogRecord, category: CountrySeriesCategory) -> ParsedCountryRoll? {
+        guard record.levelOfDescription == category.resolutionLevel else { return nil }
+        switch category {
+        case .despatches:   return parseDespatches(record)
+        case .instructions: return parseInstructions(record)
+        case .notesFrom:    return parseNotesFrom(record)
+        case .notesTo:      return parseNotesTo(record)
+        }
+    }
+
+    // MARK: Despatches (item; geo from parent file-unit title)
+
+    private static func parseDespatches(_ record: CatalogRecord) -> ParsedCountryRoll {
+        let geo = record.parentFileUnitTitle.map(despatchesCountryKeys) ?? []
+        return ParsedCountryRoll(geoKeys: geo, dateRange: HistoricalDateParser.parse(record.title))
+    }
+
+    /// `Despatches from U.S. Ministers to {Country}, {dates}` /
+    /// `Despatches from Diplomatic Officers, {Country}` → canonical keys.
+    static func despatchesCountryKeys(fromParent title: String) -> [String] {
+        var phrase = title
+        if let r = phrase.range(of: #"^Despatches from (?:U\.?S\.? Ministers to (?:the )?|Diplomatic Officers,\s*)"#,
+                                options: [.regularExpression]) {
+            phrase = String(phrase[r.upperBound...])
+        }
+        return splitCountryKeys(stripTrailingDateRange(phrase))
+    }
+
+    // MARK: Instructions (fileUnit; geo + dates from own title)
+
+    private static func parseInstructions(_ record: CatalogRecord) -> ParsedCountryRoll {
+        // `Volume {n}: {Country}: {dates}` — country between the volume label and the date;
+        // early volumes are `Volume {n}: {dates}` with no country (chronological run).
+        let parts = record.title.components(separatedBy: ":").map { $0.trimmingCharacters(in: .whitespaces) }
+        var geo: [String] = []
+        var dateText = record.title
+        if parts.count >= 3 {
+            geo = splitCountryKeys(parts[1])
+            dateText = parts[(2...)].joined(separator: ": ")
+        } else if parts.count == 2 {
+            // Either "Volume N: dates" (no country) or "Volume N: Country" (no date).
+            if HistoricalDateParser.parse(parts[1]) != nil {
+                dateText = parts[1]
+            } else {
+                geo = splitCountryKeys(parts[1])
+            }
+        }
+        return ParsedCountryRoll(geoKeys: geo, dateRange: HistoricalDateParser.parse(dateText))
+    }
+
+    // MARK: Notes from (item; geo from parent demonym, dates from item title)
+
+    private static func parseNotesFrom(_ record: CatalogRecord) -> ParsedCountryRoll {
+        let geo = record.parentFileUnitTitle.map(notesFromCountryKeys) ?? []
+        return ParsedCountryRoll(geoKeys: geo, dateRange: HistoricalDateParser.parse(record.title))
+    }
+
+    /// Extracts the country from a Notes-from parent file-unit title, handling the demonym
+    /// (`the {Demonym} Legation`), `Legation of {Country}`, `Foreign Missions, {Country}`,
+    /// and `Central American Legations` forms; a leading `T## - ` microfilm prefix is
+    /// stripped. `Miscellaneous Foreign States` rolls have no single country → `[]`.
+    static func notesFromCountryKeys(fromParent title: String) -> [String] {
+        var text = title
+        // Strip a leading microfilm prefix, e.g. "T93 - ".
+        if let r = text.range(of: #"^[A-Z]\d+\s*-\s*"#, options: [.regularExpression]) {
+            text = String(text[r.upperBound...])
+        }
+        // Strip "Notes from " lead.
+        if let r = text.range(of: #"^Notes from\s+"#, options: [.regularExpression, .caseInsensitive]) {
+            text = String(text[r.upperBound...])
+        }
+        if text.range(of: "Miscellaneous", options: .caseInsensitive) != nil { return [] }
+
+        // "the Legation(s) of {Country} in the United States…"
+        if let m = firstGroup(in: text, pattern: #"^(?:the )?Legations? of (.+?) in the United States"#) {
+            return splitCountryKeys(m)
+        }
+        // "Foreign Missions, {Country}"
+        if let m = firstGroup(in: text, pattern: #"^Foreign Missions,\s*(.+?)\s*$"#) {
+            return splitCountryKeys(stripTrailingDateRange(m))
+        }
+        // "{Demonym} Legation(s) in the United States…"  (also "Central American Legations …")
+        if let m = firstGroup(in: text, pattern: #"^(?:the )?(.+?) Legations? in the United States"#) {
+            return splitCountryKeys(m)
+        }
+        // Fallback: "{Demonym} Legation(s)…"
+        if let m = firstGroup(in: text, pattern: #"^(?:the )?(.+?) Legations?\b"#) {
+            return splitCountryKeys(m)
+        }
+        return []
+    }
+
+    // MARK: Notes to (fileUnit; geo + dates from own title)
+
+    private static func parseNotesTo(_ record: CatalogRecord) -> ParsedCountryRoll {
+        // `{Country[ and Country]}: {dates}`. Early volumes are date-only (no colon, or a
+        // descriptive register title).
+        guard let colon = record.title.firstIndex(of: ":") else {
+            return ParsedCountryRoll(geoKeys: [], dateRange: HistoricalDateParser.parse(record.title))
+        }
+        let countryPart = String(record.title[..<colon])
+        let datePart = String(record.title[record.title.index(after: colon)...])
+        // A leading "Volume N" / register label is not a country.
+        let geo = countryPart.range(of: #"\d"#, options: .regularExpression) != nil
+            ? [] : splitCountryKeys(countryPart)
+        return ParsedCountryRoll(geoKeys: geo, dateRange: HistoricalDateParser.parse(datePart))
+    }
+
+    // MARK: - Helpers
+
+    /// Splits a country phrase on conjunctions and canonicalizes each part.
+    private static func splitCountryKeys(_ phrase: String) -> [String] {
+        phrase
+            .replacingOccurrences(of: " & ", with: " and ")
+            .replacingOccurrences(of: ", and ", with: " and ")
+            .replacingOccurrences(of: ", ", with: " and ")
+            .components(separatedBy: " and ")
+            .map { GeoKeyNormalizer.canonicalize($0) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// Removes a trailing `, {dates}` clause (a comma followed by text containing a
+    /// 4-digit year), so `Chile, 1823-1906` → `Chile` and
+    /// `Serbia, July 5, 1900-July 31, 1906` → `Serbia`.
+    static func stripTrailingDateRange(_ s: String) -> String {
+        guard let r = s.range(of: #",\s*(?:[A-Za-z]+\.?\s+\d{1,2},?\s*)?\d{4}.*$"#,
+                              options: [.regularExpression]) else {
+            return s.trimmingCharacters(in: .whitespaces)
+        }
+        return String(s[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func firstGroup(in text: String, pattern: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+        let ns = text as NSString
+        guard let m = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
+              m.numberOfRanges > 1, m.range(at: 1).location != NSNotFound else { return nil }
+        return ns.substring(with: m.range(at: 1)).trimmingCharacters(in: .whitespaces)
+    }
+}

@@ -201,10 +201,15 @@ struct ResearchStripView: View {
                 if appState.currentSourceNote == nil {
                     appState.currentSourceNote = entry?.sourceNote ?? ""
                     if let dl = entry?.dateline,
-                       let m = dl.range(of: #"\b(19[0-9]{2}|20[0-2][0-9])\b"#,
+                       let m = dl.range(of: #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#,
                                         options: .regularExpression) {
                         appState.currentSourceNoteYear = Int(dl[m])
                     }
+                    // Prime the classifier context (pre-1906 country-series resolution).
+                    appState.currentSourceNoteHeader = entry?.header
+                    appState.currentSourceNoteDateline = entry?.dateline
+                    appState.currentSourceNoteVolumeId = entry?.volumeId
+                    appState.currentSourceNoteDocumentId = entry?.documentId
                 }
                 openWindow(id: "frus.sourceExplorer")
             }
@@ -3515,7 +3520,11 @@ struct SourceExplorerWindowView: View {
                         documentNumber: nil, header: did, dateline: nil, sourceNote: nil
                     )
                     appState.pendingBrowseDocument = entry
-                }
+                },
+                documentHeader: appState.currentSourceNoteHeader,
+                documentDateline: appState.currentSourceNoteDateline,
+                documentVolumeId: appState.currentSourceNoteVolumeId,
+                documentId: appState.currentSourceNoteDocumentId
             )
         } else {
             ContentUnavailableView(
