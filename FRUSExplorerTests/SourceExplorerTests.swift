@@ -600,3 +600,36 @@ struct SourceNoteExtractionTests {
         #expect(extractSourceNote(from: nodes) == nil)
     }
 }
+
+// MARK: - ArchivalNeighborMatchingTests
+
+/// Verifies `ParsedSourceNote.supportsArchivalNeighbors` / `archivalNeighborKey`, which the
+/// Source Explorer uses to decide whether the "Documents from This Collection" section can
+/// match neighbors and to explain an empty result.
+@Suite("ArchivalNeighborMatchingTests")
+struct ArchivalNeighborMatchingTests {
+
+    @Test("matchable archival note types expose a key")
+    func matchableTypes() {
+        #expect(ParsedSourceNote.lotFile(recordGroup: "RG-59", lotNumber: "63 D 123", fileIdentifier: nil).supportsArchivalNeighbors)
+        #expect(ParsedSourceNote.lotFile(recordGroup: nil, lotNumber: "63 D 123", fileIdentifier: nil).archivalNeighborKey == "Lot 63 D 123")
+
+        #expect(ParsedSourceNote.presidentialLibrary(library: "Kennedy Library", collection: "National Security Files", fileIdentifier: nil).supportsArchivalNeighbors)
+
+        // central files require a decimal identifier
+        #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "611.51/10-1646").supportsArchivalNeighbors)
+        #expect(ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "611.51/10-1646").archivalNeighborKey == "611.51")
+
+        // nara collection requires a lot
+        #expect(ParsedSourceNote.naraCollection(recordGroup: "59", series: "Decimal File", lotFile: "64 D 199", box: nil).supportsArchivalNeighbors)
+    }
+
+    @Test("unmatchable note types expose no key")
+    func unmatchableTypes() {
+        #expect(!ParsedSourceNote.centralFiles(recordGroup: "59", fileIdentifier: "3767/5").supportsArchivalNeighbors) // no decimal
+        #expect(!ParsedSourceNote.naraCollection(recordGroup: "59", series: "Decimal File", lotFile: nil, box: nil).supportsArchivalNeighbors)
+        #expect(!ParsedSourceNote.previouslyPublished(citation: "FRUS 1958-60, vol. X").supportsArchivalNeighbors)
+        #expect(!ParsedSourceNote.unrecognized(rawText: "Source: see footnote 3").supportsArchivalNeighbors)
+        #expect(ParsedSourceNote.cfpfFile(fileIdentifier: "P-reel 12").archivalNeighborKey == nil)
+    }
+}

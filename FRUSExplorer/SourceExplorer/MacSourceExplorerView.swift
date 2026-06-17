@@ -714,39 +714,52 @@ struct MacSourceExplorerView: View {
 
     /// GroupBox listing documents from the same archival collection.
     ///
-    /// Shown only when `indexingPipeline` is non-nil. An empty result is hidden
-    /// so the box does not take up space when no related documents are indexed.
+    /// Shown once the source note has been parsed, with three states: a loading spinner, the
+    /// list of matches, or an explicit empty-state explaining why there are none (the note
+    /// isn't a recognized archival citation, or no other indexed document shares its
+    /// collection) — rather than silently hiding the box.
     @ViewBuilder
     private var relatedDocumentsBox: some View {
-        if relatedLoading {
-            GroupBox(String(localized: "source.explorer.related.header",
-                            defaultValue: "Documents from This Collection")) {
-                HStack {
-                    ProgressView().controlSize(.small).padding(.trailing, 6)
-                    Text(String(localized: "source.explorer.related.loading",
-                                defaultValue: "Searching indexed volumes…"))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        } else if !relatedDocs.isEmpty {
+        if relatedLoading || parsed != nil {
             GroupBox {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(relatedDocs, id: \.documentId) { doc in
-                        Button {
-                            onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
-                        } label: {
-                            macRelatedDocumentRow(doc)
+                    if relatedLoading {
+                        HStack {
+                            ProgressView().controlSize(.small).padding(.trailing, 6)
+                            Text(String(localized: "source.explorer.related.loading",
+                                        defaultValue: "Searching indexed volumes…"))
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        if doc.documentId != relatedDocs.last?.documentId {
-                            Divider().padding(.leading, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else if !relatedDocs.isEmpty {
+                        ForEach(relatedDocs, id: \.documentId) { doc in
+                            Button {
+                                onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
+                            } label: {
+                                macRelatedDocumentRow(doc)
+                            }
+                            .buttonStyle(.plain)
+                            if doc.documentId != relatedDocs.last?.documentId {
+                                Divider().padding(.leading, 8)
+                            }
                         }
+                        if relatedTotalCount > relatedDocs.count {
+                            Text(String(localized: "source.explorer.related.overflow",
+                                        defaultValue: "\(relatedTotalCount - relatedDocs.count) more documents not shown"))
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .padding(.top, 6)
+                        }
+                    } else {
+                        Text(relatedEmptyMessage)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    if relatedTotalCount > relatedDocs.count {
-                        Text(String(localized: "source.explorer.related.overflow",
-                                    defaultValue: "\(relatedTotalCount - relatedDocs.count) more documents not shown"))
-                            .font(.caption)
+                    if !relatedLoading, let key = parsed?.archivalNeighborKey {
+                        Text(String(format: String(localized: "source.explorer.related.matchKey %@",
+                                                   defaultValue: "Matching archival source: %@"), key))
+                            .font(.caption2)
                             .foregroundStyle(.tertiary)
                             .padding(.top, 6)
                     }
@@ -758,14 +771,28 @@ struct MacSourceExplorerView: View {
                                 defaultValue: "Documents from This Collection"))
                         .font(.headline.weight(.semibold))
                     Spacer()
-                    Text("\(relatedTotalCount)")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.quaternary, in: Capsule())
+                    if !relatedDocs.isEmpty {
+                        Text("\(relatedTotalCount)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.quaternary, in: Capsule())
+                    }
                 }
             }
+        }
+    }
+
+    /// Explains an empty related-documents result: an unmatched note type vs. a matched key
+    /// with no neighbors in the indexed volumes.
+    private var relatedEmptyMessage: String {
+        if parsed?.supportsArchivalNeighbors == true {
+            return String(localized: "source.explorer.related.empty.noNeighbors",
+                          defaultValue: "No other indexed documents cite this archival source. Index more volumes to surface related documents.")
+        } else {
+            return String(localized: "source.explorer.related.empty.unmatched",
+                          defaultValue: "This source note doesn't cite a recognized lot file, central file, or presidential library, so related documents can't be matched.")
         }
     }
 

@@ -83,6 +83,35 @@ public enum ParsedSourceNote: Sendable, Equatable {
 
     /// No known pattern matched. Raw text is preserved.
     case unrecognized(rawText: String)
+
+    // MARK: - Archival neighbor matching
+
+    /// Whether the "Documents from This Collection" query
+    /// (`IndexingPipeline.relatedDocuments(for:)`) can match other documents on this
+    /// note's archival key. Mirrors the matching switch in that method, so the Source
+    /// Explorer can explain *why* the section is empty rather than silently hiding it.
+    public var supportsArchivalNeighbors: Bool {
+        archivalNeighborKey != nil
+    }
+
+    /// A short human-readable description of the archival key the related-documents query
+    /// matches on (a lot number, decimal-file base, or library/collection), or `nil` when
+    /// this note type isn't matched.
+    public var archivalNeighborKey: String? {
+        switch self {
+        case .lotFile(_, let lot, _):
+            return "Lot \(lot)"
+        case .naraCollection(_, _, let lot?, _):
+            return "Lot \(lot)"
+        case .presidentialLibrary(let library, let collection, _):
+            return "\(library): \(collection)"
+        case .centralFiles(_, let fileId?) where fileId.contains("."):
+            return fileId.components(separatedBy: "/").first?
+                .trimmingCharacters(in: .whitespaces) ?? fileId
+        default:
+            return nil
+        }
+    }
 }
 
 // MARK: - ParsedVolumeSources

@@ -815,52 +815,76 @@ struct SourceExplorerView: View {
 
     /// Section displaying documents from the same archival collection or file series.
     ///
-    /// Shown only when `indexingPipeline` is non-nil. Loading happens asynchronously;
-    /// a spinner is shown while the query runs. An empty result is hidden silently.
+    /// Shown once the source note has been parsed (so the header is always visible while the
+    /// Source Explorer is open) with three states: a loading spinner, the list of matches, or
+    /// an explicit empty-state that explains *why* there are none — either the note isn't a
+    /// recognized archival citation, or no other indexed document shares its collection.
     @ViewBuilder
     private var relatedDocumentsSection: some View {
-        if relatedLoading {
-            Section(String(localized: "source.explorer.related.header",
-                           defaultValue: "Documents from This Collection")) {
-                HStack {
-                    ProgressView().padding(.trailing, 8)
-                    Text(String(localized: "source.explorer.related.loading",
-                                defaultValue: "Searching indexed volumes…"))
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                }
-            }
-        } else if !relatedDocs.isEmpty {
+        if relatedLoading || parsed != nil {
             Section {
-                ForEach(relatedDocs, id: \.documentId) { doc in
-                    Button {
-                        dismiss()
-                        onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
-                    } label: {
-                        relatedDocumentRow(doc)
+                if relatedLoading {
+                    HStack {
+                        ProgressView().padding(.trailing, 8)
+                        Text(String(localized: "source.explorer.related.loading",
+                                    defaultValue: "Searching indexed volumes…"))
+                            .foregroundStyle(.secondary)
+                            .font(.callout)
                     }
-                    .buttonStyle(.plain)
-                }
-                if relatedTotalCount > relatedDocs.count {
-                    Text(String(localized: "source.explorer.related.overflow",
-                                defaultValue: "\(relatedTotalCount - relatedDocs.count) more documents not shown"))
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .padding(.top, 2)
+                } else if !relatedDocs.isEmpty {
+                    ForEach(relatedDocs, id: \.documentId) { doc in
+                        Button {
+                            dismiss()
+                            onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
+                        } label: {
+                            relatedDocumentRow(doc)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if relatedTotalCount > relatedDocs.count {
+                        Text(String(localized: "source.explorer.related.overflow",
+                                    defaultValue: "\(relatedTotalCount - relatedDocs.count) more documents not shown"))
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 2)
+                    }
+                } else {
+                    Text(relatedEmptyMessage)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             } header: {
                 HStack {
                     Text(String(localized: "source.explorer.related.header",
                                 defaultValue: "Documents from This Collection"))
                     Spacer()
-                    Text("\(relatedTotalCount)")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                    if !relatedDocs.isEmpty {
+                        Text("\(relatedTotalCount)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } footer: {
+                if !relatedLoading, let key = parsed?.archivalNeighborKey {
+                    Text(String(format: String(localized: "source.explorer.related.matchKey %@",
+                                               defaultValue: "Matching archival source: %@"), key))
+                        .font(.caption2)
                 }
             }
         }
-        // When relatedDocs is empty and not loading: show nothing (clean UX for
-        // documents from volumes not yet indexed or without collection matches)
+    }
+
+    /// Explains an empty related-documents result: an unmatched note type vs. a matched key
+    /// with no neighbors in the indexed volumes.
+    private var relatedEmptyMessage: String {
+        if parsed?.supportsArchivalNeighbors == true {
+            return String(localized: "source.explorer.related.empty.noNeighbors",
+                          defaultValue: "No other indexed documents cite this archival source. Index more volumes to surface related documents.")
+        } else {
+            return String(localized: "source.explorer.related.empty.unmatched",
+                          defaultValue: "This source note doesn't cite a recognized lot file, central file, or presidential library, so related documents can't be matched.")
+        }
     }
 
     @ViewBuilder
