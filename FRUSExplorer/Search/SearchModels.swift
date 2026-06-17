@@ -111,16 +111,18 @@ public struct SearchParameters: Sendable, Equatable {
 
     // MARK: - Person ref filter
 
-    /// If non-nil, restrict results to documents that mention this person ref.
+    /// If non-nil, restrict results to documents that mention this single per-volume person ref.
     ///
-    /// Applied as a post-processing filter in `SearchService.search`: only
-    /// document keys returned by `PersonMentionStore.documents(forPersonRef:)`
-    /// are eligible. A document that matches the personRef but has no FTS5
-    /// keyword match will not appear in results unless `keywords` is also nil.
-    ///
-    /// Note: a nil keywords field is not currently a valid search; this parameter
-    /// only restricts an existing keyword search's result set.
+    /// Applied inside the search SQL as an `EXISTS` sub-query over `person_mentions`
+    /// (`IndexingPipeline.searchDocuments`), not as a post-processing filter. Because the TEI `ref`
+    /// is only meaningful within one volume, this matches a single per-volume id; prefer
+    /// `personRollupId` for cross-corpus person filtering.
     public var personRef: String?
+
+    /// Restrict results to documents mentioning any member of a person rollup (the cross-corpus
+    /// identity from `person_rollup`). Set by the People browser's "Find all mentions"; correctly
+    /// spans all of a person's per-volume TEI refs, unlike `personRef` (a single per-volume id).
+    public var personRollupId: Int?
 
     // MARK: - Front matter scope
 
@@ -151,6 +153,7 @@ public struct SearchParameters: Sendable, Equatable {
         projectId: UUID? = nil,
         documentTypeFilter: DocumentTypeFilter = .all,
         personRef: String? = nil,
+        personRollupId: Int? = nil,
         includeFrontMatter: Bool = true
     ) {
         self.keywords = keywords
@@ -168,6 +171,7 @@ public struct SearchParameters: Sendable, Equatable {
         self.projectId = projectId
         self.documentTypeFilter = documentTypeFilter
         self.personRef = personRef
+        self.personRollupId = personRollupId
         self.includeFrontMatter = includeFrontMatter
     }
 }
