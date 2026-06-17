@@ -6,7 +6,7 @@ series more effectively.
 
 ## Features
 
-- Full-text search and filtering across the FRUS corpus (FTS5, English stemming, BM25 ranking)
+- Full-text search and filtering across the FRUS corpus (FTS5, English stemming, BM25 ranking), with a **volume/subseries scope** (platform-appropriate pickers; "Search this volume" handoff from the browser), grouped/Boolean query support, and a front-matter inclusion toggle
 - **WKWebView document renderer** (Sessions 140–147): documents rendered as HTML via `FRUSRenderNodeHTMLSerializer` inside `FRUSDocumentWebView`; native HTML Popover API for footnotes; CSS Custom Highlight API for passage highlights visible inline without entering a special mode
 - TEI-rendered document view faithful to history.state.gov content and annotation
 - Structured date indexing from TEI `<date>` attributes; accurate date-range filtering
@@ -14,7 +14,9 @@ series more effectively.
 - Person mention indexing: cross-volume search by person reference with mention counts
 - Persons and terms glossaries persisted to SQLite; live autocomplete person picker
 - Accurate footnote numbers from TEI `@n` attributes (matching printed volume numbering)
-- Cross-reference graph with node and edge labels, hover/click edge-context disclosure, 1°/2°/3° neighbourhood expansion, node context menu (Recenter Graph / Open in Main Window / Documents from Same Lot File), page-based reference resolution, and an info popover explaining the graph
+- Cross-reference graph (Session 161 redesign) with a left-to-right **chronological timeline layout**, direction arrows, node size encoding connectedness, edge weights/labels, a date axis, a **synchronized reference list panel** (regular widths) or List/Graph segmented picker (iPhone), sparse-graph auto-expansion to 2°, a legend and info popover, 1°/2°/3° neighbourhood expansion, and a node context menu (Recenter Graph / Open in Main Window / Documents from Same Lot File)
+- **Corpus Chronology** browser: pick a date range and read every indexed document within it, grouped into auto-coarsening day/month/year sections, with per-document date precision and certainty (from TEI `<date>` attributes), a range-anchored stacked distribution chart, a "spans this period" section for wide-span editorial notes, an "extends beyond this range" overflow section for uncertain dates, and a macOS hover magnifier for finer slices
+- **Index Health** (Settings): merged index version, status, and an integrity check across the FTS5 store
 - Document-level research notes, user tagging, and **inline text highlights** (CSS Custom Highlight API; four colors; stored offsets survive document re-renders via rendering-version hash; visible without a separate highlight mode); highlights are annotated inline across all three collection-export formats (HTML `<mark>`, PDF background shading, DOCX `<w:highlight>` runs)
 - **Citation tools**: formatted citation popover with View / Copy / **Share Citation** (combines the formatted citation and canonical history.state.gov URL into one shareable message via the system share sheet on iOS and macOS)
 - **Reading history**: every document visited and every search executed is recorded; macOS adds a **History** menu (last ten of each, with quick re-open/re-run) and a standalone **Complete History** window with an optional project filter
@@ -26,9 +28,11 @@ series more effectively.
 - User-configurable summarization prompts with structured output support
 - Citation formatter (history.state.gov recommended style)
 - Citation lookup: resolve citations encountered in publications to FRUS documents (⌘⇧F on macOS, Find by Citation button in the macOS search window)
-- **NARA Source Explorer** (Sessions 23, 130, 150): structured source note parsing with `SourceNoteParser`; lot files resolved via `variantControlNumber_is` NARA Catalog API query; State Dept. decimal files routed to period-specific NARA finding-aid pages (1910–1963, 7 periods); presidential library citations route to institution-specific finding-aid sites on zero API results; CIA records linked to CIA CREST database; no API key required for central-file and decimal-file resolution
-- Composable document collections with PDF, HTML, and DOCX export; document header (from indexed TEI `document_cache`) shown per row; per-entry delete, multi-note attachment, and inline date sort; configurable table-of-contents label style and per-document body/note inclusion
-- Corpus Analytics: corpus-wide term frequency histograms (Swift Charts) with Decade / Year / Month / Day / Subseries granularity, optional linear regression fit line, year-range filter, and metric explanation popover
+- **NARA Source Explorer** (Sessions 23, 130, 150, + Central Files Phases 1–3): structured source note parsing with `SourceNoteParser`; lot files resolved via `variantControlNumber_is` NARA Catalog API query (with a bundled key-less lot-file index covering RG-verified records); State Dept. decimal files routed to period-specific NARA finding-aid pages (1910–1963, 7 periods); **pre-1910 Central Files resolved from a bundled index** — 1906–1910 Numerical File citations to digitized rolls, and pre-1906 country-arranged diplomatic series — with no API key required; presidential library citations route to institution-specific finding-aid sites on zero API results; CIA records linked to CIA CREST database
+- **Archival Neighbors** ("Documents from This Collection"): the Source Explorer lists other indexed documents that cite the same archival source (lot file, decimal-file segment, collection), with an explicit empty/loading state so the relationship is always visible
+- Composable document collections with PDF, HTML, DOCX, and **Zotero (RIS)** export; document header (from indexed TEI `document_cache`) shown per row; per-entry delete, multi-note attachment, and inline date sort; configurable table-of-contents label style and per-document body/note inclusion
+- **Zotero / reference-manager export**: per-document "Send to Zotero" produces an RIS Book Section record (importable into standard Zotero on every platform, including iOS) carrying the canonical history.state.gov URL plus the user's FRUS Explorer tags and research notes; collections export a multi-record RIS file
+- Corpus Analytics: corpus-wide term frequency histograms (Swift Charts) with Decade / Year / Month / Day / Subseries / **By Volume** granularity, optional linear regression fit line, year-range filter, drill-in from a subseries/volume bar to a scoped search, and metric explanation popover; **shares a volume/subseries scope with Search** so a query can be charted and read against the same corpus subset
 - CloudKit-synced user data (notes, tags, collections, projects, highlights) with live sync monitoring and proactive health checks: account status and private zone verification at launch and on foreground; macOS status bar surfaces zone-missing and not-signed-in warnings alongside the existing "Syncing…/Synced/Sync Error" states; iOS Settings shows the same diagnostics in the iCloud Sync section
 - Offline functionality with download queue; volumes indexed automatically after download
 - Live indexing progress (stage, document count, throughput) in the volume browser; document list loads automatically on completion without navigating away; macOS status bar shows a tappable queue popover with per-volume progress, combined ETA, and pending-volume list for multi-volume batches
@@ -36,7 +40,8 @@ series more effectively.
 - Breadcrumb navigation trail in the volume browser
 - Front matter sections (preface, introduction, errata) browsable directly from the corpus
 - Accurate subseries grouping in the volume browser and manifest diff
-- **iOS/iPadOS**: five-tab navigation — Browse, Search, Research, Collections, Settings
+- **iOS/iPadOS**: five-tab navigation — Browse, Search, Research, Collections, Settings; iPad adopts an adaptive sidebar (`.sidebarAdaptable`) and, under Stage Manager, opens documents and tools (cross-reference graph, Source Explorer) in their own windows alongside a search-results list
+- **iPad/Mac parity**: native window tabbing on macOS; "open search result in a new window/tab"; multi-window tool windows; capability-gated "Open in New Window" that falls back to in-place navigation where multi-window is unavailable
 - **macOS**: up to 7,500 ranked search results with true-total count, TEI-derived context snippets, date-sort by structured ISO date, and scope-aware column filtering; native Settings scene (⌘,); `.help()` tooltips on all icon-only controls and toolbar buttons; save/load searches in the macOS search window; chronological **Timeline** view in the Search window (toggled from the sort bar); compact `volumeId/documentId` toolbar title and 980×600 minimum window size so toolbar controls no longer collapse into the overflow chevron
 - **Save & load searches**: bookmark any query + filters in the macOS search window; saved searches also drive smart collections that auto-populate at export time
 
@@ -303,6 +308,7 @@ The `CodingStandardsAuditTests` suite in `FRUSExplorerTests/` enforces many of t
 | `frus.crossReferenceGraph` | Cross-Reference Graph | — | Document ego graph with degree expansion |
 | `frus.sourceExplorer` | Source Explorer | — | NARA catalog integration |
 | `frus.analytics` | Corpus Analytics | — | Term frequency charts |
+| `frus.chronology` | Chronology | — | Date-range browser with range-anchored distribution chart |
 | `frus.collections` | Collections | ⇧⌘K | Document collection editor and exporter |
 | `frus.research` | Research | ⌘⌥R | Annotated documents organized by user tag |
 | `frus.history` | History | — | Complete reading + search history with project filter (also reachable via the History menu's "Complete History…" item) |

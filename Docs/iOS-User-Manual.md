@@ -19,11 +19,12 @@
 11. [AI Summarization](#11-ai-summarization)
 12. [Source Explorer](#12-source-explorer)
 13. [Corpus Analytics](#13-corpus-analytics)
-14. [Research Projects](#14-research-projects)
-15. [Settings](#15-settings)
-16. [iPad-Specific Features](#16-ipad-specific-features)
-17. [Touch Gestures Reference](#17-touch-gestures-reference)
-18. [The FRUS Research Guide](#18-the-frus-research-guide)
+14. [Chronology](#14-chronology)
+15. [Research Projects](#15-research-projects)
+16. [Settings](#16-settings)
+17. [iPad-Specific Features](#17-ipad-specific-features)
+18. [Touch Gestures Reference](#18-touch-gestures-reference)
+19. [The FRUS Research Guide](#19-the-frus-research-guide)
 
 ---
 
@@ -41,6 +42,7 @@ FRUS Explorer lets you:
 - **Cite** correctly using the State Department's recommended citation style, and share citations directly from the document view.
 - **Visualize** how documents reference one another through an interactive, touch-friendly network graph.
 - **Analyze** term frequency across the corpus with interactive charts, and jump fluidly between a chart and a search.
+- **Browse by date** with the Chronology view — read every document from any span of years, grouped and charted by date.
 
 All of your research data — notes, tags, collections, highlights, and projects — syncs automatically across every device signed into the same iCloud account, so you can start reading on your iPhone and pick up exactly where you left off on your iPad.
 
@@ -86,7 +88,7 @@ Estimated storage requirements appear before you confirm — useful on space-con
 
 **Step 3 — Ready**
 
-Optionally create your first research project — give it a name and a research question. Projects help you organize notes, tags, and collections around a single research effort (see Section 14). You can skip this step and create projects later.
+Optionally create your first research project — give it a name and a research question. Projects help you organize notes, tags, and collections around a single research effort (see Section 15). You can skip this step and create projects later.
 
 `[SCREENSHOT: Onboarding "Ready" screen with optional project creation form]`
 
@@ -186,15 +188,20 @@ A **project picker** in the Browse toolbar lets you set your active research con
 
 - **Global Context** — no active project; notes, tags, and highlights you create are not associated with any particular project
 - Any of your existing projects, shown with a checkmark beside the active one
-- **Manage Projects** — opens the full project management screen (see Section 14)
+- **Manage Projects** — opens the full project management screen (see Section 15)
 
 `[SCREENSHOT: Project picker menu open, showing Global Context and a list of projects with checkmarks]`
 
 Whatever project is active follows you throughout the app — new notes, tags, and highlights you create are automatically associated with it, and your Research tab can be filtered to show only that project's material.
 
-### 4.4 Jumping to Corpus Analytics
+### 4.4 Jumping to Analytics and Chronology
 
-A chart-icon button in the Browse toolbar opens **Corpus Analytics** as a sheet (see Section 13), letting you explore term-frequency trends across the corpus without leaving your place in the browser.
+Two buttons in the Browse toolbar open corpus-wide tools as sheets without leaving your place in the browser:
+
+- A **chart-icon** button opens **Corpus Analytics** (see Section 13) to explore term-frequency trends.
+- A **calendar-icon** button opens the **Chronology** browser (see Section 14) to read every document within a date range.
+
+`[SCREENSHOT: Browse toolbar showing the Chronology control (SF Symbol: calendar.day.timeline.left) and the Analytics control (SF Symbol: chart.bar.xaxis)]`
 
 ---
 
@@ -284,7 +291,7 @@ While in Read mode, invisible tap zones along the left and right edges of the sc
 
 ### 6.4 Display Preferences
 
-Adjust font size, line spacing, and other reading preferences from **Settings → General → Display** (see Section 15).
+Adjust font size, line spacing, and other reading preferences from **Settings → General → Display** (see Section 16).
 
 ---
 
@@ -333,15 +340,26 @@ Selecting any sidebar item shows the matching documents; tapping one opens it di
 
 ## 8. Cross-Reference Graph
 
-Many FRUS documents reference one another — a memo might respond to a cable, or a meeting record might cite an earlier policy paper. FRUS Explorer indexes these relationships and visualizes them as an interactive **network graph**.
+Many FRUS documents reference one another — a memo might respond to a cable, or a meeting record might cite an earlier policy paper. FRUS Explorer indexes these relationships and visualizes them as an interactive **network graph**, arranged chronologically so you can see the order in which references were written.
 
-Open the graph from a document's **Cross-References** menu, or from a dedicated entry point in your browsing flow. Each node represents a document; lines between nodes represent a reference from one to the other. Pinch to zoom, drag to pan, and tap a node to see a summary of that document and an option to open it.
+Open the graph from a document's **Cross-References** toolbar action. It opens full-screen (a sheet on iPad). Each node is a document, positioned left-to-right by date; arrows point from the citing document to the cited one, and larger nodes are more connected. A **legend** and an **info** button (ⓘ) explain the color, size, and direction encodings so meaning never depends on color alone.
 
-`[SCREENSHOT: Cross-reference graph showing a network of connected document nodes with one selected]`
+`[SCREENSHOT: Cross-reference graph on iPhone showing nodes arranged along a date axis with direction arrows and a legend — the Cross-References toolbar action (SF Symbol: point.3.connected.trianglepath.dotted) labeled]`
 
-The graph can also highlight references to specific people — useful for tracing how often two officials' communications cross paths across the corpus.
+**Reference list vs. canvas.** On iPhone, a segmented **List / Graph** control switches between the visual canvas and a scrollable reference list of the same connections (on iPad and Mac the list is a side panel you toggle). Selecting a node shows its details; tapping opens the document.
 
-`[SCREENSHOT: Cross-reference graph filtered to show references involving a specific person]`
+**Degree.** A degree control shows 1, 2, or 3 hops from the focus document. When a document has very few direct references, the graph auto-expands to 2 hops and says so.
+
+**Touch interactions:**
+
+| Gesture | Effect |
+|---------|--------|
+| Tap node | Select; show its title and details |
+| Long-press node | Context menu: *Recenter Graph*, *Open Document*, *Documents from Same Lot File* |
+| Pinch | Zoom |
+| Two-finger drag | Pan |
+
+Nodes in volumes you haven't downloaded are shown distinctly; selecting one offers to download the volume, and the graph updates once indexing finishes.
 
 ---
 
@@ -393,6 +411,9 @@ Tap **Export** from a collection to choose a format:
 | **PDF** | Print-ready output with consistent pagination, suitable for sharing or archiving |
 | **HTML** | Web-viewable output that preserves rich formatting and is easy to post or embed |
 | **DOCX (Word)** | Editable output for further work in Word, Pages, Google Docs, or similar |
+| **Zotero (RIS)** | Importing the whole collection into Zotero (or any RIS-aware reference manager) as one Book Section record per document, each carrying the canonical history.state.gov URL plus your FRUS Explorer tags and (optionally) research notes |
+
+> **Sending one document to Zotero:** From a document's citation popover, **Send to Zotero** shares a single RIS record. RIS imports into standard Zotero on iOS (and everywhere else) without a plugin, so the document arrives as a proper, citable entry — not an unreadable file.
 
 `[SCREENSHOT: Export format picker showing PDF, HTML, and DOCX options]`
 
@@ -442,7 +463,13 @@ Open Source Explorer from a document's toolbar. It displays the parsed source-no
 
 `[SCREENSHOT: Source Explorer view showing parsed archival source information with a NARA catalog link]`
 
-If you have a NARA API key configured (see **Settings → Integrations**), Source Explorer can enrich its display with live catalog data such as digitized-item availability.
+Source Explorer picks the most precise resolution available for each note type: State Department decimal files route to the right period-specific NARA finding aid; lot files resolve through the NARA Catalog; presidential-library and CIA citations link to the appropriate finding-aid or CREST page; and **pre-1910 Central Files** — 1906–1910 Numerical File rolls and pre-1906 country-arranged diplomatic series — resolve from a **bundled index with no API key required**.
+
+**Documents from This Collection.** Below the resolution, Source Explorer lists other indexed documents that cite the same archival source (the same lot file, decimal-file segment, or collection), so you can read a document alongside its archival neighbors. The section is always shown once a source note is parsed, with a loading state and a plain-language empty state explaining why there are none — it never silently disappears.
+
+`[SCREENSHOT: Source Explorer on iPhone showing the resolved source link and the "Documents from This Collection" list of archival neighbors]`
+
+If you have a NARA API key configured (see **Settings → Integrations**), Source Explorer can enrich lot-file and presidential-library lookups with live catalog data. Central-file, decimal-file, pre-1910, and CIA resolution work without a key.
 
 ---
 
@@ -456,7 +483,7 @@ Open Analytics from the chart-icon button in the Browse tab toolbar (Section 4.4
 
 ### 13.1 Running an Analysis
 
-Enter one or more terms and an optional date range, then tap to chart their frequency across the indexed corpus. Results display as an interactive line chart you can pinch to zoom and drag to scrub through specific years.
+Enter one or more terms and an optional date range, then tap to chart their frequency across the indexed corpus. Choose a **dimension** — Decade, Year, Month, Day, **Subseries**, or **By Volume**: the time dimensions chart frequency over time, while Subseries and By Volume break the same query down by where in the corpus it appears (omitting any subseries or volume where the term never occurs). On a Subseries or By Volume chart, tapping a bar drills into a Search scoped to that subseries or volume. You can also set a **volume/subseries scope** — the same scope Search uses — so the chart and your searches cover the identical corpus subset.
 
 ### 13.2 From a Chart to a Search
 
@@ -470,23 +497,50 @@ The relationship runs both ways: when a search returns more matches than can be 
 
 ---
 
-## 14. Research Projects
+## 14. Chronology
+
+The **Chronology** browser lets you pick a date range and read every indexed document that falls within it, grouped into date sections — a corpus-wide complement to Search and Analytics. Where Analytics charts how often a *term* appears over time, Chronology shows you the actual *documents* from a span of dates, whatever their subject.
+
+Open it from the **calendar-icon** button in the Browse tab toolbar (Section 4.4); it slides up as a sheet.
+
+`[SCREENSHOT: Chronology sheet on iPhone showing the From/To date pickers, the distribution chart, and the date-grouped document list]`
+
+### 14.1 Choosing a Range
+
+Set the **From** and **To** dates and tap **Show**. FRUS Explorer loads every document whose date interval overlaps the range and groups them into sections that auto-coarsen as the range widens — days for short ranges, months for multi-year ranges, years for very wide ranges. A document is never shown more precisely than its own date supports, and each section carries the document's date precision (day / month / year) and certainty (exact vs. approximate) from the TEI source. Very wide ranges are capped, with a prompt to narrow the range.
+
+### 14.2 The Distribution Chart
+
+A stacked bar chart above the list shows the document distribution, colored by volume, with a tappable legend that doubles as a per-volume filter. The chart is **anchored to the exact range you picked**, so it represents your chosen window rather than stretching to the uncertainty bounds of imprecise dates. Two companion sections keep the chart honest:
+
+- **Spans this period** — wide-span documents (mostly editorial notes covering a whole multi-year range) are listed separately rather than smeared across the chart.
+- **Extends beyond this range** — documents whose uncertain date reaches before or after your range are reported here, each annotated with the direction it overflows.
+
+`[SCREENSHOT: Chronology distribution chart on iPhone with the legend and the "extends beyond this range" section visible]`
+
+### 14.3 Reading and Searching the Range
+
+Tap any document to open it. Dense date sections collapse to a preview with a "Show all N" expander. **Search in this range** hands the date range to Search as a filter so you can add keyword criteria over the same span.
+
+---
+
+## 15. Research Projects
 
 **Projects** let you organize your notes, tags, highlights, and collections around a specific research effort — a paper, a course, a long-term interest — keeping that material separate from your general reading.
 
-### 14.1 Creating and Managing Projects
+### 15.1 Creating and Managing Projects
 
 Open **Manage Projects** from the project picker in the Browse tab toolbar (Section 4.3), or create your first project during onboarding. Give each project a name and an optional research question or description; you can edit these at any time.
 
 `[SCREENSHOT: Project management screen showing a list of projects with edit and delete actions]`
 
-### 14.2 Switching Active Projects
+### 15.2 Switching Active Projects
 
 The project picker in the Browse toolbar shows your current context — either **Global Context** (no project) or the name of your active project — and lets you switch instantly. Whatever is active when you create a note, apply a tag, or make a highlight determines which project (if any) that material is filed under.
 
 `[SCREENSHOT: Project picker showing the active project with a checkmark]`
 
-### 14.3 Filtering Your Research by Project
+### 15.3 Filtering Your Research by Project
 
 In the **Research** tab, you can filter your notes, tags, and highlights to show only material associated with a specific project — useful when you're deep in one research effort and don't want material from other projects cluttering the view.
 
@@ -494,7 +548,7 @@ In the **Research** tab, you can filter your notes, tags, and highlights to show
 
 ---
 
-## 15. Settings
+## 16. Settings
 
 The **Settings** tab gathers every app-wide preference, organized into clearly labeled sections.
 
@@ -504,44 +558,44 @@ The **Settings** tab gathers every app-wide preference, organized into clearly l
 |---------|----------|
 | **iCloud** | Sync status for your research data (notes, tags, collections, highlights, projects) |
 | **General** | **Display** preferences (font size, line spacing, and related reading options) and **Search Defaults** (default filters and sort order for new searches) |
-| **Volumes** | **Downloads** (queue and manage which volumes are on your device), **Storage** (see how much space the corpus occupies and free it up), and **Sideload** (import volume files manually, e.g., from a file you've obtained separately) |
+| **Volumes** | **Downloads** (queue and manage which volumes are on your device), **Storage** (see how much space the corpus occupies and free it up), **Index Health** (the merged search-index version, status, and an on-demand integrity check), and **Sideload** (import volume files manually, e.g., from a file you've obtained separately) |
 | **Research** | **Tags** (create, rename, recolor, and delete your custom tags), **Summarization** (manage AI summarization prompts), and **Log Sessions** (diagnostic logging for troubleshooting) |
 | **Integrations** | **NARA API Key** (configure your National Archives catalog key for Source Explorer) and **Reset** (clear cached or local app state) |
 
 Two standalone rows complete the tab:
 
-- **FRUS Research Guide** — opens the standalone research-methodology guide as a sheet (see Section 18)
+- **FRUS Research Guide** — opens the standalone research-methodology guide as a sheet (see Section 19)
 - **About** — version information, acknowledgments, and links (opened in the embedded browser where applicable)
 
 ---
 
-## 16. iPad-Specific Features
+## 17. iPad-Specific Features
 
 iPad's larger screen and multitasking model unlock several capabilities beyond the core iPhone experience.
 
-### 16.1 Inspector Panels
+### 17.1 Inspector Panels
 
 On iPad, several views present supplementary information — such as a document's notes, tags, or cross-references — in a side **inspector panel** rather than a full-screen sheet, so you can see your primary content and its supporting material at the same time. Show or hide an inspector with the inspector toggle in the relevant toolbar.
 
 `[SCREENSHOT: iPad split view showing a document with an inspector panel open alongside it]`
 
-### 16.2 Multi-Window and Stage Manager
+### 17.2 Multi-Window and Stage Manager
 
 On iPads that support Stage Manager, FRUS Explorer can open documents in their own windows — choose **Open in New Window** from a document's toolbar to pop it out, then arrange it alongside other FRUS Explorer windows or other apps. This is especially useful for comparing two documents side by side, or keeping a reference document visible while you work in another.
 
 `[SCREENSHOT: Stage Manager session showing two FRUS Explorer document windows side by side]`
 
-### 16.3 Keyboard and Trackpad Support
+### 17.3 Keyboard and Trackpad Support
 
 When a hardware keyboard or trackpad is connected, FRUS Explorer supports standard navigation shortcuts (such as moving between search results or document sections) and trackpad gestures for scrolling, selecting text for highlights, and navigating back and forward — letting iPad function as a capable laptop replacement for extended research sessions.
 
-### 16.4 Apple Pencil
+### 17.4 Apple Pencil
 
 When using Apple Pencil to select text for a highlight (Section 7.2), selection is precise enough for fine-grained passages — useful for marking a single clause or a specific name within a longer sentence.
 
 ---
 
-## 17. Touch Gestures Reference
+## 18. Touch Gestures Reference
 
 | Gesture | Where | Effect |
 |---------|-------|--------|
@@ -555,7 +609,7 @@ When using Apple Pencil to select text for a highlight (Section 7.2), selection 
 
 ---
 
-## 18. The FRUS Research Guide
+## 19. The FRUS Research Guide
 
 The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to build a research question, how to use citations rigorously, and other practical guidance for working with declassified diplomatic records.
 
