@@ -76,6 +76,24 @@ final class ChronologyViewModel {
     /// smeared across the day-level list and chart. Sorted by start date.
     var spanningRows: [ChronologyRow] = []
 
+    /// Day-placeable documents whose date interval is **not fully contained** in the
+    /// picked range — their uncertainty extends before (`leading`) or after (`trailing`)
+    /// the range. Kept off the range-anchored chart and reported in a dedicated list
+    /// section instead. Sorted by start date.
+    var overflowRows: [ChronologyRow] = []
+
+    /// Inclusive chart x-domain, the picked range rounded **out** to whole buckets at the
+    /// view granularity. Anchors the distribution chart to the user's range rather than to
+    /// the uncertainty bounds of overlapping documents. Set on every `reload()`.
+    var chartDomainStart: Date
+    var chartDomainEnd: Date
+
+    /// Inclusive `yyyy-MM-dd` bounds of the range that produced the current results — used to
+    /// classify overflow direction consistently even if the pickers change before the next
+    /// load. Set on every `reload()`.
+    var loadedStartISO: String = ""
+    var loadedEndISO: String = ""
+
     /// Per-bucket, per-volume counts backing the distribution chart (placed docs only).
     var chartBuckets: [ChronologyChartBucket] = []
 
@@ -119,6 +137,8 @@ final class ChronologyViewModel {
     init(rangeStart: Date, rangeEnd: Date) {
         self.rangeStart = rangeStart
         self.rangeEnd = rangeEnd
+        self.chartDomainStart = rangeStart
+        self.chartDomainEnd = rangeEnd
     }
 
     // MARK: - Loading
@@ -134,10 +154,9 @@ final class ChronologyViewModel {
         // Normalize the bounds to whole days so the inclusive end day is captured.
         let startDay = cal.startOfDay(for: min(rangeStart, rangeEnd))
         let endDay = cal.startOfDay(for: max(rangeStart, rangeEnd))
-        let range = DateRange(
-            earliest: Self.isoDay(startDay),
-            latest: Self.isoDay(endDay)
-        )
+        let startISO = Self.isoDay(startDay)
+        let endISO = Self.isoDay(endDay)
+        let range = DateRange(earliest: startISO, latest: endISO)
 
         do {
             let rows = try await pipeline.documentsInDateRange(
@@ -152,11 +171,21 @@ final class ChronologyViewModel {
             // day-placeable set before grouping, so they neither pollute the date
             // sections nor the distribution chart.
             let (placed, spanning) = Self.partition(rows)
-            totalShown = placed.count
             spanningRows = spanning.sorted { $0.dateISO < $1.dateISO }
 
+            // Among the day-placeable documents, peel off those whose interval pokes
+            // outside the picked range (uncertain dates). They are reported in a list
+            // section rather than stretching the range-anchored chart.
+            let (inRange, overflow) = Self.splitOverflow(placed, startISO: startISO, endISO: endISO)
+            overflowRows = overflow.sorted { $0.dateISO < $1.dateISO }
+            loadedStartISO = startISO
+            loadedEndISO = endISO
+            totalShown = inRange.count
+
             let viewBucket = Self.bucket(forDaysBetween: startDay, and: endDay, calendar: cal)
-            groups = Self.group(placed, viewBucket: viewBucket, ascending: ascending)
+            chartDomainStart = Self.startOfBucket(startDay, bucket: viewBucket, calendar: cal)
+            chartDomainEnd = Self.endOfBucket(endDay, bucket: viewBucket, calendar: cal)
+            groups = Self.group(inRange, viewBucket: viewBucket, ascending: ascending)
 
             let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
             chartBuckets = chart.buckets
@@ -166,6 +195,7 @@ final class ChronologyViewModel {
             errorMessage = error.localizedDescription
             groups = []
             spanningRows = []
+            overflowRows = []
             chartBuckets = []
             chartSeries = []
             totalShown = 0
@@ -224,6 +254,114 @@ final class ChronologyViewModel {
             }
         }
         return (placed, spanning)
+    }
+
+    /// Splits day-placeable rows into those whose interval is fully contained in the picked
+    /// range (`inRange`) and those that straddle a boundary (`overflow`). `startISO`/`endISO`
+    /// are the inclusive `yyyy-MM-dd` range bounds. A row is overflow when its interval starts
+    /// before the range or ends after it — i.e. its date uncertainty pokes outside the window,
+    /// so plotting it on the range-anchored chart would misrepresent where it sits.
+    nonisolated static func splitOverflow(
+        _ placed: [ChronologyRow],
+        startISO: String,
+        endISO: String
+    ) -> (inRange: [ChronologyRow], overflow: [ChronologyRow]) {
+        var inRange: [ChronologyRow] = []
+        var overflow: [ChronologyRow] = []
+        for row in placed {
+            let dir = overflowDirection(row, startISO: startISO, endISO: endISO)
+            if dir.leading || dir.trailing {
+                overflow.append(row)
+            } else {
+                inRange.append(row)
+            }
+        }
+        return (inRange, overflow)
+    }
+
+    /// Whether a row's date interval extends before (`leading`) and/or after (`trailing`) the
+    /// picked range. Compares the 10-character ISO day prefixes so it is precision-agnostic.
+    nonisolated static func overflowDirection(
+        _ row: ChronologyRow,
+        startISO: String,
+        endISO: String
+    ) -> (leading: Bool, trailing: Bool) {
+        let start = String(row.dateISO.prefix(10))
+        let end = String((row.dateISOMax ?? row.dateISO).prefix(10))
+        return (leading: start < startISO, trailing: end > endISO)
+    }
+
+    /// Re-buckets a date group's own rows one granularity finer than the group, for the macOS
+    /// hover magnifier: year → months, month → days, day → per-volume. Bars are returned in
+    /// ascending key order; empty sub-buckets are omitted.
+    nonisolated static func magnifierBreakdown(for group: ChronologyDateGroup) -> [ChronologyMagnifierBar] {
+        switch group.granularity {
+        case .year:
+            return histogram(group.rows, prefix: 7) { key in monthLabel(fromMonthKey: key) }
+        case .month:
+            return histogram(group.rows, prefix: 10) { key in dayLabel(fromDayKey: key) }
+        case .day:
+            // Finest date granularity: break the day down by volume so the colours map to
+            // the chart's series palette.
+            var counts: [String: Int] = [:]
+            for row in group.rows { counts[row.volumeId, default: 0] += 1 }
+            return counts
+                .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+                .map { ChronologyMagnifierBar(label: $0.key, count: $0.value, seriesKey: $0.key) }
+        }
+    }
+
+    /// Counts rows by the leading `prefix` characters of their `dateISO`, labelling each
+    /// bucket via `label`. Date breakdowns carry no `seriesKey` (accent-coloured mini-bars).
+    nonisolated private static func histogram(
+        _ rows: [ChronologyRow],
+        prefix: Int,
+        label: (String) -> String
+    ) -> [ChronologyMagnifierBar] {
+        var counts: [String: Int] = [:]
+        for row in rows { counts[String(row.dateISO.prefix(prefix)), default: 0] += 1 }
+        return counts
+            .sorted { $0.key < $1.key }
+            .map { ChronologyMagnifierBar(label: label($0.key), count: $0.value, seriesKey: nil) }
+    }
+
+    /// Short month name from a `"yyyy-MM"` key (e.g. `"1962-10"` → `"Oct"`).
+    nonisolated private static func monthLabel(fromMonthKey key: String) -> String {
+        let parts = key.split(separator: "-")
+        guard parts.count >= 2, let month = Int(parts[1]), (1...12).contains(month) else { return key }
+        return Calendar(identifier: .gregorian).shortStandaloneMonthSymbols[month - 1]
+    }
+
+    /// Day-of-month from a `"yyyy-MM-dd"` key (e.g. `"1962-10-22"` → `"22"`).
+    nonisolated private static func dayLabel(fromDayKey key: String) -> String {
+        let parts = key.split(separator: "-")
+        guard parts.count >= 3 else { return key }
+        return String(Int(parts[2]) ?? 0)
+    }
+
+    /// Start instant of the bucket (year/month/day) containing `date`.
+    nonisolated static func startOfBucket(_ date: Date, bucket: DateBucket, calendar: Calendar) -> Date {
+        let comps: Set<Calendar.Component>
+        switch bucket {
+        case .year:  comps = [.year]
+        case .month: comps = [.year, .month]
+        case .day:   comps = [.year, .month, .day]
+        }
+        return calendar.date(from: calendar.dateComponents(comps, from: date)) ?? date
+    }
+
+    /// End instant of the bucket (year/month/day) containing `date` — the last moment before
+    /// the following bucket begins, so the chart domain rounds *out* to whole buckets.
+    nonisolated static func endOfBucket(_ date: Date, bucket: DateBucket, calendar: Calendar) -> Date {
+        let start = startOfBucket(date, bucket: bucket, calendar: calendar)
+        let unit: Calendar.Component
+        switch bucket {
+        case .year:  unit = .year
+        case .month: unit = .month
+        case .day:   unit = .day
+        }
+        let next = calendar.date(byAdding: unit, value: 1, to: start) ?? start
+        return calendar.date(byAdding: .second, value: -1, to: next) ?? next
     }
 
     /// Builds the stacked-distribution chart data from the placed date groups: one bucket
