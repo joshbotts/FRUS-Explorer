@@ -599,10 +599,17 @@ struct ChronologyView: View {
 
     /// Floating card shown on macOS hover: a finer-grained breakdown (months within a year,
     /// days within a month, or volumes within a day) of the bucket under the pointer.
+    /// Card width — wider for the per-volume breakdown so the volume-specific titles read.
+    private static let magnifierCardWidth: CGFloat = 210
+
     private func magnifierCard(for group: ChronologyDateGroup) -> some View {
         let bars = ChronologyViewModel.magnifierBreakdown(for: group)
         let shown = Array(bars.prefix(Self.magnifierMaxBars))
         let maxCount = max(1, shown.map(\.count).max() ?? 1)
+        // Day buckets break down by volume; the per-volume rows put the (long) volume name on
+        // its own line so the titles stay legible. Month/year buckets break down by short
+        // date labels, which read fine inline.
+        let isVolumeBreakdown = group.granularity == .day
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Text(group.displayLabel).font(.caption.weight(.semibold))
@@ -612,19 +619,37 @@ struct ChronologyView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(shown) { bar in
-                HStack(spacing: 6) {
-                    Text(magnifierBarLabel(bar))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .frame(width: 46, alignment: .trailing)
-                    Capsule()
-                        .fill(magnifierBarColor(bar))
-                        .frame(width: max(3, 70 * CGFloat(bar.count) / CGFloat(maxCount)), height: 6)
-                    Text(verbatim: "\(bar.count)")
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.tertiary)
-                    Spacer(minLength: 0)
+                if isVolumeBreakdown {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(magnifierBarLabel(bar))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        HStack(spacing: 6) {
+                            Capsule()
+                                .fill(magnifierBarColor(bar))
+                                .frame(width: max(3, 150 * CGFloat(bar.count) / CGFloat(maxCount)), height: 6)
+                            Text(verbatim: "\(bar.count)")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.tertiary)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                } else {
+                    HStack(spacing: 6) {
+                        Text(magnifierBarLabel(bar))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .frame(width: 46, alignment: .trailing)
+                        Capsule()
+                            .fill(magnifierBarColor(bar))
+                            .frame(width: max(3, 70 * CGFloat(bar.count) / CGFloat(maxCount)), height: 6)
+                        Text(verbatim: "\(bar.count)")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                        Spacer(minLength: 0)
+                    }
                 }
             }
             if bars.count > shown.count {
@@ -638,17 +663,31 @@ struct ChronologyView: View {
             }
         }
         .padding(8)
-        .frame(width: 170, alignment: .leading)
+        .frame(width: Self.magnifierCardWidth, alignment: .leading)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
         .shadow(radius: 4, y: 2)
         .padding(.top, 4)
     }
 
-    /// Display label for a magnifier bar — the volume title for per-volume bars, else the
-    /// pre-formatted month/day label.
+    /// Display label for a magnifier bar — for per-volume bars the *volume-specific* title
+    /// (dropping the shared series + subseries prefix so truncated names stay distinguishable);
+    /// otherwise the pre-formatted month/day label.
     private func magnifierBarLabel(_ bar: ChronologyMagnifierBar) -> String {
-        bar.seriesKey != nil ? volumeTitle(bar.label) : bar.label
+        bar.seriesKey != nil ? shortVolumeTitle(bar.label) : bar.label
+    }
+
+    /// The volume-specific portion of a full FRUS title — everything from "Volume …" onward,
+    /// so "Foreign Relations of the United States, 1969–1976, Volume II, Organization and
+    /// Management, 1969–1972" reads as "Volume II, Organization and Management, 1969–1972".
+    /// Falls back to the full title for the rare volume whose title has no "Volume" segment
+    /// (e.g. a named retrospective).
+    private func shortVolumeTitle(_ volumeId: String) -> String {
+        let full = volumeTitle(volumeId)
+        if let range = full.range(of: "Volume ") {
+            return String(full[range.lowerBound...])
+        }
+        return full
     }
 
     /// Colour for a magnifier bar — the matching series colour for per-volume bars, else accent.
@@ -666,7 +705,7 @@ struct ChronologyView: View {
         guard let bucket = vm.chartBuckets.first(where: { $0.bucketKey == key }),
               let plotAnchor = proxy.plotFrame,
               let x = proxy.position(forX: bucket.date) else { return 0 }
-        let cardWidth: CGFloat = 170
+        let cardWidth = Self.magnifierCardWidth
         let raw = geo[plotAnchor].origin.x + x - cardWidth / 2
         return min(max(0, raw), max(0, geo.size.width - cardWidth))
     }

@@ -868,7 +868,7 @@ private extension EducationPage {
                 heading: "Citations & Bibliographic Export",
                 systemImage: "quote.bubble",
                 paragraphs: [
-                    "Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations to your reference manager as BibTeX, RIS, or Zotero-compatible JSON, individually or for a whole collection."
+                    "Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations to your reference manager as BibTeX, RIS, or straight to Zotero (RIS), individually or for a whole collection."
                 ]
             ),
             EducationSection(
