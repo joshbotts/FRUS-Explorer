@@ -1306,12 +1306,12 @@ struct PersonMentionIndexingTests {
             let store = try PersonMentionStore(databaseURL: dbURL)
 
             // Verify rows exist before removal
-            let beforeCount = try await store.documentCount(forPersonRef: "p1")
+            let beforeCount = try await store.documentCount(volumeId: "vol1", ref: "p1")
             #expect(beforeCount == 1, "Row must exist before removal")
 
             try await pipeline.removeVolume("vol1")
 
-            let afterCount = try await store.documentCount(forPersonRef: "p1")
+            let afterCount = try await store.documentCount(volumeId: "vol1", ref: "p1")
             #expect(afterCount == 0, "person_mentions rows must be deleted when volume is removed")
         }
     }
@@ -2449,6 +2449,95 @@ struct DocumentNumberIndexingTests {
 
             let n2 = try await pipeline.documentNumber(volumeId: "vol1", documentId: "d2")
             #expect(n2 == "7", "Modern numbered document resolves to its number (head and @n agree)")
+        }
+    }
+}
+
+// MARK: - PersonRollupConsolidationTests
+
+/// Validates the Phase-0 materialised person rollup: the consolidation pass keys identities by
+/// normalised name, merging the same person across volumes (fragmentation) while keeping different
+/// people who happen to share a per-volume TEI `ref` string apart (false-merge / conflation).
+@Suite("IndexingPipeline — person rollup consolidation")
+struct PersonRollupConsolidationTests {
+
+    /// A TEI volume with both document person-mentions and a front-matter persons list.
+    private func writeVolume(to url: URL, volumeId: String, year: String,
+                            documents: [(id: String, ref: String, name: String)],
+                            persons: [(ref: String, line: String)]) throws {
+        let docBlocks = documents.map {
+            "<div type=\"document\" xml:id=\"\($0.id)\"><head>\($0.id)</head>"
+            + "<p>See <persName ref=\"\($0.ref)\">\($0.name)</persName>.</p></div>"
+        }.joined(separator: "\n")
+        let personItems = persons.map {
+            "<item xml:id=\"\($0.ref)\">\($0.line)</item>"
+        }.joined(separator: "\n")
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+          <publicationStmt><date>\(year)</date></publicationStmt>
+          <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><body>
+            \(docBlocks)
+            <div type="persons"><list>
+            \(personItems)
+            </list></div>
+          </body></text>
+        </TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: url)
+    }
+
+    @Test("consolidatePersonRollup merges fragmented names and de-conflates shared refs")
+    func consolidationMergesAndDeconflates() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // volA: Kissinger (p_k) mentioned in two docs; Smith (p_s) in one.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1969",
+                documents: [("dA1", "p_k", "Kissinger"), ("dA2", "p_k", "Kissinger"), ("dA3", "p_s", "Smith")],
+                persons: [("p_k", "Kissinger, Henry A.: National Security Advisor."),
+                          ("p_s", "Smith, John: Aide.")]
+            )
+            // volB: REUSES ref "p_k" for an unrelated person (Adams); Kissinger reappears under a
+            // DIFFERENT ref "p_z" (the fragmentation the rollup must heal).
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1973",
+                documents: [("dB1", "p_k", "Adams"), ("dB2", "p_z", "Kissinger")],
+                persons: [("p_k", "Adams, Robert: Clerk."),
+                          ("p_z", "Kissinger, Henry A.: Secretary of State.")]
+            )
+
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let all = try await store.allPersonsSortedByName()
+
+            // Three distinct people: the two "Kissinger" entries merged into one rollup.
+            #expect(all.map(\.entry.name) == ["Adams, Robert", "Kissinger, Henry A.", "Smith, John"])
+
+            let kissinger = try #require(all.first { $0.entry.name == "Kissinger, Henry A." })
+            #expect(kissinger.mentionCount == 3, "volA dA1+dA2 (p_k) and volB dB2 (p_z) across the merge")
+
+            let adams = try #require(all.first { $0.entry.name == "Adams, Robert" })
+            #expect(adams.mentionCount == 1, "volB's p_k must NOT inherit volA's p_k mentions")
+
+            // The same ref string "p_k" lands in two different rollups (de-conflation)…
+            let kissRollup = try await store.rollupEntry(forVolumeId: "volA", ref: "p_k")?.rollupId
+            let adamsRollup = try await store.rollupEntry(forVolumeId: "volB", ref: "p_k")?.rollupId
+            #expect(kissRollup != nil && adamsRollup != nil && kissRollup != adamsRollup)
+            // …while a different ref ("p_z") in another volume joins the Kissinger rollup (merge).
+            #expect(try await store.rollupEntry(forVolumeId: "volB", ref: "p_z")?.rollupId == kissRollup)
+
+            // Cross-corpus drill-in for the merged rollup spans both volumes' documents.
+            let keys = try await store.documentKeys(forRollupId: kissinger.rollupId ?? -1)
+                .map { "\($0.volumeId)/\($0.documentId)" }.sorted()
+            #expect(keys == ["volA/dA1", "volA/dA2", "volB/dB2"])
         }
     }
 }
