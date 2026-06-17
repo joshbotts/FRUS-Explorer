@@ -227,6 +227,8 @@ struct CollectionExportOptions: Sendable {
 ///   1.1 — Session 82: added `.docx` backed by `DocxCollectionExporter`
 ///   1.2 — Session 155: added `.zoteroJSON` backed by `ZoteroCollectionExporter`
 ///          (Zotero JSON exchange format, one item per document)
+///   1.3 — Session 164: `.zoteroJSON` now emits RIS (`.ris`) so the export
+///          imports into standard Zotero on every platform, including iOS
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
@@ -246,7 +248,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 
     var fileExtension: String {
         switch self {
-        case .zoteroJSON: return "json"
+        case .zoteroJSON: return "ris"
         default:          return rawValue
         }
     }

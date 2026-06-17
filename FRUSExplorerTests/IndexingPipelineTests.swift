@@ -2412,3 +2412,43 @@ struct DateMetadataIndexingTests {
         }
     }
 }
+
+// MARK: - DocumentNumberIndexingTests
+
+/// Verifies that `document_number` comes from the canonical history.state.gov `@n`
+/// attribute — present for every document — so citations include a number even for early
+/// volumes whose documents were unnumbered in the printed edition (HSG assigns them an `@n`
+/// that readers use to locate the document). The `<head>` leading number is only a fallback.
+@Suite("DocumentNumberIndexingTests")
+struct DocumentNumberIndexingTests {
+
+    @Test("document_number comes from @n, including early-volume documents unnumbered in print")
+    func documentNumberFromAtN() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>vol1</title></titleStmt>
+              <publicationStmt><date>2003</date></publicationStmt>
+              <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
+              <text><body>
+                <div type="compilation" xml:id="c1">
+                  <div type="document" n="1" subtype="historical-document" xml:id="d1"><head>Mr. Seward to Mr. Adams</head><p>Early-volume document: unnumbered in print, but HSG/TEI assigns n="1".</p></div>
+                  <div type="document" n="7" subtype="historical-document" xml:id="d2"><head>7. Memorandum From X to Y</head><p>A modern numbered document (head and @n agree).</p></div>
+                </div>
+              </body></text>
+            </TEI>
+            """
+            try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+            try await pipeline.indexVolume("vol1")
+
+            let n1 = try await pipeline.documentNumber(volumeId: "vol1", documentId: "d1")
+            #expect(n1 == "1", "The canonical @n is used even though the printed head has no number")
+
+            let n2 = try await pipeline.documentNumber(volumeId: "vol1", documentId: "d2")
+            #expect(n2 == "7", "Modern numbered document resolves to its number (head and @n agree)")
+        }
+    }
+}

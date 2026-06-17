@@ -295,7 +295,13 @@ public actor IndexingPipeline {
     ///   (exact/range/approximate/textOnly). Both are computed during the XML parse by
     ///   `extractDateMetadata`, so a full re-parse is required to populate them. Lets
     ///   date features render year-only documents honestly instead of as January 1.
-    public static let currentDateIndexVersion: Int = 9
+    /// - Version 10: canonical document numbers (Session 163). `document_number` is now
+    ///   taken from the document div's `@n` (the history.state.gov document number, present
+    ///   for every document including early-volume ones unnumbered in print) rather than
+    ///   parsed from the `<head>` leading text, which yielded nothing for unnumbered heads
+    ///   and left those citations without a number. A re-parse repopulates
+    ///   `document_cache.document_number` corpus-wide so citations resolve to HSG.
+    public static let currentDateIndexVersion: Int = 10
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -1741,7 +1747,11 @@ public actor IndexingPipeline {
             let dateline   = Self.extractDateline(from: astDoc.nodes)
             let sourceNote = Self.extractSourceNote(from: astDoc.nodes)
             let bodyText   = Self.extractBodyText(from: astDoc.nodes)
-            let docNumber  = Self.extractDocumentNumber(from: astDoc.nodes)
+            // Prefer the canonical history.state.gov document number — the div's `@n`,
+            // present for every document including early-volume ones unnumbered in print —
+            // so citations resolve to the HSG source. Fall back to the `<head>` leading
+            // number only if `@n` is somehow absent.
+            let docNumber  = astDoc.printedNumber ?? Self.extractDocumentNumber(from: astDoc.nodes)
 
             let isEditorialNote: Bool = {
                 guard let first = astDoc.nodes.first, case .editorialNote = first else { return false }
@@ -2039,6 +2049,12 @@ public actor IndexingPipeline {
         nodes.map(\.plainText).joined(separator: " ").normalizedWhitespace
     }
 
+    /// Fallback document-number extractor that reads the leading number of the `<head>`
+    /// text (e.g. "17. Editorial Note" → "17"), returning `nil` when the head does not begin
+    /// with a number.
+    ///
+    /// Used only when the authoritative `@n` (`FRUSDocumentAST.printedNumber`, the canonical
+    /// history.state.gov document number) is absent. Callers should prefer `@n`.
     nonisolated static func extractDocumentNumber(from nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             if case .head(let c) = node {
@@ -3740,6 +3756,18 @@ public actor IndexingPipeline {
             isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
             isFrontMatter:   sqlite3_column_int(stmt, 10) != 0
         )
+    }
+
+    /// Returns the authoritative printed document number for a single document from the
+    /// index (`document_cache.document_number`), or `nil` if the document is unindexed or
+    /// genuinely numberless.
+    ///
+    /// Used by citation surfaces that hold only a `(volumeId, documentId)` — e.g. the macOS
+    /// citation popover — so a citation always carries the document number regardless of how
+    /// the document was navigated to (a cross-reference tap, say, builds a
+    /// `DocumentBrowserEntry` without the number even though the index has it).
+    public func documentNumber(volumeId: String, documentId: String) throws -> String? {
+        try fetchCache(volumeId: volumeId, documentId: documentId)?.documentNumber
     }
 
     /// Applies column assignments to a single `document_cache` row, skipping the

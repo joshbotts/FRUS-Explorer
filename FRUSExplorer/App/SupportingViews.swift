@@ -1550,9 +1550,29 @@ struct CitationPopoverView: View {
     /// Preferred over the manifest value, which may contain a coverage range rather
     /// than the actual print year.
     @State private var parsedPublicationYear: String? = nil
+    /// Authoritative document number resolved from the index (`document_cache.document_number`),
+    /// used when `entry.documentNumber` is `nil` (e.g. the document was opened via a
+    /// cross-reference, which builds the entry without the number). Resolved in `.task`.
+    @State private var resolvedDocumentNumber: String? = nil
 
     private var volumeEntry: VolumeManifestEntry? {
         appState.manifestStore.entry(forVolumeId: entry.volumeId)
+    }
+
+    /// The document number to cite — the entry's, or the index-resolved value as a fallback.
+    private var effectiveDocumentNumber: String? {
+        entry.documentNumber ?? resolvedDocumentNumber
+    }
+
+    /// Citation metadata for every formatter/exporter in this popover, carrying the
+    /// effective (entry-or-index) document number so the number is never dropped.
+    private var docMeta: FRUSDocumentMetadata {
+        FRUSDocumentMetadata(
+            documentId: entry.documentId,
+            documentNumber: effectiveDocumentNumber,
+            header: entry.header,
+            dateline: entry.dateline
+        )
     }
 
     var body: some View {
@@ -1567,7 +1587,7 @@ struct CitationPopoverView: View {
 
             // Document identity
             VStack(alignment: .leading, spacing: 2) {
-                Text("Doc \(entry.documentNumber ?? entry.documentId) · \(entry.volumeId)")
+                Text("Doc \(effectiveDocumentNumber ?? entry.documentId) · \(entry.volumeId)")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                 Text(entry.header)
@@ -1619,7 +1639,7 @@ struct CitationPopoverView: View {
                     }
                     let yr = effectiveYear(for: vol)
                     metaRow("Published", "\(effectivePublisher(year: yr)), \(yr)")
-                    if let docNum = entry.documentNumber {
+                    if let docNum = effectiveDocumentNumber {
                         metaRow("Document no.", docNum)
                     }
                 }
@@ -1695,9 +1715,9 @@ struct CitationPopoverView: View {
                         Label("Send to Zotero (BibTeX)\u{2026}", systemImage: "square.and.arrow.up")
                     }
                     Button {
-                        if let vol = volumeEntry { sendToZoteroJSON(vol: vol) }
+                        if let vol = volumeEntry { sendToZoteroRIS(vol: vol) }
                     } label: {
-                        Label("Send to Zotero (JSON)\u{2026}", systemImage: "square.and.arrow.up")
+                        Label("Send to Zotero (RIS)\u{2026}", systemImage: "square.and.arrow.up")
                     }
                     Divider()
                     ShareLink(item: shareableCitationMessage) {
@@ -1727,7 +1747,14 @@ struct CitationPopoverView: View {
         // Load the publication year from the volume's own TEI header when available.
         // The bundled manifest may have a coverage range in publicationDate rather than
         // the actual print year; the live XML is authoritative.
-        .task(id: entry.id) { await loadPublicationYear() }
+        .task(id: entry.id) {
+            await loadPublicationYear()
+            // Backfill the document number from the index when the entry lacks it.
+            if entry.documentNumber == nil, let pipeline = appState.indexingPipeline {
+                resolvedDocumentNumber = (try? await pipeline.documentNumber(
+                    volumeId: entry.volumeId, documentId: entry.documentId)) ?? nil
+            }
+        }
     }
 
     // MARK: - Formatted Citation
@@ -1743,7 +1770,7 @@ struct CitationPopoverView: View {
             return "Citation unavailable — volume metadata not loaded."
         }
 
-        let docMeta = FRUSDocumentMetadata(entry)
+        let docMeta = self.docMeta
         var volMeta = FRUSVolumeMetadata(vol)
         if let liveYear = parsedPublicationYear {
             volMeta = volMeta.overridingPublicationYear(liveYear)
@@ -1846,7 +1873,7 @@ struct CitationPopoverView: View {
 
     private func bibtexString(vol: VolumeManifestEntry) -> String {
         let year = effectiveYear(for: vol)
-        let docMeta = FRUSDocumentMetadata(entry)
+        let docMeta = self.docMeta
         let volMeta = FRUSVolumeMetadata(vol)
         return BibtexExporter().export(
             volumeId: entry.volumeId,
@@ -1859,7 +1886,7 @@ struct CitationPopoverView: View {
 
     private func risString(vol: VolumeManifestEntry) -> String {
         let year = effectiveYear(for: vol)
-        let docMeta = FRUSDocumentMetadata(entry)
+        let docMeta = self.docMeta
         let volMeta = FRUSVolumeMetadata(vol)
         return RISExporter().export(
             document: docMeta,
@@ -1867,6 +1894,25 @@ struct CitationPopoverView: View {
             year: year,
             url: canonicalURL
         )
+    }
+
+    /// Builds an RIS record that also carries the user's FRUS Explorer tags (→ `KW`)
+    /// and research notes (→ `N1`), used by "Send to Zotero" so a single document
+    /// imports with the same annotations as the collection-level Zotero export.
+    @MainActor
+    private func zoteroRISString(vol: VolumeManifestEntry) -> String {
+        let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
+        let item = ZoteroJSONExporter.makeItem(
+            document: docMeta,
+            volume: FRUSVolumeMetadata(vol),
+            year: effectiveYear(for: vol),
+            url: canonicalURL,
+            isEditorialNote: entry.isEditorialNote,
+            tags: resolved.tags,
+            notes: resolved.notes
+        )
+        return RISExporter().export(zoteroItem: item)
     }
 
     @MainActor
@@ -1883,30 +1929,17 @@ struct CitationPopoverView: View {
 
     // MARK: - Send to Zotero
 
-    /// Builds a Zotero JSON item for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    /// Builds an RIS record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    ///
+    /// RIS is a format Zotero imports from a shared file. The previous Zotero-API JSON
+    /// envelope is *not* a Zotero file-import format (Zotero reported "couldn't read
+    /// payload"), so this option now sends RIS.
     @MainActor
-    private func sendToZoteroJSON(vol: VolumeManifestEntry) {
-        let docMeta = FRUSDocumentMetadata(entry)
-        var volMeta = FRUSVolumeMetadata(vol)
-        if let liveYear = parsedPublicationYear {
-            volMeta = volMeta.overridingPublicationYear(liveYear)
-        }
-        let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
-            documentId: entry.documentId,
-            volumeId: entry.volumeId,
-            context: modelContext
-        )
-        let item = ZoteroJSONExporter.makeItem(
-            document: docMeta,
-            volume: volMeta,
-            year: effectiveYear(for: vol),
-            url: canonicalURL,
-            isEditorialNote: entry.isEditorialNote,
-            tags: tags,
-            notes: notes
-        )
-        guard let data = try? ZoteroJSONExporter().exportData(items: [item]) else { return }
-        sendToZotero(data: data, suggestedName: "\(entry.volumeId)-\(entry.documentId)-zotero.json", contentType: .json)
+    private func sendToZoteroRIS(vol: VolumeManifestEntry) {
+        guard let data = zoteroRISString(vol: vol).data(using: .utf8) else { return }
+        sendToZotero(data: data,
+                     suggestedName: "\(entry.volumeId)-\(entry.documentId).ris",
+                     contentType: .init(filenameExtension: "ris") ?? .text)
     }
 
     /// Builds a BibTeX record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.

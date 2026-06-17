@@ -1804,7 +1804,7 @@ private struct CitationSheetView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var bibtexFileURL: URL?
-    @State private var zoteroJSONFileURL: URL?
+    @State private var risFileURL: URL?
 
     private var citation: String {
         vm.formattedCitation ?? ""
@@ -1888,9 +1888,9 @@ private struct CitationSheetView: View {
                 }
             }
 
-            if let zoteroJSONFileURL {
-                ShareLink(item: zoteroJSONFileURL) {
-                    Label(String(localized: "document.citation.sendZoteroJSON", defaultValue: "Send to Zotero (JSON)…"), systemImage: "square.and.arrow.up")
+            if let risFileURL {
+                ShareLink(item: risFileURL) {
+                    Label(String(localized: "document.citation.sendZoteroRis", defaultValue: "Send to Zotero (RIS)…"), systemImage: "square.and.arrow.up")
                 }
             }
         } label: {
@@ -1902,7 +1902,15 @@ private struct CitationSheetView: View {
         UIPasteboard.general.string = text
     }
 
-    /// Writes the BibTeX and Zotero JSON exports to temporary files for `ShareLink`.
+    /// Writes the BibTeX and RIS exports to temporary files for `ShareLink`.
+    ///
+    /// Both are formats Zotero can import from a shared file. (The previous Zotero-API
+    /// JSON envelope is *not* a Zotero file-import format — Zotero reported "couldn't read
+    /// payload" — so the second option now shares RIS, which Zotero imports reliably.)
+    ///
+    /// The RIS file is rendered from the document's Zotero `Item` so it carries the
+    /// user's FRUS Explorer tags (→ `KW`) and research notes (→ `N1`), matching the
+    /// collection-level Zotero export. BibTeX remains a bibliographic-only citation.
     private func prepareExportFiles() {
         if let bibtex = vm.bibtexCitation {
             let url = FileManager.default.temporaryDirectory
@@ -1912,22 +1920,19 @@ private struct CitationSheetView: View {
             }
         }
 
-        let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
-            documentId: vm.entry.documentId,
-            volumeId: vm.entry.volumeId,
-            context: modelContext
-        )
-        if let item = vm.zoteroItem(tags: tags, notes: notes),
-           let data = try? ZoteroJSONExporter().exportData(items: [item]) {
+        let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: vm.entry.documentId, volumeId: vm.entry.volumeId, context: modelContext)
+        if let item = vm.zoteroItem(tags: resolved.tags, notes: resolved.notes) {
+            let ris = RISExporter().export(zoteroItem: item)
             let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId)-zotero.json")
-            if (try? data.write(to: url, options: .atomic)) != nil {
-                zoteroJSONFileURL = url
+                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId).ris")
+            if (try? ris.write(to: url, atomically: true, encoding: .utf8)) != nil {
+                risFileURL = url
             }
         }
 
         #if DEBUG
-        print("[CitationSheetView] export files prepared: bibtex=\(bibtexFileURL != nil), zoteroJSON=\(zoteroJSONFileURL != nil)")
+        print("[CitationSheetView] export files prepared: bibtex=\(bibtexFileURL != nil), ris=\(risFileURL != nil)")
         #endif
     }
 }

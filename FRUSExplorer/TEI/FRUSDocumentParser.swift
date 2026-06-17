@@ -715,6 +715,12 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // qualified name (e.g. "frus:doc-dateTime-min").
             let dateTimeMin = frame.attributes["frus:doc-dateTime-min"]
             let dateTimeMax = frame.attributes["frus:doc-dateTime-max"]
+            // The canonical history.state.gov document number is the `@n` on the document
+            // div (e.g. n="17"). Present for every document — including early-volume
+            // documents that were unnumbered in print. Trimmed and emptied-to-nil so a stray
+            // `n=""` falls back to the head-text heuristic downstream.
+            let trimmedN = frame.attributes["n"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let printedNumber = (trimmedN?.isEmpty == false) ? trimmedN : nil
             // The real corpus marks editorial notes as `type="document"
             // subtype="editorial-note"` (the standalone `type="editorialNote"`
             // encoding below exists only in legacy fixtures). Wrap their content in
@@ -727,7 +733,8 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 nodes = frame.children
             }
             let doc = FRUSDocumentAST(documentId: docId, nodes: nodes,
-                                      dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax)
+                                      dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax,
+                                      printedNumber: printedNumber)
             documents.append(doc)
             documentDivDepth = -1
             // Mark the enclosing frame so structural parent sections are not promoted

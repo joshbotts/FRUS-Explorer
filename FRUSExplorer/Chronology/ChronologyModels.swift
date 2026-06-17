@@ -95,6 +95,93 @@ public struct ChronologyRow: Sendable, Identifiable {
         guard let max = dateISOMax else { return false }
         return max != dateISO
     }
+
+    /// Number of days between the interval's start and end (0 when single-day or
+    /// missing a max). Used to separate documents whose date interval is too wide to be
+    /// placed on a specific day — chiefly editorial notes, which FRUS stamps with the
+    /// whole span of dates they discuss (often the entire volume, sometimes decades).
+    public var spanDays: Int {
+        guard let maxISO = dateISOMax,
+              let start = Self.day(from: dateISO),
+              let end = Self.day(from: maxISO)
+        else { return 0 }
+        return max(0, Calendar(identifier: .gregorian).dateComponents([.day], from: start, to: end).day ?? 0)
+    }
+
+    private static let isoDayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f
+    }()
+
+    private static func day(from iso: String) -> Date? {
+        isoDayFormatter.date(from: String(iso.prefix(10)))
+    }
+}
+
+// MARK: - Chart aggregation
+
+/// Series key used for the long tail of volumes folded together in the distribution
+/// chart once the distinct-volume count exceeds the colour budget.
+public let chronologyOtherSeriesKey = "__other__"
+
+/// One stacked segment of a chart bar: the per-series document count within a date bucket.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation
+public struct ChronologyChartSegment: Sendable, Identifiable {
+    /// Volume ID, or `chronologyOtherSeriesKey` for the folded long tail.
+    public let seriesKey: String
+    public let count: Int
+    public var id: String { seriesKey }
+
+    public init(seriesKey: String, count: Int) {
+        self.seriesKey = seriesKey
+        self.count = count
+    }
+}
+
+/// One bar of the distribution chart — a date bucket (matching a list section) plus its
+/// per-volume breakdown, so the chart and the list stay perfectly in step.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation
+public struct ChronologyChartBucket: Sendable, Identifiable {
+    /// Matches the `bucketKey` of the corresponding `ChronologyDateGroup`.
+    public let bucketKey: String
+    /// Human-readable bucket label (e.g. "October 22, 1962").
+    public let label: String
+    /// Start instant of the bucket, used as the temporal x-position.
+    public let date: Date
+    public let segments: [ChronologyChartSegment]
+    public var id: String { bucketKey }
+    public var total: Int { segments.reduce(0) { $0 + $1.count } }
+
+    public init(bucketKey: String, label: String, date: Date, segments: [ChronologyChartSegment]) {
+        self.bucketKey = bucketKey
+        self.label = label
+        self.date = date
+        self.segments = segments
+    }
+}
+
+/// A chart series (one coloured volume, or the folded "Other" group) and its total count,
+/// in legend display order (largest first). The view resolves `key` to a volume title and
+/// a colour.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation
+public struct ChronologyChartSeries: Sendable, Identifiable {
+    public let key: String
+    public let total: Int
+    public var id: String { key }
+
+    public init(key: String, total: Int) {
+        self.key = key
+        self.total = total
+    }
 }
 
 // MARK: - ChronologyParameters

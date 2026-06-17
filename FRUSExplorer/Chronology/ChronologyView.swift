@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import Charts
 
 // MARK: - ChronologyView
 
@@ -39,12 +40,26 @@ struct ChronologyView: View {
     @State private var navigationPath: [DocumentBrowserEntry] = []
     @State private var expandedSections: Set<String> = []
     @State private var didSeedDefaults = false
+    /// Whether the distribution chart pane is shown (toolbar toggle).
+    @State private var showChart = true
+    /// Whether the wide-span ("spans this period") section is expanded.
+    @State private var showSpanning = false
+    /// Active legend filter: a volume ID (or `chronologyOtherSeriesKey`) restricting the
+    /// list to documents from that volume. `nil` = show all.
+    @State private var selectedSeries: String? = nil
 
     /// Parameters this view was opened with (a `pendingChronology` handoff). Applied once.
     private let initialParameters: ChronologyParameters?
 
     /// Rows shown in a dense section before the "Show all" expander.
     private static let denseThreshold = 25
+
+    /// Distinct colours for the top chart volumes; the folded "Other" series uses gray.
+    /// System colours so light/dark mode and accessibility contrast are handled by the OS.
+    private static let seriesPalette: [Color] = [.blue, .orange, .green, .purple, .pink, .teal, .indigo]
+
+    /// `id` of the spanning section, used as a scroll target from its chip.
+    private static let spanningSectionID = "__chronology_spanning__"
 
     init(initialParameters: ChronologyParameters? = nil) {
         self.initialParameters = initialParameters
@@ -119,6 +134,13 @@ struct ChronologyView: View {
         didSeedDefaults = true
         if let start = params.rangeStart { vm.rangeStart = start }
         if let end = params.rangeEnd { vm.rangeEnd = end }
+        reload()
+    }
+
+    /// Clears any active legend filter, then reloads the current range. Routing every
+    /// reload through here prevents a stale volume filter persisting across a new query.
+    private func reload() {
+        selectedSeries = nil
         Task { await vm.reload() }
     }
 
@@ -144,7 +166,7 @@ struct ChronologyView: View {
                 .labelsHidden()
                 Spacer()
                 Button {
-                    Task { await vm.reload() }
+                    reload()
                 } label: {
                     Text(String(localized: "chronology.show", defaultValue: "Show"))
                 }
@@ -216,17 +238,75 @@ struct ChronologyView: View {
                 ))
             )
         } else {
-            sectionList
+            loadedContent
         }
     }
 
     private var maxSectionCount: Int {
-        max(1, vm.groups.map(\.count).max() ?? 1)
+        max(1, displayedGroups.map(\.count).max() ?? 1)
+    }
+
+    // MARK: - Legend filter
+
+    /// Volume IDs that have their own coloured series (everything not folded into "Other").
+    private var topSeriesKeys: Set<String> {
+        Set(vm.chartSeries.map(\.key).filter { $0 != chronologyOtherSeriesKey })
+    }
+
+    /// Whether a row passes the active legend filter (always `true` when no filter is set).
+    private func rowMatchesFilter(_ row: ChronologyRow) -> Bool {
+        guard let selected = selectedSeries else { return true }
+        if selected == chronologyOtherSeriesKey { return !topSeriesKeys.contains(row.volumeId) }
+        return row.volumeId == selected
+    }
+
+    /// Placed date groups after applying the legend filter — groups left empty are dropped,
+    /// and per-group provenance counts are recomputed from the surviving rows.
+    private var displayedGroups: [ChronologyDateGroup] {
+        guard selectedSeries != nil else { return vm.groups }
+        return vm.groups.compactMap { group in
+            let rows = group.rows.filter(rowMatchesFilter)
+            guard !rows.isEmpty else { return nil }
+            let subseries = Set(rows.compactMap { CorpusAnalyticsService.subseries(fromVolumeId: $0.volumeId) })
+            return ChronologyDateGroup(
+                bucketKey: group.bucketKey,
+                granularity: group.granularity,
+                sortDate: group.sortDate,
+                displayLabel: group.displayLabel,
+                rows: rows,
+                volumeCount: Set(rows.map(\.volumeId)).count,
+                subseriesCount: subseries.count,
+                editorialNoteCount: rows.filter(\.isEditorialNote).count
+            )
+        }
+    }
+
+    /// Spanning rows after applying the legend filter.
+    private var displayedSpanningRows: [ChronologyRow] {
+        vm.spanningRows.filter(rowMatchesFilter)
+    }
+
+    /// The chart pane (pinned above), the spanning chip, and the scrolling section list,
+    /// all inside one `ScrollViewReader` so the chart and chip can scroll the list.
+    private var loadedContent: some View {
+        ScrollViewReader { proxy in
+            VStack(spacing: 0) {
+                if showChart && !vm.chartBuckets.isEmpty {
+                    chartPane(scrollProxy: proxy)
+                    Divider()
+                }
+                if !displayedSpanningRows.isEmpty {
+                    spanningChip(scrollProxy: proxy)
+                    Divider()
+                }
+                sectionList
+            }
+        }
     }
 
     private var sectionList: some View {
         List {
-            ForEach(vm.groups) { group in
+            ForEach(displayedGroups) { group in
                 Section {
                     let visible = isExpanded(group) ? group.rows : Array(group.rows.prefix(Self.denseThreshold))
                     ForEach(visible) { row in
@@ -252,7 +332,13 @@ struct ChronologyView: View {
                 } header: {
                     sectionHeader(group)
                 }
+                .id(group.bucketKey)
             }
+
+            if showSpanning {
+                spanningSection
+            }
+
             if vm.totalShown > 0 {
                 Section {
                     Text(String(localized: "chronology.undated.note",
@@ -267,6 +353,248 @@ struct ChronologyView: View {
         #else
         .listStyle(.inset)
         #endif
+    }
+
+    // MARK: - Distribution Chart
+
+    /// Series colour for a given legend index; the folded "Other" key is always gray.
+    private func seriesColor(_ key: String, index: Int) -> Color {
+        key == chronologyOtherSeriesKey
+            ? Color.gray
+            : Self.seriesPalette[index % Self.seriesPalette.count]
+    }
+
+    /// Colours in `vm.chartSeries` order — shared by the chart's foreground scale and the
+    /// legend swatches so they always agree.
+    private var seriesColors: [Color] {
+        vm.chartSeries.enumerated().map { seriesColor($0.element.key, index: $0.offset) }
+    }
+
+    /// Human label for a series key: a volume title, or "Other volumes" for the fold.
+    private func seriesTitle(_ key: String) -> String {
+        key == chronologyOtherSeriesKey
+            ? String(localized: "chronology.chart.other", defaultValue: "Other volumes")
+            : volumeTitle(key)
+    }
+
+    /// Chart x-axis bucket unit, matching the view model's range-driven coarsening.
+    private var chartUnit: Calendar.Component {
+        let days = Calendar(identifier: .gregorian)
+            .dateComponents([.day], from: min(vm.rangeStart, vm.rangeEnd), to: max(vm.rangeStart, vm.rangeEnd)).day ?? 0
+        if days <= ChronologyViewModel.dayGroupingMaxDays { return .day }
+        if days <= ChronologyViewModel.monthGroupingMaxDays { return .month }
+        return .year
+    }
+
+    private func chartPane(scrollProxy: ScrollViewProxy) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            chartLegend
+            if let selected = selectedSeries {
+                filterIndicator(selected)
+            }
+            distributionChart(scrollProxy: scrollProxy)
+                .frame(height: 150)
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    /// Textual legend — the non-colour channel for volume identity (each entry names the
+    /// volume and its count), so the chart's colour encoding is fully available to
+    /// VoiceOver and colour-blind users. Each entry is also a toggle that filters the list
+    /// to that volume.
+    private var chartLegend: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)],
+            alignment: .leading,
+            spacing: 4
+        ) {
+            ForEach(Array(vm.chartSeries.enumerated()), id: \.element.id) { index, series in
+                Button {
+                    selectedSeries = (selectedSeries == series.key) ? nil : series.key
+                } label: {
+                    HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(seriesColor(series.key, index: index))
+                            .frame(width: 10, height: 10)
+                        Text(seriesTitle(series.key))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Text(verbatim: "\(series.total)")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                        Spacer(minLength: 0)
+                    }
+                    .opacity(legendOpacity(series.key))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(String(
+                    format: String(localized: "chronology.chart.legend.a11y %@ %lld",
+                                   defaultValue: "%@, %lld documents"),
+                    seriesTitle(series.key), Int64(series.total)
+                )))
+                .accessibilityAddTraits(selectedSeries == series.key ? .isSelected : [])
+                .accessibilityHint(Text(String(localized: "chronology.chart.legend.hint",
+                                               defaultValue: "Filters the list to this volume")))
+            }
+        }
+    }
+
+    /// Dim non-selected legend entries when a filter is active so the active volume stands
+    /// out without relying on colour alone.
+    private func legendOpacity(_ key: String) -> Double {
+        guard let selected = selectedSeries else { return 1 }
+        return key == selected ? 1 : 0.35
+    }
+
+    /// Active-filter banner with a clear control, shown below the legend.
+    private func filterIndicator(_ key: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                .foregroundStyle(Color.accentColor)
+                .font(.caption)
+                .accessibilityHidden(true)
+            Text(String(
+                format: String(localized: "chronology.filter.active %@",
+                               defaultValue: "Showing %@ only"),
+                seriesTitle(key)
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            Spacer(minLength: 8)
+            Button {
+                selectedSeries = nil
+            } label: {
+                Text(String(localized: "chronology.filter.clear", defaultValue: "Show all"))
+                    .font(.caption.weight(.medium))
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    private func distributionChart(scrollProxy: ScrollViewProxy) -> some View {
+        Chart {
+            ForEach(vm.chartBuckets) { bucket in
+                ForEach(bucket.segments) { segment in
+                    BarMark(
+                        x: .value(String(localized: "chronology.chart.x", defaultValue: "Date"),
+                                  bucket.date, unit: chartUnit),
+                        y: .value(String(localized: "chronology.chart.y", defaultValue: "Documents"),
+                                  segment.count)
+                    )
+                    .foregroundStyle(by: .value(
+                        String(localized: "chronology.chart.series", defaultValue: "Volume"),
+                        segment.seriesKey
+                    ))
+                    // Each stacked segment is individually described so a VoiceOver user
+                    // hears the date, volume, and count without seeing the colour.
+                    .accessibilityLabel(Text("\(bucket.label), \(seriesTitle(segment.seriesKey))"))
+                    .accessibilityValue(Text(String(
+                        format: String(localized: "chronology.chart.count.a11y %lld",
+                                       defaultValue: "%lld documents"),
+                        Int64(segment.count)
+                    )))
+                }
+            }
+        }
+        .chartForegroundStyleScale(domain: vm.chartSeries.map(\.key), range: seriesColors)
+        .chartLegend(.hidden)
+        .chartXAxis { AxisMarks(values: .automatic(desiredCount: 5)) }
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture { location in
+                        guard let plotAnchor = proxy.plotFrame else { return }
+                        let xInPlot = location.x - geo[plotAnchor].origin.x
+                        guard let tapped: Date = proxy.value(atX: xInPlot) else { return }
+                        if let nearest = vm.chartBuckets.min(by: {
+                            abs($0.date.timeIntervalSince(tapped)) < abs($1.date.timeIntervalSince(tapped))
+                        }) {
+                            withAnimation { scrollProxy.scrollTo(nearest.bucketKey, anchor: .top) }
+                        }
+                    }
+                    .accessibilityHidden(true)
+            }
+        }
+        .accessibilityLabel(Text(String(
+            localized: "chronology.chart.a11y",
+            defaultValue: "Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below."
+        )))
+    }
+
+    // MARK: - Spanning ("spans this period") section
+
+    /// Chip beneath the chart summarising the wide-span documents excluded from the
+    /// day-level list, and toggling their dedicated section.
+    private func spanningChip(scrollProxy: ScrollViewProxy) -> some View {
+        Button {
+            withAnimation { showSpanning.toggle() }
+            if showSpanning {
+                withAnimation { scrollProxy.scrollTo(Self.spanningSectionID, anchor: .top) }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.left.right")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(String(
+                    format: String(localized: "chronology.spanning.chip %lld",
+                                   defaultValue: "%lld editorial notes span this whole period"),
+                    Int64(displayedSpanningRows.count)
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                Spacer()
+                Image(systemName: showSpanning ? "chevron.up" : "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(
+            format: String(localized: "chronology.spanning.chip.a11y %lld",
+                           defaultValue: "%lld editorial notes span the whole period. Toggle to show them."),
+            Int64(displayedSpanningRows.count)
+        )))
+    }
+
+    @ViewBuilder
+    private var spanningSection: some View {
+        Section {
+            ForEach(displayedSpanningRows) { row in
+                Button {
+                    open(row)
+                } label: {
+                    ChronologyRowView(row: row, volumeTitle: volumeTitle(row.volumeId), spanLabel: spanLabel(row))
+                }
+                .buttonStyle(.plain)
+            }
+        } header: {
+            Text(String(localized: "chronology.spanning.header", defaultValue: "Spans this period"))
+                .textCase(nil)
+        } footer: {
+            Text(String(localized: "chronology.spanning.footer",
+                        defaultValue: "These documents (mostly editorial notes) cover a span of dates rather than a single day, so they're listed here instead of on the timeline."))
+                .font(.caption2)
+        }
+        .id(Self.spanningSectionID)
+    }
+
+    /// Year–year label for a spanning row, e.g. "1952–1975".
+    private func spanLabel(_ row: ChronologyRow) -> String {
+        let start = String(row.dateISO.prefix(4))
+        let end = row.dateISOMax.map { String($0.prefix(4)) } ?? start
+        return start == end ? start : "\(start)\u{2013}\(end)"
     }
 
     private func sectionHeader(_ group: ChronologyDateGroup) -> some View {
@@ -322,8 +650,23 @@ struct ChronologyView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Button {
+                showChart.toggle()
+            } label: {
+                Label(
+                    showChart
+                        ? String(localized: "chronology.chart.hide", defaultValue: "Hide chart")
+                        : String(localized: "chronology.chart.show", defaultValue: "Show chart"),
+                    systemImage: showChart ? "chart.bar.fill" : "chart.bar"
+                )
+            }
+            .disabled(!vm.hasLoaded || vm.chartBuckets.isEmpty)
+            .help(String(localized: "chronology.chart.toggle.help",
+                         defaultValue: "Show or hide the document distribution chart"))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
                 vm.ascending.toggle()
-                if vm.hasLoaded { Task { await vm.reload() } }
+                if vm.hasLoaded { reload() }
             } label: {
                 Label(
                     vm.ascending
@@ -407,6 +750,9 @@ struct ChronologyView: View {
 private struct ChronologyRowView: View {
     let row: ChronologyRow
     let volumeTitle: String
+    /// When set (spanning section), the document's year–year coverage, e.g. "1952–1975",
+    /// shown in place of a single dateline.
+    var spanLabel: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -426,7 +772,13 @@ private struct ChronologyRowView: View {
             }
 
             HStack(spacing: 6) {
-                if let dateline = row.dateline, !dateline.isEmpty {
+                if let spanLabel {
+                    Label(spanLabel, systemImage: "calendar")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .labelStyle(.titleAndIcon)
+                }
+                if spanLabel == nil, let dateline = row.dateline, !dateline.isEmpty {
                     Text(dateline)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)

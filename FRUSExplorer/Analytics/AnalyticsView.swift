@@ -894,6 +894,11 @@ struct AnalyticsView: View {
                         )
                     )
                     .foregroundStyle(Color.accentColor.opacity(0.65))
+                    .annotation(position: .trailing, alignment: .leading) {
+                        Text(verbatim: "\(point.count)")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .chartXAxisLabel(
@@ -942,6 +947,11 @@ struct AnalyticsView: View {
                         )
                     )
                     .foregroundStyle(Color.accentColor.opacity(0.65))
+                    .annotation(position: .trailing, alignment: .leading) {
+                        Text(verbatim: "\(point.count)")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .chartXAxisLabel(
@@ -1249,13 +1259,13 @@ struct AnalyticsView: View {
                 title: String(localized: "analytics.info.multiword.title",
                               defaultValue: "Multiple words"),
                 body:  String(localized: "analytics.info.multiword.body",
-                              defaultValue: "Words separated by spaces are combined with AND: \"national security\" matches documents containing both words. To search either term (OR) or to use exclusions (NOT), use the main Search window.")
+                              defaultValue: "Words separated by spaces are combined with AND: national security matches documents containing both words. OR (either term) and NOT / leading - (exclude a term) work too, exactly as in the Search box.")
             )
             infoRow(
                 title: String(localized: "analytics.info.phrase.title",
                               defaultValue: "Phrases"),
                 body:  String(localized: "analytics.info.phrase.body",
-                              defaultValue: "Exact phrases (e.g. \"missile crisis\" with quotes) are not supported in Analytics. Use the main Search window to search for ordered phrases.")
+                              defaultValue: "Wrap words in quotes for an ordered phrase: \"missile crisis\" matches only documents where those words appear together, in that order. Analytics and Search interpret the same query identically, so the counts here match what Search returns.")
             )
             infoRow(
                 title: String(localized: "analytics.info.stemming.title",

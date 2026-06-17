@@ -201,6 +201,11 @@ struct AnalyticsParameters: Sendable, Equatable {
 ///   1.3 — Session 163: add `termFrequencyByVolume` (and `VolumeFrequency`) for the
 ///          By-Volume analytics axis; mirrors `termFrequencyBySubseries` but buckets
 ///          by full volume ID. New `volumeFrequencyCache` cleared in `invalidateCache()`.
+///   1.4 — Session 163: queries now parse the term with `FTS5InlineQueryParser` (the same
+///          parser the main Search box uses) instead of a naive whitespace split, so
+///          quoted phrases, `OR`/`NOT`, and wildcards behave identically in Analytics and
+///          Search. Fixes analytics over-reporting hits for quoted phrase queries (it had
+///          been silently downgrading `"a b"` to a loose `a AND b`).
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -258,19 +263,21 @@ actor CorpusAnalyticsService {
         return dates
     }
 
-    /// Splits the user-supplied input into individual whitespace-delimited keywords
-    /// so each word can be tokenised and Porter-stemmed independently before being
-    /// embedded in the FTS5 MATCH expression.
+    /// Builds the FTS5 query for an analytics term using the **same** inline-syntax
+    /// parser as the main Search box (`FTS5InlineQueryParser`).
     ///
-    /// Without this split, a multi-word input like "national security" is passed
-    /// to FTS5Query as a single keyword, the Porter stemmer treats the whole
-    /// string as one word, and the resulting expression fails to match documents
-    /// containing the morphological variants of either word. Splitting here makes
-    /// analytics behave the same way as `SearchService.makeFTS5Query`.
-    nonisolated private static func splitKeywords(_ input: String) -> [String] {
-        input.split(whereSeparator: \.isWhitespace)
-            .map(String.init)
-            .filter { !$0.isEmpty }
+    /// This is what keeps Corpus Analytics and Search in agreement: a quoted
+    /// `"defense materials"` becomes an ordered **phrase** match (not a loose AND of
+    /// the two words), and `OR` / `NOT` / `term*` / `(grouping)` all behave exactly as
+    /// they do in Search. Previously analytics split on whitespace and let
+    /// `FTS5Query.sanitizeTerm` strip the quotes, silently downgrading every phrase to
+    /// an AND — so analytics over-reported hits relative to Search for any quoted query.
+    ///
+    /// Returns `nil` when `term` carries no positive search content (empty, or only
+    /// excluded terms), mirroring `SearchService`.
+    nonisolated private static func makeQuery(from term: String) -> FTS5Query? {
+        guard let expression = FTS5InlineQueryParser.parse(term) else { return nil }
+        return FTS5Query(keywordExpression: expression)
     }
 
     /// Helper for the four date-bucketed methods. Returns the matched
@@ -280,9 +287,7 @@ actor CorpusAnalyticsService {
     private func matchedDocsAndDates(term: String) async throws
         -> (keys: [(documentId: String, volumeId: String)], dates: [String: String])?
     {
-        let words = Self.splitKeywords(term)
-        guard !words.isEmpty else { return nil }
-        let query = FTS5Query(keywords: words)
+        guard let query = Self.makeQuery(from: term) else { return nil }
         let keys = try await fts5Store.matchedDocumentKeys(query: query)
         let dates = try await resolvedDocumentDates()
         return (keys, dates)
@@ -457,9 +462,7 @@ actor CorpusAnalyticsService {
         let cacheKey = term
         if let cached = subseriesFrequencyCache[cacheKey] { return cached }
 
-        let words = Self.splitKeywords(term)
-        guard !words.isEmpty else { return [] }
-        let query = FTS5Query(keywords: words)
+        guard let query = Self.makeQuery(from: term) else { return [] }
         let keys = try await fts5Store.matchedDocumentKeys(query: query)
 
         var counts: [String: Int] = [:]
@@ -490,9 +493,7 @@ actor CorpusAnalyticsService {
         let cacheKey = term
         if let cached = volumeFrequencyCache[cacheKey] { return cached }
 
-        let words = Self.splitKeywords(term)
-        guard !words.isEmpty else { return [] }
-        let query = FTS5Query(keywords: words)
+        guard let query = Self.makeQuery(from: term) else { return [] }
         let keys = try await fts5Store.matchedDocumentKeys(query: query)
 
         var counts: [String: Int] = [:]

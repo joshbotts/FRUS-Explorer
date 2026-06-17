@@ -162,3 +162,61 @@ struct ChronologyQueryTests {
         }
     }
 }
+
+// MARK: - ChronologyAggregationTests
+
+/// Verifies the in-memory partitioning (wide-span separation) and chart aggregation that
+/// back the Chronology distribution chart and "spans this period" section.
+@Suite("ChronologyAggregationTests")
+struct ChronologyAggregationTests {
+
+    private func row(_ vol: String, _ doc: String, iso: String, isoMax: String? = nil, editorial: Bool = false) -> ChronologyRow {
+        ChronologyRow(
+            volumeId: vol, documentId: doc, header: "Header", dateline: nil, summary: nil,
+            dateISO: iso, dateISOMax: isoMax ?? iso,
+            precision: .day, certainty: .exact,
+            isEditorialNote: editorial, isFrontMatter: false, documentNumber: nil
+        )
+    }
+
+    @Test("spanDays and partition separate multi-year documents from day-placeable ones")
+    func partitionBySpan() {
+        let exact = row("v1", "d1", iso: "1962-09-10")                       // span 0
+        let yearOnly = row("v1", "d2", iso: "1962-01-01", isoMax: "1962-12-31") // span 364
+        let editorial = row("v2", "d3", iso: "1952-01-11", isoMax: "1975-05-12") // ~23 years
+
+        #expect(exact.spanDays == 0)
+        #expect(yearOnly.spanDays <= ChronologyViewModel.maxSpanDaysForPlacement)
+        #expect(editorial.spanDays > ChronologyViewModel.maxSpanDaysForPlacement)
+
+        let parts = ChronologyViewModel.partition([exact, yearOnly, editorial])
+        #expect(parts.placed.map(\.id) == ["v1/d1", "v1/d2"])
+        #expect(parts.spanning.map(\.id) == ["v2/d3"], "The multi-year editorial note is separated out")
+    }
+
+    @Test("makeChart buckets by volume and folds the long tail into Other")
+    func chartAggregationFoldsTail() {
+        let g = ChronologyDateGroup(
+            bucketKey: "1962-10-22", granularity: .day, sortDate: .now, displayLabel: "Oct 22, 1962",
+            rows: [
+                row("vA", "1", iso: "1962-10-22"), row("vA", "2", iso: "1962-10-22"),
+                row("vB", "3", iso: "1962-10-22"),
+                row("vC", "4", iso: "1962-10-22")
+            ],
+            volumeCount: 3, subseriesCount: 1, editorialNoteCount: 0
+        )
+
+        // maxSeries 2 → top volume (vA) + Other (vB + vC).
+        let folded = ChronologyViewModel.makeChart(from: [g], maxSeries: 2)
+        #expect(folded.series.map(\.key) == ["vA", chronologyOtherSeriesKey])
+        #expect(folded.series.map(\.total) == [2, 2])
+        let seg = Dictionary(uniqueKeysWithValues: folded.buckets[0].segments.map { ($0.seriesKey, $0.count) })
+        #expect(seg["vA"] == 2)
+        #expect(seg[chronologyOtherSeriesKey] == 2)
+
+        // Within budget → every volume is its own series, no Other.
+        let full = ChronologyViewModel.makeChart(from: [g], maxSeries: 8)
+        #expect(Set(full.series.map(\.key)) == ["vA", "vB", "vC"])
+        #expect(!full.series.contains { $0.key == chronologyOtherSeriesKey })
+    }
+}

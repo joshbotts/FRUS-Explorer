@@ -18,7 +18,7 @@ import SwiftUI
 /// how to read a document, and how to research with it — is also valuable
 /// as an on-demand reference, so this wrapper re-presents the same five
 /// pages with `presentationContext: .standalone`:
-///  - the final page offers "Done" instead of "Set Up My Research →"
+///  - the final page offers "Done" instead of the onboarding "Start exploring"
 ///  - the guide can open directly to a specific page via
 ///    `AppState.researchGuideInitialPageId`, which contextual entry points
 ///    (e.g. an info affordance in the Source Explorer) set just before

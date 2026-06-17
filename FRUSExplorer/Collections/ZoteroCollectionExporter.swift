@@ -10,25 +10,28 @@ import Foundation
 
 // MARK: - ZoteroCollectionExporter
 
-/// Exports a collection's documents as a single Zotero JSON exchange file
-/// (`{"version": 5, "items": [...]}`), one `bookSection` item per document.
+/// Exports a collection's documents as a single RIS file, one `TY  - CHAP`
+/// record per document.
 ///
 /// Each document's `CollectionExportDocument.zoteroItem` already carries its
 /// own tags and notes (resolved by `CollectionEditorView.resolveDocuments()` /
-/// `.resolveSmartDocuments()` via `ZoteroJSONExporter.fetchTagsAndNotes`).
+/// `.resolveSmartDocuments()` via `ZoteroJSONExporter.fetchTagsAndNotes`); those
+/// `Item`s are rendered to RIS by `RISExporter.export(zoteroItem:)`.
 /// `options.includeNotes == false` strips child notes from every item so the
 /// exported file contains tags but not research-note text.
 ///
-/// Importing the resulting file (e.g. via the Better BibTeX "Zotero JSON"
-/// translator) adds every item in one operation — see
-/// `Planning/155-Zotero-Export.md` for why this satisfies "Option B at the
-/// collection level" without a non-standard `collections` field.
+/// RIS is used (rather than the Zotero web-API JSON envelope) because standard
+/// Zotero imports RIS on every platform — including iOS, where the Better BibTeX
+/// plugin that the JSON envelope relied on is unavailable. Importing the file
+/// adds every record in one operation.
 ///
 /// ## File location
 /// Output is written to `FileManager.default.temporaryDirectory`.
 ///
 /// Version history:
 ///   1.0 — Session 155: initial implementation
+///   2.0 — Session 164: switched output from Zotero JSON envelope to RIS so the
+///         file imports into standard Zotero (incl. iOS) without a plugin
 final class ZoteroCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -49,14 +52,11 @@ final class ZoteroCollectionExporter: CollectionExporter {
             }
         }
 
-        let data: Data
-        do {
-            data = try ZoteroJSONExporter().exportData(items: items)
-        } catch {
-            throw ExportError.writeFailure(underlying: error)
-        }
+        let exporter = RISExporter()
+        let ris = items.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
+        let data = Data(ris.utf8)
 
-        let filename = sanitized(metadata.name) + "-zotero.json"
+        let filename = sanitized(metadata.name) + "-zotero.ris"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
             try data.write(to: url, options: .atomic)
