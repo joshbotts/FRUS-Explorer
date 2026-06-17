@@ -47,7 +47,8 @@ This is the Corpus Browser. The hierarchy — Corpus → Subseries → Volume �
 **What's different:**
 
 - The browser occupies the full tab rather than a separate window. Breadcrumbs along the top of the navigation stack let you jump back multiple levels at once.
-- **Analytics** is accessed from a toolbar button (chart icon) at the top right of the Browse tab. On macOS this opens a separate Analytics window; on iOS it slides up as a sheet. All chart features (dimension, date range, chart vs. table) are identical.
+- **Analytics** is accessed from a toolbar button (chart icon) at the top right of the Browse tab. On macOS this opens a separate Analytics window; on iOS it slides up as a sheet. All chart features (dimension — now including Subseries and By Volume — date range, chart vs. table) are identical.
+- **Chronology** is accessed from a second Browse-tab toolbar button (calendar icon). On macOS this is the `frus.chronology` window; on iOS it slides up as a sheet. It's the same date-range document browser on both platforms — pick a span and read every document in it, with a range-anchored distribution chart — except the macOS-only hover magnifier (hover a bar for a finer breakdown) has no touch equivalent.
 
 `[SCREENSHOT: Analytics sheet on iPhone showing bar chart with dimension and date controls]`
 
@@ -84,7 +85,7 @@ This is the Research window from macOS, adapted for touch.
 
 `[SCREENSHOT: Collections tab on iPhone showing collection list with a "+" button in the navigation bar]`
 
-**What's the same:** Creating collections, adding documents (individually or by tag), smart collection linking, export formats (PDF, HTML, and DOCX).
+**What's the same:** Creating collections, adding documents (individually or by tag), smart collection linking, export formats (PDF, HTML, DOCX, and **Zotero/RIS** — the per-document "Send to Zotero" and the collection-level RIS export behave identically on both platforms).
 
 **What's different:**
 
@@ -97,13 +98,13 @@ This is the Research window from macOS, adapted for touch.
 
 `[SCREENSHOT: Settings tab on iPhone showing a grouped list layout]`
 
-**What's the same:** All panes — General, Research, Corpus, Advanced (NARA API + Summarization), Reset — are present with identical functionality.
+**What's the same:** Every setting you know from the Mac is here — iCloud sync status, Display and Search defaults, volume Downloads / Storage / **Index Health**, Tags, Summarization prompts, the NARA API key, and Reset.
 
 **What's different:**
 
 - Settings is a tab rather than a system Settings scene, so you reach it from within the app rather than from the iOS Settings app.
 - The layout is a flat grouped list rather than the macOS sidebar. Tap any row to drill into its pane.
-- **Volume management** (download queue, storage breakdown, Check for Updates, Sideload XML) is under **Settings → Corpus → Add Volumes** — same path as macOS.
+- **Volume management** (download queue, storage breakdown, index health, Check for Updates, Sideload XML) lives under **Settings → Volumes** on iOS (the Mac groups the same controls under **Corpus**).
 
 ---
 
@@ -155,16 +156,16 @@ Person references, glossary terms, and cross-references all work with a tap rath
 
 ### 3.5 Cross-Reference Graph
 
-Tap **Graph** in the document toolbar to open the cross-reference graph as a full-screen push (or sheet on iPad). All graph features are identical to macOS: three-column layout, force-directed physics for large networks, degree filter, cluster collapsing.
+Tap **Graph** in the document toolbar to open the cross-reference graph as a full-screen push (or sheet on iPad). The graph (redesigned in Session 161) is the same as on macOS: a **chronological left-to-right timeline**, direction arrows, node size by connectedness, a legend and info (ⓘ) popover, and a degree control with sparse-graph auto-expansion. Where the Mac shows a reference-list **side panel**, iPhone offers a segmented **List / Graph** control to switch between the canvas and the same connections as a scrollable list.
 
-`[SCREENSHOT: Cross-reference graph full-screen on iPhone with a three-column layout]`
+`[SCREENSHOT: Cross-reference graph full-screen on iPhone showing the chronological timeline layout and the List/Graph segmented control]`
 
 **Touch interactions in the graph:**
 
 | Gesture | Effect |
 |---------|--------|
-| Tap node | Select; shows full title below the graph |
-| Long-press node | Context menu: *Re-centre*, *Open Document* |
+| Tap node | Select; shows its details |
+| Long-press node | Context menu: *Recenter Graph*, *Open Document*, *Documents from Same Lot File* |
 | Pinch | Zoom |
 | Two-finger drag | Pan |
 
@@ -266,7 +267,9 @@ This table summarizes every significant difference between the macOS and iOS ver
 | **Navigation structure** | Multiple windows | Tab bar; each tab has its own navigation stack |
 | **Document reading area** | Dedicated main window | Pushes into the active tab's stack |
 | **Text highlights** | Select text → click Highlight in research strip → choose color; colored background overlay in document | Select text → tap paintbrush button in toolbar → choose color; same colored background overlay; identical behavior on both platforms |
-| **Analytics** | Separate persistent window | Sheet from Browse tab toolbar |
+| **Analytics** | Separate persistent window; dimensions include Subseries and By Volume | Sheet from Browse tab toolbar; same dimensions |
+| **Chronology** | `frus.chronology` window; bar-hover magnifier for finer slices | Sheet from Browse tab toolbar; no hover magnifier (touch) |
+| **Cross-reference graph** | Chronological timeline layout; reference list as a toggleable side panel | Same timeline layout; reference list via a List/Graph segmented control on iPhone |
 | **Citation Lookup** | Separate window (⌘⇧F) | Sheet from Search tab toolbar |
 | **Research notes panel** | Always-visible research strip + note editor | Toolbar button; inline editor on iPhone, inspector panel on iPad |
 | **Source Explorer** | Sheet in main window | Sheet over current tab |

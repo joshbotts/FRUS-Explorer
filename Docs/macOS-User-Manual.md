@@ -19,10 +19,11 @@
 11. [AI Summarization](#11-ai-summarization)
 12. [Source Explorer](#12-source-explorer)
 13. [Analytics](#13-analytics)
-14. [Projects and Tags](#14-projects-and-tags)
-15. [Settings](#15-settings)
-16. [Reading History and the Research Guide](#16-reading-history-and-the-research-guide)
-17. [Keyboard Shortcuts](#17-keyboard-shortcuts)
+14. [Chronology](#14-chronology)
+15. [Projects and Tags](#15-projects-and-tags)
+16. [Settings](#16-settings)
+17. [Reading History and the Research Guide](#17-reading-history-and-the-research-guide)
+18. [Keyboard Shortcuts](#18-keyboard-shortcuts)
 
 ---
 
@@ -40,6 +41,7 @@ FRUS Explorer lets you:
 - **Cite** correctly using the State Department's recommended citation style.
 - **Visualize** how documents reference one another through an interactive network graph.
 - **Analyze** term frequency across the corpus with interactive charts.
+- **Browse by date** with the Chronology view — read every document from any span of years, grouped and charted by date.
 
 All research data (notes, tags, collections, highlights) syncs automatically across your devices via iCloud.
 
@@ -83,7 +85,7 @@ Estimated storage requirements are shown before you confirm. If you are offline 
 
 **Step 3 — Ready**
 
-Optionally create your first research project — give it a name and a research question. Projects let you organize notes, tags, and collections around a single research initiative (see Section 14). You can skip this step and create projects later.
+Optionally create your first research project — give it a name and a research question. Projects let you organize notes, tags, and collections around a single research initiative (see Section 15). You can skip this step and create projects later.
 
 `[SCREENSHOT: Onboarding "Ready" screen with optional project creation form]`
 
@@ -116,8 +118,9 @@ When a document is open, a compact `volumeId/documentId` title (e.g., `frus1969-
 | **Collections** | ⇧⌘K | Collections management window |
 | **Corpus** | ⇧⌘B | Corpus browser (volume hierarchy) |
 | **Analytics** | — | Term-frequency analytics window |
+| **Chronology** | — | Date-range document browser (Section 14) |
 
-`[SCREENSHOT: Toolbar close-up with each button labeled]`
+`[SCREENSHOT: Toolbar close-up with each button labeled, including the Chronology control (SF Symbol: calendar.day.timeline.left) and Analytics control (SF Symbol: chart.bar.xaxis)]`
 
 ### 3.2 Research Strip
 
@@ -163,6 +166,7 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 | Collections | ⇧⌘K |
 | Research | ⌘⌥R |
 | Analytics | (toolbar button) |
+| Chronology | (toolbar button) |
 | History | (History menu → "Complete History…") |
 | FRUS Research Guide | (Help menu) |
 | Settings | ⌘, |
@@ -248,13 +252,15 @@ Click **Filters** in the Search window to expand additional filter controls.
 
 | Filter | Description |
 |--------|-------------|
+| **Volume / Subseries scope** | Restrict the search to one or more specific volumes or an entire subseries. The corpus browser can also hand a scope directly to Search via **Search this volume**, so you arrive pre-scoped |
 | **Date Range** | Restrict results to documents dated within a range |
 | **User Tags** | Restrict to documents you have tagged yourself |
 | **Summaries** | *All*, *Specific prompt*, or *None* (documents with no generated summary) |
 | **Research Notes** | *All documents* or *Documents with notes only* |
 | **Document Type** | Include or exclude editorial notes |
+| **Front matter** | Include or exclude volume front-matter sections (preface, introduction, persons lists, sources) from results |
 
-All active filters are shown as chips at the top of the results list; click any chip to remove that filter.
+All active filters are shown as chips at the top of the results list; click any chip to remove that filter. The same volume/subseries scope is shared with **Corpus Analytics** (Section 13), so a query can be charted and read against the identical corpus subset.
 
 ### 5.4 Timeline View
 
@@ -330,7 +336,7 @@ Research notes are freeform text attached to a specific document. They sync acro
 
 **To edit an existing note:** Click any note row directly in the Notes section of the research panel — the note editor opens with the selected note pre-loaded. You can also click the note text in the research strip or open the Research window (⌘⌥R) and double-click the document entry.
 
-Notes are associated with the active project (see Section 14). If another project has notes for the same document, a disclosure indicator appears at the bottom of the note area — click it to reveal those notes and optionally promote them to the current project.
+Notes are associated with the active project (see Section 15). If another project has notes for the same document, a disclosure indicator appears at the bottom of the note area — click it to reveal those notes and optionally promote them to the current project.
 
 ### 7.2 Highlights
 
@@ -367,43 +373,46 @@ Tags appear as **removable chips** in the Tags section of the research panel. Ea
 
 ## 8. Cross-Reference Graph
 
-FRUS documents frequently reference one another. The **Cross-Reference Graph** visualizes these connections as an interactive network.
+FRUS documents frequently reference one another. The **Cross-Reference Graph** visualizes these connections as an interactive, chronologically arranged network.
 
 Open the graph for any document by clicking **Graph** in the toolbar. The graph opens in its own window.
 
-`[SCREENSHOT: Cross-reference graph window showing a three-column network with inbound references on the left, the current document in the center, and outbound references on the right]`
+`[SCREENSHOT: Cross-reference graph window showing the focus document and its references arranged left-to-right along a date axis, with a reference list panel on the right — the Graph toolbar control (SF Symbol: point.3.connected.trianglepath.dotted) and the reference-list toggle (SF Symbol: sidebar.trailing) labeled]`
 
-### 8.1 Layout
+### 8.1 Reading the Graph
 
-The graph uses a three-column layout:
+The graph is laid out as a **chronological timeline**: nodes are positioned left-to-right by document date, so you can see the order in which references were written. The visual encoding is consistent throughout, and the **legend** (and the info popover) explains every channel so meaning never depends on color alone:
 
-- **Left column** — Documents that reference the current document (inbound).
-- **Center** — The current document.
-- **Right column** — Documents that the current document references (outbound).
+- **Direction** — Arrows point from the citing document to the cited one.
+- **Node size** — Larger nodes are more connected (more references in and out).
+- **Edges** — Line weight and labels convey how strongly two documents are linked; a date axis runs beneath the layout.
+- **Color** — The focus document, its direct (1°) neighbors, and more distant nodes are distinguished by color.
 
-When a document has more than 30 references, nodes from the same volume are grouped into a collapsible cluster. Click a cluster to expand it.
+A **reset-viewport** button re-frames the graph, and animations respect the system **Reduce Motion** setting.
 
-For documents with very large reference networks (more than 21 nodes), the layout switches to a force-directed spring simulation that animates into a stable arrangement.
+### 8.2 The Reference List
 
-### 8.2 Interacting with Nodes
+Toggle the **reference list** panel (the sidebar toggle in the toolbar) to see the same connections as a synchronized, scrollable list — the non-visual companion to the canvas. Selecting a node or edge folds its details (titles, dates, the shared footnote context) into this panel; clicking a node opens it automatically. On a compact iPhone width the canvas and list are alternatives chosen with a segmented **List / Graph** picker instead of a side panel.
+
+`[SCREENSHOT: Reference list panel open beside the graph, showing selected-node details and the inbound/outbound reference rows — the list toggle (SF Symbol: sidebar.trailing) labeled]`
+
+### 8.3 Degree and Sparse Graphs
+
+Use the **Degree** picker to control how many hops from the focus document are displayed: 1st degree (direct references only), 2nd, or 3rd. When a document has very few direct references, the graph **auto-expands to 2 hops** and notes that it has done so, so a sparse network still tells a story.
+
+`[SCREENSHOT: Graph with the degree picker control visible and second-degree nodes shown in a distinct color and size]`
+
+### 8.4 Node Actions and Undownloaded Volumes
 
 | Action | Effect |
 |--------|--------|
-| Hover | Shows the full document title and metadata in a tooltip |
-| Click | Selects the node |
-| Right-click | Context menu: *Re-centre on this document*, *Open in Main Window* |
-| Pinch / scroll | Zoom |
+| Hover | Shows the full document title and metadata |
+| Click | Selects the node; opens its details in the reference list panel |
+| Right-click | Context menu: *Recenter Graph*, *Open in Main Window*, *Documents from Same Lot File* (jumps to the Source Explorer's archival neighbors, Section 12) |
+| Scroll | Zoom |
 | Drag (background) | Pan |
 
-### 8.3 Degree Filter
-
-Use the **Degree** picker to control how many hops from the central document are displayed: 1st degree (direct references only), 2nd degree, or 3rd degree.
-
-`[SCREENSHOT: Graph with the degree picker control visible and second-degree nodes shown in a different color]`
-
-### 8.4 Undownloaded Volumes
-
-Nodes in volumes that have not been downloaded are shown with a **?** indicator. Clicking such a node prompts you to download the volume; the graph updates when indexing completes.
+Nodes in volumes that have not been downloaded are shown distinctly. Clicking such a node prompts you to download the volume; the graph updates when indexing completes. An **info** button (ⓘ) opens a popover explaining what the graph shows and how to read it.
 
 ---
 
@@ -498,6 +507,9 @@ Click **Export** in the Collections window to generate a formatted document.
 | **PDF** | Printing, archiving, sharing with colleagues who do not have FRUS Explorer |
 | **HTML** | Web-based viewing, browser printing with custom CSS, embedding links |
 | **DOCX** | Microsoft Word format with styles, footnotes, and internal links |
+| **Zotero (RIS)** | Importing the whole collection into Zotero (or any RIS-aware reference manager) — one Book Section record per document, carrying the canonical history.state.gov URL plus your FRUS Explorer tags and (optionally) research notes |
+
+> **Sending one document to Zotero:** From an open document's citation popover, **Send to Zotero** writes a single RIS record you can open straight into Zotero. RIS is used (rather than a Zotero-specific JSON envelope) because standard Zotero imports it on every platform, including iOS.
 
 The export sheet offers additional controls:
 
@@ -589,6 +601,7 @@ Source Explorer classifies each source note and applies the most precise resolut
 |-----------|-----------|:---:|
 | **State Dept. decimal files (1910–1963)** | NARA finding-aid page for the 1910–1963 decimal file series. The Source Explorer also links to the relevant **filing manual** PDF for the document's period (where applicable), so you can understand how records were classified and organized | No |
 | **State Dept. central files (post-1963)** | NARA Catalog search pre-scoped to the RG-59 parent description; subject-numeric code (e.g. `POL 27 VIET S`) used as the query | No |
+| **Pre-1910 Central Files** | Resolved from a **bundled index** (no API call or key): 1906–1910 Numerical File citations link to the digitized microfilm roll (e.g. M862), and pre-1906 records resolve within the country-arranged diplomatic series | No |
 | **Lot files** | NARA Catalog API `variantControlNumber_is` query with three normalised forms of the lot number (e.g. `63D135`, `63 D 135`, `63 D135`), constrained to Record Group 59 | Yes |
 | **Other NARA record groups** (RG 218, 306, 330, 84) | NARA Catalog API search with record group number constraint | Yes |
 | **Presidential library** | NARA Catalog keyword search combining library name and collection keywords; up to 3 candidates shown; zero-result path links to the institution's own finding-aid portal (e.g. jfklibrary.org, lbjlibrary.org, nixonlibrary.gov) | Yes |
@@ -611,6 +624,12 @@ Select the relevant text (a lot number, decimal file identifier, archival keywor
 
 `[SCREENSHOT: NARA Catalog Lookup sheet showing the pre-populated query field and strategy picker]`
 
+### 12.1.2 Documents from This Collection (Archival Neighbors)
+
+Beneath the resolution, Source Explorer lists **other indexed documents that cite the same archival source** — the same lot file, decimal-file segment, or collection — so you can read the document alongside its archival neighbors. The section is always shown when a source note has been parsed, with an explicit loading state and a plain-language empty state explaining *why* there are none (either the note isn't a recognized archival citation, or no other indexed document shares its source) rather than silently disappearing. Click any neighbor to open it. The cross-reference graph's **Documents from Same Lot File** node action (Section 8.4) jumps here directly.
+
+`[SCREENSHOT: Source Explorer "Documents from This Collection" section listing archival-neighbor documents that share the same lot file]`
+
 ### 12.2 NARA API Key
 
 Lot file and presidential library lookups require a free NARA Catalog API key. Enter your key once in **Settings → Advanced → NARA API**; it is stored in iCloud Keychain and syncs automatically to all your devices. Central file, decimal file, and CIA resolution work without a key.
@@ -629,10 +648,12 @@ Open it from the **Analytics** toolbar button in the main window.
 
 ### 13.1 Configuring a Chart
 
-1. Type a search term in the field at the top of the window. The same query syntax as the Search window is supported (see Section 5.2).
-2. Choose a **dimension**: Decade, Year, Month, or Day.
+1. Type a search term in the field at the top of the window. The same query syntax as the Search window is supported (see Section 5.2), including quoted phrases (Analytics and Search now agree on phrase queries).
+2. Choose a **dimension**: Decade, Year, Month, Day, **Subseries**, or **By Volume**. The time dimensions chart frequency over time; **Subseries** and **By Volume** break the same query down by where in the corpus it appears, omitting subseries or volumes where the query never occurs.
 3. Choose a **grouping**: All subseries combined, or broken out by subseries.
-4. Drag the **Year Range** slider to zoom in on a particular period.
+4. Drag the **Year Range** slider to zoom in on a particular period, and set an optional **volume/subseries scope** — the same scope Search uses, so you can chart and read the identical corpus subset.
+
+On a **Subseries** or **By Volume** chart, clicking a bar drills straight into a Search scoped to that subseries or volume.
 
 ### 13.2 Chart vs. Table
 
@@ -648,9 +669,39 @@ Click a bar, point, or table row to **View in Search** — this opens the Search
 
 ---
 
-## 14. Projects and Tags
+## 14. Chronology
 
-### 14.1 Projects
+The **Chronology** browser lets you pick a date range and read every indexed document that falls within it, arranged into date sections — a corpus-wide complement to Search and Analytics. Where Analytics charts how often a *term* appears over time, Chronology shows you the actual *documents* from a span of dates, whatever their subject.
+
+Open it from the **Chronology** button in the main window toolbar (Section 3.1), or the `frus.chronology` window scene.
+
+`[SCREENSHOT: Chronology window showing the From/To date pickers, the distribution chart, and the date-grouped document list — the toolbar Chronology control (SF Symbol: calendar.day.timeline.left) labeled]`
+
+### 14.1 Choosing a Range
+
+Set the **From** and **To** dates with the range pickers at the top, then click **Show**. FRUS Explorer loads every document whose date interval overlaps the range and groups them into sections that auto-coarsen as the range widens — individual days for short ranges, months for multi-year ranges, years for very wide ranges. A document is never shown at a finer precision than its own TEI date supports, so a year-only document lands in a year section rather than pretending to be January 1. A summary line reports the document count; very wide ranges are capped, with a prompt to narrow the range.
+
+Each document's section carries its **date precision** (day / month / year) and **certainty** (exact vs. approximate), read from the TEI `<date>` attributes, so you always know how firmly a document is dated.
+
+### 14.2 The Distribution Chart
+
+Above the list, a stacked bar chart shows the document distribution across the range, colored by volume, with a textual legend that names each volume and its count (and doubles as a filter — click a volume to restrict the list to it). The chart's x-axis is **anchored to the exact range you picked**, so it always represents your chosen window rather than stretching to the uncertainty bounds of imprecise dates.
+
+- **Spans this period** — Wide-span documents (chiefly editorial notes that FRUS stamps with a whole multi-year range) are separated into their own collapsible section rather than smeared across the day-level chart.
+- **Extends beyond this range** — Documents whose *uncertain* date interval begins before or ends after your range are reported in a dedicated section (each annotated "begins YYYY · before range" / "ends YYYY · after range") instead of distorting the chart.
+- **Hover magnifier** — Hovering a bar reveals a floating card breaking that slice down one level finer (a year into months, a month into days, a day by volume), without changing the axis.
+
+`[SCREENSHOT: Chronology distribution chart with the hover magnifier card showing a finer month-by-month breakdown of the hovered year]`
+
+### 14.3 Reading and Searching the Range
+
+Click any document in the list to open it in the main window. Dense date sections (a summit or crisis with many documents) collapse to a preview with a "Show all N" expander and a per-section density bar. The **Search in this range** button hands the current date range to the Search window as a date filter, so you can layer keyword criteria onto the same span.
+
+---
+
+## 15. Projects and Tags
+
+### 15.1 Projects
 
 A *project* is a named research initiative with optional default filters. Every note, highlight, summary, and collection you create is tagged with the active project, making it easy to keep separate research threads distinct.
 
@@ -676,7 +727,7 @@ In **Settings → Research → Projects**, click the ellipsis (…) button next 
 
 When you read a document that has notes from a different project, a disclosure indicator appears at the bottom of the note area. Expand it to read those notes. Click **Add to This Project** on any note to make it visible under both projects.
 
-### 14.2 User Tags
+### 15.2 User Tags
 
 User tags are global (not project-scoped). They complement projects by letting you mark documents with thematic labels that cut across multiple research initiatives.
 
@@ -688,7 +739,7 @@ Manage all user tags in **Settings → Research → Tags**:
 
 ---
 
-## 15. Settings
+## 16. Settings
 
 Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 
@@ -714,7 +765,8 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 
 | Pane | Contents |
 |------|----------|
-| **Storage** | Breakdown of disk usage by volumes (XML), search index (FTS5), and generated summaries; per-volume delete with size shown; **Reindex** button |
+| **Storage** | Breakdown of disk usage by volumes (XML), search index (FTS5), and generated summaries; per-volume delete with size shown; indexing controls (Index Remaining, Reindex All, Delete & Rebuild) |
+| **Index Health** | The merged search-index version, current status, and an on-demand **integrity check** across the FTS5 store — useful for confirming the index is consistent after large download or reindex batches |
 | **Add Volumes** | Download queue with progress; **Check for Updates** to fetch the latest manifest; **Sideload XML** to import a single volume file |
 
 ### Advanced
@@ -736,9 +788,9 @@ All reset options require confirmation.
 
 ---
 
-## 16. Reading History and the Research Guide
+## 17. Reading History and the Research Guide
 
-### 16.1 The History Menu
+### 17.1 The History Menu
 
 FRUS Explorer keeps a running record of every document you've opened and every search you've run. The **History** menu in the menu bar surfaces the last ten of each for quick access:
 
@@ -747,25 +799,25 @@ FRUS Explorer keeps a running record of every document you've opened and every s
 
 `[SCREENSHOT: History menu open, showing recent documents and recent searches]`
 
-### 16.2 The Complete History Window
+### 17.2 The Complete History Window
 
-Choose **Complete History…** from the History menu (or open the `frus.history` window directly) to see your full reading and search history in a dedicated window — not just the last ten of each. An optional **project filter** lets you narrow the list to activity associated with a specific research project (see Section 14.1), which is useful for reconstructing the research trail behind a particular paper or question.
+Choose **Complete History…** from the History menu (or open the `frus.history` window directly) to see your full reading and search history in a dedicated window — not just the last ten of each. An optional **project filter** lets you narrow the list to activity associated with a specific research project (see Section 15.1), which is useful for reconstructing the research trail behind a particular paper or question.
 
 `[SCREENSHOT: Complete History window showing a scrollable list of visited documents and searches with a project filter control]`
 
 From either list, you can reopen a document or re-run a search with a single click — the same way you would from the History menu's short lists.
 
-### 16.3 The FRUS Research Guide
+### 17.3 The FRUS Research Guide
 
 The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to frame a research question, how to cite material rigorously, and other practical guidance for working with declassified diplomatic records.
 
-Open it from **Help → FRUS Research Guide** (or the `frus.researchGuide` window scene). It opens in its own window that you can keep open for reference alongside your main research window. Internal links open in FRUS Explorer's embedded in-app browser (Section 16.4) so you never lose your place.
+Open it from **Help → FRUS Research Guide** (or the `frus.researchGuide` window scene). It opens in its own window that you can keep open for reference alongside your main research window. Internal links open in FRUS Explorer's embedded in-app browser (Section 17.4) so you never lose your place.
 
 `[SCREENSHOT: FRUS Research Guide window showing a methodology section with embedded links]`
 
 You'll also find contextual links into the Research Guide from **Source Explorer** and **NARA Catalog Lookup** — for example, a link explaining how to interpret an archival record group while you're looking at one — so guidance appears exactly when it's useful, not just as a separate reference document.
 
-### 16.4 The Embedded Browser
+### 17.4 The Embedded Browser
 
 Wherever FRUS Explorer shows a link to an external resource — onboarding, About, the Research Guide, education content, Source Explorer, or NARA Catalog Lookup — it opens in a built-in browser sheet rather than launching Safari. This keeps you in your research session: dismiss the sheet to return exactly where you were, with your document, search, or guide content untouched in the background.
 
@@ -773,7 +825,7 @@ Wherever FRUS Explorer shows a link to an external resource — onboarding, Abou
 
 ---
 
-## 17. Keyboard Shortcuts
+## 18. Keyboard Shortcuts
 
 ### Global
 
