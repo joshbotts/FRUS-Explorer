@@ -62,6 +62,16 @@ public final class DocumentViewModel {
     /// known until the XML is parsed).
     public var documentTitle: String?
 
+    /// Canonical document number resolved from the parsed document (the div's `@n` — the
+    /// history.state.gov document number — falling back to the `<head>` leading number).
+    /// Set during `load`.
+    ///
+    /// Used by `formattedCitation` in preference to `entry.documentNumber`, which is `nil`
+    /// when the document was opened via a path that doesn't carry the number (e.g. a
+    /// cross-reference tap) — that was leaving some shared citations without a document
+    /// number.
+    public var resolvedDocumentNumber: String?
+
     /// `true` while the document is being parsed/converted.
     public var isLoading: Bool = false
 
@@ -168,7 +178,12 @@ public final class DocumentViewModel {
     /// clipboard and share sheet.
     public var formattedCitation: String? {
         guard let volumeEntry else { return nil }
-        let docMeta = FRUSDocumentMetadata(entry)
+        let docMeta = FRUSDocumentMetadata(
+            documentId: entry.documentId,
+            documentNumber: resolvedDocumentNumber ?? entry.documentNumber,
+            header: entry.header,
+            dateline: entry.dateline
+        )
         var volMeta = FRUSVolumeMetadata(volumeEntry)
         if let liveYear = parsedPublicationYear {
             volMeta = volMeta.overridingPublicationYear(liveYear)
@@ -450,6 +465,13 @@ public final class DocumentViewModel {
                     break
                 }
             }
+
+            // Resolve the canonical document number from the parsed document (the div's
+            // `@n` — the history.state.gov number — with the head-text heuristic as
+            // fallback) so the citation carries it regardless of how this document was
+            // opened (a cross-reference tap, say, builds the entry without it).
+            resolvedDocumentNumber = ast.printedNumber
+                ?? IndexingPipeline.extractDocumentNumber(from: ast.nodes)
 
             // Store plain text for summarization before converting to render model
             documentPlainText = ast.nodes

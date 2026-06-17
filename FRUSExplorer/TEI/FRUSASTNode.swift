@@ -56,18 +56,29 @@ public struct FRUSDocumentAST: Sendable {
     /// notes (`<div type="editorialNote">`).
     public let isFrontMatter: Bool
 
+    /// Canonical document number from the document div's `@n` attribute (e.g. `"17"`).
+    ///
+    /// This is the **history.state.gov document number** — every document on HSG carries
+    /// one, so citing it lets a reader resolve directly to the canonical source. It is
+    /// preferred over parsing the leading number out of the `<head>` text: in early volumes
+    /// the printed edition was unnumbered (heads are titles), but the HSG digital edition /
+    /// TEI assigns each document an `@n`, and that is the number readers use to locate it.
+    public let printedNumber: String?
+
     public init(
         documentId: String,
         nodes: [FRUSASTNode],
         dateTimeMin: String? = nil,
         dateTimeMax: String? = nil,
-        isFrontMatter: Bool = false
+        isFrontMatter: Bool = false,
+        printedNumber: String? = nil
     ) {
         self.documentId = documentId
         self.nodes = nodes
         self.dateTimeMin = dateTimeMin
         self.dateTimeMax = dateTimeMax
         self.isFrontMatter = isFrontMatter
+        self.printedNumber = printedNumber
     }
 }
 
