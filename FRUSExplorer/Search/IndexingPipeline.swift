@@ -329,7 +329,9 @@ public actor IndexingPipeline {
 
     /// Version of the materialised person rollup. Bump to force a rebuild on next consolidation.
     /// v2 (Phase 1): rollup carries role/start_year/end_year.
-    public static let currentPersonRollupVersion: Int = 2
+    /// v3 (Phase 2): membership comes from `PersonClusterer` (blocking + variant folding + era/role
+    /// guardrails) and sub-threshold pairs land in `person_cluster_candidate`.
+    public static let currentPersonRollupVersion: Int = 3
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
 
@@ -348,27 +350,72 @@ public actor IndexingPipeline {
         logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries).")
     }
 
-    /// Rebuilds the person rollup from `persons` + `person_mentions`, keyed by the normalised name
-    /// (Phase 0). Mention counts are scoped by `(volume_id, ref)` — the per-volume TEI `ref` collides
-    /// across volumes, so an unscoped count conflates unrelated people. Phase 2 replaces the name
-    /// grouping with true clustering without changing the table shape.
+    /// Rebuilds the person rollup from `persons` + `person_mentions` + `document_dates` using the
+    /// `PersonClusterer` (Phase 2). The clusterer heals fragmentation (the same person under varying
+    /// name strings across volumes) and prevents conflation (different people who share an exact name
+    /// but are separated in time), honouring the program's under-merge bias: uncertain pairs stay
+    /// split and are recorded in `person_cluster_candidate` as "possibly the same" suggestions.
+    /// Mention counts are scoped by `(volume_id, ref)`. The table shape is unchanged from Phase 0/1.
     func consolidatePersonRollup() throws {
+        let inputs = try loadPersonClusterInputs()
+        let output = PersonClusterer.cluster(inputs)
+
         try inTransaction {
             try auxExec("DELETE FROM person_rollup")
             try auxExec("DELETE FROM person_rollup_member")
-            // MIN ignores NULLs, so a member that carries role/description text wins over those that
-            // don't; start/end years widen to the full active span across the merged members.
-            try auxExec("""
-                INSERT INTO person_rollup (namekey, canonical_name, description, role, start_year, end_year)
-                SELECT lower(trim(name)), MIN(name), MIN(description), MIN(role),
-                       MIN(start_year), MAX(end_year)
-                FROM persons GROUP BY lower(trim(name))
+            try auxExec("DELETE FROM person_cluster_candidate")
+
+            // One rollup per cluster (rollup_id = clusterIndex + 1) with aggregated metadata + members.
+            let rollupStmt = try auxPrepare("""
+                INSERT INTO person_rollup
+                    (rollup_id, namekey, canonical_name, description, role, start_year, end_year, mention_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
                 """)
-            try auxExec("""
-                INSERT INTO person_rollup_member (volume_id, ref, rollup_id)
-                SELECT p.volume_id, p.ref, r.rollup_id
-                FROM persons p JOIN person_rollup r ON r.namekey = lower(trim(p.name))
-                """)
+            defer { sqlite3_finalize(rollupStmt) }
+            let memberStmt = try auxPrepare(
+                "INSERT INTO person_rollup_member (volume_id, ref, rollup_id) VALUES (?, ?, ?)")
+            defer { sqlite3_finalize(memberStmt) }
+
+            for (clusterIndex, memberIndices) in output.clusters.enumerated() {
+                let rollupId = Int64(clusterIndex + 1)
+                let members = memberIndices.map { inputs[$0] }
+                let agg = Self.aggregateRollup(members)
+
+                sqlite3_bind_int64(rollupStmt, 1, rollupId)
+                sqlite3_bind_text(rollupStmt, 2, agg.namekey, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(rollupStmt, 3, agg.canonicalName, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(rollupStmt, 4, agg.description)
+                auxBindOptional(rollupStmt, 5, agg.role)
+                auxBindOptionalInt(rollupStmt, 6, agg.startYear)
+                auxBindOptionalInt(rollupStmt, 7, agg.endYear)
+                try auxStep(rollupStmt)
+                sqlite3_reset(rollupStmt)
+
+                for m in members {
+                    sqlite3_bind_text(memberStmt, 1, m.volumeId, -1, SQLITE_TRANSIENT_IP)
+                    sqlite3_bind_text(memberStmt, 2, m.ref, -1, SQLITE_TRANSIENT_IP)
+                    sqlite3_bind_int64(memberStmt, 3, rollupId)
+                    try auxStep(memberStmt)
+                    sqlite3_reset(memberStmt)
+                }
+            }
+
+            // Candidate suggestions (cluster index → rollup_id is +1).
+            if !output.candidates.isEmpty {
+                let candStmt = try auxPrepare("""
+                    INSERT OR IGNORE INTO person_cluster_candidate (rollup_id_a, rollup_id_b, reason)
+                    VALUES (?, ?, ?)
+                    """)
+                defer { sqlite3_finalize(candStmt) }
+                for c in output.candidates {
+                    sqlite3_bind_int64(candStmt, 1, Int64(c.clusterA + 1))
+                    sqlite3_bind_int64(candStmt, 2, Int64(c.clusterB + 1))
+                    sqlite3_bind_text(candStmt, 3, c.reason, -1, SQLITE_TRANSIENT_IP)
+                    try auxStep(candStmt)
+                    sqlite3_reset(candStmt)
+                }
+            }
+
             // Mention counts: aggregate once into a keyed temp table, then update by PK lookup.
             try auxExec("CREATE TEMP TABLE IF NOT EXISTS _rollup_counts (rid INTEGER PRIMARY KEY, cnt INTEGER)")
             try auxExec("DELETE FROM _rollup_counts")
@@ -385,6 +432,83 @@ public actor IndexingPipeline {
                 """)
             try auxExec("DELETE FROM _rollup_counts")
         }
+    }
+
+    /// Loads every `persons` row as a `PersonClusterInput`, joined to a per-`(volume_id, ref)`
+    /// mention-era (min/max document year from `document_dates`). The mention era gives the clusterer
+    /// an era signal even for the common case where the persons list carries no explicit years.
+    private func loadPersonClusterInputs() throws -> [PersonClusterInput] {
+        // Mention-derived era per (volume_id, ref). GLOB guards against malformed date strings.
+        var mentionEra: [String: (Int, Int)] = [:]
+        let eraStmt = try auxPrepare("""
+            SELECT pm.volume_id, pm.person_ref,
+                   MIN(CAST(substr(dd.date_iso, 1, 4) AS INTEGER)),
+                   MAX(CAST(substr(CASE WHEN substr(dd.date_iso_max, 1, 4) GLOB '[12][0-9][0-9][0-9]'
+                                        THEN dd.date_iso_max ELSE dd.date_iso END, 1, 4) AS INTEGER))
+            FROM person_mentions pm
+            JOIN document_dates dd ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+            WHERE substr(dd.date_iso, 1, 4) GLOB '[12][0-9][0-9][0-9]'
+            GROUP BY pm.volume_id, pm.person_ref
+            """)
+        defer { sqlite3_finalize(eraStmt) }
+        while try auxStep(eraStmt) {
+            let vol = auxColumnString(eraStmt, 0) ?? ""
+            let ref = auxColumnString(eraStmt, 1) ?? ""
+            if let lo = auxColumnIntOptional(eraStmt, 2) {
+                mentionEra["\(vol)||\(ref)"] = (lo, auxColumnIntOptional(eraStmt, 3) ?? lo)
+            }
+        }
+
+        var inputs: [PersonClusterInput] = []
+        let pStmt = try auxPrepare("SELECT volume_id, ref, name, description, role, start_year, end_year FROM persons")
+        defer { sqlite3_finalize(pStmt) }
+        while try auxStep(pStmt) {
+            let vol = auxColumnString(pStmt, 0) ?? ""
+            let ref = auxColumnString(pStmt, 1) ?? ""
+            let name = auxColumnString(pStmt, 2) ?? ""
+            guard !name.isEmpty else { continue }
+            let era = mentionEra["\(vol)||\(ref)"]
+            inputs.append(PersonClusterInput(
+                volumeId: vol, ref: ref, name: name,
+                description: auxColumnString(pStmt, 3),
+                role: auxColumnString(pStmt, 4),
+                listStartYear: auxColumnIntOptional(pStmt, 5),
+                listEndYear: auxColumnIntOptional(pStmt, 6),
+                mentionStartYear: era?.0,
+                mentionEndYear: era?.1
+            ))
+        }
+        return inputs
+    }
+
+    /// Aggregated rollup metadata for a cluster's members: the most complete name, the first
+    /// available description/role, and the widest active span (min start … max end of effective years).
+    private static func aggregateRollup(_ members: [PersonClusterInput]) -> RollupAggregate {
+        // Canonical name: the most complete (longest); ties broken lexicographically for stability.
+        let names: [String] = members.map(\.name)
+        let canonical: String = names.min { (a: String, b: String) -> Bool in
+            if a.count != b.count { return a.count > b.count }
+            return a < b
+        } ?? ""
+        let description: String? = members.compactMap { (m: PersonClusterInput) -> String? in
+            guard let d = m.description, !d.isEmpty else { return nil }
+            return d
+        }.min()
+        let role: String? = members.compactMap { (m: PersonClusterInput) -> String? in
+            guard let r = m.role, !r.isEmpty else { return nil }
+            return r
+        }.min()
+        let starts: [Int] = members.compactMap(\.effectiveStartYear)
+        let ends: [Int] = members.compactMap(\.effectiveEndYear)
+        let namekey = canonical.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        return RollupAggregate(
+            canonicalName: canonical,
+            namekey: namekey,
+            description: description,
+            role: role,
+            startYear: starts.min(),
+            endYear: ends.max()
+        )
     }
 
     // MARK: - Logger
@@ -2884,6 +3008,19 @@ public actor IndexingPipeline {
         try? exec("ALTER TABLE person_rollup ADD COLUMN start_year INTEGER")
         try? exec("ALTER TABLE person_rollup ADD COLUMN end_year INTEGER")
 
+        // Sub-threshold "possibly the same person" suggestions (Phase 2). The clusterer records pairs
+        // of rollups it declined to auto-merge (under-merge bias) for later user confirmation; never
+        // applied automatically. `rollup_id_a < rollup_id_b` by convention. Rebuilt by consolidation.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS person_cluster_candidate (
+                rollup_id_a INTEGER NOT NULL,
+                rollup_id_b INTEGER NOT NULL,
+                reason      TEXT,
+                PRIMARY KEY (rollup_id_a, rollup_id_b)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_cluster_candidate_b ON person_cluster_candidate(rollup_id_b)")
+
         try exec("""
             CREATE TABLE IF NOT EXISTS terms (
                 volume_id   TEXT NOT NULL,
@@ -4025,6 +4162,11 @@ public actor IndexingPipeline {
         return String(cString: ptr)
     }
 
+    private func auxColumnIntOptional(_ stmt: OpaquePointer, _ col: Int32) -> Int? {
+        guard sqlite3_column_type(stmt, col) != SQLITE_NULL else { return nil }
+        return Int(sqlite3_column_int64(stmt, col))
+    }
+
     /// Runs a single-column, single-row integer query on the auxiliary connection.
     private func auxScalarInt(_ sql: String) throws -> Int {
         let stmt = try auxPrepare(sql)
@@ -4162,6 +4304,16 @@ private struct PersonRow: Sendable {
     let volumeId: String
     let ref: String
     let name: String
+    let description: String?
+    let role: String?
+    let startYear: Int?
+    let endYear: Int?
+}
+
+/// Aggregated metadata for one person-rollup row, computed from a cluster's members (Phase 2).
+private struct RollupAggregate {
+    let canonicalName: String
+    let namekey: String
     let description: String?
     let role: String?
     let startYear: Int?

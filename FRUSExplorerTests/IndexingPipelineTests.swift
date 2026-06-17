@@ -2564,6 +2564,67 @@ struct PersonRollupConsolidationTests {
         }
     }
 
+    @Test("clustering splits a shared exact name across distant eras into two rollups (Phase 2)")
+    func clusteringSplitsByEra() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Two unrelated "Smith, John"s a century apart — and they even share the ref string "p_s".
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1851",
+                documents: [("dA1", "p_s", "Smith")],
+                persons: [("p_s", "Smith, John: Consul, 1850–1855")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1961",
+                documents: [("dB1", "p_s", "Smith")],
+                persons: [("p_s", "Smith, John: Diplomat, 1960–1965")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let smiths = try await store.allPersonsSortedByName().filter { $0.entry.name == "Smith, John" }
+            #expect(smiths.count == 2, "same name, eras a century apart → two distinct people")
+            let a = try await store.rollupEntry(forVolumeId: "volA", ref: "p_s")?.rollupId
+            let b = try await store.rollupEntry(forVolumeId: "volB", ref: "p_s")?.rollupId
+            #expect(a != nil && b != nil && a != b, "the shared ref string must resolve to two rollups")
+        }
+    }
+
+    @Test("a name-variant pair is held apart and recorded as a merge candidate (Phase 2)")
+    func clusteringRecordsCandidate() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Variant names ("Henry A." vs "Henry"), same era, but clearly different roles → the
+            // clusterer declines to auto-merge and records a candidate instead.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1974",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.: Secretary of State, 1973–1977")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1974",
+                documents: [("dB1", "p_h", "Kissinger")],
+                persons: [("p_h", "Kissinger, Henry: Petroleum geologist, 1973–1977")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let kissingers = try await store.allPersonsSortedByName().filter { $0.entry.name.hasPrefix("Kissinger") }
+            #expect(kissingers.count == 2, "variant + role conflict stays split under the under-merge bias")
+            let rid = try #require(try await store.rollupEntry(forVolumeId: "volA", ref: "p_k")?.rollupId)
+            let cands = try await store.candidates(forRollupId: rid)
+            #expect(cands.count == 1, "the held-back pair is offered as a suggestion")
+            #expect(cands.first?.name == "Kissinger, Henry")
+            #expect(cands.first?.reason?.contains("role differs") == true)
+        }
+    }
+
     @Test("merged rollup widens the active span across members (MIN start, MAX end)")
     func consolidationWidensEra() async throws {
         try await withTempDir { dir in

@@ -202,6 +202,35 @@ public actor PersonMentionStore {
         return results
     }
 
+    /// Sub-threshold "possibly the same person" suggestions for a rollup (Phase 2).
+    ///
+    /// Returns the *other* rollup's id, canonical name, and the reason the clusterer declined to
+    /// auto-merge the pair, looking at both orientations of the unordered `person_cluster_candidate`
+    /// pair. Drives the "possibly same — Merge?" affordance (Phase 3/4). Ordered by the other name.
+    public func candidates(forRollupId rollupId: Int) throws -> [(rollupId: Int, name: String, reason: String?)] {
+        let sql = """
+            SELECT c.rollup_id_b, r.canonical_name, c.reason
+            FROM person_cluster_candidate c JOIN person_rollup r ON r.rollup_id = c.rollup_id_b
+            WHERE c.rollup_id_a = ?
+            UNION ALL
+            SELECT c.rollup_id_a, r.canonical_name, c.reason
+            FROM person_cluster_candidate c JOIN person_rollup r ON r.rollup_id = c.rollup_id_a
+            WHERE c.rollup_id_b = ?
+            ORDER BY 2
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        sqlite3_bind_int64(stmt, 2, Int64(rollupId))
+        var results: [(rollupId: Int, name: String, reason: String?)] = []
+        while step(stmt) {
+            results.append((Int(sqlite3_column_int64(stmt, 0)),
+                            columnString(stmt, 1) ?? "",
+                            columnString(stmt, 2)))
+        }
+        return results
+    }
+
     // MARK: - Persons Table Queries (Session 41)
 
     /// Looks up a single person entry by volume and ref.
