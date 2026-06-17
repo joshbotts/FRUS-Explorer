@@ -88,10 +88,10 @@ struct FrontMatterPersonsView: View {
                 ))) {
                     ForEach(displayPersons, id: \.ref) { person in
                         PersonVolumeRow(person: person) {
-                            // Open detail sheet with a 0 mention count placeholder;
-                            // the sheet shows the count from its own async load.
+                            // Per-volume entry: the detail sheet resolves the cross-corpus rollup
+                            // (count + identity) from this volume + the person's ref.
                             selectedPerson = PersonIndexEntry(
-                                entry: person, mentionCount: 0
+                                entry: person, mentionCount: 0, sourceVolumeId: volumeId
                             )
                         }
                     }

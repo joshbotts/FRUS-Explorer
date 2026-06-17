@@ -12,11 +12,29 @@ import SQLite3
 // MARK: - PersonIndexEntry
 
 /// A person record bundled with a cross-volume mention count, used by `PersonIndexView`.
+///
+/// `rollupId` is set when the entry comes from the materialised cross-corpus rollup
+/// (`person_rollup`); `mentionCount` is then the correct, `(volume_id, ref)`-scoped count and
+/// `entry.ref` is empty. When the entry is built from a single volume's front matter,
+/// `rollupId` is `nil`, `sourceVolumeId`/`entry.ref` identify the per-volume person, and the
+/// detail sheet resolves the rollup to show the cross-corpus count.
 public struct PersonIndexEntry: Sendable, Identifiable {
     public let entry: PersonEntry
     /// Count of distinct documents (across all indexed volumes) that mention this person.
     public let mentionCount: Int
-    public var id: String { entry.id }
+    /// Rollup id when this entry came from the cross-corpus rollup; `nil` for a per-volume entry.
+    public let rollupId: Int?
+    /// Volume this entry was built from (per-volume front-matter case), used to resolve the rollup.
+    public let sourceVolumeId: String?
+
+    public var id: String { rollupId.map { "r\($0)" } ?? entry.id }
+
+    public init(entry: PersonEntry, mentionCount: Int, rollupId: Int? = nil, sourceVolumeId: String? = nil) {
+        self.entry = entry
+        self.mentionCount = mentionCount
+        self.rollupId = rollupId
+        self.sourceVolumeId = sourceVolumeId
+    }
 }
 
 // MARK: - PersonMentionStore
@@ -77,18 +95,21 @@ public actor PersonMentionStore {
 
     // MARK: - Public API
 
-    /// Returns all (volumeId, documentId) pairs that mention the given ref.
+    /// Returns the (volumeId, documentId) pairs in one volume that mention the given per-volume ref.
     ///
-    /// Results are ordered by volume_id, then document_id.
-    public func documents(forPersonRef ref: String) throws -> [(volumeId: String, documentId: String)] {
+    /// The TEI `ref` (xml:id) is only meaningful within its own volume — the same string is reused
+    /// for unrelated people across volumes — so this is always scoped by `(volume_id, ref)`. Use
+    /// `documentKeys(forRollupId:)` for cross-corpus identity. Results are ordered by document_id.
+    public func documents(volumeId: String, ref: String) throws -> [(volumeId: String, documentId: String)] {
         let sql = """
             SELECT volume_id, document_id FROM person_mentions
-            WHERE person_ref = ?
-            ORDER BY volume_id, document_id
+            WHERE volume_id = ? AND person_ref = ?
+            ORDER BY document_id
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        bind(stmt, 1, ref)
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, ref)
         var results: [(volumeId: String, documentId: String)] = []
         while step(stmt) {
             let vid = columnString(stmt, 0) ?? ""
@@ -118,16 +139,63 @@ public actor PersonMentionStore {
         return refs
     }
 
-    /// Returns the count of documents (across all indexed volumes) that mention the given ref.
+    /// Returns the count of documents in one volume that mention the given per-volume ref.
     ///
-    /// Used to display a mention count badge in the Document view person sheet.
-    public func documentCount(forPersonRef ref: String) throws -> Int {
-        let sql = "SELECT COUNT(*) FROM person_mentions WHERE person_ref = ?"
+    /// Scoped by `(volume_id, ref)` — the TEI `ref` collides across volumes, so an unscoped count
+    /// conflates unrelated people. For a cross-corpus count, resolve the rollup with
+    /// `rollupEntry(forVolumeId:ref:)` (its `mentionCount` is the materialised cross-corpus count).
+    public func documentCount(volumeId: String, ref: String) throws -> Int {
+        let sql = "SELECT COUNT(*) FROM person_mentions WHERE volume_id = ? AND person_ref = ?"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        bind(stmt, 1, ref)
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, ref)
         guard step(stmt) else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    // MARK: - Person Rollup Queries (Phase 0)
+
+    /// Resolves the materialised cross-corpus rollup for a single per-volume person, or `nil` if the
+    /// rollup hasn't been built or has no row for `(volumeId, ref)`. The returned entry's
+    /// `mentionCount` is the correct cross-corpus count and `rollupId` drives drill-in/search.
+    public func rollupEntry(forVolumeId volumeId: String, ref: String) throws -> PersonIndexEntry? {
+        let sql = """
+            SELECT r.rollup_id, r.canonical_name, r.description, r.mention_count
+            FROM person_rollup_member m
+            JOIN person_rollup r ON r.rollup_id = m.rollup_id
+            WHERE m.volume_id = ? AND m.ref = ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, ref)
+        guard step(stmt) else { return nil }
+        let rid  = Int(sqlite3_column_int64(stmt, 0))
+        let name = columnString(stmt, 1) ?? ""
+        let desc = columnString(stmt, 2)
+        let cnt  = Int(sqlite3_column_int64(stmt, 3))
+        return PersonIndexEntry(entry: PersonEntry(ref: "", name: name, description: desc),
+                                mentionCount: cnt, rollupId: rid)
+    }
+
+    /// The (volumeId, documentId) pairs across the whole corpus that mention any member of a rollup.
+    public func documentKeys(forRollupId rollupId: Int) throws -> [(volumeId: String, documentId: String)] {
+        let sql = """
+            SELECT DISTINCT pm.volume_id, pm.document_id
+            FROM person_rollup_member m
+            JOIN person_mentions pm ON pm.volume_id = m.volume_id AND pm.person_ref = m.ref
+            WHERE m.rollup_id = ?
+            ORDER BY pm.volume_id, pm.document_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        var results: [(volumeId: String, documentId: String)] = []
+        while step(stmt) {
+            results.append((volumeId: columnString(stmt, 0) ?? "", documentId: columnString(stmt, 1) ?? ""))
+        }
+        return results
     }
 
     // MARK: - Persons Table Queries (Session 41)
@@ -174,37 +242,30 @@ public actor PersonMentionStore {
         return results
     }
 
-    /// All distinct persons across all indexed volumes, sorted by name, with cross-volume mention counts.
+    /// All cross-corpus persons sorted by name, from the materialised `person_rollup` table.
     ///
-    /// Groups rows by `person_ref` so each person appears once regardless of how many volumes
-    /// they appear in. The canonical name is the lexicographically first name for that ref.
-    /// Returns an empty array when no volumes have been indexed.
+    /// Reads the precomputed rollup (built by `IndexingPipeline.consolidatePersonRollup`) rather than
+    /// grouping live — a cross-corpus rollup over `person_mentions` is too slow for an interactive
+    /// load. Phase 0 keys rollups by normalised name with `(volume_id, ref)`-scoped counts (so the
+    /// per-volume TEI `ref` can no longer conflate unrelated people); Phase 2 upgrades the builder to
+    /// true clustering without changing this read path. Returns an empty array when the rollup hasn't
+    /// been built (no indexed volumes, or consolidation hasn't run yet).
     public func allPersonsSortedByName() throws -> [PersonIndexEntry] {
         let sql = """
-            SELECT
-                p.ref,
-                p.name,
-                p.description,
-                (SELECT COUNT(DISTINCT volume_id || '||' || document_id)
-                 FROM person_mentions
-                 WHERE person_ref = p.ref) AS mention_count
-            FROM (
-                SELECT ref, MIN(name) AS name, MIN(description) AS description
-                FROM persons
-                GROUP BY ref
-            ) p
-            ORDER BY p.name ASC
+            SELECT rollup_id, canonical_name, description, mention_count
+            FROM person_rollup
+            ORDER BY canonical_name ASC
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var results: [PersonIndexEntry] = []
         while step(stmt) {
-            let ref   = columnString(stmt, 0) ?? ""
-            let name  = columnString(stmt, 1) ?? ref
+            let rid   = Int(sqlite3_column_int64(stmt, 0))
+            let name  = columnString(stmt, 1) ?? ""
             let desc  = columnString(stmt, 2)
             let count = Int(sqlite3_column_int64(stmt, 3))
-            let personEntry = PersonEntry(ref: ref, name: name, description: desc)
-            results.append(PersonIndexEntry(entry: personEntry, mentionCount: count))
+            results.append(PersonIndexEntry(entry: PersonEntry(ref: "", name: name, description: desc),
+                                            mentionCount: count, rollupId: rid))
         }
         return results
     }
