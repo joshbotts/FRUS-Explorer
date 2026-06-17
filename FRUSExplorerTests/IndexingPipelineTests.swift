@@ -2540,4 +2540,55 @@ struct PersonRollupConsolidationTests {
             #expect(keys == ["volA/dA1", "volA/dA2", "volB/dB2"])
         }
     }
+
+    @Test("consolidatePersonRollup carries role and active-year span onto the rollup (Phase 1)")
+    func consolidationCarriesRoleEra() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1950",
+                documents: [("dA1", "p_a", "Acheson")],
+                persons: [("p_a", "Acheson, Dean: Secretary of State, 1949–1953")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let acheson = try #require(
+                try await store.allPersonsSortedByName().first { $0.entry.name == "Acheson, Dean" })
+            #expect(acheson.entry.role == "Secretary of State")
+            #expect(acheson.entry.startYear == 1949)
+            #expect(acheson.entry.endYear == 1953)
+            #expect(acheson.entry.roleEraSubtitle == "Secretary of State · 1949–1953")
+        }
+    }
+
+    @Test("merged rollup widens the active span across members (MIN start, MAX end)")
+    func consolidationWidensEra() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // The same person, dated differently in two volumes → one rollup spanning 1945–1953.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1946",
+                documents: [("dA1", "p_a", "Acheson")],
+                persons: [("p_a", "Acheson, Dean: Under Secretary of State, 1945–1947")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1950",
+                documents: [("dB1", "p_z", "Acheson")],
+                persons: [("p_z", "Acheson, Dean: Secretary of State, 1949–1953")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let acheson = try #require(
+                try await store.allPersonsSortedByName().first { $0.entry.name == "Acheson, Dean" })
+            #expect(acheson.entry.startYear == 1945)
+            #expect(acheson.entry.endYear == 1953)
+        }
+    }
 }

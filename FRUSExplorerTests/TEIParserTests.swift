@@ -1497,6 +1497,91 @@ struct ParseVolumeFullTests {
     }
 }
 
+// MARK: - PersonRoleEraTests (person rollup Phase 1)
+
+/// Covers the persons-list role/active-year extraction added in person rollup Phase 1: the trailing
+/// role text after a `<persName>` (previously discarded), colon-delimited roles, year-range parsing,
+/// and the light non-person filter.
+struct PersonRoleEraTests {
+
+    /// Parses a persons-only volume built from raw `<item>…</item>` fragments.
+    private func parsePersons(items: [String]) async throws -> [PersonEntry] {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Persons</title></titleStmt></fileDesc></teiHeader>
+          <text><front>
+            <div type="persons"><list>
+            \(items.joined(separator: "\n"))
+            </list></div>
+          </front></text>
+        </TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("persons-\(UUID().uuidString).xml")
+        try xml.data(using: .utf8)!.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        return try await FRUSDocumentParser().parseVolumeFull(volumeURL: url).persons
+    }
+
+    @Test("Format A: trailing role text after </persName> is captured, not discarded")
+    func formatATrailingRole() async throws {
+        let people = try await parsePersons(items: [
+            "<item><persName xml:id=\"p_k\">Kissinger, Henry A.</persName>, Assistant to the President for National Security Affairs</item>"
+        ])
+        let k = try #require(people.first)
+        #expect(k.ref == "p_k")
+        #expect(k.name == "Kissinger, Henry A.")
+        #expect(k.role == "Assistant to the President for National Security Affairs")
+        #expect(k.startYear == nil)
+    }
+
+    @Test("Format B with full year range: role and start/end years are split out")
+    func formatBYearRange() async throws {
+        let people = try await parsePersons(items: [
+            "<item xml:id=\"p_a\">Acheson, Dean: Secretary of State, 1949–1953</item>"
+        ])
+        let a = try #require(people.first)
+        #expect(a.name == "Acheson, Dean")
+        #expect(a.role == "Secretary of State")
+        #expect(a.startYear == 1949)
+        #expect(a.endYear == 1953)
+        #expect(a.eraText == "1949–1953")
+    }
+
+    @Test("Two-digit end year is grafted onto the start century (1947–49 → 1949)")
+    func twoDigitEndYear() async throws {
+        let people = try await parsePersons(items: [
+            "<item xml:id=\"p_m\">Marshall, George C.: Secretary of State, 1947–49</item>"
+        ])
+        let m = try #require(people.first)
+        #expect(m.startYear == 1947)
+        #expect(m.endYear == 1949)
+    }
+
+    @Test("Single year yields startYear with nil endYear and a single-year era")
+    func singleYear() async throws {
+        let people = try await parsePersons(items: [
+            "<item xml:id=\"p_x\">Bohlen, Charles E.: Ambassador to France, 1962</item>"
+        ])
+        let b = try #require(people.first)
+        #expect(b.role == "Ambassador to France")
+        #expect(b.startYear == 1962)
+        #expect(b.endYear == nil)
+        #expect(b.eraText == "1962")
+    }
+
+    @Test("Non-person filter drops 'See …' cross-reference redirects but keeps real names")
+    func nonPersonFilter() async throws {
+        let people = try await parsePersons(items: [
+            "<item xml:id=\"r1\">See Kissinger, Henry A.</item>",
+            "<item xml:id=\"p_s\">Seeckt, Hans von: German general</item>"
+        ])
+        #expect(people.count == 1, "the 'See …' redirect must be dropped")
+        #expect(people.first?.name == "Seeckt, Hans von")
+    }
+}
+
 // MARK: - TermsDefinitionTests (Session 162)
 
 /// Covers the terms-list definition extraction fixed in the Session 162 link
