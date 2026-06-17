@@ -723,7 +723,7 @@ struct ChronologyView: View {
             }
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "arrow.left.right")
+                Image(systemName: "arrow.left.and.right")
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 Text(String(
