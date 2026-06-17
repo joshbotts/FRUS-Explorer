@@ -71,4 +71,43 @@ public struct RISExporter: Sendable {
 
         return lines.joined(separator: "\n")
     }
+
+    /// Renders an RIS record from a pre-built Zotero `Item`.
+    ///
+    /// Used by the collection Zotero export, whose pipeline produces `Item`s rather than
+    /// raw `FRUSDocumentMetadata`. RIS imports into standard Zotero (no Better BibTeX
+    /// plugin required, and works on iOS), unlike the Zotero-API JSON envelope.
+    public func export(zoteroItem item: ZoteroJSONExporter.Item) -> String {
+        var lines: [String] = ["TY  - \(Self.risType(for: item.itemType))"]
+        lines.append("TI  - \(item.title)")
+        if let bookTitle = item.bookTitle { lines.append("T2  - \(bookTitle)") }
+        for creator in item.creators ?? [] {
+            lines.append("\(Self.risCreatorTag(for: creator.creatorType))  - \(creator.name)")
+        }
+        if let publisher = item.publisher { lines.append("PB  - \(publisher)") }
+        if let place = item.place { lines.append("CY  - \(place)") }
+        if let date = item.date { lines.append("PY  - \(date)") }
+        if let url = item.url { lines.append("UR  - \(url)") }
+        for tag in item.tags ?? [] { lines.append("KW  - \(tag.tag)") }
+        if let extra = item.extra, !extra.isEmpty { lines.append("N1  - \(extra)") }
+        for note in item.notes ?? [] { lines.append("N1  - \(note.note)") }
+        lines.append("ER  - ")
+        return lines.joined(separator: "\n")
+    }
+
+    private static func risType(for itemType: String) -> String {
+        switch itemType {
+        case "bookSection": return "CHAP"
+        case "book":        return "BOOK"
+        default:            return "GEN"
+        }
+    }
+
+    private static func risCreatorTag(for creatorType: String) -> String {
+        switch creatorType {
+        case "author": return "AU"
+        case "editor": return "A3"
+        default:       return "A2"
+        }
+    }
 }

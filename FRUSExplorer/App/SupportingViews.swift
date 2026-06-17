@@ -1710,9 +1710,9 @@ struct CitationPopoverView: View {
                         Label("Send to Zotero (BibTeX)\u{2026}", systemImage: "square.and.arrow.up")
                     }
                     Button {
-                        if let vol = volumeEntry { sendToZoteroJSON(vol: vol) }
+                        if let vol = volumeEntry { sendToZoteroRIS(vol: vol) }
                     } label: {
-                        Label("Send to Zotero (JSON)\u{2026}", systemImage: "square.and.arrow.up")
+                        Label("Send to Zotero (RIS)\u{2026}", systemImage: "square.and.arrow.up")
                     }
                     Divider()
                     ShareLink(item: shareableCitationMessage) {
@@ -1891,6 +1891,25 @@ struct CitationPopoverView: View {
         )
     }
 
+    /// Builds an RIS record that also carries the user's FRUS Explorer tags (→ `KW`)
+    /// and research notes (→ `N1`), used by "Send to Zotero" so a single document
+    /// imports with the same annotations as the collection-level Zotero export.
+    @MainActor
+    private func zoteroRISString(vol: VolumeManifestEntry) -> String {
+        let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
+        let item = ZoteroJSONExporter.makeItem(
+            document: docMeta,
+            volume: FRUSVolumeMetadata(vol),
+            year: effectiveYear(for: vol),
+            url: canonicalURL,
+            isEditorialNote: entry.isEditorialNote,
+            tags: resolved.tags,
+            notes: resolved.notes
+        )
+        return RISExporter().export(zoteroItem: item)
+    }
+
     @MainActor
     private func saveBibFile(_ content: String) {
         let panel = NSSavePanel()
@@ -1905,30 +1924,17 @@ struct CitationPopoverView: View {
 
     // MARK: - Send to Zotero
 
-    /// Builds a Zotero JSON item for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    /// Builds an RIS record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
+    ///
+    /// RIS is a format Zotero imports from a shared file. The previous Zotero-API JSON
+    /// envelope is *not* a Zotero file-import format (Zotero reported "couldn't read
+    /// payload"), so this option now sends RIS.
     @MainActor
-    private func sendToZoteroJSON(vol: VolumeManifestEntry) {
-        let docMeta = self.docMeta
-        var volMeta = FRUSVolumeMetadata(vol)
-        if let liveYear = parsedPublicationYear {
-            volMeta = volMeta.overridingPublicationYear(liveYear)
-        }
-        let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
-            documentId: entry.documentId,
-            volumeId: entry.volumeId,
-            context: modelContext
-        )
-        let item = ZoteroJSONExporter.makeItem(
-            document: docMeta,
-            volume: volMeta,
-            year: effectiveYear(for: vol),
-            url: canonicalURL,
-            isEditorialNote: entry.isEditorialNote,
-            tags: tags,
-            notes: notes
-        )
-        guard let data = try? ZoteroJSONExporter().exportData(items: [item]) else { return }
-        sendToZotero(data: data, suggestedName: "\(entry.volumeId)-\(entry.documentId)-zotero.json", contentType: .json)
+    private func sendToZoteroRIS(vol: VolumeManifestEntry) {
+        guard let data = zoteroRISString(vol: vol).data(using: .utf8) else { return }
+        sendToZotero(data: data,
+                     suggestedName: "\(entry.volumeId)-\(entry.documentId).ris",
+                     contentType: .init(filenameExtension: "ris") ?? .text)
     }
 
     /// Builds a BibTeX record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
