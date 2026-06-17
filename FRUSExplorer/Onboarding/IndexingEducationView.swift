@@ -53,9 +53,10 @@ struct IndexingEducationView: View {
     /// Distinguishes the two contexts in which these pages can appear, since
     /// the final page's call-to-action differs between them.
     enum PresentationContext {
-        /// Shown while the first index builds, immediately followed by
-        /// `IndexingSetupWizardView`. The final page invites the user to
-        /// continue into that wizard.
+        /// Shown while the first index builds (from the indexing banner via
+        /// `WhileIndexingSheet`). The final page's call-to-action simply dismisses the
+        /// sheet ("Start exploring") — the project/collection setup wizard that used to
+        /// follow was removed in Session 163.
         case onboarding
         /// Opened independently as a "Research Guide" — from Settings (iOS)
         /// or a dedicated window (macOS). The final page simply offers to
@@ -123,34 +124,69 @@ struct IndexingEducationView: View {
     // MARK: - macOS: two-column document browser
 
     #if os(macOS)
+    /// Reference / Help-book layout: a topic sidebar grouped by category drives a plain
+    /// scrolling content pane. No Back/Next wizard chrome — the sidebar is the navigation.
     private var macBody: some View {
         HStack(spacing: 0) {
 
-            // ── Left sidebar: chapter list ─────────────────────────────────
+            // ── Left sidebar: grouped topic list ───────────────────────────
             VStack(spacing: 0) {
-                List(selection: Binding(
-                    get: { pageIndex },
-                    set: { pageIndex = $0 }
-                )) {
-                    ForEach(Array(EducationPage.all.enumerated()), id: \.offset) { idx, page in
-                        MacSidebarRow(number: idx + 1, title: page.title, isSelected: idx == pageIndex)
-                            .tag(idx)
+                macSidebar
+                // The first-run flow needs an explicit way out; the standalone window relies
+                // on its close button, so the "Start exploring" affordance is onboarding-only.
+                if presentationContext == .onboarding {
+                    Divider()
+                    Button {
+                        onComplete()
+                    } label: {
+                        Text(finalPageButtonLabel)
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .keyboardShortcut(.defaultAction)
+                    .padding(12)
                 }
-                .listStyle(.sidebar)
-                .frame(width: 190)
             }
+            .frame(width: 210)
 
             Divider()
 
             // ── Right content column ───────────────────────────────────────
-            VStack(spacing: 0) {
-                macContentArea
-                Divider()
-                macNavigationBar
+            macContentArea
+        }
+        .frame(minWidth: 780, minHeight: 520)
+    }
+
+    /// Topic list grouped into category sections ("About FRUS", "Using the app").
+    private var macSidebar: some View {
+        List(selection: Binding<Int?>(
+            get: { pageIndex },
+            set: { if let value = $0 { pageIndex = value } }
+        )) {
+            ForEach(Self.groupedPages, id: \.category) { group in
+                Section(group.category.title) {
+                    ForEach(group.items, id: \.index) { item in
+                        Text(item.page.title)
+                            .tag(item.index)
+                    }
+                }
             }
         }
-        .frame(minWidth: 760, minHeight: 520)
+        .listStyle(.sidebar)
+    }
+
+    /// `EducationPage.all` grouped by category, preserving order and carrying each page's
+    /// global index (used as the sidebar selection tag and the `pageIndex`).
+    private static var groupedPages: [(category: EducationCategory, items: [(index: Int, page: EducationPage)])] {
+        let indexed = EducationPage.all.enumerated().map { (index: $0.offset, page: $0.element) }
+        var order: [EducationCategory] = []
+        for item in indexed where !order.contains(item.page.category) {
+            order.append(item.page.category)
+        }
+        return order.map { category in
+            (category, indexed.filter { $0.page.category == category })
+        }
     }
 
     private var macContentArea: some View {
@@ -186,48 +222,6 @@ struct IndexingEducationView: View {
         }
         .id(pageIndex) // reset scroll position when page changes
         .animation(.easeInOut(duration: 0.15), value: pageIndex)
-    }
-
-    private var macNavigationBar: some View {
-        HStack {
-            // Back
-            if pageIndex > 0 {
-                Button(String(localized: "education.nav.back", defaultValue: "Back")) {
-                    withAnimation(.easeInOut(duration: 0.15)) { pageIndex -= 1 }
-                }
-                .keyboardShortcut(.cancelAction)
-            } else {
-                // Invisible spacer to keep layout stable
-                Button("Back") {}.opacity(0)
-            }
-
-            Spacer()
-
-            // Page indicator
-            Text("\(pageIndex + 1) of \(EducationPage.all.count)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-
-            Spacer()
-
-            // Next / Complete
-            if pageIndex < EducationPage.all.count - 1 {
-                Button(String(localized: "education.nav.next", defaultValue: "Next")) {
-                    withAnimation(.easeInOut(duration: 0.15)) { pageIndex += 1 }
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-            } else {
-                Button(finalPageButtonLabel) {
-                    onComplete()
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
     }
 
     #endif
@@ -297,8 +291,8 @@ struct IndexingEducationView: View {
     private var finalPageButtonLabel: String {
         switch presentationContext {
         case .onboarding:
-            return String(localized: "education.nav.setup",
-                          defaultValue: "Set Up My Research →")
+            return String(localized: "education.nav.startExploring",
+                          defaultValue: "Start exploring")
         case .standalone:
             return String(localized: "education.nav.done",
                           defaultValue: "Done")
@@ -306,32 +300,9 @@ struct IndexingEducationView: View {
     }
 }
 
-// MARK: - macOS sidebar row
-
-#if os(macOS)
-private struct MacSidebarRow: View {
-    let number: Int
-    let title: String
-    let isSelected: Bool
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Text("\(number)")
-                .font(.system(size: 11, weight: .semibold).monospacedDigit())
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                .frame(width: 16, alignment: .trailing)
-                .padding(.top, 1)
-            Text(title)
-                .font(.system(size: 13))
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-        }
-        .padding(.vertical, 3)
-    }
-}
-
 // MARK: - macOS section view
 
+#if os(macOS)
 private struct MacSectionView: View {
 
     let section: EducationSection
@@ -339,8 +310,17 @@ private struct MacSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             if let heading = section.heading {
-                Text(heading)
-                    .font(.headline)
+                HStack(spacing: 8) {
+                    if let symbol = section.systemImage {
+                        Image(systemName: symbol)
+                            .font(.headline)
+                            .foregroundStyle(.tint)
+                            .frame(width: 24)
+                            .accessibilityHidden(true)
+                    }
+                    Text(heading)
+                        .font(.headline)
+                }
             }
             ForEach(section.paragraphs, id: \.self) { para in
                 Text(AttributedString(markdownBody: para))
@@ -406,7 +386,16 @@ private struct iOSSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let heading = section.heading {
-                Text(heading).font(.headline)
+                HStack(spacing: 8) {
+                    if let symbol = section.systemImage {
+                        Image(systemName: symbol)
+                            .font(.headline)
+                            .foregroundStyle(.tint)
+                            .frame(width: 24)
+                            .accessibilityHidden(true)
+                    }
+                    Text(heading).font(.headline)
+                }
             }
             ForEach(section.paragraphs, id: \.self) { para in
                 Text(AttributedString(markdownBody: para)).font(.body).fixedSize(horizontal: false, vertical: true)
@@ -429,27 +418,70 @@ private struct iOSSectionView: View {
 
 // MARK: - Content model
 
+/// Top-level grouping used to organise the guide's pages into sections in the macOS
+/// reference sidebar.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation
+enum EducationCategory: String {
+    /// Background on the FRUS series and how to read its documents.
+    case aboutFRUS
+    /// Catalog of the app's features and how to reach them.
+    case usingTheApp
+
+    /// Localised sidebar section header.
+    var title: String {
+        switch self {
+        case .aboutFRUS:   return String(localized: "education.category.about",    defaultValue: "About FRUS")
+        case .usingTheApp: return String(localized: "education.category.features", defaultValue: "Using the app")
+        }
+    }
+}
+
 struct EducationPage: Identifiable {
     let id: String
     let title: String
     let subtitle: String?
+    /// Sidebar grouping on macOS. Defaults to `.aboutFRUS` so the existing corpus-background
+    /// pages need no change.
+    let category: EducationCategory
     let sections: [EducationSection]
 
-    static let all: [EducationPage] = [page1, page2, page3, page4, page5]
+    init(
+        id: String,
+        title: String,
+        subtitle: String?,
+        category: EducationCategory = .aboutFRUS,
+        sections: [EducationSection]
+    ) {
+        self.id = id
+        self.title = title
+        self.subtitle = subtitle
+        self.category = category
+        self.sections = sections
+    }
+
+    static let all: [EducationPage] = [page1, page2, page3, page4, page5, page6, page7]
 }
 
 struct EducationSection: Identifiable {
     let id: String
     let heading: String?
+    /// The actual SF Symbol used for this feature's interface element (toolbar button,
+    /// sidebar item, etc.), shown beside the heading so users recognise the on-screen
+    /// control. `nil` for non-feature (corpus-background) sections.
+    let systemImage: String?
     let paragraphs: [String]
     let bullets: [String]?
 
     init(id: String = UUID().uuidString,
          heading: String? = nil,
+         systemImage: String? = nil,
          paragraphs: [String] = [],
          bullets: [String]? = nil) {
         self.id = id
         self.heading = heading
+        self.systemImage = systemImage
         self.paragraphs = paragraphs
         self.bullets = bullets
     }
@@ -685,72 +717,174 @@ private extension EducationPage {
 // MARK: - Page 5: App Feature Walkthrough
 
 private extension EducationPage {
+    // MARK: Page 5 — Finding documents
+
     static let page5 = EducationPage(
-        id: "app-features",
-        title: "What This App Can Do",
-        subtitle: "Key features and how to use them",
+        id: "finding-documents",
+        title: "Finding What You Need",
+        subtitle: "Ways to locate documents across the corpus",
+        category: .usingTheApp,
         sections: [
             EducationSection(
                 id: "search",
                 heading: "Full-Text Search",
+                systemImage: "magnifyingglass",
                 paragraphs: [
-                    "Search the full text of all downloaded and indexed volumes simultaneously. Results are ranked by relevance with English stemming — searching \"negotiation\" will also return documents containing \"negotiate,\" \"negotiated,\" and \"negotiations.\" Narrow results further by date range and other filters. Note that search only knows about documents from indexed volumes. Downloading and indexing more volumes expands your search corpus."
+                    "Search the full text of every downloaded and indexed volume at once. Results are ranked by relevance with English stemming, so searching \"negotiation\" also returns \"negotiate,\" \"negotiated,\" and \"negotiations.\" The search box understands Google-style syntax: wrap words in quotes for an exact phrase (\"missile crisis\"), use OR for either term, a leading minus to exclude a word (-Cuba), and a trailing asterisk for prefix matching (negoti*).",
+                    "Open the advanced filters to narrow by date range, document type, a person mentioned, and the search scope (document text, summaries, notes). You can also limit a search to specific volumes or whole subseries. Search only covers indexed volumes — download and index more to widen the corpus.",
+                    "Find it on the Search tab (iOS) or the search window, ⌘F (Mac)."
                 ]
             ),
             EducationSection(
-                id: "document",
-                heading: "Document View",
+                id: "browser",
+                heading: "Corpus Browser",
+                systemImage: "books.vertical",
                 paragraphs: [
-                    "Each document is rendered from its original TEI-encoded XML, preserving structure: headings, datelines, footnote markers, tables, and emphasis as they appear in the published volume. Footnote markers open inline popups; person names are highlighted and link to the volume's biographical glossary. You can create color-coded text highlights that persist across sessions, attach research notes to specific passages or the entire document, and apply user tags to label documents according to your own needs. Reader mode keeps user focus on the published document while research mode makes notes, tags, and AI summaries immediately accessible alongside the document."
+                    "Browse the series the way it is published: corpus → subseries → volume → compilation → document, with a breadcrumb trail so you always know where you are. From here you also download and queue volumes for indexing.",
+                    "Find it on the Browse tab (iOS) or the Corpus Browser window, ⇧⌘B (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "chronology",
+                heading: "Chronology",
+                systemImage: "calendar.day.timeline.left",
+                paragraphs: [
+                    "Pick a date range and browse every indexed document from that period, grouped by date — ideal for reconstructing how a crisis or summit unfolded day by day. A distribution chart shows where documents cluster across the range and which volumes they come from, and dense dates collapse so a busy day stays readable. Tap a chart bar to jump to that date; tap a volume in the legend to filter. Documents that span a wide range of dates (chiefly editorial notes) are listed separately rather than pinned to a single day.",
+                    "Find it from the calendar button on the Browse tab toolbar (iOS) or the Chronology window (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "person-index",
+                heading: "Person Index",
+                systemImage: "person.2",
+                paragraphs: [
+                    "An alphabetical directory of everyone named across your indexed volumes. Select a person to see every document that mentions them — a fast way to follow an individual policymaker, diplomat, or foreign leader through the record.",
+                    "Find it in the Corpus Browser's People section."
+                ]
+            ),
+            EducationSection(
+                id: "citation-lookup",
+                heading: "Find by Citation",
+                systemImage: "text.magnifyingglass",
+                paragraphs: [
+                    "Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app resolves it straight to the document — no manual hunting through volumes and document numbers.",
+                    "Find it in the Search screen's overflow (More) menu."
+                ]
+            ),
+        ]
+    )
+
+    // MARK: Page 6 — Seeing the bigger picture
+
+    static let page6 = EducationPage(
+        id: "corpus-analysis",
+        title: "Seeing the Bigger Picture",
+        subtitle: "Tools for analysis across documents and volumes",
+        category: .usingTheApp,
+        sections: [
+            EducationSection(
+                id: "analytics",
+                heading: "Corpus Analytics",
+                systemImage: "chart.bar.xaxis",
+                paragraphs: [
+                    "Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.",
+                    "A caution: FRUS volumes are selective, uneven proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. Analytics runs entirely on your local index; no network connection is required.",
+                    "Find it from the chart button on the Browse tab toolbar (iOS) or the Corpus Analytics window (Mac)."
                 ]
             ),
             EducationSection(
                 id: "cross-reference-graph",
-                heading: "Cross-Reference Graphs",
+                heading: "Cross-Reference Graph",
+                systemImage: "point.3.connected.trianglepath.dotted",
                 paragraphs: [
-                    "The Cross-Reference Graph allows users to visually investigate relationships among documents and volumes that were explicitly captured explicit as footnote cross-references. Users can choose from three scopes for the graph: direct connections only or add one or two degree neighbors as well."
+                    "Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.",
+                    "Find it from a document's toolbar (iOS) or the Graph window (Mac)."
                 ]
             ),
             EducationSection(
                 id: "source-explorer",
-                heading: "Source Explorer",
+                heading: "Source Explorer & NARA Catalog",
+                systemImage: "archivebox",
                 paragraphs: [
-                    "The Source Explorer, accessible from any document, tries to detect archival citations in source notes and connects them to NARA's finding aids — routing you to the correct period-specific research page, filing manual PDFs, and related collections. When the index is complete, this will also surface other documents that came from the same archival collection."
+                    "Open the Source Explorer from any document to read its source note broken into structured archival fields, and to follow detected citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.",
+                    "You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies use a free NARA Catalog API key you add in Settings."
                 ]
             ),
             EducationSection(
-                id: "nara-lookup",
-                heading: "NARA Catalog Lookup",
+                id: "timeline",
+                heading: "Document Timeline",
+                systemImage: "chart.bar",
                 paragraphs: [
-                    "Select any text in a document — a lot file number, a decimal file identifier, a collection name — and use the NARA Catalog Lookup tool (in the toolbar's More menu, or the research strip on Mac) to query the NARA Catalog directly. Choose from several strategies: lot file search, keyword search within a specific record group, or central-files period routing. No API key is required for period routing; other strategies require a free NARA Catalog API key, available from Settings."
+                    "Turn any set of results into a timeline. From a search result list or a collection, the timeline view charts those documents by year (and lists them chronologically) so you can see their distribution over time at a glance and spot gaps or concentrations."
+                ]
+            ),
+        ]
+    )
+
+    // MARK: Page 7 — Working with documents
+
+    static let page7 = EducationPage(
+        id: "working-with-documents",
+        title: "Working With Documents",
+        subtitle: "Reading, annotating, organising, and exporting",
+        category: .usingTheApp,
+        sections: [
+            EducationSection(
+                id: "document",
+                heading: "The Document Reader",
+                systemImage: "doc.richtext",
+                paragraphs: [
+                    "Every document is rendered from its original TEI-encoded XML, preserving the published structure: headings, datelines, footnote markers, tables, and emphasis. Footnote markers open inline; person names link to the volume's biographical glossary. Reader mode keeps the focus on the published text, while research mode brings your notes, tags, and AI summaries alongside it."
+                ]
+            ),
+            EducationSection(
+                id: "annotations",
+                heading: "Highlights, Notes & Tags",
+                systemImage: "highlighter",
+                paragraphs: [
+                    "Create color-coded text highlights that persist across sessions, attach free-text research notes to a passage or a whole document, and apply your own tags to group documents by theme, actor, or analytical category. All of it is yours and travels with your account."
+                ]
+            ),
+            EducationSection(
+                id: "projects",
+                heading: "Research Projects",
+                systemImage: "folder",
+                paragraphs: [
+                    "A project is an activity lens on your work. Every note, highlight, summary, and collection you create is tagged with the active project, so you can keep separate research threads distinct and switch between them instantly — or work in the global context with no project selected. Switch or create projects from the project picker.",
+                    "A default project is created for you; you never have to set one up before exploring."
                 ]
             ),
             EducationSection(
                 id: "collections",
-                heading: "Collections",
+                heading: "Collections & Export",
+                systemImage: "tray.2",
                 paragraphs: [
-                    "Collections are curated document sets you assemble for a purpose. Add documents from any volume, attach research notes to individual entries, and export the finished collection as a PDF, HTML file, or Word document. Export options include body depth (full text, AI summary only, or index only), footnote inclusion, highlight annotation, and whether to include research notes. Collections are a great way to build a teaching reader, assemble background materials for a policy brief, or produce a document dossier."
+                    "Collections are curated document sets you assemble for a purpose — a teaching reader, a policy-brief background packet, a document dossier. Add documents from any volume, attach a note to each entry, then export the whole collection as a PDF, HTML file, or Word document. Export options control body depth (full text, AI summary only, or index only), footnotes, highlight annotations, and whether to include your notes.",
+                    "Find it on the Collections tab (iOS) or the Collections window, ⇧⌘K (Mac)."
                 ]
             ),
             EducationSection(
-                id: "research-tools",
-                heading: "Research Notes, Tags, and Projects",
+                id: "citations",
+                heading: "Citations & Bibliographic Export",
+                systemImage: "quote.bubble",
                 paragraphs: [
-                    "Annotate documents with free-text research notes that are stored in iCloud and synced across your devices. Apply user tags to group documents by theme, actor, or analytical category. Organize everything under named research projects — a project is an activity lens that tags your notes, collections, and reading history so you can keep multiple research threads separate. All annotation data is yours and travels with your account."
+                    "Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations to your reference manager as BibTeX, RIS, or Zotero-compatible JSON, individually or for a whole collection."
                 ]
             ),
             EducationSection(
                 id: "ai",
                 heading: "AI Summaries",
+                systemImage: "sparkles",
                 paragraphs: [
-                    "When Apple Intelligence is available on your device, you can generate AI summaries of individual documents using customizable prompt templates. Summaries are stored locally and can be exported alongside documents in collections. The app provides standard prompt templates for different research purposes (analytical, chronological, actors-focused) and lets you create your own. Summaries are tools for orientation — always read the primary document yourself for your actual research."
+                    "Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be exported alongside documents in collections. Treat them as orientation only: always read the primary document yourself for your actual research."
                 ]
             ),
             EducationSection(
-                id: "analytics",
-                heading: "Corpus Analytics",
+                id: "sync",
+                heading: "Syncing Across Devices",
+                systemImage: "icloud",
                 paragraphs: [
-                    "The Analytics window charts how often a term or phrase appears across the indexed corpus over time, broken down by decade, subseries, year, month, or even day. Use it to identify when a topic first appears in FRUS, how coverage of a country or issue changed across the series, or which volumes are most relevant to a specific keyword. Note that FRUS volumes are incomplete and inconsistent proxies for the underlying archival record - do not treat FRUS ngrams as direct evidence of the evolving interests and/or discourse of contemporaneous policymakers and diplomats. Analytics operates entirely on the local index — no network connection required."
+                    "Your notes, highlights, tags, collections, and projects sync automatically through iCloud, so your research follows you between iPhone, iPad, and Mac. Downloaded volumes and the search index are stored per-device and are not synced."
                 ]
             ),
         ]

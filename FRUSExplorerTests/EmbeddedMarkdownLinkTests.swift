@@ -142,4 +142,32 @@ struct EmbeddedMarkdownLinkTests {
                     "Expected Markdown link syntax to be parsed out of: \(raw.prefix(80))…")
         }
     }
+
+    @Test("Research Guide includes the expanded feature catalog and grouping")
+    @MainActor
+    func featureCatalogPagesPresent() {
+        let pageIDs = Set(EducationPage.all.map(\.id))
+        #expect(pageIDs.isSuperset(of: ["finding-documents", "corpus-analysis", "working-with-documents"]),
+                "The three feature pages must be present")
+
+        // Feature topics new users should be able to discover.
+        let topicIDs = Set(EducationPage.all.flatMap { $0.sections.map(\.id) })
+        for topic in ["search", "browser", "chronology", "person-index", "analytics", "collections", "projects", "citations", "ai", "sync"] {
+            #expect(topicIDs.contains(topic), "Missing feature topic: \(topic)")
+        }
+
+        // Pages are grouped for the macOS reference sidebar: 4 background + 3 feature pages.
+        #expect(EducationPage.all.filter { $0.category == .aboutFRUS }.count == 4)
+        #expect(EducationPage.all.filter { $0.category == .usingTheApp }.count == 3)
+
+        // Every feature section shows the actual SF Symbol of its interface element, so
+        // users can recognise the on-screen control.
+        for page in EducationPage.all where page.category == .usingTheApp {
+            for section in page.sections {
+                let symbol = section.systemImage
+                #expect(symbol != nil && !(symbol ?? "").isEmpty,
+                        "Feature section \(section.id) must carry its interface glyph")
+            }
+        }
+    }
 }
