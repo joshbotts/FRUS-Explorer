@@ -301,7 +301,11 @@ public actor IndexingPipeline {
     ///   parsed from the `<head>` leading text, which yielded nothing for unnumbered heads
     ///   and left those citations without a number. A re-parse repopulates
     ///   `document_cache.document_number` corpus-wide so citations resolve to HSG.
-    public static let currentDateIndexVersion: Int = 10
+    /// - Version 11: person role/era metadata (person rollup Phase 1). The persons list carries
+    ///   role text (and sometimes an active-year range) after each name; the parser previously
+    ///   discarded the trailing text. A re-parse repopulates `persons.role`/`start_year`/`end_year`
+    ///   so the People browser can show a `role · era` subtitle.
+    public static let currentDateIndexVersion: Int = 11
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -324,7 +328,8 @@ public actor IndexingPipeline {
     // MARK: - Person Rollup (Phase 0)
 
     /// Version of the materialised person rollup. Bump to force a rebuild on next consolidation.
-    public static let currentPersonRollupVersion: Int = 1
+    /// v2 (Phase 1): rollup carries role/start_year/end_year.
+    public static let currentPersonRollupVersion: Int = 2
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
 
@@ -351,9 +356,12 @@ public actor IndexingPipeline {
         try inTransaction {
             try auxExec("DELETE FROM person_rollup")
             try auxExec("DELETE FROM person_rollup_member")
+            // MIN ignores NULLs, so a member that carries role/description text wins over those that
+            // don't; start/end years widen to the full active span across the merged members.
             try auxExec("""
-                INSERT INTO person_rollup (namekey, canonical_name, description)
-                SELECT lower(trim(name)), MIN(name), MIN(description)
+                INSERT INTO person_rollup (namekey, canonical_name, description, role, start_year, end_year)
+                SELECT lower(trim(name)), MIN(name), MIN(description), MIN(role),
+                       MIN(start_year), MAX(end_year)
                 FROM persons GROUP BY lower(trim(name))
                 """)
             try auxExec("""
@@ -1872,7 +1880,8 @@ public actor IndexingPipeline {
 
         // Persons and terms were extracted in the same single-pass parse above.
         let personRows = fullResult.persons.map { p in
-            PersonRow(volumeId: volumeId, ref: p.ref, name: p.name, description: p.description)
+            PersonRow(volumeId: volumeId, ref: p.ref, name: p.name, description: p.description,
+                      role: p.role, startYear: p.startYear, endYear: p.endYear)
         }
         let termRows = fullResult.terms.map { t in
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
@@ -2832,6 +2841,12 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name)")
+        // Role/era metadata (person rollup Phase 1). Idempotent — the persons list carries role text
+        // and sometimes an active-year range after each name; these were previously discarded.
+        // A reindex (currentDateIndexVersion bump) repopulates them on existing databases.
+        try? exec("ALTER TABLE persons ADD COLUMN role TEXT")
+        try? exec("ALTER TABLE persons ADD COLUMN start_year INTEGER")
+        try? exec("ALTER TABLE persons ADD COLUMN end_year INTEGER")
 
         // Person rollup (Phase 0): a materialised cross-volume person index read by the People
         // browser. The per-volume `ref` is the TEI xml:id and is only meaningful within its volume
@@ -2863,6 +2878,11 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_person_rollup_member_rollup ON person_rollup_member(rollup_id)")
+        // Role/era carried onto the rollup (Phase 1) so the People browser can show a `role · era`
+        // subtitle without a per-row persons lookup. Idempotent; repopulated by consolidation.
+        try? exec("ALTER TABLE person_rollup ADD COLUMN role TEXT")
+        try? exec("ALTER TABLE person_rollup ADD COLUMN start_year INTEGER")
+        try? exec("ALTER TABLE person_rollup ADD COLUMN end_year INTEGER")
 
         try exec("""
             CREATE TABLE IF NOT EXISTS terms (
@@ -3147,8 +3167,8 @@ public actor IndexingPipeline {
     private func auxInsertPersons(_ rows: [PersonRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
-            INSERT OR REPLACE INTO persons (volume_id, ref, name, description)
-            VALUES (?, ?, ?, ?)
+            INSERT OR REPLACE INTO persons (volume_id, ref, name, description, role, start_year, end_year)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -3158,6 +3178,9 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 2, row.ref,         -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 3, row.name,        -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 4, row.description)
+                auxBindOptional(stmt, 5, row.role)
+                auxBindOptionalInt(stmt, 6, row.startYear)
+                auxBindOptionalInt(stmt, 7, row.endYear)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -3992,6 +4015,11 @@ public actor IndexingPipeline {
         else              { sqlite3_bind_null(stmt, col) }
     }
 
+    private func auxBindOptionalInt(_ stmt: OpaquePointer, _ col: Int32, _ value: Int?) {
+        if let v = value { sqlite3_bind_int64(stmt, col, Int64(v)) }
+        else             { sqlite3_bind_null(stmt, col) }
+    }
+
     private func auxColumnString(_ stmt: OpaquePointer, _ col: Int32) -> String? {
         guard let ptr = sqlite3_column_text(stmt, col) else { return nil }
         return String(cString: ptr)
@@ -4135,6 +4163,9 @@ private struct PersonRow: Sendable {
     let ref: String
     let name: String
     let description: String?
+    let role: String?
+    let startYear: Int?
+    let endYear: Int?
 }
 
 private struct TermRow: Sendable {

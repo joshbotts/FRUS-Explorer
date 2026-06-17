@@ -426,6 +426,7 @@ public enum ListType: String, Sendable, Codable {
 /// Version history:
 ///   1.0 — Session 06: initial definition
 ///   1.1 — Session 07: populated by persons div parser
+///   1.2 — Person rollup Phase 1: role + active-year range captured from the persons list
 public struct PersonEntry: Sendable, Identifiable {
     /// The `xml:id` attribute value of the `<person>` element, matching the `ref`
     /// attribute of `<persName>` elements in the document body.
@@ -434,10 +435,54 @@ public struct PersonEntry: Sendable, Identifiable {
     /// Full display name.
     public let name: String
 
-    /// Optional biographical description from the List of Persons.
+    /// Optional biographical description from the List of Persons (the full trailing text after
+    /// the name, e.g. "Assistant to the President for National Security Affairs, 1969–1975").
     public let description: String?
 
+    /// The role/title portion of `description` with any trailing year range removed
+    /// (e.g. "Assistant to the President for National Security Affairs"). Used for compact
+    /// `role · era` subtitles. `nil` when the persons list gives no descriptive text.
+    public let role: String?
+
+    /// First year of the person's active range, parsed from the persons-list text when present.
+    public let startYear: Int?
+
+    /// Last year of the person's active range (or `nil` for an open/"present" range or a single year).
+    public let endYear: Int?
+
     public var id: String { ref }
+
+    public init(ref: String, name: String, description: String? = nil,
+                role: String? = nil, startYear: Int? = nil, endYear: Int? = nil) {
+        self.ref = ref
+        self.name = name
+        self.description = description
+        self.role = role
+        self.startYear = startYear
+        self.endYear = endYear
+    }
+}
+
+public extension PersonEntry {
+    /// A compact active-year string for subtitles: "1969–1975" for a range, "1969" for a single or
+    /// open-ended year, or `nil` when no year was parsed.
+    var eraText: String? {
+        guard let start = startYear else { return nil }
+        if let end = endYear, end != start { return "\(start)–\(end)" }
+        return "\(start)"
+    }
+
+    /// A one-line `role · era` subtitle combining the role title (falling back to `description`)
+    /// with `eraText`. `nil` when neither is available.
+    var roleEraSubtitle: String? {
+        let title = role ?? description
+        switch (title, eraText) {
+        case let (t?, e?): return "\(t) · \(e)"
+        case let (t?, nil): return t
+        case let (nil, e?): return e
+        default: return nil
+        }
+    }
 }
 
 /// A term entry from the volume's Terms and Abbreviations list (`<div type="terms">`).
