@@ -135,8 +135,8 @@ private struct PersonIndexRow: View {
                     Text(indexEntry.entry.name)
                         .font(.body)
                         .foregroundStyle(.primary)
-                    if let desc = indexEntry.entry.description, !desc.isEmpty {
-                        Text(desc)
+                    if let subtitle = indexEntry.entry.roleEraSubtitle {
+                        Text(subtitle)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -216,6 +216,12 @@ struct PersonIndexDetailSheet: View {
                         } else {
                             Text("\(displayCount) document\(displayCount == 1 ? "" : "s")")
                         }
+                    }
+                    if let era = indexEntry.entry.eraText {
+                        LabeledContent(
+                            String(localized: "people.detail.active", defaultValue: "Active"),
+                            value: era
+                        )
                     }
                 }
 

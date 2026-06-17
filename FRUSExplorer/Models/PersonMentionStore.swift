@@ -161,7 +161,8 @@ public actor PersonMentionStore {
     /// `mentionCount` is the correct cross-corpus count and `rollupId` drives drill-in/search.
     public func rollupEntry(forVolumeId volumeId: String, ref: String) throws -> PersonIndexEntry? {
         let sql = """
-            SELECT r.rollup_id, r.canonical_name, r.description, r.mention_count
+            SELECT r.rollup_id, r.canonical_name, r.description, r.mention_count,
+                   r.role, r.start_year, r.end_year
             FROM person_rollup_member m
             JOIN person_rollup r ON r.rollup_id = m.rollup_id
             WHERE m.volume_id = ? AND m.ref = ?
@@ -175,8 +176,11 @@ public actor PersonMentionStore {
         let name = columnString(stmt, 1) ?? ""
         let desc = columnString(stmt, 2)
         let cnt  = Int(sqlite3_column_int64(stmt, 3))
-        return PersonIndexEntry(entry: PersonEntry(ref: "", name: name, description: desc),
-                                mentionCount: cnt, rollupId: rid)
+        let entry = PersonEntry(ref: "", name: name, description: desc,
+                                role: columnString(stmt, 4),
+                                startYear: columnIntOptional(stmt, 5),
+                                endYear: columnIntOptional(stmt, 6))
+        return PersonIndexEntry(entry: entry, mentionCount: cnt, rollupId: rid)
     }
 
     /// The (volumeId, documentId) pairs across the whole corpus that mention any member of a rollup.
@@ -206,7 +210,7 @@ public actor PersonMentionStore {
     /// (e.g. the volume has not been indexed yet).
     public func person(forRef ref: String, volumeId: String) throws -> PersonEntry? {
         let sql = """
-            SELECT ref, name, description FROM persons
+            SELECT ref, name, description, role, start_year, end_year FROM persons
             WHERE volume_id = ? AND ref = ?
             """
         let stmt = try prepare(sql)
@@ -217,7 +221,10 @@ public actor PersonMentionStore {
         let r    = columnString(stmt, 0) ?? ref
         let name = columnString(stmt, 1) ?? ""
         let desc = columnString(stmt, 2)
-        return PersonEntry(ref: r, name: name, description: desc)
+        return PersonEntry(ref: r, name: name, description: desc,
+                           role: columnString(stmt, 3),
+                           startYear: columnIntOptional(stmt, 4),
+                           endYear: columnIntOptional(stmt, 5))
     }
 
     /// All person entries for a volume, sorted by name.
@@ -225,7 +232,7 @@ public actor PersonMentionStore {
     /// Returns an empty array if the volume has not been indexed or has no persons list.
     public func allPersons(forVolumeId volumeId: String) throws -> [PersonEntry] {
         let sql = """
-            SELECT ref, name, description FROM persons
+            SELECT ref, name, description, role, start_year, end_year FROM persons
             WHERE volume_id = ?
             ORDER BY name
             """
@@ -237,7 +244,10 @@ public actor PersonMentionStore {
             let ref  = columnString(stmt, 0) ?? ""
             let name = columnString(stmt, 1) ?? ""
             let desc = columnString(stmt, 2)
-            results.append(PersonEntry(ref: ref, name: name, description: desc))
+            results.append(PersonEntry(ref: ref, name: name, description: desc,
+                                       role: columnString(stmt, 3),
+                                       startYear: columnIntOptional(stmt, 4),
+                                       endYear: columnIntOptional(stmt, 5)))
         }
         return results
     }
@@ -252,7 +262,7 @@ public actor PersonMentionStore {
     /// been built (no indexed volumes, or consolidation hasn't run yet).
     public func allPersonsSortedByName() throws -> [PersonIndexEntry] {
         let sql = """
-            SELECT rollup_id, canonical_name, description, mention_count
+            SELECT rollup_id, canonical_name, description, mention_count, role, start_year, end_year
             FROM person_rollup
             ORDER BY canonical_name ASC
             """
@@ -264,8 +274,11 @@ public actor PersonMentionStore {
             let name  = columnString(stmt, 1) ?? ""
             let desc  = columnString(stmt, 2)
             let count = Int(sqlite3_column_int64(stmt, 3))
-            results.append(PersonIndexEntry(entry: PersonEntry(ref: "", name: name, description: desc),
-                                            mentionCount: count, rollupId: rid))
+            let entry = PersonEntry(ref: "", name: name, description: desc,
+                                    role: columnString(stmt, 4),
+                                    startYear: columnIntOptional(stmt, 5),
+                                    endYear: columnIntOptional(stmt, 6))
+            results.append(PersonIndexEntry(entry: entry, mentionCount: count, rollupId: rid))
         }
         return results
     }
@@ -365,6 +378,11 @@ public actor PersonMentionStore {
     private func columnString(_ stmt: OpaquePointer, _ col: Int32) -> String? {
         guard let ptr = sqlite3_column_text(stmt, col) else { return nil }
         return String(cString: ptr)
+    }
+
+    private func columnIntOptional(_ stmt: OpaquePointer, _ col: Int32) -> Int? {
+        guard sqlite3_column_type(stmt, col) != SQLITE_NULL else { return nil }
+        return Int(sqlite3_column_int64(stmt, col))
     }
 }
 
