@@ -44,6 +44,12 @@ struct ChronologyView: View {
     @State private var showChart = true
     /// Whether the wide-span ("spans this period") section is expanded.
     @State private var showSpanning = false
+    /// Whether the "extends beyond this range" overflow section is expanded.
+    @State private var showOverflow = false
+    #if os(macOS)
+    /// Bucket key currently under the pointer, driving the hover magnifier (macOS only).
+    @State private var hoveredBucketKey: String? = nil
+    #endif
     /// Active legend filter: a volume ID (or `chronologyOtherSeriesKey`) restricting the
     /// list to documents from that volume. `nil` = show all.
     @State private var selectedSeries: String? = nil
@@ -60,6 +66,9 @@ struct ChronologyView: View {
 
     /// `id` of the spanning section, used as a scroll target from its chip.
     private static let spanningSectionID = "__chronology_spanning__"
+
+    /// `id` of the overflow ("extends beyond this range") section, a scroll target from its chip.
+    private static let overflowSectionID = "__chronology_overflow__"
 
     init(initialParameters: ChronologyParameters? = nil) {
         self.initialParameters = initialParameters
@@ -228,7 +237,7 @@ struct ChronologyView: View {
                     defaultValue: "Pick a start and end date, then tap Show to browse every corpus document from that period."
                 ))
             )
-        } else if vm.groups.isEmpty {
+        } else if vm.groups.isEmpty && vm.spanningRows.isEmpty && vm.overflowRows.isEmpty {
             ContentUnavailableView(
                 String(localized: "chronology.empty.title", defaultValue: "No Documents"),
                 systemImage: "calendar.badge.exclamationmark",
@@ -286,6 +295,11 @@ struct ChronologyView: View {
         vm.spanningRows.filter(rowMatchesFilter)
     }
 
+    /// Overflow rows (uncertain dates straddling the range bounds) after the legend filter.
+    private var displayedOverflowRows: [ChronologyRow] {
+        vm.overflowRows.filter(rowMatchesFilter)
+    }
+
     /// The chart pane (pinned above), the spanning chip, and the scrolling section list,
     /// all inside one `ScrollViewReader` so the chart and chip can scroll the list.
     private var loadedContent: some View {
@@ -297,6 +311,10 @@ struct ChronologyView: View {
                 }
                 if !displayedSpanningRows.isEmpty {
                     spanningChip(scrollProxy: proxy)
+                    Divider()
+                }
+                if !displayedOverflowRows.isEmpty {
+                    overflowChip(scrollProxy: proxy)
                     Divider()
                 }
                 sectionList
@@ -337,6 +355,10 @@ struct ChronologyView: View {
 
             if showSpanning {
                 spanningSection
+            }
+
+            if showOverflow {
+                overflowSection
             }
 
             if vm.totalShown > 0 {
@@ -384,6 +406,18 @@ struct ChronologyView: View {
         if days <= ChronologyViewModel.dayGroupingMaxDays { return .day }
         if days <= ChronologyViewModel.monthGroupingMaxDays { return .month }
         return .year
+    }
+
+    /// Inclusive x-domain that anchors the chart to the loaded range (rounded out to whole
+    /// buckets by the view model). A one-unit nudge avoids a degenerate zero-width domain
+    /// when the range collapses to a single bucket.
+    private var chartXDomain: ClosedRange<Date> {
+        let lower = vm.chartDomainStart
+        var upper = vm.chartDomainEnd
+        if upper <= lower {
+            upper = Calendar(identifier: .gregorian).date(byAdding: chartUnit, value: 1, to: lower) ?? lower.addingTimeInterval(86_400)
+        }
+        return lower...upper
     }
 
     private func chartPane(scrollProxy: ScrollViewProxy) -> some View {
@@ -504,6 +538,7 @@ struct ChronologyView: View {
         }
         .chartForegroundStyleScale(domain: vm.chartSeries.map(\.key), range: seriesColors)
         .chartLegend(.hidden)
+        .chartXScale(domain: chartXDomain)
         .chartXAxis { AxisMarks(values: .automatic(desiredCount: 5)) }
         .chartOverlay { proxy in
             GeometryReader { geo in
@@ -511,15 +546,31 @@ struct ChronologyView: View {
                     .fill(Color.clear)
                     .contentShape(Rectangle())
                     .onTapGesture { location in
-                        guard let plotAnchor = proxy.plotFrame else { return }
-                        let xInPlot = location.x - geo[plotAnchor].origin.x
-                        guard let tapped: Date = proxy.value(atX: xInPlot) else { return }
-                        if let nearest = vm.chartBuckets.min(by: {
-                            abs($0.date.timeIntervalSince(tapped)) < abs($1.date.timeIntervalSince(tapped))
-                        }) {
+                        if let nearest = bucket(near: location, proxy: proxy, geo: geo) {
                             withAnimation { scrollProxy.scrollTo(nearest.bucketKey, anchor: .top) }
                         }
                     }
+                    #if os(macOS)
+                    // Pointer-only enhancement: hovering a bar reveals a finer breakdown of
+                    // that slice. The same counts remain in the list and legend, so nothing
+                    // becomes hover-only.
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let location):
+                            hoveredBucketKey = bucket(near: location, proxy: proxy, geo: geo)?.bucketKey
+                        case .ended:
+                            hoveredBucketKey = nil
+                        }
+                    }
+                    .overlay(alignment: .topLeading) {
+                        if let key = hoveredBucketKey,
+                           let group = vm.groups.first(where: { $0.bucketKey == key }) {
+                            magnifierCard(for: group)
+                                .offset(x: magnifierOffsetX(forBucketKey: key, proxy: proxy, geo: geo))
+                                .allowsHitTesting(false)
+                        }
+                    }
+                    #endif
                     .accessibilityHidden(true)
             }
         }
@@ -528,6 +579,98 @@ struct ChronologyView: View {
             defaultValue: "Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below."
         )))
     }
+
+    /// Maps a point in the chart overlay to the nearest `chartBuckets` entry, or `nil` when
+    /// the point falls outside the plot. Shared by the tap-to-scroll and macOS hover paths.
+    private func bucket(near location: CGPoint, proxy: ChartProxy, geo: GeometryProxy) -> ChronologyChartBucket? {
+        guard let plotAnchor = proxy.plotFrame else { return nil }
+        let xInPlot = location.x - geo[plotAnchor].origin.x
+        guard let target: Date = proxy.value(atX: xInPlot) else { return nil }
+        return vm.chartBuckets.min(by: {
+            abs($0.date.timeIntervalSince(target)) < abs($1.date.timeIntervalSince(target))
+        })
+    }
+
+    #if os(macOS)
+    // MARK: - Hover Magnifier (macOS)
+
+    /// Maximum mini-bars shown in the magnifier before a "+N more" line.
+    private static let magnifierMaxBars = 14
+
+    /// Floating card shown on macOS hover: a finer-grained breakdown (months within a year,
+    /// days within a month, or volumes within a day) of the bucket under the pointer.
+    private func magnifierCard(for group: ChronologyDateGroup) -> some View {
+        let bars = ChronologyViewModel.magnifierBreakdown(for: group)
+        let shown = Array(bars.prefix(Self.magnifierMaxBars))
+        let maxCount = max(1, shown.map(\.count).max() ?? 1)
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(group.displayLabel).font(.caption.weight(.semibold))
+                Spacer(minLength: 8)
+                Text(verbatim: "\(group.count)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(shown) { bar in
+                HStack(spacing: 6) {
+                    Text(magnifierBarLabel(bar))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .frame(width: 46, alignment: .trailing)
+                    Capsule()
+                        .fill(magnifierBarColor(bar))
+                        .frame(width: max(3, 70 * CGFloat(bar.count) / CGFloat(maxCount)), height: 6)
+                    Text(verbatim: "\(bar.count)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                    Spacer(minLength: 0)
+                }
+            }
+            if bars.count > shown.count {
+                Text(String(
+                    format: String(localized: "chronology.magnifier.more %lld",
+                                   defaultValue: "+%lld more"),
+                    Int64(bars.count - shown.count)
+                ))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(8)
+        .frame(width: 170, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+        .shadow(radius: 4, y: 2)
+        .padding(.top, 4)
+    }
+
+    /// Display label for a magnifier bar — the volume title for per-volume bars, else the
+    /// pre-formatted month/day label.
+    private func magnifierBarLabel(_ bar: ChronologyMagnifierBar) -> String {
+        bar.seriesKey != nil ? volumeTitle(bar.label) : bar.label
+    }
+
+    /// Colour for a magnifier bar — the matching series colour for per-volume bars, else accent.
+    private func magnifierBarColor(_ bar: ChronologyMagnifierBar) -> Color {
+        guard let key = bar.seriesKey,
+              let idx = vm.chartSeries.firstIndex(where: { $0.key == key }) else {
+            return Color.accentColor
+        }
+        return seriesColor(key, index: idx)
+    }
+
+    /// Horizontal offset that centres the magnifier card over the hovered bar, clamped to the
+    /// chart width.
+    private func magnifierOffsetX(forBucketKey key: String, proxy: ChartProxy, geo: GeometryProxy) -> CGFloat {
+        guard let bucket = vm.chartBuckets.first(where: { $0.bucketKey == key }),
+              let plotAnchor = proxy.plotFrame,
+              let x = proxy.position(forX: bucket.date) else { return 0 }
+        let cardWidth: CGFloat = 170
+        let raw = geo[plotAnchor].origin.x + x - cardWidth / 2
+        return min(max(0, raw), max(0, geo.size.width - cardWidth))
+    }
+    #endif
 
     // MARK: - Spanning ("spans this period") section
 
@@ -595,6 +738,114 @@ struct ChronologyView: View {
         let start = String(row.dateISO.prefix(4))
         let end = row.dateISOMax.map { String($0.prefix(4)) } ?? start
         return start == end ? start : "\(start)\u{2013}\(end)"
+    }
+
+    // MARK: - Overflow ("extends beyond this range") section
+
+    /// Number of overflow rows that begin before / end after the loaded range, for the chip.
+    private var overflowCounts: (leading: Int, trailing: Int) {
+        var leading = 0, trailing = 0
+        for row in displayedOverflowRows {
+            let dir = ChronologyViewModel.overflowDirection(row, startISO: vm.loadedStartISO, endISO: vm.loadedEndISO)
+            if dir.leading { leading += 1 }
+            if dir.trailing { trailing += 1 }
+        }
+        return (leading, trailing)
+    }
+
+    /// Chip beneath the chart summarising the uncertain documents whose interval straddles a
+    /// range boundary, and toggling their dedicated section.
+    private func overflowChip(scrollProxy: ScrollViewProxy) -> some View {
+        let counts = overflowCounts
+        return Button {
+            withAnimation { showOverflow.toggle() }
+            if showOverflow {
+                withAnimation { scrollProxy.scrollTo(Self.overflowSectionID, anchor: .top) }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.left.and.right")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(String(
+                    format: String(localized: "chronology.overflow.chip %lld",
+                                   defaultValue: "%lld documents extend beyond this range"),
+                    Int64(displayedOverflowRows.count)
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                Text(verbatim: overflowBreakdownText(counts))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Image(systemName: showOverflow ? "chevron.up" : "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(
+            format: String(localized: "chronology.overflow.chip.a11y %lld",
+                           defaultValue: "%lld documents have uncertain dates that extend beyond this range. Toggle to show them."),
+            Int64(displayedOverflowRows.count)
+        )))
+    }
+
+    /// "(2 before · 1 after)" breakdown for the overflow chip.
+    private func overflowBreakdownText(_ counts: (leading: Int, trailing: Int)) -> String {
+        var parts: [String] = []
+        if counts.leading > 0 {
+            parts.append(String(format: String(localized: "chronology.overflow.before %lld",
+                                                defaultValue: "%lld before"), Int64(counts.leading)))
+        }
+        if counts.trailing > 0 {
+            parts.append(String(format: String(localized: "chronology.overflow.after %lld",
+                                                defaultValue: "%lld after"), Int64(counts.trailing)))
+        }
+        return parts.isEmpty ? "" : "(" + parts.joined(separator: " \u{00b7} ") + ")"
+    }
+
+    @ViewBuilder
+    private var overflowSection: some View {
+        Section {
+            ForEach(displayedOverflowRows) { row in
+                Button {
+                    open(row)
+                } label: {
+                    ChronologyRowView(row: row, volumeTitle: volumeTitle(row.volumeId), spanLabel: overflowDirectionLabel(row))
+                }
+                .buttonStyle(.plain)
+            }
+        } header: {
+            Text(String(localized: "chronology.overflow.header", defaultValue: "Extends beyond this range"))
+                .textCase(nil)
+        } footer: {
+            Text(String(localized: "chronology.overflow.footer",
+                        defaultValue: "These documents overlap your range but their dates are imprecise enough to reach before or after it, so they're listed here rather than placed on the chart."))
+                .font(.caption2)
+        }
+        .id(Self.overflowSectionID)
+    }
+
+    /// Direction annotation for an overflow row, e.g. "begins 1961 · before range" or
+    /// "ends 1970 · after range" (or both when the interval encloses the whole range).
+    private func overflowDirectionLabel(_ row: ChronologyRow) -> String {
+        let dir = ChronologyViewModel.overflowDirection(row, startISO: vm.loadedStartISO, endISO: vm.loadedEndISO)
+        var parts: [String] = []
+        if dir.leading {
+            parts.append(String(format: String(localized: "chronology.overflow.begins %@",
+                                                defaultValue: "begins %@ · before range"),
+                                 String(row.dateISO.prefix(4))))
+        }
+        if dir.trailing {
+            let end = row.dateISOMax.map { String($0.prefix(4)) } ?? String(row.dateISO.prefix(4))
+            parts.append(String(format: String(localized: "chronology.overflow.ends %@",
+                                                defaultValue: "ends %@ · after range"), end))
+        }
+        return parts.joined(separator: " \u{00b7} ")
     }
 
     private func sectionHeader(_ group: ChronologyDateGroup) -> some View {

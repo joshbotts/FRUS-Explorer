@@ -184,6 +184,30 @@ public struct ChronologyChartSeries: Sendable, Identifiable {
     }
 }
 
+// MARK: - ChronologyMagnifierBar
+
+/// One mini-bar in the macOS hover magnifier: a finer-grained slice of a hovered chart
+/// bucket (a month within a year, a day within a month, or a volume within a day).
+///
+/// `seriesKey` is the volume ID for the day-level (per-volume) breakdown so the view can
+/// tint the mini-bar with the matching series colour; it is `nil` for the month/day
+/// date breakdowns, which use the accent colour.
+///
+/// Version history:
+///   1.0 — Session 165: macOS hover magnifier
+public struct ChronologyMagnifierBar: Sendable, Identifiable {
+    public let label: String
+    public let count: Int
+    public let seriesKey: String?
+    public var id: String { label }
+
+    public init(label: String, count: Int, seriesKey: String? = nil) {
+        self.label = label
+        self.count = count
+        self.seriesKey = seriesKey
+    }
+}
+
 // MARK: - ChronologyParameters
 
 /// Lightweight, `Sendable`/`Equatable` handoff value placed on

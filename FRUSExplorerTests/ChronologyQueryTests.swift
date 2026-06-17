@@ -219,4 +219,60 @@ struct ChronologyAggregationTests {
         #expect(Set(full.series.map(\.key)) == ["vA", "vB", "vC"])
         #expect(!full.series.contains { $0.key == chronologyOtherSeriesKey })
     }
+
+    @Test("splitOverflow separates boundary-straddling uncertain documents from contained ones")
+    func overflowSplit() {
+        let yearOnly = row("v1", "d1", iso: "1962-01-01", isoMax: "1962-12-31") // encloses a summer range
+        let contained = row("v1", "d2", iso: "1962-07-15")                       // squarely inside
+        let split = ChronologyViewModel.splitOverflow(
+            [yearOnly, contained], startISO: "1962-06-01", endISO: "1962-08-31")
+        #expect(split.inRange.map(\.id) == ["v1/d2"])
+        #expect(split.overflow.map(\.id) == ["v1/d1"])
+    }
+
+    @Test("overflowDirection flags leading, trailing, enclosing, and contained intervals")
+    func overflowDirections() {
+        let s = "1962-06-01", e = "1962-08-31"
+        let leading = row("v", "a", iso: "1962-05-20", isoMax: "1962-07-10")
+        let trailing = row("v", "b", iso: "1962-07-01", isoMax: "1962-09-15")
+        let both = row("v", "c", iso: "1962-01-01", isoMax: "1962-12-31")
+        let inside = row("v", "d", iso: "1962-07-01", isoMax: "1962-07-31")
+
+        let l = ChronologyViewModel.overflowDirection(leading, startISO: s, endISO: e)
+        #expect(l.leading && !l.trailing)
+        let t = ChronologyViewModel.overflowDirection(trailing, startISO: s, endISO: e)
+        #expect(!t.leading && t.trailing)
+        let b = ChronologyViewModel.overflowDirection(both, startISO: s, endISO: e)
+        #expect(b.leading && b.trailing)
+        let c = ChronologyViewModel.overflowDirection(inside, startISO: s, endISO: e)
+        #expect(!c.leading && !c.trailing)
+    }
+
+    @Test("magnifierBreakdown re-buckets a group one granularity finer")
+    func magnifierFinerBreakdown() {
+        let yearGroup = ChronologyDateGroup(
+            bucketKey: "1965", granularity: .year, sortDate: .now, displayLabel: "1965",
+            rows: [row("v", "1", iso: "1965-02-10"), row("v", "2", iso: "1965-02-20"), row("v", "3", iso: "1965-08-05")],
+            volumeCount: 1, subseriesCount: 1, editorialNoteCount: 0)
+        let months = ChronologyViewModel.magnifierBreakdown(for: yearGroup)
+        #expect(months.map(\.count) == [2, 1])                 // Feb (2) before Aug (1), ascending key
+        #expect(months.allSatisfy { $0.seriesKey == nil })
+
+        let monthGroup = ChronologyDateGroup(
+            bucketKey: "1965-03", granularity: .month, sortDate: .now, displayLabel: "March 1965",
+            rows: [row("v", "1", iso: "1965-03-04"), row("v", "2", iso: "1965-03-04"), row("v", "3", iso: "1965-03-19")],
+            volumeCount: 1, subseriesCount: 1, editorialNoteCount: 0)
+        let days = ChronologyViewModel.magnifierBreakdown(for: monthGroup)
+        #expect(days.map(\.label) == ["4", "19"])
+        #expect(days.map(\.count) == [2, 1])
+
+        let dayGroup = ChronologyDateGroup(
+            bucketKey: "1965-03-04", granularity: .day, sortDate: .now, displayLabel: "March 4, 1965",
+            rows: [row("vA", "1", iso: "1965-03-04"), row("vA", "2", iso: "1965-03-04"), row("vB", "3", iso: "1965-03-04")],
+            volumeCount: 2, subseriesCount: 1, editorialNoteCount: 0)
+        let volumes = ChronologyViewModel.magnifierBreakdown(for: dayGroup)
+        #expect(volumes.map(\.label) == ["vA", "vB"])          // per-volume, by count desc
+        #expect(volumes.map(\.count) == [2, 1])
+        #expect(volumes.map(\.seriesKey) == ["vA", "vB"])
+    }
 }
