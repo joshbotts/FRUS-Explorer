@@ -1978,6 +1978,61 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// Like `dateBucketCounts`, but additionally grouped by `volume_id` so the chronology
+    /// distribution chart can build its stacked, per-volume series for an arbitrarily large
+    /// range without materialising rows. Joins `document_cache` (indexed documents only) and
+    /// excludes multi-year spanning documents (interval > 366 days), matching the chart's
+    /// placed-document semantics and the `documentsInDateRange` list query.
+    ///
+    /// - Returns: `(bucketKey, volumeId, count)` tuples; the sum of counts is the bucketed
+    ///   total used as the chart's headline count when the list is capped.
+    func dateBucketVolumeCounts(
+        _ range: DateRange,
+        bucket: DateBucket,
+        scopeVolumeIds: [String]?
+    ) throws -> [(bucketKey: String, volumeId: String, count: Int)] {
+        var parts: [String] = [
+            "dd.date_iso IS NOT NULL",
+            "julianday(COALESCE(dd.date_iso_max, dd.date_iso)) - julianday(dd.date_iso) <= 366"
+        ]
+        var args: [String] = []
+        if let e = range.earliest {
+            parts.append("COALESCE(dd.date_iso_max, dd.date_iso) >= ?")
+            args.append(e)
+        }
+        if let l = range.latest {
+            parts.append("dd.date_iso <= ?")
+            args.append(l)
+        }
+        if let vids = scopeVolumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            parts.append("dd.volume_id IN (\(placeholders))")
+            args.append(contentsOf: vids)
+        }
+
+        let sql = """
+            SELECT substr(dd.date_iso, 1, \(bucket.prefixLength)) AS bucket, dd.volume_id, COUNT(*)
+            FROM document_dates dd
+            JOIN document_cache dc
+              ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
+            WHERE \(parts.joined(separator: " AND "))
+            GROUP BY bucket, dd.volume_id
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, arg) in args.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), arg, -1, SQLITE_TRANSIENT_IP)
+        }
+
+        var result: [(bucketKey: String, volumeId: String, count: Int)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let key = auxColumnString(stmt, 0), let vid = auxColumnString(stmt, 1) {
+                result.append((bucketKey: key, volumeId: vid, count: Int(sqlite3_column_int(stmt, 2))))
+            }
+        }
+        return result
+    }
+
     // MARK: - Date Lookup (used by DocumentTimelineView)
 
     /// Returns ISO date strings keyed by `"volumeId/documentId"` for the given document pairs.

@@ -210,6 +210,14 @@ struct ChronologyView: View {
             format: String(localized: "chronology.summary %lld", defaultValue: "%lld documents"),
             Int64(docs)
         )
+        if vm.chartShowsFullDistribution {
+            // The chart reflects the full range (`docs` is the true total); the list below
+            // is capped, so the headline count and the chart are complete while only the
+            // browsable rows are limited.
+            return base + " " + String(
+                localized: "chronology.summary.chartFull",
+                defaultValue: "(chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)")
+        }
         return vm.isCapped
             ? base + " " + String(localized: "chronology.summary.capped",
                                    defaultValue: "(showing the first \(ChronologyViewModel.loadLimit) — narrow the range)")
@@ -396,7 +404,7 @@ struct ChronologyView: View {
     private func seriesTitle(_ key: String) -> String {
         key == chronologyOtherSeriesKey
             ? String(localized: "chronology.chart.other", defaultValue: "Other volumes")
-            : volumeTitle(key)
+            : distilledVolumeLabel(key)
     }
 
     /// Chart x-axis bucket unit, matching the view model's range-driven coarsening.
@@ -563,7 +571,11 @@ struct ChronologyView: View {
                         }
                     }
                     .overlay(alignment: .topLeading) {
-                        if let key = hoveredBucketKey,
+                        // The magnifier breaks a bucket down from its loaded rows; when the
+                        // chart is the full-range aggregate (list capped), those rows aren't
+                        // all present, so the finer breakdown is suppressed.
+                        if !vm.chartShowsFullDistribution,
+                           let key = hoveredBucketKey,
                            let group = vm.groups.first(where: { $0.bucketKey == key }) {
                             magnifierCard(for: group)
                                 .offset(x: magnifierOffsetX(forBucketKey: key, proxy: proxy, geo: geo))
@@ -674,7 +686,7 @@ struct ChronologyView: View {
     /// (dropping the shared series + subseries prefix so truncated names stay distinguishable);
     /// otherwise the pre-formatted month/day label.
     private func magnifierBarLabel(_ bar: ChronologyMagnifierBar) -> String {
-        bar.seriesKey != nil ? shortVolumeTitle(bar.label) : bar.label
+        bar.seriesKey != nil ? distilledVolumeLabel(bar.label) : bar.label
     }
 
     /// The volume-specific portion of a full FRUS title — everything from "Volume …" onward,
@@ -682,13 +694,6 @@ struct ChronologyView: View {
     /// Management, 1969–1972" reads as "Volume II, Organization and Management, 1969–1972".
     /// Falls back to the full title for the rare volume whose title has no "Volume" segment
     /// (e.g. a named retrospective).
-    private func shortVolumeTitle(_ volumeId: String) -> String {
-        let full = volumeTitle(volumeId)
-        if let range = full.range(of: "Volume ") {
-            return String(full[range.lowerBound...])
-        }
-        return full
-    }
 
     /// Colour for a magnifier bar — the matching series colour for per-volume bars, else accent.
     private func magnifierBarColor(_ bar: ChronologyMagnifierBar) -> Color {
@@ -997,6 +1002,17 @@ struct ChronologyView: View {
 
     private func volumeTitle(_ volumeId: String) -> String {
         appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+    }
+
+    /// Distilled, distinct, descriptive volume label for the chart legend and magnifier
+    /// (e.g. "Southeast Asia · 1969-76 v20"), resolved from the manifest entry.
+    private func distilledVolumeLabel(_ volumeId: String) -> String {
+        let entry = appState.manifestStore.entry(forVolumeId: volumeId)
+        return ChronologyViewModel.distilledVolumeLabel(
+            volumeId: volumeId,
+            subseries: entry?.subseries ?? "",
+            title: entry?.title ?? volumeId
+        )
     }
 
     private func open(_ row: ChronologyRow) {
