@@ -7,6 +7,8 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Testing
+import Foundation
+import SwiftData
 @testable import FRUSExplorer
 
 // MARK: - PersonClustererTests
@@ -143,5 +145,104 @@ struct PersonClustererTests {
         #expect(PersonClusterer.nameRelation(["henry", "a"], ["henry", "a"]) == .exact)
         #expect(PersonClusterer.nameRelation(["henry", "a"], ["henry"]) == .variant)
         #expect(PersonClusterer.nameRelation(["henry"], ["harold"]) == .incompatible)
+    }
+
+    // MARK: User corrections (Phase 3)
+
+    private func key(_ vol: String, _ ref: String) -> PersonClusterer.MemberKey {
+        PersonClusterer.MemberKey(volumeId: vol, ref: ref)
+    }
+
+    @Test("must-link merges two records the era guardrail would otherwise split")
+    func mustLinkOverridesEraSplit() {
+        let out = PersonClusterer.cluster(
+            [input("v1", "p1", "Smith, John", listStart: 1850, listEnd: 1855),
+             input("v2", "p2", "Smith, John", listStart: 1960, listEnd: 1965)],
+            mustLink: [(key("v1", "p1"), key("v2", "p2"))])
+        #expect(out.clusters.count == 1, "the user's merge overrides the era guardrail")
+    }
+
+    @Test("must-link merges across different surname blocks")
+    func mustLinkAcrossBlocks() {
+        let out = PersonClusterer.cluster(
+            [input("v1", "p1", "Clay, Lucius"),
+             input("v2", "p2", "Clayton, William")],   // different surname → different block
+            mustLink: [(key("v1", "p1"), key("v2", "p2"))])
+        #expect(out.clusters.count == 1)
+    }
+
+    @Test("detach pulls a member out of its algorithmic cluster into its own identity")
+    func detachSplitsCluster() {
+        let people = [input("v1", "p1", "Kissinger, Henry A."),
+                      input("v2", "p2", "Kissinger, Henry A."),
+                      input("v3", "p3", "Kissinger, Henry A.")]
+        #expect(PersonClusterer.cluster(people).clusters.count == 1)
+        let out = PersonClusterer.cluster(people, detach: [key("v3", "p3")])
+        #expect(out.clusters.count == 2)
+        #expect(out.clusters.contains { $0.count == 2 })
+        #expect(out.clusters.contains { $0.count == 1 })
+    }
+
+    @Test("detach then must-link can move a member to a different identity")
+    func detachThenMustLink() {
+        // a,b merge; c,d merge. Detach b from {a,b}, then must-link b with c → {a}, {b,c,d}.
+        let people = [input("v1", "p1", "Adams, John"),
+                      input("v2", "p2", "Adams, John"),
+                      input("v3", "p3", "Baker, Howard"),
+                      input("v4", "p4", "Baker, Howard")]
+        let out = PersonClusterer.cluster(people,
+                                          mustLink: [(key("v2", "p2"), key("v3", "p3"))],
+                                          detach: [key("v2", "p2")])
+        // {a} alone, and {b,c,d} merged.
+        #expect(out.clusters.count == 2)
+        #expect(out.clusters.contains { $0.count == 1 })
+        #expect(out.clusters.contains { $0.count == 3 })
+    }
+}
+
+// MARK: - PersonClusterOverrideStoreTests
+
+/// Tests the SwiftData store for person-cluster corrections (Phase 3), backed by an in-memory
+/// container so no CloudKit/disk is touched.
+@MainActor
+struct PersonClusterOverrideStoreTests {
+
+    private func makeContext() throws -> ModelContext {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: PersonClusterOverride.self, configurations: config)
+        return ModelContext(container)
+    }
+
+    @Test("merge dedups unordered pairs and rejects a self-merge")
+    func mergeDedup() throws {
+        let ctx = try makeContext()
+        #expect(PersonClusterOverrideStore.merge(("v1", "p1"), ("v2", "p2"), context: ctx) != nil)
+        #expect(PersonClusterOverrideStore.merge(("v1", "p1"), ("v2", "p2"), context: ctx) == nil)
+        #expect(PersonClusterOverrideStore.merge(("v2", "p2"), ("v1", "p1"), context: ctx) == nil,
+                "reversed orientation is the same unordered pair")
+        #expect(PersonClusterOverrideStore.merge(("v1", "p1"), ("v1", "p1"), context: ctx) == nil,
+                "a self-merge is rejected")
+        #expect(PersonClusterOverrideStore.fetchAll(context: ctx).count == 1)
+    }
+
+    @Test("split dedups per member; snapshot maps both kinds")
+    func splitAndSnapshot() throws {
+        let ctx = try makeContext()
+        #expect(PersonClusterOverrideStore.split(("v1", "p1"), context: ctx) != nil)
+        #expect(PersonClusterOverrideStore.split(("v1", "p1"), context: ctx) == nil)
+        PersonClusterOverrideStore.merge(("v1", "p1"), ("v2", "p2"), context: ctx)
+
+        let snap = PersonClusterOverrideStore.snapshot(context: ctx)
+        #expect(snap.count == 2)
+        #expect(snap.contains { $0.kind == .split && $0.volumeIdA == "v1" && $0.refA == "p1" })
+        #expect(snap.contains { $0.kind == .merge && $0.volumeIdB == "v2" && $0.refB == "p2" })
+    }
+
+    @Test("remove deletes an override")
+    func removeOverride() throws {
+        let ctx = try makeContext()
+        let override = try #require(PersonClusterOverrideStore.split(("v1", "p1"), context: ctx))
+        PersonClusterOverrideStore.remove(override, context: ctx)
+        #expect(PersonClusterOverrideStore.fetchAll(context: ctx).isEmpty)
     }
 }

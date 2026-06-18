@@ -2625,6 +2625,78 @@ struct PersonRollupConsolidationTests {
         }
     }
 
+    @Test("a merge override unions two rollups across consolidation (Phase 3)")
+    func mergeOverrideUnionsRollups() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Two variant Kissingers the clusterer holds apart (role conflict → candidate, not merge).
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1974",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.: Secretary of State, 1973–1977")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1974",
+                documents: [("dB1", "p_h", "Kissinger")],
+                persons: [("p_h", "Kissinger, Henry: Petroleum geologist, 1973–1977")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            try await pipeline.consolidatePersonRollup()
+            #expect(try await store.allPersonsSortedByName()
+                .filter { $0.entry.name.hasPrefix("Kissinger") }.count == 2)
+
+            // The user confirms they are the same person. forceReload: false exercises the in-memory
+            // cluster-input cache the UI uses for a fast re-apply.
+            let override = PersonClusterOverrideData(kind: .merge,
+                                                     volumeIdA: "volA", refA: "p_k",
+                                                     volumeIdB: "volB", refB: "p_h")
+            try await pipeline.consolidatePersonRollup(overrides: [override], forceReload: false)
+            let merged = try await store.allPersonsSortedByName().filter { $0.entry.name.hasPrefix("Kissinger") }
+            #expect(merged.count == 1, "the merge override unions the two into one identity")
+            let rid = try #require(merged.first?.rollupId)
+            let keys = try await store.documentKeys(forRollupId: rid)
+                .map { "\($0.volumeId)/\($0.documentId)" }.sorted()
+            #expect(keys == ["volA/dA1", "volB/dB1"], "drill-in now spans both volumes")
+        }
+    }
+
+    @Test("a split override detaches a member from its cluster (Phase 3)")
+    func splitOverrideDetachesMember() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Two exact-name records the clusterer merges (no era separation).
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1970",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1971",
+                documents: [("dB1", "p_z", "Kissinger")],
+                persons: [("p_z", "Kissinger, Henry A.")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            try await pipeline.consolidatePersonRollup()
+            #expect(try await store.allPersonsSortedByName()
+                .filter { $0.entry.name == "Kissinger, Henry A." }.count == 1)
+
+            // The user marks volB's record as a different person.
+            let override = PersonClusterOverrideData(kind: .split, volumeIdA: "volB", refA: "p_z")
+            try await pipeline.consolidatePersonRollup(overrides: [override])
+            #expect(try await store.allPersonsSortedByName()
+                .filter { $0.entry.name == "Kissinger, Henry A." }.count == 2,
+                "the detached record stands alone")
+        }
+    }
+
     @Test("merged rollup widens the active span across members (MIN start, MAX end)")
     func consolidationWidensEra() async throws {
         try await withTempDir { dir in
