@@ -109,6 +109,11 @@ final class ChronologyViewModel {
     /// `true` when the result set hit `loadLimit` and was truncated.
     var isCapped: Bool = false
 
+    /// `true` when the distribution chart reflects the full range via aggregate counts
+    /// while the document list below is capped at `loadLimit`. Drives the summary wording
+    /// and disables the row-based hover magnifier (whose rows aren't fully loaded).
+    var chartShowsFullDistribution: Bool = false
+
     // MARK: - Dependencies
 
     /// Set by the view before the first `reload()`.
@@ -187,9 +192,34 @@ final class ChronologyViewModel {
             chartDomainEnd = Self.endOfBucket(endDay, bucket: viewBucket, calendar: cal)
             groups = Self.group(inRange, viewBucket: viewBucket, ascending: ascending)
 
-            let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
-            chartBuckets = chart.buckets
-            chartSeries = chart.series
+            if isCapped {
+                // The list is truncated to `loadLimit`, but the distribution chart should
+                // still reflect the whole range. Rebuild it from an aggregate COUNT query
+                // (no row materialisation) and report the true total above the capped list.
+                let counts = (try? await pipeline.dateBucketVolumeCounts(
+                    range, bucket: viewBucket, scopeVolumeIds: nil)) ?? []
+                if !counts.isEmpty {
+                    let chart = Self.makeChart(fromCounts: counts,
+                                               viewBucket: viewBucket,
+                                               maxSeries: Self.maxChartSeries)
+                    chartBuckets = chart.buckets
+                    chartSeries = chart.series
+                    totalShown = counts.reduce(0) { $0 + $1.count }
+                    chartShowsFullDistribution = true
+                } else {
+                    // Defensive fallback: keep the row-derived chart if the aggregate
+                    // query returned nothing (e.g. only spanning documents).
+                    let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
+                    chartBuckets = chart.buckets
+                    chartSeries = chart.series
+                    chartShowsFullDistribution = false
+                }
+            } else {
+                let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
+                chartBuckets = chart.buckets
+                chartSeries = chart.series
+                chartShowsFullDistribution = false
+            }
             hasLoaded = true
         } catch {
             errorMessage = error.localizedDescription
@@ -199,6 +229,7 @@ final class ChronologyViewModel {
             chartBuckets = []
             chartSeries = []
             totalShown = 0
+            chartShowsFullDistribution = false
             hasLoaded = true
         }
     }
@@ -403,6 +434,61 @@ final class ChronologyViewModel {
                 bucketKey: group.bucketKey,
                 label: group.displayLabel,
                 date: group.sortDate,
+                segments: segments
+            )
+        }
+
+        var series = ranked
+            .filter { topKeys.contains($0.key) }
+            .map { ChronologyChartSeries(key: $0.key, total: $0.value) }
+        if usesOther {
+            let otherTotal = ranked.filter { !topKeys.contains($0.key) }.reduce(0) { $0 + $1.value }
+            series.append(ChronologyChartSeries(key: chronologyOtherSeriesKey, total: otherTotal))
+        }
+        return (buckets, series)
+    }
+
+    /// Builds the stacked-distribution chart from pre-aggregated `(bucketKey, volumeId, count)`
+    /// tuples produced by `IndexingPipeline.documentDateBucketCounts`. Used when the range
+    /// exceeds `loadLimit`, so the chart reflects the full distribution without materialising
+    /// rows. Buckets are keyed at `viewBucket` granularity; volume folding into
+    /// `chronologyOtherSeriesKey` matches `makeChart(from:maxSeries:)`.
+    nonisolated static func makeChart(
+        fromCounts counts: [(bucketKey: String, volumeId: String, count: Int)],
+        viewBucket: DateBucket,
+        maxSeries: Int
+    ) -> (buckets: [ChronologyChartBucket], series: [ChronologyChartSeries]) {
+        guard !counts.isEmpty else { return ([], []) }
+
+        var volumeTotals: [String: Int] = [:]
+        for c in counts { volumeTotals[c.volumeId, default: 0] += c.count }
+
+        let ranked = volumeTotals.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+        let topKeys: Set<String>
+        let usesOther: Bool
+        if ranked.count <= maxSeries {
+            topKeys = Set(ranked.map(\.key))
+            usesOther = false
+        } else {
+            topKeys = Set(ranked.prefix(maxSeries - 1).map(\.key))
+            usesOther = true
+        }
+        func seriesKey(for volumeId: String) -> String {
+            topKeys.contains(volumeId) ? volumeId : chronologyOtherSeriesKey
+        }
+
+        var perBucket: [String: [String: Int]] = [:]
+        for c in counts {
+            perBucket[c.bucketKey, default: [:]][seriesKey(for: c.volumeId), default: 0] += c.count
+        }
+        let buckets: [ChronologyChartBucket] = perBucket.keys.sorted().map { key in
+            let segments = perBucket[key]!
+                .map { ChronologyChartSegment(seriesKey: $0.key, count: $0.value) }
+                .sorted { $0.seriesKey < $1.seriesKey }
+            return ChronologyChartBucket(
+                bucketKey: key,
+                label: label(forBucketKey: key, granularity: viewBucket),
+                date: sortDate(forBucketKey: key) ?? .distantPast,
                 segments: segments
             )
         }

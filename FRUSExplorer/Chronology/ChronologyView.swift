@@ -210,6 +210,14 @@ struct ChronologyView: View {
             format: String(localized: "chronology.summary %lld", defaultValue: "%lld documents"),
             Int64(docs)
         )
+        if vm.chartShowsFullDistribution {
+            // The chart reflects the full range (`docs` is the true total); the list below
+            // is capped, so the headline count and the chart are complete while only the
+            // browsable rows are limited.
+            return base + " " + String(
+                localized: "chronology.summary.chartFull",
+                defaultValue: "(chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)")
+        }
         return vm.isCapped
             ? base + " " + String(localized: "chronology.summary.capped",
                                    defaultValue: "(showing the first \(ChronologyViewModel.loadLimit) — narrow the range)")
@@ -563,7 +571,11 @@ struct ChronologyView: View {
                         }
                     }
                     .overlay(alignment: .topLeading) {
-                        if let key = hoveredBucketKey,
+                        // The magnifier breaks a bucket down from its loaded rows; when the
+                        // chart is the full-range aggregate (list capped), those rows aren't
+                        // all present, so the finer breakdown is suppressed.
+                        if !vm.chartShowsFullDistribution,
+                           let key = hoveredBucketKey,
                            let group = vm.groups.first(where: { $0.bucketKey == key }) {
                             magnifierCard(for: group)
                                 .offset(x: magnifierOffsetX(forBucketKey: key, proxy: proxy, geo: geo))
