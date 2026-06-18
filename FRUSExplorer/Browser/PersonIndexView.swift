@@ -30,6 +30,8 @@ struct PersonIndexView: View {
     @State private var isLoading = true
     @State private var searchText: String = ""
     @State private var selectedIndexEntry: PersonIndexEntry?
+    /// Rollup ids with a pending "possibly the same" suggestion, loaded once for row hints.
+    @State private var candidateRollupIds: Set<Int> = []
 
     private var displaySections: [PersonIndexSection] {
         guard !searchText.isEmpty else { return sections }
@@ -62,9 +64,18 @@ struct PersonIndexView: View {
                     ForEach(displaySections) { section in
                         Section(section.letter) {
                             ForEach(section.entries) { indexEntry in
-                                PersonIndexRow(indexEntry: indexEntry) {
+                                PersonIndexRow(
+                                    indexEntry: indexEntry,
+                                    hasCandidate: indexEntry.rollupId.map { candidateRollupIds.contains($0) } ?? false
+                                ) {
                                     selectedIndexEntry = indexEntry
                                 }
+                                .contextMenu { mentionsButton(for: indexEntry) }
+                                #if os(iOS)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    mentionsButton(for: indexEntry).tint(.accentColor)
+                                }
+                                #endif
                             }
                         }
                     }
@@ -101,7 +112,23 @@ struct PersonIndexView: View {
         }
         let entries = (try? await store.allPersonsSortedByName()) ?? []
         sections = PersonIndexSection.makeSections(from: entries)
+        candidateRollupIds = (try? await store.rollupIdsWithCandidates()) ?? []
         isLoading = false
+    }
+
+    /// A "Find all mentions" action for a cluster, used in the row context menu and iOS swipe.
+    @ViewBuilder
+    private func mentionsButton(for indexEntry: PersonIndexEntry) -> some View {
+        Button {
+            appState.pendingSearch = SearchParameters(personRollupId: indexEntry.rollupId)
+            #if os(iOS)
+            appState.activeTab = .search
+            #endif
+        } label: {
+            Label(String(localized: "people.row.findMentions", defaultValue: "Find all mentions"),
+                  systemImage: "magnifyingglass")
+        }
+        .disabled(indexEntry.mentionCount == 0)
     }
 }
 
@@ -128,7 +155,20 @@ struct PersonIndexSection: Identifiable {
 
 private struct PersonIndexRow: View {
     let indexEntry: PersonIndexEntry
+    /// Whether this rollup has a pending "possibly the same" suggestion (Phase 4 hint).
+    let hasCandidate: Bool
     let onTap: () -> Void
+
+    /// `role · era · N volumes`, omitting whichever parts are absent.
+    private var subtitle: String? {
+        var parts: [String] = []
+        if let roleEra = indexEntry.entry.roleEraSubtitle { parts.append(roleEra) }
+        if indexEntry.volumeCount > 1 {
+            parts.append(String(localized: "people.row.volumeCount",
+                                defaultValue: "\(indexEntry.volumeCount) volumes"))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
 
     var body: some View {
         Button(action: onTap) {
@@ -137,7 +177,7 @@ private struct PersonIndexRow: View {
                     Text(indexEntry.entry.name)
                         .font(.body)
                         .foregroundStyle(.primary)
-                    if let subtitle = indexEntry.entry.roleEraSubtitle {
+                    if let subtitle {
                         Text(subtitle)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -145,6 +185,15 @@ private struct PersonIndexRow: View {
                     }
                 }
                 Spacer()
+                if hasCandidate {
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                        .help(String(localized: "people.row.candidate.help",
+                                     defaultValue: "May be the same as another person — open to review"))
+                        .accessibilityLabel(String(localized: "people.row.candidate.a11y",
+                                                   defaultValue: "Possible duplicate"))
+                }
                 if indexEntry.mentionCount > 0 {
                     Text("\(indexEntry.mentionCount)")
                         .font(.caption)
@@ -189,7 +238,9 @@ struct PersonIndexDetailSheet: View {
     @State private var resolvedRollupId: Int?
     /// "Possibly the same person" suggestions for this rollup (Phase 2 candidates).
     @State private var candidates: [PersonMergeCandidate] = []
-    /// True while a merge correction is being applied + the rollup re-consolidated.
+    /// The per-volume records folded into this rollup (Phase 4 drill-in).
+    @State private var members: [PersonRollupMember] = []
+    /// True while a correction (merge or separate) is being applied + the rollup re-consolidated.
     @State private var isMerging = false
 
     private var displayCount: Int { resolvedMentionCount ?? indexEntry.mentionCount }
@@ -285,6 +336,36 @@ struct PersonIndexDetailSheet: View {
                                     defaultValue: "Merge if these records refer to the same person. The change syncs across your devices."))
                     }
                 }
+
+                if members.count > 1 {
+                    Section {
+                        ForEach(members) { member in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(member.entry.name)
+                                        .font(.body)
+                                    Text(member.volumeId)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button(role: .destructive) {
+                                    Task { await separate(member) }
+                                } label: {
+                                    Text(String(localized: "people.detail.separate", defaultValue: "Separate"))
+                                }
+                                .buttonStyle(.borderless)
+                                .disabled(isMerging)
+                            }
+                        }
+                    } header: {
+                        Text(String(localized: "people.detail.records.header",
+                                    defaultValue: "Records in This Identity (\(members.count))"))
+                    } footer: {
+                        Text(String(localized: "people.detail.records.footer",
+                                    defaultValue: "Separate a record if it refers to a different person."))
+                    }
+                }
             }
             .navigationTitle(indexEntry.entry.name)
             #if os(iOS)
@@ -316,16 +397,32 @@ struct PersonIndexDetailSheet: View {
                     resolvedMentionCount = 0
                 }
             }
-            await loadCandidates()
+            await loadCorrectionContext()
         }
     }
 
-    // MARK: - Merge candidates (Phase 3)
+    // MARK: - Corrections (Phase 3 merge / Phase 4 split)
 
-    private func loadCandidates() async {
+    private func loadCorrectionContext() async {
         guard let rollupId = effectiveRollupId, let store = appState.personMentionStore else { return }
         let raw = (try? await store.candidates(forRollupId: rollupId)) ?? []
         candidates = raw.map { PersonMergeCandidate(rollupId: $0.rollupId, name: $0.name, reason: $0.reason) }
+        members = (try? await store.members(forRollupId: rollupId)) ?? []
+    }
+
+    /// Records a "split" correction detaching `member` into its own identity, re-consolidates so it
+    /// takes effect immediately, then dismisses.
+    private func separate(_ member: PersonRollupMember) async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        isMerging = true
+        defer { isMerging = false }
+        PersonClusterOverrideStore.split((volumeId: member.volumeId, ref: member.entry.ref),
+                                         context: modelContext)
+        try? modelContext.save()
+        let snapshot = PersonClusterOverrideStore.snapshot(context: modelContext)
+        try? await pipeline.consolidatePersonRollup(overrides: snapshot, forceReload: false)
+        onCorrection?()
+        dismiss()
     }
 
     /// Records a user "merge" correction (a must-link `PersonClusterOverride`) between this rollup and
