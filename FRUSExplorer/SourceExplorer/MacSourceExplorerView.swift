@@ -75,7 +75,10 @@ struct MacSourceExplorerView: View {
     // MARK: - State
 
     @State private var parsed: ParsedSourceNote? = nil
-    @State private var catalogResult: NARACatalogResult? = nil
+    /// Up to five ranked NARA Catalog candidates for the current source note.
+    /// Replaces the former single-result `catalogResult`, bringing macOS to parity
+    /// with the iOS Source Explorer (which already shows a candidate list).
+    @State private var catalogResults: [NARACatalogResult] = []
     @State private var isLoading = false
     @State private var loadError: String? = nil
     @State private var hasAPIKey: Bool = false
@@ -131,7 +134,7 @@ struct MacSourceExplorerView: View {
                              defaultValue: "Copy"),
                       systemImage: "doc.on.clipboard")
             }
-            .disabled(catalogResult == nil)
+            .disabled(catalogResults.isEmpty)
             .help(String(localized: "source.explorer.toolbar.copy.tooltip",
                          defaultValue: "Copy catalog result to clipboard"))
         }
@@ -143,7 +146,7 @@ struct MacSourceExplorerView: View {
                              defaultValue: "Export"),
                       systemImage: "square.and.arrow.up")
             }
-            .disabled(catalogResult == nil)
+            .disabled(catalogResults.isEmpty)
             .help(String(localized: "source.explorer.toolbar.export.tooltip",
                          defaultValue: "Save catalog result as a text file"))
         }
@@ -466,8 +469,14 @@ struct MacSourceExplorerView: View {
                         Label(error, systemImage: "exclamationmark.triangle")
                             .foregroundStyle(.red)
                             .font(.callout)
-                    } else if let result = catalogResult {
-                        catalogResultView(result)
+                    } else if !catalogResults.isEmpty {
+                        // Up to 5 ranked candidates (parity with iOS).
+                        ForEach(catalogResults.prefix(5), id: \.naId) { result in
+                            catalogResultView(result)
+                            if result.naId != catalogResults.prefix(5).last?.naId {
+                                Divider()
+                            }
+                        }
                     } else {
                         Text(String(localized: "source.explorer.nara.noResult",
                                     defaultValue: "No matching record found in the NARA Catalog."))
@@ -659,26 +668,25 @@ struct MacSourceExplorerView: View {
             // phrase query if all variants return zero results. Pass the actual RG so
             // F-designator lot files (RG 84 post records) are queried correctly.
             let rgToUse = (rg ?? "RG-59").replacingOccurrences(of: "RG-", with: "")
-            await fetchResult {
-                let results = try await client.resolveLotFileVariants(lotNumber: lotNumber, recordGroup: rgToUse)
-                return results.first
+            await fetchResults {
+                try await client.resolveLotFileVariants(lotNumber: lotNumber, recordGroup: rgToUse)
             }
 
         case .naraCollection(let rg, let series, let lot, _):
             let keywords = [series, lot].compactMap { $0 }.joined(separator: " ")
             manualQuery = "RG \(rg) \(keywords)"
             guard hasAPIKey else { return }
-            let results = try? await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 3)
-            if let first = results?.first { await MainActor.run { catalogResult = first } }
+            await fetchResults {
+                try await client.searchByRecordGroup(rg, keywords: keywords, maxResults: 5)
+            }
 
         case .presidentialLibrary(let library, let collection, _):
             manualQuery = "\(library) \(collection)"
             guard hasAPIKey else { return }
-            // Return up to 3 candidates; display the first in the single-result macOS layout.
-            await fetchResult {
+            await fetchResults {
                 try await client.searchByPresidentialMaterials(
                     library: library, collection: collection, maxResults: 3
-                ).first
+                )
             }
 
         default:
@@ -703,11 +711,13 @@ struct MacSourceExplorerView: View {
         relatedLoading = false
     }
 
-    private func fetchResult(_ operation: @Sendable () async throws -> NARACatalogResult?) async {
+    /// Executes a NARA Catalog API operation and stores up to five ranked candidates
+    /// (or an error message). Mirrors the iOS Source Explorer's multi-candidate list.
+    private func fetchResults(_ operation: @Sendable () async throws -> [NARACatalogResult]) async {
         isLoading = true
         loadError = nil
         do {
-            catalogResult = try await operation()
+            catalogResults = try await operation()
         } catch {
             loadError = error.localizedDescription
         }
@@ -719,13 +729,13 @@ struct MacSourceExplorerView: View {
     private func runManualSearch() async {
         let query = manualQuery.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return }
-        await fetchResult { try await client.searchCatalog(query: query) }
+        await fetchResults { (try await client.searchCatalog(query: query)).map { [$0] } ?? [] }
     }
 
     // MARK: - Copy
 
     private func copyResultToClipboard() {
-        guard let result = catalogResult else { return }
+        guard let result = catalogResults.first else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(naraExportText(result), forType: .string)
     }
@@ -733,7 +743,7 @@ struct MacSourceExplorerView: View {
     // MARK: - Export
 
     private func exportCatalogResult() {
-        guard let result = catalogResult else { return }
+        guard let result = catalogResults.first else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.plainText]
         panel.nameFieldStringValue = "\(result.naId).txt"
