@@ -404,7 +404,7 @@ struct ChronologyView: View {
     private func seriesTitle(_ key: String) -> String {
         key == chronologyOtherSeriesKey
             ? String(localized: "chronology.chart.other", defaultValue: "Other volumes")
-            : volumeTitle(key)
+            : distilledVolumeLabel(key)
     }
 
     /// Chart x-axis bucket unit, matching the view model's range-driven coarsening.
@@ -686,7 +686,7 @@ struct ChronologyView: View {
     /// (dropping the shared series + subseries prefix so truncated names stay distinguishable);
     /// otherwise the pre-formatted month/day label.
     private func magnifierBarLabel(_ bar: ChronologyMagnifierBar) -> String {
-        bar.seriesKey != nil ? shortVolumeTitle(bar.label) : bar.label
+        bar.seriesKey != nil ? distilledVolumeLabel(bar.label) : bar.label
     }
 
     /// The volume-specific portion of a full FRUS title — everything from "Volume …" onward,
@@ -694,13 +694,6 @@ struct ChronologyView: View {
     /// Management, 1969–1972" reads as "Volume II, Organization and Management, 1969–1972".
     /// Falls back to the full title for the rare volume whose title has no "Volume" segment
     /// (e.g. a named retrospective).
-    private func shortVolumeTitle(_ volumeId: String) -> String {
-        let full = volumeTitle(volumeId)
-        if let range = full.range(of: "Volume ") {
-            return String(full[range.lowerBound...])
-        }
-        return full
-    }
 
     /// Colour for a magnifier bar — the matching series colour for per-volume bars, else accent.
     private func magnifierBarColor(_ bar: ChronologyMagnifierBar) -> Color {
@@ -1009,6 +1002,17 @@ struct ChronologyView: View {
 
     private func volumeTitle(_ volumeId: String) -> String {
         appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+    }
+
+    /// Distilled, distinct, descriptive volume label for the chart legend and magnifier
+    /// (e.g. "Southeast Asia · 1969-76 v20"), resolved from the manifest entry.
+    private func distilledVolumeLabel(_ volumeId: String) -> String {
+        let entry = appState.manifestStore.entry(forVolumeId: volumeId)
+        return ChronologyViewModel.distilledVolumeLabel(
+            volumeId: volumeId,
+            subseries: entry?.subseries ?? "",
+            title: entry?.title ?? volumeId
+        )
     }
 
     private func open(_ row: ChronologyRow) {

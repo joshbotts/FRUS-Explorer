@@ -508,6 +508,129 @@ final class ChronologyViewModel {
         a.prefixLength <= b.prefixLength ? a : b
     }
 
+    // MARK: - Volume Labelling
+
+    /// Maximum characters kept from a volume's topic before eliding; the period/volume tag
+    /// keeps the overall label distinct even when the topic is truncated.
+    nonisolated static let volumeTopicMaxLength = 40
+
+    /// A concise, distinct, descriptive label for a volume, distilled from its full FRUS
+    /// title for the chronology chart legend and hover magnifier — where the raw title (e.g.
+    /// "Foreign Relations of the United States, 1969–1976, Volume XX, Southeast Asia,
+    /// 1969–1972") is far too long and repetitive to tell volumes apart.
+    ///
+    /// The result is the volume's **topic** (when the title carries one) joined to a compact
+    /// **period + volume/part tag** derived from the id — e.g. "Southeast Asia · 1969-76 v20"
+    /// or "Soviet Union · 1981-88 v6". The early annual "Papers Relating to Foreign Affairs"
+    /// volumes have no topic, so they reduce to just the tag, e.g. "1864 pt.1". The tag alone
+    /// is globally unique, so labels never collide even after a long topic is truncated.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume's stable id, e.g. `"frus1969-76v20"`.
+    ///   - subseries: The volume's subseries period, e.g. `"1969-76"`.
+    ///   - title: The full TEI volume title (whitespace already collapsed on manifest decode).
+    nonisolated static func distilledVolumeLabel(volumeId: String, subseries: String, title: String) -> String {
+        let tag = volumeTag(volumeId: volumeId, subseries: subseries)
+        let topic = volumeTopic(from: title)
+        return topic.isEmpty ? tag : "\(topic) · \(tag)"
+    }
+
+    /// Compact, globally unique period + volume/part tag derived from the id, e.g.
+    /// `"1969-76 v20"`, `"1952-54 v2 pt.1"`, `"1864 pt.1"`, `"1877 app"`, or `"1870"`.
+    nonisolated private static func volumeTag(volumeId: String, subseries: String) -> String {
+        var parts = [subseries]
+        let vol = captureGroups(in: volumeId, pattern: "v(E-)?([0-9]+)")
+        if let vol, vol.count > 2, let digits = vol[2], let n = Int(digits) {
+            parts.append("v\(vol[1] ?? "")\(n)")
+        }
+        let part = captureGroups(in: volumeId, pattern: "p([0-9]+)")
+        if let part, part.count > 1, let digits = part[1], let n = Int(digits) {
+            parts.append("pt.\(n)")
+        }
+        if parts.count == 1 {
+            // No v/p suffix — append any remaining id suffix (e.g. "app") for uniqueness.
+            var suffix = volumeId
+            let withSub = "frus" + subseries
+            if suffix.hasPrefix(withSub) { suffix = String(suffix.dropFirst(withSub.count)) }
+            else if suffix.hasPrefix("frus") { suffix = String(suffix.dropFirst(4)) }
+            suffix = suffix.trimmingCharacters(in: CharacterSet(charactersIn: "-_ "))
+            if !suffix.isEmpty { parts.append(suffix) }
+        }
+        return parts.joined(separator: " ")
+    }
+
+    /// The descriptive topic distilled from a full FRUS volume title, or `""` when the title
+    /// is pure boilerplate (the early annual "Papers Relating…/Message of the President…"
+    /// volumes). Strips the series boilerplate, the subseries year, the "Volume N"/"Part N"
+    /// tokens, and trailing date ranges, then truncates to `volumeTopicMaxLength`.
+    nonisolated private static func volumeTopic(from title: String) -> String {
+        var t = title.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+        let prefixes = [
+            "Foreign Relations of the United States, Diplomatic Papers,",
+            "Foreign Relations of the United States,",
+            "Papers Relating to the Foreign Relations of the United States,",
+            "Papers Relating to Foreign Affairs,"
+        ]
+        for p in prefixes where t.hasPrefix(p) {
+            t = String(t.dropFirst(p.count)).trimmingCharacters(in: .whitespaces)
+            break
+        }
+        for boilerplate in [
+            "Accompanying the Annual Message of the President",
+            "With the Annual Message of the President",
+            "with the Annual Message of the President",
+            "Transmitted to Congress",
+            "Diplomatic Papers"
+        ] {
+            t = t.replacingOccurrences(of: boilerplate, with: "")
+        }
+        let removals = [
+            ",?\\s*\\bVolumes?\\s+[IVXLCDM/]+(?:,\\s*[IVXLCDM/]+)*\\b",
+            ",?\\s*\\bPart\\s+([IVXLCDM]+|[0-9]+)\\b",
+            "to the .*?Congress",
+            "^[0-9]{4}(?:[–-][0-9]{2,4})?\\s*,?\\s*",
+            ",?\\s*[A-Z][a-z]+ [0-9]{1,2},?\\s*[0-9]{4}.*$",
+            ",?\\s*[A-Z][a-z]+ [0-9]{4}\\s*[–-]\\s*[A-Z][a-z]+ [0-9]{4}\\s*$",
+            ",?\\s*[0-9]{4}(?:[–-][0-9]{2,4})?\\s*$"
+        ]
+        for pattern in removals {
+            t = t.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+        }
+        t = t.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: " ,.;"))
+        let low = t.lowercased()
+        if t.count < 3 || low.hasPrefix("message of the president")
+            || low.contains("congress") || low.contains("session") {
+            return ""
+        }
+        return truncateTopic(t)
+    }
+
+    /// Truncates a topic to `volumeTopicMaxLength`, preferring a trailing word boundary, and
+    /// appends an ellipsis. The volume tag keeps the full label distinct after truncation.
+    nonisolated private static func truncateTopic(_ s: String) -> String {
+        guard s.count > volumeTopicMaxLength else { return s }
+        var cut = String(s.prefix(volumeTopicMaxLength))
+        if let space = cut.lastIndex(of: " "),
+           cut.distance(from: cut.startIndex, to: space) >= volumeTopicMaxLength - 12 {
+            cut = String(cut[..<space])
+        }
+        return cut.trimmingCharacters(in: CharacterSet(charactersIn: " ,;:")) + "…"
+    }
+
+    /// Returns a regex match's capture groups indexed by group number (`[0]` is the whole
+    /// match); an entry is `nil` when that optional group did not participate. `nil` when the
+    /// pattern does not match.
+    nonisolated private static func captureGroups(in string: String, pattern: String) -> [String?]? {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let range = NSRange(string.startIndex..., in: string)
+        guard let match = regex.firstMatch(in: string, range: range) else { return nil }
+        return (0..<match.numberOfRanges).map { i in
+            Range(match.range(at: i), in: string).map { String(string[$0]) }
+        }
+    }
+
     /// Maps a stored `DatePrecision` to the corresponding bucket (`nil` → `.day`).
     nonisolated private static func bucket(forPrecision precision: DatePrecision?) -> DateBucket {
         switch precision {

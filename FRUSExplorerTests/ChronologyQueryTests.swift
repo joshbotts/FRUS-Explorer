@@ -276,3 +276,66 @@ struct ChronologyAggregationTests {
         #expect(volumes.map(\.seriesKey) == ["vA", "vB"])
     }
 }
+
+// MARK: - Volume Label Distillation
+
+@Suite("ChronologyVolumeLabelTests")
+struct ChronologyVolumeLabelTests {
+
+    private func label(_ vid: String, _ sub: String, _ title: String) -> String {
+        ChronologyViewModel.distilledVolumeLabel(volumeId: vid, subseries: sub, title: title)
+    }
+
+    @Test("Modern volume distills to topic + period/volume tag")
+    func modernTopicTag() {
+        #expect(label("frus1969-76v20", "1969-76",
+                      "Foreign Relations of the United States, 1969–1976, Volume XX, Southeast Asia, 1969–1972")
+                == "Southeast Asia · 1969-76 v20")
+        #expect(label("frus1981-88v06", "1981-88",
+                      "Foreign Relations of the United States, 1981–1988, Volume VI, Soviet Union, October 1986–January 1989")
+                == "Soviet Union · 1981-88 v6")
+    }
+
+    @Test("Topic before the volume number is still extracted, with Part")
+    func topicBeforeVolumeAndPart() {
+        #expect(label("frus1945v06", "1945",
+                      "Foreign Relations of the United States, Diplomatic Papers, 1945, The British Commonwealth, The Far East, Volume VI")
+                == "The British Commonwealth, The Far East · 1945 v6")
+        #expect(label("frus1952-54v02p1", "1952-54",
+                      "Foreign Relations of the United States, 1952–1954, National Security Affairs, Volume II, Part 1")
+                == "National Security Affairs · 1952-54 v2 pt.1")
+    }
+
+    @Test("Early annual volumes with no topic reduce to the period/part tag")
+    func earlyAnnualNoTopic() {
+        #expect(label("frus1864p1", "1864",
+                      "Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the Second Session Thirty-eighth Congress, Part I")
+                == "1864 pt.1")
+        #expect(label("frus1870", "1870",
+                      "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress with the Annual Message of the President, December 5, 1870")
+                == "1870")
+        #expect(label("frus1861", "1861",
+                      "Message of the President of the United States to the Two Houses of Congress, at the Commencement of the Second Session of the Thirty-seventh Congress")
+                == "1861")
+    }
+
+    @Test("Same topic in different subseries stays distinct via the tag")
+    func distinctAcrossSubseries() {
+        let a = label("frus1969-76v01", "1969-76",
+                      "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972")
+        let b = label("frus1977-80v01", "1977-80",
+                      "Foreign Relations of the United States, 1977–1980, Volume I, Foundations of Foreign Policy")
+        #expect(a == "Foundations of Foreign Policy · 1969-76 v1")
+        #expect(b == "Foundations of Foreign Policy · 1977-80 v1")
+        #expect(a != b)
+    }
+
+    @Test("Long topics are truncated but the distinct tag is preserved")
+    func longTopicTruncated() {
+        let result = label("frus1894p1", "1894",
+                           "Papers Relating to the Foreign Relations of the United States, 1894, Appendix I, Chinese-Japanese War, Enforcement of Regulation Respective to Fur Seals, Mosquito Territory, Affairs at Bluefields")
+        #expect(result.hasSuffix("· 1894 pt.1"))
+        #expect(result.contains("…"))
+        #expect(result.count < 60)
+    }
+}
