@@ -29,16 +29,24 @@ public struct PersonIndexEntry: Sendable, Identifiable {
     /// Number of distinct volumes this cluster spans (Phase 4), for the "N volumes" subtitle. 0 for
     /// a per-volume front-matter entry.
     public let volumeCount: Int
+    /// Canonical id from the OOH authority crosswalk (Phase 5) when this identity is authoritative;
+    /// `nil` for a heuristically-clustered identity.
+    public let authorityId: Int?
+    /// VIAF id (Phase 5) when reconciled, for a "View on VIAF" link.
+    public let viafId: String?
 
     public var id: String { rollupId.map { "r\($0)" } ?? entry.id }
 
     public init(entry: PersonEntry, mentionCount: Int, rollupId: Int? = nil,
-                sourceVolumeId: String? = nil, volumeCount: Int = 0) {
+                sourceVolumeId: String? = nil, volumeCount: Int = 0,
+                authorityId: Int? = nil, viafId: String? = nil) {
         self.entry = entry
         self.mentionCount = mentionCount
         self.rollupId = rollupId
         self.sourceVolumeId = sourceVolumeId
         self.volumeCount = volumeCount
+        self.authorityId = authorityId
+        self.viafId = viafId
     }
 }
 
@@ -185,7 +193,7 @@ public actor PersonMentionStore {
     public func rollupEntry(forVolumeId volumeId: String, ref: String) throws -> PersonIndexEntry? {
         let sql = """
             SELECT r.rollup_id, r.canonical_name, r.description, r.mention_count,
-                   r.role, r.start_year, r.end_year, r.volume_count
+                   r.role, r.start_year, r.end_year, r.volume_count, r.authority_id, r.viaf_id
             FROM person_rollup_member m
             JOIN person_rollup r ON r.rollup_id = m.rollup_id
             WHERE m.volume_id = ? AND m.ref = ?
@@ -204,7 +212,9 @@ public actor PersonMentionStore {
                                 startYear: columnIntOptional(stmt, 5),
                                 endYear: columnIntOptional(stmt, 6))
         return PersonIndexEntry(entry: entry, mentionCount: cnt, rollupId: rid,
-                                volumeCount: Int(sqlite3_column_int64(stmt, 7)))
+                                volumeCount: Int(sqlite3_column_int64(stmt, 7)),
+                                authorityId: columnIntOptional(stmt, 8),
+                                viafId: columnString(stmt, 9))
     }
 
     /// The (volumeId, documentId) pairs across the whole corpus that mention any member of a rollup.
@@ -371,7 +381,7 @@ public actor PersonMentionStore {
     public func allPersonsSortedByName() throws -> [PersonIndexEntry] {
         let sql = """
             SELECT rollup_id, canonical_name, description, mention_count, role, start_year, end_year,
-                   volume_count
+                   volume_count, authority_id, viaf_id
             FROM person_rollup
             ORDER BY canonical_name ASC
             """
@@ -388,7 +398,9 @@ public actor PersonMentionStore {
                                     startYear: columnIntOptional(stmt, 5),
                                     endYear: columnIntOptional(stmt, 6))
             results.append(PersonIndexEntry(entry: entry, mentionCount: count, rollupId: rid,
-                                            volumeCount: Int(sqlite3_column_int64(stmt, 7))))
+                                            volumeCount: Int(sqlite3_column_int64(stmt, 7)),
+                                            authorityId: columnIntOptional(stmt, 8),
+                                            viafId: columnString(stmt, 9)))
         }
         return results
     }

@@ -19,9 +19,11 @@ struct PersonClustererTests {
 
     private func input(_ vol: String, _ ref: String, _ name: String,
                        role: String? = nil,
-                       listStart: Int? = nil, listEnd: Int? = nil) -> PersonClusterInput {
+                       listStart: Int? = nil, listEnd: Int? = nil,
+                       authorityId: Int? = nil) -> PersonClusterInput {
         PersonClusterInput(volumeId: vol, ref: ref, name: name, role: role,
-                           listStartYear: listStart, listEndYear: listEnd)
+                           listStartYear: listStart, listEndYear: listEnd,
+                           authorityId: authorityId)
     }
 
     // MARK: Exact-name behaviour
@@ -181,6 +183,40 @@ struct PersonClustererTests {
         #expect(out.clusters.count == 2)
         #expect(out.clusters.contains { $0.count == 2 })
         #expect(out.clusters.contains { $0.count == 1 })
+    }
+
+    // MARK: Authority crosswalk (Phase 5)
+
+    @Test("authority crosswalk merges members sharing a canonical id, across surname/era blocks")
+    func authoritySameIdMerges() {
+        // Different name strings and a disjoint listed era — the heuristic would never auto-merge —
+        // but the shared canonical id unites them.
+        let out = PersonClusterer.cluster([
+            input("v1", "p1", "Aaron, David L.", listStart: 1977, listEnd: 1981, authorityId: 100001),
+            input("v2", "p2", "Aaron, David", authorityId: 100001),
+            input("v3", "p3", "Aaron, David Laurence", listStart: 1969, listEnd: 1972, authorityId: 100001)
+        ])
+        #expect(out.clusters.count == 1)
+        #expect(out.clusters.first?.count == 3)
+    }
+
+    @Test("authority crosswalk never merges different canonical ids, even with identical names")
+    func authorityDifferentIdNeverMerges() {
+        let out = PersonClusterer.cluster([
+            input("v1", "p1", "Smith, John", authorityId: 1),
+            input("v2", "p2", "Smith, John", authorityId: 2)
+        ])
+        #expect(out.clusters.count == 2, "authority splits a same-name conflation the heuristic would merge")
+        #expect(out.candidates.isEmpty)
+    }
+
+    @Test("a user detach overrides an authority grouping")
+    func userDetachOverridesAuthority() {
+        let out = PersonClusterer.cluster([
+            input("v1", "p1", "Aaron, David", authorityId: 100001),
+            input("v2", "p2", "Aaron, David", authorityId: 100001)
+        ], detach: [key("v2", "p2")])
+        #expect(out.clusters.count == 2, "the user's split wins over the authority crosswalk")
     }
 
     @Test("detach then must-link can move a member to a different identity")
