@@ -120,7 +120,7 @@ When a document is open, a compact `volumeId/documentId` title (e.g., `frus1969-
 | **Analytics** | — | Term-frequency analytics window |
 | **Chronology** | — | Date-range document browser (Section 14) |
 
-`[SCREENSHOT: Toolbar close-up with each button labeled, including the Chronology control (SF Symbol: calendar.day.timeline.left) and Analytics control (SF Symbol: chart.bar.xaxis)]`
+![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the right-side buttons: Search, Graph, Info, Research, Collections, Corpus, Analytics, and Chronology.](screenshots/macos/toolbar.png)
 
 ### 3.2 Research Strip
 
@@ -131,7 +131,7 @@ Directly below the toolbar, the research strip is always visible when a document
 - **Citation** — Open the citation popover.
 - **Tags** — Apply or remove user tags.
 
-`[SCREENSHOT: Research strip shown beneath toolbar with a document open]`
+![The research strip directly beneath the toolbar with a document open — Add to collection, Add note, Tag, Graph, Sources, Highlight (greyed out until text is selected), Cite, and New Window, sitting above the open document's heading.](screenshots/macos/research-strip.png)
 
 ### 3.3 Document View
 
@@ -298,7 +298,7 @@ Pinch or use the scroll wheel to zoom the timeline; drag to pan.
 
 Click **Save Search** to bookmark the current query and all active filters. Saved searches appear in a sidebar in the Search window for instant re-running.
 
-`[SCREENSHOT: Search window sidebar showing a list of saved searches]`
+![The Search window's saved-searches list, opened from the bookmark button in the toolbar — each saved query can be re-run with a single click.](screenshots/macos/saved-searches.png)
 
 Saved searches can also be linked to Collections to create *smart collections* that auto-populate at export time (see Section 10.3).
 
@@ -615,7 +615,7 @@ Every FRUS document carries a source note that identifies the archival record be
 
 Click the source note at the top of any open document to open the Source Explorer sheet.
 
-`[SCREENSHOT: Source Explorer sheet showing a resolved RG-59 lot file with NARA Catalog link]`
+![The Source Explorer resolving a document's RG-59 source — the parsed source note and provenance (National Archives, RG 59, Central Files 1967–69) on the left; on the right, the NARA search query, the matched NARA Catalog entry with a "View in NARA Catalog" link, and the Archival Neighbors section.](screenshots/macos/source-explorer.png)
 
 ### 12.1 Resolution by Provenance Type
 
@@ -683,7 +683,7 @@ On a **Subseries** or **By Volume** chart, clicking a bar drills straight into a
 
 Toggle between **Chart** (bar chart with optional trend line) and **Table** (scrollable data grid) using the segmented control at the top right.
 
-`[SCREENSHOT: Analytics window in Table mode showing year, count, and subseries columns]`
+![Corpus Analytics in Table mode — the term field ("Berlin"), the chart/table segmented control and "By Year" grouping at the top right, and a scrollable grid of year and document-count rows below.](screenshots/macos/analytics-table.png)
 
 ### 13.3 From a Chart to a Search
 
