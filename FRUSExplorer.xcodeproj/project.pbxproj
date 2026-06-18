@@ -144,6 +144,7 @@
 		57936A3F8F0DBD340B8453B3 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85FA098FBFD49BBDDCE10EB6 /* OnboardingFlowTests.swift */; };
 		58631740ADC031C73FEC9C9C /* GlobalContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA37AF54A23793804F86A33 /* GlobalContextView.swift */; };
 		591BF510DC7FF0D9F4308083 /* IndexingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4796534819AD8F60335063F5 /* IndexingPipeline.swift */; };
+		5A3FD3816DD086B1052C00E2 /* PersonClusterOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */; };
 		5AAA76063AD14C36CDB8A2FB /* IndexingContextCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B92FF355B906D07F1DE187 /* IndexingContextCard.swift */; };
 		5B80B69A0B965DE304D07F7D /* OnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBE0716B4B3C7052EC58ACEB /* OnboardingTests.swift */; };
 		5BAAE20BF4C40A53111E6468 /* DistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F90C473C5F3F0E1236E38C0 /* DistributionTests.swift */; };
@@ -156,6 +157,7 @@
 		5E3FE25609F695CCC37FFCFB /* DiscoveryTips.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEB436C7A2D56045B99705DF /* DiscoveryTips.swift */; };
 		5E693B239B1B7C9D330CC1C4 /* ResearchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889499978D57AFAA88BE4093 /* ResearchSession.swift */; };
 		5EBEB485AF689114E6C233BA /* ResearchNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098147A931A317EF31085A2E /* ResearchNote.swift */; };
+		60104E52630DAD34651553D2 /* PersonClusterOverrideStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E858FA32E6E21088FD2FB93F /* PersonClusterOverrideStore.swift */; };
 		6031DF2938466493210A2697 /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */; };
 		60EB74EAF0E29E021314B099 /* ZoteroJSONExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B198234CB42E88D3372AD2 /* ZoteroJSONExporter.swift */; };
 		60F22FAC6A69B29BECC423AC /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175DA5DB0C781AF94092EFC /* SearchView.swift */; };
@@ -265,6 +267,7 @@
 		A3DF51FEDE81F8A3807DBCE0 /* IndexingQueueBannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD78F8E282DB8E257A3895F6 /* IndexingQueueBannerTests.swift */; };
 		A58E4E15A73ACF2CAFF69DA7 /* DownloadManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B07C4D4E5E839658A27521B /* DownloadManagerTests.swift */; };
 		A5EF94095D052BD474E84E81 /* ChronologyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B1FCB97482B12E177439C04 /* ChronologyView.swift */; };
+		A7116E9882C7EE6908549B69 /* PersonClusterOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */; };
 		A71FD8F16EA54AD18DF949FD /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81475CA28849923822135AD /* BrowserViewModel.swift */; };
 		A720A8CBE9671A43BC31F30B /* OnboardingProjectSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1434C098DA61D946980046B5 /* OnboardingProjectSetupView.swift */; };
 		A8065087F9358A1B00FB8B98 /* ModelContainer+FRUS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */; };
@@ -302,6 +305,7 @@
 		B5D098DE0C404DF13282B1A2 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */; };
 		B5F08C82D92407C0F669E6FA /* CentralFilesIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549E24BC93CEFA09605A4296 /* CentralFilesIndexTests.swift */; };
 		B5F3041184E73E4AB21A22EE /* MacSourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16946AEC13F668D7DA36D2EB /* MacSourceExplorerView.swift */; };
+		B6C4325BD8996C5EB026C95A /* PersonClusterOverrideStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E858FA32E6E21088FD2FB93F /* PersonClusterOverrideStore.swift */; };
 		B72DF8B6CFFEA31016B26B0F /* SearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8327430EB70882B55BC015 /* SearchSheet.swift */; };
 		B78ECD58EA453D397B3D1808 /* ProjectAdminServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2253915E5BB1A073BECE1CBD /* ProjectAdminServiceTests.swift */; };
 		B8C370E4638C2FA0A4E92779 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF3800E6EA9F402E0F8B123 /* CorpusView.swift */; };
@@ -524,6 +528,7 @@
 		3EC00D2D14BDB0E3991932B3 /* ReadingHistoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingHistoryEntry.swift; sourceTree = "<group>"; };
 		3F3C065FBA889092972C1DBB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		423271170536DE4B8160B34A /* CollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionExporter.swift; sourceTree = "<group>"; };
+		43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonClusterOverride.swift; sourceTree = "<group>"; };
 		449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASTToRenderNodeConverter.swift; sourceTree = "<group>"; };
 		4796534819AD8F60335063F5 /* IndexingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingPipeline.swift; sourceTree = "<group>"; };
 		48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaxonomyModels.swift; sourceTree = "<group>"; };
@@ -699,6 +704,7 @@
 		E51A626491C155C769DF2F17 /* DocumentWindowID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentWindowID.swift; sourceTree = "<group>"; };
 		E62D6B16BC80A92DB71B8F3D /* IndexingSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingSummaryCard.swift; sourceTree = "<group>"; };
 		E636DD791BC3326FB4AFFCD8 /* SourceNoteParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
+		E858FA32E6E21088FD2FB93F /* PersonClusterOverrideStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonClusterOverrideStore.swift; sourceTree = "<group>"; };
 		E8CD93F51265ECCE42D3C95D /* CorpusAnalyticsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorpusAnalyticsServiceTests.swift; sourceTree = "<group>"; };
 		EA3C71FE56549C748BEDFFDB /* OnboardingVolumePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingVolumePickerView.swift; sourceTree = "<group>"; };
 		EB6B99F69428BCC52D934736 /* ResearchNoteEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorTests.swift; sourceTree = "<group>"; };
@@ -1180,6 +1186,8 @@
 				3CFC1E7C3362A966E80CA3A6 /* IndexingActivityAttributes.swift */,
 				87E25F23B7A7E1469594E312 /* KeychainStore.swift */,
 				B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */,
+				43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */,
+				E858FA32E6E21088FD2FB93F /* PersonClusterOverrideStore.swift */,
 				BD5D8E81D46123965E0B18DB /* PersonMentionStore.swift */,
 				5B75F3D4EC68B2923931D983 /* Project.swift */,
 				3EC00D2D14BDB0E3991932B3 /* ReadingHistoryEntry.swift */,
@@ -1546,6 +1554,8 @@
 				A1A14D2CCF243A81956F2D18 /* OnboardingVolumePickerView.swift in Sources */,
 				9CCA9BB2895C8F324B3192DB /* PDFCollectionExporter.swift in Sources */,
 				A1D6D547B67EA1C2BD8AF5B2 /* PageRangeStore.swift in Sources */,
+				5A3FD3816DD086B1052C00E2 /* PersonClusterOverride.swift in Sources */,
+				B6C4325BD8996C5EB026C95A /* PersonClusterOverrideStore.swift in Sources */,
 				BCAD69DDEB470FDFE43EE409 /* PersonClusterer.swift in Sources */,
 				48491876D648872B3A051420 /* PersonIndexView.swift in Sources */,
 				EDF17EAD96A8DC3A5D6082EA /* PersonMentionStore.swift in Sources */,
@@ -1717,6 +1727,8 @@
 				4C5AFAF48E1844D8DD05ED31 /* OnboardingVolumePickerView.swift in Sources */,
 				916F5C1BA935DB09FB00727C /* PDFCollectionExporter.swift in Sources */,
 				862089694FCB1479D6DD7BDB /* PageRangeStore.swift in Sources */,
+				A7116E9882C7EE6908549B69 /* PersonClusterOverride.swift in Sources */,
+				60104E52630DAD34651553D2 /* PersonClusterOverrideStore.swift in Sources */,
 				D11BA2598C862FCCB6853366 /* PersonClusterer.swift in Sources */,
 				4B72551F127ADEFB79ED3C2B /* PersonIndexView.swift in Sources */,
 				DE25DE234FCC53145F57C808 /* PersonMentionStore.swift in Sources */,
