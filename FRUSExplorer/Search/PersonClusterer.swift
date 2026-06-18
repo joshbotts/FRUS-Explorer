@@ -35,15 +35,20 @@ public struct PersonClusterInput: Sendable {
     public let mentionStartYear: Int?
     /// Latest document year this record is mentioned in, if any.
     public let mentionEndYear: Int?
+    /// Authoritative canonical id from the bundled crosswalk (Phase 5), if this `(volume, ref)` is
+    /// covered. Records sharing an id are force-merged; records with *different* ids are never
+    /// merged (the authority both heals fragmentation and prevents same-name conflation).
+    public let authorityId: Int?
 
     public init(volumeId: String, ref: String, name: String, description: String? = nil,
                 role: String? = nil, listStartYear: Int? = nil, listEndYear: Int? = nil,
-                mentionStartYear: Int? = nil, mentionEndYear: Int? = nil) {
+                mentionStartYear: Int? = nil, mentionEndYear: Int? = nil, authorityId: Int? = nil) {
         self.volumeId = volumeId
         self.ref = ref
         self.name = name
         self.description = description
         self.role = role
+        self.authorityId = authorityId
         self.listStartYear = listStartYear
         self.listEndYear = listEndYear
         self.mentionStartYear = mentionStartYear
@@ -175,8 +180,20 @@ public enum PersonClusterer {
             }
         }
 
-        // Apply user corrections (Phase 3) on top of the algorithmic clustering.
-        applyConstraints(mustLink: mustLink, detach: detach,
+        // Authority crosswalk groups (Phase 5): unite every member sharing a canonical id, across
+        // blocks (the pairwise pass only compares within a block).
+        var byAuthority: [Int: [Int]] = [:]
+        for i in 0..<n where inputs[i].authorityId != nil {
+            byAuthority[inputs[i].authorityId!, default: []].append(i)
+        }
+        var authorityLink: [(Int, Int)] = []
+        for members in byAuthority.values where members.count > 1 {
+            let first = members[0]
+            for m in members.dropFirst() { authorityLink.append((first, m)) }
+        }
+
+        // Apply authority groups, then user corrections (Phase 3) on top.
+        applyConstraints(authorityLink: authorityLink, mustLink: mustLink, detach: detach,
                          indexByKey: indexByKey, clusters: &clusters, clusterOf: &clusterOf)
 
         // Drop empty clusters left by must-link merges and reindex, keeping a member→cluster map.
@@ -208,14 +225,24 @@ public enum PersonClusterer {
 
     // MARK: - User corrections (Phase 3)
 
-    /// Applies user corrections on top of the algorithmic clustering, mutating `clusters`/`clusterOf`.
-    /// Detaches run first (pull a member into a fresh singleton); must-links then union clusters,
-    /// leaving an emptied slot the caller compacts away. Both anchor on stable `(volumeId, ref)` keys.
-    private static func applyConstraints(mustLink: [(MemberKey, MemberKey)],
+    /// Applies authority groups (Phase 5) then user corrections (Phase 3), mutating `clusters`/
+    /// `clusterOf`. Order matters: authority crosswalk groups first, then a user detach (which can
+    /// pull a member out of an authority or heuristic cluster), then a user must-link — so a user
+    /// correction always has the final say. Must-links leave an emptied slot the caller compacts away.
+    private static func applyConstraints(authorityLink: [(Int, Int)],
+                                         mustLink: [(MemberKey, MemberKey)],
                                          detach: [MemberKey],
                                          indexByKey: [MemberKey: Int],
                                          clusters: inout [[Int]],
                                          clusterOf: inout [Int]) {
+        func merge(_ i: Int, _ j: Int) {
+            let ci = clusterOf[i], cj = clusterOf[j]
+            guard ci != cj else { return }
+            for m in clusters[cj] { clusterOf[m] = ci }
+            clusters[ci].append(contentsOf: clusters[cj])
+            clusters[cj] = []
+        }
+        for (i, j) in authorityLink { merge(i, j) }
         for key in detach {
             guard let m = indexByKey[key] else { continue }
             let ci = clusterOf[m]
@@ -226,11 +253,7 @@ public enum PersonClusterer {
         }
         for (a, b) in mustLink {
             guard let i = indexByKey[a], let j = indexByKey[b] else { continue }
-            let ci = clusterOf[i], cj = clusterOf[j]
-            guard ci != cj else { continue }
-            for m in clusters[cj] { clusterOf[m] = ci }
-            clusters[ci].append(contentsOf: clusters[cj])
-            clusters[cj] = []
+            merge(i, j)
         }
     }
 
@@ -244,6 +267,13 @@ public enum PersonClusterer {
 
     private static func decide(_ a: PersonClusterInput, _ na: NormalizedName,
                                _ b: PersonClusterInput, _ nb: NormalizedName) -> Decision {
+        // Authority crosswalk (Phase 5) is decisive when both records are covered: same canonical id
+        // → merge; different ids → never merge (even if names match — this splits a conflation the
+        // heuristic would miss). A mixed pair (one covered) falls through to the heuristic, which can
+        // bridge an uncovered straggler into a covered cluster on a strong name+era match.
+        if let idA = a.authorityId, let idB = b.authorityId {
+            return idA == idB ? .merge : .none
+        }
         switch nameRelation(na.given, nb.given) {
         case .incompatible:
             return .none

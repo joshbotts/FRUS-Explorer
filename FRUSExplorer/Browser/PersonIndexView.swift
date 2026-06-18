@@ -236,6 +236,9 @@ struct PersonIndexDetailSheet: View {
     @State private var resolvedMentionCount: Int?
     /// Rollup id resolved for a per-volume front-matter entry, used by "Find all mentions".
     @State private var resolvedRollupId: Int?
+    /// Authority id / VIAF id resolved for a per-volume front-matter entry (Phase 5).
+    @State private var resolvedAuthorityId: Int?
+    @State private var resolvedViafId: String?
     /// "Possibly the same person" suggestions for this rollup (Phase 2 candidates).
     @State private var candidates: [PersonMergeCandidate] = []
     /// The per-volume records folded into this rollup (Phase 4 drill-in).
@@ -245,6 +248,8 @@ struct PersonIndexDetailSheet: View {
 
     private var displayCount: Int { resolvedMentionCount ?? indexEntry.mentionCount }
     private var effectiveRollupId: Int? { indexEntry.rollupId ?? resolvedRollupId }
+    private var effectiveAuthorityId: Int? { indexEntry.authorityId ?? resolvedAuthorityId }
+    private var effectiveViafId: String? { indexEntry.viafId ?? resolvedViafId }
 
     var body: some View {
         NavigationStack {
@@ -257,6 +262,17 @@ struct PersonIndexDetailSheet: View {
                             Text(desc)
                                 .font(.body)
                                 .foregroundStyle(.secondary)
+                        }
+                        if effectiveAuthorityId != nil {
+                            Label(
+                                String(localized: "people.detail.reconciled",
+                                       defaultValue: "Reconciled identity"),
+                                systemImage: "checkmark.seal"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .help(String(localized: "people.detail.reconciled.help",
+                                         defaultValue: "Matched to the Office of the Historian's person registry"))
                         }
                     }
                     .padding(.vertical, 4)
@@ -303,6 +319,16 @@ struct PersonIndexDetailSheet: View {
                     .disabled(displayCount == 0)
                     .help(String(localized: "people.detail.findMentions.help",
                                  defaultValue: "Open Search filtered to documents that mention this person"))
+
+                    if let viaf = effectiveViafId, !viaf.isEmpty,
+                       let url = URL(string: "https://viaf.org/viaf/\(viaf)") {
+                        Link(destination: url) {
+                            Label(String(localized: "people.detail.viaf", defaultValue: "View on VIAF"),
+                                  systemImage: "link")
+                        }
+                        .help(String(localized: "people.detail.viaf.help",
+                                     defaultValue: "Open this person's VIAF authority record"))
+                    }
                 }
 
                 if !candidates.isEmpty {
@@ -393,6 +419,8 @@ struct PersonIndexDetailSheet: View {
                 if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
                     resolvedRollupId = resolved.rollupId
                     resolvedMentionCount = resolved.mentionCount
+                    resolvedAuthorityId = resolved.authorityId
+                    resolvedViafId = resolved.viafId
                 } else {
                     resolvedMentionCount = 0
                 }

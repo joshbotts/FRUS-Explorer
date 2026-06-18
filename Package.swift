@@ -128,6 +128,34 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - PersonAuthorityIndexGenerator
+
+        /// Builds `person-authority-index.json` from a checkout of the Office of the Historian's
+        /// public-domain `HistoryAtState/people` registry: a `(volume, ref) → canonicalId` crosswalk
+        /// plus canonical names/birth-death years/VIAF ids, so the app can key its person rollup on
+        /// authoritative identities instead of (only) heuristic clustering.
+        .target(
+            name: "PersonAuthorityIndexGeneratorCore",
+            path: "PersonAuthorityIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls PersonAuthorityIndexRunner.run() and exits.
+        .executableTarget(
+            name: "PersonAuthorityIndexGenerator",
+            dependencies: [.target(name: "PersonAuthorityIndexGeneratorCore")],
+            path: "PersonAuthorityIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for PersonAuthorityIndexGeneratorCore logic.
+        .testTarget(
+            name: "PersonAuthorityIndexGeneratorTests",
+            dependencies: [.target(name: "PersonAuthorityIndexGeneratorCore")],
+            path: "PersonAuthorityIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - FTS5Store
 
         /// SQLite FTS5 Swift wrapper. Actor-based, async/await, Swift 6 strict concurrency.
