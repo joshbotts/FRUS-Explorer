@@ -2787,4 +2787,60 @@ struct PersonRollupConsolidationTests {
             }
         }
     }
+
+    @Test("authority crosswalk drives the rollup: canonical name, ids/VIAF, and conflation split (Phase 5)")
+    func authorityDrivesRollup() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // The same person under two name strings across volumes (the heuristic would only make a
+            // candidate), plus a different person who shares the name "Kissinger, Henry".
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1962",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1973",
+                documents: [("dB1", "p_h", "Kissinger")],
+                persons: [("p_h", "Kissinger, Henry")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volC.xml"), volumeId: "volC", year: "1905",
+                documents: [("dC1", "p_x", "Kissinger")],
+                persons: [("p_x", "Kissinger, Henry")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.indexVolume("volC")
+
+            // Inject an authority index: volA/p_k + volB/p_h → 107252 (the real Kissinger);
+            // volC/p_x → 999 (a same-named different person).
+            let index = PersonAuthorityIndex(
+                version: 1, generated: "test", source: "test",
+                crosswalk: ["volA": ["p_k": 107252], "volB": ["p_h": 107252], "volC": ["p_x": 999]],
+                authority: [
+                    "107252": .init(n: "Kissinger, Henry A.", b: 1923, d: nil, v: "66509613"),
+                    "999": .init(n: "Kissinger, Henry (clerk)", b: 1880, d: 1944, v: nil)
+                ])
+            await pipeline.setAuthorityIndexForTesting(index)
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let all = try await store.allPersonsSortedByName()
+
+            // The two name variants unite under the canonical identity, with VIAF + birth year.
+            let k = try #require(all.first { $0.authorityId == 107252 })
+            #expect(k.entry.name == "Kissinger, Henry A.")
+            #expect(k.viafId == "66509613")
+            #expect(k.entry.startYear == 1923)
+            let members = try await store.members(forRollupId: try #require(k.rollupId))
+            #expect(Set(members.map(\.volumeId)) == ["volA", "volB"])
+
+            // The same-named different person stays a separate identity (authority splits it).
+            let other = try #require(all.first { $0.authorityId == 999 })
+            #expect(other.rollupId != k.rollupId)
+            #expect(other.entry.name == "Kissinger, Henry (clerk)")
+        }
+    }
 }
