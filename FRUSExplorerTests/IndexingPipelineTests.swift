@@ -2541,6 +2541,46 @@ struct PersonRollupConsolidationTests {
         }
     }
 
+    @Test("consolidatePersonRollup purges pre-filter non-person artifacts from the rollup")
+    func consolidationPurgesNonPersonArtifacts() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1969",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.: National Security Advisor.")]
+            )
+            try await pipeline.indexVolume("volA")
+
+            // Simulate a database built before the parser gained the non-person filter: inject a
+            // leading-bracket parenthetical fragment directly into `persons`. The parser now rejects
+            // it at index time, so it can only reach `persons` in legacy data. The relied-upon purge
+            // is what must remove it — there is no skip-guard in the loader, so if the purge failed
+            // the artifact would cluster into a rollup and this assertion would catch it.
+            var db: OpaquePointer?
+            #expect(sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK)
+            let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+            var ins: OpaquePointer?
+            sqlite3_prepare_v2(db, "INSERT INTO persons (volume_id, ref, name) VALUES (?, ?, ?)", -1, &ins, nil)
+            sqlite3_bind_text(ins, 1, "volA", -1, TRANSIENT)
+            sqlite3_bind_text(ins, 2, "x_junk", -1, TRANSIENT)
+            sqlite3_bind_text(ins, 3, "(together with political, military and technical advisers).", -1, TRANSIENT)
+            #expect(sqlite3_step(ins) == SQLITE_DONE)
+            sqlite3_finalize(ins)
+            sqlite3_close_v2(db)
+
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dbURL)
+            let names = try await store.allPersonsSortedByName().map(\.entry.name)
+            #expect(names == ["Kissinger, Henry A."], "the parenthetical artifact must be purged from the rollup")
+            #expect(!names.contains { $0.hasPrefix("(") })
+        }
+    }
+
     @Test("consolidatePersonRollup carries role and active-year span onto the rollup (Phase 1)")
     func consolidationCarriesRoleEra() async throws {
         try await withTempDir { dir in

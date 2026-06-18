@@ -1201,6 +1201,36 @@ private struct ParseFrame {
     var hasChildDocuments: Bool = false
 }
 
+// MARK: - Person List Heuristics
+
+/// Classifies a List-of-Persons entry as a real person vs. an artifact of the surrounding list prose.
+///
+/// Centralised so the index-time parser (`PersonsParserDelegate`) and the rollup consolidation read
+/// path (`IndexingPipeline.consolidatePersonRollup`) apply identical rules. The cross-corpus People
+/// browser surfaced parenthetical fragments — e.g. `(together with political, military and technical
+/// advisers).` — that a parser-only filter could not retroactively remove from already-indexed
+/// `persons` rows; consolidation now reuses this same predicate to purge them without a full reindex.
+enum PersonListHeuristics {
+    /// Whether `name` looks like a biographical record rather than list-prose noise.
+    ///
+    /// Rejects, conservatively (it must never discard a real person):
+    /// - empty or letterless strings;
+    /// - back-of-book `See …` / `See also …` cross-reference redirects;
+    /// - entries whose first meaningful character is an opening bracket (`(`, `[`, `{`) — a
+    ///   parenthetical fragment lifted out of the prose.
+    ///
+    /// A name that merely *contains* a parenthetical mid-string ("McKeown (MacEoin), Major General
+    /// Sean") starts with a letter and is kept; transliterated names that legitimately open with an
+    /// apostrophe or ʿayn are not bracket-led and are likewise kept.
+    static func isLikelyPersonName(_ name: String) -> Bool {
+        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard n.contains(where: { $0.isLetter }) else { return false }
+        if let first = n.first, first == "(" || first == "[" || first == "{" { return false }
+        let lower = n.lowercased()
+        return !(lower.hasPrefix("see ") || lower.hasPrefix("see also "))
+    }
+}
+
 // MARK: - Persons Parser Delegate
 
 /// Minimal SAX delegate that extracts `PersonEntry` records from a FRUS volume.
@@ -1333,7 +1363,7 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
                         ? Self.cleanTrailingText(parts[1...].joined(separator: ":"))
                         : nil
                 }
-                if !name.isEmpty, Self.isLikelyPerson(name: name) {
+                if !name.isEmpty, PersonListHeuristics.isLikelyPersonName(name) {
                     let (role, startYear, endYear) = Self.extractRoleAndYears(from: descRaw)
                     entries.append(PersonEntry(
                         ref: id, name: name, description: descRaw,
@@ -1369,16 +1399,6 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         t = t.trimmingCharacters(in: .whitespacesAndNewlines)
         guard t.contains(where: { $0.isLetter }) else { return nil }
         return t
-    }
-
-    /// Light filter to drop persons-list items that are not biographical records: empty/letterless
-    /// names and back-of-book "See …" cross-reference redirects. Deliberately conservative so it
-    /// never discards a real person (e.g. "Seeckt, Hans von" has no space after "see").
-    static func isLikelyPerson(name: String) -> Bool {
-        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard n.contains(where: { $0.isLetter }) else { return false }
-        let lower = n.lowercased()
-        return !(lower.hasPrefix("see ") || lower.hasPrefix("see also "))
     }
 
     /// Splits descriptive text into a role title and an active-year range. Years come from `YYYY` or

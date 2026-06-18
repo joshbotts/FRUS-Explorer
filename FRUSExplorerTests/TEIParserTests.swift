@@ -1580,6 +1580,22 @@ struct PersonRoleEraTests {
         #expect(people.count == 1, "the 'See …' redirect must be dropped")
         #expect(people.first?.name == "Seeckt, Hans von")
     }
+
+    @Test("Non-person filter drops leading-bracket parenthetical fragments but keeps mid-string parentheticals")
+    func leadingParentheticalFilter() async throws {
+        let people = try await parsePersons(items: [
+            // A parenthetical prose fragment lifted out of the list — must be dropped.
+            "<item xml:id=\"x1\">(together with political, military and technical advisers).</item>",
+            // A lone opening bracket — letterless, must be dropped.
+            "<item xml:id=\"x2\">(</item>",
+            // A real name that merely *contains* a parenthetical mid-string — must be kept.
+            "<item><persName xml:id=\"p_mck\">McKeown (MacEoin), Sean</persName>, Major General</item>"
+        ])
+        #expect(people.count == 1, "leading-bracket fragments are dropped; mid-string parentheticals are kept")
+        let kept = try #require(people.first)
+        #expect(kept.name == "McKeown (MacEoin), Sean")
+        #expect(kept.role == "Major General")
+    }
 }
 
 // MARK: - TermsDefinitionTests (Session 162)

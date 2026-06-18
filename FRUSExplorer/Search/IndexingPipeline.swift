@@ -335,7 +335,11 @@ public actor IndexingPipeline {
     /// v5 (Phase 4): rollup carries `volume_count` (distinct volumes the cluster spans).
     /// v6 (Phase 5): clustering is keyed on the bundled OOH authority crosswalk where covered;
     /// rollup carries `authority_id`/`viaf_id` and the canonical name + birth/death years.
-    public static let currentPersonRollupVersion: Int = 6
+    /// v7 (audit fix): non-person artifacts (leading-bracket parenthetical fragments lifted out of
+    /// the List-of-Persons prose, e.g. "(together with … advisers).") are purged from `persons`
+    /// before consolidation, so already-indexed databases drop them from the rollup without a
+    /// full reindex. New indexes never store them (`PersonListHeuristics` filters at parse time).
+    public static let currentPersonRollupVersion: Int = 7
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key tracking the override count the rollup was last built with, so a launch after
@@ -377,6 +381,14 @@ public actor IndexingPipeline {
         if !forceReload, let cached = cachedClusterInputs {
             inputs = cached
         } else {
+            // Drop pre-filter non-person artifacts from the derived `persons` table first, so the
+            // rebuilt rollup excludes them and the `members == persons` drift invariant still holds
+            // (every surviving `persons` row maps to exactly one rollup member). New indexes never
+            // reach here with such rows — `PersonListHeuristics` filters them at parse time.
+            let purged = try purgeNonPersonRows()
+            if purged > 0 {
+                logger.info("Purged \(purged, privacy: .public) non-person rows from persons before consolidation.")
+            }
             inputs = try loadPersonClusterInputs()
             cachedClusterInputs = inputs
         }
@@ -490,6 +502,35 @@ public actor IndexingPipeline {
             }
         }
         return (mustLink, detach)
+    }
+
+    /// Deletes List-of-Persons artifacts that are not biographical records (leading-bracket
+    /// parenthetical fragments, letterless strings, "See …" redirects) from the derived `persons`
+    /// table, identified by `PersonListHeuristics.isLikelyPersonName`. Returns the number removed.
+    ///
+    /// Rows indexed after the parser gained the filter never match, so this is a one-time cleanup of
+    /// databases built before it; deleting from the rebuildable `persons` index keeps the per-volume
+    /// persons list and the cross-corpus rollup consistent and preserves the consolidation's
+    /// `members == persons` drift invariant. Deletes by `rowid` so each match is removed precisely.
+    private func purgeNonPersonRows() throws -> Int {
+        var doomed: [Int64] = []
+        let stmt = try auxPrepare("SELECT rowid, name FROM persons")
+        defer { sqlite3_finalize(stmt) }
+        while try auxStep(stmt) {
+            let name = auxColumnString(stmt, 1) ?? ""
+            if !PersonListHeuristics.isLikelyPersonName(name) {
+                doomed.append(sqlite3_column_int64(stmt, 0))
+            }
+        }
+        guard !doomed.isEmpty else { return 0 }
+        let del = try auxPrepare("DELETE FROM persons WHERE rowid = ?")
+        defer { sqlite3_finalize(del) }
+        for rid in doomed {
+            sqlite3_bind_int64(del, 1, rid)
+            try auxStep(del)
+            sqlite3_reset(del)
+        }
+        return doomed.count
     }
 
     /// Loads every `persons` row as a `PersonClusterInput`, joined to a per-`(volume_id, ref)`
