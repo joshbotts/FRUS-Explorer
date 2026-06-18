@@ -488,6 +488,10 @@ struct SearchView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 Spacer()
+                // Page controls — only meaningful for the paged list (not the timeline).
+                if !showTimeline && vm.totalPages > 1 {
+                    pageControls
+                }
             }
             // Over-cap guidance: shown when the result set hit the hard limit, meaning
             // there are likely more matching documents not visible in the list.
@@ -524,6 +528,40 @@ struct SearchView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
+    }
+
+    /// Previous / next page controls shown in the results header when the result set
+    /// spans more than one page. Tapping re-pages `vm.pagedResults` (and resets scroll).
+    private var pageControls: some View {
+        HStack(spacing: 12) {
+            Button {
+                if vm.currentPage > 0 { vm.currentPage -= 1 }
+            } label: {
+                Image(systemName: "chevron.left")
+            }
+            .disabled(vm.currentPage == 0)
+            .accessibilityLabel(String(localized: "search.page.previous",
+                                       defaultValue: "Previous page"))
+
+            Text(String(
+                format: String(localized: "search.page.indicator %lld %lld",
+                               defaultValue: "Page %lld of %lld"),
+                Int64(vm.currentPage + 1), Int64(vm.totalPages)
+            ))
+            .font(.footnote.monospacedDigit())
+            .foregroundStyle(.secondary)
+
+            Button {
+                if vm.currentPage < vm.totalPages - 1 { vm.currentPage += 1 }
+            } label: {
+                Image(systemName: "chevron.right")
+            }
+            .disabled(vm.currentPage >= vm.totalPages - 1)
+            .accessibilityLabel(String(localized: "search.page.next",
+                                       defaultValue: "Next page"))
+        }
+        .font(.footnote)
+        .buttonStyle(.borderless)
     }
 
     /// Builds an `AnalyticsParameters` snapshot from the current (capped) search
@@ -629,7 +667,7 @@ struct SearchView: View {
 
     private var resultsList: some View {
         List {
-            ForEach(vm.results) { result in
+            ForEach(vm.pagedResults) { result in
                 Button {
                     openResult(vm.makeEntry(from: result))
                 } label: {
@@ -670,6 +708,9 @@ struct SearchView: View {
         #else
         .listStyle(.inset)
         #endif
+        // Re-identify the list when the page changes so it scrolls back to the top
+        // instead of retaining the previous page's offset.
+        .id(vm.currentPage)
     }
 }
 
