@@ -80,6 +80,11 @@ struct SearchView: View {
     @State private var showSavedSearches = false
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
+    // Tracks whether the `.searchable` field is in its active (focused) state. An active search
+    // field suppresses the nav-bar `.primaryAction` toolbar items (filters, timeline, Save/overflow),
+    // so we drop it back to inactive after a search is submitted — otherwise those controls stay
+    // hidden while the user reads results, with no way to save the search or toggle the timeline.
+    @State private var isSearchFieldActive = false
     private let initialParameters: SearchParameters?
 
     init(
@@ -110,12 +115,15 @@ struct SearchView: View {
                 // title those buttons were unreachable on iPhone (Session 162).
                 .searchable(
                     text: $vm.keywords,
+                    isPresented: $isSearchFieldActive,
                     placement: searchFieldPlacement,
                     prompt: String(localized: "search.keywords.placeholder",
                                    defaultValue: "Keywords…")
                 )
-                // Fire search on keyboard Return / iOS "Search" button.
+                // Fire search on keyboard Return / iOS "Search" button, then deactivate the search
+                // field so the nav-bar toolbar (filters, timeline, Save) returns over the results.
                 .onSubmit(of: .search) {
+                    isSearchFieldActive = false
                     Task { await vm.search() }
                 }
                 // Clearing the search bar resets results so the view returns to
