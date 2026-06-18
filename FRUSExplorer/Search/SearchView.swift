@@ -80,11 +80,6 @@ struct SearchView: View {
     @State private var showSavedSearches = false
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
-    // Tracks whether the `.searchable` field is in its active (focused) state. An active search
-    // field suppresses the nav-bar `.primaryAction` toolbar items (filters, timeline, Save/overflow),
-    // so we drop it back to inactive after a search is submitted — otherwise those controls stay
-    // hidden while the user reads results, with no way to save the search or toggle the timeline.
-    @State private var isSearchFieldActive = false
     private let initialParameters: SearchParameters?
 
     init(
@@ -115,15 +110,12 @@ struct SearchView: View {
                 // title those buttons were unreachable on iPhone (Session 162).
                 .searchable(
                     text: $vm.keywords,
-                    isPresented: $isSearchFieldActive,
                     placement: searchFieldPlacement,
                     prompt: String(localized: "search.keywords.placeholder",
                                    defaultValue: "Keywords…")
                 )
-                // Fire search on keyboard Return / iOS "Search" button, then deactivate the search
-                // field so the nav-bar toolbar (filters, timeline, Save) returns over the results.
+                // Fire search on keyboard Return / iOS "Search" button.
                 .onSubmit(of: .search) {
-                    isSearchFieldActive = false
                     Task { await vm.search() }
                 }
                 // Clearing the search bar resets results so the view returns to
@@ -142,102 +134,23 @@ struct SearchView: View {
                 .safeAreaInset(edge: .top, spacing: 0) {
                     volumeScopeBanner
                 }
+                // macOS keeps the search actions in the inspector toolbar (where `.searchable` does
+                // not suppress them). iOS uses the persistent `searchActionsBar` content row below —
+                // an active `.searchable` field hides nav-bar trailing items, which made filters /
+                // timeline / Save vanish over the results.
                 .toolbar {
-                    #if !os(iOS)
+                    #if os(macOS)
                     ToolbarItem(placement: .confirmationAction) {
-                        Button(String(localized: "search.done",
-                                      defaultValue: "Done")) {
-                            dismiss()
-                        }
+                        Button(String(localized: "search.done", defaultValue: "Done")) { dismiss() }
                     }
+                    ToolbarItem(placement: .primaryAction) { filterButton }
+                    ToolbarItem(placement: .primaryAction) { timelineButton }
+                    ToolbarItem(placement: .primaryAction) { moreMenu }
                     #endif
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            vm.showFilterPanel = true
-                        } label: {
-                            Image(systemName: vm.hasActiveFilters
-                                  ? "line.3.horizontal.decrease.circle.fill"
-                                  : "line.3.horizontal.decrease.circle")
-                        }
-                        .controlHelp(
-                            String(localized: "search.filters.toggle.a11y",
-                                   defaultValue: "Toggle filters"),
-                            detail: String(localized: "search.filters.toggle.help",
-                                           defaultValue: "Filter results by volume, date range, document type, or tags"),
-                            systemImage: "line.3.horizontal.decrease.circle"
-                        )
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            showTimeline.toggle()
-                        } label: {
-                            Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
-                        }
-                        .controlHelp(
-                            showTimeline
-                                ? String(localized: "search.timeline.hide.a11y",
-                                         defaultValue: "Hide timeline")
-                                : String(localized: "search.timeline.show.a11y",
-                                         defaultValue: "Show timeline"),
-                            detail: String(localized: "search.timeline.help",
-                                           defaultValue: "Chart how the search results distribute over time"),
-                            systemImage: "chart.bar"
-                        )
-                        .disabled(vm.results.isEmpty)
-                    }
-                    // Save Search / Saved Searches are folded into a single overflow
-                    // menu rather than given their own toolbar items. On iPhone these
-                    // previously moved to `.bottomBar` to avoid crowding the nav bar
-                    // alongside `.searchable` and its Cancel button — but that placed
-                    // them in direct z-order conflict with MainTabView's app-level tab
-                    // bar, which won and hid them entirely. Consolidating into one
-                    // `Menu` keeps everything in the nav bar (no `.bottomBar` anywhere
-                    // in this view) while still leaving room for `.searchable`.
-                    ToolbarItem(placement: .primaryAction) {
-                        Menu {
-                            Button {
-                                saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
-                                showSaveSearchSheet = true
-                            } label: {
-                                Label(
-                                    String(localized: "search.saveSearch.a11y",
-                                           defaultValue: "Save this search"),
-                                    systemImage: "bookmark"
-                                )
-                            }
-                            .disabled(!vm.hasSearched)
-
-                            Button {
-                                showSavedSearches = true
-                            } label: {
-                                Label(
-                                    String(localized: "search.savedSearches.a11y",
-                                           defaultValue: "Saved searches"),
-                                    systemImage: "bookmark.fill"
-                                )
-                            }
-
-                            Button {
-                                showCitationLookup = true
-                            } label: {
-                                Label(
-                                    String(localized: "search.citationLookup.a11y",
-                                           defaultValue: "Find by citation"),
-                                    systemImage: "text.magnifyingglass"
-                                )
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                        }
-                        .controlHelp(
-                            String(localized: "search.moreActions.a11y",
-                                   defaultValue: "More search actions"),
-                            detail: String(localized: "search.moreActions.help",
-                                           defaultValue: "Save this search, revisit saved searches, or find a document by citation"),
-                            systemImage: "ellipsis.circle"
-                        )
-                    }
                 }
+                #if os(iOS)
+                .safeAreaInset(edge: .top, spacing: 0) { searchActionsBar }
+                #endif
                 // Advanced filter sheet — iOS uses detents; macOS uses a fixed frame
                 // declared inside SearchFilterView.
                 .sheet(isPresented: $vm.showFilterPanel) {
@@ -337,6 +250,99 @@ struct SearchView: View {
             Task { await vm.search() }
         }
     }
+
+    // MARK: - Search Action Controls
+
+    /// Filter toggle — shared by the macOS nav-bar toolbar and the iOS `searchActionsBar`.
+    @ViewBuilder
+    private var filterButton: some View {
+        Button {
+            vm.showFilterPanel = true
+        } label: {
+            Image(systemName: vm.hasActiveFilters
+                  ? "line.3.horizontal.decrease.circle.fill"
+                  : "line.3.horizontal.decrease.circle")
+        }
+        .controlHelp(
+            String(localized: "search.filters.toggle.a11y", defaultValue: "Toggle filters"),
+            detail: String(localized: "search.filters.toggle.help",
+                           defaultValue: "Filter results by volume, date range, document type, or tags"),
+            systemImage: "line.3.horizontal.decrease.circle"
+        )
+    }
+
+    /// Timeline toggle — disabled until there are results to chart.
+    @ViewBuilder
+    private var timelineButton: some View {
+        Button {
+            showTimeline.toggle()
+        } label: {
+            Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
+        }
+        .controlHelp(
+            showTimeline
+                ? String(localized: "search.timeline.hide.a11y", defaultValue: "Hide timeline")
+                : String(localized: "search.timeline.show.a11y", defaultValue: "Show timeline"),
+            detail: String(localized: "search.timeline.help",
+                           defaultValue: "Chart how the search results distribute over time"),
+            systemImage: "chart.bar"
+        )
+        .disabled(vm.results.isEmpty)
+    }
+
+    /// Save / Saved searches / Find by citation overflow menu.
+    @ViewBuilder
+    private var moreMenu: some View {
+        Menu {
+            Button {
+                saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
+                showSaveSearchSheet = true
+            } label: {
+                Label(String(localized: "search.saveSearch.a11y", defaultValue: "Save this search"),
+                      systemImage: "bookmark")
+            }
+            .disabled(!vm.hasSearched)
+            Button {
+                showSavedSearches = true
+            } label: {
+                Label(String(localized: "search.savedSearches.a11y", defaultValue: "Saved searches"),
+                      systemImage: "bookmark.fill")
+            }
+            Button {
+                showCitationLookup = true
+            } label: {
+                Label(String(localized: "search.citationLookup.a11y", defaultValue: "Find by citation"),
+                      systemImage: "text.magnifyingglass")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        .controlHelp(
+            String(localized: "search.moreActions.a11y", defaultValue: "More search actions"),
+            detail: String(localized: "search.moreActions.help",
+                           defaultValue: "Save this search, revisit saved searches, or find a document by citation"),
+            systemImage: "ellipsis.circle"
+        )
+    }
+
+    #if os(iOS)
+    /// Persistent search-action row pinned below the `.searchable` field on iOS. An active search
+    /// field suppresses the nav-bar trailing items, which used to make filters / timeline / Save
+    /// disappear over the results; this content row keeps them reachable in every state.
+    private var searchActionsBar: some View {
+        HStack(spacing: 20) {
+            filterButton
+            timelineButton
+            Spacer()
+            moreMenu
+        }
+        .font(.title3)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
+    }
+    #endif
 
     // MARK: - Volume Scope Banner
 
