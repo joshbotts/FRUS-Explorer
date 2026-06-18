@@ -124,6 +124,10 @@ public struct SearchParameters: Sendable, Equatable {
     /// spans all of a person's per-volume TEI refs, unlike `personRef` (a single per-volume id).
     public var personRollupId: Int?
 
+    /// Optional display name for the active person filter (`personRollupId`/`personRef`), shown as a
+    /// removable "Mentions: …" chip in the search filter UI. Carried for presentation only.
+    public var personLabel: String?
+
     // MARK: - Front matter scope
 
     /// Whether front-matter prose sections (preface, introduction, prefatoryNote, terms, etc.)
@@ -154,6 +158,7 @@ public struct SearchParameters: Sendable, Equatable {
         documentTypeFilter: DocumentTypeFilter = .all,
         personRef: String? = nil,
         personRollupId: Int? = nil,
+        personLabel: String? = nil,
         includeFrontMatter: Bool = true
     ) {
         self.keywords = keywords
@@ -172,6 +177,7 @@ public struct SearchParameters: Sendable, Equatable {
         self.documentTypeFilter = documentTypeFilter
         self.personRef = personRef
         self.personRollupId = personRollupId
+        self.personLabel = personLabel
         self.includeFrontMatter = includeFrontMatter
     }
 }

@@ -134,6 +134,13 @@ final class SearchViewModel {
     /// that mention a specific person. Empty string means no filter.
     var personRefText: String = ""
 
+    /// Cross-corpus person rollup id (the People browser's "Find all mentions" handoff). Restricts
+    /// results to documents mentioning any member of the clustered identity. `nil` means no filter.
+    var personRollupId: Int?
+
+    /// Display name for the active `personRollupId`/`personRef` filter, shown in the filter chip.
+    var personLabel: String?
+
     // MARK: - Volume & Subseries Filter
 
     /// **Individually** selected volume IDs (the Volumes picker), distinct from the
@@ -247,6 +254,7 @@ final class SearchViewModel {
             || params.phrase != nil
             || params.prefixWildcard != nil
             || params.personRef != nil
+            || params.personRollupId != nil
         guard hasPositiveTerm else {
             searchError = String(
                 localized: "search.error.empty",
@@ -295,6 +303,8 @@ final class SearchViewModel {
         includeFrontMatter = true
         documentTypeFilter = SearchDefaults.documentTypeFilter
         personRefText = ""
+        personRollupId = nil
+        personLabel = nil
     }
 
     func clearAll() {
@@ -354,6 +364,8 @@ final class SearchViewModel {
             personRef: personRefText.trimmingCharacters(in: .whitespaces).isEmpty
                 ? nil
                 : personRefText.trimmingCharacters(in: .whitespaces),
+            personRollupId: personRollupId,
+            personLabel: personLabel,
             includeFrontMatter: includeFrontMatter
         )
     }
@@ -371,6 +383,7 @@ final class SearchViewModel {
     // the "Clear Filters" affordance must remain available to reset it.
     var hasActiveFilters: Bool {
         if documentTypeFilter != .all { return true }
+        if personRollupId != nil { return true }
         if !personRefText.trimmingCharacters(in: .whitespaces).isEmpty { return true }
         if dateRangeEnabled { return true }
         if !selectedVolumeIds.isEmpty { return true }
@@ -412,6 +425,8 @@ final class SearchViewModel {
         booleanMode       = params.booleanMode
         excludedTermsText = params.excludedTerms.joined(separator: ", ")
         personRefText     = params.personRef ?? ""
+        personRollupId    = params.personRollupId
+        personLabel       = params.personLabel
         if let range = params.dateRange {
             dateRangeEnabled = true
             let fmt = ISO8601DateFormatter()

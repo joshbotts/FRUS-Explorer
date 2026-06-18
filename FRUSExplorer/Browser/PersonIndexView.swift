@@ -120,7 +120,8 @@ struct PersonIndexView: View {
     @ViewBuilder
     private func mentionsButton(for indexEntry: PersonIndexEntry) -> some View {
         Button {
-            appState.pendingSearch = SearchParameters(personRollupId: indexEntry.rollupId)
+            appState.pendingSearch = SearchParameters(personRollupId: indexEntry.rollupId,
+                                                      personLabel: indexEntry.entry.name)
             #if os(iOS)
             appState.activeTab = .search
             #endif
@@ -304,7 +305,8 @@ struct PersonIndexDetailSheet: View {
 
                 Section {
                     Button {
-                        appState.pendingSearch = SearchParameters(personRollupId: effectiveRollupId)
+                        appState.pendingSearch = SearchParameters(personRollupId: effectiveRollupId,
+                                                                  personLabel: indexEntry.entry.name)
                         #if os(iOS)
                         appState.activeTab = .search
                         #endif

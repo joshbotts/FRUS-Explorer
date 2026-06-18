@@ -291,7 +291,7 @@ final class MacSearchViewModel {
         if parameters.volumeIds != nil           { parts.append("volume") }
         if !parameters.userTagIds.isEmpty        { parts.append("tags") }
         if parameters.phrase != nil              { parts.append("phrase") }
-        if parameters.personRef != nil           { parts.append("person") }
+        if parameters.personRef != nil || parameters.personRollupId != nil { parts.append("person") }
         if !parameters.excludedTerms.isEmpty     { parts.append("excluded") }
         if parameters.prefixWildcard != nil      { parts.append("prefix") }
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
@@ -368,6 +368,8 @@ final class MacSearchViewModel {
         filterVM.booleanMode        = parameters.booleanMode
         filterVM.excludedTermsText  = parameters.excludedTerms.joined(separator: ", ")
         filterVM.personRefText      = parameters.personRef ?? ""
+        filterVM.personRollupId     = parameters.personRollupId
+        filterVM.personLabel        = parameters.personLabel
         filterVM.documentTypeFilter = parameters.documentTypeFilter
         filterVM.includeDocumentText = parameters.includeDocumentText
         filterVM.includeSummaries   = parameters.includeSummaries
@@ -400,6 +402,8 @@ final class MacSearchViewModel {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         parameters.personRef        = filterVM.personRefText.isEmpty ? nil : filterVM.personRefText
+        parameters.personRollupId   = filterVM.personRollupId
+        parameters.personLabel      = filterVM.personLabel
         parameters.documentTypeFilter = filterVM.documentTypeFilter
         parameters.includeDocumentText = filterVM.includeDocumentText
         parameters.includeSummaries = filterVM.includeSummaries
@@ -426,14 +430,15 @@ final class MacSearchViewModel {
     ///
     /// Sets both `parameters` and the reflected UI state (scope toggles, query text),
     /// then bumps `parametersVersion` so `.task(id: searchTrigger)` fires a new search.
-    /// If no keywords are provided but a `personRef` filter is present, the person ref
-    /// is used as the query text so the search actually runs.
+    ///
+    /// A keyword-less person handoff (the People browser's "Find all mentions") runs on its
+    /// `personRef`/`personRollupId` filter alone — `performSearch` now treats a person filter as a
+    /// valid standalone term, and the `parametersVersion` bump fires the search. We no longer
+    /// fabricate a `"person:<ref>"` query string (which used to leak into the FTS keywords).
     func applyParameters(_ params: SearchParameters) {
-        let kw = params.keywords ?? (params.personRef.map { "person:\($0)" } ?? "")
-        if !kw.isEmpty {
-            queryText = kw
-            submittedQuery = kw
-        }
+        let kw = params.keywords ?? ""
+        queryText = kw
+        submittedQuery = kw
         parameters = params
         scopeDocuments = params.includeDocumentText
         scopeNotes     = params.includeNotes
@@ -472,14 +477,17 @@ final class MacSearchViewModel {
     /// flashing an empty list. `isSearching` is always reset via `defer`.
     func performSearch(service: SearchService?) async {
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty, let service else {
+        // A person filter (single ref or a cross-corpus rollup) is a valid standalone term, so a
+        // keyword-less "Find all mentions" handoff runs on it alone.
+        let hasPersonFilter = parameters.personRef != nil || parameters.personRollupId != nil
+        guard (!query.isEmpty || hasPersonFilter), let service else {
             results = []
             totalMatchCount = 0
             return
         }
 
         var params = parameters
-        params.keywords = query
+        params.keywords = query.isEmpty ? nil : query
 
         // Empty scope guard: at least one of the three scope flags must be enabled.
         // Without this, SearchService throws `emptyQuery`, which surfaces as an unhelpful

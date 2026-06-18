@@ -324,6 +324,7 @@ struct SearchView: View {
             || !(params.phrase ?? "").isEmpty
             || !(params.prefixWildcard ?? "").isEmpty
             || !(params.personRef ?? "").isEmpty
+            || params.personRollupId != nil
         if canRun {
             Task { await vm.search() }
         }
@@ -391,6 +392,7 @@ struct SearchView: View {
         vm.selectedSubseriesIds = []
         let hasQuery = !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty
             || !vm.personRefText.trimmingCharacters(in: .whitespaces).isEmpty
+            || vm.personRollupId != nil
         if vm.hasSearched && hasQuery {
             Task { await vm.search() }
         }

@@ -2843,4 +2843,41 @@ struct PersonRollupConsolidationTests {
             #expect(other.entry.name == "Kissinger, Henry (clerk)")
         }
     }
+
+    @Test("keyword-less personRollupId search returns the whole cluster's documents (Find all mentions)")
+    func findAllMentionsByRollup() async throws {
+        try await withTempDir { dir in
+            let (pipeline, fts5) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Kissinger across two volumes (one cluster, different refs); each has a doc mentioning
+            // him, plus a doc that mentions someone else.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1970",
+                documents: [("dA1", "p_k", "Kissinger"), ("dA2", "p_other", "Other")],
+                persons: [("p_k", "Kissinger, Henry A."), ("p_other", "Other, Person")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1971",
+                documents: [("dB1", "p_h", "Kissinger")],
+                persons: [("p_h", "Kissinger, Henry A.")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let kissinger = try #require(
+                try await store.allPersonsSortedByName().first { $0.entry.name == "Kissinger, Henry A." })
+            let rid = try #require(kissinger.rollupId)
+
+            let service = SearchService(fts5Store: fts5, pipeline: pipeline, personMentionStore: store)
+            // The "Find all mentions" handoff: a keyword-less, person-scoped search.
+            let params = SearchParameters(personRollupId: rid, personLabel: "Kissinger, Henry A.")
+            let results = try await service.search(parameters: params)
+            let keys = Set(results.map { "\($0.volumeId)/\($0.documentId)" })
+            #expect(keys == ["volA/dA1", "volB/dB1"],
+                    "documents mentioning any cluster member, across volumes; no others")
+            #expect(try await service.searchCount(parameters: params) == 2)
+        }
+    }
 }

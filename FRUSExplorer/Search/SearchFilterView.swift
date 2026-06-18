@@ -287,18 +287,21 @@ struct SearchFilterView: View {
                 }
             }
 
-            // Active filter badge
-            if !vm.personRefText.isEmpty {
+            // Active filter badge — a name-typed personRef filter, or a cross-corpus rollup handed
+            // off from the People browser's "Find all mentions" (shown by its display label).
+            if vm.personRollupId != nil || !vm.personRefText.isEmpty {
                 HStack(spacing: 4) {
                     Image(systemName: "person.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(vm.personRefText)
+                    Text(vm.personLabel ?? vm.personRefText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button {
                         vm.personRefText  = ""
+                        vm.personRollupId = nil
+                        vm.personLabel    = nil
                         personSearchText  = ""
                         personSuggestions = []
                     } label: {
