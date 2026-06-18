@@ -10,8 +10,9 @@ has not been captured yet.
   the full 552-volume corpus, via `xcrun simctl io <device> screenshot` (clean device-screen PNGs).
   Set an Apple-style status bar first:
   `xcrun simctl status_bar <device> override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi`
-- **macOS** — capture each window with the macOS screenshot tools (`⇧⌘4` then space, or
-  `screencapture -o -w`). See the note under *Remaining* about capturing on a clean desktop.
+- **macOS** — capture each window with the macOS screenshot tools (`⇧⌘4` then space). The
+  committed shots were taken with the main window in full-screen so its backdrop hid every other
+  app, then `screencapture -R` cropped each floating window.
 - Keep filenames lowercase-kebab and grouped under `ios/`, `ipad/`, `macos/`.
 
 ## Captured
@@ -22,18 +23,24 @@ has not been captured yet.
 **iPad (`ipad/`)** — `browse` (portrait split view), `sidebar-landscape` (landscape adaptive
 sidebar), `document` (landscape reading view), `search-results`.
 
+**macOS (`macos/`)** — `browser` (Corpus Browser with the People button), `search`, `document`
+(full-window reading view), `analytics`, `chronology`, `collections`, and `research` (the Research
+window; not yet wired into the manual — no placeholder).
+
 ## Remaining
 
 These placeholders still need images. They were out of scope for the first "core feature screens"
 pass — most need a state that the running, already-indexed app can't show without extra setup.
 
-**macOS — all window screenshots (`macos/`).** Not captured in the automation session: the
-controlling terminal overlapped the app's right-hand panes in every full-screen grab, so the region
-captures were unusable. Capture these by hand from a clean desktop (quit other windows first):
-Corpus Browser (`⇧⌘B`) with the **People** toolbar button, the **People** browser sheet and a
-reconciled person's detail, the Search window (`⌘F`) with results, a document in the main window
-(Read / Research toggle), Analytics, Chronology, Source Explorer, Collections, and Settings →
-Index Health.
+**macOS People browser.** Deliberately not captured: on the test Mac the person rollup was in a
+degraded state (e.g. "Kissinger" split into four entries, and several names carrying a spurious
+leading `*`), whereas the same database on the iOS simulators shows the correct unified identities.
+This looks like the macOS reconsolidation not completing cleanly (the status bar showed CloudKit
+"Zone Missing / Sync Error"); it should be re-checked before screenshotting the macOS People window.
+The iOS People screenshots represent the feature accurately in the meantime.
+
+**Other macOS placeholders** still open (out of the core set): the toolbar close-up, Research strip,
+saved-searches sidebar, Source Explorer, Analytics table mode, and the Chronology hover magnifier.
 
 **iOS / iPadOS states needing special setup:**
 
