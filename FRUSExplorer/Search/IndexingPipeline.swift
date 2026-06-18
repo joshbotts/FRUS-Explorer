@@ -333,7 +333,9 @@ public actor IndexingPipeline {
     /// guardrails) and sub-threshold pairs land in `person_cluster_candidate`.
     /// v4 (Phase 3): user `PersonClusterOverride`s are applied as must-link/detach constraints.
     /// v5 (Phase 4): rollup carries `volume_count` (distinct volumes the cluster spans).
-    public static let currentPersonRollupVersion: Int = 5
+    /// v6 (Phase 5): clustering is keyed on the bundled OOH authority crosswalk where covered;
+    /// rollup carries `authority_id`/`viaf_id` and the canonical name + birth/death years.
+    public static let currentPersonRollupVersion: Int = 6
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key tracking the override count the rollup was last built with, so a launch after
@@ -390,9 +392,10 @@ public actor IndexingPipeline {
             let rollupStmt = try auxPrepare("""
                 INSERT INTO person_rollup
                     (rollup_id, namekey, canonical_name, description, role, start_year, end_year,
-                     volume_count, mention_count)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                     volume_count, authority_id, viaf_id, mention_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                 """)
+            let authIndex = authorityIndex()
             defer { sqlite3_finalize(rollupStmt) }
             let memberStmt = try auxPrepare(
                 "INSERT INTO person_rollup_member (volume_id, ref, rollup_id) VALUES (?, ?, ?)")
@@ -403,14 +406,23 @@ public actor IndexingPipeline {
                 let members = memberIndices.map { inputs[$0] }
                 let agg = Self.aggregateRollup(members)
 
+                // Authority override (Phase 5): a covered cluster shares one canonical id (the
+                // clusterer never merges across ids). Prefer the authoritative preferred name and
+                // birth/death years, and carry the VIAF id, over the heuristic aggregate.
+                let authorityId = members.compactMap(\.authorityId).first
+                let auth = authorityId.flatMap { authIndex?.entry(for: $0) }
+                let canonicalName = (auth?.n).flatMap { $0.isEmpty ? nil : $0 } ?? agg.canonicalName
+
                 sqlite3_bind_int64(rollupStmt, 1, rollupId)
-                sqlite3_bind_text(rollupStmt, 2, agg.namekey, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_text(rollupStmt, 3, agg.canonicalName, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(rollupStmt, 2, canonicalName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines), -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(rollupStmt, 3, canonicalName, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(rollupStmt, 4, agg.description)
                 auxBindOptional(rollupStmt, 5, agg.role)
-                auxBindOptionalInt(rollupStmt, 6, agg.startYear)
-                auxBindOptionalInt(rollupStmt, 7, agg.endYear)
+                auxBindOptionalInt(rollupStmt, 6, auth?.b ?? agg.startYear)
+                auxBindOptionalInt(rollupStmt, 7, auth?.d ?? agg.endYear)
                 sqlite3_bind_int64(rollupStmt, 8, Int64(agg.volumeCount))
+                auxBindOptionalInt(rollupStmt, 9, authorityId)
+                auxBindOptional(rollupStmt, 10, auth?.v)
                 try auxStep(rollupStmt)
                 sqlite3_reset(rollupStmt)
 
@@ -505,6 +517,7 @@ public actor IndexingPipeline {
             }
         }
 
+        let authIndex = authorityIndex()
         var inputs: [PersonClusterInput] = []
         let pStmt = try auxPrepare("SELECT volume_id, ref, name, description, role, start_year, end_year FROM persons")
         defer { sqlite3_finalize(pStmt) }
@@ -521,7 +534,8 @@ public actor IndexingPipeline {
                 listStartYear: auxColumnIntOptional(pStmt, 5),
                 listEndYear: auxColumnIntOptional(pStmt, 6),
                 mentionStartYear: era?.0,
-                mentionEndYear: era?.1
+                mentionEndYear: era?.1,
+                authorityId: authIndex?.canonicalId(volumeId: vol, ref: ref)
             ))
         }
         return inputs
@@ -576,6 +590,26 @@ public actor IndexingPipeline {
     /// clusterer (with the new constraints) without repeating the expensive `persons`/mention-era
     /// load. Invalidated whenever a volume is indexed or removed.
     private var cachedClusterInputs: [PersonClusterInput]?
+
+    /// The bundled person-authority crosswalk (Phase 5), loaded lazily on first consolidation. The
+    /// double optional distinguishes "not yet loaded" (`nil`) from "loaded, absent" (`.some(nil)`),
+    /// so a missing bundle resource is only looked up once. Injectable for tests.
+    private var loadedAuthorityIndex: PersonAuthorityIndex??
+
+    /// The authority index, loading it from the app bundle on first use (cached).
+    func authorityIndex() -> PersonAuthorityIndex? {
+        if let cached = loadedAuthorityIndex { return cached }
+        let loaded = PersonAuthorityIndex.loadBundled()
+        loadedAuthorityIndex = .some(loaded)
+        return loaded
+    }
+
+    /// Injects an authority index for tests (the unit-test bundle has no bundled JSON).
+    /// Invalidates the cluster-input cache so the next consolidation re-resolves canonical ids.
+    func setAuthorityIndexForTesting(_ index: PersonAuthorityIndex?) {
+        loadedAuthorityIndex = .some(index)
+        cachedClusterInputs = nil
+    }
 
     // MARK: - Auxiliary SQLite connection
 
@@ -3066,6 +3100,10 @@ public actor IndexingPipeline {
         try? exec("ALTER TABLE person_rollup ADD COLUMN end_year INTEGER")
         // Distinct volumes a cluster spans (Phase 4), for the "N volumes" row subtitle.
         try? exec("ALTER TABLE person_rollup ADD COLUMN volume_count INTEGER NOT NULL DEFAULT 0")
+        // Authoritative identity from the bundled OOH crosswalk (Phase 5): the canonical person id
+        // and an optional VIAF id. Present only for clusters keyed to the authority index.
+        try? exec("ALTER TABLE person_rollup ADD COLUMN authority_id INTEGER")
+        try? exec("ALTER TABLE person_rollup ADD COLUMN viaf_id TEXT")
 
         // Sub-threshold "possibly the same person" suggestions (Phase 2). The clusterer records pairs
         // of rollups it declined to auto-merge (under-merge bias) for later user confirmation; never
