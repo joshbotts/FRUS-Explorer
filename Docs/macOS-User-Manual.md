@@ -139,7 +139,7 @@ The large central area displays the currently open document. If no document is o
 
 Documents are rendered from TEI XML into native SwiftUI, matching the typography and structure of the history.state.gov website. As you navigate — through search results, cross-references, or the corpus browser — FRUS Explorer maintains a full navigation history. Use the standard macOS Back (⌘[) and Forward (⌘]) gestures or the toolbar arrows to move through your reading history.
 
-`[SCREENSHOT: Document view showing a rendered FRUS document with footnotes and source note]`
+![Document view on macOS — a rendered FRUS document filling the window: heading, dateline, body text with linked person names and footnote markers, the footnotes section, the Read/Research toolbar, and previous/next document navigation.](screenshots/macos/document.png)
 
 ### 3.4 Status Bar
 
@@ -177,7 +177,7 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 
 Open the **Corpus Browser** (⇧⌘B) to navigate the FRUS series as a hierarchy.
 
-`[SCREENSHOT: Corpus browser window open alongside the main window, showing the subseries list]`
+![Corpus Browser on macOS — the subseries list with downloaded counts in the sidebar, the People toolbar button (two-person icon), and the detail pane prompting you to select a subseries.](screenshots/macos/browser.png)
 
 ### 4.1 Navigation Levels
 
@@ -210,13 +210,37 @@ A filter bar at the top of the Corpus Browser lets you narrow the display by:
 - **Date range** — Slide to restrict volumes to a particular period.
 - **Subject tags** — Pick from the bundled subject-tag taxonomy to show only volumes tagged with relevant topics.
 
+### 4.4 The People Browser
+
+The Corpus Browser toolbar includes a **People** button (a two-person icon). Click it to open a reconciled, corpus-wide index of everyone named across the volumes you've indexed — a single alphabetical list rather than a per-volume one.
+
+![The People browser sheet on macOS, opened from the Corpus Browser's People button — an alphabetical list of reconciled identities, each row showing the canonical name, a role · active-years · volume-count subtitle, a mention count, and a reconciled-identity seal where the entry was matched to the authority file.](screenshots/macos/people-list.png)
+
+The same person frequently appears across many volumes under slightly different name forms ("Kissinger, Henry A.", "Kissinger, Henry", "Kissinger, Henry A. Laurence"). FRUS Explorer consolidates these into **one identity**, so you don't have to chase the same person through a dozen separate entries. Each row shows:
+
+- the person's **canonical name**;
+- a subtitle combining their **role** and **active years** (e.g. *Secretary of State · 1973–1977*) where the volume's List of Persons supplied them;
+- a **mention count** — the number of distinct documents referencing this identity across the whole corpus;
+- a **reconciled-identity** seal when the entry has been matched to the Office of the Historian's people authority file.
+
+Use the **search field** to filter the list by name; click a person to open their detail panel.
+
+![The person detail sheet on macOS for "Kissinger, Henry A." — the reconciled-identity seal, a mention count of 13,174 documents, active years 1923–2015, a Find all mentions button, and the "Records in This Identity" list of underlying volume records, each with a Separate action.](screenshots/macos/people-detail.png)
+
+- **Find all mentions** runs a person-scoped search returning every document that references this identity (see Section 5).
+- **Records in This Identity** lists each underlying `(volume, ref)` record that was folded into this person; click **Separate** on any record that is actually a different person to split it out. Your correction syncs across your devices via iCloud and is reapplied whenever the index is rebuilt.
+- When the app is uncertain whether two identities are the same person, it surfaces a **"possibly the same person"** suggestion with a **Merge** action.
+- Reconciled identities that carry an authority id show a **View on VIAF** link to the external authority record.
+
+> The consolidation is deliberately cautious: when in doubt it keeps identities **separate** rather than merging two different people. Your merge/separate corrections always take precedence.
+
 ---
 
 ## 5. Searching Documents
 
 Press **⌘F** to open the Search window, or click the Search toolbar button.
 
-`[SCREENSHOT: Search window showing keyword field, filter controls, and results list]`
+![Search window on macOS — the keyword field, search-in toggles, filter controls, total count (1,622 results), sort options, and a ranked results list with highlighted snippets, citations, and dates.](screenshots/macos/search.png)
 
 ### 5.1 Basic Search
 
@@ -471,7 +495,7 @@ Collections are ordered groups of documents that you can export as formatted PDF
 
 Open the Collections window with **⇧⌘K**.
 
-`[SCREENSHOT: Collections window showing a list of collections on the left and a selected collection's contents on the right]`
+![Collections window on macOS — the collection list on the left and the selected collection on the right: its name, collection note, and the documents it contains (each with a source note, notes menu, and remove control), plus the export button in the toolbar.](screenshots/macos/collections.png)
 
 ### 10.1 Creating a Collection
 
@@ -644,7 +668,7 @@ The **Analytics** window charts how often a search term appears across the corpu
 
 Open it from the **Analytics** toolbar button in the main window.
 
-`[SCREENSHOT: Analytics window showing a bar chart of term frequency by year with a trend line overlay]`
+![Corpus Analytics on macOS — a term-frequency chart for "Berlin" by year across the corpus (16,224 documents matched), with the term field, dimension toggles, year-range controls, and a "View in Search" handoff.](screenshots/macos/analytics.png)
 
 ### 13.1 Configuring a Chart
 
@@ -675,7 +699,7 @@ The **Chronology** browser lets you pick a date range and read every indexed doc
 
 Open it from the **Chronology** button in the main window toolbar (Section 3.1), or the `frus.chronology` window scene.
 
-`[SCREENSHOT: Chronology window showing the From/To date pickers, the distribution chart, and the date-grouped document list — the toolbar Chronology control (SF Symbol: calendar.day.timeline.left) labeled]`
+![Chronology window on macOS — From/To date pickers, a per-subseries distribution chart with a colour legend, "spans this period" and "extends beyond this range" sections, and the date-grouped document list below.](screenshots/macos/chronology.png)
 
 ### 14.1 Choosing a Range
 

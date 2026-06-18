@@ -197,13 +197,19 @@ On **iPhone models with Dynamic Island** (iPhone 14 Pro and later), indexing pro
 
 ## 5. iPad-Specific Features
 
-iPad gives you more screen room, and FRUS Explorer uses it in two important ways.
+iPad gives you more screen room, and FRUS Explorer uses it in three important ways: an adaptive sidebar, inspector panels, and multi-window.
+
+On iPad the five tabs become a native **adaptive sidebar**: in portrait they appear as a compact bar across the top, and in landscape (or a wide window) they expand into a left-hand sidebar — the same Mac-like navigation researchers expect on a keyboard-and-trackpad iPad. Each section keeps its own split view, so the Browse tab shows the subseries list, the corpus contents, and the People entry side by side.
+
+![iPad Browse in portrait — the subseries list in the left column and the corpus contents (with the People entry) in the detail column.](screenshots/ipad/browse.png)
+
+![iPad in landscape — the five tabs expand into a left sidebar (Browse, Search, Research, Collections, Settings) alongside a full-width search results list.](screenshots/ipad/sidebar-landscape.png)
 
 ### 5.1 Inspector Panels
 
 On iPad in landscape orientation, most tabs add a persistent side panel on the right (an iOS `inspector`) instead of relying on sheets and navigation pushes.
 
-`[SCREENSHOT: iPad landscape view of the Browse tab with the document list on the left and a document open in the right inspector panel]`
+![iPad in landscape — a FRUS document open in the reading pane with the navigation sidebar on the left and the document toolbar (including the Read / Research toggle) across the top.](screenshots/ipad/document.png)
 
 | Tab | Inspector contents |
 |-----|--------------------|
