@@ -427,6 +427,11 @@ public enum ListType: String, Sendable, Codable {
 ///   1.0 — Session 06: initial definition
 ///   1.1 — Session 07: populated by persons div parser
 ///   1.2 — Person rollup Phase 1: role + active-year range captured from the persons list
+///   1.3 — Audit fix: collapse internal whitespace in `description`/`role`. The TEI List of
+///          Persons wraps the trailing role text across indented source lines, so the captured
+///          string carries embedded newlines + run-on spaces (e.g. "Assistant\n      to the
+///          President…"). Normalizing in the initializer fixes both the stored value on the next
+///          index *and* the display of values already in the database, with no version bump.
 public struct PersonEntry: Sendable, Identifiable {
     /// The `xml:id` attribute value of the `<person>` element, matching the `ref`
     /// attribute of `<persName>` elements in the document body.
@@ -456,10 +461,20 @@ public struct PersonEntry: Sendable, Identifiable {
                 role: String? = nil, startYear: Int? = nil, endYear: Int? = nil) {
         self.ref = ref
         self.name = name
-        self.description = description
-        self.role = role
+        self.description = PersonEntry.collapsingWhitespace(description)
+        self.role = PersonEntry.collapsingWhitespace(role)
         self.startYear = startYear
         self.endYear = endYear
+    }
+
+    /// Collapses every run of Unicode whitespace (spaces, tabs, the newlines and indentation the
+    /// TEI source wraps role text across) into a single ASCII space and trims the ends. Returns
+    /// `nil` for a `nil` input or a value that is entirely whitespace, preserving the "no role"
+    /// semantics callers rely on.
+    private static func collapsingWhitespace(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let collapsed = value.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        return collapsed.isEmpty ? nil : collapsed
     }
 }
 

@@ -1536,6 +1536,21 @@ struct PersonRoleEraTests {
         #expect(k.startYear == nil)
     }
 
+    @Test("Role text wrapped across indented source lines is whitespace-normalized")
+    func multilineRoleNormalized() async throws {
+        // The live FRUS List of Persons wraps the trailing role text across indented source lines,
+        // so the parser captures embedded newlines and run-on indentation (e.g. the rendered
+        // "Assistant⏎      to the President…"). PersonEntry must collapse internal whitespace.
+        let people = try await parsePersons(items: [
+            "<item><persName xml:id=\"p_k\">Kissinger, Henry A.</persName>, Assistant\n"
+            + "                        to the President for National Security Affairs</item>"
+        ])
+        let k = try #require(people.first)
+        #expect(k.role == "Assistant to the President for National Security Affairs")
+        #expect(!(k.role ?? "").contains("\n"))
+        #expect(!(k.role ?? "").contains("  "))
+    }
+
     @Test("Format B with full year range: role and start/end years are split out")
     func formatBYearRange() async throws {
         let people = try await parsePersons(items: [
