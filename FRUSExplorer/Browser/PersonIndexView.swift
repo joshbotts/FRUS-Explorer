@@ -176,11 +176,14 @@ struct PersonIndexDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     /// Cross-corpus mention count loaded asynchronously on appear.
-    /// Starts as `indexEntry.mentionCount` (often already correct when coming from
-    /// `PersonIndexView`, or 0 when coming from `FrontMatterPersonsView`).
+    /// Already correct for rollup entries from `PersonIndexView`; resolved here for the per-volume
+    /// front-matter case (`FrontMatterPersonsView` passes 0 + a `sourceVolumeId`).
     @State private var resolvedMentionCount: Int?
+    /// Rollup id resolved for a per-volume front-matter entry, used by "Find all mentions".
+    @State private var resolvedRollupId: Int?
 
     private var displayCount: Int { resolvedMentionCount ?? indexEntry.mentionCount }
+    private var effectiveRollupId: Int? { indexEntry.rollupId ?? resolvedRollupId }
 
     var body: some View {
         NavigationStack {
@@ -202,8 +205,8 @@ struct PersonIndexDetailSheet: View {
                     LabeledContent(
                         String(localized: "people.detail.mentions", defaultValue: "Mentions")
                     ) {
-                        if resolvedMentionCount == nil && indexEntry.mentionCount == 0 {
-                            // Loading from a caller that passed 0 as a placeholder.
+                        if indexEntry.rollupId == nil && resolvedMentionCount == nil && indexEntry.mentionCount == 0 {
+                            // Per-volume front-matter entry still resolving its cross-corpus count.
                             HStack(spacing: 6) {
                                 ProgressView().controlSize(.mini)
                                 Text(String(localized: "people.detail.mentions.loading",
@@ -218,7 +221,7 @@ struct PersonIndexDetailSheet: View {
 
                 Section {
                     Button {
-                        appState.pendingSearch = SearchParameters(personRef: indexEntry.entry.ref)
+                        appState.pendingSearch = SearchParameters(personRollupId: effectiveRollupId)
                         #if os(iOS)
                         appState.activeTab = .search
                         #endif
@@ -253,11 +256,17 @@ struct PersonIndexDetailSheet: View {
             #endif
         }
         .task {
-            // If the caller passed 0 as a placeholder, load the real count now.
-            guard indexEntry.mentionCount == 0,
+            // Browser rollup entries already carry the correct count + rollup id. A per-volume
+            // front-matter entry resolves its rollup here for the cross-corpus count and search.
+            guard indexEntry.rollupId == nil,
+                  let volumeId = indexEntry.sourceVolumeId,
                   let store = appState.personMentionStore else { return }
-            resolvedMentionCount = (try? await store.documentCount(
-                forPersonRef: indexEntry.entry.ref)) ?? 0
+            if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
+                resolvedRollupId = resolved.rollupId
+                resolvedMentionCount = resolved.mentionCount
+            } else {
+                resolvedMentionCount = 0
+            }
         }
     }
 }

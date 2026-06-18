@@ -651,7 +651,14 @@ public final class DocumentViewModel {
             selectedPersonMentionCount = 0
             return
         }
-        selectedPersonMentionCount = (try? await store.documentCount(forPersonRef: person.ref)) ?? 0
+        // Cross-corpus count via the person's rollup (resolved from this document's volume + ref).
+        // The per-volume TEI `ref` collides across volumes, so an unscoped count would conflate
+        // unrelated people; fall back to the correct same-volume count if the rollup isn't built yet.
+        if let rollup = try? await store.rollupEntry(forVolumeId: entry.volumeId, ref: person.ref) {
+            selectedPersonMentionCount = rollup.mentionCount
+        } else {
+            selectedPersonMentionCount = (try? await store.documentCount(volumeId: entry.volumeId, ref: person.ref)) ?? 0
+        }
     }
 }
 

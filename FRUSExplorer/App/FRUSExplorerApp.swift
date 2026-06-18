@@ -678,6 +678,8 @@ struct FRUSExplorerApp: App {
                     try? await pipeline.indexAllVolumes()
                     await pipeline.markDateReindexComplete()
                     if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
+                    // Rebuild the materialised person rollup after the persons table changes.
+                    try? await pipeline.consolidatePersonRollupIfNeeded()
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index complete.")
                     #endif
@@ -690,10 +692,15 @@ struct FRUSExplorerApp: App {
                     if (try? await pipeline.rebuildSearchIndexFromCache()) != nil {
                         await pipeline.markFTSRebuildReindexComplete()
                     }
+                    try? await pipeline.consolidatePersonRollupIfNeeded()
                     #if DEBUG
                     print("[FRUSExplorer] FTS rebuild from document_cache complete.")
                     #endif
                 }
+            } else {
+                // Normal launch: rebuild the person rollup if its version was bumped or the
+                // member set has drifted (volumes added/removed). Cheap no-op when up to date.
+                Task { try? await pipeline.consolidatePersonRollupIfNeeded() }
             }
 
             // Reconcile downloads that completed without a post-download indexing

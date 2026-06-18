@@ -321,6 +321,64 @@ public actor IndexingPipeline {
         logger.info("Date index marked at version \(Self.currentDateIndexVersion, privacy: .public)")
     }
 
+    // MARK: - Person Rollup (Phase 0)
+
+    /// Version of the materialised person rollup. Bump to force a rebuild on next consolidation.
+    public static let currentPersonRollupVersion: Int = 1
+    /// UserDefaults key under which the installed person-rollup version is persisted.
+    public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
+
+    /// Rebuilds the materialised `person_rollup` / `person_rollup_member` tables if they are stale —
+    /// the version was bumped, the rollup was never built, or the member set has drifted from the
+    /// `persons` table (a volume was added or removed). The People browser reads the rollup directly
+    /// because a live cross-corpus rollup over `person_mentions` is too slow on the full corpus.
+    /// Cheap when up to date (two `COUNT(*)`s + a version check).
+    public func consolidatePersonRollupIfNeeded() async throws {
+        let installedVersion = UserDefaults.standard.integer(forKey: Self.personRollupVersionKey)
+        let members = (try? auxScalarInt("SELECT COUNT(*) FROM person_rollup_member")) ?? -1
+        let persons = (try? auxScalarInt("SELECT COUNT(*) FROM persons")) ?? 0
+        guard installedVersion < Self.currentPersonRollupVersion || members != persons else { return }
+        try consolidatePersonRollup()
+        UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
+        logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries).")
+    }
+
+    /// Rebuilds the person rollup from `persons` + `person_mentions`, keyed by the normalised name
+    /// (Phase 0). Mention counts are scoped by `(volume_id, ref)` — the per-volume TEI `ref` collides
+    /// across volumes, so an unscoped count conflates unrelated people. Phase 2 replaces the name
+    /// grouping with true clustering without changing the table shape.
+    func consolidatePersonRollup() throws {
+        try inTransaction {
+            try auxExec("DELETE FROM person_rollup")
+            try auxExec("DELETE FROM person_rollup_member")
+            try auxExec("""
+                INSERT INTO person_rollup (namekey, canonical_name, description)
+                SELECT lower(trim(name)), MIN(name), MIN(description)
+                FROM persons GROUP BY lower(trim(name))
+                """)
+            try auxExec("""
+                INSERT INTO person_rollup_member (volume_id, ref, rollup_id)
+                SELECT p.volume_id, p.ref, r.rollup_id
+                FROM persons p JOIN person_rollup r ON r.namekey = lower(trim(p.name))
+                """)
+            // Mention counts: aggregate once into a keyed temp table, then update by PK lookup.
+            try auxExec("CREATE TEMP TABLE IF NOT EXISTS _rollup_counts (rid INTEGER PRIMARY KEY, cnt INTEGER)")
+            try auxExec("DELETE FROM _rollup_counts")
+            try auxExec("""
+                INSERT INTO _rollup_counts (rid, cnt)
+                SELECT m.rollup_id, COUNT(DISTINCT pm.volume_id || '||' || pm.document_id)
+                FROM person_rollup_member m
+                JOIN person_mentions pm ON pm.volume_id = m.volume_id AND pm.person_ref = m.ref
+                GROUP BY m.rollup_id
+                """)
+            try auxExec("""
+                UPDATE person_rollup SET mention_count =
+                    COALESCE((SELECT cnt FROM _rollup_counts WHERE rid = person_rollup.rollup_id), 0)
+                """)
+            try auxExec("DELETE FROM _rollup_counts")
+        }
+    }
+
     // MARK: - Logger
 
     private let logger = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "IndexingPipeline")
@@ -1396,6 +1454,18 @@ public actor IndexingPipeline {
                           AND pm.person_ref = ?)
                 """)
             binds.append(personRef)
+        }
+
+        if let rollupId = filters.personRollupId {
+            // Cross-corpus person identity: any mention whose (volume_id, ref) belongs to the rollup.
+            conditions.append("""
+                EXISTS (SELECT 1 FROM person_mentions pm
+                        JOIN person_rollup_member m ON m.volume_id = pm.volume_id AND m.ref = pm.person_ref
+                        WHERE pm.volume_id = dc.volume_id
+                          AND pm.document_id = dc.document_id
+                          AND m.rollup_id = ?)
+                """)
+            binds.append(String(rollupId))
         }
 
         for tagId in filters.subjectTagIds {
@@ -2762,6 +2832,38 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name)")
+
+        // Person rollup (Phase 0): a materialised cross-volume person index read by the People
+        // browser. The per-volume `ref` is the TEI xml:id and is only meaningful within its volume
+        // (it both collides across volumes and drifts for the same person), so the cross-corpus
+        // identity must be precomputed — a live rollup over `person_mentions` is too slow on the
+        // full corpus. `consolidatePersonRollup()` rebuilds these from `persons` + `person_mentions`;
+        // they are rebuildable from the index (not user data). Phase 0 keys rollups by normalised
+        // name; Phase 2 upgrades the builder to true clustering without changing this shape.
+        // The composite index makes the scoped `(volume_id, ref)` mention join fast; the expression
+        // index speeds normalised-name grouping. Both build on existing data at open (no reindex).
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_volref ON person_mentions(volume_id, person_ref)")
+        try exec("CREATE INDEX IF NOT EXISTS idx_persons_namekey ON persons(lower(trim(name)))")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS person_rollup (
+                rollup_id      INTEGER PRIMARY KEY,
+                namekey        TEXT NOT NULL,
+                canonical_name TEXT NOT NULL,
+                description    TEXT,
+                mention_count  INTEGER NOT NULL DEFAULT 0
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_rollup_name ON person_rollup(canonical_name)")
+        try exec("""
+            CREATE TABLE IF NOT EXISTS person_rollup_member (
+                volume_id TEXT NOT NULL,
+                ref       TEXT NOT NULL,
+                rollup_id INTEGER NOT NULL,
+                PRIMARY KEY (volume_id, ref)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_rollup_member_rollup ON person_rollup_member(rollup_id)")
+
         try exec("""
             CREATE TABLE IF NOT EXISTS terms (
                 volume_id   TEXT NOT NULL,
@@ -3894,6 +3996,14 @@ public actor IndexingPipeline {
         guard let ptr = sqlite3_column_text(stmt, col) else { return nil }
         return String(cString: ptr)
     }
+
+    /// Runs a single-column, single-row integer query on the auxiliary connection.
+    private func auxScalarInt(_ sql: String) throws -> Int {
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        guard try auxStep(stmt) else { return 0 }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
 }
 
 // MARK: - Combined Search Types
@@ -3946,6 +4056,8 @@ public struct SearchSQLFilters: Sendable {
     public var includeFrontMatter: Bool
     /// Restrict results to documents mentioning this person ref.
     public var personRef: String?
+    /// Restrict results to documents mentioning any member of this person rollup (cross-corpus).
+    public var personRollupId: Int?
     /// Subject tag IDs that must all be present (AND).
     public var subjectTagIds: [String]
     /// User tag IDs that must all be present (AND).
@@ -3958,6 +4070,7 @@ public struct SearchSQLFilters: Sendable {
         dateRange: DateRange? = nil,
         includeFrontMatter: Bool = true,
         personRef: String? = nil,
+        personRollupId: Int? = nil,
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
         documentTypeFilter: DocumentTypeFilter = .all
@@ -3966,6 +4079,7 @@ public struct SearchSQLFilters: Sendable {
         self.dateRange = dateRange
         self.includeFrontMatter = includeFrontMatter
         self.personRef = personRef
+        self.personRollupId = personRollupId
         self.subjectTagIds = subjectTagIds
         self.userTagIds = userTagIds
         self.documentTypeFilter = documentTypeFilter

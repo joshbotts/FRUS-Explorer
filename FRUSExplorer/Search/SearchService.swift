@@ -232,6 +232,7 @@ public actor SearchService {
             dateRange: parameters.dateRange,
             includeFrontMatter: parameters.includeFrontMatter,
             personRef: parameters.personRef,
+            personRollupId: parameters.personRollupId,
             subjectTagIds: parameters.subjectTagIds,
             userTagIds: parameters.userTagIds,
             documentTypeFilter: parameters.documentTypeFilter

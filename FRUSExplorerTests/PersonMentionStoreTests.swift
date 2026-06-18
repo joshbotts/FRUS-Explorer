@@ -58,21 +58,22 @@ struct PersonMentionStoreTests {
         sqlite3_step(stmt)
     }
 
-    @Test("documentsForPersonRef — returns correct (volumeId, documentId) pairs")
-    func documentsForPersonRef() async throws {
+    @Test("documents(volumeId:ref:) — scoped to one volume, never conflates a shared ref")
+    func documentsScopedByVolume() async throws {
         let (dir, store) = try makeFixture()
         defer { try? FileManager.default.removeItem(at: dir) }
         let dbURL = dir.appendingPathComponent("test.sqlite")
 
         try insertMention(dbURL: dbURL, volumeId: "vol1", documentId: "d1", personRef: "p_kissinger")
         try insertMention(dbURL: dbURL, volumeId: "vol1", documentId: "d3", personRef: "p_kissinger")
+        // vol2 reuses the same TEI ref string for an unrelated person — must be excluded.
         try insertMention(dbURL: dbURL, volumeId: "vol2", documentId: "d5", personRef: "p_kissinger")
         try insertMention(dbURL: dbURL, volumeId: "vol1", documentId: "d2", personRef: "p_nixon")
 
-        let results = try await store.documents(forPersonRef: "p_kissinger")
-        #expect(results.count == 3)
+        let results = try await store.documents(volumeId: "vol1", ref: "p_kissinger")
+        #expect(results.count == 2)
         let keys = results.map { "\($0.volumeId)/\($0.documentId)" }.sorted()
-        #expect(keys == ["vol1/d1", "vol1/d3", "vol2/d5"])
+        #expect(keys == ["vol1/d1", "vol1/d3"])
     }
 
     @Test("personRefsForDocument — returns refs for a given document")
@@ -89,18 +90,113 @@ struct PersonMentionStoreTests {
         #expect(refs.sorted() == ["p_kissinger", "p_nixon"])
     }
 
-    @Test("documentCountForRef — returns correct count")
-    func documentCountForRef() async throws {
+    @Test("documentCount(volumeId:ref:) — counts only the scoped volume's mentions")
+    func documentCountScopedByVolume() async throws {
         let (dir, store) = try makeFixture()
         defer { try? FileManager.default.removeItem(at: dir) }
         let dbURL = dir.appendingPathComponent("test.sqlite")
 
         try insertMention(dbURL: dbURL, volumeId: "vol1", documentId: "d1", personRef: "p1")
         try insertMention(dbURL: dbURL, volumeId: "vol1", documentId: "d2", personRef: "p1")
+        // vol2's "p1" is an unrelated person sharing the ref string — counted separately.
         try insertMention(dbURL: dbURL, volumeId: "vol2", documentId: "d1", personRef: "p1")
 
-        let count = try await store.documentCount(forPersonRef: "p1")
-        #expect(count == 3)
+        #expect(try await store.documentCount(volumeId: "vol1", ref: "p1") == 2)
+        #expect(try await store.documentCount(volumeId: "vol2", ref: "p1") == 1)
+    }
+
+    // MARK: - Rollup read API (Phase 0)
+
+    // Insert a person_rollup row plus its members directly via raw SQLite.
+    private func insertRollup(
+        dbURL: URL, rollupId: Int, namekey: String, canonicalName: String,
+        description: String?, mentionCount: Int, members: [(volumeId: String, ref: String)]
+    ) throws {
+        var db: OpaquePointer?
+        sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil)
+        defer { sqlite3_close_v2(db) }
+        let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        var s1: OpaquePointer?
+        sqlite3_prepare_v2(db, """
+            INSERT INTO person_rollup (rollup_id, namekey, canonical_name, description, mention_count)
+            VALUES (?, ?, ?, ?, ?)
+            """, -1, &s1, nil)
+        sqlite3_bind_int64(s1, 1, Int64(rollupId))
+        sqlite3_bind_text(s1, 2, namekey, -1, TRANSIENT)
+        sqlite3_bind_text(s1, 3, canonicalName, -1, TRANSIENT)
+        if let d = description { sqlite3_bind_text(s1, 4, d, -1, TRANSIENT) } else { sqlite3_bind_null(s1, 4) }
+        sqlite3_bind_int64(s1, 5, Int64(mentionCount))
+        sqlite3_step(s1)
+        sqlite3_finalize(s1)
+        for m in members {
+            var s2: OpaquePointer?
+            sqlite3_prepare_v2(db,
+                "INSERT INTO person_rollup_member (volume_id, ref, rollup_id) VALUES (?, ?, ?)",
+                -1, &s2, nil)
+            sqlite3_bind_text(s2, 1, m.volumeId, -1, TRANSIENT)
+            sqlite3_bind_text(s2, 2, m.ref, -1, TRANSIENT)
+            sqlite3_bind_int64(s2, 3, Int64(rollupId))
+            sqlite3_step(s2)
+            sqlite3_finalize(s2)
+        }
+    }
+
+    @Test("rollupEntry(forVolumeId:ref:) — resolves the cross-corpus rollup for a per-volume person")
+    func rollupEntryResolution() async throws {
+        let (dir, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+
+        // Kissinger appears under different per-volume refs in two volumes → one rollup.
+        try insertRollup(dbURL: dbURL, rollupId: 1, namekey: "kissinger, henry a.",
+                         canonicalName: "Kissinger, Henry A.", description: "Secretary of State",
+                         mentionCount: 42, members: [("vol1", "p_KHA1"), ("vol2", "p_HK3")])
+
+        let viaVol1 = try await store.rollupEntry(forVolumeId: "vol1", ref: "p_KHA1")
+        #expect(viaVol1?.rollupId == 1)
+        #expect(viaVol1?.mentionCount == 42)
+        #expect(viaVol1?.entry.name == "Kissinger, Henry A.")
+        // A different per-volume ref in another volume resolves to the same rollup.
+        #expect(try await store.rollupEntry(forVolumeId: "vol2", ref: "p_HK3")?.rollupId == 1)
+        // Unknown (volume, ref) → nil.
+        #expect(try await store.rollupEntry(forVolumeId: "vol9", ref: "p_KHA1") == nil)
+    }
+
+    @Test("documentKeys(forRollupId:) — DISTINCT cross-corpus mentions across all members")
+    func documentKeysForRollup() async throws {
+        let (dir, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+
+        try insertMention(dbURL: dbURL, volumeId: "vol1", documentId: "d1", personRef: "p_KHA1")
+        try insertMention(dbURL: dbURL, volumeId: "vol1", documentId: "d2", personRef: "p_KHA1")
+        try insertMention(dbURL: dbURL, volumeId: "vol2", documentId: "d9", personRef: "p_HK3")
+        try insertRollup(dbURL: dbURL, rollupId: 1, namekey: "kissinger, henry a.",
+                         canonicalName: "Kissinger, Henry A.", description: nil, mentionCount: 3,
+                         members: [("vol1", "p_KHA1"), ("vol2", "p_HK3")])
+
+        let keys = try await store.documentKeys(forRollupId: 1)
+            .map { "\($0.volumeId)/\($0.documentId)" }.sorted()
+        #expect(keys == ["vol1/d1", "vol1/d2", "vol2/d9"])
+    }
+
+    @Test("allPersonsSortedByName — reads the materialised rollup, ordered by canonical name")
+    func allPersonsReadsRollup() async throws {
+        let (dir, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+
+        try insertRollup(dbURL: dbURL, rollupId: 2, namekey: "nixon, richard m.",
+                         canonicalName: "Nixon, Richard M.", description: nil, mentionCount: 10,
+                         members: [("vol1", "p_RN1")])
+        try insertRollup(dbURL: dbURL, rollupId: 1, namekey: "kissinger, henry a.",
+                         canonicalName: "Kissinger, Henry A.", description: nil, mentionCount: 42,
+                         members: [("vol1", "p_KHA1")])
+
+        let all = try await store.allPersonsSortedByName()
+        #expect(all.map(\.entry.name) == ["Kissinger, Henry A.", "Nixon, Richard M."])
+        #expect(all.first?.rollupId == 1)
+        #expect(all.first?.mentionCount == 42)
     }
 
     @Test("searchFilterByPersonRef — only documents mentioning the ref are returned")
