@@ -1532,24 +1532,47 @@ public actor IndexingPipeline {
         limit: Int,
         offset: Int
     ) throws -> [IndexedSearchRow] {
-        let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
         let (whereClause, filterBinds) = Self.filterConditions(filters)
-        let sql = """
-            \(matchCTE)
-            SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
-                   dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
-                   dc.is_editorial_note, dc.is_front_matter, dd.date_iso, m.score
-            FROM merged m
-            JOIN document_cache dc ON dc.rowid = m.docrowid
-            LEFT JOIN document_dates dd
-                ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
-            \(whereClause)
-            ORDER BY m.score
-            LIMIT \(limit) OFFSET \(offset)
-            """
+        let sql: String
+        let binds: [String]
+        if corpusMatch == nil, userContentMatch == nil {
+            // Filter-only query (e.g. the People browser's "Find all mentions" — a person filter with
+            // no FTS terms). No MATCH/BM25; the WHERE clause (which always carries the person filter
+            // in this path) does the work, ordered by volume + document for a stable browse. Guard
+            // against an unbounded dump if somehow no filter is present.
+            guard !whereClause.isEmpty else { return [] }
+            sql = """
+                SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
+                       dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, 0.0 AS score
+                FROM document_cache dc
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(whereClause)
+                ORDER BY dc.volume_id, dc.document_id
+                LIMIT \(limit) OFFSET \(offset)
+                """
+            binds = filterBinds
+        } else {
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            sql = """
+                \(matchCTE)
+                SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
+                       dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, m.score
+                FROM merged m
+                JOIN document_cache dc ON dc.rowid = m.docrowid
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(whereClause)
+                ORDER BY m.score
+                LIMIT \(limit) OFFSET \(offset)
+                """
+            binds = matchBinds + filterBinds
+        }
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (i, bind) in (matchBinds + filterBinds).enumerated() {
+        for (i, bind) in binds.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
         }
 
@@ -1584,20 +1607,36 @@ public actor IndexingPipeline {
         userContentMatch: String?,
         filters: SearchSQLFilters
     ) throws -> Int {
-        let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
         let (whereClause, filterBinds) = Self.filterConditions(filters)
-        let sql = """
-            \(matchCTE)
-            SELECT COUNT(*)
-            FROM merged m
-            JOIN document_cache dc ON dc.rowid = m.docrowid
-            LEFT JOIN document_dates dd
-                ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
-            \(whereClause)
-            """
+        let sql: String
+        let binds: [String]
+        if corpusMatch == nil, userContentMatch == nil {
+            // Filter-only count (mirrors searchDocuments' filter-only path).
+            guard !whereClause.isEmpty else { return 0 }
+            sql = """
+                SELECT COUNT(*)
+                FROM document_cache dc
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(whereClause)
+                """
+            binds = filterBinds
+        } else {
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            sql = """
+                \(matchCTE)
+                SELECT COUNT(*)
+                FROM merged m
+                JOIN document_cache dc ON dc.rowid = m.docrowid
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(whereClause)
+                """
+            binds = matchBinds + filterBinds
+        }
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (i, bind) in (matchBinds + filterBinds).enumerated() {
+        for (i, bind) in binds.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
         }
         guard try auxStep(stmt) else { return 0 }
