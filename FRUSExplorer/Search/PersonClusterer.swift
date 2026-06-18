@@ -106,12 +106,31 @@ public enum PersonClusterer {
     /// different people. ~one generation; chosen to split same-name figures across distant eras.
     static let eraGapYears = 30
 
+    /// A stable `(volumeId, ref)` member key, used to anchor user corrections to the TEI data.
+    public struct MemberKey: Sendable, Hashable {
+        public let volumeId: String
+        public let ref: String
+        public init(volumeId: String, ref: String) {
+            self.volumeId = volumeId
+            self.ref = ref
+        }
+    }
+
     /// Clusters `inputs` and returns the grouped member indices plus candidate pairs.
-    public static func cluster(_ inputs: [PersonClusterInput]) -> PersonClusterOutput {
+    ///
+    /// `mustLink` (user "merge" corrections) forces the anchored member pairs into the same cluster,
+    /// overriding blocking and the era/role guardrails. `detach` (user "split" corrections) pulls the
+    /// anchored member out of whatever cluster it landed in, into its own identity. Detaches are
+    /// applied before must-links, so a member can be detached and then re-merged elsewhere.
+    public static func cluster(_ inputs: [PersonClusterInput],
+                               mustLink: [(MemberKey, MemberKey)] = [],
+                               detach: [MemberKey] = []) -> PersonClusterOutput {
         let n = inputs.count
         guard n > 0 else { return PersonClusterOutput(clusters: [], candidates: []) }
 
         let normalized = inputs.map { normalize($0.name) }
+        var indexByKey: [MemberKey: Int] = [:]
+        for i in 0..<n { indexByKey[MemberKey(volumeId: inputs[i].volumeId, ref: inputs[i].ref)] = i }
 
         // Blocking: only records sharing a surname + first-given-initial are ever compared.
         var blocks: [String: [Int]] = [:]
@@ -156,6 +175,21 @@ public enum PersonClusterer {
             }
         }
 
+        // Apply user corrections (Phase 3) on top of the algorithmic clustering.
+        applyConstraints(mustLink: mustLink, detach: detach,
+                         indexByKey: indexByKey, clusters: &clusters, clusterOf: &clusterOf)
+
+        // Drop empty clusters left by must-link merges and reindex, keeping a member→cluster map.
+        if clusters.contains(where: \.isEmpty) {
+            var compact: [[Int]] = []
+            for c in clusters where !c.isEmpty {
+                let ci = compact.count
+                for m in c { clusterOf[m] = ci }
+                compact.append(c)
+            }
+            clusters = compact
+        }
+
         // Map raw candidate pairs to cluster-index pairs, dropping any that ended up merged.
         var seen = Set<Int>()
         var candidates: [PersonClusterCandidate] = []
@@ -170,6 +204,34 @@ public enum PersonClusterer {
         }
 
         return PersonClusterOutput(clusters: clusters, candidates: candidates)
+    }
+
+    // MARK: - User corrections (Phase 3)
+
+    /// Applies user corrections on top of the algorithmic clustering, mutating `clusters`/`clusterOf`.
+    /// Detaches run first (pull a member into a fresh singleton); must-links then union clusters,
+    /// leaving an emptied slot the caller compacts away. Both anchor on stable `(volumeId, ref)` keys.
+    private static func applyConstraints(mustLink: [(MemberKey, MemberKey)],
+                                         detach: [MemberKey],
+                                         indexByKey: [MemberKey: Int],
+                                         clusters: inout [[Int]],
+                                         clusterOf: inout [Int]) {
+        for key in detach {
+            guard let m = indexByKey[key] else { continue }
+            let ci = clusterOf[m]
+            guard clusters[ci].count > 1 else { continue }   // already its own identity
+            clusters[ci].removeAll { $0 == m }
+            clusterOf[m] = clusters.count
+            clusters.append([m])
+        }
+        for (a, b) in mustLink {
+            guard let i = indexByKey[a], let j = indexByKey[b] else { continue }
+            let ci = clusterOf[i], cj = clusterOf[j]
+            guard ci != cj else { continue }
+            for m in clusters[cj] { clusterOf[m] = ci }
+            clusters[ci].append(contentsOf: clusters[cj])
+            clusters[cj] = []
+        }
     }
 
     // MARK: - Pairwise decision

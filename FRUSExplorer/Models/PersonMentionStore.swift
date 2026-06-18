@@ -231,6 +231,21 @@ public actor PersonMentionStore {
         return results
     }
 
+    /// A representative `(volumeId, ref)` member of a rollup, used to anchor a user correction
+    /// (`PersonClusterOverride`) to stable TEI keys. Returns the member with the smallest
+    /// `(volume_id, ref)` for determinism, or `nil` when the rollup has no members.
+    public func representativeMember(forRollupId rollupId: Int) throws -> (volumeId: String, ref: String)? {
+        let sql = """
+            SELECT volume_id, ref FROM person_rollup_member
+            WHERE rollup_id = ? ORDER BY volume_id, ref LIMIT 1
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        guard step(stmt) else { return nil }
+        return (columnString(stmt, 0) ?? "", columnString(stmt, 1) ?? "")
+    }
+
     // MARK: - Persons Table Queries (Session 41)
 
     /// Looks up a single person entry by volume and ref.

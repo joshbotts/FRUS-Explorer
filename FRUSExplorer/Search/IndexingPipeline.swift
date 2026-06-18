@@ -331,34 +331,54 @@ public actor IndexingPipeline {
     /// v2 (Phase 1): rollup carries role/start_year/end_year.
     /// v3 (Phase 2): membership comes from `PersonClusterer` (blocking + variant folding + era/role
     /// guardrails) and sub-threshold pairs land in `person_cluster_candidate`.
-    public static let currentPersonRollupVersion: Int = 3
+    /// v4 (Phase 3): user `PersonClusterOverride`s are applied as must-link/detach constraints.
+    public static let currentPersonRollupVersion: Int = 4
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
+    /// UserDefaults key tracking the override count the rollup was last built with, so a launch after
+    /// corrections sync in from another device re-consolidates even when the version is unchanged.
+    public static let personRollupOverrideCountKey = "frusExplorer.personRollupOverrideCount"
 
     /// Rebuilds the materialised `person_rollup` / `person_rollup_member` tables if they are stale —
     /// the version was bumped, the rollup was never built, or the member set has drifted from the
     /// `persons` table (a volume was added or removed). The People browser reads the rollup directly
     /// because a live cross-corpus rollup over `person_mentions` is too slow on the full corpus.
     /// Cheap when up to date (two `COUNT(*)`s + a version check).
-    public func consolidatePersonRollupIfNeeded() async throws {
+    public func consolidatePersonRollupIfNeeded(overrides: [PersonClusterOverrideData] = []) async throws {
         let installedVersion = UserDefaults.standard.integer(forKey: Self.personRollupVersionKey)
         let members = (try? auxScalarInt("SELECT COUNT(*) FROM person_rollup_member")) ?? -1
         let persons = (try? auxScalarInt("SELECT COUNT(*) FROM persons")) ?? 0
-        guard installedVersion < Self.currentPersonRollupVersion || members != persons else { return }
-        try consolidatePersonRollup()
-        UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
-        logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries).")
+        let lastOverrideCount = UserDefaults.standard.integer(forKey: Self.personRollupOverrideCountKey)
+        guard installedVersion < Self.currentPersonRollupVersion
+            || members != persons
+            || lastOverrideCount != overrides.count else { return }
+        try consolidatePersonRollup(overrides: overrides)
+        logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries, \(overrides.count, privacy: .public) overrides).")
     }
 
     /// Rebuilds the person rollup from `persons` + `person_mentions` + `document_dates` using the
-    /// `PersonClusterer` (Phase 2). The clusterer heals fragmentation (the same person under varying
-    /// name strings across volumes) and prevents conflation (different people who share an exact name
-    /// but are separated in time), honouring the program's under-merge bias: uncertain pairs stay
-    /// split and are recorded in `person_cluster_candidate` as "possibly the same" suggestions.
+    /// `PersonClusterer` (Phase 2), applying the user's `PersonClusterOverride`s as constraints
+    /// (Phase 3): `merge` → must-link, `split` → detach. The clusterer heals fragmentation (the same
+    /// person under varying name strings across volumes) and prevents conflation (different people who
+    /// share an exact name but are separated in time), honouring the under-merge bias: uncertain pairs
+    /// stay split and are recorded in `person_cluster_candidate` as "possibly the same" suggestions.
     /// Mention counts are scoped by `(volume_id, ref)`. The table shape is unchanged from Phase 0/1.
-    func consolidatePersonRollup() throws {
-        let inputs = try loadPersonClusterInputs()
-        let output = PersonClusterer.cluster(inputs)
+    ///
+    /// - Parameters:
+    ///   - overrides: User corrections to apply on top of the algorithmic clustering.
+    ///   - forceReload: When `false`, reuses the in-memory snapshot of cluster inputs from the last
+    ///     load so a single correction re-applies fast (the expensive `persons`/mention-era load is
+    ///     skipped). The gated launch/post-index path passes `true`.
+    func consolidatePersonRollup(overrides: [PersonClusterOverrideData] = [], forceReload: Bool = true) throws {
+        let inputs: [PersonClusterInput]
+        if !forceReload, let cached = cachedClusterInputs {
+            inputs = cached
+        } else {
+            inputs = try loadPersonClusterInputs()
+            cachedClusterInputs = inputs
+        }
+        let (mustLink, detach) = Self.clusterConstraints(from: overrides)
+        let output = PersonClusterer.cluster(inputs, mustLink: mustLink, detach: detach)
 
         try inTransaction {
             try auxExec("DELETE FROM person_rollup")
@@ -432,6 +452,29 @@ public actor IndexingPipeline {
                 """)
             try auxExec("DELETE FROM _rollup_counts")
         }
+
+        // Record what this build reflects so the gated launch path knows when it is stale.
+        UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
+        UserDefaults.standard.set(overrides.count, forKey: Self.personRollupOverrideCountKey)
+    }
+
+    /// Translates user `PersonClusterOverride` snapshots into clusterer constraints.
+    private static func clusterConstraints(from overrides: [PersonClusterOverrideData])
+        -> (mustLink: [(PersonClusterer.MemberKey, PersonClusterer.MemberKey)], detach: [PersonClusterer.MemberKey]) {
+        var mustLink: [(PersonClusterer.MemberKey, PersonClusterer.MemberKey)] = []
+        var detach: [PersonClusterer.MemberKey] = []
+        for o in overrides {
+            switch o.kind {
+            case .merge:
+                if let vb = o.volumeIdB, let rb = o.refB {
+                    mustLink.append((PersonClusterer.MemberKey(volumeId: o.volumeIdA, ref: o.refA),
+                                     PersonClusterer.MemberKey(volumeId: vb, ref: rb)))
+                }
+            case .split:
+                detach.append(PersonClusterer.MemberKey(volumeId: o.volumeIdA, ref: o.refA))
+            }
+        }
+        return (mustLink, detach)
     }
 
     /// Loads every `persons` row as a `PersonClusterInput`, joined to a per-`(volume_id, ref)`
@@ -521,6 +564,13 @@ public actor IndexingPipeline {
     private let volumesDirectory: URL
     private let subjectTagStore: SubjectTagStore
     private let stateTracker: IndexingStateTracker?
+
+    // MARK: - Person rollup cache (Phase 3)
+
+    /// In-memory snapshot of the last-loaded cluster inputs, so a user correction can re-apply the
+    /// clusterer (with the new constraints) without repeating the expensive `persons`/mention-era
+    /// load. Invalidated whenever a volume is indexed or removed.
+    private var cachedClusterInputs: [PersonClusterInput]?
 
     // MARK: - Auxiliary SQLite connection
 
@@ -675,6 +725,7 @@ public actor IndexingPipeline {
     ///
     /// - Throws: `IndexingError.volumeNotFound` if the XML file is absent.
     public func indexVolume(_ volumeId: String) async throws {
+        cachedClusterInputs = nil   // persons/mentions about to change — drop the rollup input cache
         let url = volumesDirectory.appendingPathComponent("\(volumeId).xml")
         guard FileManager.default.fileExists(atPath: url.path) else {
             logger.error("indexVolume: file not found for \(volumeId, privacy: .public)")
@@ -911,6 +962,7 @@ public actor IndexingPipeline {
     /// per-document FTS5 delete loop matched by `document_id` alone, which removed
     /// rows like `"d1"` from **every** indexed volume.)
     public func removeVolume(_ volumeId: String) async throws {
+        cachedClusterInputs = nil   // persons/mentions about to change — drop the rollup input cache
         try auxDeleteVolume(volumeId)
         try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
 
