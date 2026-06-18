@@ -63,6 +63,14 @@ struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
     @State private var viewModel: BrowserViewModel?
+    // Corpus Analytics / Chronology are presented as sheets from the Browse toolbar. These items
+    // MUST live inside BrowserView's own NavigationStack/NavigationSplitView — when they were
+    // declared on `BrowserView()` from BrowserTabView (outside the nav container) they were silently
+    // dropped and the features became unreachable on iPhone and iPad.
+    @State private var showAnalytics = false
+    @State private var analyticsParameters: AnalyticsParameters?
+    @State private var showChronology = false
+    @State private var chronologyParameters: ChronologyParameters?
     // showCitationLookup lives in AppState (promoted in Session 43) so that macOS
     // menu commands and future iOS tab navigation can trigger it. On iOS, Search/
     // Citation Lookup/Settings are persistent tabs (MainTabView) — BrowserView
@@ -96,7 +104,67 @@ struct BrowserView: View {
         .onChange(of: appState.filterDownloadedOnly) { _, flag in
             viewModel?.filterDownloadedOnly = flag
         }
+        .sheet(isPresented: $showAnalytics) {
+            AnalyticsView(initialParameters: analyticsParameters)
+                .environment(appState)
+        }
+        .sheet(isPresented: $showChronology) {
+            ChronologyView(initialParameters: chronologyParameters)
+                .environment(appState)
+        }
+        // Search → Analytics handoff (a capped search offered to "Visualize in Corpus Analytics")
+        // and the cross-view → Chronology handoff. Captured into local state before presenting, then
+        // cleared on AppState so the observer doesn't refire on the next sheet dismissal.
+        .onChange(of: appState.pendingAnalytics) { _, params in
+            guard let params else { return }
+            analyticsParameters = params
+            appState.pendingAnalytics = nil
+            showAnalytics = true
+        }
+        .onChange(of: appState.pendingChronology) { _, params in
+            guard let params else { return }
+            chronologyParameters = params
+            appState.pendingChronology = nil
+            showChronology = true
+        }
         .onAppear { bootstrapViewModel() }
+    }
+
+    // MARK: - Shared Toolbar Content
+
+    /// Chronology + Corpus Analytics buttons, shared by the split (iPad) and stack (iPhone) layouts.
+    /// Declared as `ToolbarContent` so it can be composed into each layout's `.toolbar` *inside* the
+    /// navigation container (the only place toolbar items actually render).
+    @ToolbarContentBuilder
+    private var analyticsToolbarItems: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                chronologyParameters = nil
+                showChronology = true
+            } label: {
+                Image(systemName: "calendar.day.timeline.left")
+            }
+            .controlHelp(
+                String(localized: "browse.chronology.a11y", defaultValue: "Chronology"),
+                detail: String(localized: "browse.chronology.help",
+                               defaultValue: "Browse every corpus document within a date range"),
+                systemImage: "calendar.day.timeline.left"
+            )
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                analyticsParameters = nil
+                showAnalytics = true
+            } label: {
+                Image(systemName: "chart.bar.xaxis")
+            }
+            .controlHelp(
+                String(localized: "browse.analytics.a11y", defaultValue: "Corpus Analytics"),
+                detail: String(localized: "browse.analytics.help",
+                               defaultValue: "Chart term frequencies across your downloaded volumes"),
+                systemImage: "chart.bar.xaxis"
+            )
+        }
     }
 
     // MARK: - Layout Variants
@@ -137,6 +205,7 @@ struct BrowserView: View {
                                          defaultValue: "Show only volumes you have downloaded and can browse offline")
                         )
                     }
+                    analyticsToolbarItems
                 }
         } detail: {
             if let last = vm.navigationPath.last {
@@ -189,6 +258,7 @@ struct BrowserView: View {
                                          defaultValue: "Show only volumes you have downloaded and can browse offline")
                         )
                     }
+                    analyticsToolbarItems
                 }
         }
     }

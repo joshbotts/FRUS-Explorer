@@ -182,72 +182,13 @@ struct MainTabView: View {
 ///          sheet pre-seeded via `AnalyticsView(initialParameters:)`
 struct BrowserTabView: View {
 
-    @Environment(AppState.self) private var appState
-    @State private var showAnalytics = false
-    @State private var analyticsParameters: AnalyticsParameters? = nil
-    @State private var showChronology = false
-    @State private var chronologyParameters: ChronologyParameters? = nil
-
+    // The Chronology/Analytics toolbar buttons, their sheets, and the pendingAnalytics/
+    // pendingChronology handoff observers now live INSIDE `BrowserView` (within its own
+    // NavigationStack/NavigationSplitView). Declared here — on `BrowserView()` from outside its
+    // navigation container — they were silently dropped and the features were unreachable on iOS.
+    // This wrapper remains only to give `BrowserView`'s `@State` stable identity across tab switches.
     var body: some View {
         BrowserView()
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        chronologyParameters = nil
-                        showChronology = true
-                    } label: {
-                        Image(systemName: "calendar.day.timeline.left")
-                    }
-                    .controlHelp(
-                        String(localized: "browse.chronology.a11y",
-                               defaultValue: "Chronology"),
-                        detail: String(localized: "browse.chronology.help",
-                                       defaultValue: "Browse every corpus document within a date range"),
-                        systemImage: "calendar.day.timeline.left"
-                    )
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        analyticsParameters = nil
-                        showAnalytics = true
-                    } label: {
-                        Image(systemName: "chart.bar.xaxis")
-                    }
-                    .controlHelp(
-                        String(localized: "browse.analytics.a11y",
-                               defaultValue: "Corpus Analytics"),
-                        detail: String(localized: "browse.analytics.help",
-                                       defaultValue: "Chart term frequencies across your downloaded volumes"),
-                        systemImage: "chart.bar.xaxis"
-                    )
-                }
-            }
-            .sheet(isPresented: $showAnalytics) {
-                AnalyticsView(initialParameters: analyticsParameters)
-                    .environment(appState)
-            }
-            .sheet(isPresented: $showChronology) {
-                ChronologyView(initialParameters: chronologyParameters)
-                    .environment(appState)
-            }
-            // Search → Analytics handoff: a capped search offered to "Visualize
-            // in Corpus Analytics". Captured into local state before presenting —
-            // `AnalyticsView` reads it once at init (a fresh sheet instance is
-            // created each presentation) — then cleared on `AppState` so the
-            // observer doesn't refire on the next sheet dismissal.
-            .onChange(of: appState.pendingAnalytics) { _, params in
-                guard let params else { return }
-                analyticsParameters = params
-                appState.pendingAnalytics = nil
-                showAnalytics = true
-            }
-            // Cross-view → Chronology handoff, mirroring the Analytics block above.
-            .onChange(of: appState.pendingChronology) { _, params in
-                guard let params else { return }
-                chronologyParameters = params
-                appState.pendingChronology = nil
-                showChronology = true
-            }
     }
 }
 
