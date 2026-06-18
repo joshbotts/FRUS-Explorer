@@ -2724,4 +2724,67 @@ struct PersonRollupConsolidationTests {
             #expect(acheson.entry.endYear == 1953)
         }
     }
+
+    @Test("rollup carries volume_count and member drill-in (Phase 4)")
+    func volumeCountAndMemberDrillIn() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // The same person in two volumes → one cluster spanning two volumes.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1970",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1971",
+                documents: [("dB1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let kissinger = try #require(
+                try await store.allPersonsSortedByName().first { $0.entry.name == "Kissinger, Henry A." })
+            #expect(kissinger.volumeCount == 2, "the cluster spans two volumes")
+
+            let rid = try #require(kissinger.rollupId)
+            let members = try await store.members(forRollupId: rid)
+            #expect(members.count == 2)
+            #expect(Set(members.map(\.volumeId)) == ["volA", "volB"])
+            #expect(members.allSatisfy { $0.entry.name == "Kissinger, Henry A." })
+        }
+    }
+
+    @Test("rollupIdsWithCandidates surfaces both rollups of a pending suggestion (Phase 4)")
+    func candidateSetSurfacesRollups() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Variant + role conflict → a candidate the clusterer does not auto-merge.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1974",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.: Secretary of State, 1973–1977")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1974",
+                documents: [("dB1", "p_h", "Kissinger")],
+                persons: [("p_h", "Kissinger, Henry: Petroleum geologist, 1973–1977")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let withCandidates = try await store.rollupIdsWithCandidates()
+            let kissingers = try await store.allPersonsSortedByName().filter { $0.entry.name.hasPrefix("Kissinger") }
+            #expect(kissingers.count == 2)
+            for k in kissingers {
+                #expect(withCandidates.contains(k.rollupId ?? -1), "both sides of the pair are flagged")
+            }
+        }
+    }
 }
