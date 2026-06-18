@@ -168,7 +168,9 @@ final class SearchViewModel {
 
     // MARK: - Results
 
-    var results: [SearchResult] = []
+    var results: [SearchResult] = [] {
+        didSet { if currentPage >= totalPages { currentPage = 0 } }
+    }
     var isSearching: Bool = false
     var searchError: String? = nil
     var hasSearched: Bool = false
@@ -188,10 +190,30 @@ final class SearchViewModel {
 
     /// Maximum results fetched by `search()`.
     ///
-    /// iOS shows all results in a continuous list (no client-side pagination), so a
-    /// cap of 500 balances completeness against list-render memory. The macOS search
-    /// window uses a separate hard limit of 7 500 with explicit page controls.
-    static let searchHardLimit: Int = 500
+    /// iOS pages through results (`pageSize` per page) rather than rendering them in one
+    /// continuous list, so the full set is materialised in memory but only a single page
+    /// of rows is ever rendered. Raised from 500 → 1 000 once pagination bounded the
+    /// render cost. The macOS search window uses a separate hard limit of 7 500.
+    static let searchHardLimit: Int = 1_000
+
+    /// Number of results rendered per page on iOS.
+    static let pageSize: Int = 25
+
+    /// Zero-based index of the currently displayed results page.
+    var currentPage: Int = 0
+
+    /// Total number of result pages for the current result set (always ≥ 1).
+    var totalPages: Int {
+        max(1, Int(ceil(Double(results.count) / Double(Self.pageSize))))
+    }
+
+    /// The slice of `results` shown on the current page. Only these rows are rendered,
+    /// keeping the list bounded regardless of how many results were fetched.
+    var pagedResults: [SearchResult] {
+        let start = currentPage * Self.pageSize
+        guard start < results.count else { return [] }
+        return Array(results[start..<min(start + Self.pageSize, results.count)])
+    }
 
     // MARK: - Dependencies
 
@@ -268,6 +290,7 @@ final class SearchViewModel {
         do {
             results = try await searchService.search(parameters: params,
                                                      limit: Self.searchHardLimit)
+            currentPage = 0
             #if DEBUG
             print("[SearchView] Search returned \(results.count) results")
             #endif
