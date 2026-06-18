@@ -124,8 +124,8 @@ struct FrontMatterPersonsView: View {
 
 /// A single row in the volume persons list.
 ///
-/// Shows name (primary) and optional description (secondary). No mention count badge —
-/// those are cross-corpus counts loaded in the detail sheet after tap.
+/// Shows name (primary) and an optional `role · era` subtitle (secondary). No mention count
+/// badge — those are cross-corpus counts loaded in the detail sheet after tap.
 private struct PersonVolumeRow: View {
     let person: PersonEntry
     let onTap: () -> Void
@@ -137,8 +137,8 @@ private struct PersonVolumeRow: View {
                     Text(person.name)
                         .font(.body)
                         .foregroundStyle(.primary)
-                    if let desc = person.description, !desc.isEmpty {
-                        Text(desc)
+                    if let subtitle = person.roleEraSubtitle {
+                        Text(subtitle)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)

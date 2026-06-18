@@ -26,14 +26,37 @@ public struct PersonIndexEntry: Sendable, Identifiable {
     public let rollupId: Int?
     /// Volume this entry was built from (per-volume front-matter case), used to resolve the rollup.
     public let sourceVolumeId: String?
+    /// Number of distinct volumes this cluster spans (Phase 4), for the "N volumes" subtitle. 0 for
+    /// a per-volume front-matter entry.
+    public let volumeCount: Int
 
     public var id: String { rollupId.map { "r\($0)" } ?? entry.id }
 
-    public init(entry: PersonEntry, mentionCount: Int, rollupId: Int? = nil, sourceVolumeId: String? = nil) {
+    public init(entry: PersonEntry, mentionCount: Int, rollupId: Int? = nil,
+                sourceVolumeId: String? = nil, volumeCount: Int = 0) {
         self.entry = entry
         self.mentionCount = mentionCount
         self.rollupId = rollupId
         self.sourceVolumeId = sourceVolumeId
+        self.volumeCount = volumeCount
+    }
+}
+
+// MARK: - PersonRollupMember
+
+/// A single per-volume record (`(volumeId, ref)` + its `persons` row) belonging to a person rollup,
+/// used by the Phase 4 detail-sheet member drill-in and its "Separate" action.
+public struct PersonRollupMember: Sendable, Identifiable {
+    /// The volume this record comes from.
+    public let volumeId: String
+    /// The per-volume person entry (carries `ref`, name, role, era).
+    public let entry: PersonEntry
+
+    public var id: String { "\(volumeId)|\(entry.ref)" }
+
+    public init(volumeId: String, entry: PersonEntry) {
+        self.volumeId = volumeId
+        self.entry = entry
     }
 }
 
@@ -161,7 +184,8 @@ public actor PersonMentionStore {
     /// `mentionCount` is the correct cross-corpus count and `rollupId` drives drill-in/search.
     public func rollupEntry(forVolumeId volumeId: String, ref: String) throws -> PersonIndexEntry? {
         let sql = """
-            SELECT r.rollup_id, r.canonical_name, r.description, r.mention_count
+            SELECT r.rollup_id, r.canonical_name, r.description, r.mention_count,
+                   r.role, r.start_year, r.end_year, r.volume_count
             FROM person_rollup_member m
             JOIN person_rollup r ON r.rollup_id = m.rollup_id
             WHERE m.volume_id = ? AND m.ref = ?
@@ -175,8 +199,12 @@ public actor PersonMentionStore {
         let name = columnString(stmt, 1) ?? ""
         let desc = columnString(stmt, 2)
         let cnt  = Int(sqlite3_column_int64(stmt, 3))
-        return PersonIndexEntry(entry: PersonEntry(ref: "", name: name, description: desc),
-                                mentionCount: cnt, rollupId: rid)
+        let entry = PersonEntry(ref: "", name: name, description: desc,
+                                role: columnString(stmt, 4),
+                                startYear: columnIntOptional(stmt, 5),
+                                endYear: columnIntOptional(stmt, 6))
+        return PersonIndexEntry(entry: entry, mentionCount: cnt, rollupId: rid,
+                                volumeCount: Int(sqlite3_column_int64(stmt, 7)))
     }
 
     /// The (volumeId, documentId) pairs across the whole corpus that mention any member of a rollup.
@@ -198,6 +226,90 @@ public actor PersonMentionStore {
         return results
     }
 
+    /// Sub-threshold "possibly the same person" suggestions for a rollup (Phase 2).
+    ///
+    /// Returns the *other* rollup's id, canonical name, and the reason the clusterer declined to
+    /// auto-merge the pair, looking at both orientations of the unordered `person_cluster_candidate`
+    /// pair. Drives the "possibly same — Merge?" affordance (Phase 3/4). Ordered by the other name.
+    public func candidates(forRollupId rollupId: Int) throws -> [(rollupId: Int, name: String, reason: String?)] {
+        let sql = """
+            SELECT c.rollup_id_b, r.canonical_name, c.reason
+            FROM person_cluster_candidate c JOIN person_rollup r ON r.rollup_id = c.rollup_id_b
+            WHERE c.rollup_id_a = ?
+            UNION ALL
+            SELECT c.rollup_id_a, r.canonical_name, c.reason
+            FROM person_cluster_candidate c JOIN person_rollup r ON r.rollup_id = c.rollup_id_a
+            WHERE c.rollup_id_b = ?
+            ORDER BY 2
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        sqlite3_bind_int64(stmt, 2, Int64(rollupId))
+        var results: [(rollupId: Int, name: String, reason: String?)] = []
+        while step(stmt) {
+            results.append((Int(sqlite3_column_int64(stmt, 0)),
+                            columnString(stmt, 1) ?? "",
+                            columnString(stmt, 2)))
+        }
+        return results
+    }
+
+    /// The per-volume member records of a rollup (Phase 4 drill-in), joined to their `persons` rows
+    /// for the per-volume name/role/era. Ordered by name then volume.
+    public func members(forRollupId rollupId: Int) throws -> [PersonRollupMember] {
+        let sql = """
+            SELECT m.volume_id, p.ref, p.name, p.description, p.role, p.start_year, p.end_year
+            FROM person_rollup_member m
+            JOIN persons p ON p.volume_id = m.volume_id AND p.ref = m.ref
+            WHERE m.rollup_id = ?
+            ORDER BY p.name, m.volume_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        var results: [PersonRollupMember] = []
+        while step(stmt) {
+            let entry = PersonEntry(ref: columnString(stmt, 1) ?? "",
+                                    name: columnString(stmt, 2) ?? "",
+                                    description: columnString(stmt, 3),
+                                    role: columnString(stmt, 4),
+                                    startYear: columnIntOptional(stmt, 5),
+                                    endYear: columnIntOptional(stmt, 6))
+            results.append(PersonRollupMember(volumeId: columnString(stmt, 0) ?? "", entry: entry))
+        }
+        return results
+    }
+
+    /// The set of rollup ids that have at least one pending "possibly the same" candidate (Phase 4
+    /// row hint). Loaded once for the whole People list rather than per row.
+    public func rollupIdsWithCandidates() throws -> Set<Int> {
+        let sql = """
+            SELECT rollup_id_a FROM person_cluster_candidate
+            UNION SELECT rollup_id_b FROM person_cluster_candidate
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var ids = Set<Int>()
+        while step(stmt) { ids.insert(Int(sqlite3_column_int64(stmt, 0))) }
+        return ids
+    }
+
+    /// A representative `(volumeId, ref)` member of a rollup, used to anchor a user correction
+    /// (`PersonClusterOverride`) to stable TEI keys. Returns the member with the smallest
+    /// `(volume_id, ref)` for determinism, or `nil` when the rollup has no members.
+    public func representativeMember(forRollupId rollupId: Int) throws -> (volumeId: String, ref: String)? {
+        let sql = """
+            SELECT volume_id, ref FROM person_rollup_member
+            WHERE rollup_id = ? ORDER BY volume_id, ref LIMIT 1
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        guard step(stmt) else { return nil }
+        return (columnString(stmt, 0) ?? "", columnString(stmt, 1) ?? "")
+    }
+
     // MARK: - Persons Table Queries (Session 41)
 
     /// Looks up a single person entry by volume and ref.
@@ -206,7 +318,7 @@ public actor PersonMentionStore {
     /// (e.g. the volume has not been indexed yet).
     public func person(forRef ref: String, volumeId: String) throws -> PersonEntry? {
         let sql = """
-            SELECT ref, name, description FROM persons
+            SELECT ref, name, description, role, start_year, end_year FROM persons
             WHERE volume_id = ? AND ref = ?
             """
         let stmt = try prepare(sql)
@@ -217,7 +329,10 @@ public actor PersonMentionStore {
         let r    = columnString(stmt, 0) ?? ref
         let name = columnString(stmt, 1) ?? ""
         let desc = columnString(stmt, 2)
-        return PersonEntry(ref: r, name: name, description: desc)
+        return PersonEntry(ref: r, name: name, description: desc,
+                           role: columnString(stmt, 3),
+                           startYear: columnIntOptional(stmt, 4),
+                           endYear: columnIntOptional(stmt, 5))
     }
 
     /// All person entries for a volume, sorted by name.
@@ -225,7 +340,7 @@ public actor PersonMentionStore {
     /// Returns an empty array if the volume has not been indexed or has no persons list.
     public func allPersons(forVolumeId volumeId: String) throws -> [PersonEntry] {
         let sql = """
-            SELECT ref, name, description FROM persons
+            SELECT ref, name, description, role, start_year, end_year FROM persons
             WHERE volume_id = ?
             ORDER BY name
             """
@@ -237,7 +352,10 @@ public actor PersonMentionStore {
             let ref  = columnString(stmt, 0) ?? ""
             let name = columnString(stmt, 1) ?? ""
             let desc = columnString(stmt, 2)
-            results.append(PersonEntry(ref: ref, name: name, description: desc))
+            results.append(PersonEntry(ref: ref, name: name, description: desc,
+                                       role: columnString(stmt, 3),
+                                       startYear: columnIntOptional(stmt, 4),
+                                       endYear: columnIntOptional(stmt, 5)))
         }
         return results
     }
@@ -252,7 +370,8 @@ public actor PersonMentionStore {
     /// been built (no indexed volumes, or consolidation hasn't run yet).
     public func allPersonsSortedByName() throws -> [PersonIndexEntry] {
         let sql = """
-            SELECT rollup_id, canonical_name, description, mention_count
+            SELECT rollup_id, canonical_name, description, mention_count, role, start_year, end_year,
+                   volume_count
             FROM person_rollup
             ORDER BY canonical_name ASC
             """
@@ -264,8 +383,12 @@ public actor PersonMentionStore {
             let name  = columnString(stmt, 1) ?? ""
             let desc  = columnString(stmt, 2)
             let count = Int(sqlite3_column_int64(stmt, 3))
-            results.append(PersonIndexEntry(entry: PersonEntry(ref: "", name: name, description: desc),
-                                            mentionCount: count, rollupId: rid))
+            let entry = PersonEntry(ref: "", name: name, description: desc,
+                                    role: columnString(stmt, 4),
+                                    startYear: columnIntOptional(stmt, 5),
+                                    endYear: columnIntOptional(stmt, 6))
+            results.append(PersonIndexEntry(entry: entry, mentionCount: count, rollupId: rid,
+                                            volumeCount: Int(sqlite3_column_int64(stmt, 7))))
         }
         return results
     }
@@ -365,6 +488,11 @@ public actor PersonMentionStore {
     private func columnString(_ stmt: OpaquePointer, _ col: Int32) -> String? {
         guard let ptr = sqlite3_column_text(stmt, col) else { return nil }
         return String(cString: ptr)
+    }
+
+    private func columnIntOptional(_ stmt: OpaquePointer, _ col: Int32) -> Int? {
+        guard sqlite3_column_type(stmt, col) != SQLITE_NULL else { return nil }
+        return Int(sqlite3_column_int64(stmt, col))
     }
 }
 

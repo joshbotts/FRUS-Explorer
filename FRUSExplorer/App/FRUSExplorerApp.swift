@@ -670,6 +670,9 @@ struct FRUSExplorerApp: App {
             //     FTS rebuild is satisfied by it too).
             let ftsRebuildNeeded = store.didRebuildSchema || pipeline.needsFTSRebuildReindex
             let dateReindexNeeded = pipeline.needsDateReindex
+            // Snapshot the user's person-cluster corrections (Phase 3) so consolidation re-applies
+            // them as constraints. Captured here on the MainActor; the value type is Sendable.
+            let personOverrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
             if dateReindexNeeded {
                 Task {
                     #if DEBUG
@@ -679,7 +682,7 @@ struct FRUSExplorerApp: App {
                     await pipeline.markDateReindexComplete()
                     if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
                     // Rebuild the materialised person rollup after the persons table changes.
-                    try? await pipeline.consolidatePersonRollupIfNeeded()
+                    try? await pipeline.consolidatePersonRollupIfNeeded(overrides: personOverrides)
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index complete.")
                     #endif
@@ -692,7 +695,7 @@ struct FRUSExplorerApp: App {
                     if (try? await pipeline.rebuildSearchIndexFromCache()) != nil {
                         await pipeline.markFTSRebuildReindexComplete()
                     }
-                    try? await pipeline.consolidatePersonRollupIfNeeded()
+                    try? await pipeline.consolidatePersonRollupIfNeeded(overrides: personOverrides)
                     #if DEBUG
                     print("[FRUSExplorer] FTS rebuild from document_cache complete.")
                     #endif
@@ -700,7 +703,7 @@ struct FRUSExplorerApp: App {
             } else {
                 // Normal launch: rebuild the person rollup if its version was bumped or the
                 // member set has drifted (volumes added/removed). Cheap no-op when up to date.
-                Task { try? await pipeline.consolidatePersonRollupIfNeeded() }
+                Task { try? await pipeline.consolidatePersonRollupIfNeeded(overrides: personOverrides) }
             }
 
             // Reconcile downloads that completed without a post-download indexing

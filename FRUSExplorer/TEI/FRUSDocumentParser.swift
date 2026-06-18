@@ -1316,15 +1316,29 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
             let id = currentId ?? raw
             if !id.isEmpty {
-                let parts = raw.components(separatedBy: ":")
-                let name = currentName
-                    ?? parts.first?.trimmingCharacters(in: .whitespacesAndNewlines)
-                    ?? raw
-                let desc = parts.count > 1
-                    ? parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
-                    : nil
-                if !name.isEmpty {
-                    entries.append(PersonEntry(ref: id, name: name, description: desc?.isEmpty == true ? nil : desc))
+                // Two persons-list shapes appear across FRUS eras:
+                //   Format A (modern, persName-wrapped): the name came from <persName>; `raw` is the
+                //     trailing role text after </persName> (e.g. ", Assistant to the President…")
+                //     that earlier versions discarded.
+                //   Format B (older, colon-delimited): a single text run "Name: role".
+                let name: String
+                let descRaw: String?
+                if let cn = currentName {
+                    name = cn
+                    descRaw = Self.cleanTrailingText(raw)
+                } else {
+                    let parts = raw.components(separatedBy: ":")
+                    name = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? raw
+                    descRaw = parts.count > 1
+                        ? Self.cleanTrailingText(parts[1...].joined(separator: ":"))
+                        : nil
+                }
+                if !name.isEmpty, Self.isLikelyPerson(name: name) {
+                    let (role, startYear, endYear) = Self.extractRoleAndYears(from: descRaw)
+                    entries.append(PersonEntry(
+                        ref: id, name: name, description: descRaw,
+                        role: role, startYear: startYear, endYear: endYear
+                    ))
                 }
             }
             inPersonElement = false
@@ -1340,6 +1354,70 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             inPersonsSection = false
             personsSectionDepth = -1
         }
+    }
+
+    // MARK: - Role / year extraction (person rollup Phase 1)
+
+    /// Cleans a descriptive fragment: trims whitespace, strips leading/trailing separators and
+    /// brackets left over from "</persName>, role" or year removal, and a trailing period. Returns
+    /// `nil` when nothing with a letter remains (e.g. "()" left after extracting "(1923–1990)").
+    static func cleanTrailingText(_ s: String) -> String? {
+        var t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        let seps = CharacterSet(charactersIn: ",:;–—-()[]. ")
+        while let f = t.unicodeScalars.first, seps.contains(f) { t.removeFirst() }
+        while let l = t.unicodeScalars.last, seps.contains(l) { t.removeLast() }
+        t = t.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard t.contains(where: { $0.isLetter }) else { return nil }
+        return t
+    }
+
+    /// Light filter to drop persons-list items that are not biographical records: empty/letterless
+    /// names and back-of-book "See …" cross-reference redirects. Deliberately conservative so it
+    /// never discards a real person (e.g. "Seeckt, Hans von" has no space after "see").
+    static func isLikelyPerson(name: String) -> Bool {
+        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard n.contains(where: { $0.isLetter }) else { return false }
+        let lower = n.lowercased()
+        return !(lower.hasPrefix("see ") || lower.hasPrefix("see also "))
+    }
+
+    /// Splits descriptive text into a role title and an active-year range. Years come from `YYYY` or
+    /// `YYYY[–-]YY(YY)` / `YYYY–present` patterns bounded to plausible FRUS years (1700–2099); the
+    /// role is the text with that span removed. A "present"/open range leaves `endYear` nil.
+    static func extractRoleAndYears(from text: String?) -> (role: String?, startYear: Int?, endYear: Int?) {
+        guard let text, !text.isEmpty else { return (nil, nil, nil) }
+        let ns = text as NSString
+        let full = NSRange(location: 0, length: ns.length)
+
+        func boundedYear(_ s: String) -> Int? {
+            guard let y = Int(s), y >= 1700, y <= 2099 else { return nil }
+            return y
+        }
+
+        // Year range first: "1973–1977", "1973-77", "1969–present".
+        if let re = try? NSRegularExpression(pattern: #"(\d{4})\s*[–—-]\s*(\d{2,4}|present|pres\.?)"#,
+                                             options: [.caseInsensitive]),
+           let m = re.firstMatch(in: text, range: full),
+           let start = boundedYear(ns.substring(with: m.range(at: 1))) {
+            let endStr = ns.substring(with: m.range(at: 2))
+            var end: Int?
+            if endStr.count == 4 {
+                end = boundedYear(endStr)
+            } else if endStr.count == 2, let two = Int(endStr) {
+                // "1973–77" → 1977: graft the century/decade of the start year.
+                end = boundedYear(String(format: "%02d%02d", start / 100, two))
+            }
+            let role = Self.cleanTrailingText(ns.replacingCharacters(in: m.range, with: ""))
+            return (role, start, end)
+        }
+        // Single year: "Ambassador to France, 1975".
+        if let re = try? NSRegularExpression(pattern: #"\b(\d{4})\b"#),
+           let m = re.firstMatch(in: text, range: full),
+           let y = boundedYear(ns.substring(with: m.range(at: 1))) {
+            let role = Self.cleanTrailingText(ns.replacingCharacters(in: m.range, with: ""))
+            return (role, y, nil)
+        }
+        return (Self.cleanTrailingText(text), nil, nil)
     }
 }
 

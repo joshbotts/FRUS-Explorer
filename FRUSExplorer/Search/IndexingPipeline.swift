@@ -301,7 +301,11 @@ public actor IndexingPipeline {
     ///   parsed from the `<head>` leading text, which yielded nothing for unnumbered heads
     ///   and left those citations without a number. A re-parse repopulates
     ///   `document_cache.document_number` corpus-wide so citations resolve to HSG.
-    public static let currentDateIndexVersion: Int = 10
+    /// - Version 11: person role/era metadata (person rollup Phase 1). The persons list carries
+    ///   role text (and sometimes an active-year range) after each name; the parser previously
+    ///   discarded the trailing text. A re-parse repopulates `persons.role`/`start_year`/`end_year`
+    ///   so the People browser can show a `role · era` subtitle.
+    public static let currentDateIndexVersion: Int = 11
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -324,43 +328,117 @@ public actor IndexingPipeline {
     // MARK: - Person Rollup (Phase 0)
 
     /// Version of the materialised person rollup. Bump to force a rebuild on next consolidation.
-    public static let currentPersonRollupVersion: Int = 1
+    /// v2 (Phase 1): rollup carries role/start_year/end_year.
+    /// v3 (Phase 2): membership comes from `PersonClusterer` (blocking + variant folding + era/role
+    /// guardrails) and sub-threshold pairs land in `person_cluster_candidate`.
+    /// v4 (Phase 3): user `PersonClusterOverride`s are applied as must-link/detach constraints.
+    /// v5 (Phase 4): rollup carries `volume_count` (distinct volumes the cluster spans).
+    public static let currentPersonRollupVersion: Int = 5
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
+    /// UserDefaults key tracking the override count the rollup was last built with, so a launch after
+    /// corrections sync in from another device re-consolidates even when the version is unchanged.
+    public static let personRollupOverrideCountKey = "frusExplorer.personRollupOverrideCount"
 
     /// Rebuilds the materialised `person_rollup` / `person_rollup_member` tables if they are stale —
     /// the version was bumped, the rollup was never built, or the member set has drifted from the
     /// `persons` table (a volume was added or removed). The People browser reads the rollup directly
     /// because a live cross-corpus rollup over `person_mentions` is too slow on the full corpus.
     /// Cheap when up to date (two `COUNT(*)`s + a version check).
-    public func consolidatePersonRollupIfNeeded() async throws {
+    public func consolidatePersonRollupIfNeeded(overrides: [PersonClusterOverrideData] = []) async throws {
         let installedVersion = UserDefaults.standard.integer(forKey: Self.personRollupVersionKey)
         let members = (try? auxScalarInt("SELECT COUNT(*) FROM person_rollup_member")) ?? -1
         let persons = (try? auxScalarInt("SELECT COUNT(*) FROM persons")) ?? 0
-        guard installedVersion < Self.currentPersonRollupVersion || members != persons else { return }
-        try consolidatePersonRollup()
-        UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
-        logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries).")
+        let lastOverrideCount = UserDefaults.standard.integer(forKey: Self.personRollupOverrideCountKey)
+        guard installedVersion < Self.currentPersonRollupVersion
+            || members != persons
+            || lastOverrideCount != overrides.count else { return }
+        try consolidatePersonRollup(overrides: overrides)
+        logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries, \(overrides.count, privacy: .public) overrides).")
     }
 
-    /// Rebuilds the person rollup from `persons` + `person_mentions`, keyed by the normalised name
-    /// (Phase 0). Mention counts are scoped by `(volume_id, ref)` — the per-volume TEI `ref` collides
-    /// across volumes, so an unscoped count conflates unrelated people. Phase 2 replaces the name
-    /// grouping with true clustering without changing the table shape.
-    func consolidatePersonRollup() throws {
+    /// Rebuilds the person rollup from `persons` + `person_mentions` + `document_dates` using the
+    /// `PersonClusterer` (Phase 2), applying the user's `PersonClusterOverride`s as constraints
+    /// (Phase 3): `merge` → must-link, `split` → detach. The clusterer heals fragmentation (the same
+    /// person under varying name strings across volumes) and prevents conflation (different people who
+    /// share an exact name but are separated in time), honouring the under-merge bias: uncertain pairs
+    /// stay split and are recorded in `person_cluster_candidate` as "possibly the same" suggestions.
+    /// Mention counts are scoped by `(volume_id, ref)`. The table shape is unchanged from Phase 0/1.
+    ///
+    /// - Parameters:
+    ///   - overrides: User corrections to apply on top of the algorithmic clustering.
+    ///   - forceReload: When `false`, reuses the in-memory snapshot of cluster inputs from the last
+    ///     load so a single correction re-applies fast (the expensive `persons`/mention-era load is
+    ///     skipped). The gated launch/post-index path passes `true`.
+    func consolidatePersonRollup(overrides: [PersonClusterOverrideData] = [], forceReload: Bool = true) throws {
+        let inputs: [PersonClusterInput]
+        if !forceReload, let cached = cachedClusterInputs {
+            inputs = cached
+        } else {
+            inputs = try loadPersonClusterInputs()
+            cachedClusterInputs = inputs
+        }
+        let (mustLink, detach) = Self.clusterConstraints(from: overrides)
+        let output = PersonClusterer.cluster(inputs, mustLink: mustLink, detach: detach)
+
         try inTransaction {
             try auxExec("DELETE FROM person_rollup")
             try auxExec("DELETE FROM person_rollup_member")
-            try auxExec("""
-                INSERT INTO person_rollup (namekey, canonical_name, description)
-                SELECT lower(trim(name)), MIN(name), MIN(description)
-                FROM persons GROUP BY lower(trim(name))
+            try auxExec("DELETE FROM person_cluster_candidate")
+
+            // One rollup per cluster (rollup_id = clusterIndex + 1) with aggregated metadata + members.
+            let rollupStmt = try auxPrepare("""
+                INSERT INTO person_rollup
+                    (rollup_id, namekey, canonical_name, description, role, start_year, end_year,
+                     volume_count, mention_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
                 """)
-            try auxExec("""
-                INSERT INTO person_rollup_member (volume_id, ref, rollup_id)
-                SELECT p.volume_id, p.ref, r.rollup_id
-                FROM persons p JOIN person_rollup r ON r.namekey = lower(trim(p.name))
-                """)
+            defer { sqlite3_finalize(rollupStmt) }
+            let memberStmt = try auxPrepare(
+                "INSERT INTO person_rollup_member (volume_id, ref, rollup_id) VALUES (?, ?, ?)")
+            defer { sqlite3_finalize(memberStmt) }
+
+            for (clusterIndex, memberIndices) in output.clusters.enumerated() {
+                let rollupId = Int64(clusterIndex + 1)
+                let members = memberIndices.map { inputs[$0] }
+                let agg = Self.aggregateRollup(members)
+
+                sqlite3_bind_int64(rollupStmt, 1, rollupId)
+                sqlite3_bind_text(rollupStmt, 2, agg.namekey, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(rollupStmt, 3, agg.canonicalName, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(rollupStmt, 4, agg.description)
+                auxBindOptional(rollupStmt, 5, agg.role)
+                auxBindOptionalInt(rollupStmt, 6, agg.startYear)
+                auxBindOptionalInt(rollupStmt, 7, agg.endYear)
+                sqlite3_bind_int64(rollupStmt, 8, Int64(agg.volumeCount))
+                try auxStep(rollupStmt)
+                sqlite3_reset(rollupStmt)
+
+                for m in members {
+                    sqlite3_bind_text(memberStmt, 1, m.volumeId, -1, SQLITE_TRANSIENT_IP)
+                    sqlite3_bind_text(memberStmt, 2, m.ref, -1, SQLITE_TRANSIENT_IP)
+                    sqlite3_bind_int64(memberStmt, 3, rollupId)
+                    try auxStep(memberStmt)
+                    sqlite3_reset(memberStmt)
+                }
+            }
+
+            // Candidate suggestions (cluster index → rollup_id is +1).
+            if !output.candidates.isEmpty {
+                let candStmt = try auxPrepare("""
+                    INSERT OR IGNORE INTO person_cluster_candidate (rollup_id_a, rollup_id_b, reason)
+                    VALUES (?, ?, ?)
+                    """)
+                defer { sqlite3_finalize(candStmt) }
+                for c in output.candidates {
+                    sqlite3_bind_int64(candStmt, 1, Int64(c.clusterA + 1))
+                    sqlite3_bind_int64(candStmt, 2, Int64(c.clusterB + 1))
+                    sqlite3_bind_text(candStmt, 3, c.reason, -1, SQLITE_TRANSIENT_IP)
+                    try auxStep(candStmt)
+                    sqlite3_reset(candStmt)
+                }
+            }
+
             // Mention counts: aggregate once into a keyed temp table, then update by PK lookup.
             try auxExec("CREATE TEMP TABLE IF NOT EXISTS _rollup_counts (rid INTEGER PRIMARY KEY, cnt INTEGER)")
             try auxExec("DELETE FROM _rollup_counts")
@@ -377,6 +455,108 @@ public actor IndexingPipeline {
                 """)
             try auxExec("DELETE FROM _rollup_counts")
         }
+
+        // Record what this build reflects so the gated launch path knows when it is stale.
+        UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
+        UserDefaults.standard.set(overrides.count, forKey: Self.personRollupOverrideCountKey)
+    }
+
+    /// Translates user `PersonClusterOverride` snapshots into clusterer constraints.
+    private static func clusterConstraints(from overrides: [PersonClusterOverrideData])
+        -> (mustLink: [(PersonClusterer.MemberKey, PersonClusterer.MemberKey)], detach: [PersonClusterer.MemberKey]) {
+        var mustLink: [(PersonClusterer.MemberKey, PersonClusterer.MemberKey)] = []
+        var detach: [PersonClusterer.MemberKey] = []
+        for o in overrides {
+            switch o.kind {
+            case .merge:
+                if let vb = o.volumeIdB, let rb = o.refB {
+                    mustLink.append((PersonClusterer.MemberKey(volumeId: o.volumeIdA, ref: o.refA),
+                                     PersonClusterer.MemberKey(volumeId: vb, ref: rb)))
+                }
+            case .split:
+                detach.append(PersonClusterer.MemberKey(volumeId: o.volumeIdA, ref: o.refA))
+            }
+        }
+        return (mustLink, detach)
+    }
+
+    /// Loads every `persons` row as a `PersonClusterInput`, joined to a per-`(volume_id, ref)`
+    /// mention-era (min/max document year from `document_dates`). The mention era gives the clusterer
+    /// an era signal even for the common case where the persons list carries no explicit years.
+    private func loadPersonClusterInputs() throws -> [PersonClusterInput] {
+        // Mention-derived era per (volume_id, ref). GLOB guards against malformed date strings.
+        var mentionEra: [String: (Int, Int)] = [:]
+        let eraStmt = try auxPrepare("""
+            SELECT pm.volume_id, pm.person_ref,
+                   MIN(CAST(substr(dd.date_iso, 1, 4) AS INTEGER)),
+                   MAX(CAST(substr(CASE WHEN substr(dd.date_iso_max, 1, 4) GLOB '[12][0-9][0-9][0-9]'
+                                        THEN dd.date_iso_max ELSE dd.date_iso END, 1, 4) AS INTEGER))
+            FROM person_mentions pm
+            JOIN document_dates dd ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+            WHERE substr(dd.date_iso, 1, 4) GLOB '[12][0-9][0-9][0-9]'
+            GROUP BY pm.volume_id, pm.person_ref
+            """)
+        defer { sqlite3_finalize(eraStmt) }
+        while try auxStep(eraStmt) {
+            let vol = auxColumnString(eraStmt, 0) ?? ""
+            let ref = auxColumnString(eraStmt, 1) ?? ""
+            if let lo = auxColumnIntOptional(eraStmt, 2) {
+                mentionEra["\(vol)||\(ref)"] = (lo, auxColumnIntOptional(eraStmt, 3) ?? lo)
+            }
+        }
+
+        var inputs: [PersonClusterInput] = []
+        let pStmt = try auxPrepare("SELECT volume_id, ref, name, description, role, start_year, end_year FROM persons")
+        defer { sqlite3_finalize(pStmt) }
+        while try auxStep(pStmt) {
+            let vol = auxColumnString(pStmt, 0) ?? ""
+            let ref = auxColumnString(pStmt, 1) ?? ""
+            let name = auxColumnString(pStmt, 2) ?? ""
+            guard !name.isEmpty else { continue }
+            let era = mentionEra["\(vol)||\(ref)"]
+            inputs.append(PersonClusterInput(
+                volumeId: vol, ref: ref, name: name,
+                description: auxColumnString(pStmt, 3),
+                role: auxColumnString(pStmt, 4),
+                listStartYear: auxColumnIntOptional(pStmt, 5),
+                listEndYear: auxColumnIntOptional(pStmt, 6),
+                mentionStartYear: era?.0,
+                mentionEndYear: era?.1
+            ))
+        }
+        return inputs
+    }
+
+    /// Aggregated rollup metadata for a cluster's members: the most complete name, the first
+    /// available description/role, and the widest active span (min start … max end of effective years).
+    private static func aggregateRollup(_ members: [PersonClusterInput]) -> RollupAggregate {
+        // Canonical name: the most complete (longest); ties broken lexicographically for stability.
+        let names: [String] = members.map(\.name)
+        let canonical: String = names.min { (a: String, b: String) -> Bool in
+            if a.count != b.count { return a.count > b.count }
+            return a < b
+        } ?? ""
+        let description: String? = members.compactMap { (m: PersonClusterInput) -> String? in
+            guard let d = m.description, !d.isEmpty else { return nil }
+            return d
+        }.min()
+        let role: String? = members.compactMap { (m: PersonClusterInput) -> String? in
+            guard let r = m.role, !r.isEmpty else { return nil }
+            return r
+        }.min()
+        let starts: [Int] = members.compactMap(\.effectiveStartYear)
+        let ends: [Int] = members.compactMap(\.effectiveEndYear)
+        let namekey = canonical.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let volumeCount = Set(members.map(\.volumeId)).count
+        return RollupAggregate(
+            canonicalName: canonical,
+            namekey: namekey,
+            description: description,
+            role: role,
+            startYear: starts.min(),
+            endYear: ends.max(),
+            volumeCount: volumeCount
+        )
     }
 
     // MARK: - Logger
@@ -389,6 +569,13 @@ public actor IndexingPipeline {
     private let volumesDirectory: URL
     private let subjectTagStore: SubjectTagStore
     private let stateTracker: IndexingStateTracker?
+
+    // MARK: - Person rollup cache (Phase 3)
+
+    /// In-memory snapshot of the last-loaded cluster inputs, so a user correction can re-apply the
+    /// clusterer (with the new constraints) without repeating the expensive `persons`/mention-era
+    /// load. Invalidated whenever a volume is indexed or removed.
+    private var cachedClusterInputs: [PersonClusterInput]?
 
     // MARK: - Auxiliary SQLite connection
 
@@ -543,6 +730,7 @@ public actor IndexingPipeline {
     ///
     /// - Throws: `IndexingError.volumeNotFound` if the XML file is absent.
     public func indexVolume(_ volumeId: String) async throws {
+        cachedClusterInputs = nil   // persons/mentions about to change — drop the rollup input cache
         let url = volumesDirectory.appendingPathComponent("\(volumeId).xml")
         guard FileManager.default.fileExists(atPath: url.path) else {
             logger.error("indexVolume: file not found for \(volumeId, privacy: .public)")
@@ -779,6 +967,7 @@ public actor IndexingPipeline {
     /// per-document FTS5 delete loop matched by `document_id` alone, which removed
     /// rows like `"d1"` from **every** indexed volume.)
     public func removeVolume(_ volumeId: String) async throws {
+        cachedClusterInputs = nil   // persons/mentions about to change — drop the rollup input cache
         try auxDeleteVolume(volumeId)
         try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
 
@@ -1872,7 +2061,8 @@ public actor IndexingPipeline {
 
         // Persons and terms were extracted in the same single-pass parse above.
         let personRows = fullResult.persons.map { p in
-            PersonRow(volumeId: volumeId, ref: p.ref, name: p.name, description: p.description)
+            PersonRow(volumeId: volumeId, ref: p.ref, name: p.name, description: p.description,
+                      role: p.role, startYear: p.startYear, endYear: p.endYear)
         }
         let termRows = fullResult.terms.map { t in
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
@@ -2832,6 +3022,12 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name)")
+        // Role/era metadata (person rollup Phase 1). Idempotent — the persons list carries role text
+        // and sometimes an active-year range after each name; these were previously discarded.
+        // A reindex (currentDateIndexVersion bump) repopulates them on existing databases.
+        try? exec("ALTER TABLE persons ADD COLUMN role TEXT")
+        try? exec("ALTER TABLE persons ADD COLUMN start_year INTEGER")
+        try? exec("ALTER TABLE persons ADD COLUMN end_year INTEGER")
 
         // Person rollup (Phase 0): a materialised cross-volume person index read by the People
         // browser. The per-volume `ref` is the TEI xml:id and is only meaningful within its volume
@@ -2863,6 +3059,26 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_person_rollup_member_rollup ON person_rollup_member(rollup_id)")
+        // Role/era carried onto the rollup (Phase 1) so the People browser can show a `role · era`
+        // subtitle without a per-row persons lookup. Idempotent; repopulated by consolidation.
+        try? exec("ALTER TABLE person_rollup ADD COLUMN role TEXT")
+        try? exec("ALTER TABLE person_rollup ADD COLUMN start_year INTEGER")
+        try? exec("ALTER TABLE person_rollup ADD COLUMN end_year INTEGER")
+        // Distinct volumes a cluster spans (Phase 4), for the "N volumes" row subtitle.
+        try? exec("ALTER TABLE person_rollup ADD COLUMN volume_count INTEGER NOT NULL DEFAULT 0")
+
+        // Sub-threshold "possibly the same person" suggestions (Phase 2). The clusterer records pairs
+        // of rollups it declined to auto-merge (under-merge bias) for later user confirmation; never
+        // applied automatically. `rollup_id_a < rollup_id_b` by convention. Rebuilt by consolidation.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS person_cluster_candidate (
+                rollup_id_a INTEGER NOT NULL,
+                rollup_id_b INTEGER NOT NULL,
+                reason      TEXT,
+                PRIMARY KEY (rollup_id_a, rollup_id_b)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_cluster_candidate_b ON person_cluster_candidate(rollup_id_b)")
 
         try exec("""
             CREATE TABLE IF NOT EXISTS terms (
@@ -3147,8 +3363,8 @@ public actor IndexingPipeline {
     private func auxInsertPersons(_ rows: [PersonRow], inExternalTransaction: Bool = false) throws {
         guard !rows.isEmpty else { return }
         let sql = """
-            INSERT OR REPLACE INTO persons (volume_id, ref, name, description)
-            VALUES (?, ?, ?, ?)
+            INSERT OR REPLACE INTO persons (volume_id, ref, name, description, role, start_year, end_year)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -3158,6 +3374,9 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 2, row.ref,         -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 3, row.name,        -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 4, row.description)
+                auxBindOptional(stmt, 5, row.role)
+                auxBindOptionalInt(stmt, 6, row.startYear)
+                auxBindOptionalInt(stmt, 7, row.endYear)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -3992,9 +4211,19 @@ public actor IndexingPipeline {
         else              { sqlite3_bind_null(stmt, col) }
     }
 
+    private func auxBindOptionalInt(_ stmt: OpaquePointer, _ col: Int32, _ value: Int?) {
+        if let v = value { sqlite3_bind_int64(stmt, col, Int64(v)) }
+        else             { sqlite3_bind_null(stmt, col) }
+    }
+
     private func auxColumnString(_ stmt: OpaquePointer, _ col: Int32) -> String? {
         guard let ptr = sqlite3_column_text(stmt, col) else { return nil }
         return String(cString: ptr)
+    }
+
+    private func auxColumnIntOptional(_ stmt: OpaquePointer, _ col: Int32) -> Int? {
+        guard sqlite3_column_type(stmt, col) != SQLITE_NULL else { return nil }
+        return Int(sqlite3_column_int64(stmt, col))
     }
 
     /// Runs a single-column, single-row integer query on the auxiliary connection.
@@ -4135,6 +4364,20 @@ private struct PersonRow: Sendable {
     let ref: String
     let name: String
     let description: String?
+    let role: String?
+    let startYear: Int?
+    let endYear: Int?
+}
+
+/// Aggregated metadata for one person-rollup row, computed from a cluster's members (Phase 2).
+private struct RollupAggregate {
+    let canonicalName: String
+    let namekey: String
+    let description: String?
+    let role: String?
+    let startYear: Int?
+    let endYear: Int?
+    let volumeCount: Int
 }
 
 private struct TermRow: Sendable {

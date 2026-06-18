@@ -62,6 +62,7 @@ extension ModelContainer {
             SessionEvent.self,
             DocumentHighlight.self,
             DocumentTagAssignment.self,
+            PersonClusterOverride.self,
         ]
     }
 
