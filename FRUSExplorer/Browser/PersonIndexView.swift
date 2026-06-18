@@ -86,7 +86,9 @@ struct PersonIndexView: View {
         )
         .task { await loadPeople() }
         .sheet(item: $selectedIndexEntry) { indexEntry in
-            PersonIndexDetailSheet(indexEntry: indexEntry)
+            PersonIndexDetailSheet(indexEntry: indexEntry, onCorrection: {
+                Task { await loadPeople() }
+            })
         }
     }
 
@@ -172,8 +174,12 @@ private struct PersonIndexRow: View {
 struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
+    /// Called after a correction (merge) changes the rollup, so the caller can reload its list.
+    var onCorrection: (() -> Void)? = nil
+
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     /// Cross-corpus mention count loaded asynchronously on appear.
     /// Already correct for rollup entries from `PersonIndexView`; resolved here for the per-volume
@@ -181,6 +187,10 @@ struct PersonIndexDetailSheet: View {
     @State private var resolvedMentionCount: Int?
     /// Rollup id resolved for a per-volume front-matter entry, used by "Find all mentions".
     @State private var resolvedRollupId: Int?
+    /// "Possibly the same person" suggestions for this rollup (Phase 2 candidates).
+    @State private var candidates: [PersonMergeCandidate] = []
+    /// True while a merge correction is being applied + the rollup re-consolidated.
+    @State private var isMerging = false
 
     private var displayCount: Int { resolvedMentionCount ?? indexEntry.mentionCount }
     private var effectiveRollupId: Int? { indexEntry.rollupId ?? resolvedRollupId }
@@ -243,6 +253,38 @@ struct PersonIndexDetailSheet: View {
                     .help(String(localized: "people.detail.findMentions.help",
                                  defaultValue: "Open Search filtered to documents that mention this person"))
                 }
+
+                if !candidates.isEmpty {
+                    Section {
+                        ForEach(candidates) { candidate in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(candidate.name)
+                                        .font(.body)
+                                    if let reason = candidate.reason {
+                                        Text(reason)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Button {
+                                    Task { await merge(with: candidate) }
+                                } label: {
+                                    Text(String(localized: "people.detail.merge", defaultValue: "Merge"))
+                                }
+                                .buttonStyle(.borderless)
+                                .disabled(isMerging)
+                            }
+                        }
+                    } header: {
+                        Text(String(localized: "people.detail.possiblySame.header",
+                                    defaultValue: "Possibly the Same Person"))
+                    } footer: {
+                        Text(String(localized: "people.detail.possiblySame.footer",
+                                    defaultValue: "Merge if these records refer to the same person. The change syncs across your devices."))
+                    }
+                }
             }
             .navigationTitle(indexEntry.entry.name)
             #if os(iOS)
@@ -264,15 +306,55 @@ struct PersonIndexDetailSheet: View {
         .task {
             // Browser rollup entries already carry the correct count + rollup id. A per-volume
             // front-matter entry resolves its rollup here for the cross-corpus count and search.
-            guard indexEntry.rollupId == nil,
-                  let volumeId = indexEntry.sourceVolumeId,
-                  let store = appState.personMentionStore else { return }
-            if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
-                resolvedRollupId = resolved.rollupId
-                resolvedMentionCount = resolved.mentionCount
-            } else {
-                resolvedMentionCount = 0
+            if indexEntry.rollupId == nil,
+               let volumeId = indexEntry.sourceVolumeId,
+               let store = appState.personMentionStore {
+                if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
+                    resolvedRollupId = resolved.rollupId
+                    resolvedMentionCount = resolved.mentionCount
+                } else {
+                    resolvedMentionCount = 0
+                }
             }
+            await loadCandidates()
         }
     }
+
+    // MARK: - Merge candidates (Phase 3)
+
+    private func loadCandidates() async {
+        guard let rollupId = effectiveRollupId, let store = appState.personMentionStore else { return }
+        let raw = (try? await store.candidates(forRollupId: rollupId)) ?? []
+        candidates = raw.map { PersonMergeCandidate(rollupId: $0.rollupId, name: $0.name, reason: $0.reason) }
+    }
+
+    /// Records a user "merge" correction (a must-link `PersonClusterOverride`) between this rollup and
+    /// `candidate`, re-consolidates so the change takes effect immediately, then dismisses.
+    private func merge(with candidate: PersonMergeCandidate) async {
+        guard let store = appState.personMentionStore,
+              let pipeline = appState.indexingPipeline,
+              let myRollup = effectiveRollupId else { return }
+        isMerging = true
+        defer { isMerging = false }
+        guard let mine = try? await store.representativeMember(forRollupId: myRollup),
+              let theirs = try? await store.representativeMember(forRollupId: candidate.rollupId) else { return }
+        PersonClusterOverrideStore.merge((volumeId: mine.volumeId, ref: mine.ref),
+                                         (volumeId: theirs.volumeId, ref: theirs.ref),
+                                         context: modelContext)
+        try? modelContext.save()
+        let snapshot = PersonClusterOverrideStore.snapshot(context: modelContext)
+        try? await pipeline.consolidatePersonRollup(overrides: snapshot, forceReload: false)
+        onCorrection?()
+        dismiss()
+    }
+}
+
+// MARK: - PersonMergeCandidate
+
+/// A "possibly the same person" suggestion shown in `PersonIndexDetailSheet`.
+private struct PersonMergeCandidate: Identifiable {
+    let rollupId: Int
+    let name: String
+    let reason: String?
+    var id: Int { rollupId }
 }
