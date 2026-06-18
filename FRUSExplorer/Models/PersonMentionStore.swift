@@ -26,14 +26,37 @@ public struct PersonIndexEntry: Sendable, Identifiable {
     public let rollupId: Int?
     /// Volume this entry was built from (per-volume front-matter case), used to resolve the rollup.
     public let sourceVolumeId: String?
+    /// Number of distinct volumes this cluster spans (Phase 4), for the "N volumes" subtitle. 0 for
+    /// a per-volume front-matter entry.
+    public let volumeCount: Int
 
     public var id: String { rollupId.map { "r\($0)" } ?? entry.id }
 
-    public init(entry: PersonEntry, mentionCount: Int, rollupId: Int? = nil, sourceVolumeId: String? = nil) {
+    public init(entry: PersonEntry, mentionCount: Int, rollupId: Int? = nil,
+                sourceVolumeId: String? = nil, volumeCount: Int = 0) {
         self.entry = entry
         self.mentionCount = mentionCount
         self.rollupId = rollupId
         self.sourceVolumeId = sourceVolumeId
+        self.volumeCount = volumeCount
+    }
+}
+
+// MARK: - PersonRollupMember
+
+/// A single per-volume record (`(volumeId, ref)` + its `persons` row) belonging to a person rollup,
+/// used by the Phase 4 detail-sheet member drill-in and its "Separate" action.
+public struct PersonRollupMember: Sendable, Identifiable {
+    /// The volume this record comes from.
+    public let volumeId: String
+    /// The per-volume person entry (carries `ref`, name, role, era).
+    public let entry: PersonEntry
+
+    public var id: String { "\(volumeId)|\(entry.ref)" }
+
+    public init(volumeId: String, entry: PersonEntry) {
+        self.volumeId = volumeId
+        self.entry = entry
     }
 }
 
@@ -162,7 +185,7 @@ public actor PersonMentionStore {
     public func rollupEntry(forVolumeId volumeId: String, ref: String) throws -> PersonIndexEntry? {
         let sql = """
             SELECT r.rollup_id, r.canonical_name, r.description, r.mention_count,
-                   r.role, r.start_year, r.end_year
+                   r.role, r.start_year, r.end_year, r.volume_count
             FROM person_rollup_member m
             JOIN person_rollup r ON r.rollup_id = m.rollup_id
             WHERE m.volume_id = ? AND m.ref = ?
@@ -180,7 +203,8 @@ public actor PersonMentionStore {
                                 role: columnString(stmt, 4),
                                 startYear: columnIntOptional(stmt, 5),
                                 endYear: columnIntOptional(stmt, 6))
-        return PersonIndexEntry(entry: entry, mentionCount: cnt, rollupId: rid)
+        return PersonIndexEntry(entry: entry, mentionCount: cnt, rollupId: rid,
+                                volumeCount: Int(sqlite3_column_int64(stmt, 7)))
     }
 
     /// The (volumeId, documentId) pairs across the whole corpus that mention any member of a rollup.
@@ -229,6 +253,46 @@ public actor PersonMentionStore {
                             columnString(stmt, 2)))
         }
         return results
+    }
+
+    /// The per-volume member records of a rollup (Phase 4 drill-in), joined to their `persons` rows
+    /// for the per-volume name/role/era. Ordered by name then volume.
+    public func members(forRollupId rollupId: Int) throws -> [PersonRollupMember] {
+        let sql = """
+            SELECT m.volume_id, p.ref, p.name, p.description, p.role, p.start_year, p.end_year
+            FROM person_rollup_member m
+            JOIN persons p ON p.volume_id = m.volume_id AND p.ref = m.ref
+            WHERE m.rollup_id = ?
+            ORDER BY p.name, m.volume_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        var results: [PersonRollupMember] = []
+        while step(stmt) {
+            let entry = PersonEntry(ref: columnString(stmt, 1) ?? "",
+                                    name: columnString(stmt, 2) ?? "",
+                                    description: columnString(stmt, 3),
+                                    role: columnString(stmt, 4),
+                                    startYear: columnIntOptional(stmt, 5),
+                                    endYear: columnIntOptional(stmt, 6))
+            results.append(PersonRollupMember(volumeId: columnString(stmt, 0) ?? "", entry: entry))
+        }
+        return results
+    }
+
+    /// The set of rollup ids that have at least one pending "possibly the same" candidate (Phase 4
+    /// row hint). Loaded once for the whole People list rather than per row.
+    public func rollupIdsWithCandidates() throws -> Set<Int> {
+        let sql = """
+            SELECT rollup_id_a FROM person_cluster_candidate
+            UNION SELECT rollup_id_b FROM person_cluster_candidate
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var ids = Set<Int>()
+        while step(stmt) { ids.insert(Int(sqlite3_column_int64(stmt, 0))) }
+        return ids
     }
 
     /// A representative `(volumeId, ref)` member of a rollup, used to anchor a user correction
@@ -306,7 +370,8 @@ public actor PersonMentionStore {
     /// been built (no indexed volumes, or consolidation hasn't run yet).
     public func allPersonsSortedByName() throws -> [PersonIndexEntry] {
         let sql = """
-            SELECT rollup_id, canonical_name, description, mention_count, role, start_year, end_year
+            SELECT rollup_id, canonical_name, description, mention_count, role, start_year, end_year,
+                   volume_count
             FROM person_rollup
             ORDER BY canonical_name ASC
             """
@@ -322,7 +387,8 @@ public actor PersonMentionStore {
                                     role: columnString(stmt, 4),
                                     startYear: columnIntOptional(stmt, 5),
                                     endYear: columnIntOptional(stmt, 6))
-            results.append(PersonIndexEntry(entry: entry, mentionCount: count, rollupId: rid))
+            results.append(PersonIndexEntry(entry: entry, mentionCount: count, rollupId: rid,
+                                            volumeCount: Int(sqlite3_column_int64(stmt, 7))))
         }
         return results
     }

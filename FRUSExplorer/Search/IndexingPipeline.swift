@@ -332,7 +332,8 @@ public actor IndexingPipeline {
     /// v3 (Phase 2): membership comes from `PersonClusterer` (blocking + variant folding + era/role
     /// guardrails) and sub-threshold pairs land in `person_cluster_candidate`.
     /// v4 (Phase 3): user `PersonClusterOverride`s are applied as must-link/detach constraints.
-    public static let currentPersonRollupVersion: Int = 4
+    /// v5 (Phase 4): rollup carries `volume_count` (distinct volumes the cluster spans).
+    public static let currentPersonRollupVersion: Int = 5
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key tracking the override count the rollup was last built with, so a launch after
@@ -388,8 +389,9 @@ public actor IndexingPipeline {
             // One rollup per cluster (rollup_id = clusterIndex + 1) with aggregated metadata + members.
             let rollupStmt = try auxPrepare("""
                 INSERT INTO person_rollup
-                    (rollup_id, namekey, canonical_name, description, role, start_year, end_year, mention_count)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                    (rollup_id, namekey, canonical_name, description, role, start_year, end_year,
+                     volume_count, mention_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
                 """)
             defer { sqlite3_finalize(rollupStmt) }
             let memberStmt = try auxPrepare(
@@ -408,6 +410,7 @@ public actor IndexingPipeline {
                 auxBindOptional(rollupStmt, 5, agg.role)
                 auxBindOptionalInt(rollupStmt, 6, agg.startYear)
                 auxBindOptionalInt(rollupStmt, 7, agg.endYear)
+                sqlite3_bind_int64(rollupStmt, 8, Int64(agg.volumeCount))
                 try auxStep(rollupStmt)
                 sqlite3_reset(rollupStmt)
 
@@ -544,13 +547,15 @@ public actor IndexingPipeline {
         let starts: [Int] = members.compactMap(\.effectiveStartYear)
         let ends: [Int] = members.compactMap(\.effectiveEndYear)
         let namekey = canonical.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let volumeCount = Set(members.map(\.volumeId)).count
         return RollupAggregate(
             canonicalName: canonical,
             namekey: namekey,
             description: description,
             role: role,
             startYear: starts.min(),
-            endYear: ends.max()
+            endYear: ends.max(),
+            volumeCount: volumeCount
         )
     }
 
@@ -3059,6 +3064,8 @@ public actor IndexingPipeline {
         try? exec("ALTER TABLE person_rollup ADD COLUMN role TEXT")
         try? exec("ALTER TABLE person_rollup ADD COLUMN start_year INTEGER")
         try? exec("ALTER TABLE person_rollup ADD COLUMN end_year INTEGER")
+        // Distinct volumes a cluster spans (Phase 4), for the "N volumes" row subtitle.
+        try? exec("ALTER TABLE person_rollup ADD COLUMN volume_count INTEGER NOT NULL DEFAULT 0")
 
         // Sub-threshold "possibly the same person" suggestions (Phase 2). The clusterer records pairs
         // of rollups it declined to auto-merge (under-merge bias) for later user confirmation; never
@@ -4370,6 +4377,7 @@ private struct RollupAggregate {
     let role: String?
     let startYear: Int?
     let endYear: Int?
+    let volumeCount: Int
 }
 
 private struct TermRow: Sendable {
