@@ -210,6 +210,30 @@ A filter bar at the top of the Corpus Browser lets you narrow the display by:
 - **Date range** — Slide to restrict volumes to a particular period.
 - **Subject tags** — Pick from the bundled subject-tag taxonomy to show only volumes tagged with relevant topics.
 
+### 4.4 The People Browser
+
+The Corpus Browser toolbar includes a **People** button (a two-person icon). Click it to open a reconciled, corpus-wide index of everyone named across the volumes you've indexed — a single alphabetical list rather than a per-volume one.
+
+`[SCREENSHOT: People browser sheet on macOS showing the alphabetical list with role subtitles and mention counts]`
+
+The same person frequently appears across many volumes under slightly different name forms ("Kissinger, Henry A.", "Kissinger, Henry", "Kissinger, Henry A. Laurence"). FRUS Explorer consolidates these into **one identity**, so you don't have to chase the same person through a dozen separate entries. Each row shows:
+
+- the person's **canonical name**;
+- a subtitle combining their **role** and **active years** (e.g. *Secretary of State · 1973–1977*) where the volume's List of Persons supplied them;
+- a **mention count** — the number of distinct documents referencing this identity across the whole corpus;
+- a **reconciled-identity** seal when the entry has been matched to the Office of the Historian's people authority file.
+
+Use the **search field** to filter the list by name; click a person to open their detail panel.
+
+`[SCREENSHOT: Person detail on macOS showing the reconciled-identity seal, mention count, active years, Find all mentions, and the member record list]`
+
+- **Find all mentions** runs a person-scoped search returning every document that references this identity (see Section 5).
+- **Records in This Identity** lists each underlying `(volume, ref)` record that was folded into this person; click **Separate** on any record that is actually a different person to split it out. Your correction syncs across your devices via iCloud and is reapplied whenever the index is rebuilt.
+- When the app is uncertain whether two identities are the same person, it surfaces a **"possibly the same person"** suggestion with a **Merge** action.
+- Reconciled identities that carry an authority id show a **View on VIAF** link to the external authority record.
+
+> The consolidation is deliberately cautious: when in doubt it keeps identities **separate** rather than merging two different people. Your merge/separate corrections always take precedence.
+
 ---
 
 ## 5. Searching Documents

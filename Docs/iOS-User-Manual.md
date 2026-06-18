@@ -162,7 +162,7 @@ When you open a document for reading, its toolbar gathers every contextual actio
 
 The **Browse** tab is where you navigate the FRUS corpus by its natural structure: subseries (publication eras), volumes, and individual documents.
 
-`[SCREENSHOT: Browse tab showing a list of subseries]`
+![Browse tab — the FRUS Corpus root showing the People entry above the subseries list, with the Chronology and Analytics buttons in the toolbar.](screenshots/ios/browse-corpus.png)
 
 ### 4.1 Navigating the Hierarchy
 
@@ -203,13 +203,39 @@ Two buttons in the Browse toolbar open corpus-wide tools as sheets without leavi
 
 `[SCREENSHOT: Browse toolbar showing the Chronology control (SF Symbol: calendar.day.timeline.left) and the Analytics control (SF Symbol: chart.bar.xaxis)]`
 
+### 4.5 The People Browser
+
+At the very top of the Browse screen, above the subseries list, is a **People** row. Tap it to open a reconciled, corpus-wide index of everyone named across the volumes you've indexed — a single alphabetical list rather than a per-volume one.
+
+![People browser on iPhone — a single alphabetical list of reconciled identities, each with a role · active-years subtitle and a corpus-wide mention count; a reconciled-identity seal appears on matched entries.](screenshots/ios/people-list.png)
+
+The same person often appears across many volumes under slightly different name forms ("Kissinger, Henry A.", "Kissinger, Henry", "Kissinger, Henry A. Laurence"). FRUS Explorer consolidates these into **one identity** so you don't have to chase the same person through a dozen separate entries. Each row shows:
+
+- the person's **canonical name**;
+- a subtitle combining their **role** and **active years** (e.g. *Secretary of State · 1973–1977*) where the volume's List of Persons supplied them;
+- a **mention count** badge — the number of distinct documents that reference this identity across the whole corpus;
+- a small **reconciled-identity** seal when the entry has been matched to the Office of the Historian's people authority file.
+
+Use the **search field** at the top to filter the list by name.
+
+Tap a person to open their **detail sheet**:
+
+![Person detail sheet on iPhone — the reconciled-identity seal under the name, the corpus-wide mention count and active-year span, a Find all mentions button, and the list of underlying volume records each with a Separate action.](screenshots/ios/people-detail.png)
+
+- **Find all mentions** runs a person-scoped search returning every document that references this identity (see Section 5).
+- **Records in This Identity** lists each underlying `(volume, ref)` record that was folded into this person. If one of them is actually a different person, swipe or tap **Separate** to split it out — your correction syncs across your devices via iCloud and is reapplied whenever the index is rebuilt.
+- When the app is uncertain whether two identities are the same person, it surfaces a **"possibly the same person"** suggestion with a **Merge** action so you can confirm.
+- Reconciled identities that carry an authority id show a **View on VIAF** link to the external authority record.
+
+> The consolidation is deliberately cautious: when in doubt it keeps identities **separate** (so you may occasionally see two entries for one person) rather than merging two different people. Your merge/separate corrections always take precedence.
+
 ---
 
 ## 5. Searching Documents
 
 The **Search** tab provides full-text search across every volume you've downloaded and indexed, powered by the same search engine used for the State Department's own archive — ranked by relevance using the BM25 algorithm with English-language stemming (so searching for "negotiate" also matches "negotiation," "negotiated," and so on).
 
-`[SCREENSHOT: Search tab with results list and a query in the search field]`
+![Search tab on iPhone — a keyword query in the field, the filter / timeline / overflow action bar pinned below it, and a ranked results list with highlighted snippets, citations, and dates.](screenshots/ios/search-results.png)
 
 ### 5.1 Basic Search
 
@@ -268,7 +294,7 @@ Tap the citation-lookup button (a magnifying glass over quotation marks) in the 
 
 Tapping any document — from Browse, Search, Research, or a Collection — opens it in the document view, where the original TEI-encoded text is rendered as readable, well-formatted prose: headings, datelines, paragraphs, footnotes, editorial notes, and cross-reference links all appear as the State Department originally published them, adapted for your screen.
 
-`[SCREENSHOT: Document view showing a rendered FRUS document with heading, dateline, and body text]`
+![Document view on iPhone — a rendered FRUS document with its heading, dateline, body text, linked person names and terms, and footnote markers, with the document toolbar across the top.](screenshots/ios/document-view.png)
 
 ### 6.1 Navigating Within a Document
 
@@ -479,7 +505,7 @@ If you have a NARA API key configured (see **Settings → Integrations**), Sourc
 
 Open Analytics from the chart-icon button in the Browse tab toolbar (Section 4.4), or via the handoff described below.
 
-`[SCREENSHOT: Corpus Analytics view showing a term-frequency chart across a date range]`
+![Corpus Analytics on iPhone — a term-frequency histogram for "Berlin" by year across the corpus, with the term field, year-range controls, and a "View in Search" handoff.](screenshots/ios/analytics.png)
 
 ### 13.1 Running an Analysis
 
@@ -503,7 +529,7 @@ The **Chronology** browser lets you pick a date range and read every indexed doc
 
 Open it from the **calendar-icon** button in the Browse tab toolbar (Section 4.4); it slides up as a sheet.
 
-`[SCREENSHOT: Chronology sheet on iPhone showing the From/To date pickers, the distribution chart, and the date-grouped document list]`
+![Chronology on iPhone — From/To date pickers, a stacked distribution chart with a per-subseries legend, "spans this period" and "extends beyond this range" sections, and the date-grouped document list below.](screenshots/ios/chronology.png)
 
 ### 14.1 Choosing a Range
 
@@ -552,7 +578,7 @@ In the **Research** tab, you can filter your notes, tags, and highlights to show
 
 The **Settings** tab gathers every app-wide preference, organized into clearly labeled sections.
 
-`[SCREENSHOT: Settings tab showing the full list of sections]`
+![Settings on iPhone — the grouped sections for Volumes (Downloads, Storage & Index), Research (User Tags, Projects, Summarization), Integrations, and Data.](screenshots/ios/settings.png)
 
 | Section | Contains |
 |---------|----------|
