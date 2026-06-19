@@ -401,7 +401,7 @@ FRUS documents frequently reference one another. The **Cross-Reference Graph** v
 
 Open the graph for any document by clicking **Graph** in the toolbar. The graph opens in its own window.
 
-`[SCREENSHOT: Cross-reference graph window showing the focus document and its references arranged left-to-right along a date axis, with a reference list panel on the right — the Graph toolbar control (SF Symbol: point.3.connected.trianglepath.dotted) and the reference-list toggle (SF Symbol: sidebar.trailing) labeled]`
+![Cross-reference graph window showing the focus document and its references arranged left-to-right along a date axis, with a reference list panel on the right.](screenshots/macos/cross-reference-graph.png)
 
 ### 8.1 Reading the Graph
 
