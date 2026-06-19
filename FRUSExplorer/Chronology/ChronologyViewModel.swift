@@ -100,6 +100,12 @@ final class ChronologyViewModel {
     /// Chart legend series (coloured volumes + an optional folded "Other"), largest first.
     var chartSeries: [ChronologyChartSeries] = []
 
+    /// Per-chart-bucket finer breakdown for the hover magnifier, keyed by chart `bucketKey`.
+    /// Populated only in the full-distribution state (`chartShowsFullDistribution`), where the
+    /// document list is capped and the row-based breakdown would be incomplete; the magnifier
+    /// reads these aggregate counts instead so it still works on wide ranges.
+    var aggregatedMagnifierBars: [String: [ChronologyMagnifierBar]] = [:]
+
     /// Total **placed** documents currently shown across all sections.
     var totalShown: Int = 0
     /// `true` once a load has completed (drives the prompt vs results state).
@@ -206,6 +212,10 @@ final class ChronologyViewModel {
                     chartSeries = chart.series
                     totalShown = counts.reduce(0) { $0 + $1.count }
                     chartShowsFullDistribution = true
+                    // Precompute the hover magnifier's finer breakdown from aggregates, so it
+                    // still works even though the document list (its usual source) is capped.
+                    aggregatedMagnifierBars = await magnifierBars(
+                        pipeline: pipeline, range: range, viewBucket: viewBucket, dayCounts: counts)
                 } else {
                     // Defensive fallback: keep the row-derived chart if the aggregate
                     // query returned nothing (e.g. only spanning documents).
@@ -213,12 +223,14 @@ final class ChronologyViewModel {
                     chartBuckets = chart.buckets
                     chartSeries = chart.series
                     chartShowsFullDistribution = false
+                    aggregatedMagnifierBars = [:]
                 }
             } else {
                 let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
                 chartBuckets = chart.buckets
                 chartSeries = chart.series
                 chartShowsFullDistribution = false
+                aggregatedMagnifierBars = [:]
             }
             hasLoaded = true
         } catch {
@@ -230,7 +242,38 @@ final class ChronologyViewModel {
             chartSeries = []
             totalShown = 0
             chartShowsFullDistribution = false
+            aggregatedMagnifierBars = [:]
             hasLoaded = true
+        }
+    }
+
+    /// Builds the hover-magnifier breakdown for every chart bucket from aggregate counts,
+    /// one granularity finer than the chart (year → months, month → days, day → volumes).
+    /// Runs the finer query off the same range as the chart; reuses `dayCounts` for the
+    /// day-bucket case so no extra query is needed.
+    private func magnifierBars(
+        pipeline: IndexingPipeline,
+        range: DateRange,
+        viewBucket: DateBucket,
+        dayCounts: [(bucketKey: String, volumeId: String, count: Int)]
+    ) async -> [String: [ChronologyMagnifierBar]] {
+        switch viewBucket {
+        case .year:
+            let months = (try? await pipeline.dateBucketVolumeCounts(
+                range, bucket: .month, scopeVolumeIds: nil)) ?? []
+            return Self.magnifierBarsByBucket(counts: months,
+                                              parentPrefix: DateBucket.year.prefixLength,
+                                              volumeBreakdown: false)
+        case .month:
+            let days = (try? await pipeline.dateBucketVolumeCounts(
+                range, bucket: .day, scopeVolumeIds: nil)) ?? []
+            return Self.magnifierBarsByBucket(counts: days,
+                                              parentPrefix: DateBucket.month.prefixLength,
+                                              volumeBreakdown: false)
+        case .day:
+            return Self.magnifierBarsByBucket(counts: dayCounts,
+                                              parentPrefix: DateBucket.day.prefixLength,
+                                              volumeBreakdown: true)
         }
     }
 
@@ -368,6 +411,45 @@ final class ChronologyViewModel {
         let parts = key.split(separator: "-")
         guard parts.count >= 3 else { return key }
         return String(Int(parts[2]) ?? 0)
+    }
+
+    /// Short label for a date bucket key — day-of-month for a `yyyy-MM-dd` key, short month
+    /// name for a `yyyy-MM` key, else the key verbatim.
+    nonisolated private static func dateBucketLabel(forKey key: String) -> String {
+        if key.count >= 10 { return dayLabel(fromDayKey: key) }
+        if key.count >= 7  { return monthLabel(fromMonthKey: key) }
+        return key
+    }
+
+    /// Groups finer-grained `(bucketKey, volumeId, count)` aggregates under their parent chart
+    /// bucket (the first `parentPrefix` characters of the finer key) to build the hover
+    /// magnifier's bars. With `volumeBreakdown` the bars are per volume (largest first, carrying
+    /// the volume's series key); otherwise they are per finer date bucket (chronological, no
+    /// series key) — matching `magnifierBreakdown(for:)`'s row-based output.
+    nonisolated static func magnifierBarsByBucket(
+        counts: [(bucketKey: String, volumeId: String, count: Int)],
+        parentPrefix: Int,
+        volumeBreakdown: Bool
+    ) -> [String: [ChronologyMagnifierBar]] {
+        var grouped: [String: [String: Int]] = [:]
+        for c in counts {
+            let parent = String(c.bucketKey.prefix(parentPrefix))
+            let inner = volumeBreakdown ? c.volumeId : c.bucketKey
+            grouped[parent, default: [:]][inner, default: 0] += c.count
+        }
+        var result: [String: [ChronologyMagnifierBar]] = [:]
+        for (parent, inner) in grouped {
+            if volumeBreakdown {
+                result[parent] = inner
+                    .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+                    .map { ChronologyMagnifierBar(label: $0.key, count: $0.value, seriesKey: $0.key) }
+            } else {
+                result[parent] = inner
+                    .sorted { $0.key < $1.key }
+                    .map { ChronologyMagnifierBar(label: dateBucketLabel(forKey: $0.key), count: $0.value, seriesKey: nil) }
+            }
+        }
+        return result
     }
 
     /// Start instant of the bucket (year/month/day) containing `date`.
