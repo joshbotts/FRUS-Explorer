@@ -107,21 +107,32 @@ struct SourceExplorerView: View {
     @Environment(\.openURL) private var openURL
     @Environment(AppState.self) private var appState
 
+    /// Whether the document actually carries an archival source note. When `false` (chiefly
+    /// pre-1906 documents, which carry none), the explorer leads with the country-series
+    /// classification heuristic rather than presenting an "unrecognized note" parse failure.
+    private var hasSourceNote: Bool {
+        !rawSourceNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     // MARK: - Body
 
     var body: some View {
         NavigationStack {
             Form {
-                if !rawSourceNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if hasSourceNote {
                     rawNoteSection
                 }
 
-                if let parsed {
+                // Only parse provenance when a note exists; an absent note is not an
+                // "unrecognized" one.
+                if hasSourceNote, let parsed {
                     provenanceSection(parsed: parsed)
                 }
 
                 if !countryResolutions.isEmpty {
                     countrySeriesSection
+                } else if !hasSourceNote {
+                    noSourceNoteSection
                 }
 
                 if indexingPipeline != nil {
@@ -427,6 +438,44 @@ struct SourceExplorerView: View {
         } header: {
             Text(String(localized: "source.explorer.countrySeries.header",
                         defaultValue: "Digitized Diplomatic Records (pre-1906)"))
+        }
+    }
+
+    /// Shown for a document with no source note that the country-series classifier could not
+    /// resolve to a specific roll (e.g. 1906–1910 Numerical File documents, whose case-number
+    /// filing can't be predicted from metadata). Names the likely series for the era instead
+    /// of presenting an "unrecognized note" parse failure.
+    @ViewBuilder
+    private var noSourceNoteSection: some View {
+        Section {
+            Text(String(localized: "source.explorer.noNote.detail",
+                        defaultValue: "This document carries no archival source note, and its exact filing couldn't be predicted from its dateline and FRUS chapter."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let series = predictedSeriesNote {
+                Text(series)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text(String(localized: "source.explorer.noNote.header",
+                        defaultValue: "Archival Source"))
+        }
+    }
+
+    /// A plain-language note on the likely State Department file series for a note-less
+    /// document, inferred from its year. Used when no specific roll can be predicted.
+    private var predictedSeriesNote: String? {
+        guard let year = documentYear else { return nil }
+        switch year {
+        case ..<1906:
+            return String(localized: "source.explorer.noNote.series.diplomatic",
+                          defaultValue: "Documents of this era are held in the country-arranged diplomatic series (Despatches and Instructions) at the National Archives, Record Group 59.")
+        case 1906...1910:
+            return String(localized: "source.explorer.noNote.series.numerical",
+                          defaultValue: "Documents of this era are filed in the 1906–1910 Numerical File at the National Archives, Record Group 59, arranged by case number rather than by country or date.")
+        default:
+            return nil
         }
     }
 
