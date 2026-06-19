@@ -381,25 +381,28 @@ struct SourceExplorerView: View {
               let year = documentYear, year < 1906,
               let index = CentralFilesIndexStore.shared else { return }
 
-        // Resolve the FRUS chapter (country) from the cached volume structure.
-        var chapterCountry: String? = nil
+        // Resolve the section chain to the document from the cached volume structure. The
+        // country (e.g. "Great Britain.") is usually a parent chapter, not the leaf subject
+        // section, so we try each title in the chain below.
+        var path: [String] = []
         if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId,
            let structure = try? await pipeline.cachedVolumeStructure(forVolumeId: volumeId) {
-            chapterCountry = CentralFilesClassifier.chapterCountry(in: structure, documentId: docId)
+            path = CentralFilesClassifier.documentSectionPath(in: structure, documentId: docId)
         }
-
-        let classifications = CentralFilesClassifier.classify(
-            header: documentHeader ?? "", dateline: dateline, chapterCountry: chapterCountry)
-        guard !classifications.isEmpty else { return }
+        guard !path.isEmpty else { return }
 
         let dateISO = CentralFilesClassifier.datelineDateISO(from: dateline)
         var resolutions: [CountrySeriesResolution] = []
-        for classification in classifications {
-            guard let geoKey = classification.geoKeys.first,
-                  let series = index.series(category: classification.category) else { continue }
-            let rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
-            if !rolls.isEmpty {
-                resolutions.append(CountrySeriesResolution(classification: classification, rolls: rolls))
+        for title in path where resolutions.isEmpty {
+            let classifications = CentralFilesClassifier.classify(
+                header: documentHeader ?? "", dateline: dateline, chapterCountry: title)
+            for classification in classifications {
+                guard let geoKey = classification.geoKeys.first,
+                      let series = index.series(category: classification.category) else { continue }
+                let rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
+                if !rolls.isEmpty {
+                    resolutions.append(CountrySeriesResolution(classification: classification, rolls: rolls))
+                }
             }
         }
         countryResolutions = resolutions
