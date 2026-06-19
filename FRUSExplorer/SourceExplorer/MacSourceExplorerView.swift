@@ -169,7 +169,10 @@ struct MacSourceExplorerView: View {
             VStack(alignment: .leading, spacing: 14) {
                 GroupBox(String(localized: "source.explorer.rawNote.header",
                                 defaultValue: "Source Note")) {
-                    Text(rawSourceNote)
+                    Text(hasSourceNote
+                         ? rawSourceNote
+                         : String(localized: "source.explorer.noNote.body",
+                                  defaultValue: "This document has no archival source note. Its likely filing is predicted from its dateline and FRUS chapter — see the resolution on the right."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
@@ -177,7 +180,9 @@ struct MacSourceExplorerView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                if let parsed {
+                // Only show parsed provenance when there is a note to parse; an absent note
+                // is not an "unrecognized" one.
+                if hasSourceNote, let parsed {
                     provenanceBox(for: parsed)
                 }
             }
@@ -191,22 +196,28 @@ struct MacSourceExplorerView: View {
     private var rightColumn: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 14) {
-                if showsManualSearch {
-                    manualSearchField
+                if hasSourceNote {
+                    // A real note exists — parse it and resolve via the NARA Catalog.
+                    if showsManualSearch {
+                        manualSearchField
+                    }
+                    if case .lotFile(_, let lot, _) = parsed,
+                       let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
+                        bundledLotBox(entry)
+                    }
+                    if let parsed {
+                        naraBox(for: parsed)
+                    } else {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .padding(40)
+                    }
                 }
-                if case .lotFile(_, let lot, _) = parsed,
-                   let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
-                    bundledLotBox(entry)
-                }
-                if let parsed {
-                    naraBox(for: parsed)
-                } else {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(40)
-                }
+                // Country-series classification (pre-1906 documents with no source note).
                 if !countryResolutions.isEmpty {
                     countrySeriesBox
+                } else if !hasSourceNote {
+                    noSourceNoteBox
                 }
                 if indexingPipeline != nil {
                     relatedDocumentsBox
@@ -217,6 +228,14 @@ struct MacSourceExplorerView: View {
     }
 
     // MARK: - Manual Search
+
+    /// Whether the document actually carries an archival source note. When `false` (chiefly
+    /// pre-1906 documents, which carry none), the explorer leads with the country-series
+    /// classification heuristics rather than parsing — and presenting failure for — a note
+    /// that does not exist.
+    private var hasSourceNote: Bool {
+        !rawSourceNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     private var showsManualSearch: Bool {
         switch parsed {
@@ -282,7 +301,12 @@ struct MacSourceExplorerView: View {
                                                defaultValue: "Type"),
                                   value: String(localized: "source.explorer.lotFile.typeValue",
                                                defaultValue: "State Dept. Lot File"))
-                    if let r = rg { provenanceRow(label: "Record Group", value: "RG \(r)") }
+                    if let r = rg {
+                        // `rg` already carries the "RG-" prefix (e.g. "RG-59"); normalise to
+                        // "RG 59" so the row doesn't read "RG RG-59".
+                        provenanceRow(label: "Record Group",
+                                      value: r.replacingOccurrences(of: "RG-", with: "RG "))
+                    }
                     provenanceRow(label: String(localized: "source.explorer.lotFile.lot",
                                                defaultValue: "Lot Number"),
                                   value: lot)
@@ -642,6 +666,45 @@ struct MacSourceExplorerView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// Shown for a document with no source note that the country-series classifier could not
+    /// resolve to a specific roll (e.g. 1906–1910 Numerical File documents, whose case-number
+    /// filing can't be predicted from metadata). Names the likely series for the era instead
+    /// of presenting an "unrecognized note" parse failure.
+    @ViewBuilder
+    private var noSourceNoteBox: some View {
+        GroupBox(String(localized: "source.explorer.noNote.header",
+                        defaultValue: "Archival Source")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(String(localized: "source.explorer.noNote.detail",
+                            defaultValue: "This document carries no archival source note, and its exact filing couldn't be predicted from its dateline and FRUS chapter."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let series = predictedSeriesNote {
+                    Text(series)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// A plain-language note on the likely State Department file series for a note-less
+    /// document, inferred from its year. Used when no specific roll can be predicted.
+    private var predictedSeriesNote: String? {
+        guard let year = documentYear else { return nil }
+        switch year {
+        case ..<1906:
+            return String(localized: "source.explorer.noNote.series.diplomatic",
+                          defaultValue: "Documents of this era are held in the country-arranged diplomatic series (Despatches and Instructions) at the National Archives, Record Group 59.")
+        case 1906...1910:
+            return String(localized: "source.explorer.noNote.series.numerical",
+                          defaultValue: "Documents of this era are filed in the 1906–1910 Numerical File at the National Archives, Record Group 59, arranged by case number rather than by country or date.")
+        default:
+            return nil
         }
     }
 
