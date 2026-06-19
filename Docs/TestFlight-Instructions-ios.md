@@ -18,6 +18,8 @@ In Browse, open a volume, tap a document, and read; use Previous/Next to move be
 - A reference to a document or page ("Document 42," "pp. 311–313") → jumps there, even in another volume; if it isn't downloaded, you'll see a relationship graph instead.
 - A web link → opens in your browser.
 
+To look someone up across the whole corpus, open Browse → **People** (the row above the subseries list): an alphabetical, searchable index of everyone mentioned in your indexed volumes. Tap a name for their description, a mention count, and **Find all mentions**.
+
 From the toolbar, **Source Explorer** resolves where the document came from (NARA record group, lot file, decimal/central file, presidential library, or CIA collection), links to the right finding aid, and lists other documents from the same source.
 
 Tap many of these (and a few source notes); report any that do nothing, error, or land wrong.
@@ -39,11 +41,11 @@ Two Browse-tab toolbar buttons open corpus-wide tools as sheets:
 
 ## Step 5 — Search, organize, summarize, export
 
-Use the Search tab for full-text queries (a phrase, or AND/OR; scope to specific volumes). Add highlights, notes, and tags as you read — the Research tab collects them. With Apple Intelligence, try **Summarize with AI** (on-device). Gather documents into Collections you can **export** (PDF, HTML, DOCX, Zotero/RIS), copy a **citation**, or **Send to Zotero**.
+Use the Search tab for full-text queries (a phrase, or AND/OR; scope to specific volumes); long result sets load more as you scroll. Add highlights, notes, and tags as you read — the Research tab collects them. With Apple Intelligence, try **Summarize with AI** (on-device). Gather documents into Collections you can **export** (PDF, HTML, DOCX, Zotero/RIS), copy a **citation**, or **Send to Zotero**.
 
 ## What feedback to provide
 
-Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions, the Chronology and Analytics charts, AI summaries, and searches returning too few or too many results. Tips appear to help you find features; tell me if anything's confusing.
+Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions, the Chronology and Analytics charts, the People index (names that look merged, split, or out of place), AI summaries, and searches returning too few or too many results. Tips appear to help you find features; tell me if anything's confusing.
 
 ## How to report an issue
 

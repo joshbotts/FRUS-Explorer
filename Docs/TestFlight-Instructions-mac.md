@@ -18,6 +18,8 @@ Open a volume, select a document, and read; move with the Previous/Next buttons,
 - A reference to a document or page ("Document 42," "pp. 311–313") → navigates there, even across volumes; if that volume isn't downloaded, the relationship graph opens instead.
 - A web link → opens in your browser.
 
+To look someone up across the whole corpus, the Corpus Browser lists **People** at the top: an alphabetical, searchable index of everyone mentioned in your indexed volumes. Click a name for their description, a mention count, and **Find all mentions**.
+
 Also click the **source note** at the top of the document. The **Source Explorer** resolves where it came from — a National Archives record group, lot file, decimal/central file, presidential library, or CIA collection — with links to the right finding aid and a list of other indexed documents sharing that source.
 
 Click many of these (and a few source notes); report any that do nothing, error, or land wrong.
@@ -41,7 +43,7 @@ Search (⌘F) opens its own window that stays open while you read — try a phra
 
 ## What to provide feedback on
 
-Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions (hover/click/zoom/pan/brush), the Chronology and Analytics charts, multi-window behavior, AI summaries, and searches returning too few or too many results.
+Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions (hover/click/zoom/pan/brush), the Chronology and Analytics charts, the People index (names that look merged, split, or out of place), multi-window behavior, AI summaries, and searches returning too few or too many results.
 
 ## How to report an issue
 
