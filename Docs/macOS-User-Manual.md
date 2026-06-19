@@ -713,7 +713,7 @@ Above the list, a stacked bar chart shows the document distribution across the r
 
 - **Spans this period** — Wide-span documents (chiefly editorial notes that FRUS stamps with a whole multi-year range) are separated into their own collapsible section rather than smeared across the day-level chart.
 - **Extends beyond this range** — Documents whose *uncertain* date interval begins before or ends after your range are reported in a dedicated section (each annotated "begins YYYY · before range" / "ends YYYY · after range") instead of distorting the chart.
-- **Hover magnifier** — Hovering a bar reveals a floating card breaking that slice down one level finer (a year into months, a month into days, a day by volume), without changing the axis. For very wide ranges where the list is capped (Section 14.1), the magnifier's finer breakdown is unavailable — the bars still show true totals on hover.
+- **Hover magnifier** — Hovering a bar reveals a floating card breaking that slice down one level finer (a year into months, a month into days, a day by volume), without changing the axis. This works for any range, including very wide ones where the document list is capped (Section 14.1) — the breakdown is computed from the same aggregate counts as the chart.
 
 `[SCREENSHOT: Chronology distribution chart with the hover magnifier card showing a finer month-by-month breakdown of the hovered year]`
 
