@@ -100,6 +100,19 @@ enum CentralFilesClassifier {
                                   defaultValue: "Dateline is a foreign legation in Washington — a note from the foreign mission."))]
         }
 
+        // Fallback: datelined abroad — no Washington / Department of State marker. The
+        // dateline frequently gives only the city (e.g. "Paris, December 11, 1863.") without
+        // spelling out "Legation of the United States". In these country-arranged volumes such
+        // documents are overwhelmingly despatches from the U.S. mission (or enclosures filmed
+        // with them), so resolve to the country's despatch series.
+        if !dl.trimmingCharacters(in: .whitespaces).isEmpty,
+           !dl.contains("washington"), !dl.contains("department of state") {
+            return [CentralFilesClassification(
+                category: .despatches, geoKeys: geoKeys, confidence: .medium,
+                rationale: String(localized: "centralFiles.rationale.despatchAbroad",
+                                  defaultValue: "Datelined abroad — likely a despatch from the U.S. mission (or an enclosure filed with it)."))]
+        }
+
         return []
     }
 

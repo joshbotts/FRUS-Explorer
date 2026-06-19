@@ -88,6 +88,26 @@ struct CentralFilesClassifierTests {
         #expect(none.isEmpty)
     }
 
+    @Test("Bare-city foreign dateline (no 'Legation' marker) → despatch")
+    func classifiesBareCityDespatch() {
+        // frus1864p3/d6: U.S. Minister Dayton to Secretary Seward, datelined only "Paris…".
+        let d6 = CentralFilesClassifier.classify(
+            header: "Mr. Dayton to Mr. Seward.",
+            dateline: "Paris, December 11, 1863.",
+            chapterCountry: "France")
+        #expect(d6.count == 1)
+        #expect(d6.first?.category == .despatches)
+        #expect(d6.first?.geoKeys == ["france"])
+        #expect(d6.first?.confidence == .medium)
+
+        // A Washington / Department dateline must NOT be swept into the despatch fallback.
+        let outbound = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Mr. Dayton.",
+            dateline: "Department of State, Washington, December 11, 1863.",
+            chapterCountry: "France")
+        #expect(outbound.map(\.category) == [.instructions, .notesTo])
+    }
+
     // MARK: Dateline date parsing
 
     @Test("Parses the sent date from a dateline, ignoring a Received clause")
@@ -154,5 +174,22 @@ struct CentralFilesClassifierTests {
         let nf = index.series(category: .notesFrom)?
             .rolls(geoKey: "venezuela", dateISO: "1893-10-26") ?? []
         #expect(nf.contains { $0.naId == "188287901" })
+    }
+
+    @Test("Bare-city Paris despatch resolves to the France despatch roll (NAID 188687259)")
+    func resolvesParisDespatchEndToEnd() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        // frus1864p3/d6 — datelined only "Paris…", so the despatch fallback applies.
+        let c = try #require(CentralFilesClassifier.classify(
+            header: "Mr. Dayton to Mr. Seward.",
+            dateline: "Paris, December 11, 1863.",
+            chapterCountry: "France").first)
+        #expect(c.category == .despatches)
+        let dateISO = CentralFilesClassifier.datelineDateISO(from: "Paris, December 11, 1863.")
+        #expect(dateISO == "1863-12-11")
+        let rolls = index.series(category: c.category)?
+            .rolls(geoKey: c.geoKeys[0], dateISO: dateISO) ?? []
+        // "Oct. 23, 1863 – June 8, 1864" — the roll that holds the document's date.
+        #expect(rolls.contains { $0.naId == "188687259" })
     }
 }
