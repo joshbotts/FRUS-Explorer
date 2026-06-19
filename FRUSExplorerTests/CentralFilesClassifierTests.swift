@@ -101,14 +101,26 @@ struct CentralFilesClassifierTests {
 
     // MARK: Chapter-country resolution from volume structure
 
-    @Test("Resolves the top-level chapter title containing a document")
-    func resolvesChapterCountry() {
-        let chapter = VolumeSection(
-            sectionId: "c1", divType: "compilation", title: "Great Britain.",
+    @Test("documentSectionPath returns the full ancestor chain, including a nested country")
+    func resolvesSectionPath() {
+        // Mirrors the real "Papers Relating to Foreign Affairs" nesting: a compilation
+        // wraps the country chapter, whose subject subchapters hold the documents.
+        let subchapter = VolumeSection(
+            sectionId: "sc1", divType: "subchapter",
+            title: "Correspondence respecting the capture of the Saxon.",
             documentIds: ["d229"], subsections: [])
-        let structure = VolumeStructure(volumeId: "frus1863p1", sections: [chapter])
-        #expect(CentralFilesClassifier.chapterCountry(in: structure, documentId: "d229") == "Great Britain")
-        #expect(CentralFilesClassifier.chapterCountry(in: structure, documentId: "d999") == nil)
+        let country = VolumeSection(
+            sectionId: "ch1", divType: "chapter", title: "Great Britain.",
+            documentIds: [], subsections: [subchapter])
+        let compilation = VolumeSection(
+            sectionId: "comp1", divType: "compilation", title: "Correspondence.",
+            documentIds: [], subsections: [country])
+        let structure = VolumeStructure(volumeId: "frus1864p1", sections: [compilation])
+
+        // The country sits in the middle of the chain — a flat top-level lookup would miss it.
+        #expect(CentralFilesClassifier.documentSectionPath(in: structure, documentId: "d229")
+                == ["Correspondence.", "Great Britain.", "Correspondence respecting the capture of the Saxon."])
+        #expect(CentralFilesClassifier.documentSectionPath(in: structure, documentId: "d999").isEmpty)
     }
 
     // MARK: End-to-end against the bundled index

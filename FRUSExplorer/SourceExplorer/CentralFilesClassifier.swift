@@ -123,18 +123,29 @@ enum CentralFilesClassifier {
         return String(format: "%04d-%02d-%02d", year, month, min(max(day, 1), 31))
     }
 
-    // MARK: - Chapter country
+    // MARK: - Section path
 
-    /// Returns the title of the top-level volume section (the country chapter, in
-    /// country-arranged volumes) that contains `documentId`, trimmed of trailing
-    /// punctuation. `nil` when the document isn't found in any top-level section.
-    static func chapterCountry(in structure: VolumeStructure, documentId: String) -> String? {
-        for section in structure.sections where section.allDocumentIds.contains(documentId) {
-            let title = section.title.trimmingCharacters(
-                in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ".")))
-            return title.isEmpty ? nil : title
+    /// The chain of section titles from the volume root down to the section that
+    /// **directly** contains `documentId` — e.g. `["Correspondence.", "Great Britain.",
+    /// "Correspondence respecting the capture of the Saxon…"]`.
+    ///
+    /// Pre-1906 "Papers Relating to Foreign Affairs" volumes nest the country (e.g.
+    /// "Great Britain.") as a chapter with subject subchapters beneath it — and the
+    /// documents live in those subchapters — so the country is rarely the top-level
+    /// section. Callers try each title in the returned chain to find the one that resolves
+    /// to a country series, rather than assuming a single "chapter country".
+    ///
+    /// Returns `[]` when the document isn't found in the structure.
+    static func documentSectionPath(in structure: VolumeStructure, documentId: String) -> [String] {
+        func search(_ sections: [VolumeSection], _ ancestors: [String]) -> [String]? {
+            for section in sections {
+                let chain = ancestors + [section.title]
+                if section.documentIds.contains(documentId) { return chain }
+                if let hit = search(section.subsections, chain) { return hit }
+            }
+            return nil
         }
-        return nil
+        return search(structure.sections, []) ?? []
     }
 }
 
