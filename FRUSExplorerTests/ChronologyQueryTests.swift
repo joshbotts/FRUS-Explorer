@@ -275,6 +275,29 @@ struct ChronologyAggregationTests {
         #expect(volumes.map(\.count) == [2, 1])
         #expect(volumes.map(\.seriesKey) == ["vA", "vB"])
     }
+
+    @Test("magnifierBarsByBucket builds finer breakdowns from aggregate counts (capped chart)")
+    func aggregateMagnifierBars() {
+        // Year chart buckets → month bars (volumes summed, chronological key, no series key).
+        let monthCounts: [(bucketKey: String, volumeId: String, count: Int)] = [
+            ("1972-01", "vA", 3), ("1972-01", "vB", 2), ("1972-03", "vA", 5), ("1973-06", "vA", 4)
+        ]
+        let byYear = ChronologyViewModel.magnifierBarsByBucket(
+            counts: monthCounts, parentPrefix: 4, volumeBreakdown: false)
+        #expect(byYear["1972"]?.map(\.count) == [5, 5])        // Jan (3+2) then Mar, ascending key
+        #expect(byYear["1972"]?.allSatisfy { $0.seriesKey == nil } == true)
+        #expect(byYear["1973"]?.map(\.count) == [4])
+
+        // Day chart bucket → per-volume bars (count desc, carrying the volume series key).
+        let dayCounts: [(bucketKey: String, volumeId: String, count: Int)] = [
+            ("1972-03-04", "vA", 2), ("1972-03-04", "vB", 5), ("1972-03-05", "vA", 1)
+        ]
+        let byDay = ChronologyViewModel.magnifierBarsByBucket(
+            counts: dayCounts, parentPrefix: 10, volumeBreakdown: true)
+        #expect(byDay["1972-03-04"]?.map(\.label) == ["vB", "vA"])
+        #expect(byDay["1972-03-04"]?.map(\.count) == [5, 2])
+        #expect(byDay["1972-03-04"]?.map(\.seriesKey) == ["vB", "vA"])
+    }
 }
 
 // MARK: - Volume Label Distillation

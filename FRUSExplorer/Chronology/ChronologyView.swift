@@ -571,15 +571,23 @@ struct ChronologyView: View {
                         }
                     }
                     .overlay(alignment: .topLeading) {
-                        // The magnifier breaks a bucket down from its loaded rows; when the
-                        // chart is the full-range aggregate (list capped), those rows aren't
-                        // all present, so the finer breakdown is suppressed.
-                        if !vm.chartShowsFullDistribution,
-                           let key = hoveredBucketKey,
-                           let group = vm.groups.first(where: { $0.bucketKey == key }) {
-                            magnifierCard(for: group)
-                                .offset(x: magnifierOffsetX(forBucketKey: key, proxy: proxy, geo: geo))
-                                .allowsHitTesting(false)
+                        // The magnifier breaks the hovered bucket down one level finer. For the
+                        // full-range aggregate chart (list capped) the loaded rows are
+                        // incomplete, so it reads the precomputed aggregate breakdown instead;
+                        // otherwise it derives the breakdown from the loaded date group.
+                        if let key = hoveredBucketKey {
+                            if vm.chartShowsFullDistribution,
+                               let bucket = vm.chartBuckets.first(where: { $0.bucketKey == key }) {
+                                magnifierCard(title: bucket.label,
+                                              total: bucket.total,
+                                              bars: vm.aggregatedMagnifierBars[key] ?? [])
+                                    .offset(x: magnifierOffsetX(forBucketKey: key, proxy: proxy, geo: geo))
+                                    .allowsHitTesting(false)
+                            } else if let group = vm.groups.first(where: { $0.bucketKey == key }) {
+                                magnifierCard(for: group)
+                                    .offset(x: magnifierOffsetX(forBucketKey: key, proxy: proxy, geo: geo))
+                                    .allowsHitTesting(false)
+                            }
                         }
                     }
                     #endif
@@ -614,19 +622,25 @@ struct ChronologyView: View {
     /// Card width — wider for the per-volume breakdown so the volume-specific titles read.
     private static let magnifierCardWidth: CGFloat = 210
 
+    /// Convenience for the row-based (non-capped) path, breaking a loaded date group down.
     private func magnifierCard(for group: ChronologyDateGroup) -> some View {
-        let bars = ChronologyViewModel.magnifierBreakdown(for: group)
+        magnifierCard(title: group.displayLabel,
+                      total: group.count,
+                      bars: ChronologyViewModel.magnifierBreakdown(for: group))
+    }
+
+    private func magnifierCard(title: String, total: Int, bars: [ChronologyMagnifierBar]) -> some View {
         let shown = Array(bars.prefix(Self.magnifierMaxBars))
         let maxCount = max(1, shown.map(\.count).max() ?? 1)
         // Day buckets break down by volume; the per-volume rows put the (long) volume name on
         // its own line so the titles stay legible. Month/year buckets break down by short
-        // date labels, which read fine inline.
-        let isVolumeBreakdown = group.granularity == .day
+        // date labels, which read fine inline. Volume bars carry a series key.
+        let isVolumeBreakdown = bars.first?.seriesKey != nil
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Text(group.displayLabel).font(.caption.weight(.semibold))
+                Text(title).font(.caption.weight(.semibold))
                 Spacer(minLength: 8)
-                Text(verbatim: "\(group.count)")
+                Text(verbatim: "\(total)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
