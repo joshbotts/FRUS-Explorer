@@ -943,6 +943,7 @@ struct AddByTagSheet: View {
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
 
     let collection: Collection
     let entries: [CollectionEntry]
@@ -966,6 +967,8 @@ struct ExportSheetView: View {
     @State private var preparingMessage: String? = nil
     /// Non-nil while summaries are being generated on demand.
     @State private var summaryGeneratingMessage: String? = nil
+    /// Non-nil after a successful "Send to Zotero Library" run (drives the result alert).
+    @State private var zoteroResult: ZoteroSendResult? = nil
 
     // MARK: - Ephemeral document reference (smart collection path)
 
@@ -1142,6 +1145,8 @@ struct ExportSheetView: View {
                     }
                 }
 
+                zoteroSendButton
+
                 Button {
                     Task { await runExport() }
                 } label: {
@@ -1163,6 +1168,7 @@ struct ExportSheetView: View {
         .sheet(item: $exportedURL) { url in
             MacExportCompleteView(url: url)
         }
+        .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
     }
     #endif
 
@@ -1255,6 +1261,7 @@ struct ExportSheetView: View {
                             )
                         }
                         .disabled(entries.isEmpty && collection.savedSearchId == nil)
+                        zoteroSendButton
                     }
                 }
 
@@ -1279,6 +1286,7 @@ struct ExportSheetView: View {
                 ShareSheet(url: url)
                     .ignoresSafeArea()
             }
+            .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
         }
     }
     #endif // os(iOS)
@@ -1397,6 +1405,97 @@ struct ExportSheetView: View {
             summaryPromptId: selectedPromptId,
             includeWordCloud: includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html)
         )
+    }
+
+    // MARK: - Send to Zotero Library (Web API)
+
+    /// `true` when a Zotero account is connected (Settings → Integrations → Zotero).
+    private var isZoteroConnected: Bool { ZoteroAccountStore.shared.isConnected }
+
+    /// A "Send to Zotero Library…" button, shown only when a Zotero account is
+    /// connected. Pushes the collection's documents — with tags and research notes —
+    /// straight into the user's Zotero library via the Web API.
+    @ViewBuilder
+    private var zoteroSendButton: some View {
+        if isZoteroConnected {
+            Button {
+                Task { await sendToZoteroLibrary() }
+            } label: {
+                Label(String(localized: "export.zotero.send",
+                             defaultValue: "Send to Zotero Library…"),
+                      systemImage: "books.vertical")
+            }
+            .disabled(isExporting)
+        }
+    }
+
+    /// Resolves the collection's documents (static or smart) and POSTs them to the
+    /// user's Zotero library, then surfaces a result alert.
+    private func sendToZoteroLibrary() async {
+        let store = ZoteroAccountStore.shared
+        guard let apiKey = store.retrieveKey(), let userID = store.userID else {
+            exportError = ZoteroAPIError.missingCredentials.errorDescription
+            return
+        }
+        isExporting = true
+        defer { isExporting = false; preparingMessage = nil }
+        do {
+            let docs = try await resolvedZoteroDocuments()
+            let items = docs.sorted { $0.sortOrder < $1.sortOrder }.compactMap(\.zoteroItem)
+            guard !items.isEmpty else {
+                exportError = String(localized: "export.zotero.empty",
+                                     defaultValue: "This collection has no documents to send.")
+                return
+            }
+            let result = try await ZoteroAPIClient().send(
+                items: items,
+                collectionName: collection.name.isEmpty ? nil : collection.name,
+                apiKey: apiKey,
+                userID: userID,
+                username: store.username
+            ) { message in
+                Task { @MainActor in preparingMessage = message }
+            }
+            appState.logEvent(.export(format: "zotero-api", documentCount: result.addedItems))
+            zoteroResult = result
+        } catch is CancellationError {
+            return
+        } catch {
+            exportError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    /// Resolves the collection's export documents for the Zotero send, handling both
+    /// the smart (saved-search) and static collection paths.
+    private func resolvedZoteroDocuments() async throws -> [CollectionExportDocument] {
+        if let searchId = collection.savedSearchId {
+            guard let searchService = appState.searchService else {
+                throw ZoteroAPIError.network(String(localized: "export.smart.noSearchService",
+                                                    defaultValue: "Search service unavailable."))
+            }
+            let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })
+            guard let savedSearch = try? modelContext.fetch(descriptor).first else { return [] }
+            let results = try await searchService.search(parameters: savedSearch.searchParameters)
+            let smart = results.enumerated().map {
+                SmartEntry(documentId: $0.element.documentId, volumeId: $0.element.volumeId, sortOrder: $0.offset)
+            }
+            return await resolveSmartDocuments(smart)
+        }
+        await prepareVolumes()
+        return try await resolveDocuments()
+    }
+
+    /// Localised body for the Zotero result alert.
+    private func zoteroResultMessage(_ result: ZoteroSendResult) -> String {
+        var line = String(format: String(localized: "export.zotero.result %lld %lld",
+                                          defaultValue: "Added %lld documents and %lld notes to Zotero."),
+                          Int64(result.addedItems), Int64(result.addedNotes))
+        if result.failedItems > 0 {
+            line += " " + String(format: String(localized: "export.zotero.result.failed %lld",
+                                                defaultValue: "%lld failed."),
+                                 Int64(result.failedItems))
+        }
+        return line
     }
 
     /// Downloads and indexes any volumes referenced by the collection that are not yet
@@ -1970,4 +2069,41 @@ private struct ShareSheet: UIViewControllerRepresentable {
 
 extension URL: @retroactive Identifiable {
     public var id: String { absoluteString }
+}
+
+// MARK: - Zotero result alert
+
+/// Presents the outcome of a "Send to Zotero Library" run, with an optional
+/// "View in Zotero" link. Shared by the export sheet's macOS and iOS bodies.
+private struct ZoteroResultAlertModifier: ViewModifier {
+    @Binding var result: ZoteroSendResult?
+    let message: (ZoteroSendResult) -> String
+    let openURL: OpenURLAction
+
+    func body(content: Content) -> some View {
+        content.alert(
+            String(localized: "export.zotero.result.title", defaultValue: "Sent to Zotero"),
+            isPresented: Binding(get: { result != nil }, set: { if !$0 { result = nil } }),
+            presenting: result
+        ) { result in
+            if let url = result.webURL {
+                Button(String(localized: "export.zotero.viewInZotero",
+                              defaultValue: "View in Zotero")) { openURL(url) }
+            }
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+        } message: { result in
+            Text(message(result))
+        }
+    }
+}
+
+extension View {
+    /// Attaches the Zotero "Sent to Zotero" result alert.
+    func zoteroResultAlert(
+        result: Binding<ZoteroSendResult?>,
+        message: @escaping (ZoteroSendResult) -> String,
+        openURL: OpenURLAction
+    ) -> some View {
+        modifier(ZoteroResultAlertModifier(result: result, message: message, openURL: openURL))
+    }
 }
