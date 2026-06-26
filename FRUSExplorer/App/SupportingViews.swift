@@ -2628,6 +2628,14 @@ struct CorpusBrowserWindowView: View {
             }
             Spacer()
         }
+        .contextMenu {
+            Button {
+                appState.pendingWordCloud = .subseries(subseriesId: sub)
+            } label: {
+                Label(String(localized: "corpus.subseries.wordCloud", defaultValue: "Word Cloud"),
+                      systemImage: "cloud")
+            }
+        }
     }
 
     @ViewBuilder
@@ -2768,6 +2776,14 @@ private struct SubseriesVolumeListView: View {
         .padding(.vertical, 2)
         .contentShape(Rectangle())
         .onTapGesture { sheetContent = .detail(vol) }
+        .contextMenu {
+            Button {
+                appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+            } label: {
+                Label(String(localized: "corpus.volume.wordCloud", defaultValue: "Word Cloud"),
+                      systemImage: "cloud")
+            }
+        }
     }
 }
 
