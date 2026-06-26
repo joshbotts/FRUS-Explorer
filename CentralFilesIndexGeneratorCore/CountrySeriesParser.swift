@@ -102,17 +102,29 @@ public enum CountrySeriesParser {
         return ParsedCountryRoll(geoKeys: geo, dateRange: HistoricalDateParser.parse(record.title))
     }
 
-    /// `Despatches [Ff]rom U.S. Consuls in {City}, {Region/Country}, {dates}` → the post
-    /// city key(s). The city is the first comma-delimited component; a parenthetical
-    /// alternate spelling (`Brusa (Brousa)`) yields both as keys.
+    /// Consular file-unit title → the post city key(s). The city is the first
+    /// comma-delimited component after stripping the (highly variable) `Despatches from …
+    /// {agency} {role} in/to` lead and the trailing date range. A parenthetical alternate
+    /// spelling (`Brusa (Brousa)`) yields both as keys.
+    ///
+    /// Real lead forms (504 file units): `Despatches from U.S./U. S./US/United States
+    /// Consuls in {City}`, `…the U.S. Consuls in`, `…Consular Officers, {City}`,
+    /// `…Consular Offices - {City}`, `…Consular Representatives in`, `…Consuls to`,
+    /// `…Ministers to`, `Despatches from {City}`, and a bare `{City}, {dates}`.
     static func consularPostKeys(fromParent title: String) -> [String] {
-        var phrase = title
-        if let r = phrase.range(of: #"^Despatches [Ff]rom U\.?S\.? Consuls in\s+"#,
-                                options: [.regularExpression]) {
+        var phrase = stripTrailingDateRange(title)
+        // Strip the "Despatches from " lead.
+        if let r = phrase.range(of: #"^Despatches\s+[Ff]rom\s+"#, options: [.regularExpression]) {
             phrase = String(phrase[r.upperBound...])
         }
-        phrase = stripTrailingDateRange(phrase)
-        // The post city is the first comma-delimited component.
+        // Strip an optional agency + role + connector: "(the) (U.S./United States)
+        // {Consular Officers|Consular Offices|Consular Representatives|Consuls|Ministers}
+        // (in|to)? (- | ,)?". Cities that don't begin with a role word pass through.
+        let lead = #"^(?:the\s+)?(?:U\.?\s*S\.?\s+|United States\s+)?(?:Consular Officers?|Consular Offices?|Consular Representatives?|Consuls?|Ministers?)\b\s*(?:in|to)?\s*[-–,]?\s*"#
+        if let r = phrase.range(of: lead, options: [.regularExpression, .caseInsensitive]) {
+            phrase = String(phrase[r.upperBound...])
+        }
+        phrase = phrase.trimmingCharacters(in: .whitespaces)
         guard let city = phrase.components(separatedBy: ",").first?
             .trimmingCharacters(in: .whitespaces), !city.isEmpty else { return [] }
         // Split a `Main (Alternate)` spelling into both keys.

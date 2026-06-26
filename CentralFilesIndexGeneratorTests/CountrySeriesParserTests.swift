@@ -24,8 +24,20 @@ struct CountrySeriesParserTests {
         #expect(f("Despatches from U.S. Consuls in Windsor, Nova Scotia, Canada, 1872-1906") == ["windsor"])
         #expect(f("Despatches from U.S. Consuls in Three Rivers, Canada, 1881-1906") == ["three rivers"])
         #expect(f("Despatches from U.S. Consuls in Havana, Cuba, 1783-1906") == ["havana"])
+        // Agency-form variants: spelled-out "United States" and spaced "U. S." (real data).
+        #expect(f("Despatches from United States Consuls in Havana, Cuba, 1783-1906") == ["havana"])
+        #expect(f("Despatches from U. S. Consuls in Alicante, Spain, 1797-1899") == ["alicante"])
         // Parenthetical alternate spelling → both keys.
         #expect(f("Despatches from U.S. Consuls in Brusa (Brousa), Turkey, 1837-1840") == ["brusa", "brousa"])
+        // Other real lead forms (the 9 edge cases found in the cache).
+        #expect(f("Despatches from the U.S. Consuls in Antigua, 1794-1906") == ["antigua"])
+        #expect(f("Despatches from Consular Officers, Canton, China") == ["canton"])
+        #expect(f("Despatches from Consular Offices - Port au Prince") == ["port au prince"])
+        #expect(f("Despatches from U.S. Consular Representatives in Puerto Rico, 1821-1899") == ["puerto rico"])
+        #expect(f("Despatches from U.S. Consuls to Cape Gracias a Dios, Nicaragua, 1903-1906") == ["cape gracias a dios"])
+        #expect(f("Despatches from U.S. Ministers to Cap Haitien, Haiti, 1797-1906") == ["cap haitien"])
+        #expect(f("Despatches from Grenville, Canada, 1904-1906") == ["grenville"])
+        #expect(f("Antwerp, June 30, 1805-December 31, 1863") == ["antwerp"])
     }
 
     @Test("Consular: parses geo + date for a roll under a post file unit")
