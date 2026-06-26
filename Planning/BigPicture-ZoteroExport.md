@@ -171,8 +171,17 @@ extracted record is rich. Out of scope here.)*
 
 - **Phase 1 — RIS desktop hygiene. ✅ Done.** `M2` doc-number fix; honest copy; format rescoped to
   desktop.
-- **Phase 2 — Web API (primary).** `ZoteroAPIClient` + Keychain account + Settings → Integrations +
-  collection/document entry points. Personal library only.
+- **Phase 2 — Web API (primary). 🟢 Built (2026-06-26), pending live verification.** Shipped:
+  `ZoteroAccountStore` (Keychain key + UserDefaults userID/username), `ZoteroAPIModels` (encodable
+  items/creators/notes with last-space name split; decodable write/key responses), `ZoteroAPIClient`
+  actor (`resolveAccount`, `createCollection`, chunked `createItems` with write-token + 429/`Backoff`
+  retry, child-note pass, `send()` orchestration), **Settings → Integrations → Zotero** (paste key →
+  verify → connected/disconnect), **"Send to Zotero Library…" in the collection export sheet** (both
+  platforms), and **document-level "Send to Zotero Library…"** in the iOS citation sheet (lands a
+  single doc + its notes/tags in My Library). Unit-tested: creator split, item mapping/encoding, note
+  htmlify, response decoding. **Remaining:** live end-to-end verification against a real API key (the
+  network round-trip is untested — only request construction + response decoding are unit-covered);
+  optional macOS document-level entry (macOS already has RIS→desktop). Personal library only.
 - **Phase 3 — iOS web fallback.** "Send to Zotero (web)" URL share on iOS.
 - **Phase 4 (optional).** Group libraries (`/groups/<id>`); pick-existing-collection browser;
   highlights → notes; a contributed history.state.gov translator.

@@ -146,6 +146,10 @@ struct SettingsView: View {
                                          defaultValue: "NARA Catalog API Key")) {
                         NARAKeyView()
                     }
+                    NavigationLink(String(localized: "settings.row.zotero",
+                                         defaultValue: "Zotero")) {
+                        ZoteroIntegrationView()
+                    }
                 }
 
                 Section(String(localized: "settings.section.data",
@@ -2731,6 +2735,123 @@ private struct SummarizationPromptsSettingsView: View {
         let count = allSummaries.filter { $0.promptId == prompt.id }.count
         return String(localized: "settings.summarization.prompt.count",
                       defaultValue: "\(count) \(count == 1 ? "summary" : "summaries") generated")
+    }
+}
+
+// MARK: - ZoteroIntegrationView
+
+/// Settings → Integrations → Zotero: connect a Zotero account by pasting a Web API
+/// key, which is verified (resolving the user ID) and stored in the Keychain. Once
+/// connected, "Send to Zotero Library…" appears on collections and documents.
+///
+/// Version history:
+///   1.0 — Zotero Web API integration (Phase 2)
+private struct ZoteroIntegrationView: View {
+
+    @State private var keyText: String = ""
+    @State private var isConnecting = false
+    @State private var connectedUsername: String?
+    @State private var isConnected = false
+    @State private var errorMessage: String?
+
+    private let store = ZoteroAccountStore.shared
+    private let client = ZoteroAPIClient()
+
+    /// Deep link that pre-fills a new key with library + notes + write access.
+    private let getKeyURL = URL(string:
+        "https://www.zotero.org/settings/keys/new?name=FRUS%20Explorer&library_access=1&notes_access=1&write_access=1")
+
+    var body: some View {
+        Form {
+            Section {
+                Text(String(localized: "settings.zotero.about.body",
+                            defaultValue: "Send FRUS documents — with your tags and research notes — straight into your Zotero library, where they sync to all your devices including the Zotero iOS app. This is the only way to get FRUS annotations into Zotero on iPhone and iPad."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text(String(localized: "settings.zotero.about.header", defaultValue: "About"))
+            }
+
+            if isConnected {
+                Section {
+                    LabeledContent(
+                        String(localized: "settings.zotero.connectedAs", defaultValue: "Connected as"),
+                        value: connectedUsername ?? String(localized: "settings.zotero.unknownUser",
+                                                           defaultValue: "your library")
+                    )
+                    Button(String(localized: "settings.zotero.disconnect", defaultValue: "Disconnect"),
+                           role: .destructive) {
+                        store.disconnect()
+                        refresh()
+                    }
+                } header: {
+                    Text(String(localized: "settings.zotero.account.header", defaultValue: "Account"))
+                }
+            } else {
+                Section {
+                    if let getKeyURL {
+                        Link(destination: getKeyURL) {
+                            HStack {
+                                Label(String(localized: "settings.zotero.getKey",
+                                             defaultValue: "Create a Zotero API key"), systemImage: "key")
+                                Spacer()
+                                Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityAddTraits(.isLink)
+                    }
+                    SecureField(
+                        String(localized: "settings.zotero.field.placeholder",
+                               defaultValue: "Paste your Zotero API key…"),
+                        text: $keyText
+                    )
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.asciiCapable)
+                    #endif
+                    Button {
+                        connect()
+                    } label: {
+                        if isConnecting { ProgressView() }
+                        else { Text(String(localized: "settings.zotero.connect", defaultValue: "Connect")) }
+                    }
+                    .disabled(keyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isConnecting)
+                } header: {
+                    Text(String(localized: "settings.zotero.connect.header", defaultValue: "Connect"))
+                } footer: {
+                    if let errorMessage {
+                        Text(errorMessage).foregroundStyle(.red)
+                    }
+                }
+            }
+        }
+        .navigationTitle(String(localized: "settings.zotero.title", defaultValue: "Zotero"))
+        .onAppear { refresh() }
+    }
+
+    private func refresh() {
+        isConnected = store.isConnected
+        connectedUsername = store.username
+    }
+
+    private func connect() {
+        let key = keyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { return }
+        isConnecting = true
+        errorMessage = nil
+        Task {
+            do {
+                let info = try await client.resolveAccount(key: key)
+                store.storeKey(key)
+                store.setAccount(userID: info.userID, username: info.username)
+                keyText = ""
+                refresh()
+            } catch {
+                errorMessage = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
+            }
+            isConnecting = false
+        }
     }
 }
 
