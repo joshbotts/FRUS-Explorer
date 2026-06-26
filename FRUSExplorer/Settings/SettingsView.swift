@@ -156,6 +156,14 @@ struct SettingsView: View {
                     }
                 }
 
+                #if os(iOS) && DEBUG
+                Section("Diagnostics") {
+                    NavigationLink("Summarization Probe") {
+                        SummarizationProbeView()
+                    }
+                }
+                #endif
+
                 Section {
                     NavigationLink(String(localized: "settings.row.reset",
                                          defaultValue: "Reset App")) {
@@ -1118,8 +1126,23 @@ private struct StorageManagementView: View {
     @AppStorage(SettingsKeys.liveActivityEnabled) private var liveActivityEnabled = true
     #endif
 
+    /// User preference: precompute heavy word clouds (corpus/subseries) in the
+    /// background after indexing so they open instantly. Mirrors the key read by
+    /// `WordCloudPrecomputeQueue`.
+    @AppStorage("frus.wordcloud.backgroundPrecompute") private var precomputeWordClouds = true
+
     var body: some View {
         Form {
+            #if os(iOS)
+            Section(footer: Text(String(
+                localized: "settings.storage.wordcloud.footer",
+                defaultValue: "When enabled, the most demanding word clouds are computed in the background after indexing, so they open instantly. Runs only while the device is idle."
+            ))) {
+                Toggle(String(localized: "settings.storage.wordcloud.toggle",
+                              defaultValue: "Precompute word clouds in background"),
+                       isOn: $precomputeWordClouds)
+            }
+            #endif
             Section(header: Text(String(localized: "settings.storage.aggregate.header",
                                         defaultValue: "Total Storage Used")),
                     footer: Text(String(localized: "settings.storage.aggregate.footer",
@@ -2707,7 +2730,7 @@ private struct SummarizationPromptsSettingsView: View {
     private func summaryCountLabel(for prompt: SummarizationPrompt) -> String {
         let count = allSummaries.filter { $0.promptId == prompt.id }.count
         return String(localized: "settings.summarization.prompt.count",
-                      defaultValue: "\(count) summary\(count == 1 ? "" : "ies") generated")
+                      defaultValue: "\(count) \(count == 1 ? "summary" : "summaries") generated")
     }
 }
 

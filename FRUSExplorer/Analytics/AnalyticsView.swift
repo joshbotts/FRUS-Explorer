@@ -129,6 +129,10 @@ struct AnalyticsView: View {
     /// current calendar year, re-evaluated at view construction.
     @State private var yearRangeEnd: Int = Calendar.current.component(.year, from: Date())
 
+    /// Guards one-time seeding of `yearRangeEnd` from the corpus span on first
+    /// appearance (see `seedDefaultYearRange()`).
+    @State private var didSeedYearRange = false
+
     /// User preference: whether to overlay a smoothed trend line on date-bucketed
     /// charts. Defaults to true. Has no effect on the by-subseries horizontal
     /// bar chart, which never plots a line.
@@ -160,9 +164,14 @@ struct AnalyticsView: View {
 
     // MARK: - Derived Properties
 
-    /// Current calendar year, used as the default upper bound and stepper maximum.
-    private var currentYear: Int {
-        Calendar.current.component(.year, from: Date())
+    /// Most recent year covered by the known FRUS corpus, used as the default
+    /// upper bound and stepper maximum. Derived from the manifest's volume span
+    /// (typically 1992/1993) rather than the calendar year, since no published
+    /// FRUS volume includes documents past the most recent published volume —
+    /// defaulting to the current year would leave an empty tail on the chart.
+    private var corpusMaxYear: Int {
+        Calendar(identifier: .gregorian)
+            .component(.year, from: appState.manifestStore.corpusDateRange.upperBound)
     }
 
     /// `yearData` filtered to `yearRangeStart...yearRangeEnd`.
@@ -206,7 +215,7 @@ struct AnalyticsView: View {
 
     /// `true` when the user has narrowed the range away from its default values.
     private var yearRangeIsCustom: Bool {
-        yearRangeStart != 1861 || yearRangeEnd != currentYear
+        yearRangeStart != 1861 || yearRangeEnd != corpusMaxYear
     }
 
     // MARK: - Body
@@ -243,9 +252,13 @@ struct AnalyticsView: View {
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 520)
         #endif
-        // Seed from the constructor parameter (iOS sheet presentation — a fresh
-        // `AnalyticsView` instance is created each time the sheet opens).
-        .task { applyAnalyticsParameters(initialParameters) }
+        // Seed the default year-range end from the corpus span, then apply any
+        // constructor parameter (iOS sheet presentation — a fresh `AnalyticsView`
+        // instance is created each time the sheet opens).
+        .task {
+            seedDefaultYearRange()
+            applyAnalyticsParameters(initialParameters)
+        }
         // Re-seed when a new handoff arrives while the view is already on screen
         // (macOS `frus.analytics` Window — a long-lived instance reused across
         // openWindow calls). `MainWindowView` opens the window; this clears the
@@ -263,6 +276,16 @@ struct AnalyticsView: View {
     /// Applies a `Search → Analytics` handoff: seeds the term and (if present)
     /// the year-range bounds, then runs the chart query immediately so the user
     /// lands on a populated chart rather than an empty "enter a term" prompt.
+    /// Seeds `yearRangeEnd` to the most recent corpus year on first appearance.
+    /// The `@State` initialiser can't read `appState`, so the field starts at a
+    /// placeholder and is corrected here once. Runs at most once per view
+    /// lifetime so it never clobbers a range the user has since adjusted.
+    private func seedDefaultYearRange() {
+        guard !didSeedYearRange else { return }
+        didSeedYearRange = true
+        yearRangeEnd = corpusMaxYear
+    }
+
     private func applyAnalyticsParameters(_ params: AnalyticsParameters?) {
         guard let params else { return }
         let term = params.term.trimmingCharacters(in: .whitespaces)
@@ -355,26 +378,28 @@ struct AnalyticsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Stepper(value: $yearRangeStart, in: 1776...yearRangeEnd) {
-                Text(verbatim: String(yearRangeStart))
-                    .font(.caption.monospacedDigit())
-                    .frame(width: 36, alignment: .trailing)
-            }
+            yearEntryField(
+                value: $yearRangeStart,
+                bounds: 1776...yearRangeEnd,
+                accessibilityLabel: String(localized: "analytics.yearRange.start.a11y",
+                                           defaultValue: "Start year")
+            )
 
             Text(verbatim: "–")
                 .foregroundStyle(.tertiary)
                 .font(.caption)
 
-            Stepper(value: $yearRangeEnd, in: yearRangeStart...currentYear) {
-                Text(verbatim: String(yearRangeEnd))
-                    .font(.caption.monospacedDigit())
-                    .frame(width: 36, alignment: .trailing)
-            }
+            yearEntryField(
+                value: $yearRangeEnd,
+                bounds: yearRangeStart...corpusMaxYear,
+                accessibilityLabel: String(localized: "analytics.yearRange.end.a11y",
+                                           defaultValue: "End year")
+            )
 
             if yearRangeIsCustom {
                 Button {
                     yearRangeStart = 1861
-                    yearRangeEnd = currentYear
+                    yearRangeEnd = corpusMaxYear
                 } label: {
                     Text(String(localized: "analytics.yearRange.reset",
                                 defaultValue: "Reset"))
@@ -392,6 +417,38 @@ struct AnalyticsView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+    }
+
+    /// A year value rendered as an editable, clamped text field paired with an
+    /// up/down stepper. Typing commits a value (clamped into `bounds`), letting
+    /// the user jump directly to a year instead of stepping one at a time; the
+    /// stepper remains for fine adjustment.
+    private func yearEntryField(
+        value: Binding<Int>,
+        bounds: ClosedRange<Int>,
+        accessibilityLabel: String
+    ) -> some View {
+        // Clamp on write so a typed (or stepped) value can never escape `bounds`.
+        let clamped = Binding<Int>(
+            get: { value.wrappedValue },
+            set: { value.wrappedValue = min(max($0, bounds.lowerBound), bounds.upperBound) }
+        )
+        return Stepper(value: clamped, in: bounds) {
+            TextField(
+                String(localized: "analytics.yearRange.field.placeholder", defaultValue: "Year"),
+                value: clamped,
+                format: .number.grouping(.never)
+            )
+            .labelsHidden()
+            .multilineTextAlignment(.trailing)
+            .font(.caption.monospacedDigit())
+            .frame(width: 44)
+            .textFieldStyle(.roundedBorder)
+            #if os(iOS)
+            .keyboardType(.numberPad)
+            #endif
+        }
+        .accessibilityLabel(accessibilityLabel)
     }
 
     // MARK: - Search Handoff Bar

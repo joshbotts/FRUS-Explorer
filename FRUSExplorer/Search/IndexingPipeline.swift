@@ -3819,6 +3819,110 @@ public actor IndexingPipeline {
         try fetchCache(volumeId: volumeId, documentId: documentId)?.bodyText
     }
 
+    // MARK: - Word Cloud Support
+
+    /// Returns the body text of every document whose key is in `keys`, in
+    /// arbitrary order. Missing or unindexed keys are silently skipped.
+    ///
+    /// Used by the word-cloud pipeline to gather the text of a bounded scope
+    /// (volume, subseries, collection, user tag, saved search). Keys are queried
+    /// in chunks via a `WITH wanted(v, d) AS (VALUES …)` CTE joined against the
+    /// `document_cache` composite primary key, so SQLite performs index
+    /// point-lookups rather than a full scan. Each chunk of 400 pairs binds 800
+    /// parameters (within the 999-parameter limit).
+    ///
+    /// - Parameter keys: The document keys to fetch text for.
+    /// - Returns: The non-empty body texts of the matched documents.
+    func documentBodyTexts(forKeys keys: [WordCloudDocumentKey]) throws -> [String] {
+        guard !keys.isEmpty else { return [] }
+        var result: [String] = []
+        result.reserveCapacity(keys.count)
+        let chunkSize = 400
+        var index = 0
+        while index < keys.count {
+            let chunk = Array(keys[index..<min(index + chunkSize, keys.count)])
+            index += chunkSize
+            let values = Array(repeating: "(?,?)", count: chunk.count).joined(separator: ",")
+            let sql = """
+                WITH wanted(v, d) AS (VALUES \(values))
+                SELECT dc.body_text
+                FROM document_cache dc
+                JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var bind: Int32 = 1
+            for key in chunk {
+                sqlite3_bind_text(stmt, bind, key.volumeId, -1, SQLITE_TRANSIENT_IP); bind += 1
+                sqlite3_bind_text(stmt, bind, key.documentId, -1, SQLITE_TRANSIENT_IP); bind += 1
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let text = auxColumnString(stmt, 0), !text.isEmpty { result.append(text) }
+            }
+        }
+        return result
+    }
+
+    /// Returns the `(volumeId, documentId)` key of every indexed document.
+    ///
+    /// Used to enumerate the corpus scope for a corpus-wide word cloud. The
+    /// caller chunks the result through `documentBodyTexts(forKeys:)` so document
+    /// text is never all held in memory at once.
+    ///
+    /// - Returns: All indexed document keys.
+    /// A cheap fingerprint of the indexed corpus, used to invalidate persisted
+    /// word-cloud results when volumes are added or removed.
+    ///
+    /// Returns the `document_cache` row count. A change in the set of indexed
+    /// volumes changes this count, so a persisted corpus/subseries cloud keyed on
+    /// it is recomputed after the index changes (and reused across launches when
+    /// it has not).
+    ///
+    /// - Returns: The number of cached documents.
+    func documentCacheCount() throws -> Int {
+        let stmt = try auxPrepare("SELECT COUNT(*) FROM document_cache")
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    func allDocumentKeys() throws -> [WordCloudDocumentKey] {
+        let stmt = try auxPrepare("SELECT volume_id, document_id FROM document_cache")
+        defer { sqlite3_finalize(stmt) }
+        var keys: [WordCloudDocumentKey] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let v = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                keys.append(WordCloudDocumentKey(volumeId: v, documentId: d))
+            }
+        }
+        return keys
+    }
+
+    /// Returns the keys of every document tagged with the given user-tag UUID.
+    ///
+    /// `document_cache.user_tag_ids` stores space-separated UUID strings; the
+    /// space-delimited `LIKE` mirrors the user-tag filter used by search so a tag
+    /// resolves to exactly the documents the rest of the app considers tagged.
+    ///
+    /// - Parameter tagId: The user-tag UUID string.
+    /// - Returns: The keys of documents carrying that tag.
+    func documentKeys(forUserTagId tagId: String) throws -> [WordCloudDocumentKey] {
+        let sql = """
+            SELECT volume_id, document_id FROM document_cache
+            WHERE (' ' || COALESCE(user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, tagId, -1, SQLITE_TRANSIENT_IP)
+        var keys: [WordCloudDocumentKey] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let v = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                keys.append(WordCloudDocumentKey(volumeId: v, documentId: d))
+            }
+        }
+        return keys
+    }
+
     /// Returns the structured `date_iso` value for each of the given document keys.
     ///
     /// Sources `document_dates.date_iso` — the canonical ISO 8601 date string

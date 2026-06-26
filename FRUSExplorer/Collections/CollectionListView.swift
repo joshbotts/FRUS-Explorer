@@ -123,6 +123,15 @@ struct CollectionListView: View {
                 CollectionRow(collection: collection)
                     .contentShape(Rectangle())
                     .onTapGesture { collectionToEdit = collection }
+                    .contextMenu {
+                        Button {
+                            appState.pendingWordCloud = .collection(id: collection.id)
+                        } label: {
+                            Label(String(localized: "collection.wordCloud",
+                                         defaultValue: "Word Cloud"),
+                                  systemImage: "cloud")
+                        }
+                    }
             }
             .onDelete { indexSet in
                 deleteCollections(at: indexSet)

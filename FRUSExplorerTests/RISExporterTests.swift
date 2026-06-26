@@ -48,7 +48,9 @@ struct RISExporterTests {
         #expect(ris.contains("TI  - Memorandum of Conversation"))
         #expect(ris.contains("A3  - Louis J. Smith"))
         #expect(ris.contains("A3  - David H. Herschler"))
-        #expect(ris.contains("N1  - Document 1"))
+        // Document number → Extra (M2), not Notes (N1), to avoid a spurious note.
+        #expect(ris.contains("M2  - FRUS Document 1"))
+        #expect(!ris.contains("N1  - "))
     }
 
     // MARK: - export(zoteroItem:)

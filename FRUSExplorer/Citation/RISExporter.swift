@@ -24,9 +24,14 @@
 /// CY  - Washington, D.C.
 /// PY  - 1972
 /// UR  - https://history.state.gov/historicaldocuments/frus1969-76v01/d1
-/// N1  - Document 1
+/// M2  - FRUS Document 1
 /// ER  -
 /// ```
+///
+/// The FRUS document number is emitted as `M2`, which Zotero's RIS import maps to
+/// the **Extra** field — not `N1` (Notes). Using `N1` would create a spurious note
+/// alongside the researcher's own notes on import. User research notes remain on
+/// `N1`, which Zotero imports as proper child notes.
 ///
 /// Version history:
 ///   1.0 — Session 86
@@ -65,8 +70,10 @@ public struct RISExporter: Sendable {
             lines.append("UR  - \(url)")
         }
 
-        let note = document.documentNumber.map { "Document \($0)" } ?? document.documentId
-        lines.append("N1  - \(note)")
+        // FRUS document number → Zotero "Extra" (M2), not Notes (N1).
+        let docRef = document.documentNumber.map { "FRUS Document \($0)" }
+            ?? "FRUS Document \(document.documentId)"
+        lines.append("M2  - \(docRef)")
         lines.append("ER  - ")
 
         return lines.joined(separator: "\n")
@@ -75,8 +82,12 @@ public struct RISExporter: Sendable {
     /// Renders an RIS record from a pre-built Zotero `Item`.
     ///
     /// Used by the collection Zotero export, whose pipeline produces `Item`s rather than
-    /// raw `FRUSDocumentMetadata`. RIS imports into standard Zotero (no Better BibTeX
-    /// plugin required, and works on iOS), unlike the Zotero-API JSON envelope.
+    /// raw `FRUSDocumentMetadata`. RIS imports into **Zotero desktop** via File → Import
+    /// (no Better BibTeX plugin required); the iOS Zotero app has no RIS import, so on
+    /// iOS the Zotero Web API path is used instead.
+    ///
+    /// `extra` lines map to `M2` (→ Zotero "Extra"); research notes map to `N1`
+    /// (→ Zotero child notes); tags map to `KW` (→ Zotero tags).
     public func export(zoteroItem item: ZoteroJSONExporter.Item) -> String {
         var lines: [String] = ["TY  - \(Self.risType(for: item.itemType))"]
         lines.append("TI  - \(item.title)")
@@ -89,7 +100,13 @@ public struct RISExporter: Sendable {
         if let date = item.date { lines.append("PY  - \(date)") }
         if let url = item.url { lines.append("UR  - \(url)") }
         for tag in item.tags ?? [] { lines.append("KW  - \(tag.tag)") }
-        if let extra = item.extra, !extra.isEmpty { lines.append("N1  - \(extra)") }
+        // Each Extra line is its own M2 so Zotero accumulates them (newlines within a
+        // single RIS field would break parsing); M2 → Zotero "Extra", not Notes.
+        if let extra = item.extra, !extra.isEmpty {
+            for line in extra.split(separator: "\n", omittingEmptySubsequences: true) {
+                lines.append("M2  - \(line)")
+            }
+        }
         for note in item.notes ?? [] { lines.append("N1  - \(note.note)") }
         lines.append("ER  - ")
         return lines.joined(separator: "\n")

@@ -139,6 +139,13 @@ struct MainWindowView: View {
             guard params != nil else { return }
             openWindow(id: "frus.analytics")
         }
+        // Open the Word Cloud window when a cross-view pendingWordCloud arrives.
+        // The window content reads the current scope from appState (it is not
+        // cleared on macOS, unlike the iOS sheet's item binding).
+        .onChange(of: appState.pendingWordCloud) { _, scope in
+            guard scope != nil else { return }
+            openWindow(id: "frus.wordcloud")
+        }
         // Citation Lookup sheet — responds to both the menu command (⌘⇧F) and any
         // code that sets appState.showCitationLookup = true.
         .sheet(isPresented: $appStateBindable.showCitationLookup) {
@@ -279,6 +286,19 @@ struct MainWindowView: View {
             .help(String(
                 localized: "mainwindow.tools.analytics.help",
                 defaultValue: "Open Corpus Analytics — chart term frequency over time"
+            ))
+
+            // Word Cloud window (corpus scope)
+            Button {
+                appState.pendingWordCloud = .corpus
+                openWindow(id: "frus.wordcloud")
+            } label: {
+                Label(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud"),
+                      systemImage: "cloud")
+            }
+            .help(String(
+                localized: "mainwindow.tools.wordcloud.help",
+                defaultValue: "Visualise the most frequent terms across the corpus"
             ))
 
             // Chronology window
