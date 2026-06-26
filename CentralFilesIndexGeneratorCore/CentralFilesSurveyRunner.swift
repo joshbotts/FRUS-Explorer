@@ -23,12 +23,18 @@ import Foundation
 ///   1.0 — Session 2026-06-15: Phase 2 survey
 public enum CentralFilesSurveyRunner {
 
-    /// The Phase 2 diplomatic series, for reference when choosing a `SURVEY_SERIES`.
+    /// Surveyable series, for reference when choosing a `SURVEY_SERIES`. Phase 2 diplomatic
+    /// series plus the Phase 3 consular series.
     public static let diplomaticSeries: [(name: String, naId: String)] = [
         ("Diplomatic Despatches",        "603720"),
         ("Diplomatic Instructions",      "593313"),
         ("Notes from Foreign Missions",  "594363"),
         ("Notes to Foreign Missions",    "597272"),
+        // Phase 3 — consular series.
+        ("Consular Despatches",          "302031"),
+        ("Consular Instructions",        "604019"),
+        ("Notes to Foreign Consuls",     "1076611"),
+        ("Notes from Foreign Consuls",   "1076629"),
     ]
 
     /// Enumerates `seriesNaId` and prints a structural report. Calls `exit(1)` on failure.
