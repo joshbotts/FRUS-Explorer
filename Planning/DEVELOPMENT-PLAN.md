@@ -821,3 +821,27 @@ then the CITATIONS_CSV run) → final index with RG-verified lots + matchType; (
 *app* integration — add `lotFiles` to the app-side `CentralFilesIndex`, resolve the lot
 panel from the bundle first (key-less) with a confidence chip, fall back to live API on miss;
 commit the final index.
+
+### Session 2026-06-16 — Phase 3 consular series (Consular Despatches)
+Caught the branch up to v2 (PR #61 + subsequent refinements) then initiated consular
+harvesting. Survey of Consular Despatches (NARA 302031) confirmed it mirrors diplomatic
+Despatches: all 3,357 records are item rolls under a per-post file unit; roll titles
+`Despatches: {dates}` (with `Volume N:` prefixes / `CHECK DATE` suffixes that
+`HistoricalDateParser` already tolerates); file-unit titles
+`Despatches [Ff]rom U.S. Consuls in {City}, {Region/Country}, {dates}` — the post **city**
+is the first comma-delimited component.
+- **Generator**: new `.consularDespatches` category (302031, item-level, geo = post city);
+  `CountrySeriesParser.consularPostKeys` (first comma component; `Brusa (Brousa)` → both
+  keys); the harvest loop (`allCases`) picks it up automatically; golden check added
+  (Doc 8: consular Havana 1895-06-19 → roll 211373468).
+- **App**: `.consularDespatches` added to `CentralFilesSeriesCategory`; `CentralFilesClassifier`
+  now routes consular datelines **first** (geo = post city from the dateline via
+  `consularPostKey`, independent of the FRUS chapter) → `.consularDespatches` instead of the
+  old `return []`. Handles `Consulate…, {City}` and `Consulate … at {City}` forms.
+- 64 generator tests + 11 classifier tests pass; iOS + macOS build clean. (Full unit-bundle
+  run was confirmed separately after a simulator launch flake on the first attempt.)
+- **Next**: user runs the full harvest (`CATALOG_API_KEY=… CITATIONS_CSV=… swift run
+  CentralFilesIndexGenerator`; 302031 is cached from the survey, so it's a fast cached run)
+  to regenerate the index with the consular series + validate the Havana golden check, then
+  commit the index. Other consular series (Consular Instructions 604019, Notes to/from
+  Consuls) and Domestic/Misc Letters remain as further Phase 3 work.

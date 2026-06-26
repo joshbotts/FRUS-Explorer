@@ -102,12 +102,14 @@ struct LotFileEntry: Codable, Sendable, Equatable {
 
 // MARK: - CentralFilesSeriesCategory
 
-/// The Phase 2 country-arranged diplomatic series, mirroring the generator's categories.
+/// The country-arranged diplomatic series (Phase 2) plus the consular series (Phase 3),
+/// mirroring the generator's categories.
 enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
     case despatches = "diplomaticDespatches"
     case instructions = "diplomaticInstructions"
     case notesFrom = "notesFromForeignMissions"
     case notesTo = "notesToForeignMissions"
+    case consularDespatches = "consularDespatches"
 
     /// Human-readable series name.
     var displayName: String {
@@ -120,6 +122,8 @@ enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
                                           defaultValue: "Notes from Foreign Missions")
         case .notesTo:      return String(localized: "centralFiles.series.notesTo",
                                           defaultValue: "Notes to Foreign Missions")
+        case .consularDespatches: return String(localized: "centralFiles.series.consular",
+                                          defaultValue: "Consular Despatches")
         }
     }
 }

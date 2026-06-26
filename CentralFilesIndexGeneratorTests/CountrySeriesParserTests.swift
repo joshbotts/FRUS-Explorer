@@ -13,6 +13,52 @@ import Foundation
 /// Tests for per-series geo + date extraction, using real catalog titles from the survey.
 struct CountrySeriesParserTests {
 
+    // MARK: Consular Despatches (geo = post city from parent file-unit title)
+
+    @Test("Consular: extracts the post city from the parent file-unit title")
+    func consularPostCity() {
+        let f = CountrySeriesParser.consularPostKeys(fromParent:)
+        // Real survey file-unit titles.
+        #expect(f("Despatches from U.S. Consuls in San Jose, Costa Rica, 1852-1906") == ["san jose"])
+        #expect(f("Despatches From U.S. Consuls in Clifton, Canada, 1864-1906") == ["clifton"])  // "From" variant
+        #expect(f("Despatches from U.S. Consuls in Windsor, Nova Scotia, Canada, 1872-1906") == ["windsor"])
+        #expect(f("Despatches from U.S. Consuls in Three Rivers, Canada, 1881-1906") == ["three rivers"])
+        #expect(f("Despatches from U.S. Consuls in Havana, Cuba, 1783-1906") == ["havana"])
+        // Agency-form variants: spelled-out "United States" and spaced "U. S." (real data).
+        #expect(f("Despatches from United States Consuls in Havana, Cuba, 1783-1906") == ["havana"])
+        #expect(f("Despatches from U. S. Consuls in Alicante, Spain, 1797-1899") == ["alicante"])
+        // Parenthetical alternate spelling → both keys.
+        #expect(f("Despatches from U.S. Consuls in Brusa (Brousa), Turkey, 1837-1840") == ["brusa", "brousa"])
+        // Other real lead forms (the 9 edge cases found in the cache).
+        #expect(f("Despatches from the U.S. Consuls in Antigua, 1794-1906") == ["antigua"])
+        #expect(f("Despatches from Consular Officers, Canton, China") == ["canton"])
+        #expect(f("Despatches from Consular Offices - Port au Prince") == ["port au prince"])
+        #expect(f("Despatches from U.S. Consular Representatives in Puerto Rico, 1821-1899") == ["puerto rico"])
+        #expect(f("Despatches from U.S. Consuls to Cape Gracias a Dios, Nicaragua, 1903-1906") == ["cape gracias a dios"])
+        #expect(f("Despatches from U.S. Ministers to Cap Haitien, Haiti, 1797-1906") == ["cap haitien"])
+        #expect(f("Despatches from Grenville, Canada, 1904-1906") == ["grenville"])
+        #expect(f("Antwerp, June 30, 1805-December 31, 1863") == ["antwerp"])
+    }
+
+    @Test("Consular: parses geo + date for a roll under a post file unit")
+    func consularRoll() throws {
+        let record = CatalogRecord(
+            naId: "211373468", title: "Despatches: April 1 - August 31, 1895",
+            levelOfDescription: "item",
+            parentFileUnitNaId: "196006797",
+            parentFileUnitTitle: "Despatches from U.S. Consuls in Havana, Cuba, 1783-1906")
+        let parsed = try #require(CountrySeriesParser.parse(record, category: .consularDespatches))
+        #expect(parsed.geoKeys == ["havana"])
+        #expect(parsed.dateRange?.startISO == "1895-04-01")
+        #expect(parsed.dateRange?.endISO == "1895-08-31")
+    }
+
+    @Test("Consular: tolerates Volume-prefixed and annotated roll titles")
+    func consularRollTitleVariants() throws {
+        #expect(HistoricalDateParser.parse("Despatches: Volume 1: August 24, 1897 - August 14, 1906")?.startISO == "1897-08-24")
+        #expect(HistoricalDateParser.parse("Despatches: Volume 1: June 22, 1872 - June 11, 1886 CHECK DATE")?.endISO == "1886-06-11")
+    }
+
     // MARK: Despatches (geo from parent file-unit title)
 
     @Test("Despatches: extracts country from the parent file-unit title")

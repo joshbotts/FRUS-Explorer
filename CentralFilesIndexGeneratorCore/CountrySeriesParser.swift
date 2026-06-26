@@ -19,29 +19,33 @@ import Foundation
 /// | `.instructions` | fileUnit | own title (`Volume {n}: {Country}: {dates}`) | own title |
 /// | `.notesFrom` | item | parent file-unit title (`…the {Demonym} Legation…`) | item title |
 /// | `.notesTo` | fileUnit | own title (`{Country[ and …]}: {dates}`) | own title |
+/// | `.consularDespatches` | item | parent file-unit title (`…U.S. Consuls in {City}, …`) | item title |
 public enum CountrySeriesCategory: String, Sendable, CaseIterable {
     case despatches = "diplomaticDespatches"
     case instructions = "diplomaticInstructions"
     case notesFrom = "notesFromForeignMissions"
     case notesTo = "notesToForeignMissions"
+    case consularDespatches = "consularDespatches"
 
     /// NARA series NAID.
     public var seriesNaId: String {
         switch self {
-        case .despatches:   return "603720"
-        case .instructions: return "593313"
-        case .notesFrom:    return "594363"
-        case .notesTo:      return "597272"
+        case .despatches:         return "603720"
+        case .instructions:       return "593313"
+        case .notesFrom:          return "594363"
+        case .notesTo:            return "597272"
+        case .consularDespatches: return "302031"
         }
     }
 
     /// Human-readable series name for display.
     public var displayName: String {
         switch self {
-        case .despatches:   return "Diplomatic Despatches"
-        case .instructions: return "Diplomatic Instructions"
-        case .notesFrom:    return "Notes from Foreign Missions"
-        case .notesTo:      return "Notes to Foreign Missions"
+        case .despatches:         return "Diplomatic Despatches"
+        case .instructions:       return "Diplomatic Instructions"
+        case .notesFrom:          return "Notes from Foreign Missions"
+        case .notesTo:            return "Notes to Foreign Missions"
+        case .consularDespatches: return "Consular Despatches"
         }
     }
 
@@ -49,8 +53,8 @@ public enum CountrySeriesCategory: String, Sendable, CaseIterable {
     /// targets for this series (the rest are skipped during the build).
     public var resolutionLevel: String {
         switch self {
-        case .despatches, .notesFrom: return "item"
-        case .instructions, .notesTo: return "fileUnit"
+        case .despatches, .notesFrom, .consularDespatches: return "item"
+        case .instructions, .notesTo:                      return "fileUnit"
         }
     }
 }
@@ -76,10 +80,11 @@ public enum CountrySeriesParser {
     public static func parse(_ record: CatalogRecord, category: CountrySeriesCategory) -> ParsedCountryRoll? {
         guard record.levelOfDescription == category.resolutionLevel else { return nil }
         switch category {
-        case .despatches:   return parseDespatches(record)
-        case .instructions: return parseInstructions(record)
-        case .notesFrom:    return parseNotesFrom(record)
-        case .notesTo:      return parseNotesTo(record)
+        case .despatches:         return parseDespatches(record)
+        case .instructions:       return parseInstructions(record)
+        case .notesFrom:          return parseNotesFrom(record)
+        case .notesTo:            return parseNotesTo(record)
+        case .consularDespatches: return parseConsular(record)
         }
     }
 
@@ -88,6 +93,47 @@ public enum CountrySeriesParser {
     private static func parseDespatches(_ record: CatalogRecord) -> ParsedCountryRoll {
         let geo = record.parentFileUnitTitle.map(despatchesCountryKeys) ?? []
         return ParsedCountryRoll(geoKeys: geo, dateRange: HistoricalDateParser.parse(record.title))
+    }
+
+    // MARK: Consular Despatches (item; geo = post city from parent file-unit title)
+
+    private static func parseConsular(_ record: CatalogRecord) -> ParsedCountryRoll {
+        let geo = record.parentFileUnitTitle.map(consularPostKeys) ?? []
+        return ParsedCountryRoll(geoKeys: geo, dateRange: HistoricalDateParser.parse(record.title))
+    }
+
+    /// Consular file-unit title → the post city key(s). The city is the first
+    /// comma-delimited component after stripping the (highly variable) `Despatches from …
+    /// {agency} {role} in/to` lead and the trailing date range. A parenthetical alternate
+    /// spelling (`Brusa (Brousa)`) yields both as keys.
+    ///
+    /// Real lead forms (504 file units): `Despatches from U.S./U. S./US/United States
+    /// Consuls in {City}`, `…the U.S. Consuls in`, `…Consular Officers, {City}`,
+    /// `…Consular Offices - {City}`, `…Consular Representatives in`, `…Consuls to`,
+    /// `…Ministers to`, `Despatches from {City}`, and a bare `{City}, {dates}`.
+    static func consularPostKeys(fromParent title: String) -> [String] {
+        var phrase = stripTrailingDateRange(title)
+        // Strip the "Despatches from " lead.
+        if let r = phrase.range(of: #"^Despatches\s+[Ff]rom\s+"#, options: [.regularExpression]) {
+            phrase = String(phrase[r.upperBound...])
+        }
+        // Strip an optional agency + role + connector: "(the) (U.S./United States)
+        // {Consular Officers|Consular Offices|Consular Representatives|Consuls|Ministers}
+        // (in|to)? (- | ,)?". Cities that don't begin with a role word pass through.
+        let lead = #"^(?:the\s+)?(?:U\.?\s*S\.?\s+|United States\s+)?(?:Consular Officers?|Consular Offices?|Consular Representatives?|Consuls?|Ministers?)\b\s*(?:in|to)?\s*[-–,]?\s*"#
+        if let r = phrase.range(of: lead, options: [.regularExpression, .caseInsensitive]) {
+            phrase = String(phrase[r.upperBound...])
+        }
+        phrase = phrase.trimmingCharacters(in: .whitespaces)
+        guard let city = phrase.components(separatedBy: ",").first?
+            .trimmingCharacters(in: .whitespaces), !city.isEmpty else { return [] }
+        // Split a `Main (Alternate)` spelling into both keys.
+        if let m = firstGroups(in: city, pattern: #"^(.+?)\s*\((.+?)\)\s*$"#) {
+            return [GeoKeyNormalizer.canonicalize(m.0), GeoKeyNormalizer.canonicalize(m.1)]
+                .filter { !$0.isEmpty }
+        }
+        let key = GeoKeyNormalizer.canonicalize(city)
+        return key.isEmpty ? [] : [key]
     }
 
     /// `Despatches from U.S. Ministers to {Country}, {dates}` /
@@ -211,5 +257,16 @@ public enum CountrySeriesParser {
         guard let m = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
               m.numberOfRanges > 1, m.range(at: 1).location != NSNotFound else { return nil }
         return ns.substring(with: m.range(at: 1)).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Returns the first two capture groups of `pattern` matched against `text`, or `nil`.
+    private static func firstGroups(in text: String, pattern: String) -> (String, String)? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+        let ns = text as NSString
+        guard let m = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
+              m.numberOfRanges > 2,
+              m.range(at: 1).location != NSNotFound, m.range(at: 2).location != NSNotFound else { return nil }
+        return (ns.substring(with: m.range(at: 1)).trimmingCharacters(in: .whitespaces),
+                ns.substring(with: m.range(at: 2)).trimmingCharacters(in: .whitespaces))
     }
 }
