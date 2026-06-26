@@ -85,6 +85,13 @@ struct MacCollectionManagerView: View {
                 CollectionSidebarRow(collection: c)
                     .tag(c.id)
                     .contextMenu {
+                        Button {
+                            appState.pendingWordCloud = .collection(id: c.id)
+                        } label: {
+                            Label(String(localized: "collection.wordCloud", defaultValue: "Word Cloud"),
+                                  systemImage: "cloud")
+                        }
+                        Divider()
                         Button(role: .destructive) {
                             if selectedId == c.id { selectedId = nil }
                             for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
