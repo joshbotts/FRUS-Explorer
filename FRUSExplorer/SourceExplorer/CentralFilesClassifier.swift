@@ -61,12 +61,22 @@ enum CentralFilesClassifier {
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
     /// consular despatch — Phase 3 — or a document with no resolvable country).
     static func classify(header: String, dateline: String, chapterCountry: String?) -> [CentralFilesClassification] {
-        let geoKeys = chapterCountry.map { GeoKeyNormalizer.keys(from: $0) } ?? []
-        guard !geoKeys.isEmpty else { return [] }
         let dl = dateline.lowercased()
 
-        // Consular despatches (Phase 3) — don't claim a diplomatic series for these.
-        if dl.contains("consulate") || dl.contains("consular") { return [] }
+        // Consular despatch (Phase 3) — handled first, because its geography is the post
+        // CITY taken from the dateline ("Consulate-General…, Havana") rather than the FRUS
+        // chapter country. No city → can't resolve.
+        if dl.contains("consulate") || dl.contains("consular") {
+            guard let city = consularPostKey(fromDateline: dateline) else { return [] }
+            return [CentralFilesClassification(
+                category: .consularDespatches, geoKeys: [city], confidence: .high,
+                rationale: String(localized: "centralFiles.rationale.consular",
+                                  defaultValue: "Dateline is a U.S. consulate abroad — a consular despatch to the Department."))]
+        }
+
+        // Diplomatic series — geography is the FRUS chapter country.
+        let geoKeys = chapterCountry.map { GeoKeyNormalizer.keys(from: $0) } ?? []
+        guard !geoKeys.isEmpty else { return [] }
 
         // A U.S. diplomatic mission abroad → a despatch home.
         if containsAny(dl, ["legation of the united states", "embassy of the united states",
@@ -114,6 +124,41 @@ enum CentralFilesClassifier {
         }
 
         return []
+    }
+
+    /// Extracts the consular post city key from a dateline, normalized to match the index.
+    ///
+    /// Handles `Consulate[-General][, of the United States], {City}, {date}` (city is the
+    /// comma-segment that isn't the consulate phrase / "United States" / "American") and the
+    /// `Consulate … at {City}` form. Returns `nil` when no city can be isolated.
+    static func consularPostKey(fromDateline dateline: String) -> String? {
+        // Drop the trailing date so its month/place tokens don't masquerade as the city.
+        let preDate: String
+        if let r = dateline.range(of: #"[A-Za-z]+\.?\s+\d{1,2}\s*,?\s*\d{4}"#, options: .regularExpression) {
+            preDate = String(dateline[..<r.lowerBound])
+        } else {
+            preDate = dateline
+        }
+        let segments = preDate.components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        // 1. A standalone city segment (not the office phrase).
+        for seg in segments {
+            let low = seg.lowercased()
+            if low.contains("consul") || low.contains("united states") || low.contains("american")
+                || low.contains("legation") || low.contains("embassy") { continue }
+            let key = GeoKeyNormalizer.canonicalize(seg)
+            if !key.isEmpty { return key }
+        }
+        // 2. The "Consulate … at {City}" form.
+        for seg in segments where seg.lowercased().contains("consul") {
+            if let r = seg.range(of: #"\bat\s+"#, options: [.regularExpression, .caseInsensitive]) {
+                let key = GeoKeyNormalizer.canonicalize(String(seg[r.upperBound...]))
+                if !key.isEmpty { return key }
+            }
+        }
+        return nil
     }
 
     private static func containsAny(_ haystack: String, _ needles: [String]) -> Bool {

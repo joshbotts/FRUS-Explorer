@@ -83,6 +83,9 @@ public struct CentralFilesIndexGeneratorRunner {
                            expectedNaId: "188401761", source: "frus1905/d544"),
         CountryGoldenCheck(category: .despatches, geoKey: "switzerland", dateISO: "1875-09-28",
                            expectedNaId: "189376306", source: "frus1876/d311"),
+        // Doc 8: consular despatch from Havana (the enclosure's originating series).
+        CountryGoldenCheck(category: .consularDespatches, geoKey: "havana", dateISO: "1895-06-19",
+                           expectedNaId: "211373468", source: "frus1895p2/d464"),
     ]
 
     private init() {}

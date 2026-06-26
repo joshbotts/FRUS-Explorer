@@ -70,13 +70,28 @@ struct CentralFilesClassifierTests {
         #expect(d3.first?.geoKeys == ["paraguay"])
     }
 
-    @Test("Consular despatch is not claimed (Phase 3)")
-    func skipsConsular() {
+    @Test("Consular despatch → consular series keyed on the dateline post city (Phase 3)")
+    func classifiesConsular() {
+        // Doc 8: consular despatch from Havana. Geo is the post city, not the FRUS chapter.
         let c = CentralFilesClassifier.classify(
             header: "Mr. Springer to Mr. Uhl.",
-            dateline: "Consulate-General of the United States, Havana, June 19, 1895.",
+            dateline: "Consulate-General, of the United States, Havana, June 19, 1895.",
             chapterCountry: "Spain")
-        #expect(c.isEmpty)
+        #expect(c.count == 1)
+        #expect(c.first?.category == .consularDespatches)
+        #expect(c.first?.geoKeys == ["havana"])
+        #expect(c.first?.confidence == .high)
+    }
+
+    @Test("Consular post city extraction handles the comma and 'at' dateline forms")
+    func consularPostKeyExtraction() {
+        #expect(CentralFilesClassifier.consularPostKey(
+            fromDateline: "Consulate-General, of the United States, Havana, June 19, 1895.") == "havana")
+        #expect(CentralFilesClassifier.consularPostKey(
+            fromDateline: "American Consulate, Amoy, March 2, 1899.") == "amoy")
+        #expect(CentralFilesClassifier.consularPostKey(
+            fromDateline: "Consulate of the United States at Canton, July 4, 1860.") == "canton")
+        #expect(CentralFilesClassifier.consularPostKey(fromDateline: "no consulate city here") == nil)
     }
 
     @Test("No resolvable country → no classification")
