@@ -305,7 +305,7 @@ enum HTMLTemplate {
     .fn-list {
       padding-left: 1.5em;
       font-size: var(--font-size-footnote);
-      color: var(--color-secondary);
+      color: var(--color-footnote-text);
     }
 
     .fn-list-item {

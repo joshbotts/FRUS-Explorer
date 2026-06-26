@@ -90,7 +90,13 @@ final class PDFCollectionExporter: CollectionExporter {
         documents: [CollectionExportDocument],
         options: CollectionExportOptions
     ) async throws -> URL {
-        let data = try buildPDF(collection: metadata, documents: documents, options: options)
+        let wordCloud: CGImage? = options.includeWordCloud
+            ? WordCloudExporter.collectionCloudImage(
+                texts: documents.map(\.bodyText), title: metadata.name
+              )?.cgImage
+            : nil
+        let data = try buildPDF(collection: metadata, documents: documents,
+                                options: options, wordCloud: wordCloud)
         let filename = sanitized(metadata.name) + ".pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
@@ -106,7 +112,8 @@ final class PDFCollectionExporter: CollectionExporter {
     private func buildPDF(
         collection: CollectionExportMetadata,
         documents: [CollectionExportDocument],
-        options: CollectionExportOptions
+        options: CollectionExportOptions,
+        wordCloud: CGImage? = nil
     ) throws -> Data {
         let mutableData = NSMutableData()
         var mediaBox = Self.pageRect
@@ -124,6 +131,15 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.endPDFPage()
         pageNumber += 1
 
+        // Word-cloud overview page (optional)
+        if let wordCloud {
+            ctx.beginPDFPage(nil)
+            drawWordCloudPage(ctx: ctx, image: wordCloud)
+            drawPageNumber(ctx: ctx, number: pageNumber)
+            ctx.endPDFPage()
+            pageNumber += 1
+        }
+
         // Document pages
         for doc in documents {
             drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
@@ -131,6 +147,30 @@ final class PDFCollectionExporter: CollectionExporter {
 
         ctx.closePDF()
         return mutableData as Data
+    }
+
+    // MARK: - Word Cloud Page
+
+    /// Draws the word-cloud overview image, aspect-fit within the page margins.
+    /// A raw Core Graphics PDF context has a bottom-left origin and draws images
+    /// upright, so no flip transform is needed.
+    private func drawWordCloudPage(ctx: CGContext, image: CGImage) {
+        let page = Self.pageRect
+        let available = page.insetBy(dx: Self.margin, dy: Self.margin)
+        let imageAspect = CGFloat(image.width) / CGFloat(image.height)
+        var width = available.width
+        var height = width / imageAspect
+        if height > available.height {
+            height = available.height
+            width = height * imageAspect
+        }
+        let rect = CGRect(
+            x: page.midX - width / 2,
+            y: page.midY - height / 2,
+            width: width,
+            height: height
+        )
+        ctx.draw(image, in: rect)
     }
 
     // MARK: - Cover Page

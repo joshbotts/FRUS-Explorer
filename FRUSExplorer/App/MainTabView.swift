@@ -110,6 +110,14 @@ struct MainTabView: View {
         // which becomes the sidebar's detail content rather than nesting a second
         // split. (BigPicture-iPadMacParity Phase 1.)
         .tabViewStyle(.sidebarAdaptable)
+        // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the
+        // sheet presents over whichever tab is active and clears it on dismiss.
+        // Mirrors the `pendingAnalytics` pattern but presented at the tab root so
+        // it is reachable from every tab.
+        .sheet(item: $appState.pendingWordCloud) { scope in
+            WordCloudView(scope: scope)
+                .environment(appState)
+        }
     }
 
     /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.

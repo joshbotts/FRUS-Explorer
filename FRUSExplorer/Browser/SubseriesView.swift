@@ -23,6 +23,8 @@ struct SubseriesView: View {
     let vm: BrowserViewModel
     let group: SubseriesGroup
 
+    @Environment(AppState.self) private var appState
+
     var body: some View {
         List {
             // Subseries statistics
@@ -77,6 +79,19 @@ struct SubseriesView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    appState.pendingWordCloud = .subseries(subseriesId: group.subseries)
+                } label: {
+                    Image(systemName: "cloud")
+                }
+                .help(String(localized: "browser.subseries.wordCloud.help",
+                             defaultValue: "Visualise the most frequent terms across this subseries"))
+                .accessibilityLabel(String(localized: "browser.subseries.wordCloud.a11y",
+                                           defaultValue: "Subseries word cloud"))
+            }
+        }
     }
 }
 
@@ -361,6 +376,13 @@ private struct VolumeRowContextMenu: View {
                     systemImage: "arrow.triangle.2.circlepath"
                 )
             }
+        }
+        Button {
+            appState.pendingWordCloud = .volume(volumeId: volume.volumeId)
+        } label: {
+            Label(String(localized: "browser.volume.wordCloud.action",
+                         defaultValue: "Word Cloud"),
+                  systemImage: "cloud")
         }
     }
 }

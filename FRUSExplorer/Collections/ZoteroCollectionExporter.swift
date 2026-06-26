@@ -20,18 +20,24 @@ import Foundation
 /// `options.includeNotes == false` strips child notes from every item so the
 /// exported file contains tags but not research-note text.
 ///
-/// RIS is used (rather than the Zotero web-API JSON envelope) because standard
-/// Zotero imports RIS on every platform — including iOS, where the Better BibTeX
-/// plugin that the JSON envelope relied on is unavailable. Importing the file
-/// adds every record in one operation.
+/// This RIS file is the **Zotero desktop** path: it imports via File → Import
+/// (no Better BibTeX plugin required), bringing in every record — with notes
+/// (`N1`), tags (`KW`), and the document number in Extra (`M2`) — in one
+/// operation. **Note:** the iOS Zotero app has no RIS/file import (no document-type
+/// registration; its share extension is a web-translator, not a citation-file
+/// importer), so on iOS the Zotero Web API path is used instead and this file is
+/// offered only as a "send to a Mac" artifact. Collection *hierarchy* is not
+/// expressible in RIS; File → Import groups the records into a single new
+/// collection.
 ///
 /// ## File location
 /// Output is written to `FileManager.default.temporaryDirectory`.
 ///
 /// Version history:
 ///   1.0 — Session 155: initial implementation
-///   2.0 — Session 164: switched output from Zotero JSON envelope to RIS so the
-///         file imports into standard Zotero (incl. iOS) without a plugin
+///   2.0 — Session 164: switched output from Zotero JSON envelope to RIS
+///   2.1 — Zotero strategy: RIS scoped to desktop (iOS has no RIS import);
+///         document number moved from N1 (Notes) to M2 (Extra)
 final class ZoteroCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter

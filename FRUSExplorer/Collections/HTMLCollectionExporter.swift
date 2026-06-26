@@ -54,7 +54,13 @@ final class HTMLCollectionExporter: CollectionExporter {
         documents: [CollectionExportDocument],
         options: CollectionExportOptions
     ) async throws -> URL {
-        let html = buildHTML(collection: metadata, documents: documents, options: options)
+        let cloudBase64: String? = options.includeWordCloud
+            ? WordCloudExporter.collectionCloudImage(
+                texts: documents.map(\.bodyText), title: metadata.name
+              )?.pngBase64
+            : nil
+        let html = buildHTML(collection: metadata, documents: documents,
+                             options: options, wordCloudPNGBase64: cloudBase64)
         let filename = sanitized(metadata.name) + ".html"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
@@ -70,7 +76,8 @@ final class HTMLCollectionExporter: CollectionExporter {
     private func buildHTML(
         collection: CollectionExportMetadata,
         documents: [CollectionExportDocument],
-        options: CollectionExportOptions
+        options: CollectionExportOptions,
+        wordCloudPNGBase64: String? = nil
     ) -> String {
         let title = escaped(collection.name)
         var body = ""
@@ -82,6 +89,15 @@ final class HTMLCollectionExporter: CollectionExporter {
             body += "  <p class=\"collection-note\">\(markdownItalics(escaped(note)))</p>\n"
         }
         body += "</header>\n\n"
+
+        // Word-cloud overview (optional), embedded as a base64 PNG
+        if let base64 = wordCloudPNGBase64 {
+            body += "<figure class=\"word-cloud\">\n"
+            body += "  <img alt=\"Word cloud of the most frequent terms in this collection\" "
+            body += "src=\"data:image/png;base64,\(base64)\" style=\"max-width:100%;height:auto;\" />\n"
+            body += "  <figcaption>Most frequent terms in this collection</figcaption>\n"
+            body += "</figure>\n\n"
+        }
 
         // Table of contents — label style controlled by options.tocStyle
         body += "<nav>\n  <h2>Contents</h2>\n  <ol>\n"

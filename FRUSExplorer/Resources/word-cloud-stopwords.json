@@ -1,0 +1,37 @@
+{
+  "english": [
+    "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
+    "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being",
+    "below", "between", "both", "but", "by", "can", "cannot", "could", "couldn't",
+    "did", "didn't", "do", "does", "doesn't", "doing", "don't", "down", "during",
+    "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't",
+    "have", "haven't", "having", "he", "her", "here", "hers", "herself", "him",
+    "himself", "his", "how", "i", "if", "in", "into", "is", "isn't", "it", "its",
+    "itself", "let", "me", "more", "most", "must", "my", "myself", "no", "nor",
+    "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours",
+    "ourselves", "out", "over", "own", "said", "same", "shall", "she", "should",
+    "shouldn't", "so", "some", "such", "than", "that", "the", "their", "theirs",
+    "them", "themselves", "then", "there", "these", "they", "this", "those",
+    "through", "to", "too", "under", "until", "up", "upon", "very", "was", "wasn't",
+    "we", "were", "weren't", "what", "when", "where", "which", "while", "who",
+    "whom", "why", "will", "with", "would", "wouldn't", "you", "your", "yours",
+    "yourself", "yourselves", "also", "may", "might", "one", "two", "thus",
+    "however", "therefore", "whether", "upon", "within", "without", "per", "via",
+    "etc", "yet", "us", "am", "being", "able", "made", "make", "made", "much",
+    "many", "well", "now", "new", "old", "first", "last", "long", "great", "good"
+  ],
+  "diplomatic": [
+    "telegram", "telegrams", "memorandum", "memoranda", "memo", "department",
+    "departmental", "secretary", "secretaries", "embassy", "embassies", "legation",
+    "legations", "minister", "ministers", "ambassador", "ambassadors", "washington",
+    "state", "foreign", "affairs", "office", "bureau", "government", "governments",
+    "note", "notes", "dispatch", "dispatches", "despatch", "despatches", "letter",
+    "letters", "message", "messages", "report", "reports", "instruction",
+    "instructions", "document", "documents", "subject", "reference", "regarding",
+    "concerning", "received", "enclosure", "enclosures", "enclosed", "attached",
+    "sir", "dear", "excellency", "honor", "honour", "obedient", "servant",
+    "respectfully", "official", "officials", "officer", "officers", "chief",
+    "section", "paragraph", "page", "pages", "volume", "file", "files", "no",
+    "number", "numbered", "copy", "copies", "signed", "dated", "translation"
+  ]
+}

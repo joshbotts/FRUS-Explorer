@@ -174,6 +174,9 @@ struct ResearchView: View {
                                 .foregroundStyle(Color.accentColor)
                         }
                         .tag(ResearchSidebarItem.collection(item.collection.id))
+                        .contextMenu {
+                            wordCloudButton(.collection(id: item.collection.id))
+                        }
                     }
                 }
             }
@@ -196,6 +199,9 @@ struct ResearchView: View {
                                 .foregroundStyle(Color.accentColor)
                         }
                         .tag(ResearchSidebarItem.tag(item.tag.id))
+                        .contextMenu {
+                            wordCloudButton(.userTag(id: item.tag.id))
+                        }
                     }
                 }
             }
@@ -417,6 +423,19 @@ struct ResearchView: View {
         }
         .background(color.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    // MARK: - Word Cloud
+
+    /// A context-menu button that opens a word cloud for the given scope.
+    @ViewBuilder
+    private func wordCloudButton(_ scope: WordCloudScope) -> some View {
+        Button {
+            appState.pendingWordCloud = scope
+        } label: {
+            Label(String(localized: "research.wordCloud", defaultValue: "Word Cloud"),
+                  systemImage: "cloud")
+        }
     }
 
     // MARK: - Context Menu

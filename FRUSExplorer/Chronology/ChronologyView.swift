@@ -164,6 +164,7 @@ struct ChronologyView: View {
                     in: ...vm.rangeEnd,
                     displayedComponents: .date
                 )
+                .datePickerStyle(.compact)
                 .labelsHidden()
                 Text(verbatim: "–").foregroundStyle(.tertiary)
                 DatePicker(
@@ -172,6 +173,7 @@ struct ChronologyView: View {
                     in: vm.rangeStart...,
                     displayedComponents: .date
                 )
+                .datePickerStyle(.compact)
                 .labelsHidden()
                 Spacer()
                 Button {
@@ -201,7 +203,8 @@ struct ChronologyView: View {
                 }
             }
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 8)
     }
 
     private var summaryLine: String {

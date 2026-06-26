@@ -57,7 +57,7 @@ struct VolumeFrequency: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 98: initial implementation
-struct TermCount: Sendable, Identifiable {
+struct TermCount: Sendable, Identifiable, Codable {
     let term: String
     let count: Int
     var id: String { term }

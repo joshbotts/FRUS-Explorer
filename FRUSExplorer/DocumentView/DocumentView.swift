@@ -829,6 +829,23 @@ struct DocumentView: View {
                 systemImage: "tag"
             )
 
+            // 2b. Word cloud for this document
+            Button {
+                appState.pendingWordCloud = .document(
+                    volumeId: vm.entry.volumeId, documentId: vm.entry.documentId)
+            } label: {
+                Label(
+                    String(localized: "document.toolbar.wordCloud", defaultValue: "Word Cloud"),
+                    systemImage: "cloud"
+                )
+            }
+            .controlHelp(
+                String(localized: "document.toolbar.wordCloud.a11y", defaultValue: "Word cloud"),
+                detail: String(localized: "document.toolbar.wordCloud.help",
+                               defaultValue: "Visualise the most frequent terms in this document"),
+                systemImage: "cloud"
+            )
+
             // 3. Create highlight — enabled when text is selected in the web view
             Button {
                 showHighlightColorPicker = true
@@ -1884,13 +1901,13 @@ private struct CitationSheetView: View {
 
             if let bibtexFileURL {
                 ShareLink(item: bibtexFileURL) {
-                    Label(String(localized: "document.citation.sendZoteroBibtex", defaultValue: "Send to Zotero (BibTeX)…"), systemImage: "square.and.arrow.up")
+                    Label(String(localized: "document.citation.sendZoteroBibtex", defaultValue: "Share BibTeX file…"), systemImage: "square.and.arrow.up")
                 }
             }
 
             if let risFileURL {
                 ShareLink(item: risFileURL) {
-                    Label(String(localized: "document.citation.sendZoteroRis", defaultValue: "Send to Zotero (RIS)…"), systemImage: "square.and.arrow.up")
+                    Label(String(localized: "document.citation.sendZoteroRis", defaultValue: "Share RIS file…"), systemImage: "square.and.arrow.up")
                 }
             }
         } label: {
@@ -1944,6 +1961,17 @@ private struct SummaryStripView: View {
     let summary: GeneratedSummary
     let totalCount: Int
 
+    /// Number of lines shown before the summary is collapsed behind "Show more".
+    private static let collapsedLineLimit = 4
+
+    /// Whether the full summary text is shown. Collapsed by default so a long
+    /// summary doesn't dominate the pinned header; tapping expands it inline.
+    @State private var isExpanded = false
+
+    /// `true` once the collapsed text is detected to overflow `collapsedLineLimit`
+    /// lines — gates whether the "Show more" control appears at all.
+    @State private var isTruncated = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -1972,7 +2000,33 @@ private struct SummaryStripView: View {
             Text(summary.responseText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .lineLimit(4)
+                .lineLimit(isExpanded ? nil : Self.collapsedLineLimit)
+                .fixedSize(horizontal: false, vertical: true)
+                .background {
+                    // Behind the (possibly clamped) text, try to fit the full text
+                    // into the same proposed height. If it doesn't fit, the visible
+                    // text is truncated and the "Show more" control should appear.
+                    ViewThatFits(in: .vertical) {
+                        Text(summary.responseText)
+                            .font(.callout)
+                            .hidden()
+                            .accessibilityHidden(true)
+                        Color.clear
+                            .onAppear { isTruncated = true }
+                            .accessibilityHidden(true)
+                    }
+                }
+            if isTruncated || isExpanded {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+                } label: {
+                    Text(isExpanded
+                         ? String(localized: "document.summary.showLess", defaultValue: "Show less")
+                         : String(localized: "document.summary.showMore", defaultValue: "Show more"))
+                        .font(.caption.weight(.medium))
+                }
+                .buttonStyle(.borderless)
+            }
             if summary.wasChunked {
                 Label(
                     String(localized: "document.summary.chunked",

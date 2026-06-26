@@ -957,6 +957,7 @@ struct ExportSheetView: View {
     @State private var footnoteStyle: CollectionFootnoteStyle = .all
     @State private var applyHighlights: Bool = false
     @State private var includeNotes: Bool = true
+    @State private var includeWordCloud: Bool = false
     @State private var selectedPromptId: UUID? = nil
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
@@ -1094,6 +1095,12 @@ struct ExportSheetView: View {
                 Toggle(String(localized: "export.includeNotes.label",
                               defaultValue: "Include research notes"),
                        isOn: $includeNotes)
+
+                if selectedFormat == .pdf || selectedFormat == .html {
+                    Toggle(String(localized: "export.includeWordCloud.label",
+                                  defaultValue: "Include word cloud overview"),
+                           isOn: $includeWordCloud)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1218,6 +1225,11 @@ struct ExportSheetView: View {
                     Toggle(String(localized: "export.includeNotes.label",
                                  defaultValue: "Include research notes"),
                            isOn: $includeNotes)
+                    if selectedFormat == .pdf || selectedFormat == .html {
+                        Toggle(String(localized: "export.includeWordCloud.label",
+                                     defaultValue: "Include word cloud overview"),
+                               isOn: $includeWordCloud)
+                    }
                 }
 
                 Section {
@@ -1382,7 +1394,8 @@ struct ExportSheetView: View {
             footnoteStyle:   footnoteStyle,
             applyHighlights: applyHighlights,
             includeNotes:    includeNotes,
-            summaryPromptId: selectedPromptId
+            summaryPromptId: selectedPromptId,
+            includeWordCloud: includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html)
         )
     }
 

@@ -364,6 +364,10 @@ final class AppState {
     /// `nil` if the FTS5 database could not be opened.
     var analyticsService: CorpusAnalyticsService?
 
+    /// The shared word-frequency service backing word clouds. Created at boot
+    /// alongside `searchService`; `nil` if the FTS5 database could not be opened.
+    var wordFrequencyService: WordFrequencyService?
+
     // MARK: - Research Session Logging
 
     /// `ModelContext` used exclusively for writing `ResearchSession` and `SessionEvent`
@@ -470,6 +474,15 @@ final class AppState {
     /// `frus.chronology` window) observe this via `.onChange`, apply it, and clear it —
     /// mirroring the `pendingSearch` / `pendingAnalytics` pattern.
     var pendingChronology: ChronologyParameters? = nil
+
+    /// Cross-view handoff into the Word Cloud analytics view.
+    ///
+    /// Set by any surface (document toolbar, volume/subseries browser, collection,
+    /// user tag, saved search) that wants to open a word cloud for a given scope.
+    /// `MainTabView` (iOS sheet) and the macOS `frus.wordcloud` window observe this
+    /// via `.onChange`, present the cloud, and clear it — mirroring the
+    /// `pendingSearch` / `pendingAnalytics` pattern.
+    var pendingWordCloud: WordCloudScope? = nil
 
     /// Set by cross-reference navigation to push a document into the Browse tab's
     /// NavigationStack/NavigationSplitView. `BrowserView` observes via `.onChange`
@@ -697,6 +710,10 @@ final class AppState {
                     }
                     #if os(iOS)
                     self.endIndexingLiveActivity()
+                    // The index just changed, invalidating the corpus word cloud's
+                    // on-disk cache. Queue a background precompute so the next time
+                    // the user opens the corpus cloud it's already warm.
+                    WordCloudPrecomputeQueue.enqueue(WordCloudScope.corpus.signature)
                     #endif
                 } else {
                     let isNewVolume = self.currentIndexingProgress?.volumeId != update.volumeId

@@ -176,6 +176,33 @@ struct FRUSExplorerApp: App {
     /// Task identifier registered in BGTaskSchedulerPermittedIdentifiers (Info.plist).
     private static let indexingBGTaskID = "bottsywattsy.FRUS-Explorer.indexing"
 
+    #if DEBUG
+    /// DEBUG accessor so the summarization probe view can name the identifier to
+    /// simulate. The probe reuses the indexing task (no second BG identifier) — when
+    /// armed, an indexing wake runs the probe instead of indexing.
+    static var debugIndexingBGTaskID: String { indexingBGTaskID }
+    #endif
+
+    /// Drains the word-cloud precompute queue within the background task's remaining
+    /// budget, one scope at a time. A scope is dequeued only when finished; if the
+    /// task is cancelled (budget expired) the loop stops and the rest stay queued
+    /// for the next wake.
+    @MainActor
+    private static func drainWordCloudPrecompute(appState: AppState, modelContext: ModelContext) async {
+        guard WordCloudPrecomputeQueue.isEnabled else { return }
+        for signature in WordCloudPrecomputeQueue.pending() {
+            if Task.isCancelled { break }
+            let finished = await WordCloudLoader.precompute(
+                signature: signature, appState: appState, modelContext: modelContext
+            )
+            if finished {
+                WordCloudPrecomputeQueue.remove(signature)
+            } else {
+                break
+            }
+        }
+    }
+
     /// Registers the BGProcessingTask handler with the system.
     ///
     /// Must be called before the app finishes launching. `appState` is a reference-type
@@ -184,6 +211,7 @@ struct FRUSExplorerApp: App {
     init() {
         Self.configureTipKit()
         let state = appState
+        let container = modelContainer
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: Self.indexingBGTaskID,
             using: nil
@@ -210,6 +238,16 @@ struct FRUSExplorerApp: App {
                     complete(false)
                     return
                 }
+                #if DEBUG
+                // When the summarization probe is armed, spend this wake measuring
+                // FoundationModels under background conditions instead of indexing.
+                if SummarizationBackgroundProbe.isArmed {
+                    SummarizationBackgroundProbe.disarm()
+                    await SummarizationBackgroundProbe.runUntilExpiration(appState: state)
+                    complete(true)
+                    return
+                }
+                #endif
                 let volumesToIndex = Array(state.interruptedVolumeIds)
                 if volumesToIndex.isEmpty {
                     // No specific interrupted volumes; index anything not yet done.
@@ -219,6 +257,9 @@ struct FRUSExplorerApp: App {
                         try? await pipeline.indexVolume(volumeId)
                     }
                 }
+                // With any remaining budget, precompute queued heavy word clouds
+                // (corpus / subseries) into the on-disk cache so they open instantly.
+                await Self.drainWordCloudPrecompute(appState: state, modelContext: container.mainContext)
                 complete(true)
             }
             // System calls this when budget expires. Cancel in-flight work; the
@@ -412,6 +453,15 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
         }
         .defaultSize(width: 760, height: 560)
+
+        // MARK: - Word Cloud Window
+        Window(String(localized: "wordcloud.window.title", defaultValue: "Word Cloud"),
+               id: "frus.wordcloud") {
+            WordCloudWindowContent()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 760, height: 620)
 
         // MARK: - Chronology Window
         Window(String(localized: "chronology.window.title", defaultValue: "Chronology"),
@@ -641,6 +691,7 @@ struct FRUSExplorerApp: App {
                 personMentionStore: appState.personMentionStore
             )
             appState.analyticsService = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+            appState.wordFrequencyService = WordFrequencyService(pipeline: pipeline)
             let pageRangeStore = try? PageRangeStore(databaseURL: dbURL)
             appState.pageRangeStore = pageRangeStore
             let downloadedIds = Set(
@@ -966,7 +1017,11 @@ struct FRUSExplorerApp: App {
             queue: .main
         ) { [appState] _ in
             Task { @MainActor in
-                guard appState.currentIndexingProgress != nil || !appState.interruptedVolumeIds.isEmpty else { return }
+                let hasIndexingWork = appState.currentIndexingProgress != nil
+                    || !appState.interruptedVolumeIds.isEmpty
+                let hasPrecomputeWork = WordCloudPrecomputeQueue.isEnabled
+                    && WordCloudPrecomputeQueue.hasPending
+                guard hasIndexingWork || hasPrecomputeWork else { return }
                 let request = BGProcessingTaskRequest(identifier: Self.indexingBGTaskID)
                 request.requiresNetworkConnectivity = false
                 request.requiresExternalPower = false

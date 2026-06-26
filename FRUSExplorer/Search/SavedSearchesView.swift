@@ -37,6 +37,7 @@ struct SavedSearchesView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppState.self) private var appState
 
     // MARK: - Data
 
@@ -176,6 +177,14 @@ struct SavedSearchesView: View {
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
+                    Button {
+                        appState.pendingWordCloud = .savedSearch(id: search.id)
+                        dismiss()
+                    } label: {
+                        Label(String(localized: "savedSearches.row.wordCloud",
+                                     defaultValue: "Word Cloud"),
+                              systemImage: "cloud")
+                    }
                     Button(String(localized: "savedSearches.row.rename",
                                   defaultValue: "Rename")) {
                         renaming = search

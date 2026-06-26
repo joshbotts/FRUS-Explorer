@@ -216,6 +216,9 @@ struct CollectionExportOptions: Sendable {
     /// The `SummarizationPrompt.id` to use when `bodyDepth == .summaryOnly`.
     /// Summaries are generated on demand if none exist for this prompt.
     var summaryPromptId: UUID? = nil
+    /// When `true`, a word-cloud overview page/section of the collection's most
+    /// frequent terms is included. Supported by the PDF and HTML exporters.
+    var includeWordCloud: Bool = false
 }
 
 // MARK: - ExportFormat
@@ -227,8 +230,10 @@ struct CollectionExportOptions: Sendable {
 ///   1.1 — Session 82: added `.docx` backed by `DocxCollectionExporter`
 ///   1.2 — Session 155: added `.zoteroJSON` backed by `ZoteroCollectionExporter`
 ///          (Zotero JSON exchange format, one item per document)
-///   1.3 — Session 164: `.zoteroJSON` now emits RIS (`.ris`) so the export
-///          imports into standard Zotero on every platform, including iOS
+///   1.3 — Session 164: `.zoteroJSON` now emits RIS (`.ris`)
+///   1.4 — Zotero strategy: `.zoteroJSON` (RIS) is the **Zotero desktop**
+///          fallback only — iOS Zotero has no RIS import. The annotation-
+///          preserving path on both platforms is the Zotero Web API (separate).
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
@@ -242,7 +247,8 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         case .pdf:        return "PDF"
         case .html:       return "HTML"
         case .docx:       return "DOCX"
-        case .zoteroJSON: return String(localized: "export.format.zotero", defaultValue: "Zotero")
+        case .zoteroJSON: return String(localized: "export.format.zotero",
+                                        defaultValue: "Zotero RIS (desktop)")
         }
     }
 

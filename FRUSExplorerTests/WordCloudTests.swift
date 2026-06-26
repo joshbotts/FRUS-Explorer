@@ -1,0 +1,263 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import CoreGraphics
+import Foundation
+import Testing
+@testable import FRUSExplorer
+
+// MARK: - WordCloudTokenizerTests
+
+/// Verifies tokenisation, lemmatisation, and stopword filtering for the word-cloud
+/// pipeline.
+struct WordCloudTokenizerTests {
+
+    @Test("WordCloudTokenizer: drops stopwords and short tokens, counts the rest")
+    func filtersAndCounts() {
+        let tokenizer = WordCloudTokenizer(stopwords: ["the", "and", "of"])
+        var counts: [String: Int] = [:]
+        let added = tokenizer.accumulate(
+            from: "The treaty and the negotiation of the treaty.",
+            into: &counts
+        )
+        // "the", "and", "of" are stopped; "a"/short words none here.
+        #expect(counts["treaty"] == 2)
+        #expect(counts["negotiation"] == 1)
+        #expect(counts["the"] == nil)
+        #expect(counts["and"] == nil)
+        #expect(added == 3) // treaty, negotiation, treaty
+    }
+
+    @Test("WordCloudTokenizer: case-folds identical words into one bucket")
+    func caseFolds() {
+        let tokenizer = WordCloudTokenizer(stopwords: [])
+        var counts: [String: Int] = [:]
+        // Normalisation lowercases, so differing case must not fragment a term.
+        tokenizer.accumulate(from: "Treaty treaty TREATY", into: &counts)
+        #expect(counts["treaty"] == 3)
+        #expect(counts.count == 1)
+    }
+
+    @Test("WordCloudTokenizer: rejects numbers and punctuation-only tokens")
+    func rejectsNonAlphabetic() {
+        let tokenizer = WordCloudTokenizer(stopwords: [])
+        var counts: [String: Int] = [:]
+        tokenizer.accumulate(from: "1969 42nd —— diplomacy 12/15", into: &counts)
+        #expect(counts["1969"] == nil)
+        #expect(counts["diplomacy"] == 1)
+        // No purely numeric or symbolic tokens survive.
+        #expect(counts.keys.allSatisfy { $0.contains(where: { $0.isLetter }) })
+    }
+
+    @Test("WordCloudTokenizer: singularize folds common plurals, spares exceptions")
+    func singularizeRules() {
+        #expect(WordCloudTokenizer.singularize("treaties") == "treaty")
+        #expect(WordCloudTokenizer.singularize("policies") == "policy")
+        #expect(WordCloudTokenizer.singularize("documents") == "document")
+        #expect(WordCloudTokenizer.singularize("boxes") == "box")
+        #expect(WordCloudTokenizer.singularize("churches") == "church")
+        // Exceptions and risky endings are left alone.
+        #expect(WordCloudTokenizer.singularize("series") == "series")
+        #expect(WordCloudTokenizer.singularize("crisis") == "crisis")
+        #expect(WordCloudTokenizer.singularize("congress") == "congress")
+        #expect(WordCloudTokenizer.singularize("analysis") == "analysis")
+    }
+
+    @Test("WordCloudTokenizer: plural fold merges singular and plural counts")
+    func pluralFoldMerges() {
+        let tokenizer = WordCloudTokenizer(stopwords: [])
+        var counts: [String: Int] = [:]
+        tokenizer.accumulate(from: "treaty treaties treaties", into: &counts)
+        #expect(counts["treaty"] == 3)
+        #expect(counts["treaties"] == nil)
+    }
+
+    @Test("WordCloudTokenizer: folding can be disabled")
+    func pluralFoldDisabled() {
+        let tokenizer = WordCloudTokenizer(stopwords: [], foldPlurals: false)
+        var counts: [String: Int] = [:]
+        tokenizer.accumulate(from: "treaties", into: &counts)
+        // With folding off and no lemma, the surface plural is kept.
+        #expect(counts["treaties"] == 1)
+    }
+
+    @Test("WordCloudTokenizer: empty text contributes nothing")
+    func emptyText() {
+        let tokenizer = WordCloudTokenizer(stopwords: [])
+        var counts: [String: Int] = [:]
+        let added = tokenizer.accumulate(from: "", into: &counts)
+        #expect(added == 0)
+        #expect(counts.isEmpty)
+    }
+}
+
+// MARK: - WordCloudStopwordsTests
+
+/// Verifies the bundled stopword resource loads and layers correctly.
+struct WordCloudStopwordsTests {
+
+    @Test("WordCloudStopwords: English layer is non-empty and always active")
+    func englishLayerLoads() {
+        #expect(!WordCloudStopwords.english.isEmpty)
+        #expect(WordCloudStopwords.english.contains("the"))
+    }
+
+    @Test("WordCloudStopwords: diplomatic layer only applies when requested")
+    func diplomaticLayerOptional() {
+        let withoutDiplomatic = WordCloudStopwords.active(includeDiplomatic: false)
+        let withDiplomatic = WordCloudStopwords.active(includeDiplomatic: true)
+        #expect(!withoutDiplomatic.contains("telegram"))
+        #expect(withDiplomatic.contains("telegram"))
+        #expect(withDiplomatic.isSuperset(of: withoutDiplomatic))
+    }
+}
+
+// MARK: - WordCloudLayoutTests
+
+/// Verifies the spiral packing produces non-overlapping, in-bounds placements with
+/// frequency-proportional sizing.
+struct WordCloudLayoutTests {
+
+    private func sampleTerms() -> [TermCount] {
+        [
+            TermCount(term: "diplomacy", count: 100),
+            TermCount(term: "treaty", count: 60),
+            TermCount(term: "embassy", count: 40),
+            TermCount(term: "summit", count: 20),
+            TermCount(term: "accord", count: 5)
+        ]
+    }
+
+    @Test("WordCloudLayout: most frequent term gets the largest font")
+    func frequencyDrivesFontSize() {
+        let placed = WordCloudLayout.place(
+            terms: sampleTerms(), in: CGSize(width: 800, height: 600)
+        )
+        let byTerm = Dictionary(uniqueKeysWithValues: placed.map { ($0.term, $0.fontSize) })
+        if let top = byTerm["diplomacy"], let bottom = byTerm["accord"] {
+            #expect(top > bottom)
+        } else {
+            Issue.record("Expected both extreme terms to be placed")
+        }
+    }
+
+    @Test("WordCloudLayout: placements stay within the canvas bounds")
+    func staysInBounds() {
+        let size = CGSize(width: 800, height: 600)
+        let placed = WordCloudLayout.place(terms: sampleTerms(), in: size)
+        #expect(!placed.isEmpty)
+        for word in placed {
+            #expect(word.center.x >= 0 && word.center.x <= size.width)
+            #expect(word.center.y >= 0 && word.center.y <= size.height)
+        }
+    }
+
+    @Test("WordCloudLayout: empty input yields no placements")
+    func emptyInput() {
+        let placed = WordCloudLayout.place(terms: [], in: CGSize(width: 400, height: 400))
+        #expect(placed.isEmpty)
+    }
+
+    @Test("WordCloudLayout: zero-area canvas yields no placements")
+    func zeroCanvas() {
+        let placed = WordCloudLayout.place(terms: sampleTerms(), in: .zero)
+        #expect(placed.isEmpty)
+    }
+}
+
+// MARK: - WordCloudDiskCacheTests
+
+/// Verifies the on-disk word-cloud cache round-trips and is fingerprint-sensitive.
+struct WordCloudDiskCacheTests {
+
+    private func sampleResult() -> WordCloudResult {
+        WordCloudResult(
+            terms: [TermCount(term: "diplomacy", count: 9), TermCount(term: "treaty", count: 4)],
+            documentCount: 3, totalTokenCount: 42
+        )
+    }
+
+    @Test("WordCloudDiskCache: saves and loads a result for the same key")
+    func roundTrips() {
+        let key = WordCloudDiskCache.key(
+            signature: "test-\(UUID().uuidString)", limit: 100,
+            includeDiplomatic: true, fingerprint: 7
+        )
+        WordCloudDiskCache.save(sampleResult(), key: key)
+        let loaded = WordCloudDiskCache.load(key: key)
+        #expect(loaded?.documentCount == 3)
+        #expect(loaded?.totalTokenCount == 42)
+        #expect(loaded?.terms.first?.term == "diplomacy")
+        #expect(loaded?.terms.first?.count == 9)
+    }
+
+    @Test("WordCloudDiskCache: a changed fingerprint misses the cache")
+    func fingerprintInvalidates() {
+        let signature = "test-\(UUID().uuidString)"
+        let key1 = WordCloudDiskCache.key(signature: signature, limit: 100,
+                                          includeDiplomatic: true, fingerprint: 1)
+        WordCloudDiskCache.save(sampleResult(), key: key1)
+        // Same scope/params but a different index fingerprint → different key → miss.
+        let key2 = WordCloudDiskCache.key(signature: signature, limit: 100,
+                                          includeDiplomatic: true, fingerprint: 2)
+        #expect(WordCloudDiskCache.load(key: key2) == nil)
+    }
+}
+
+// MARK: - WordCloudScopeTests
+
+/// Verifies scope signatures are stable and distinct.
+struct WordCloudScopeTests {
+
+    @Test("WordCloudScope: distinct scopes have distinct signatures")
+    func distinctSignatures() {
+        let id = UUID()
+        let scopes: [WordCloudScope] = [
+            .document(volumeId: "v1", documentId: "d1"),
+            .volume(volumeId: "v1"),
+            .subseries(subseriesId: "1969-76"),
+            .corpus,
+            .collection(id: id),
+            .userTag(id: id),
+            .savedSearch(id: id)
+        ]
+        let signatures = Set(scopes.map(\.signature))
+        #expect(signatures.count == scopes.count)
+    }
+
+    @Test("WordCloudScope: signature is stable for equal scopes")
+    func stableSignature() {
+        #expect(WordCloudScope.volume(volumeId: "v1").signature
+                == WordCloudScope.volume(volumeId: "v1").signature)
+        #expect(WordCloudScope.corpus.id == "corpus")
+    }
+
+    @Test("WordCloudScope: reconstructs from its signature (round-trip)")
+    func signatureRoundTrip() {
+        let id = UUID()
+        let scopes: [WordCloudScope] = [
+            .document(volumeId: "frus1969-76v01", documentId: "d42"),
+            .volume(volumeId: "frus1969-76v01"),
+            .subseries(subseriesId: "1969-76"),
+            .corpus,
+            .collection(id: id),
+            .userTag(id: id),
+            .savedSearch(id: id)
+        ]
+        for scope in scopes {
+            #expect(WordCloudScope(signature: scope.signature) == scope)
+        }
+    }
+
+    @Test("WordCloudScope: rejects malformed signatures")
+    func rejectsBadSignatures() {
+        #expect(WordCloudScope(signature: "bogus") == nil)
+        #expect(WordCloudScope(signature: "col:not-a-uuid") == nil)
+        #expect(WordCloudScope(signature: "") == nil)
+    }
+}

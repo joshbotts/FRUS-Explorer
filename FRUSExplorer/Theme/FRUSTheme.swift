@@ -125,6 +125,7 @@ enum FRUSTheme {
     /// |-----------------------------|--------------------------------------------|
     /// | `--color-primary`           | Body text                                  |
     /// | `--color-secondary`         | Dateline, secondary text, table borders    |
+    /// | `--color-footnote-text`     | Visible footnote-list body text            |
     /// | `--color-accent`            | Links, footnote markers                    |
     /// | `--color-background`        | Page background, footnote popover bg       |
     /// | `--color-editorial-border`  | Left border of editorial note blocks       |
@@ -149,7 +150,15 @@ enum FRUSTheme {
         // ── Colors ────────────────────────────────────────────────────────────
         let primary            = dark ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.85)"
         let secondary          = dark ? "rgba(255,255,255,0.52)" : "rgba(0,0,0,0.50)"
-        let accent             = "rgb(0,122,255)"                  // system blue (both modes)
+        // Footnote body text is small (≈0.785× body), so it needs more contrast
+        // than ordinary secondary text to stay legible — most noticeably in dark
+        // mode, where 52% white at footnote size is hard to read.
+        let footnoteText       = dark ? "rgba(255,255,255,0.78)"  : "rgba(0,0,0,0.68)"
+        // System blue, brightened in dark mode to Apple's dark-appearance
+        // systemBlue. The light value sits at ~4.2:1 on the dark page background —
+        // under WCAG AA — which is most noticeable on the tiny footnote markers
+        // and gloss/cross-ref links that all draw in this color.
+        let accent             = dark ? "rgb(10,132,255)" : "rgb(0,122,255)"
         let background         = dark ? "rgb(28,28,30)"           : "rgb(255,255,255)"
         let editorialBorder    = dark ? "rgba(160,120,230,0.60)"  : "rgba(140,0,140,0.50)"
         let editorialBg        = dark ? "rgba(160,120,230,0.12)"  : "rgba(128,0,128,0.07)"
@@ -169,6 +178,7 @@ enum FRUSTheme {
         :root {
           --color-primary:           \(primary);
           --color-secondary:         \(secondary);
+          --color-footnote-text:     \(footnoteText);
           --color-accent:            \(accent);
           --color-background:        \(background);
           --color-editorial-border:  \(editorialBorder);
