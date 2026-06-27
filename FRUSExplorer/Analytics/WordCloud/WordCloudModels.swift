@@ -8,6 +8,70 @@
 
 import Foundation
 
+// MARK: - WordCloudLens
+
+/// A semantic filter applied while tokenising, so a word cloud can foreground a
+/// particular kind of term instead of all frequent words.
+///
+/// `allTerms` is the default (lemmatised content words). The entity lenses use
+/// Apple's `NaturalLanguage` named-entity recogniser; the part-of-speech lenses
+/// use its lexical-class tagger. All run on-device.
+///
+/// Version history:
+///   1.0 — Word Cloud v2: semantic lenses
+enum WordCloudLens: String, CaseIterable, Sendable, Codable, Identifiable {
+    /// All frequent content words (the original behaviour).
+    case allTerms
+    /// Named people.
+    case people
+    /// Named places.
+    case places
+    /// Named organizations.
+    case organizations
+    /// Common nouns — the subjects/topics of the text.
+    case topics
+    /// Verbs — the actions.
+    case actions
+    /// Adjectives — descriptive language.
+    case descriptors
+
+    var id: String { rawValue }
+
+    /// `true` for the named-entity lenses (people / places / organizations).
+    var isEntity: Bool {
+        switch self {
+        case .people, .places, .organizations: return true
+        default: return false
+        }
+    }
+
+    /// Localised menu label.
+    var label: String {
+        switch self {
+        case .allTerms:      return String(localized: "wordcloud.lens.all", defaultValue: "All terms")
+        case .people:        return String(localized: "wordcloud.lens.people", defaultValue: "People")
+        case .places:        return String(localized: "wordcloud.lens.places", defaultValue: "Places")
+        case .organizations: return String(localized: "wordcloud.lens.orgs", defaultValue: "Organizations")
+        case .topics:        return String(localized: "wordcloud.lens.topics", defaultValue: "Topics (nouns)")
+        case .actions:       return String(localized: "wordcloud.lens.actions", defaultValue: "Actions (verbs)")
+        case .descriptors:   return String(localized: "wordcloud.lens.descriptors", defaultValue: "Descriptors (adjectives)")
+        }
+    }
+
+    /// SF Symbol for the lens menu.
+    var systemImage: String {
+        switch self {
+        case .allTerms:      return "text.word.spacing"
+        case .people:        return "person.2"
+        case .places:        return "mappin.and.ellipse"
+        case .organizations: return "building.2"
+        case .topics:        return "tag"
+        case .actions:       return "bolt"
+        case .descriptors:   return "paintpalette"
+        }
+    }
+}
+
 // MARK: - WordCloudDocumentKey
 
 /// A composite document identity (`volumeId` + `documentId`) used to address a

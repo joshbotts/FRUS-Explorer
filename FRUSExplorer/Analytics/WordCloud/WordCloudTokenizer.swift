@@ -39,15 +39,43 @@ struct WordCloudTokenizer: Sendable {
     /// lemmatiser leaves unchanged, so e.g. "treaties" merges with "treaty".
     let foldPlurals: Bool
 
+    /// The semantic filter. `.allTerms` keeps all content words; the entity and
+    /// part-of-speech lenses keep only matching tokens (via `NaturalLanguage`).
+    let lens: WordCloudLens
+
     /// Creates a tokenizer.
     /// - Parameters:
     ///   - stopwords: Terms to exclude after lemmatisation/lowercasing.
     ///   - minimumLength: Shortest surviving token length. Default 3.
     ///   - foldPlurals: Whether to apply the plural-folding fallback. Default true.
-    init(stopwords: Set<String>, minimumLength: Int = 3, foldPlurals: Bool = true) {
+    ///   - lens: Semantic filter to apply. Default `.allTerms`.
+    init(stopwords: Set<String>, minimumLength: Int = 3, foldPlurals: Bool = true,
+         lens: WordCloudLens = .allTerms) {
         self.stopwords = stopwords
         self.minimumLength = minimumLength
         self.foldPlurals = foldPlurals
+        self.lens = lens
+    }
+
+    /// The `NaturalLanguage` name-type tag this lens filters on, if it's an entity lens.
+    private var nameTag: NLTag? {
+        switch lens {
+        case .people:        return .personalName
+        case .places:        return .placeName
+        case .organizations: return .organizationName
+        default:             return nil
+        }
+    }
+
+    /// The `NaturalLanguage` lexical-class tag this lens filters on, if it's a
+    /// part-of-speech lens.
+    private var lexicalTag: NLTag? {
+        switch lens {
+        case .topics:      return .noun
+        case .actions:     return .verb
+        case .descriptors: return .adjective
+        default:           return nil
+        }
     }
 
     /// Accumulates lemmatised, filtered term counts from `text` into `counts`.
@@ -63,7 +91,18 @@ struct WordCloudTokenizer: Sendable {
     @discardableResult
     func accumulate(from text: String, into counts: inout [String: Int]) -> Int {
         guard !text.isEmpty else { return 0 }
-        let tagger = NLTagger(tagSchemes: [.lemma])
+        return lens.isEntity
+            ? accumulateEntities(from: text, into: &counts)
+            : accumulateWords(from: text, into: &counts)
+    }
+
+    /// Word path: lemmatised content words (`.allTerms`) optionally filtered to a
+    /// part-of-speech (`.topics` / `.actions` / `.descriptors`).
+    private func accumulateWords(from text: String, into counts: inout [String: Int]) -> Int {
+        // Only request the lexical-class scheme when a POS lens needs it — the
+        // default `.allTerms` path stays lemma-only and fast.
+        let schemes: [NLTagScheme] = lexicalTag == nil ? [.lemma] : [.lemma, .lexicalClass]
+        let tagger = NLTagger(tagSchemes: schemes)
         tagger.string = text
         // The FRUS corpus is English; pinning the language improves lemma quality
         // and avoids per-call language detection.
@@ -76,6 +115,10 @@ struct WordCloudTokenizer: Sendable {
             scheme: .lemma,
             options: [.omitPunctuation, .omitWhitespace, .omitOther]
         ) { tag, tokenRange in
+            if let needed = lexicalTag {
+                let cls = tagger.tag(at: tokenRange.lowerBound, unit: .word, scheme: .lexicalClass).0
+                guard cls == needed else { return true }
+            }
             let surface = text[tokenRange]
             let lemma = tag?.rawValue
             let hasLemma = (lemma?.isEmpty == false)
@@ -86,6 +129,34 @@ struct WordCloudTokenizer: Sendable {
             if !hasLemma && foldPlurals { candidate = Self.singularize(candidate) }
             if isAcceptable(candidate) {
                 counts[candidate, default: 0] += 1
+                added += 1
+            }
+            return true
+        }
+        return added
+    }
+
+    /// Entity path: named people / places / organizations via the name-type
+    /// recogniser. `.joinNames` keeps multi-word names ("United States") whole.
+    private func accumulateEntities(from text: String, into counts: inout [String: Int]) -> Int {
+        guard let needed = nameTag else { return 0 }
+        let tagger = NLTagger(tagSchemes: [.nameType])
+        tagger.string = text
+        tagger.setLanguage(.english, range: text.startIndex..<text.endIndex)
+
+        var added = 0
+        tagger.enumerateTags(
+            in: text.startIndex..<text.endIndex,
+            unit: .word,
+            scheme: .nameType,
+            options: [.omitPunctuation, .omitWhitespace, .omitOther, .joinNames]
+        ) { tag, tokenRange in
+            guard tag == needed else { return true }
+            let term = String(text[tokenRange])
+                .lowercased()
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if isAcceptableEntity(term) {
+                counts[term, default: 0] += 1
                 added += 1
             }
             return true
@@ -129,6 +200,16 @@ struct WordCloudTokenizer: Sendable {
     private func isAcceptable(_ term: String) -> Bool {
         guard term.count >= minimumLength else { return false }
         for ch in term where !(ch.isLetter || ch == "-" || ch == "'") { return false }
+        guard term.contains(where: { $0.isLetter }) else { return false }
+        return !stopwords.contains(term)
+    }
+
+    /// Whether a named-entity term should be counted. More permissive than
+    /// `isAcceptable` — multi-word names keep their spaces and periods
+    /// ("john f. kennedy", "united states") — but still drops too-short and
+    /// stopword tokens.
+    private func isAcceptableEntity(_ term: String) -> Bool {
+        guard term.count >= minimumLength else { return false }
         guard term.contains(where: { $0.isLetter }) else { return false }
         return !stopwords.contains(term)
     }

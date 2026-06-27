@@ -83,6 +83,7 @@ struct WordCloudView: View {
     @State private var progressModel = WordCloudProgressModel()
     @State private var hiddenWords: Set<String> = []
     @State private var comparisonScope: WordCloudScope?
+    @State private var lens: WordCloudLens = .allTerms
 
     @Query(sort: \Collection.name) private var collections: [Collection]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
@@ -123,7 +124,7 @@ struct WordCloudView: View {
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 520)
         #endif
-        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate)) {
+        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate, lens: lens)) {
             await load()
         }
         .sheet(item: $exportItem) { item in
@@ -174,6 +175,8 @@ struct WordCloudView: View {
                     Text(word.term)
                         .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
                         .foregroundStyle(Self.palette[word.colorIndex % Self.palette.count])
+                        .fixedSize()
+                        .rotationEffect(.degrees(word.rotationDegrees))
                         .position(word.center)
                         .onTapGesture { search(for: word.term) }
                         .contextMenu { wordContextMenu(term: word.term) }
@@ -184,7 +187,7 @@ struct WordCloudView: View {
             .contentShape(Rectangle())
             .task(id: LayoutKey(width: geo.size.width, height: geo.size.height,
                                 signature: scope.signature, exclude: excludeBoilerplate,
-                                termCount: result.terms.count)) {
+                                lens: lens, termCount: result.terms.count)) {
                 placements = WordCloudLayout.place(terms: result.terms, in: geo.size)
             }
         }
@@ -314,6 +317,13 @@ struct WordCloudView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             Menu {
+                Picker(String(localized: "wordcloud.lens.label", defaultValue: "Show"),
+                       selection: $lens) {
+                    ForEach(WordCloudLens.allCases) { lens in
+                        Label(lens.label, systemImage: lens.systemImage).tag(lens)
+                    }
+                }
+                Divider()
                 Toggle(String(localized: "wordcloud.filter.boilerplate",
                               defaultValue: "Hide common diplomatic words"),
                        isOn: $excludeBoilerplate)
@@ -427,7 +437,7 @@ struct WordCloudView: View {
         do {
             let (computed, loadedTitle) = try await WordCloudLoader.load(
                 scope: scope, excludeBoilerplate: excludeBoilerplate,
-                hiddenWords: hiddenWords, limit: Self.termLimit,
+                hiddenWords: hiddenWords, limit: Self.termLimit, lens: lens,
                 appState: appState, modelContext: modelContext, progress: handler
             )
             if Task.isCancelled { return }
@@ -490,18 +500,20 @@ struct WordCloudView: View {
 
     // MARK: - Recompute Keys
 
-    /// Drives a reload when the scope or stopword policy changes.
+    /// Drives a reload when the scope, stopword policy, or lens changes.
     private struct TaskKey: Equatable {
         let signature: String
         let exclude: Bool
+        let lens: WordCloudLens
     }
 
-    /// Drives a spiral relayout when the canvas size, scope, or policy changes.
+    /// Drives a spiral relayout when the canvas size, scope, policy, or lens changes.
     private struct LayoutKey: Equatable {
         let width: CGFloat
         let height: CGFloat
         let signature: String
         let exclude: Bool
+        let lens: WordCloudLens
         let termCount: Int
     }
 }

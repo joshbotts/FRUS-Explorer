@@ -261,3 +261,74 @@ struct WordCloudScopeTests {
         #expect(WordCloudScope(signature: "") == nil)
     }
 }
+
+// MARK: - WordCloudLensTests
+
+/// Verifies the semantic-lens enum and that a part-of-speech lens narrows the
+/// result to a subset of the all-terms tokens (it shares the same normalisation,
+/// just adds a class filter — robust regardless of the tagger's exact accuracy).
+struct WordCloudLensTests {
+
+    @Test("WordCloudLens: entity lenses are flagged; all-cases present")
+    func lensProperties() {
+        #expect(WordCloudLens.people.isEntity)
+        #expect(WordCloudLens.places.isEntity)
+        #expect(WordCloudLens.organizations.isEntity)
+        #expect(!WordCloudLens.allTerms.isEntity)
+        #expect(!WordCloudLens.topics.isEntity)
+        #expect(WordCloudLens.allCases.count == 7)
+        for lens in WordCloudLens.allCases {
+            #expect(!lens.label.isEmpty)
+            #expect(!lens.systemImage.isEmpty)
+        }
+    }
+
+    @Test("Tokenizer: topics (nouns) lens yields a subset of all-terms tokens")
+    func topicsIsSubsetOfAllTerms() {
+        let text = "The diplomats negotiated a difficult treaty in Geneva."
+        var all: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .allTerms).accumulate(from: text, into: &all)
+        var topics: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .topics).accumulate(from: text, into: &topics)
+        // The POS filter can only remove tokens, never add or rename them.
+        for key in topics.keys { #expect(all[key] != nil) }
+        #expect(topics.count <= all.count)
+    }
+
+    @Test("Tokenizer: all-terms path unchanged (regression)")
+    func allTermsRegression() {
+        var counts: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: ["the", "a"], lens: .allTerms)
+            .accumulate(from: "The treaty and a treaty.", into: &counts)
+        #expect(counts["treaty"] == 2)
+        #expect(counts["the"] == nil)
+    }
+}
+
+// MARK: - WordCloudLayoutRotationTests
+
+struct WordCloudLayoutRotationTests {
+
+    private func sampleTerms(_ n: Int) -> [TermCount] {
+        (0..<n).map { TermCount(term: "term\($0)word", count: 100 - $0) }
+    }
+
+    @Test("WordCloudLayout: placements are horizontal or vertical (0/90), and some rotate")
+    func rotationAssignment() {
+        let placed = WordCloudLayout.place(terms: sampleTerms(30),
+                                           in: CGSize(width: 1000, height: 800))
+        #expect(!placed.isEmpty)
+        #expect(placed.allSatisfy { $0.rotationDegrees == 0 || $0.rotationDegrees == 90 })
+        #expect(placed.contains { $0.rotationDegrees == 90 })   // vertical words exist
+        #expect(placed.prefix(3).allSatisfy { $0.rotationDegrees == 0 }) // largest stay horizontal
+    }
+
+    @Test("WordCloudLayout: rotation assignment is deterministic across runs")
+    func rotationDeterministic() {
+        let size = CGSize(width: 900, height: 700)
+        let a = WordCloudLayout.place(terms: sampleTerms(25), in: size)
+        let b = WordCloudLayout.place(terms: sampleTerms(25), in: size)
+        let aRot = Dictionary(uniqueKeysWithValues: a.map { ($0.term, $0.rotationDegrees) })
+        for word in b { #expect(aRot[word.term] == word.rotationDegrees) }
+    }
+}

@@ -22,7 +22,7 @@ enum WordCloudLoader {
 
     /// The standard number of terms requested by the main view and the background
     /// precompute, kept in one place so their on-disk cache keys always match.
-    static let standardTermLimit = 150
+    static let standardTermLimit = 220
 
     /// AppStorage key for the diplomatic-boilerplate stopword toggle (mirrors the
     /// `@AppStorage` used by `WordCloudView`).
@@ -75,6 +75,7 @@ enum WordCloudLoader {
         excludeBoilerplate: Bool,
         hiddenWords: Set<String>,
         limit: Int,
+        lens: WordCloudLens = .allTerms,
         appState: AppState,
         modelContext: ModelContext,
         progress: WordCloudProgress? = nil
@@ -94,13 +95,13 @@ enum WordCloudLoader {
         if resolved.isCorpus {
             result = try await service.corpusTopTerms(
                 limit: limit, includeDiplomaticStopwords: excludeBoilerplate,
-                extraStopwords: hiddenWords, progress: progress
+                extraStopwords: hiddenWords, lens: lens, progress: progress
             )
         } else {
             result = try await service.topTerms(
                 signature: scope.signature, keys: resolved.keys,
                 limit: limit, includeDiplomaticStopwords: excludeBoilerplate,
-                extraStopwords: hiddenWords,
+                extraStopwords: hiddenWords, lens: lens,
                 persistent: isSubseries, progress: isSubseries ? progress : nil
             )
         }

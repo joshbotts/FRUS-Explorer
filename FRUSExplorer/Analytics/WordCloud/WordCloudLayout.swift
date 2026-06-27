@@ -24,6 +24,9 @@ struct PlacedWord: Identifiable, Sendable {
     let fontSize: CGFloat
     /// Index into the view's colour palette (assigned by rank).
     let colorIndex: Int
+    /// Rotation in degrees (0 = horizontal, 90 = vertical). Vertical words fill the
+    /// space a horizontally-constrained cloud leaves unused, raising density.
+    let rotationDegrees: Double
 
     /// Stable identity for `ForEach`.
     var id: String { term }
@@ -57,7 +60,7 @@ enum WordCloudLayout {
     static func place(
         terms: [TermCount],
         in size: CGSize,
-        maxWords: Int = 120,
+        maxWords: Int = 180,
         minFontSize: CGFloat = 13,
         maxFontSize: CGFloat = 64
     ) -> [PlacedWord] {
@@ -74,16 +77,21 @@ enum WordCloudLayout {
         for (rank, term) in words.enumerated() {
             let fontSize = fontSize(for: term.count, minCount: minCount, maxCount: maxCount,
                                     minFontSize: minFontSize, maxFontSize: maxFontSize)
-            let estimate = estimatedSize(term: term.term, fontSize: fontSize)
+            // Keep the largest words horizontal (most readable); rotate every third
+            // of the rest 90° to fill vertical gaps. Rank-based so it's deterministic
+            // and always produces some vertical words regardless of the term set.
+            let vertical = rank > words.count / 4 && rank % 3 == 1
+            var estimate = estimatedSize(term: term.term, fontSize: fontSize)
+            if vertical { estimate = CGSize(width: estimate.height, height: estimate.width) }
 
             // March outward along the spiral until a non-colliding slot is found.
             // The horizontal stretch (1.7) favours wider-than-tall clouds, matching
             // typical landscape/portrait card aspect ratios.
             var angle: CGFloat = 0
-            let angleStep: CGFloat = 0.35
-            let spiralTightness: CGFloat = max(estimate.height, minFontSize) * 0.28
+            let angleStep: CGFloat = 0.30
+            let spiralTightness: CGFloat = max(estimate.height, minFontSize) * 0.22
             var slot: CGRect?
-            while angle < 60 { // ~9.5 turns; plenty before giving up
+            while angle < 70 { // ~11 turns; plenty before giving up
                 let radius = spiralTightness * angle
                 let point = CGPoint(
                     x: center.x + radius * cos(angle) * 1.7,
@@ -109,13 +117,16 @@ enum WordCloudLayout {
                 count: term.count,
                 center: CGPoint(x: rect.midX, y: rect.midY),
                 fontSize: fontSize,
-                colorIndex: rank
+                colorIndex: rank,
+                rotationDegrees: vertical ? 90 : 0
             ))
-            // Pad the occupied rect slightly so neighbours don't touch.
-            occupied.append(rect.insetBy(dx: -3, dy: -2))
+            // Pad the occupied rect just enough that neighbours don't touch — tighter
+            // than before for a denser cloud.
+            occupied.append(rect.insetBy(dx: -1.5, dy: -1.5))
         }
         return placed
     }
+
 
     /// Maps a term count onto a point size using a square-root (area-proportional) scale.
     static func fontSize(

@@ -221,6 +221,8 @@ struct WordCloudImageContent: View {
                 Text(word.term)
                     .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
                     .foregroundStyle(palette[word.colorIndex % palette.count])
+                    .fixedSize()
+                    .rotationEffect(.degrees(word.rotationDegrees))
                     .position(word.center)
             }
             VStack(spacing: 0) {
