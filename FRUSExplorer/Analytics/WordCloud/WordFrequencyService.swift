@@ -89,11 +89,15 @@ actor WordFrequencyService {
         limit: Int,
         includeDiplomaticStopwords: Bool,
         extraStopwords: Set<String> = [],
+        lens: WordCloudLens = .allTerms,
         persistent: Bool = false,
         progress: WordCloudProgress? = nil
     ) async throws -> WordCloudResult {
         let extrasToken = Self.extrasToken(extraStopwords)
-        let cacheKey = Self.cacheKey(signature: signature, limit: limit,
+        // Fold the lens into the signature so non-default lenses get their own cache
+        // entries while `.allTerms` keeps its existing (precomputed) keys.
+        let effectiveSignature = lens == .allTerms ? signature : "\(signature)|lens=\(lens.rawValue)"
+        let cacheKey = Self.cacheKey(signature: effectiveSignature, limit: limit,
                                      includeDiplomatic: includeDiplomaticStopwords, extras: extrasToken)
         if let cached = cache[cacheKey] {
             progress?(cached.documentCount, cached.documentCount)
@@ -105,7 +109,7 @@ actor WordFrequencyService {
         if persistent {
             let fingerprint = (try? await pipeline.documentCacheCount()) ?? 0
             let key = WordCloudDiskCache.key(
-                signature: signature, limit: limit,
+                signature: effectiveSignature, limit: limit,
                 includeDiplomatic: includeDiplomaticStopwords,
                 extras: extrasToken, fingerprint: fingerprint
             )
@@ -119,7 +123,9 @@ actor WordFrequencyService {
 
         let tokenizer = WordCloudTokenizer(
             stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomaticStopwords)
-                .union(extraStopwords)
+                .union(extraStopwords),
+            lens: lens,
+            lexicon: WordCloudLexicons.filter(for: lens)
         )
         let total = keys.count
         var counts: [String: Int] = [:]
@@ -159,6 +165,7 @@ actor WordFrequencyService {
         limit: Int,
         includeDiplomaticStopwords: Bool,
         extraStopwords: Set<String> = [],
+        lens: WordCloudLens = .allTerms,
         progress: WordCloudProgress? = nil
     ) async throws -> WordCloudResult {
         let keys = try await pipeline.allDocumentKeys()
@@ -168,6 +175,7 @@ actor WordFrequencyService {
             limit: limit,
             includeDiplomaticStopwords: includeDiplomaticStopwords,
             extraStopwords: extraStopwords,
+            lens: lens,
             persistent: true,
             progress: progress
         )

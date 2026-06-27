@@ -125,6 +125,8 @@ struct ComparativeCloudColumn: View {
                     Text(word.term)
                         .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
                         .foregroundStyle(Self.palette[word.colorIndex % Self.palette.count])
+                        .fixedSize()
+                        .rotationEffect(.degrees(word.rotationDegrees))
                         .position(word.center)
                 }
             }

@@ -83,6 +83,7 @@ struct WordCloudView: View {
     @State private var progressModel = WordCloudProgressModel()
     @State private var hiddenWords: Set<String> = []
     @State private var comparisonScope: WordCloudScope?
+    @State private var lens: WordCloudLens = .allTerms
 
     @Query(sort: \Collection.name) private var collections: [Collection]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
@@ -105,7 +106,7 @@ struct WordCloudView: View {
                     loadingView
                 } else if let errorMessage {
                     errorView(errorMessage)
-                } else if result.terms.isEmpty {
+                } else if result.terms.isEmpty && lens == .allTerms {
                     emptyView
                 } else {
                     content
@@ -123,7 +124,7 @@ struct WordCloudView: View {
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 520)
         #endif
-        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate)) {
+        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate, lens: lens)) {
             await load()
         }
         .sheet(item: $exportItem) { item in
@@ -136,12 +137,106 @@ struct WordCloudView: View {
     private var content: some View {
         VStack(spacing: 0) {
             scopeHeader
+            lensBar
+            if lens.colorsBySentiment { sentimentLegend }
             Divider()
-            switch viewMode {
-            case .cloud: cloudCanvas
-            case .list:  rankedList
+            if belowSignalThreshold {
+                insufficientSignalView
+            } else {
+                switch viewMode {
+                case .cloud: cloudCanvas
+                case .list:  rankedList
+                }
             }
         }
+    }
+
+    /// `true` when the active lens depends on semantic signal the current scope
+    /// doesn't contain enough of to be meaningful.
+    private var belowSignalThreshold: Bool {
+        lens.isSignalDependent && result.terms.count < lens.minimumSignalTerms
+    }
+
+    /// Horizontally-scrolling lens selector. A scrolling chip bar rather than a
+    /// fixed segmented control because there are more lenses than fit a phone width.
+    private var lensBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(WordCloudLens.allCases) { option in
+                    lensChip(option)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+        }
+        .accessibilityLabel(String(localized: "wordcloud.lens.label", defaultValue: "Show"))
+    }
+
+    /// One selectable lens chip.
+    private func lensChip(_ option: WordCloudLens) -> some View {
+        let selected = option == lens
+        return Button {
+            lens = option
+        } label: {
+            Label(option.label, systemImage: option.systemImage)
+                .font(.caption.weight(selected ? .semibold : .regular))
+                .labelStyle(.titleAndIcon)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule().fill(selected
+                                   ? Color.accentColor
+                                   : Color.secondary.opacity(0.15))
+                )
+                .foregroundStyle(selected ? Color.white : Color.primary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+    }
+
+    /// Colour key shown under the lens bar while the sentiment lens is active.
+    private var sentimentLegend: some View {
+        HStack(spacing: 14) {
+            Label(String(localized: "wordcloud.sentiment.positive", defaultValue: "Positive"),
+                  systemImage: "circle.fill")
+                .foregroundStyle(.green)
+            Label(String(localized: "wordcloud.sentiment.negative", defaultValue: "Negative"),
+                  systemImage: "circle.fill")
+                .foregroundStyle(.red)
+            Spacer()
+        }
+        .font(.caption2)
+        .labelStyle(.titleAndIcon)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 4)
+    }
+
+    /// Shown when a signal-dependent lens (entities, concepts, sentiment) finds too
+    /// few matching terms in the current scope to be worth displaying.
+    private var insufficientSignalView: some View {
+        ContentUnavailableView(
+            String(localized: "wordcloud.lens.insufficient.title", defaultValue: "Not Enough Signal"),
+            systemImage: lens.systemImage,
+            description: Text(String(
+                format: String(localized: "wordcloud.lens.insufficient.detail %@",
+                               defaultValue: "There aren't enough %@ in this scope to fill a cloud. Try a broader scope or a different lens."),
+                lens.label.lowercased()
+            ))
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The colour for a word: sentiment polarity under the sentiment lens, otherwise
+    /// the rank-based palette.
+    private func wordColor(term: String, colorIndex: Int) -> Color {
+        if lens.colorsBySentiment {
+            switch WordCloudLexicons.polarity(of: term) {
+            case .positive: return .green
+            case .negative: return .red
+            case .none:     return .secondary
+            }
+        }
+        return Self.palette[colorIndex % Self.palette.count]
     }
 
     private var scopeHeader: some View {
@@ -173,7 +268,9 @@ struct WordCloudView: View {
                 ForEach(placements) { word in
                     Text(word.term)
                         .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Self.palette[word.colorIndex % Self.palette.count])
+                        .foregroundStyle(wordColor(term: word.term, colorIndex: word.colorIndex))
+                        .fixedSize()
+                        .rotationEffect(.degrees(word.rotationDegrees))
                         .position(word.center)
                         .onTapGesture { search(for: word.term) }
                         .contextMenu { wordContextMenu(term: word.term) }
@@ -184,7 +281,7 @@ struct WordCloudView: View {
             .contentShape(Rectangle())
             .task(id: LayoutKey(width: geo.size.width, height: geo.size.height,
                                 signature: scope.signature, exclude: excludeBoilerplate,
-                                termCount: result.terms.count)) {
+                                lens: lens, termCount: result.terms.count)) {
                 placements = WordCloudLayout.place(terms: result.terms, in: geo.size)
             }
         }
@@ -204,6 +301,9 @@ struct WordCloudView: View {
                             .frame(minWidth: 28, alignment: .trailing)
                         Text(term.term)
                             .font(.body)
+                            .foregroundStyle(lens.colorsBySentiment
+                                             ? wordColor(term: term.term, colorIndex: index)
+                                             : Color.primary)
                         Spacer()
                         weightBar(count: term.count, maxCount: maxCount)
                         Text("\(term.count)")
@@ -340,7 +440,7 @@ struct WordCloudView: View {
                     Button {
                         exportItem = WordCloudExporter.image(
                             terms: result.terms, title: title, format: .png,
-                            palette: Self.palette
+                            palette: Self.palette, sentimentColors: lens.colorsBySentiment
                         )
                     } label: {
                         Label(String(localized: "wordcloud.export.png", defaultValue: "Image (PNG)…"),
@@ -349,7 +449,7 @@ struct WordCloudView: View {
                     Button {
                         exportItem = WordCloudExporter.image(
                             terms: result.terms, title: title, format: .pdf,
-                            palette: Self.palette
+                            palette: Self.palette, sentimentColors: lens.colorsBySentiment
                         )
                     } label: {
                         Label(String(localized: "wordcloud.export.pdf", defaultValue: "PDF…"),
@@ -427,7 +527,7 @@ struct WordCloudView: View {
         do {
             let (computed, loadedTitle) = try await WordCloudLoader.load(
                 scope: scope, excludeBoilerplate: excludeBoilerplate,
-                hiddenWords: hiddenWords, limit: Self.termLimit,
+                hiddenWords: hiddenWords, limit: Self.termLimit, lens: lens,
                 appState: appState, modelContext: modelContext, progress: handler
             )
             if Task.isCancelled { return }
@@ -490,18 +590,20 @@ struct WordCloudView: View {
 
     // MARK: - Recompute Keys
 
-    /// Drives a reload when the scope or stopword policy changes.
+    /// Drives a reload when the scope, stopword policy, or lens changes.
     private struct TaskKey: Equatable {
         let signature: String
         let exclude: Bool
+        let lens: WordCloudLens
     }
 
-    /// Drives a spiral relayout when the canvas size, scope, or policy changes.
+    /// Drives a spiral relayout when the canvas size, scope, policy, or lens changes.
     private struct LayoutKey: Equatable {
         let width: CGFloat
         let height: CGFloat
         let signature: String
         let exclude: Bool
+        let lens: WordCloudLens
         let termCount: Int
     }
 }
