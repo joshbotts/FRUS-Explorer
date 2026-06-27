@@ -52,6 +52,11 @@ struct BackgroundSummarizationSettingsView: View {
 
     @State private var concurrencyLimit: Int = 2
 
+    /// iOS only: keep summarizing in the background (BGProcessingTask) after the app
+    /// is suspended. Opt-in. Mirrors the key read by `BackgroundSummarizationRequestStore`.
+    @AppStorage("frus.backgroundSummarization.continueInBackground")
+    private var continueInBackground = false
+
     // MARK: - Body
 
     var body: some View {
@@ -59,10 +64,32 @@ struct BackgroundSummarizationSettingsView: View {
             scopeSection
             promptSection
             concurrencySection
+            #if os(iOS)
+            backgroundContinuationSection
+            #endif
             controlSection
             progressSection
         }
     }
+
+    #if os(iOS)
+    // MARK: - Background Continuation Section
+
+    @ViewBuilder
+    private var backgroundContinuationSection: some View {
+        Section {
+            Toggle(String(localized: "bg.summarizer.continue.label",
+                          defaultValue: "Continue in the background"),
+                   isOn: $continueInBackground)
+                .onChange(of: continueInBackground) { _, on in
+                    if !on { BackgroundSummarizationRequestStore.clear() }
+                }
+        } footer: {
+            Text(String(localized: "bg.summarizer.continue.hint",
+                        defaultValue: "When on, summarization resumes opportunistically while the device is idle, a few documents at a time, even after you close the app. Uses the on-device model and some battery."))
+        }
+    }
+    #endif
 
     // MARK: - Scope Section
 
@@ -411,6 +438,10 @@ struct BackgroundSummarizationSettingsView: View {
             // buildScope() is async because .savedSearch must execute the search
             // service to enumerate matching documents before the run starts.
             let scope = await buildScope()
+            // Persist the run so the iOS BGProcessingTask can resume it after the
+            // app is suspended (no-op unless "Continue in the background" is on).
+            BackgroundSummarizationRequestStore.save(
+                BackgroundSummarizationRequest(scope: scope, promptId: promptId))
             await service.start(
                 scope: scope,
                 promptSnapshot: promptSnapshot,
@@ -424,6 +455,8 @@ struct BackgroundSummarizationSettingsView: View {
     }
 
     private func stopSummarization() {
+        // Also drop any persisted background run so it doesn't resume after stop.
+        BackgroundSummarizationRequestStore.clear()
         guard let service = appState.backgroundSummarizationService else { return }
         Task { await service.stop() }
     }

@@ -216,7 +216,8 @@ enum SummarizationBackgroundProbe {
     }
 
     /// Current resident memory footprint in megabytes (`phys_footprint`), or `-1`.
-    private static func footprintMB() -> Double {
+    /// Exposed so the real background-summarization batch can sample it too.
+    static func footprintMB() -> Double {
         var info = task_vm_info_data_t()
         var count = mach_msg_type_number_t(
             MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size
@@ -227,6 +228,44 @@ enum SummarizationBackgroundProbe {
             }
         }
         return result == KERN_SUCCESS ? Double(info.phys_footprint) / 1_048_576 : -1
+    }
+
+    // MARK: - Real background-run instrumentation
+
+    /// Appends a sample from the *real* background-summarization batch (not the
+    /// probe), so an unplugged soak self-records throughput/latency/memory to the
+    /// same log — readable from this screen without a debugger.
+    ///
+    /// `sequence` is the document's index within the current wake's batch, so the
+    /// max sequence per timestamp cluster is that wake's throughput, and the
+    /// `inferenceMs` trend across a cluster reveals thermal creep.
+    static func recordBackgroundRun(
+        documentId: String,
+        sequence: Int,
+        inputChars: Int,
+        inferenceMs: Int,
+        footprintBeforeMB: Double,
+        footprintAfterMB: Double,
+        success: Bool,
+        error: String?
+    ) {
+        let sample = Sample(
+            date: ISO8601DateFormatter().string(from: Date()),
+            trigger: "bg-real",
+            sequence: sequence,
+            applicationState: "background",
+            availability: String(describing: SystemLanguageModel.default.availability),
+            documentId: documentId,
+            inputChars: inputChars,
+            success: success,
+            outputChars: 0,
+            inferenceMs: inferenceMs,
+            footprintBeforeMB: footprintBeforeMB,
+            footprintAfterMB: footprintAfterMB,
+            cancelled: false,
+            error: error
+        )
+        append(sample)
     }
 }
 
