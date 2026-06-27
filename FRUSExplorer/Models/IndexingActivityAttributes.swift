@@ -16,6 +16,20 @@
 import ActivityKit
 import Foundation
 
+/// The kind of long-running job a Live Activity represents.
+///
+/// The activity contract was generalised from indexing-only to any background
+/// job; `kind` lets the widget pick the right verb/icon. Optional in the content
+/// state so activities encoded by an older app version (no `kind`) still decode —
+/// `nil` is treated as `.indexing`.
+///
+/// Version history:
+///   1.0 — Live Activity generalization
+public enum LiveActivityJobKind: String, Codable, Hashable, Sendable {
+    case indexing
+    case summarizing
+}
+
 /// ActivityKit attributes for the FRUS Explorer indexing Live Activity.
 ///
 /// Shared between the main app target (which starts and updates the activity) and the
@@ -31,8 +45,15 @@ import Foundation
 public struct IndexingActivityAttributes: ActivityAttributes {
 
     /// Dynamic content that changes with each progress update.
+    ///
+    /// Generalised beyond indexing: `kind` selects the verb/icon, and the field
+    /// names below read generically — `volumeTitle` is the job's title,
+    /// `completedDocuments`/`totalDocuments` are processed/total items, and
+    /// `isOptimizing` is any indeterminate "finishing" phase.
     public struct ContentState: Codable, Hashable, Sendable {
-        /// Display title of the currently-indexing volume (shown in Dynamic Island + lock screen).
+        /// The job kind. `nil` (older encodings) is treated as `.indexing`.
+        public var kind: LiveActivityJobKind?
+        /// Display title of the job (shown in Dynamic Island + lock screen).
         public var volumeTitle: String
         /// 0.0–1.0 fractional progress, or `nil` while the XML parse is running or during FTS5 optimise.
         public var progressFraction: Double?
@@ -48,6 +69,9 @@ public struct IndexingActivityAttributes: ActivityAttributes {
         public var queueCurrent: Int?
         /// Total volume count in the current batch, or `nil` for single-volume indexing.
         public var queueTotal: Int?
+
+        /// The job kind, defaulting to `.indexing` for content encoded before `kind` existed.
+        public var resolvedKind: LiveActivityJobKind { kind ?? .indexing }
     }
 }
 #endif

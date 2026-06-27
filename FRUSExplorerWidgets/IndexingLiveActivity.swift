@@ -16,6 +16,34 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
+// MARK: - Job-kind presentation
+
+private extension IndexingActivityAttributes.ContentState {
+    /// SF Symbol for the compact / minimal presentation, by job kind.
+    var compactSymbol: String {
+        switch resolvedKind {
+        case .indexing:    return "square.and.arrow.down"
+        case .summarizing: return "sparkles"
+        }
+    }
+
+    /// SF Symbol for the expanded / lock-screen leading icon (optimise overrides).
+    var leadingSymbol: String {
+        if isOptimizing { return "wand.and.stars" }
+        return compactSymbol
+    }
+
+    /// Localised text shown while progress is indeterminate (no fraction).
+    var indeterminateLabel: String {
+        switch resolvedKind {
+        case .indexing:
+            return String(localized: "liveactivity.parsing", defaultValue: "Parsing…")
+        case .summarizing:
+            return String(localized: "liveactivity.summarizing", defaultValue: "Summarizing…")
+        }
+    }
+}
+
 /// Live Activity widget for FRUS Explorer indexing progress.
 ///
 /// Renders in three contexts:
@@ -30,7 +58,7 @@ struct IndexingLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: context.state.isOptimizing ? "wand.and.stars" : "square.and.arrow.down")
+                    Image(systemName: context.state.leadingSymbol)
                         .foregroundStyle(.blue)
                         .font(.title3)
                 }
@@ -45,7 +73,7 @@ struct IndexingLiveActivity: Widget {
                     IndexingExpandedView(state: context.state)
                 }
             } compactLeading: {
-                Image(systemName: "square.and.arrow.down")
+                Image(systemName: context.state.compactSymbol)
                     .foregroundStyle(.blue)
             } compactTrailing: {
                 if context.state.isOptimizing {
@@ -60,7 +88,7 @@ struct IndexingLiveActivity: Widget {
                         .foregroundStyle(.secondary)
                 }
             } minimal: {
-                Image(systemName: "square.and.arrow.down")
+                Image(systemName: context.state.compactSymbol)
                     .foregroundStyle(.blue)
             }
         }
@@ -105,7 +133,7 @@ private struct IndexingExpandedView: View {
                 ProgressView()
                     .progressViewStyle(.linear)
                     .tint(.blue)
-                Text(String(localized: "liveactivity.parsing", defaultValue: "Parsing…"))
+                Text(state.indeterminateLabel)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -119,7 +147,7 @@ private struct IndexingLockScreenView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: state.isOptimizing ? "wand.and.stars" : "square.and.arrow.down")
+            Image(systemName: state.leadingSymbol)
                 .font(.title2)
                 .foregroundStyle(.blue)
                 .frame(width: 32)

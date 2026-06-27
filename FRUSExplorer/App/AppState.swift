@@ -605,6 +605,13 @@ final class AppState {
     /// `endIndexingLiveActivity` on `.complete`. Managed entirely within
     /// `connectIndexingProgress` so the lifecycle mirrors the progress stream.
     private var indexingActivity: Activity<IndexingActivityAttributes>?
+
+    /// The currently-running summarization Live Activity, or `nil` when idle.
+    /// Driven by `backgroundSummarizationProgress` via `syncSummarizationLiveActivity`.
+    /// Started only while the app is foreground (ActivityKit forbids starting one
+    /// from the background); a foreground-started run's activity then persists and
+    /// updates when the app next becomes active.
+    private var summarizationActivity: Activity<IndexingActivityAttributes>?
     #endif
 
     // MARK: - Queue tracking (Session 116)
@@ -785,6 +792,7 @@ final class AppState {
             return Int(Double(update.totalDocuments - update.completedDocuments) / update.docsPerSecond)
         }()
         let state = IndexingActivityAttributes.ContentState(
+            kind: .indexing,
             volumeTitle: title,
             progressFraction: fraction,
             etaSeconds: eta,
@@ -804,7 +812,8 @@ final class AppState {
             // nil even if a Live Activity widget is still displayed on the Dynamic
             // Island. Without this check, each `syncIndexingLiveActivity` call during
             // an in-progress index run after app restart spawns an additional widget.
-            if let existing = Activity<IndexingActivityAttributes>.activities.first {
+            if let existing = Activity<IndexingActivityAttributes>.activities
+                .first(where: { $0.content.state.resolvedKind == .indexing }) {
                 indexingActivity = existing
                 Task { @MainActor in
                     await existing.update(ActivityContent(state: state, staleDate: nil))
@@ -823,6 +832,70 @@ final class AppState {
     private func endIndexingLiveActivity() {
         guard let activity = indexingActivity else { return }
         indexingActivity = nil
+        Task { @MainActor in
+            await activity.end(nil, dismissalPolicy: .after(.now + 3))
+        }
+    }
+
+    // MARK: - Summarization Live Activity
+
+    /// Re-arming observer that mirrors `backgroundSummarizationProgress.state` onto a
+    /// Live Activity. Call once at boot; it re-subscribes after every change.
+    func startObservingSummarizationProgress() {
+        withObservationTracking {
+            _ = backgroundSummarizationProgress.state
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.syncSummarizationLiveActivity()
+                self.startObservingSummarizationProgress()
+            }
+        }
+    }
+
+    /// Starts/updates/ends the summarization Live Activity from the current progress
+    /// state. Mirrors `syncIndexingLiveActivity` but for the on-device summarizer.
+    private func syncSummarizationLiveActivity() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let liveActivityEnabled = (UserDefaults.standard.object(forKey: SettingsKeys.liveActivityEnabled) as? Bool) ?? true
+
+        switch backgroundSummarizationProgress.state {
+        case let .running(processed, total, _):
+            guard liveActivityEnabled else { endSummarizationLiveActivity(); return }
+            let fraction: Double? = total > 0 ? Double(processed) / Double(total) : nil
+            let content = IndexingActivityAttributes.ContentState(
+                kind: .summarizing,
+                volumeTitle: String(localized: "liveactivity.summarizing.title",
+                                    defaultValue: "Summarizing FRUS documents"),
+                progressFraction: fraction,
+                etaSeconds: nil,
+                completedDocuments: processed,
+                totalDocuments: total,
+                isOptimizing: false,
+                queueCurrent: nil,
+                queueTotal: nil
+            )
+            if let running = summarizationActivity {
+                Task { @MainActor in await running.update(ActivityContent(state: content, staleDate: nil)) }
+            } else if let existing = Activity<IndexingActivityAttributes>.activities
+                .first(where: { $0.content.state.resolvedKind == .summarizing }) {
+                summarizationActivity = existing
+                Task { @MainActor in await existing.update(ActivityContent(state: content, staleDate: nil)) }
+            } else {
+                summarizationActivity = try? Activity.request(
+                    attributes: IndexingActivityAttributes(),
+                    content: ActivityContent(state: content, staleDate: nil)
+                )
+            }
+        case .completed, .cancelled, .failed, .idle:
+            endSummarizationLiveActivity()
+        }
+    }
+
+    /// Ends the summarization Live Activity with a brief dismissal delay.
+    private func endSummarizationLiveActivity() {
+        guard let activity = summarizationActivity else { return }
+        summarizationActivity = nil
         Task { @MainActor in
             await activity.end(nil, dismissalPolicy: .after(.now + 3))
         }
