@@ -920,58 +920,46 @@ struct DocumentView: View {
                        defaultValue: "Read mode also enables edge-tap navigation to the previous and next document in this volume")
             )
 
-            // 5. View Citation
-            Button {
-                activeSheet = .citation
+            // 5. Citation — one toolbar item; View / Copy / Share are options in
+            // its menu (mirrors the macOS citation popover's Export menu), so the
+            // toolbar isn't crowded with three separate citation buttons.
+            Menu {
+                Button {
+                    activeSheet = .citation
+                } label: {
+                    Label(String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
+                          systemImage: "doc.text")
+                }
+                .disabled(vm.formattedCitation == nil)
+
+                // Copy uses plain text so _..._ italic markers aren't pasted as raw
+                // underscores; the View sheet still renders the markdown italics.
+                Button {
+                    if let citation = vm.plainTextFormattedCitation {
+                        copyToPasteboard(citation)
+                    }
+                } label: {
+                    Label(String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
+                          systemImage: "doc.on.clipboard")
+                }
+                .disabled(vm.plainTextFormattedCitation == nil)
+
+                // Share the formatted citation + canonical history.state.gov URL.
+                ShareLink(item: vm.shareableCitationMessage ?? "") {
+                    Label(String(localized: "document.toolbar.shareCitation", defaultValue: "Share Citation"),
+                          systemImage: "square.and.arrow.up")
+                }
+                .disabled(vm.shareableCitationMessage == nil)
             } label: {
-                Label(
-                    String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
-                    systemImage: "doc.text"
-                )
+                Label(String(localized: "document.toolbar.citation", defaultValue: "Citation"),
+                      systemImage: "quote.bubble")
             }
             .disabled(vm.formattedCitation == nil)
             .controlHelp(
-                String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
-                detail: String(localized: "document.toolbar.viewCitation.help",
-                               defaultValue: "Show the formatted citation for this document"),
-                systemImage: "doc.text"
-            )
-
-            // 6. Copy Citation — uses plain text so _..._ italic markers are
-            // not pasted as raw underscores. View Citation (above) still uses
-            // the markdown string via CitationSheetView.attributedCitation.
-            Button {
-                if let citation = vm.plainTextFormattedCitation {
-                    copyToPasteboard(citation)
-                }
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
-                    systemImage: "doc.on.clipboard"
-                )
-            }
-            .disabled(vm.plainTextFormattedCitation == nil)
-            .controlHelp(
-                String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
-                detail: String(localized: "document.toolbar.copyCitation.help",
-                               defaultValue: "Copy the formatted citation to the clipboard"),
-                systemImage: "doc.on.clipboard"
-            )
-
-            // 6b. Share Citation — system share sheet with the formatted citation
-            // and the canonical history.state.gov URL combined into one message.
-            ShareLink(item: vm.shareableCitationMessage ?? "") {
-                Label(
-                    String(localized: "document.toolbar.shareCitation", defaultValue: "Share Citation"),
-                    systemImage: "square.and.arrow.up"
-                )
-            }
-            .disabled(vm.shareableCitationMessage == nil)
-            .controlHelp(
-                String(localized: "document.toolbar.shareCitation", defaultValue: "Share Citation"),
-                detail: String(localized: "document.toolbar.shareCitation.help",
-                               defaultValue: "Share the citation and a link to this document on history.state.gov"),
-                systemImage: "square.and.arrow.up"
+                String(localized: "document.toolbar.citation", defaultValue: "Citation"),
+                detail: String(localized: "document.toolbar.citation.help",
+                               defaultValue: "View, copy, or share the formatted citation for this document"),
+                systemImage: "quote.bubble"
             )
 
             // 7. Add to Collection

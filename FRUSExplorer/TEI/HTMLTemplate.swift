@@ -263,6 +263,7 @@ enum HTMLTemplate {
     /* ─── Footnote popovers (HTML Popover API) ──────────────────────────────── */
     aside.footnote {
       font-size: var(--font-size-footnote);
+      color: var(--color-footnote-text);
       background: var(--color-background);
       border: 1px solid var(--color-table-border);
       border-radius: 10px;

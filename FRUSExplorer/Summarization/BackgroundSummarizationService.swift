@@ -198,10 +198,14 @@ public actor BackgroundSummarizationService {
             candidates = manifestEntries
                 .filter { $0.subseries == sub }
                 .map(\.volumeId)
-        case .userTag, .savedSearch:
-            // All downloaded volumes — document filtering happens per-document
-            // using the pre-computed documentKeys set
-            candidates = Array(downloadedVolumeIds)
+        case let .userTag(keys), let .savedSearch(keys):
+            // Only the volumes referenced by the matched documents. Returning every
+            // downloaded volume meant `run()` parsed the entire downloaded corpus
+            // just to filter by `keys`, so a tag/saved-search run appeared to stall
+            // at 0/0 (and never finished). The keys already name their volumes.
+            candidates = Array(Set(keys.compactMap {
+                $0.split(separator: "/", maxSplits: 1).first.map(String.init)
+            }))
         case .dateRange(let earliest, let latest):
             candidates = manifestEntries
                 .filter { overlaps(range: $0.dateRange, earliest: earliest, latest: latest) }
