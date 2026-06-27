@@ -183,7 +183,7 @@ struct SavedSearchesView: View {
                     } label: {
                         Label(String(localized: "savedSearches.row.wordCloud",
                                      defaultValue: "Word Cloud"),
-                              systemImage: "cloud")
+                              systemImage: "textformat.size")
                     }
                     Button(String(localized: "savedSearches.row.rename",
                                   defaultValue: "Rename")) {

@@ -169,13 +169,13 @@ struct BrowserView: View {
             Button {
                 appState.pendingWordCloud = .corpus
             } label: {
-                Image(systemName: "cloud")
+                Image(systemName: "textformat.size")
             }
             .controlHelp(
                 String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud"),
                 detail: String(localized: "browse.wordcloud.help",
                                defaultValue: "Visualise the most frequent terms across your downloaded volumes"),
-                systemImage: "cloud"
+                systemImage: "textformat.size"
             )
         }
     }

@@ -434,7 +434,7 @@ struct ResearchView: View {
             appState.pendingWordCloud = scope
         } label: {
             Label(String(localized: "research.wordCloud", defaultValue: "Word Cloud"),
-                  systemImage: "cloud")
+                  systemImage: "textformat.size")
         }
     }
 

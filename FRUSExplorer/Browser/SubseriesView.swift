@@ -84,7 +84,7 @@ struct SubseriesView: View {
                 Button {
                     appState.pendingWordCloud = .subseries(subseriesId: group.subseries)
                 } label: {
-                    Image(systemName: "cloud")
+                    Image(systemName: "textformat.size")
                 }
                 .help(String(localized: "browser.subseries.wordCloud.help",
                              defaultValue: "Visualise the most frequent terms across this subseries"))
@@ -382,7 +382,7 @@ private struct VolumeRowContextMenu: View {
         } label: {
             Label(String(localized: "browser.volume.wordCloud.action",
                          defaultValue: "Word Cloud"),
-                  systemImage: "cloud")
+                  systemImage: "textformat.size")
         }
     }
 }

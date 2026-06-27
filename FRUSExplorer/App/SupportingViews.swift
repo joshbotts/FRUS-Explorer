@@ -184,6 +184,24 @@ struct ResearchStripView: View {
                 defaultValue: "Show this document's cross-reference graph (inbound and outbound references)"
             ))
 
+            // Word Cloud — document-scoped. Lives here (next to Graph) rather than in
+            // the window toolbar so it reads clearly as "this document" and doesn't
+            // collide with the corpus-scoped Word Cloud button in the main toolbar.
+            ResearchStripButton(
+                title: "Word Cloud",
+                systemImage: "textformat.size",
+                isDisabled: isDisabled
+            ) {
+                if let entry {
+                    appState.pendingWordCloud = .document(
+                        volumeId: entry.volumeId, documentId: entry.documentId)
+                }
+            }
+            .help(String(
+                localized: "researchStrip.wordCloud.help",
+                defaultValue: "Visualise the most frequent terms in this document"
+            ))
+
             // Sources — always available for all documents.
             // appState.currentSourceNote is pre-set by MacDocumentView.loadDocument()
             // from vm.sourceNote (live XML parse) after each document loads, so the
@@ -2627,13 +2645,27 @@ struct CorpusBrowserWindowView: View {
                     .foregroundStyle(dlCount > 0 ? Color.secondary : Color.secondary.opacity(0.5))
             }
             Spacer()
+            Button {
+                appState.pendingWordCloud = .subseries(subseriesId: sub)
+            } label: {
+                Image(systemName: "textformat.size")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(String(localized: "corpus.subseries.wordCloudButton.help",
+                         defaultValue: "Word cloud for this subseries"))
+            .accessibilityLabel(
+                String(localized: "corpus.subseries.wordCloudButton.a11y",
+                       defaultValue: "Word cloud for \(sub)")
+            )
         }
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
             } label: {
                 Label(String(localized: "corpus.subseries.wordCloud", defaultValue: "Word Cloud"),
-                      systemImage: "cloud")
+                      systemImage: "textformat.size")
             }
         }
     }
@@ -2761,6 +2793,20 @@ private struct SubseriesVolumeListView: View {
             }
             Spacer()
             Button {
+                appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+            } label: {
+                Image(systemName: "textformat.size")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+            .help(String(localized: "corpus.volume.wordCloudButton.help",
+                         defaultValue: "Word cloud for this volume"))
+            .accessibilityLabel(
+                String(localized: "corpus.volume.wordCloudButton.a11y",
+                       defaultValue: "Word cloud for \(vol.volumeId)")
+            )
+            Button {
                 sheetContent = .graph(vol)
             } label: {
                 Image(systemName: "point.3.connected.trianglepath.dotted")
@@ -2768,6 +2814,8 @@ private struct SubseriesVolumeListView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.mini)
+            .help(String(localized: "corpus.volume.graphButton.help",
+                         defaultValue: "Cross-reference graph for this volume"))
             .accessibilityLabel(
                 String(localized: "corpus.volume.graphButton.a11y",
                        defaultValue: "Cross-reference graph for \(vol.volumeId)")
@@ -2781,7 +2829,7 @@ private struct SubseriesVolumeListView: View {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
             } label: {
                 Label(String(localized: "corpus.volume.wordCloud", defaultValue: "Word Cloud"),
-                      systemImage: "cloud")
+                      systemImage: "textformat.size")
             }
         }
     }

@@ -129,7 +129,7 @@ struct CollectionListView: View {
                         } label: {
                             Label(String(localized: "collection.wordCloud",
                                          defaultValue: "Word Cloud"),
-                                  systemImage: "cloud")
+                                  systemImage: "textformat.size")
                         }
                     }
             }

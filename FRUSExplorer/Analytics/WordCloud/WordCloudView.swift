@@ -30,7 +30,7 @@ enum WordCloudViewMode: String, CaseIterable {
     /// SF Symbol for the segmented control.
     var systemImage: String {
         switch self {
-        case .cloud: return "cloud"
+        case .cloud: return "textformat.size"
         case .list:  return "list.number"
         }
     }
@@ -241,7 +241,7 @@ struct WordCloudView: View {
 
     private var scopeHeader: some View {
         HStack(spacing: 8) {
-            Image(systemName: "cloud")
+            Image(systemName: "textformat.size")
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
@@ -366,7 +366,7 @@ struct WordCloudView: View {
     private var emptyView: some View {
         ContentUnavailableView(
             String(localized: "wordcloud.empty.title", defaultValue: "No Terms"),
-            systemImage: "cloud",
+            systemImage: "textformat.size",
             description: Text(String(
                 localized: "wordcloud.empty.detail",
                 defaultValue: "There's no indexed text in this scope yet. Download and index the relevant volumes, then try again."
@@ -609,27 +609,175 @@ struct WordCloudView: View {
 }
 
 #if os(macOS)
-/// Content for the macOS `frus.wordcloud` window. Reads the current scope from
-/// `appState.pendingWordCloud`, re-creating the cloud when the scope changes.
+/// Content for the macOS `frus.wordcloud` window.
+///
+/// Seeds its scope from `appState.pendingWordCloud` (set by whichever surface opened
+/// the window) and tracks subsequent hand-offs, but also hosts a `WordCloudScopeBar`
+/// so the user can retarget the cloud to any available scope — corpus, subseries,
+/// volume, collection, tag, or saved search — directly from this app-level window.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   2.0 — Word Cloud: in-window scope picker
 struct WordCloudWindowContent: View {
     @Environment(AppState.self) private var appState
 
+    /// The scope currently displayed; `nil` until one is chosen or handed off.
+    @State private var scope: WordCloudScope?
+
     var body: some View {
-        if let scope = appState.pendingWordCloud {
-            WordCloudView(scope: scope)
-                .id(scope.signature)
-        } else {
-            ContentUnavailableView(
-                String(localized: "wordcloud.window.empty.title", defaultValue: "No Word Cloud"),
-                systemImage: "cloud",
-                description: Text(String(
-                    localized: "wordcloud.window.empty.detail",
-                    defaultValue: "Open a word cloud from a document, volume, collection, tag, saved search, or the corpus."
-                ))
-            )
+        VStack(spacing: 0) {
+            WordCloudScopeBar(scope: $scope)
+            Divider()
+            if let scope {
+                WordCloudView(scope: scope)
+                    .id(scope.signature)
+            } else {
+                ContentUnavailableView(
+                    String(localized: "wordcloud.window.empty.title", defaultValue: "No Word Cloud"),
+                    systemImage: "textformat.size",
+                    description: Text(String(
+                        localized: "wordcloud.window.empty.detail",
+                        defaultValue: "Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, or the corpus."
+                    ))
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .onAppear { if scope == nil { scope = appState.pendingWordCloud } }
+        .onChange(of: appState.pendingWordCloud) { _, handedOff in
+            if let handedOff { scope = handedOff }
+        }
+    }
+}
+
+/// A compact scope selector for the macOS word-cloud window.
+///
+/// Presents a single menu listing every scope the cloud can target: the whole
+/// corpus, a subseries, a specific volume (grouped under its subseries), or a user
+/// collection / tag / saved search. The button shows a readable label for the
+/// current scope so the window always says what it's analysing.
+///
+/// Version history:
+///   1.0 — Word Cloud: in-window scope picker
+private struct WordCloudScopeBar: View {
+    /// The scope binding shared with `WordCloudWindowContent`.
+    @Binding var scope: WordCloudScope?
+
+    @Environment(AppState.self) private var appState
+    @Query(sort: \Collection.name) private var collections: [Collection]
+    @Query(sort: \UserTag.name) private var tags: [UserTag]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearches: [SavedSearch]
+
+    /// The known volume manifest entries (diffed if available, else bundled).
+    private var entries: [VolumeManifestEntry] {
+        appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+    }
+
+    /// The distinct subseries names, in manifest order.
+    private var subseriesList: [String] {
+        var seen = Set<String>()
+        var all: [String] = []
+        for entry in entries where seen.insert(entry.subseries).inserted { all.append(entry.subseries) }
+        return all
+    }
+
+    /// The volumes belonging to a subseries.
+    private func volumes(in subseries: String) -> [VolumeManifestEntry] {
+        entries.filter { $0.subseries == subseries }
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(String(localized: "wordcloud.scopeBar.label", defaultValue: "Scope"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Menu {
+                Button(String(localized: "wordcloud.scope.corpus", defaultValue: "Entire Corpus")) {
+                    scope = .corpus
+                }
+                Menu(String(localized: "wordcloud.scope.subseries", defaultValue: "Subseries")) {
+                    ForEach(subseriesList, id: \.self) { sub in
+                        Button(sub) { scope = .subseries(subseriesId: sub) }
+                    }
+                }
+                Menu(String(localized: "wordcloud.scope.volume", defaultValue: "Volume")) {
+                    ForEach(subseriesList, id: \.self) { sub in
+                        Menu(sub) {
+                            ForEach(volumes(in: sub)) { vol in
+                                Button(vol.title.isEmpty ? vol.volumeId : vol.title) {
+                                    scope = .volume(volumeId: vol.volumeId)
+                                }
+                            }
+                        }
+                    }
+                }
+                if !collections.isEmpty {
+                    Menu(String(localized: "wordcloud.scope.collection", defaultValue: "Collection")) {
+                        ForEach(collections) { collection in
+                            Button(collection.name.isEmpty
+                                   ? String(localized: "wordcloud.scope.untitled", defaultValue: "Untitled")
+                                   : collection.name) {
+                                scope = .collection(id: collection.id)
+                            }
+                        }
+                    }
+                }
+                if !tags.isEmpty {
+                    Menu(String(localized: "wordcloud.scope.tag", defaultValue: "Tag")) {
+                        ForEach(tags) { tag in
+                            Button(tag.name) { scope = .userTag(id: tag.id) }
+                        }
+                    }
+                }
+                if !savedSearches.isEmpty {
+                    Menu(String(localized: "wordcloud.scope.savedSearch", defaultValue: "Saved Search")) {
+                        ForEach(savedSearches) { search in
+                            Button(search.name.isEmpty
+                                   ? String(localized: "wordcloud.scope.untitled", defaultValue: "Untitled")
+                                   : search.name) {
+                                scope = .savedSearch(id: search.id)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Text(currentLabel)
+                    .font(.subheadline.weight(.semibold))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+    }
+
+    /// A readable label for the current scope, resolved against the manifest and
+    /// the user's SwiftData records.
+    private var currentLabel: String {
+        guard let scope else {
+            return String(localized: "wordcloud.scope.choose", defaultValue: "Choose scope…")
+        }
+        switch scope {
+        case .corpus:
+            return String(localized: "wordcloud.scope.corpus", defaultValue: "Entire Corpus")
+        case let .subseries(subseriesId):
+            return subseriesId
+        case let .volume(volumeId):
+            return entries.first { $0.volumeId == volumeId }?.title ?? volumeId
+        case let .document(_, documentId):
+            return String(format: String(localized: "wordcloud.scope.document %@",
+                                          defaultValue: "Document %@"), documentId)
+        case let .collection(id):
+            return collections.first { $0.id == id }?.name
+                ?? String(localized: "wordcloud.scope.collection", defaultValue: "Collection")
+        case let .userTag(id):
+            return tags.first { $0.id == id }?.name
+                ?? String(localized: "wordcloud.scope.tag", defaultValue: "Tag")
+        case let .savedSearch(id):
+            return savedSearches.first { $0.id == id }?.name
+                ?? String(localized: "wordcloud.scope.savedSearch", defaultValue: "Saved Search")
         }
     }
 }
