@@ -836,14 +836,14 @@ struct DocumentView: View {
             } label: {
                 Label(
                     String(localized: "document.toolbar.wordCloud", defaultValue: "Word Cloud"),
-                    systemImage: "cloud"
+                    systemImage: "textformat.size"
                 )
             }
             .controlHelp(
                 String(localized: "document.toolbar.wordCloud.a11y", defaultValue: "Word cloud"),
                 detail: String(localized: "document.toolbar.wordCloud.help",
                                defaultValue: "Visualise the most frequent terms in this document"),
-                systemImage: "cloud"
+                systemImage: "textformat.size"
             )
 
             // 3. Create highlight — enabled when text is selected in the web view

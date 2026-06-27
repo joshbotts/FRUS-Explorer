@@ -167,19 +167,6 @@ struct MacDocumentView: View {
                 title: entry.header.isEmpty ? entry.documentId : entry.header
             ))
         }
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    appState.pendingWordCloud = .document(
-                        volumeId: entry.volumeId, documentId: entry.documentId)
-                } label: {
-                    Label(String(localized: "document.toolbar.wordCloud", defaultValue: "Word Cloud"),
-                          systemImage: "cloud")
-                }
-                .help(String(localized: "document.toolbar.wordCloud.help",
-                             defaultValue: "Visualise the most frequent terms in this document"))
-            }
-        }
         .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
             activity.title = entry.header.isEmpty ? entry.documentId : entry.header
             activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
