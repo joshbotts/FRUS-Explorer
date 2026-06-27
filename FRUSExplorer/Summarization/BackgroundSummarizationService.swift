@@ -286,8 +286,16 @@ public actor BackgroundSummarizationService {
 
         // Summarize serially with light pacing between documents.
         var processed = 0
-        for job in batch {
+        for (index, job) in batch.enumerated() {
             if Task.isCancelled { break }
+            #if DEBUG && os(iOS)
+            // Instrument the real background run so an unplugged soak self-records
+            // throughput/latency/memory to the Summarization Probe log.
+            let footprintBefore = SummarizationBackgroundProbe.footprintMB()
+            let startedAt = Date()
+            #endif
+            var succeeded = false
+            var failure: String?
             do {
                 try await withRetry(maxAttempts: 2) {
                     try await self.summarizationService.summarizeDiscarding(
@@ -297,11 +305,25 @@ public actor BackgroundSummarizationService {
                     )
                 }
                 processed += 1
+                succeeded = true
             } catch {
+                failure = String(describing: error)
                 #if DEBUG
                 print("[BackgroundSummarizer] BG batch failed \(job.volumeId)/\(job.documentId): \(error)")
                 #endif
             }
+            #if DEBUG && os(iOS)
+            SummarizationBackgroundProbe.recordBackgroundRun(
+                documentId: "\(job.volumeId)/\(job.documentId)",
+                sequence: index,
+                inputChars: job.text.count,
+                inferenceMs: Int(Date().timeIntervalSince(startedAt) * 1_000),
+                footprintBeforeMB: footprintBefore,
+                footprintAfterMB: SummarizationBackgroundProbe.footprintMB(),
+                success: succeeded,
+                error: failure
+            )
+            #endif
             if !Task.isCancelled, processed < batch.count {
                 try? await Task.sleep(for: perDocumentDelay)
             }
