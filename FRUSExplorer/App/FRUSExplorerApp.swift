@@ -212,10 +212,13 @@ struct FRUSExplorerApp: App {
         Self.configureTipKit()
         let state = appState
         let container = modelContainer
-        BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: Self.indexingBGTaskID,
-            using: nil
-        ) { task in
+        // The launch handler MUST be `@Sendable` (non-isolated). BGTaskScheduler invokes
+        // it on its own background dispatch queue (`com.apple.BGTaskScheduler …`), not the
+        // main actor. Without `@Sendable` the closure inherits `App.init`'s `@MainActor`
+        // isolation, and Swift's executor assertion (`swift_task_isCurrentExecutor`) traps
+        // the instant the system runs it off-main. The actual work still hops to the main
+        // actor via the inner `Task { @MainActor in … }`.
+        let launchHandler: @Sendable (BGTask) -> Void = { task in
             guard let bgTask = task as? BGProcessingTask else {
                 task.setTaskCompleted(success: false)
                 return
@@ -269,6 +272,11 @@ struct FRUSExplorerApp: App {
                 complete(false)
             }
         }
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: Self.indexingBGTaskID,
+            using: nil,
+            launchHandler: launchHandler
+        )
     }
 
     #endif
