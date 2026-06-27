@@ -183,6 +183,51 @@ struct FRUSExplorerApp: App {
     static var debugIndexingBGTaskID: String { indexingBGTaskID }
     #endif
 
+    /// Conservative per-wake cap for background summarization. Sized small because a
+    /// single on-device summary runs several seconds under background QoS; the run
+    /// is resumable, so the rest are picked up on later wakes.
+    private static let backgroundSummarizationBatchSize = 6
+
+    /// Resumes the persisted background-summarization request (if the user opted in)
+    /// for a bounded batch, rebuilding the run's dependencies from `AppState`. Clears
+    /// the request once its scope is fully summarized.
+    @MainActor
+    private static func runBackgroundSummarizationBatch(appState: AppState, modelContext: ModelContext) async {
+        guard BackgroundSummarizationRequestStore.isEnabled,
+              let request = BackgroundSummarizationRequestStore.load(),
+              let service = appState.backgroundSummarizationService,
+              let downloadManager = appState.downloadManager else { return }
+
+        let descriptor = FetchDescriptor<SummarizationPrompt>(
+            predicate: #Predicate { $0.id == request.promptId }
+        )
+        guard let prompt = try? modelContext.fetch(descriptor).first else {
+            // The prompt was deleted — drop the stale request.
+            BackgroundSummarizationRequestStore.clear()
+            return
+        }
+        let snapshot = SummarizationPromptSnapshot(from: prompt)
+        let manifest = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        var urls: [String: URL] = [:]
+        for entry in manifest where downloadManager.isVolumeDownloaded(entry.volumeId) {
+            urls[entry.volumeId] = downloadManager.volumeURL(for: entry.volumeId)
+        }
+
+        let result = await service.processBackgroundBatch(
+            scope: request.scope,
+            snapshot: snapshot,
+            promptId: request.promptId,
+            provider: AppleIntelligenceProvider.shared,
+            downloadedVolumeURLs: urls,
+            manifestEntries: manifest,
+            activeProjectId: appState.activeProjectId,
+            maxDocuments: Self.backgroundSummarizationBatchSize
+        )
+        if result.scopeComplete {
+            BackgroundSummarizationRequestStore.clear()
+        }
+    }
+
     /// Drains the word-cloud precompute queue within the background task's remaining
     /// budget, one scope at a time. A scope is dequeued only when finished; if the
     /// task is cancelled (budget expired) the loop stops and the rest stay queued
@@ -263,6 +308,10 @@ struct FRUSExplorerApp: App {
                 // With any remaining budget, precompute queued heavy word clouds
                 // (corpus / subseries) into the on-disk cache so they open instantly.
                 await Self.drainWordCloudPrecompute(appState: state, modelContext: container.mainContext)
+                // Then summarize a small, resumable batch if the user opted in. Last
+                // because it's the most expensive/thermal work; the cap + expiration
+                // keep it conservative, and `shouldSkip` resumes it next wake.
+                await Self.runBackgroundSummarizationBatch(appState: state, modelContext: container.mainContext)
                 complete(true)
             }
             // System calls this when budget expires. Cancel in-flight work; the
@@ -1029,7 +1078,8 @@ struct FRUSExplorerApp: App {
                     || !appState.interruptedVolumeIds.isEmpty
                 let hasPrecomputeWork = WordCloudPrecomputeQueue.isEnabled
                     && WordCloudPrecomputeQueue.hasPending
-                guard hasIndexingWork || hasPrecomputeWork else { return }
+                let hasSummarizationWork = BackgroundSummarizationRequestStore.hasPending
+                guard hasIndexingWork || hasPrecomputeWork || hasSummarizationWork else { return }
                 let request = BGProcessingTaskRequest(identifier: Self.indexingBGTaskID)
                 request.requiresNetworkConnectivity = false
                 request.requiresExternalPower = false

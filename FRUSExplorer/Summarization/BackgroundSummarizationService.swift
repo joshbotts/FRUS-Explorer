@@ -13,7 +13,10 @@ import UserNotifications
 // MARK: - SummarizationScope
 
 /// Defines the set of documents to process in a background summarization run.
-public enum SummarizationScope: Sendable, Equatable {
+///
+/// `Codable` so a run can be persisted (`BackgroundSummarizationRequest`) and
+/// resumed by the iOS `BGProcessingTask` after the app is suspended.
+public enum SummarizationScope: Sendable, Equatable, Codable {
     /// All documents in one specific volume.
     case volume(volumeId: String)
     /// All documents in all volumes that share the given subseries identifier.
@@ -216,6 +219,99 @@ public actor BackgroundSummarizationService {
         )
         let count = (try? context.fetchCount(descriptor)) ?? 0
         return count > 0
+    }
+
+    // MARK: - Background batch (BGProcessingTask)
+
+    /// Processes up to `maxDocuments` not-yet-summarized documents in `scope`, one
+    /// at a time with light pacing, honoring cancellation (the background-task
+    /// budget).
+    ///
+    /// Conservative by design: serial (concurrency 1) to limit thermal load, a
+    /// short retry budget, an inter-document delay, and a hard per-wake cap. Does
+    /// **not** touch the foreground `progress` model. Posts a completion
+    /// notification only when the entire scope is finished.
+    ///
+    /// - Returns: the number summarized this wake, and whether the scope is now
+    ///   completely summarized (so the caller can clear the persisted request).
+    func processBackgroundBatch(
+        scope: SummarizationScope,
+        snapshot: SummarizationPromptSnapshot,
+        promptId: UUID,
+        provider: any SummarizationProvider,
+        downloadedVolumeURLs: [String: URL],
+        manifestEntries: [VolumeManifestEntry],
+        activeProjectId: UUID?,
+        maxDocuments: Int,
+        perDocumentDelay: Duration = .seconds(1)
+    ) async -> (processed: Int, scopeComplete: Bool) {
+        guard maxDocuments > 0, !Task.isCancelled, await provider.isAvailable else {
+            return (0, false)
+        }
+        let context = ModelContext(modelContainer)
+        let downloadedIds = Set(downloadedVolumeURLs.keys)
+        let volumeIds = resolvedVolumeIds(for: scope, in: manifestEntries, downloadedVolumeIds: downloadedIds)
+
+        // Lazily enumerate undone documents, stopping once we exceed the batch cap —
+        // the overflow tells us work remains without parsing the whole scope.
+        var batch: [(volumeId: String, documentId: String, text: String)] = []
+        var moreRemain = false
+        enumerate: for volumeId in volumeIds {
+            if Task.isCancelled { break }
+            guard let url = downloadedVolumeURLs[volumeId] else { continue }
+            let docs = (try? await parser.parse(volumeURL: url)) ?? []
+            for doc in docs {
+                if Task.isCancelled { break enumerate }
+                switch scope {
+                case .userTag(let keys), .savedSearch(let keys):
+                    guard keys.contains("\(volumeId)/\(doc.documentId)") else { continue }
+                default:
+                    break
+                }
+                if shouldSkip(volumeId: volumeId, documentId: doc.documentId,
+                              promptId: promptId, context: context) { continue }
+                let text = doc.nodes
+                    .map(\.plainText)
+                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    .joined(separator: "\n\n")
+                guard !text.isEmpty else { continue }
+                if batch.count < maxDocuments {
+                    batch.append((volumeId, doc.documentId, text))
+                } else {
+                    moreRemain = true
+                    break enumerate
+                }
+            }
+        }
+
+        // Summarize serially with light pacing between documents.
+        var processed = 0
+        for job in batch {
+            if Task.isCancelled { break }
+            do {
+                try await withRetry(maxAttempts: 2) {
+                    try await self.summarizationService.summarizeDiscarding(
+                        documentId: job.documentId, volumeId: job.volumeId,
+                        documentText: job.text, prompt: snapshot,
+                        provider: provider, activeProjectId: activeProjectId
+                    )
+                }
+                processed += 1
+            } catch {
+                #if DEBUG
+                print("[BackgroundSummarizer] BG batch failed \(job.volumeId)/\(job.documentId): \(error)")
+                #endif
+            }
+            if !Task.isCancelled, processed < batch.count {
+                try? await Task.sleep(for: perDocumentDelay)
+            }
+        }
+
+        let scopeComplete = !moreRemain && !Task.isCancelled && processed == batch.count
+        if scopeComplete && processed > 0 {
+            await deliverCompletionNotification(processed: processed, total: processed)
+        }
+        return (processed, scopeComplete)
     }
 
     // MARK: - Private run loop
