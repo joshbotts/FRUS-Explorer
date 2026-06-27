@@ -276,10 +276,69 @@ struct WordCloudLensTests {
         #expect(WordCloudLens.organizations.isEntity)
         #expect(!WordCloudLens.allTerms.isEntity)
         #expect(!WordCloudLens.topics.isEntity)
-        #expect(WordCloudLens.allCases.count == 7)
+        #expect(WordCloudLens.allCases.count == 9)
         for lens in WordCloudLens.allCases {
             #expect(!lens.label.isEmpty)
             #expect(!lens.systemImage.isEmpty)
+        }
+        // Signal-dependent lenses get an "insufficient signal" threshold; the
+        // bread-and-butter lenses always display.
+        #expect(WordCloudLens.concepts.isSignalDependent)
+        #expect(WordCloudLens.sentiment.isSignalDependent)
+        #expect(WordCloudLens.people.isSignalDependent)
+        #expect(!WordCloudLens.allTerms.isSignalDependent)
+        #expect(!WordCloudLens.topics.isSignalDependent)
+        #expect(WordCloudLens.concepts.minimumSignalTerms > 0)
+        #expect(WordCloudLens.allTerms.minimumSignalTerms == 0)
+        // Only the sentiment lens recolours by polarity.
+        #expect(WordCloudLens.sentiment.colorsBySentiment)
+        #expect(!WordCloudLens.concepts.colorsBySentiment)
+    }
+
+    @Test("Tokenizer: concept lens keeps only lexicon terms")
+    func conceptLensFiltersToLexicon() {
+        let text = "The question of sovereignty and legitimacy shaped the kitchen table talk."
+        var counts: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .concepts,
+                           lexicon: WordCloudLexicons.concepts)
+            .accumulate(from: text, into: &counts)
+        // Concept words survive; ordinary nouns ("kitchen", "table") do not.
+        #expect(counts["sovereignty"] != nil)
+        #expect(counts["legitimacy"] != nil)
+        #expect(counts["kitchen"] == nil)
+        #expect(counts["table"] == nil)
+        // Every surviving term is a member of the concept lexicon.
+        for key in counts.keys { #expect(WordCloudLexicons.concepts.contains(key)) }
+    }
+
+    @Test("Tokenizer: sentiment lens keeps only polarity terms; lexicon polarity resolves")
+    func sentimentLensFiltersAndPolarity() {
+        let text = "The crisis brought conflict, but cooperation and peace offered hope."
+        var counts: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .sentiment,
+                           lexicon: WordCloudLexicons.sentimentAll)
+            .accumulate(from: text, into: &counts)
+        for key in counts.keys { #expect(WordCloudLexicons.sentimentAll.contains(key)) }
+        #expect(WordCloudLexicons.polarity(of: "crisis") == .negative)
+        #expect(WordCloudLexicons.polarity(of: "cooperation") == .positive)
+        #expect(WordCloudLexicons.polarity(of: "kitchen") == nil)
+        // The lens filter helper maps each lens to the right membership set.
+        #expect(WordCloudLexicons.filter(for: .concepts) == WordCloudLexicons.concepts)
+        #expect(WordCloudLexicons.filter(for: .sentiment) == WordCloudLexicons.sentimentAll)
+        #expect(WordCloudLexicons.filter(for: .allTerms) == nil)
+    }
+
+    @Test("Tokenizer: entity terms are presented in Title Case")
+    func entityTitleCasing() {
+        // The name recogniser is best-effort; assert only that any surviving entity
+        // key is title-cased (no all-lowercase words), never raw lowercase.
+        var counts: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .places)
+            .accumulate(from: "The delegation travelled from Washington to Geneva and back to Washington.",
+                        into: &counts)
+        for key in counts.keys {
+            let firstWord = key.split(separator: " ").first.map(String.init) ?? key
+            #expect(firstWord.first?.isUppercase == true)
         }
     }
 

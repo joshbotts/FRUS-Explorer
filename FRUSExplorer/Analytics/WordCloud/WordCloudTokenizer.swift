@@ -43,18 +43,24 @@ struct WordCloudTokenizer: Sendable {
     /// part-of-speech lenses keep only matching tokens (via `NaturalLanguage`).
     let lens: WordCloudLens
 
+    /// For the lexicon-backed lenses (`.concepts`, `.sentiment`), the set of
+    /// base-form words a token must belong to; `nil` for all other lenses.
+    let lexicon: Set<String>?
+
     /// Creates a tokenizer.
     /// - Parameters:
     ///   - stopwords: Terms to exclude after lemmatisation/lowercasing.
     ///   - minimumLength: Shortest surviving token length. Default 3.
     ///   - foldPlurals: Whether to apply the plural-folding fallback. Default true.
     ///   - lens: Semantic filter to apply. Default `.allTerms`.
+    ///   - lexicon: Membership set for lexicon-backed lenses. Default `nil`.
     init(stopwords: Set<String>, minimumLength: Int = 3, foldPlurals: Bool = true,
-         lens: WordCloudLens = .allTerms) {
+         lens: WordCloudLens = .allTerms, lexicon: Set<String>? = nil) {
         self.stopwords = stopwords
         self.minimumLength = minimumLength
         self.foldPlurals = foldPlurals
         self.lens = lens
+        self.lexicon = lexicon
     }
 
     /// The `NaturalLanguage` name-type tag this lens filters on, if it's an entity lens.
@@ -127,6 +133,9 @@ struct WordCloudTokenizer: Sendable {
             // apply a conservative plural fold so "treaties"/"treaty" don't split.
             var candidate = (hasLemma ? lemma! : String(surface)).lowercased()
             if !hasLemma && foldPlurals { candidate = Self.singularize(candidate) }
+            // Lexicon-backed lenses (concepts / sentiment) keep only base-form words
+            // that belong to their curated set.
+            if let lexicon, !lexicon.contains(candidate) { return true }
             if isAcceptable(candidate) {
                 counts[candidate, default: 0] += 1
                 added += 1
@@ -152,11 +161,14 @@ struct WordCloudTokenizer: Sendable {
             options: [.omitPunctuation, .omitWhitespace, .omitOther, .joinNames]
         ) { tag, tokenRange in
             guard tag == needed else { return true }
-            let term = String(text[tokenRange])
+            // Lowercase first to merge casing variants ("United States" /
+            // "united states"), accept against the lowercased stopword set, then
+            // present the entity in Title Case for display.
+            let lowered = String(text[tokenRange])
                 .lowercased()
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            if isAcceptableEntity(term) {
-                counts[term, default: 0] += 1
+            if isAcceptableEntity(lowered) {
+                counts[lowered.capitalized, default: 0] += 1
                 added += 1
             }
             return true

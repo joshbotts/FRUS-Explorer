@@ -83,6 +83,7 @@
 		29FFE7328CB3DD126DDA1E27 /* IndexingQueueBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551104A534CC0A4670AD011D /* IndexingQueueBannerView.swift */; };
 		2A4762E722C42F3B00DF0293 /* FRUSDocumentParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1242DB8819CA5517FA76085B /* FRUSDocumentParser.swift */; };
 		2B4B4D3EEF8A8E3151B9FB9F /* CitationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6116A9829A1771E680567C25 /* CitationModels.swift */; };
+		2BC7798EB292D4F4F15DFD78 /* word-cloud-lexicons.json in Resources */ = {isa = PBXBuildFile; fileRef = C8DF61F3D994D634101C919B /* word-cloud-lexicons.json */; };
 		2BFDC571A924C58EBA1970D4 /* ControlHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C9422F6CC80557BB550335 /* ControlHelp.swift */; };
 		2C11F536879BAC97EBA6FDFA /* DocumentViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D8BE5332FFC2F2CBCDF4E4 /* DocumentViewTests.swift */; };
 		2C9048C93034F2F9777EF382 /* VolumeSourcesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFC3D2EF12D1AB4841E13DE /* VolumeSourcesView.swift */; };
@@ -372,6 +373,7 @@
 		C6E0818E685497269C535E14 /* ChronologyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F77CF7607C21F1182A75699 /* ChronologyModels.swift */; };
 		C722BFA9333EF9703C8D8615 /* ReferenceListPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110B126810387F00795E8E63 /* ReferenceListPanel.swift */; };
 		C9E4DBB56CAA92B59F71F2C0 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A66E5749137D5CDDA2B9BF /* BrowserView.swift */; };
+		C9EE7A1CA4B10B8B789911A0 /* WordCloudLexicons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86529079121B0BC9ED304B29 /* WordCloudLexicons.swift */; };
 		C9FD74FD4A1409079CB57B86 /* ChronologyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B1FCB97482B12E177439C04 /* ChronologyView.swift */; };
 		CA5E4CD61606B24F276EE64D /* DocumentTagAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8FA0DEEA5CAD1582FFE3DC /* DocumentTagAssignment.swift */; };
 		CB6AD2656E288EE5C8DA8A18 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E25F23B7A7E1469594E312 /* KeychainStore.swift */; };
@@ -402,6 +404,7 @@
 		DBDB381D3930953279C45B61 /* WordCloudExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A803BE62D1B38E2C378588BA /* WordCloudExport.swift */; };
 		DBE0059F66CF7260097EADEF /* SummarizationBackgroundProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4098809B135A742E73742AF2 /* SummarizationBackgroundProbe.swift */; };
 		DC929497C0A8C6D7A61B7D04 /* CrossReferenceGraphWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D1347278F03F8E67FE3984 /* CrossReferenceGraphWindowView.swift */; };
+		DD2A4F11BA0E0DE4B4C60834 /* word-cloud-lexicons.json in Resources */ = {isa = PBXBuildFile; fileRef = C8DF61F3D994D634101C919B /* word-cloud-lexicons.json */; };
 		DD7F356BFDDE1D9BDBCB419A /* ChronologyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBFDE9A0F70D3F83ED561B6 /* ChronologyViewModel.swift */; };
 		DDCBCF2F3B3E8B283CFB47DA /* SwiftDataModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EED1F2548C67D29AA03E32C8 /* SwiftDataModelTests.swift */; };
 		DE20A274CB38EA14B042B185 /* DownloadModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9157F5C19EAE8DBFC671D07 /* DownloadModels.swift */; };
@@ -468,6 +471,7 @@
 		F98B32B579F89D6B63DB432A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9863245E183A705A15D03E63 /* Assets.xcassets */; };
 		F98F4FB6070B606F48B4F4B2 /* FRUSTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B864FAA0FBEB4ECA349A89 /* FRUSTheme.swift */; };
 		F9B317CC530A34937C69A2A7 /* ProjectContextViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5427B5FF858A83768CB8A9F5 /* ProjectContextViewModel.swift */; };
+		F9B81905AA33974F8F93E4AA /* WordCloudLexicons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86529079121B0BC9ED304B29 /* WordCloudLexicons.swift */; };
 		F9C93D5B5CEF2CF48925B070 /* PromptsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F0D5415C8AA5908320FFAC /* PromptsListView.swift */; };
 		F9D7D848CD476214022ABB60 /* IndexingStageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B86D858B33FBF2E45478F /* IndexingStageTests.swift */; };
 		FA52B05E729D79A66D057C02 /* MainTabViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */; };
@@ -667,6 +671,7 @@
 		84E3757E916E1190247FE8C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-DirectDistribution.entitlements"; sourceTree = "<group>"; };
 		85FA098FBFD49BBDDCE10EB6 /* OnboardingFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowTests.swift; sourceTree = "<group>"; };
+		86529079121B0BC9ED304B29 /* WordCloudLexicons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudLexicons.swift; sourceTree = "<group>"; };
 		87C1CE86F4937BA9A1EAF837 /* FRUSSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSSettingsView.swift; sourceTree = "<group>"; };
 		87E25F23B7A7E1469594E312 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		889499978D57AFAA88BE4093 /* ResearchSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchSession.swift; sourceTree = "<group>"; };
@@ -741,6 +746,7 @@
 		C70DCDD8B97981CF1265792C /* CitationFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationFormatter.swift; sourceTree = "<group>"; };
 		C8549879A3702BD749AD1596 /* WordCloudView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudView.swift; sourceTree = "<group>"; };
 		C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSDocumentWebView.swift; sourceTree = "<group>"; };
+		C8DF61F3D994D634101C919B /* word-cloud-lexicons.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "word-cloud-lexicons.json"; sourceTree = "<group>"; };
 		C9B92FF355B906D07F1DE187 /* IndexingContextCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingContextCard.swift; sourceTree = "<group>"; };
 		CA286AC3CE197B6146D6092A /* SearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
 		CAF0799F904BBDF8A9C941F5 /* FTS5Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Types.swift; sourceTree = "<group>"; };
@@ -1099,6 +1105,7 @@
 				D0FB234387A3255640B79119 /* WordCloudDiskCache.swift */,
 				A803BE62D1B38E2C378588BA /* WordCloudExport.swift */,
 				81468F37DEEF01DF5BC14F13 /* WordCloudLayout.swift */,
+				86529079121B0BC9ED304B29 /* WordCloudLexicons.swift */,
 				8C62C528984EEA78DAF451E0 /* WordCloudLoader.swift */,
 				5CCD4B79D4110F10E75A4E67 /* WordCloudModels.swift */,
 				A55053214F8330B5F2F51CC0 /* WordCloudOverrides.swift */,
@@ -1141,6 +1148,7 @@
 				EC5C8DCD8DD7D1CB8A6B20E2 /* taxonomy.json */,
 				CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */,
 				F34208BE1028E5D565589526 /* volume-tag-taxonomy.json */,
+				C8DF61F3D994D634101C919B /* word-cloud-lexicons.json */,
 				661866B4560BAA662EBB3C2F /* word-cloud-stopwords.json */,
 			);
 			path = Resources;
@@ -1522,6 +1530,7 @@
 				394289F250E39E55E732C0C2 /* taxonomy.json in Resources */,
 				B5D098DE0C404DF13282B1A2 /* tei-rendering-config.json in Resources */,
 				90FFBCCFADB367D0A52C0291 /* volume-tag-taxonomy.json in Resources */,
+				DD2A4F11BA0E0DE4B4C60834 /* word-cloud-lexicons.json in Resources */,
 				ED3EEE86D4556D6762EBBA49 /* word-cloud-stopwords.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1543,6 +1552,7 @@
 				6299EF251CB1514312C72431 /* taxonomy.json in Resources */,
 				DA08A8C0BF8FE6E727A1DF46 /* tei-rendering-config.json in Resources */,
 				40D6C246CB8181B4C67AA895 /* volume-tag-taxonomy.json in Resources */,
+				2BC7798EB292D4F4F15DFD78 /* word-cloud-lexicons.json in Resources */,
 				C2EEB3BFCC6AB2E4F6E5B5E5 /* word-cloud-stopwords.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1735,6 +1745,7 @@
 				555B8C5524F792FA0409C7F7 /* WordCloudDiskCache.swift in Sources */,
 				DBDB381D3930953279C45B61 /* WordCloudExport.swift in Sources */,
 				0D347250EA4A69C21E4A3F35 /* WordCloudLayout.swift in Sources */,
+				C9EE7A1CA4B10B8B789911A0 /* WordCloudLexicons.swift in Sources */,
 				BD55B08ED972679C51571A58 /* WordCloudLoader.swift in Sources */,
 				4D944B2E3FD46DDFCF406FA9 /* WordCloudModels.swift in Sources */,
 				05A01041FB63560FD4979C46 /* WordCloudOverrides.swift in Sources */,
@@ -1928,6 +1939,7 @@
 				50F1A83FCE37DE72FB829BA2 /* WordCloudDiskCache.swift in Sources */,
 				91D4115ABA72491519E91CDD /* WordCloudExport.swift in Sources */,
 				82DBEA310A92CF1890503F2D /* WordCloudLayout.swift in Sources */,
+				F9B81905AA33974F8F93E4AA /* WordCloudLexicons.swift in Sources */,
 				937D55D24ABA92EF6609B8F2 /* WordCloudLoader.swift in Sources */,
 				1D6FE4751C31E4AE5627D203 /* WordCloudModels.swift in Sources */,
 				5204D327F7AFB4573B157FDC /* WordCloudOverrides.swift in Sources */,

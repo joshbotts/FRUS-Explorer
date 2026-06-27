@@ -34,6 +34,10 @@ enum WordCloudLens: String, CaseIterable, Sendable, Codable, Identifiable {
     case actions
     /// Adjectives — descriptive language.
     case descriptors
+    /// Abstract IR/diplomacy concepts (sovereignty, legitimacy, deterrence…).
+    case concepts
+    /// Sentiment-bearing words, coloured by polarity.
+    case sentiment
 
     var id: String { rawValue }
 
@@ -45,6 +49,24 @@ enum WordCloudLens: String, CaseIterable, Sendable, Codable, Identifiable {
         }
     }
 
+    /// Lenses whose output depends on how much matching signal a scope contains —
+    /// a tiny document may have few or no entities, concepts, or sentiment words, so
+    /// the UI shows an "insufficient signal" state rather than a near-empty cloud.
+    var isSignalDependent: Bool {
+        switch self {
+        case .allTerms, .topics, .actions, .descriptors: return false
+        case .people, .places, .organizations, .concepts, .sentiment: return true
+        }
+    }
+
+    /// The minimum number of terms below which this lens is treated as having
+    /// insufficient signal to display for a scope.
+    var minimumSignalTerms: Int { isSignalDependent ? 4 : 0 }
+
+    /// `true` when the cloud should colour words by sentiment polarity instead of
+    /// the rank palette.
+    var colorsBySentiment: Bool { self == .sentiment }
+
     /// Localised menu label.
     var label: String {
         switch self {
@@ -55,6 +77,8 @@ enum WordCloudLens: String, CaseIterable, Sendable, Codable, Identifiable {
         case .topics:        return String(localized: "wordcloud.lens.topics", defaultValue: "Topics (nouns)")
         case .actions:       return String(localized: "wordcloud.lens.actions", defaultValue: "Actions (verbs)")
         case .descriptors:   return String(localized: "wordcloud.lens.descriptors", defaultValue: "Descriptors (adjectives)")
+        case .concepts:      return String(localized: "wordcloud.lens.concepts", defaultValue: "Concepts")
+        case .sentiment:     return String(localized: "wordcloud.lens.sentiment", defaultValue: "Sentiment")
         }
     }
 
@@ -68,6 +92,8 @@ enum WordCloudLens: String, CaseIterable, Sendable, Codable, Identifiable {
         case .topics:        return "tag"
         case .actions:       return "bolt"
         case .descriptors:   return "paintpalette"
+        case .concepts:      return "lightbulb"
+        case .sentiment:     return "face.smiling"
         }
     }
 }

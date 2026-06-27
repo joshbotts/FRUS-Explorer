@@ -124,7 +124,8 @@ actor WordFrequencyService {
         let tokenizer = WordCloudTokenizer(
             stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomaticStopwords)
                 .union(extraStopwords),
-            lens: lens
+            lens: lens,
+            lexicon: WordCloudLexicons.filter(for: lens)
         )
         let total = keys.count
         var counts: [String: Int] = [:]

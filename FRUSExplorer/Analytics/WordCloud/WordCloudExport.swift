@@ -81,13 +81,16 @@ enum WordCloudExporter {
     ///   - title: Scope title, drawn as a caption and used for the filename.
     ///   - format: PNG or PDF.
     ///   - palette: The colour palette to draw words with.
+    ///   - sentimentColors: When `true`, words are coloured by sentiment polarity
+    ///     instead of the rank palette, matching the on-screen sentiment lens.
     /// - Returns: The written export item, or `nil` on failure.
     @MainActor
     static func image(
         terms: [TermCount],
         title: String,
         format: WordCloudImageFormat,
-        palette: [Color]
+        palette: [Color],
+        sentimentColors: Bool = false
     ) -> WordCloudExportItem? {
         // Leave a caption band at the bottom; lay words out above it.
         let captionBand: CGFloat = 56
@@ -97,7 +100,7 @@ enum WordCloudExporter {
         )
         let content = WordCloudImageContent(
             placements: placements, title: title, size: canvas,
-            captionBand: captionBand, palette: palette
+            captionBand: captionBand, palette: palette, sentimentColors: sentimentColors
         )
 
         let renderer = ImageRenderer(content: content)
@@ -213,6 +216,8 @@ struct WordCloudImageContent: View {
     let captionBand: CGFloat
     /// Colour palette.
     let palette: [Color]
+    /// When `true`, words are coloured by sentiment polarity instead of `palette`.
+    var sentimentColors: Bool = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -220,7 +225,7 @@ struct WordCloudImageContent: View {
             ForEach(placements) { word in
                 Text(word.term)
                     .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
-                    .foregroundStyle(palette[word.colorIndex % palette.count])
+                    .foregroundStyle(color(for: word))
                     .fixedSize()
                     .rotationEffect(.degrees(word.rotationDegrees))
                     .position(word.center)
@@ -242,6 +247,18 @@ struct WordCloudImageContent: View {
             }
         }
         .frame(width: size.width, height: size.height)
+    }
+
+    /// Colour for a word: sentiment polarity when `sentimentColors` is set,
+    /// otherwise the rank palette. Neutral words use a mid grey, legible on the
+    /// white export canvas.
+    private func color(for word: PlacedWord) -> Color {
+        guard sentimentColors else { return palette[word.colorIndex % palette.count] }
+        switch WordCloudLexicons.polarity(of: word.term) {
+        case .positive: return .green
+        case .negative: return .red
+        case .none:     return Color(white: 0.4)
+        }
     }
 }
 
