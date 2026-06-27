@@ -737,6 +737,10 @@ struct FRUSExplorerApp: App {
            ) {
             appState.indexingPipeline = pipeline
             appState.connectIndexingProgress(pipeline: pipeline)
+            // Collapse any CloudKit-sync duplicate tags / projects / collections
+            // (SwiftData + CloudKit can't enforce unique `id`s) so they stop
+            // appearing twice in lists.
+            DuplicateRecordCleanup.run(context: modelContainer.mainContext)
             #if os(iOS)
             // Mirror background-summarization progress onto a Live Activity.
             appState.startObservingSummarizationProgress()

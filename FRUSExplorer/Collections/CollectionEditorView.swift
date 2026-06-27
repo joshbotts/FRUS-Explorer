@@ -766,38 +766,42 @@ private struct EntryRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                ForEach(availableNotes) { note in
-                    let isOn = Binding<Bool>(
-                        get: {
-                            // Prefer selectedNoteIds when non-empty; fall back to researchNoteId.
-                            if !entry.selectedNoteIds.isEmpty {
-                                return entry.selectedNoteIds.contains(note.id)
-                            }
-                            return entry.researchNoteId == note.id
-                        },
-                        set: { include in
-                            // Migrate from legacy single-note to multi-note on first edit.
-                            if entry.selectedNoteIds.isEmpty, let legacy = entry.researchNoteId {
-                                entry.selectedNoteIds = [legacy]
-                                entry.researchNoteId = nil
-                            }
-                            if include {
-                                if !entry.selectedNoteIds.contains(note.id) {
-                                    entry.selectedNoteIds.append(note.id)
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(availableNotes) { note in
+                        let isOn = Binding<Bool>(
+                            get: {
+                                // Prefer selectedNoteIds when non-empty; fall back to researchNoteId.
+                                if !entry.selectedNoteIds.isEmpty {
+                                    return entry.selectedNoteIds.contains(note.id)
                                 }
-                            } else {
-                                entry.selectedNoteIds.removeAll { $0 == note.id }
+                                return entry.researchNoteId == note.id
+                            },
+                            set: { include in
+                                // Migrate from legacy single-note to multi-note on first edit.
+                                if entry.selectedNoteIds.isEmpty, let legacy = entry.researchNoteId {
+                                    entry.selectedNoteIds = [legacy]
+                                    entry.researchNoteId = nil
+                                }
+                                if include {
+                                    if !entry.selectedNoteIds.contains(note.id) {
+                                        entry.selectedNoteIds.append(note.id)
+                                    }
+                                } else {
+                                    entry.selectedNoteIds.removeAll { $0 == note.id }
+                                }
                             }
+                        )
+                        Toggle(isOn: isOn) {
+                            Text(noteLabel(note))
+                                .font(.caption)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                    )
-                    Toggle(isOn: isOn) {
-                        Text(noteLabel(note))
-                            .font(.caption)
+                        #if os(macOS)
+                        .toggleStyle(.checkbox)
+                        #endif
                     }
-                    #if os(macOS)
-                    .toggleStyle(.checkbox)
-                    #endif
                 }
+                .padding(.top, 2)
             }
         }
         .padding(.vertical, 4)
