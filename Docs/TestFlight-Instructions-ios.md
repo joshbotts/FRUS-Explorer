@@ -41,11 +41,17 @@ Two Browse-tab toolbar buttons open corpus-wide tools as sheets:
 
 ## Step 5 — Search, organize, summarize, export
 
-Use the Search tab for full-text queries (a phrase, or AND/OR; scope to specific volumes); long result sets load more as you scroll. Add highlights, notes, and tags as you read — the Research tab collects them. With Apple Intelligence, try **Summarize with AI** (on-device). Gather documents into Collections you can **export** (PDF, HTML, DOCX, Zotero/RIS), copy a **citation**, or **Send to Zotero**.
+Use the Search tab for full-text queries (a phrase, or AND/OR; scope to specific volumes); long result sets load more as you scroll. Add highlights, notes, and tags as you read — the Research tab collects them. With Apple Intelligence, try **Summarize with AI** (on-device); to summarize many documents at once, turn on **background summarization** in Settings → Research → Summarization. Gather documents into Collections you can **export** (PDF, HTML, DOCX, Zotero/RIS), and use a document's **Share** menu (or a collection's export) to copy a **citation** or **Send to Zotero**.
+
+## Step 6 — What's new to try in this build
+
+- **Word Cloud** — Open one for a document (Share/More), a volume or subseries (browser context menu), a collection, a tag, a saved search, or the whole corpus. Try the **lens chips** (People, Places, Concepts, Sentiment, …), tap a word to search it, and export it. Tune the filters and add hidden words in Settings → Research → **Word Cloud**.
+- **Zotero (Web API)** — In Settings → Integrations → **Zotero**, paste a Zotero Web API key, then use a document's **Share → Send to Zotero Library** (or a collection) to push it — with your tags and notes — straight into your Zotero library.
+- **Sync settings across devices** — Settings → iCloud Sync has a new toggle. Turn it on to mirror your word-cloud filters, citation style, and a few other preferences to your other devices (off by default).
 
 ## What feedback to provide
 
-Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions, the Chronology and Analytics charts, the People index (names that look merged, split, or out of place), AI summaries, and searches returning too few or too many results. Tips appear to help you find features; tell me if anything's confusing.
+Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions, the Chronology and Analytics charts, the **word cloud** (a lens showing the wrong kind of term, or words you'd expect filtered out), **Send to Zotero** (does the document arrive with its tags and notes?), the People index (names that look merged, split, or out of place), AI summaries (including very long documents), and searches returning too few or too many results. Tips appear to help you find features; tell me if anything's confusing.
 
 ## How to report an issue
 

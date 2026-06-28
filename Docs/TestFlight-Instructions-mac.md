@@ -39,11 +39,17 @@ From a document's toolbar, click Cross-References. Each circle is a document, pl
 
 ## Step 5 — Search, organize, summarize, export
 
-Search (⌘F) opens its own window that stays open while you read — try a phrase or AND/OR, scoped to specific volumes. Open documents in new windows, work with search and the graph side by side, and revisit places via History. Add highlights, notes, and tags as you read (the Research window, ⌘⌥R, gathers them). With Apple Intelligence on an Apple Silicon Mac, you can also **Summarize** a document on-device. Gather documents into Collections (⇧⌘K) to **export** (PDF, HTML, DOCX, Zotero/RIS), copy a **citation**, or **Send to Zotero**.
+Search (⌘F) opens its own window that stays open while you read — try a phrase or AND/OR, scoped to specific volumes. Open documents in new windows, work with search and the graph side by side, and revisit places via History. Add highlights, notes, and tags as you read (the Research window, ⌘⌥R, gathers them). With Apple Intelligence on an Apple Silicon Mac, you can also **Summarize** a document on-device (and queue a whole subseries with the **Background Summarizer** in Settings → Advanced → Summarization). Gather documents into Collections (⇧⌘K) to **export** (PDF, HTML, DOCX, Zotero/RIS); a document's **Cite** and **Share** Research-strip buttons copy a **citation** or **Send to Zotero**.
+
+## Step 6 — What's new to try in this build
+
+- **Word Cloud** — The **Word Cloud** toolbar button opens a window with an in-window scope picker (corpus, any subseries/volume/collection/tag/saved search); per-row buttons in the Corpus Browser and the document Research strip open scoped clouds. Try the **lens chips** (People, Places, Concepts, Sentiment, …), click a word to search it, compare two scopes, and export PNG/PDF/CSV. Tune filters and hidden words in Settings → **Word Cloud**.
+- **Zotero (Web API)** — In Settings → Advanced → **Zotero**, paste a Zotero Web API key, then use a document's **Share → Send to Zotero Library** (or a collection) to push it — with your tags and notes — into your Zotero library.
+- **Sync settings across devices** — Settings → **iCloud Sync** has a new toggle to mirror your word-cloud filters, citation style, and a few other preferences across devices (off by default).
 
 ## What to provide feedback on
 
-Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions (hover/click/zoom/pan/brush), the Chronology and Analytics charts, the People index (names that look merged, split, or out of place), multi-window behavior, AI summaries, and searches returning too few or too many results.
+Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions (hover/click/zoom/pan/brush), the Chronology and Analytics charts, the **word cloud** (a lens showing the wrong kind of term, or words you'd expect filtered out), **Send to Zotero** (does the document arrive with its tags and notes?), the People index (names that look merged, split, or out of place), multi-window behavior, AI summaries (including very long documents), and searches returning too few or too many results.
 
 ## How to report an issue
 

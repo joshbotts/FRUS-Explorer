@@ -144,9 +144,9 @@ When you open a document for reading, its toolbar gathers every contextual actio
 | **Tag Document** | Apply or remove custom tags |
 | **Create Highlight** | Enter highlight mode to mark up passages (see Section 7.2) |
 | **Read / Research** (segmented control) | Switch between distraction-free Read mode and the Research panel layout (see Section 6.2) |
-| **View Citation** | Open the formatted-citation popover |
-| **Copy Citation** | Copy the formatted citation text to the clipboard |
-| **Share Citation** | Open the system share sheet with both the formatted citation and its canonical history.state.gov link, ready to send as one message |
+| **Citation** | View the formatted citation, or copy it (including Copy as… BibTeX/RIS) — see Section 9.3 |
+| **Share** | Send this document to your Zotero library, export a Zotero file, or share the citation + link (see Section 9.3) |
+| **Word Cloud** | Open a frequency word cloud for this document (see Section 13.4) |
 | **Add to Collection** | File this document into one or more collections |
 | **Cross-References** | View this document's outbound and inbound cross-references, and look any referenced person up in the NARA catalog |
 | **Source Explorer** | Open this document's archival source note in Source Explorer |
@@ -409,12 +409,15 @@ From the Search tab, tap the citation-lookup button to open **Citation Lookup**:
 
 ### 9.3 Copying and Sharing Citations
 
-From the document toolbar:
+The document toolbar separates the *citation itself* from *sending the document somewhere*:
 
-- **Copy Citation** copies the formatted citation text to your clipboard, ready to paste into a paper, email, or notes app.
-- **Share Citation** opens the system share sheet with a single message that combines the formatted citation *and* its canonical `history.state.gov` link — so whoever receives it can both read the citation and open the original source online with one tap. This works with any share destination your device supports: Messages, Mail, Notes, third-party apps, AirDrop, and more.
+- The **Citation** menu is for the reference text — **View Citation** (opens the formatted citation; from there you can also **Copy as…** BibTeX or RIS) and **Copy Citation**.
+- The **Share** menu (the share icon, next to Citation) gathers the export and send actions:
+  - **Send to Zotero Library** — pushes this document straight into your Zotero library over the Web API, with its tags and research notes (appears only when a Zotero account is connected; see Section 16).
+  - **Export Zotero file (BibTeX / RIS)** — shares a Zotero-importable file via the system share sheet.
+  - **Share Citation** — opens the share sheet with a single message combining the formatted citation *and* its canonical `history.state.gov` link, so whoever receives it can read the citation and open the original source online with one tap (works with Messages, Mail, Notes, AirDrop, third-party apps, and more).
 
-`[SCREENSHOT: System share sheet showing a combined citation-and-link message ready to send]`
+`[SCREENSHOT: Document Share menu showing Send to Zotero Library, Export Zotero file, and Share Citation]`
 
 ---
 
@@ -441,7 +444,7 @@ Tap **Export** from a collection to choose a format:
 | **DOCX (Word)** | Editable output for further work in Word, Pages, Google Docs, or similar |
 | **Zotero (RIS)** | Importing the whole collection into Zotero (or any RIS-aware reference manager) as one Book Section record per document, each carrying the canonical history.state.gov URL plus your FRUS Explorer tags and (optionally) research notes |
 
-> **Sending one document to Zotero:** From a document's citation popover, **Send to Zotero** shares a single RIS record. RIS imports into standard Zotero on iOS (and everywhere else) without a plugin, so the document arrives as a proper, citable entry — not an unreadable file.
+> **Sending one document to Zotero:** Use the document's **Share** menu (Section 9.3). If you've connected a Zotero account (Section 16), **Send to Zotero Library** pushes the single document — with its tags and notes — straight into your library over the Web API. Without an account, **Export Zotero file (RIS)** shares a single RIS record, which imports into standard Zotero on iOS (and everywhere else) without a plugin. A whole collection can likewise be sent to your library or exported as RIS.
 
 `[SCREENSHOT: Export format picker showing PDF, HTML, and DOCX options]`
 
@@ -480,6 +483,12 @@ FRUS Explorer ships with a standard summarization prompt, and you can create you
 ### 11.3 Summaries in Exports
 
 When building a collection export, choosing **Summary only** as the body depth (Section 10.3) generates summaries on demand for any included document that doesn't already have one for the selected prompt — producing a compact briefing-style export instead of a full-text one.
+
+### 11.4 Summarizing Many Documents in the Background
+
+To summarize a large set of documents without sitting through them one at a time, open **Settings → Research → Summarization** and turn on **background summarization**, then pick a scope — an entire subseries, a single volume, a user tag, a saved search, or a date range. FRUS Explorer works through the queue conservatively, including for a period after you leave the app, and reports progress through a Live Activity (on supported iPhones) and the Settings screen. It's deliberately cautious about battery and heat, so a large batch may span several sessions; documents that already have a summary for the chosen prompt are skipped. Very long documents are handled automatically — they're summarized in sections and recombined, so even an unusually long policy paper completes rather than failing.
+
+> **Note:** Background summarization is opt-in and runs only while the device has capacity; it is not a guaranteed-immediate operation. For a single document, **Summarize with AI** (Section 11.1) is always the fastest path.
 
 ---
 
@@ -522,6 +531,19 @@ Tap a point or segment on the chart to **View in Search** — this opens the Sea
 ### 13.3 From a Search to a Chart
 
 The relationship runs both ways: when a search returns more matches than can be shown in full, Search offers **Visualize in Corpus Analytics** (Section 5.5) — tapping it opens Analytics pre-seeded with your search terms and date filter, so you can chart the term's distribution and narrow your date range before returning to a more focused search.
+
+### 13.4 Word Cloud
+
+Where Analytics charts one term over time, a **Word Cloud** shows the most frequent terms in a body of material at a glance. You can open one for almost any scope: a single **document** (Share/More menu in the document toolbar), a **volume** or **subseries** (the context menu in the browser), a **collection**, a **user tag**, a **saved search**, or the whole **corpus**.
+
+`[SCREENSHOT: Word cloud for a volume on iPhone, with the lens bar above a packed spiral of sized terms]`
+
+- **Two views.** A packed **spiral cloud** sizes each term by frequency (and rotates some terms to pack more in); a **List** view ranks the same terms with a weight bar and exact counts. The List view is also what VoiceOver reads, so the cloud is fully accessible.
+- **Lenses.** A bar of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). If a scope doesn't contain enough of a given kind of term, the cloud says so instead of showing a near-empty result.
+- **Act on a term.** Tap any word to hand off to Search for that term. The options menu lets you **hide** a word for that scope, switch lenses, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG image, a PDF, or a CSV of terms and counts.
+- **Tuning.** Settings → Research → **Word Cloud** lets you set minimum word length and occurrence count, toggle plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintain your own **hidden-word lists** (global, or per lens) — useful for trimming a recurring false positive without affecting other lenses.
+
+Corpus- and subseries-wide clouds can take a moment the first time; on iPhone they're precomputed in the background and cached, so reopening them is instant.
 
 ---
 
@@ -584,11 +606,12 @@ The **Settings** tab gathers every app-wide preference, organized into clearly l
 
 | Section | Contains |
 |---------|----------|
-| **iCloud** | Sync status for your research data (notes, tags, collections, highlights, projects) |
+| **iCloud Sync** | Sync status for your research data (notes, tags, collections, highlights, projects), plus a **Sync Settings Across Devices** toggle that mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices that have it enabled. Off by default — turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate. (Device-specific preferences like download limits stay local.) |
 | **General** | **Display** preferences (font size, line spacing, and related reading options) and **Search Defaults** (default filters and sort order for new searches) |
 | **Volumes** | **Downloads** (queue and manage which volumes are on your device), **Storage** (see how much space the corpus occupies and free it up), **Index Health** (the merged search-index version, status, and an on-demand integrity check), and **Sideload** (import volume files manually, e.g., from a file you've obtained separately) |
-| **Research** | **Tags** (create, rename, recolor, and delete your custom tags), **Summarization** (manage AI summarization prompts), and **Log Sessions** (diagnostic logging for troubleshooting) |
-| **Integrations** | **NARA API Key** (configure your National Archives catalog key for Source Explorer) and **Reset** (clear cached or local app state) |
+| **Research** | **Tags** (create, rename, recolor, and delete your custom tags), **Summarization** (manage AI summarization prompts and turn on background summarization), **Word Cloud** (filtering criteria and custom hidden-word lists; see Section 13.4), and **Log Sessions** (diagnostic logging for troubleshooting) |
+| **Integrations** | **NARA API Key** (your National Archives catalog key for Source Explorer) and **Zotero** (connect your Zotero account with a Web API key so **Send to Zotero Library** can push documents and collections straight into your library) |
+| **Data** | Export your research data, and **Reset** options to clear cached or local app state |
 
 Two standalone rows complete the tab:
 
