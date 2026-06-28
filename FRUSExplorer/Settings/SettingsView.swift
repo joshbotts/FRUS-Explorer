@@ -77,6 +77,8 @@ struct SettingsView: View {
     #endif
 
     @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
+    /// Device-local master toggle for optional cross-device settings sync.
+    @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
     @Environment(AppState.self) private var appState
 
     var body: some View {
@@ -86,9 +88,33 @@ struct SettingsView: View {
             Form {
                 // iCloud sync status — visible on iOS where there is no macOS status bar.
                 // Shows container init result and the most recent sync event outcome.
-                Section(String(localized: "settings.section.icloud",
-                               defaultValue: "iCloud Sync")) {
+                Section {
                     iCloudSyncStatusRow
+                    Toggle(isOn: $syncSettingsEnabled) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(String(localized: "settings.sync.toggle",
+                                        defaultValue: "Sync Settings Across Devices"))
+                            Text(String(localized: "settings.sync.toggle.detail",
+                                        defaultValue: "Word-cloud filters & stop lists, citation style, default document mode, and research logging."))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .disabled(!appState.cloudKitSyncEnabled)
+                    .onChange(of: syncSettingsEnabled) { _, newValue in
+                        appState.settingsSync?.handleEnabledChange(newValue)
+                    }
+                    if !appState.cloudKitSyncEnabled {
+                        Text(String(localized: "settings.sync.unavailable",
+                                    defaultValue: "Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text(String(localized: "settings.section.icloud", defaultValue: "iCloud Sync"))
+                } footer: {
+                    Text(String(localized: "settings.sync.footer",
+                                defaultValue: "When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."))
                 }
 
                 Section(String(localized: "settings.section.general",
@@ -132,6 +158,10 @@ struct SettingsView: View {
                     NavigationLink(String(localized: "settings.row.summarization",
                                          defaultValue: "Summarization")) {
                         SummarizationPromptsSettingsView()
+                    }
+                    NavigationLink(String(localized: "settings.row.wordCloud",
+                                         defaultValue: "Word Cloud")) {
+                        WordCloudSettingsView()
                     }
                     Toggle(
                         String(localized: "settings.row.logSessions",

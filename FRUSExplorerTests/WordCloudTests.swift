@@ -391,3 +391,103 @@ struct WordCloudLayoutRotationTests {
         for word in b { #expect(aRot[word.term] == word.rotationDegrees) }
     }
 }
+
+// MARK: - WordCloudCriteriaTests
+
+/// Covers the criteria tightening: the bundled markings layer, markings filtering in
+/// both the word and entity paths, and the tunable cache token.
+struct WordCloudCriteriaTests {
+
+    @Test("Markings layer loads from the bundle")
+    func markingsLayerLoads() {
+        #expect(WordCloudStopwords.markings.contains("top secret"))
+        #expect(WordCloudStopwords.markings.contains("confidential"))
+        #expect(WordCloudStopwords.markings.contains("priority"))
+    }
+
+    @Test("Tokenizer: markings drop document-chrome words from word lenses")
+    func wordMarkingsExclude() {
+        var counts: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .allTerms, markings: ["secret", "confidential"])
+            .accumulate(from: "secret confidential treaty treaty", into: &counts)
+        #expect(counts["secret"] == nil)
+        #expect(counts["confidential"] == nil)
+        #expect(counts["treaty"] == 2)
+    }
+
+    @Test("Tokenizer: markings can only remove an entity, never add one")
+    func entityMarkingsExclude() {
+        let text = "The delegation travelled to Paris for the talks."
+        var plain: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .places)
+            .accumulate(from: text, into: &plain)
+        var filtered: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .places, markings: ["paris"])
+            .accumulate(from: text, into: &filtered)
+        #expect(filtered["Paris"] == nil)
+        #expect(filtered.count <= plain.count)
+    }
+
+    @Test("Tokenizer: entity terms with digits are rejected")
+    func entityRejectsDigits() {
+        // A pure-digit / digit-bearing token must never count as a name even if the
+        // recogniser tags it.
+        var counts: [String: Int] = [:]
+        WordCloudTokenizer(stopwords: [], lens: .organizations)
+            .accumulate(from: "Article 19 and Resolution 242 were cited.", into: &counts)
+        for key in counts.keys { #expect(!key.contains(where: { $0.isNumber })) }
+    }
+
+    @Test("Tuning cache token reflects each criterion")
+    func tuningCacheToken() {
+        let base = WordCloudTuning.standard.cacheToken
+        #expect(WordCloudTuning(minimumLength: 5).cacheToken != base)
+        #expect(WordCloudTuning(minimumCount: 3).cacheToken != base)
+        #expect(WordCloudTuning(foldPlurals: false).cacheToken != base)
+        #expect(WordCloudTuning(filterMarkings: false).cacheToken != base)
+        #expect(WordCloudTuning.standard.filterMarkings) // markings on by default
+    }
+}
+
+// MARK: - WordCloudSettingsStoreTests
+
+/// Round-trips the user-managed stop lists and verifies the revision bump that
+/// drives recompute.
+struct WordCloudSettingsStoreTests {
+
+    @Test("Settings store: global and per-lens stop lists round-trip and bump revision")
+    func stopListRoundTrip() {
+        let global = "zzqq-global-probe"
+        let lensWord = "zzqq-lens-probe"
+        // Start clean in case a prior run left state.
+        WordCloudSettings.removeGlobalStopword(global)
+        WordCloudSettings.removeLensStopword(lensWord, lens: .people)
+
+        let beforeRevision = WordCloudSettings.revision
+        WordCloudSettings.addGlobalStopword(global)
+        #expect(WordCloudSettings.globalStopwords.contains(global))
+        // The global list is shared by every lens's assembled extras.
+        #expect(WordCloudSettings.extraStopwords(for: .topics).contains(global))
+        #expect(WordCloudSettings.revision > beforeRevision)
+
+        WordCloudSettings.addLensStopword(lensWord, lens: .people)
+        #expect(WordCloudSettings.lensStopwords(.people).contains(lensWord))
+        #expect(!WordCloudSettings.lensStopwords(.places).contains(lensWord))
+        #expect(WordCloudSettings.extraStopwords(for: .people).contains(lensWord))
+        #expect(!WordCloudSettings.extraStopwords(for: .places).contains(lensWord))
+
+        // Cleanup.
+        WordCloudSettings.removeGlobalStopword(global)
+        WordCloudSettings.removeLensStopword(lensWord, lens: .people)
+        #expect(!WordCloudSettings.globalStopwords.contains(global))
+        #expect(!WordCloudSettings.lensStopwords(.people).contains(lensWord))
+    }
+
+    @Test("Settings store: tuning clamps to safe minimums")
+    func tuningClamps() {
+        // Defaults are sane even when nothing is stored.
+        let tuning = WordCloudSettings.tuning
+        #expect(tuning.minimumLength >= 2)
+        #expect(tuning.minimumCount >= 1)
+    }
+}

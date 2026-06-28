@@ -368,6 +368,11 @@ final class AppState {
     /// alongside `searchService`; `nil` if the FTS5 database could not be opened.
     var wordFrequencyService: WordFrequencyService?
 
+    /// Coordinates optional cross-device settings sync. Created at boot with the
+    /// main model context; `nil` until then. Holds no UI state itself — it mirrors
+    /// `UserDefaults` to/from a CloudKit-synced record when the device opts in.
+    var settingsSync: SettingsSyncCoordinator?
+
     // MARK: - Research Session Logging
 
     /// `ModelContext` used exclusively for writing `ResearchSession` and `SessionEvent`

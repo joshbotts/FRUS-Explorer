@@ -33,5 +33,18 @@
     "respectfully", "official", "officials", "officer", "officers", "chief",
     "section", "paragraph", "page", "pages", "volume", "file", "files", "no",
     "number", "numbered", "copy", "copies", "signed", "dated", "translation"
+  ],
+  "markings": [
+    "secret", "top secret", "confidential", "unclassified", "restricted",
+    "sensitive", "official use only", "for official use only", "limited official use",
+    "limited official use only", "eyes only", "no foreign", "no foreign dissemination",
+    "noforn", "nodis", "exdis", "limdis", "limited distribution", "no distribution",
+    "personal and confidential", "personal", "private", "informal", "official informal",
+    "declassified", "declassify", "classification", "classified", "handling",
+    "priority", "immediate", "operational immediate", "flash", "niact", "routine",
+    "deferred", "night action", "verbatim text", "verbatim", "literally",
+    "january", "february", "march", "april", "may", "june", "july", "august",
+    "september", "october", "november", "december",
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
   ]
 }

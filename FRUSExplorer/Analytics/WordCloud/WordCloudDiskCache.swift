@@ -43,13 +43,14 @@ enum WordCloudDiskCache {
     ///   - limit: The requested term limit.
     ///   - includeDiplomatic: Whether the diplomatic stopword layer is active.
     ///   - extras: A token summarising any per-scope extra stopwords.
+    ///   - tuning: A token summarising the tunable criteria (`WordCloudTuning.cacheToken`).
     ///   - fingerprint: The index fingerprint (`documentCacheCount`).
     /// - Returns: A composite key string.
     static func key(
         signature: String, limit: Int, includeDiplomatic: Bool,
-        extras: String = "", fingerprint: Int
+        extras: String = "", tuning: String = "", fingerprint: Int
     ) -> String {
-        "\(signature)|n=\(limit)|diplo=\(includeDiplomatic)|x=\(extras)|fp=\(fingerprint)"
+        "\(signature)|n=\(limit)|diplo=\(includeDiplomatic)|x=\(extras)|t=\(tuning)|fp=\(fingerprint)"
     }
 
     /// Loads a cached result for `key`, or `nil` if none is stored.

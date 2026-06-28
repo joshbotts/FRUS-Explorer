@@ -98,6 +98,36 @@ enum WordCloudLens: String, CaseIterable, Sendable, Codable, Identifiable {
     }
 }
 
+// MARK: - WordCloudTuning
+
+/// User-tunable criteria that shape how text is reduced to word-cloud terms.
+///
+/// Bundled into one value so it threads cleanly through the service and folds into
+/// the result cache key. `.standard` is the default behaviour applied when the user
+/// hasn't changed anything in Settings.
+///
+/// Version history:
+///   1.0 — Word Cloud: tunable criteria + stop-list management
+struct WordCloudTuning: Sendable, Equatable, Codable {
+    /// Shortest surviving token length (in characters).
+    var minimumLength: Int = 3
+    /// Smallest total occurrence count a term must reach to appear.
+    var minimumCount: Int = 1
+    /// Whether to fold likely plurals onto their singular form.
+    var foldPlurals: Bool = true
+    /// Whether to drop classification markings and document chrome
+    /// ("Top Secret", "Confidential", precedence words, month names).
+    var filterMarkings: Bool = true
+
+    /// The default tuning (the historical behaviour, plus markings filtering on).
+    static let standard = WordCloudTuning()
+
+    /// A short, stable token capturing this tuning for cache keys.
+    var cacheToken: String {
+        "l\(minimumLength)c\(minimumCount)f\(foldPlurals ? 1 : 0)m\(filterMarkings ? 1 : 0)"
+    }
+}
+
 // MARK: - WordCloudDocumentKey
 
 /// A composite document identity (`volumeId` + `documentId`) used to address a

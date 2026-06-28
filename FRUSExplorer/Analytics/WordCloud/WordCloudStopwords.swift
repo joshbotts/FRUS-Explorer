@@ -27,6 +27,7 @@ enum WordCloudStopwords {
     private struct Payload: Decodable {
         let english: [String]
         let diplomatic: [String]
+        let markings: [String]?
     }
 
     /// Decoded payload, loaded lazily from the app bundle on first access.
@@ -39,7 +40,7 @@ enum WordCloudStopwords {
             #if DEBUG
             print("[WordCloudStopwords] Failed to load word-cloud-stopwords.json; using empty lists.")
             #endif
-            return Payload(english: [], diplomatic: [])
+            return Payload(english: [], diplomatic: [], markings: [])
         }
         return decoded
     }()
@@ -49,6 +50,13 @@ enum WordCloudStopwords {
 
     /// The diplomatic-boilerplate stopword set (lowercased).
     static let diplomatic: Set<String> = Set(payload.diplomatic.map { $0.lowercased() })
+
+    /// Classification markings, handling caveats, precedence words, and calendar
+    /// terms (lowercased). These read as document chrome rather than content and are
+    /// a frequent source of named-entity false positives ("Top Secret" tagged as a
+    /// place), so they're filtered when the user's "filter markings" setting is on.
+    /// Includes multi-word phrases for the entity path's phrase check.
+    static let markings: Set<String> = Set((payload.markings ?? []).map { $0.lowercased() })
 
     /// The active stopword set for a request.
     ///
