@@ -90,12 +90,19 @@ actor SummarizationService {
         }
 
         let tokenLimit = await provider.contextWindowTokenLimit
+        // Budget the *content* portion of each call conservatively: subtract the
+        // prompt template's own tokens (so a long structured prompt doesn't push a
+        // chunk over the window) plus a safety margin for token-estimate drift. This
+        // same budget bounds both the per-chunk (map) and synthesis (reduce) calls.
+        let budget = documentBudget(promptText: prompt.promptText,
+                                    responseFormat: prompt.responseFormat,
+                                    limit: tokenLimit)
         let estimatedTokens = estimateTokens(documentText)
 
         let resultText: String
         let wasChunked: Bool
 
-        if estimatedTokens <= tokenLimit {
+        if estimatedTokens <= budget {
             let req = SummarizationRequest(
                 documentId: documentId,
                 volumeId: volumeId,
@@ -106,9 +113,9 @@ actor SummarizationService {
             resultText = result.text
             wasChunked = false
         } else {
-            let chunks = chunk(text: documentText, maxTokens: tokenLimit)
+            let chunks = chunk(text: documentText, maxTokens: budget)
             #if DEBUG
-            print("[SummarizationService] Chunked into \(chunks.count) pieces")
+            print("[SummarizationService] Chunked into \(chunks.count) pieces (budget=\(budget))")
             #endif
             let partials = try await summarizeChunks(
                 chunks,
@@ -122,7 +129,8 @@ actor SummarizationService {
                 prompt: prompt,
                 provider: provider,
                 documentId: documentId,
-                volumeId: volumeId
+                volumeId: volumeId,
+                budget: budget
             )
             wasChunked = true
         }
@@ -160,8 +168,31 @@ actor SummarizationService {
         Int((Double(text.count) / 4.0).rounded(.up))
     }
 
-    /// Splits `text` at paragraph boundaries, accumulating paragraphs until the next
-    /// addition would exceed `maxTokens`. Oversized single paragraphs get their own chunk.
+    /// The conservative content-token budget for one model call, given the prompt
+    /// template that wraps the content.
+    ///
+    /// Starts from the provider's window limit, then subtracts the template's own
+    /// tokens (everything except the `{{DOCUMENT}}` placeholder), a proportional
+    /// safety margin for token-estimate drift, and — for structured prompts — an
+    /// allowance for the runtime `GenerationSchema` field descriptions, which aren't
+    /// part of `promptText`. Floored so a pathologically long template still leaves a
+    /// usable budget.
+    func documentBudget(promptText: String, responseFormat: ResponseFormat, limit: Int) -> Int {
+        let templateTokens = estimateTokens(
+            promptText.replacingOccurrences(of: "{{DOCUMENT}}", with: ""))
+        var reserve = limit / 6                          // safety margin (~17%)
+        if case .structured = responseFormat { reserve += limit / 12 }  // schema overhead
+        let floor = max(64, limit / 4)
+        return max(floor, limit - templateTokens - reserve)
+    }
+
+    /// Splits `text` into chunks that each fit `maxTokens`.
+    ///
+    /// Accumulates whole paragraphs (`\n\n`-separated) until the next would exceed the
+    /// budget. A paragraph that alone exceeds the budget is hard-split — first at
+    /// sentence boundaries, then by character count for a runaway sentence — so **no
+    /// chunk can exceed `maxTokens`** (a giant table or unbroken block can't overflow
+    /// the model window).
     func chunk(text: String, maxTokens: Int) -> [String] {
         let paragraphs = text
             .components(separatedBy: "\n\n")
@@ -172,22 +203,86 @@ actor SummarizationService {
         var current: [String] = []
         var currentTokens = 0
 
-        for para in paragraphs {
-            let paraTokens = estimateTokens(para)
-            if !current.isEmpty && currentTokens + paraTokens > maxTokens {
+        func flush() {
+            if !current.isEmpty {
                 chunks.append(current.joined(separator: "\n\n"))
                 current = []
                 currentTokens = 0
             }
+        }
+
+        for para in paragraphs {
+            let paraTokens = estimateTokens(para)
+            if paraTokens > maxTokens {
+                // Oversized single paragraph: flush the accumulator, then split it.
+                flush()
+                chunks.append(contentsOf: splitOversized(para, maxTokens: maxTokens))
+                continue
+            }
+            if !current.isEmpty && currentTokens + paraTokens > maxTokens {
+                flush()
+            }
             current.append(para)
             currentTokens += paraTokens
         }
-
-        if !current.isEmpty {
-            chunks.append(current.joined(separator: "\n\n"))
-        }
+        flush()
 
         return chunks.isEmpty ? [text] : chunks
+    }
+
+    /// Splits a paragraph that exceeds `maxTokens` into fitting pieces — at sentence
+    /// boundaries where possible, falling back to a character split for a single
+    /// sentence that still overflows.
+    func splitOversized(_ paragraph: String, maxTokens: Int) -> [String] {
+        var sentences: [String] = []
+        paragraph.enumerateSubstrings(
+            in: paragraph.startIndex..<paragraph.endIndex, options: .bySentences
+        ) { substring, _, _, _ in
+            if let substring, !substring.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                sentences.append(substring)
+            }
+        }
+        if sentences.isEmpty { sentences = [paragraph] }
+
+        var pieces: [String] = []
+        var current = ""
+        var currentTokens = 0
+
+        func flush() {
+            let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { pieces.append(trimmed) }
+            current = ""
+            currentTokens = 0
+        }
+
+        for sentence in sentences {
+            let sentenceTokens = estimateTokens(sentence)
+            if sentenceTokens > maxTokens {
+                flush()
+                pieces.append(contentsOf: hardSplit(sentence, maxTokens: maxTokens))
+                continue
+            }
+            if !current.isEmpty && currentTokens + sentenceTokens > maxTokens {
+                flush()
+            }
+            current += sentence
+            currentTokens += sentenceTokens
+        }
+        flush()
+        return pieces.isEmpty ? [paragraph] : pieces
+    }
+
+    /// Last-resort character split for text with no usable sentence boundaries.
+    func hardSplit(_ text: String, maxTokens: Int) -> [String] {
+        let maxChars = max(1, maxTokens * 4)
+        var pieces: [String] = []
+        var index = text.startIndex
+        while index < text.endIndex {
+            let end = text.index(index, offsetBy: maxChars, limitedBy: text.endIndex) ?? text.endIndex
+            pieces.append(String(text[index..<end]))
+            index = end
+        }
+        return pieces
     }
 
     // MARK: - Background use
@@ -240,24 +335,84 @@ actor SummarizationService {
         return partials
     }
 
+    /// Combines per-chunk partial summaries into one final summary.
+    ///
+    /// The naive approach — concatenating *all* partials into a single synthesis call —
+    /// overflows the model window once a document is long enough (the original
+    /// `frus1950v01/d85` failure). Instead this reduces **hierarchically**: while the
+    /// joined partials exceed `budget`, they're grouped into batches that each fit, and
+    /// each batch is synthesised into an intermediate summary; the process repeats on
+    /// the intermediates until they fit, then one final synthesis produces the result.
+    /// Every model call therefore stays within the window, for a document of any length.
     private func synthesize(
         partialSummaries: [String],
         prompt: SummarizationPromptSnapshot,
         provider: any SummarizationProvider,
         documentId: String,
-        volumeId: String
+        volumeId: String,
+        budget: Int
     ) async throws -> String {
         do {
+            var level = partialSummaries
+            // Reduce level-by-level until everything fits one synthesis call.
+            while level.count > 1,
+                  estimateTokens(level.joined(separator: "\n\n")) > budget {
+                let batches = batch(level, maxTokens: budget)
+                // No progress possible (each summary already fills a batch on its own):
+                // stop and let the final force-fit handle it, rather than looping.
+                if batches.count >= level.count { break }
+                #if DEBUG
+                print("[SummarizationService] Reduce level: \(level.count) → \(batches.count) batches")
+                #endif
+                var next: [String] = []
+                for group in batches {
+                    let req = SummarizationRequest(
+                        documentId: documentId, volumeId: volumeId,
+                        chunks: group, isSynthesisPass: true)
+                    next.append(try await provider.summarize(request: req, prompt: prompt).text)
+                }
+                level = next
+            }
+
+            // Final synthesis over the (now-fitting) summaries. If a degenerate level
+            // still exceeds budget, fold it to a single capped entry so the call can't
+            // overflow — graceful degradation rather than failure.
+            if estimateTokens(level.joined(separator: "\n\n")) > budget {
+                level = [String(level.joined(separator: "\n\n").prefix(max(1, budget * 4)))]
+            }
             let req = SummarizationRequest(
-                documentId: documentId,
-                volumeId: volumeId,
-                chunks: partialSummaries,
-                isSynthesisPass: true
-            )
-            let result = try await provider.summarize(request: req, prompt: prompt)
-            return result.text
+                documentId: documentId, volumeId: volumeId,
+                chunks: level, isSynthesisPass: true)
+            return try await provider.summarize(request: req, prompt: prompt).text
         } catch {
             throw SummarizationError.synthesisFailed(underlying: error)
         }
+    }
+
+    /// Groups summaries into batches whose joined token estimate each stays within
+    /// `maxTokens`. A single summary larger than the budget is character-capped so it
+    /// can fit, guaranteeing the reduce always makes progress.
+    func batch(_ summaries: [String], maxTokens: Int) -> [[String]] {
+        var batches: [[String]] = []
+        var current: [String] = []
+        var currentTokens = 0
+
+        for summary in summaries {
+            var piece = summary
+            var pieceTokens = estimateTokens(piece)
+            if pieceTokens > maxTokens {
+                piece = String(piece.prefix(max(1, maxTokens * 4)))
+                pieceTokens = estimateTokens(piece)
+            }
+            if !current.isEmpty && currentTokens + pieceTokens > maxTokens {
+                batches.append(current)
+                current = []
+                currentTokens = 0
+            }
+            current.append(piece)
+            currentTokens += pieceTokens
+        }
+        if !current.isEmpty { batches.append(current) }
+        return batches.isEmpty ? [summaries] : batches
     }
 }

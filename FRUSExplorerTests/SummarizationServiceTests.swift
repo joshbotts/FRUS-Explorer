@@ -162,8 +162,10 @@ struct SummarizationServiceTests {
         let calls = await provider.callCount
         #expect(calls >= 2, "Expected chunk calls + synthesis call, got \(calls)")
 
+        // Hierarchical reduce may run more than one synthesis pass for a very long
+        // document; the contract is that at least one runs and the last call is one.
         let synthCalls = await provider.synthesisCalls
-        #expect(synthCalls == 1, "Expected exactly one synthesis pass, got \(synthCalls)")
+        #expect(synthCalls >= 1, "Expected at least one synthesis pass, got \(synthCalls)")
 
         let lastReq = await provider.lastRequest
         #expect(lastReq?.isSynthesisPass == true)
@@ -240,5 +242,74 @@ struct SummarizationServiceTests {
         #expect(saved.promptId == promptId)
         #expect(saved.projectId == projectId)
         #expect(!saved.wasChunked)
+    }
+
+    // MARK: - Context-overflow mitigation
+
+    @Test("DocumentBudget: template tokens and structured overhead shrink the budget")
+    func documentBudgetIsTemplateAware() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let limit = 3_072
+        let short = await service.documentBudget(
+            promptText: "Summarize: {{DOCUMENT}}", responseFormat: .general, limit: limit)
+        let longTemplate = "Summarize: {{DOCUMENT}}" + String(repeating: "context ", count: 400)
+        let long = await service.documentBudget(
+            promptText: longTemplate, responseFormat: .general, limit: limit)
+        // A longer template leaves less room for content.
+        #expect(long < short)
+        #expect(short <= limit)
+        // Structured prompts reserve extra for the runtime schema.
+        let schema = StructuredSummarySchema(fields: [.init(name: "A", description: "x")])
+        let structured = await service.documentBudget(
+            promptText: "Summarize: {{DOCUMENT}}", responseFormat: .structured(schema: schema), limit: limit)
+        #expect(structured < short)
+    }
+
+    @Test("Chunking: an oversized unbroken block is hard-split so no chunk exceeds the budget")
+    func oversizedBlockIsHardSplit() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        // ~2 750 tokens, a single "paragraph" with no sentence boundaries.
+        let block = String(repeating: "diplomatic ", count: 1_000)
+        let budget = 200
+        let chunks = await service.chunk(text: block, maxTokens: budget)
+        #expect(chunks.count > 1)
+        for piece in chunks {
+            #expect(await service.estimateTokens(piece) <= budget)
+        }
+    }
+
+    @Test("Batching: every batch fits the budget and an oversized summary is capped")
+    func batchingFitsBudget() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let big = String(repeating: "x", count: 4_000)   // ~1 000 tokens
+        let budget = 200
+        let batches = await service.batch([big, big, "tiny", "tiny"], maxTokens: budget)
+        for group in batches {
+            #expect(await service.estimateTokens(group.joined(separator: "\n\n")) <= budget)
+        }
+    }
+
+    @Test("Long document with many chunks: hierarchical reduce terminates with a non-empty summary")
+    func hierarchicalReduceTerminates() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = SummarizationService(modelContainer: container)
+        // Small window + non-trivial partials → many chunks whose synthesis would
+        // overflow a single pass; the reduce must batch and still return.
+        let provider = MockSummarizationProvider(tokenLimit: 80, responseText: "Concise partial summary text.")
+        let prompt = makePromptSnapshot()
+
+        let summary = try await service.summarize(
+            documentId: "dLong",
+            volumeId: "volLong",
+            documentText: makeOversizedText(tokenLimit: 80),
+            prompt: prompt,
+            provider: provider,
+            activeProjectId: nil
+        )
+
+        #expect(summary.wasChunked)
+        #expect(!summary.responseText.isEmpty)
+        let synthCalls = await provider.synthesisCalls
+        #expect(synthCalls >= 1)
     }
 }
