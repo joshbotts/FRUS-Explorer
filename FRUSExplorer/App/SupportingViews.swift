@@ -1573,6 +1573,14 @@ struct CitationPopoverView: View {
     /// cross-reference, which builds the entry without the number). Resolved in `.task`.
     @State private var resolvedDocumentNumber: String? = nil
 
+    @Environment(\.openURL) private var openURL
+    /// Non-nil after a successful Web API "Send to Zotero Library" run (drives the alert).
+    @State private var zoteroResult: ZoteroSendResult? = nil
+    /// `true` while a Web API send is in flight.
+    @State private var zoteroSending = false
+    /// Non-nil when a Web API send failed.
+    @State private var zoteroError: String? = nil
+
     private var volumeEntry: VolumeManifestEntry? {
         appState.manifestStore.entry(forVolumeId: entry.volumeId)
     }
@@ -1737,6 +1745,16 @@ struct CitationPopoverView: View {
                     } label: {
                         Label("Send to Zotero (RIS)\u{2026}", systemImage: "square.and.arrow.up")
                     }
+                    if ZoteroAccountStore.shared.isConnected {
+                        Button {
+                            if let vol = volumeEntry {
+                                Task { await sendToZoteroLibrary(vol: vol) }
+                            }
+                        } label: {
+                            Label("Send to Zotero Library\u{2026}", systemImage: "books.vertical")
+                        }
+                        .disabled(zoteroSending)
+                    }
                     Divider()
                     ShareLink(item: shareableCitationMessage) {
                         Label("Share Citation\u{2026}", systemImage: "square.and.arrow.up")
@@ -1762,6 +1780,15 @@ struct CitationPopoverView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(width: 440)
+        .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
+        .alert(
+            String(localized: "citation.popover.zotero.error.title",
+                   defaultValue: "Couldn't Send to Zotero"),
+            isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
+            presenting: zoteroError
+        ) { _ in
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+        } message: { Text($0) }
         // Load the publication year from the volume's own TEI header when available.
         // The bundled manifest may have a coverage range in publicationDate rather than
         // the actual print year; the live XML is authoritative.
@@ -1917,11 +1944,13 @@ struct CitationPopoverView: View {
     /// Builds an RIS record that also carries the user's FRUS Explorer tags (→ `KW`)
     /// and research notes (→ `N1`), used by "Send to Zotero" so a single document
     /// imports with the same annotations as the collection-level Zotero export.
+    /// Builds the document's Zotero item (carrying its FRUS Explorer tags and
+    /// research notes), shared by the RIS file export and the Web API library send.
     @MainActor
-    private func zoteroRISString(vol: VolumeManifestEntry) -> String {
+    private func zoteroLibraryItem(vol: VolumeManifestEntry) -> ZoteroJSONExporter.Item {
         let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
             documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
-        let item = ZoteroJSONExporter.makeItem(
+        return ZoteroJSONExporter.makeItem(
             document: docMeta,
             volume: FRUSVolumeMetadata(vol),
             year: effectiveYear(for: vol),
@@ -1930,7 +1959,40 @@ struct CitationPopoverView: View {
             tags: resolved.tags,
             notes: resolved.notes
         )
-        return RISExporter().export(zoteroItem: item)
+    }
+
+    @MainActor
+    private func zoteroRISString(vol: VolumeManifestEntry) -> String {
+        RISExporter().export(zoteroItem: zoteroLibraryItem(vol: vol))
+    }
+
+    /// Pushes this single document (with its tags + notes) into the user's Zotero
+    /// library via the Web API. No collection is created — it lands in My Library.
+    @MainActor
+    private func sendToZoteroLibrary(vol: VolumeManifestEntry) async {
+        let store = ZoteroAccountStore.shared
+        guard let apiKey = store.retrieveKey(), let userID = store.userID else {
+            zoteroError = ZoteroAPIError.missingCredentials.errorDescription
+            return
+        }
+        zoteroSending = true
+        defer { zoteroSending = false }
+        do {
+            let result = try await ZoteroAPIClient().send(
+                items: [zoteroLibraryItem(vol: vol)], collectionName: nil,
+                apiKey: apiKey, userID: userID, username: store.username
+            )
+            zoteroResult = result
+        } catch {
+            zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    /// Body for the Web API Zotero result alert.
+    private func zoteroResultMessage(_ result: ZoteroSendResult) -> String {
+        String(format: String(localized: "citation.popover.zotero.result %lld %lld",
+                              defaultValue: "Added %lld document and %lld notes to Zotero."),
+               Int64(result.addedItems), Int64(result.addedNotes))
     }
 
     @MainActor
