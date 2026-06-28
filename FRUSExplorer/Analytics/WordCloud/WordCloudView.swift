@@ -54,10 +54,15 @@ enum WordCloudViewMode: String, CaseIterable {
 /// Two modes share one data set: a spiral tag **cloud** (font size ∝ √count) and
 /// a ranked **list**. The list doubles as the cloud's `accessibilityRepresentation`,
 /// since a scattered cloud is opaque to VoiceOver. Tapping any term hands off to
-/// Search via `pendingSearch`. The view can be exported as PNG, PDF, or CSV.
+/// **Corpus Analytics** (`pendingAnalytics`), scoped to match this cloud where
+/// Analytics can express it and falling back to the whole corpus otherwise; the word
+/// context menu also keeps a direct "Search for this term" shortcut. The view can be
+/// exported as PNG, PDF, or CSV.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — Session 164: word taps hand off to Corpus Analytics (scoped) rather than
+///          Search; Search remains available via the word context menu
 struct WordCloudView: View {
 
     /// The body of material to visualise.
@@ -281,7 +286,7 @@ struct WordCloudView: View {
                         .fixedSize()
                         .rotationEffect(.degrees(word.rotationDegrees))
                         .position(word.center)
-                        .onTapGesture { search(for: word.term) }
+                        .onTapGesture { analyze(for: word.term) }
                         .contextMenu { wordContextMenu(term: word.term) }
                         .accessibilityHidden(true)
                 }
@@ -302,7 +307,7 @@ struct WordCloudView: View {
         let maxCount = result.terms.first?.count ?? 1
         return List {
             ForEach(Array(result.terms.enumerated()), id: \.element.id) { index, term in
-                Button { search(for: term.term) } label: {
+                Button { analyze(for: term.term) } label: {
                     HStack(spacing: 10) {
                         Text("\(index + 1)")
                             .font(.caption.monospacedDigit())
@@ -555,6 +560,12 @@ struct WordCloudView: View {
     @ViewBuilder
     private func wordContextMenu(term: String) -> some View {
         Button {
+            analyze(for: term)
+        } label: {
+            Label(String(localized: "wordcloud.word.analyze", defaultValue: "Analyze in Corpus Analytics"),
+                  systemImage: "chart.bar.xaxis")
+        }
+        Button {
             search(for: term)
         } label: {
             Label(String(localized: "wordcloud.word.search", defaultValue: "Search for this term"),
@@ -588,7 +599,57 @@ struct WordCloudView: View {
         loadTask = Task { await load() }
     }
 
-    /// Hands off to Search pre-filled with `term`, mirroring the Analytics → Search handoff.
+    /// Primary word-tap action: hands off to Corpus Analytics seeded with `term`,
+    /// scoped to match this cloud where Analytics can express the scope (volume /
+    /// subseries) and falling back to the whole corpus where it cannot (a single
+    /// document, collection, tag, or saved search). From Analytics the researcher
+    /// reaches the matching documents via its built-in "View in Search" gateway, so
+    /// the cloud no longer needs its own direct Search handoff for the common path.
+    private func analyze(for term: String) {
+        let (volumeIds, label) = analyticsScope()
+        appState.pendingAnalytics = AnalyticsParameters(
+            term: term, scopeVolumeIds: volumeIds, scopeLabel: label
+        )
+        #if DEBUG
+        print("[WordCloudView] Handoff to Corpus Analytics — term: \"\(term)\", scope: \(label ?? "corpus"), volumes: \(volumeIds?.count ?? 0)")
+        #endif
+        #if os(iOS)
+        // Corpus Analytics is presented from the Browse tab on iOS; bring it forward
+        // so the analytics sheet (opened by `BrowserView` on `pendingAnalytics`) is visible.
+        appState.activeTab = .browse
+        #endif
+        dismiss()
+    }
+
+    /// Translates `scope` into the volume-ID scope Corpus Analytics understands.
+    ///
+    /// Analytics buckets by whole volumes, so only the volume-aligned scopes carry
+    /// through: `.volume` → that volume, `.subseries` → the subseries' volumes. The
+    /// remaining scopes — `.corpus`, plus the sub-volume / document-set scopes
+    /// `.document`, `.collection`, `.userTag`, and `.savedSearch`, which Analytics
+    /// cannot express at volume granularity — fall back to the whole corpus, per the
+    /// cross-surface handoff contract.
+    ///
+    /// - Returns: The volume-ID scope and its display label, or `(nil, nil)` for a
+    ///   corpus-wide query.
+    private func analyticsScope() -> (volumeIds: [String]?, label: String?) {
+        switch scope {
+        case let .volume(volumeId):
+            return ([volumeId], title.isEmpty ? volumeId : title)
+        case let .subseries(subseriesId):
+            let volumeIds = appState.manifestStore.bundledEntries
+                .filter { $0.subseries == subseriesId }
+                .map(\.volumeId)
+            guard !volumeIds.isEmpty else { return (nil, nil) }
+            return (volumeIds, title.isEmpty ? subseriesId : title)
+        case .corpus, .document, .collection, .userTag, .savedSearch:
+            return (nil, nil)
+        }
+    }
+
+    /// Secondary action: hands off to Search pre-filled with `term`, mirroring the
+    /// Analytics → Search handoff. Still offered in the word context menu for users
+    /// who want to jump straight to the documents rather than via Analytics.
     private func search(for term: String) {
         appState.pendingSearch = SearchParameters(keywords: term)
         #if DEBUG

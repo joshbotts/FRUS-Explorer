@@ -133,6 +133,16 @@ struct AnalyticsView: View {
     /// appearance (see `seedDefaultYearRange()`).
     @State private var didSeedYearRange = false
 
+    /// Optional volume-ID scope carried in from a `WordCloud → Analytics` handoff.
+    /// When non-empty, every chart query is restricted to these volumes; `nil`
+    /// means the whole indexed corpus (the default and only state for the
+    /// toolbar-button presentation).
+    @State private var scopeVolumeIds: [String]? = nil
+
+    /// Human-readable label for `scopeVolumeIds` (a volume or subseries title),
+    /// shown in the scope chip. `nil` when the query is corpus-wide.
+    @State private var scopeLabel: String? = nil
+
     /// User preference: whether to overlay a smoothed trend line on date-bucketed
     /// charts. Defaults to true. Has no effect on the by-subseries horizontal
     /// bar chart, which never plots a line.
@@ -228,6 +238,10 @@ struct AnalyticsView: View {
                 } else {
                     VStack(spacing: 0) {
                         searchBar
+                        if let scopeLabel {
+                            Divider()
+                            scopeChip(scopeLabel)
+                        }
                         if chartAxis.isDateBased && !committedTerm.isEmpty {
                             Divider()
                             yearRangeBar
@@ -293,6 +307,10 @@ struct AnalyticsView: View {
         termInput = term
         if let start = params.yearRangeStart { yearRangeStart = start }
         if let end = params.yearRangeEnd { yearRangeEnd = end }
+        // Always assign the scope (including nil) so a later corpus-wide handoff
+        // clears a scope left over from a previous one on the long-lived macOS window.
+        scopeVolumeIds = (params.scopeVolumeIds?.isEmpty == true) ? nil : params.scopeVolumeIds
+        scopeLabel = scopeVolumeIds == nil ? nil : params.scopeLabel
         runSearch()
     }
 
@@ -311,9 +329,13 @@ struct AnalyticsView: View {
                 latest: String(format: "%04d-12-31", yearRangeEnd)
               )
             : nil
-        appState.pendingSearch = SearchParameters(keywords: committedTerm, dateRange: range)
+        // Carry the active volume scope through to Search so a Word Cloud → Analytics
+        // → Search chain lands on the same documents the (scoped) chart visualised.
+        appState.pendingSearch = SearchParameters(
+            keywords: committedTerm, dateRange: range, volumeIds: scopeVolumeIds
+        )
         #if DEBUG
-        print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range))")
+        print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range)), scopeVolumes: \(scopeVolumeIds?.count ?? 0)")
         #endif
         navigateToSearch()
     }
@@ -360,6 +382,49 @@ struct AnalyticsView: View {
     /// to the raw volume ID when the manifest has no entry.
     private func volumeTitle(_ volumeId: String) -> String {
         appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+    }
+
+    // MARK: - Scope Chip
+
+    /// Banner shown when Analytics was opened scoped to a volume or subseries from a
+    /// `WordCloud → Analytics` handoff. Names the scope and offers a "Whole corpus"
+    /// reset that clears the scope and re-runs the query corpus-wide.
+    @ViewBuilder
+    private func scopeChip(_ label: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "scope")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+            Text(String(format: String(localized: "analytics.scope.label %@",
+                                        defaultValue: "Scoped to %@"), label))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer()
+            Button {
+                clearScope()
+            } label: {
+                Text(String(localized: "analytics.scope.clear", defaultValue: "Whole corpus"))
+                    .font(.caption)
+            }
+            .buttonStyle(.borderless)
+            .controlHelp(
+                String(localized: "analytics.scope.clear.a11y", defaultValue: "Analyze the whole corpus"),
+                detail: String(localized: "analytics.scope.clear.help",
+                               defaultValue: "Remove the volume scope and chart this term across the entire corpus"),
+                systemImage: "scope"
+            )
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+    }
+
+    /// Clears the active volume scope and re-runs the query across the whole corpus.
+    private func clearScope() {
+        scopeVolumeIds = nil
+        scopeLabel = nil
+        runSearch()
     }
 
     // MARK: - Year Range Bar
@@ -1297,7 +1362,8 @@ struct AnalyticsView: View {
     ///   not total mentions)
     /// - How multi-word queries are interpreted (whitespace-AND, individual
     ///   Porter stemming)
-    /// - That phrases are not supported in analytics
+    /// - That quoted phrases, `OR` / `NOT`, and `term*` wildcards are supported and
+    ///   interpreted identically to the Search box (via `FTS5InlineQueryParser`)
     /// - That the chart bucket is the document date (TEI `<date>`), not the
     ///   volume publication date
     private var infoPopoverContent: some View {
@@ -1368,17 +1434,20 @@ struct AnalyticsView: View {
         dayData = []
         subseriesData = []
         volumeData = []
+        // Restrict every axis to the active volume-ID scope (Word Cloud → Analytics
+        // handoff); `nil`/empty means the whole corpus, the default presentation.
+        let scope: Set<String>? = scopeVolumeIds.map(Set.init)
         Task {
             do {
                 // Fetch every granularity in parallel so switching between
                 // Year / Decade / Month / Day / Subseries is instantaneous after
                 // the initial Search press.
-                async let years     = service.termFrequencyByYear(term: term)
-                async let decades   = service.termFrequencyByDecade(term: term)
-                async let months    = service.termFrequencyByMonth(term: term)
-                async let days      = service.termFrequencyByDay(term: term)
-                async let subseries = service.termFrequencyBySubseries(term: term)
-                async let volumes   = service.termFrequencyByVolume(term: term)
+                async let years     = service.termFrequencyByYear(term: term, volumeIds: scope)
+                async let decades   = service.termFrequencyByDecade(term: term, volumeIds: scope)
+                async let months    = service.termFrequencyByMonth(term: term, volumeIds: scope)
+                async let days      = service.termFrequencyByDay(term: term, volumeIds: scope)
+                async let subseries = service.termFrequencyBySubseries(term: term, volumeIds: scope)
+                async let volumes   = service.termFrequencyByVolume(term: term, volumeIds: scope)
                 yearData      = try await years
                 decadeData    = try await decades
                 monthData     = try await months
