@@ -119,6 +119,7 @@ struct FRUSSettingsView: View {
                 case .storage:        SettingsStoragePane()
                 case .downloads:      SettingsAddVolumesPane()
                 case .naraAPI:        SettingsNARAPane()
+                case .zotero:         ZoteroIntegrationView()
                 case .summarization:  SettingsSummarizationPane()
                 case .data:           SettingsDataPane()
                 case .reset:          SettingsResetPane()
@@ -136,7 +137,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
     case sync, about, display, search
     case projects, tags, notes, wordCloud
     case storage, downloads
-    case naraAPI, summarization, data
+    case naraAPI, zotero, summarization, data
     case reset
 
     var id: String { rawValue }
@@ -154,6 +155,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .storage:       return "Storage"
         case .downloads:     return "Add Volumes"
         case .naraAPI:       return "NARA API"
+        case .zotero:        return "Zotero"
         case .summarization: return "Summarization"
         case .data:          return "Data"
         case .reset:         return "Reset"
@@ -173,6 +175,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .storage:       return "internaldrive"
         case .downloads:     return "plus.circle"
         case .naraAPI:       return "key"
+        case .zotero:        return "books.vertical"
         case .summarization: return "sparkles"
         case .data:          return "square.and.arrow.up"
         case .reset:         return "arrow.counterclockwise"
@@ -182,7 +185,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
     static let general:  [SettingsPane] = [.sync, .display, .search]
     static let research: [SettingsPane] = [.projects, .tags, .notes, .wordCloud]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
-    static let advanced: [SettingsPane] = [.naraAPI, .summarization, .data]
+    static let advanced: [SettingsPane] = [.naraAPI, .zotero, .summarization, .data]
     static let resetSection: [SettingsPane] = [.reset]
 }
 

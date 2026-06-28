@@ -89,6 +89,8 @@ struct ResearchStripView: View {
     /// discoverably), so this is now the sole presenter — the private `@State`
     /// remains simply because there's no longer any reason to share it.
     @State private var showCitationPopover: Bool = false
+    /// Whether the document Share / Export popover is showing.
+    @State private var showSharePopover: Bool = false
     let highlightCoordinator: HighlightCoordinator
     /// Called when the user taps "Look Up in NARA Catalog" with text selected.
     /// The argument is the selected text string from the WebKit renderer.
@@ -313,6 +315,24 @@ struct ResearchStripView: View {
             ))
             .popover(isPresented: $showCitationPopover, arrowEdge: .bottom) {
                 if let entry { CitationPopoverView(entry: entry) }
+            }
+
+            // Share / Export — send this document to Zotero, export a Zotero file,
+            // or share the citation. Kept separate from Cite so "save this source"
+            // is discoverable on its own.
+            ResearchStripButton(
+                title: "Share",
+                systemImage: "square.and.arrow.up",
+                isDisabled: isDisabled
+            ) {
+                showSharePopover = true
+            }
+            .help(String(
+                localized: "researchStrip.share.help",
+                defaultValue: "Send this document to your Zotero library, export a Zotero file, or share its citation"
+            ))
+            .popover(isPresented: $showSharePopover, arrowEdge: .bottom) {
+                if let entry { DocumentSharePopover(entry: entry) }
             }
 
             // Open in New Window — opens this document in its own window. macOS
@@ -1537,6 +1557,131 @@ private struct MacIndexingQueuePanel: View {
 
 // MARK: - CitationPopoverView
 
+/// Pure builders for a document's citation/export artifacts, shared by the citation
+/// popover (which owns its style + resolved-metadata state) and the document Share
+/// popover (which owns its own). Keeping these stateless avoids the two views drifting.
+///
+/// Version history:
+///   1.0 — Document Share/Export control split out from the citation popover
+@MainActor
+enum DocumentExportSupport {
+
+    /// Canonical history.state.gov URL for a document.
+    static func canonicalURL(entry: DocumentBrowserEntry) -> String {
+        "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
+    }
+
+    /// Citation metadata carrying the effective (entry-or-index) document number.
+    static func docMeta(entry: DocumentBrowserEntry, documentNumber: String?) -> FRUSDocumentMetadata {
+        FRUSDocumentMetadata(
+            documentId: entry.documentId,
+            documentNumber: documentNumber ?? entry.documentNumber,
+            header: entry.header,
+            dateline: entry.dateline
+        )
+    }
+
+    /// Best available publication year: live-parsed first, then a plausible 4-digit
+    /// year from the manifest's `publicationDate`, then "n.d.".
+    static func effectiveYear(parsed: String?, volume: VolumeManifestEntry) -> String {
+        if let live = parsed, !live.isEmpty { return live }
+        guard let pd = volume.publicationDate else { return "n.d." }
+        let segments = pd.components(separatedBy: .init(charactersIn: "0123456789").inverted)
+        if let yr = segments.first(where: { $0.count == 4 }), let y = Int(yr), y > 1750 { return yr }
+        return "n.d."
+    }
+
+    /// Reads the volume XML header and extracts the publication year.
+    static func extractPublicationYear(volumeURL url: URL) async -> String? {
+        await Task.detached(priority: .utility) {
+            guard let stream = InputStream(url: url) else { return nil }
+            stream.open()
+            defer { stream.close() }
+            var buffer = [UInt8](repeating: 0, count: 8_192)
+            let n = stream.read(&buffer, maxLength: buffer.count)
+            guard n > 0, let text = String(bytes: Array(buffer[0..<n]), encoding: .utf8) else { return nil }
+            guard let blockStart = text.range(of: "<publicationStmt"),
+                  let blockEnd = text.range(of: "</publicationStmt>"),
+                  blockStart.lowerBound < blockEnd.lowerBound else { return nil }
+            let block = String(text[blockStart.lowerBound..<blockEnd.upperBound])
+            if let yr = regexFirstCapture(#"when="(\d{4})""#, in: block),
+               let y = Int(yr), y > 1750, y < 2100 { return yr }
+            if let yr = regexFirstCapture(#">(\d{4})\s*<"#, in: block),
+               let y = Int(yr), y > 1750, y < 2100 { return yr }
+            return nil
+        }.value
+    }
+
+    private nonisolated static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              match.numberOfRanges >= 2,
+              let range = Range(match.range(at: 1), in: text) else { return nil }
+        return String(text[range])
+    }
+
+    /// BibTeX record for the document.
+    static func bibtex(entry: DocumentBrowserEntry, volume: VolumeManifestEntry,
+                       documentNumber: String?, year: String) -> String {
+        BibtexExporter().export(
+            volumeId: entry.volumeId,
+            document: docMeta(entry: entry, documentNumber: documentNumber),
+            volume: FRUSVolumeMetadata(volume),
+            year: year,
+            url: canonicalURL(entry: entry)
+        )
+    }
+
+    /// RIS record for the document (citation only, no annotations).
+    static func ris(entry: DocumentBrowserEntry, volume: VolumeManifestEntry,
+                    documentNumber: String?, year: String) -> String {
+        RISExporter().export(
+            document: docMeta(entry: entry, documentNumber: documentNumber),
+            volume: FRUSVolumeMetadata(volume),
+            year: year,
+            url: canonicalURL(entry: entry)
+        )
+    }
+
+    /// Zotero item carrying the document's FRUS Explorer tags and research notes.
+    static func zoteroItem(entry: DocumentBrowserEntry, volume: VolumeManifestEntry,
+                           documentNumber: String?, year: String,
+                           context: ModelContext) -> ZoteroJSONExporter.Item {
+        let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: entry.documentId, volumeId: entry.volumeId, context: context)
+        return ZoteroJSONExporter.makeItem(
+            document: docMeta(entry: entry, documentNumber: documentNumber),
+            volume: FRUSVolumeMetadata(volume),
+            year: year,
+            url: canonicalURL(entry: entry),
+            isEditorialNote: entry.isEditorialNote,
+            tags: resolved.tags,
+            notes: resolved.notes
+        )
+    }
+
+    /// Formatted citation (with Markdown italics) for a style and live year.
+    static func formatted(entry: DocumentBrowserEntry, volume: VolumeManifestEntry,
+                          documentNumber: String?, parsedYear: String?,
+                          style: CitationStyle) -> String {
+        var volMeta = FRUSVolumeMetadata(volume)
+        if let parsedYear { volMeta = volMeta.overridingPublicationYear(parsedYear) }
+        return style.makeFormatter().format(
+            document: docMeta(entry: entry, documentNumber: documentNumber), volume: volMeta)
+    }
+
+    /// Plain-text citation with Markdown italic markers removed.
+    static func plainText(_ formatted: String) -> String {
+        if let attr = try? AttributedString(
+            markdown: formatted, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+            return String(attr.characters)
+        }
+        return formatted
+            .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
+            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
+    }
+}
+
 /// Popover displaying a formatted FRUS citation for the current document.
 ///
 /// Three styles: history.state.gov (default), Chicago, Turabian.
@@ -1726,35 +1871,16 @@ struct CitationPopoverView: View {
                     } label: {
                         Label("Save as .bib\u{2026}", systemImage: "square.and.arrow.down")
                     }
-                    Divider()
-                    Button {
-                        if let vol = volumeEntry { sendToZoteroBibtex(vol: vol) }
-                    } label: {
-                        Label("Send to Zotero (BibTeX)\u{2026}", systemImage: "square.and.arrow.up")
-                    }
-                    Button {
-                        if let vol = volumeEntry { sendToZoteroRIS(vol: vol) }
-                    } label: {
-                        Label("Send to Zotero (RIS)\u{2026}", systemImage: "square.and.arrow.up")
-                    }
-                    Divider()
-                    ShareLink(item: shareableCitationMessage) {
-                        Label("Share Citation\u{2026}", systemImage: "square.and.arrow.up")
-                    }
-                    .help(String(
-                        localized: "citation.popover.shareCitation.help",
-                        defaultValue: "Share the formatted citation and its history.state.gov URL"
-                    ))
                 } label: {
-                    Label("Export", systemImage: "square.and.arrow.up").font(.system(size: 11))
+                    Label("Copy as\u{2026}", systemImage: "doc.on.doc").font(.system(size: 11))
                 }
                 .menuStyle(.button)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .controlSize(.small)
                 .disabled(volumeEntry == nil)
                 .help(String(
-                    localized: "citation.popover.export.help",
-                    defaultValue: "Export this citation as BibTeX or RIS, or save a .bib file to disk"
+                    localized: "citation.popover.copyAs.help",
+                    defaultValue: "Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are on the document’s Share button."
                 ))
             }
 
@@ -1787,50 +1913,21 @@ struct CitationPopoverView: View {
         guard let vol = volumeEntry else {
             return "Citation unavailable — volume metadata not loaded."
         }
-
-        let docMeta = self.docMeta
-        var volMeta = FRUSVolumeMetadata(vol)
-        if let liveYear = parsedPublicationYear {
-            volMeta = volMeta.overridingPublicationYear(liveYear)
-        }
-        return selectedStyle.makeFormatter().format(document: docMeta, volume: volMeta)
+        return DocumentExportSupport.formatted(
+            entry: entry, volume: vol, documentNumber: effectiveDocumentNumber,
+            parsedYear: parsedPublicationYear, style: selectedStyle)
     }
 
     /// Plain-text version of `formattedCitation` with Markdown italic markers stripped.
-    ///
-    /// `formattedCitation` uses `_..._` and `*...*` for the series title; the view
-    /// renders these via `AttributedString(markdown:)` (producing actual italics), but
-    /// the clipboard and share sheet should receive clean text without raw underscore/
-    /// asterisk characters.  `AttributedString.characters` extracts the character
-    /// sequence after Markdown parsing, giving the plain text automatically.
     private var plainTextCitation: String {
-        if let attrStr = try? AttributedString(
-            markdown: formattedCitation,
-            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        ) {
-            return String(attrStr.characters)
-        }
-        // Fallback: strip paired delimiters via regex if markdown parsing fails.
-        return formattedCitation
-            .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
-            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
+        DocumentExportSupport.plainText(formattedCitation)
     }
 
     // MARK: - Publication Year
 
-    /// Returns the best available publication year for `vol`.
-    ///
-    /// Priority: (1) `parsedPublicationYear` extracted live from the volume XML's
-    /// `<publicationStmt><date>` element; (2) the first plausible 4-digit year
-    /// found in the manifest's `publicationDate` string; (3) "n.d."
+    /// Best available publication year for `vol` (live-parsed, else manifest, else n.d.).
     private func effectiveYear(for vol: VolumeManifestEntry) -> String {
-        if let live = parsedPublicationYear, !live.isEmpty { return live }
-        guard let pd = vol.publicationDate else { return "n.d." }
-        // Extract the first 4-digit number that looks like a year (post-1750).
-        let segments = pd.components(separatedBy: .init(charactersIn: "0123456789").inverted)
-        if let yr = segments.first(where: { $0.count == 4 }),
-           let y = Int(yr), y > 1750 { return yr }
-        return "n.d."
+        DocumentExportSupport.effectiveYear(parsed: parsedPublicationYear, volume: vol)
     }
 
     private func effectivePublisher(year: String) -> String {
@@ -1840,97 +1937,26 @@ struct CitationPopoverView: View {
             : "Government Printing Office"
     }
 
-    // MARK: - Live Publication Year Extraction
-
-    /// Reads the first portion of the downloaded volume XML and extracts the
-    /// publication year from `<publicationStmt><date @when>` or its text content.
+    /// Reads the publication year live from the volume's TEI header.
     private func loadPublicationYear() async {
         guard let dm = appState.downloadManager,
               dm.isVolumeDownloaded(entry.volumeId) else { return }
-        let url = dm.volumeURL(for: entry.volumeId)
-        parsedPublicationYear = await Self.extractPublicationYear(from: url)
-    }
-
-    private static func extractPublicationYear(from url: URL) async -> String? {
-        await Task.detached(priority: .utility) {
-            guard let stream = InputStream(url: url) else { return nil }
-            stream.open()
-            defer { stream.close() }
-            // 8 KB covers the teiHeader which always appears at the top of the file.
-            var buffer = [UInt8](repeating: 0, count: 8_192)
-            let n = stream.read(&buffer, maxLength: buffer.count)
-            guard n > 0,
-                  let text = String(bytes: Array(buffer[0..<n]), encoding: .utf8) else { return nil }
-
-            // Isolate the <publicationStmt> block.
-            guard let blockStart = text.range(of: "<publicationStmt"),
-                  let blockEnd   = text.range(of: "</publicationStmt>"),
-                  blockStart.lowerBound < blockEnd.lowerBound else { return nil }
-            let block = String(text[blockStart.lowerBound..<blockEnd.upperBound])
-
-            // Prefer @when="YYYY" — most authoritative, always the actual publication year.
-            if let yr = regexFirstCapture(#"when="(\d{4})""#, in: block),
-               let y = Int(yr), y > 1750, y < 2100 { return yr }
-            // Fall back to bare year as text content, e.g. <date>2010</date>.
-            if let yr = regexFirstCapture(#">(\d{4})\s*<"#, in: block),
-               let y = Int(yr), y > 1750, y < 2100 { return yr }
-            return nil
-        }.value
-    }
-
-    private nonisolated static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: text,
-                                           range: NSRange(text.startIndex..., in: text)),
-              match.numberOfRanges >= 2,
-              let range = Range(match.range(at: 1), in: text) else { return nil }
-        return String(text[range])
+        parsedPublicationYear = await DocumentExportSupport.extractPublicationYear(
+            volumeURL: dm.volumeURL(for: entry.volumeId))
     }
 
     // MARK: - BibTeX / RIS Export
 
     private func bibtexString(vol: VolumeManifestEntry) -> String {
-        let year = effectiveYear(for: vol)
-        let docMeta = self.docMeta
-        let volMeta = FRUSVolumeMetadata(vol)
-        return BibtexExporter().export(
-            volumeId: entry.volumeId,
-            document: docMeta,
-            volume: volMeta,
-            year: year,
-            url: canonicalURL
-        )
+        DocumentExportSupport.bibtex(entry: entry, volume: vol,
+                                     documentNumber: effectiveDocumentNumber,
+                                     year: effectiveYear(for: vol))
     }
 
     private func risString(vol: VolumeManifestEntry) -> String {
-        let year = effectiveYear(for: vol)
-        let docMeta = self.docMeta
-        let volMeta = FRUSVolumeMetadata(vol)
-        return RISExporter().export(
-            document: docMeta,
-            volume: volMeta,
-            year: year,
-            url: canonicalURL
-        )
-    }
-
-    /// Builds an RIS record that also carries the user's FRUS Explorer tags (→ `KW`)
-    /// and research notes (→ `N1`), used by "Send to Zotero" so a single document
-    /// imports with the same annotations as the collection-level Zotero export.
-    @MainActor
-    private func zoteroRISString(vol: VolumeManifestEntry) -> String {
-        let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
-            documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
-        let item = ZoteroJSONExporter.makeItem(
-            document: docMeta,
-            volume: FRUSVolumeMetadata(vol),
-            year: effectiveYear(for: vol),
-            url: canonicalURL,
-            isEditorialNote: entry.isEditorialNote,
-            tags: resolved.tags,
-            notes: resolved.notes
-        )
-        return RISExporter().export(zoteroItem: item)
+        DocumentExportSupport.ris(entry: entry, volume: vol,
+                                  documentNumber: effectiveDocumentNumber,
+                                  year: effectiveYear(for: vol))
     }
 
     @MainActor
@@ -1945,72 +1971,10 @@ struct CitationPopoverView: View {
         }
     }
 
-    // MARK: - Send to Zotero
-
-    /// Builds an RIS record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
-    ///
-    /// RIS is a format Zotero imports from a shared file. The previous Zotero-API JSON
-    /// envelope is *not* a Zotero file-import format (Zotero reported "couldn't read
-    /// payload"), so this option now sends RIS.
-    @MainActor
-    private func sendToZoteroRIS(vol: VolumeManifestEntry) {
-        guard let data = zoteroRISString(vol: vol).data(using: .utf8) else { return }
-        sendToZotero(data: data,
-                     suggestedName: "\(entry.volumeId)-\(entry.documentId).ris",
-                     contentType: .init(filenameExtension: "ris") ?? .text)
-    }
-
-    /// Builds a BibTeX record for this document and hands it to `sendToZotero(_:suggestedName:contentType:)`.
-    @MainActor
-    private func sendToZoteroBibtex(vol: VolumeManifestEntry) {
-        guard let data = bibtexString(vol: vol).data(using: .utf8) else { return }
-        sendToZotero(data: data, suggestedName: "\(entry.volumeId)-\(entry.documentId).bib", contentType: .init(filenameExtension: "bib") ?? .data)
-    }
-
-    /// Saves `data` to a user-chosen location via `NSSavePanel`, then opens the
-    /// saved file in Zotero (if installed) or reveals it in Finder.
-    @MainActor
-    private func sendToZotero(data: Data, suggestedName: String, contentType: UTType) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [contentType]
-        panel.nameFieldStringValue = suggestedName
-        panel.title = "Send to Zotero"
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            do {
-                try data.write(to: url, options: .atomic)
-            } catch {
-                // The user explicitly chose a destination — a silent failure
-                // here looks like the export worked.
-                let alert = NSAlert()
-                alert.alertStyle = .warning
-                alert.messageText = "Could Not Save File"
-                alert.informativeText = error.localizedDescription
-                alert.runModal()
-                return
-            }
-            if let zoteroURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.zotero.zotero") {
-                NSWorkspace.shared.open([url], withApplicationAt: zoteroURL, configuration: NSWorkspace.OpenConfiguration())
-            } else {
-                NSWorkspace.shared.activateFileViewerSelecting([url])
-            }
-        }
-    }
-
     // MARK: - Helpers
 
     private var canonicalURL: String? {
-        "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
-    }
-
-    /// A formatted citation plus its canonical `history.state.gov` URL,
-    /// suitable for sharing via the system share sheet (Mail, Messages,
-    /// AirDrop, etc.). Uses `plainTextCitation` so markdown italic markers
-    /// (_..._  / *...*) do not appear as raw syntax in the share payload.
-    /// Falls back to `plainTextCitation` alone if no canonical URL is available.
-    private var shareableCitationMessage: String {
-        guard let url = canonicalURL else { return plainTextCitation }
-        return "\(plainTextCitation)\n\n\(url)"
+        DocumentExportSupport.canonicalURL(entry: entry)
     }
 
     private var accessedDate: String {
@@ -2030,6 +1994,201 @@ struct CitationPopoverView: View {
     private func copyToClipboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+// MARK: - DocumentSharePopover
+
+/// Document-level Share / Export popover, presented from the Research strip's
+/// "Share" button — independent of the citation popover. Gathers the actions that
+/// *send the document somewhere*: into the user's Zotero library via the Web API,
+/// out as a Zotero-importable file, or via the system share sheet. Citation copying
+/// stays on the Cite popover.
+///
+/// Version history:
+///   1.0 — Document Share/Export control split out from the citation popover
+struct DocumentSharePopover: View {
+    let entry: DocumentBrowserEntry
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
+
+    @State private var parsedPublicationYear: String?
+    @State private var resolvedDocumentNumber: String?
+    @State private var zoteroResult: ZoteroSendResult?
+    @State private var zoteroSending = false
+    @State private var zoteroError: String?
+
+    private var volumeEntry: VolumeManifestEntry? {
+        appState.manifestStore.entry(forVolumeId: entry.volumeId)
+    }
+    private var effectiveDocumentNumber: String? {
+        entry.documentNumber ?? resolvedDocumentNumber
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Share / Export", systemImage: "square.and.arrow.up")
+                    .font(.system(size: 12, weight: .medium))
+                Spacer()
+            }
+            Text(entry.header)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            Divider()
+
+            if let vol = volumeEntry {
+                if ZoteroAccountStore.shared.isConnected {
+                    actionRow("Send to Zotero Library", systemImage: "books.vertical",
+                              busy: zoteroSending) {
+                        Task { await sendToZoteroLibrary(vol: vol) }
+                    }
+                    Text("Adds this document — with your tags and research notes — straight to your Zotero library.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                actionRow("Export Zotero file (RIS)\u{2026}", systemImage: "doc.badge.arrow.up") {
+                    sendToZoteroFile(zoteroRIS(vol: vol), ext: "ris", type: .init(filenameExtension: "ris") ?? .text)
+                }
+                actionRow("Export Zotero file (BibTeX)\u{2026}", systemImage: "doc.badge.arrow.up") {
+                    sendToZoteroFile(DocumentExportSupport.bibtex(entry: entry, volume: vol,
+                                                                 documentNumber: effectiveDocumentNumber,
+                                                                 year: year(vol)),
+                                     ext: "bib", type: .init(filenameExtension: "bib") ?? .data)
+                }
+                ShareLink(item: shareMessage(vol: vol)) {
+                    Label("Share Citation\u{2026}", systemImage: "square.and.arrow.up")
+                        .font(.system(size: 11))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            } else {
+                Text("Document metadata isn’t loaded yet.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .frame(width: 320)
+        .task(id: entry.id) {
+            if let dm = appState.downloadManager, dm.isVolumeDownloaded(entry.volumeId) {
+                parsedPublicationYear = await DocumentExportSupport.extractPublicationYear(
+                    volumeURL: dm.volumeURL(for: entry.volumeId))
+            }
+            if entry.documentNumber == nil, let pipeline = appState.indexingPipeline {
+                resolvedDocumentNumber = (try? await pipeline.documentNumber(
+                    volumeId: entry.volumeId, documentId: entry.documentId)) ?? nil
+            }
+        }
+        .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
+        .alert(
+            String(localized: "document.share.zotero.error.title", defaultValue: "Couldn't Send to Zotero"),
+            isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
+            presenting: zoteroError
+        ) { _ in
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+        } message: { Text($0) }
+    }
+
+    // MARK: - Rows
+
+    @ViewBuilder
+    private func actionRow(_ title: String, systemImage: String,
+                           busy: Bool = false, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Label(title, systemImage: systemImage).font(.system(size: 11))
+                Spacer()
+                if busy { ProgressView().controlSize(.mini) }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(busy)
+    }
+
+    // MARK: - Builders
+
+    private func year(_ vol: VolumeManifestEntry) -> String {
+        DocumentExportSupport.effectiveYear(parsed: parsedPublicationYear, volume: vol)
+    }
+
+    private func zoteroItem(vol: VolumeManifestEntry) -> ZoteroJSONExporter.Item {
+        DocumentExportSupport.zoteroItem(entry: entry, volume: vol,
+                                         documentNumber: effectiveDocumentNumber,
+                                         year: year(vol), context: modelContext)
+    }
+
+    private func zoteroRIS(vol: VolumeManifestEntry) -> String {
+        RISExporter().export(zoteroItem: zoteroItem(vol: vol))
+    }
+
+    private func shareMessage(vol: VolumeManifestEntry) -> String {
+        let formatted = DocumentExportSupport.formatted(
+            entry: entry, volume: vol, documentNumber: effectiveDocumentNumber,
+            parsedYear: parsedPublicationYear, style: CitationStyle.current)
+        return "\(DocumentExportSupport.plainText(formatted))\n\n\(DocumentExportSupport.canonicalURL(entry: entry))"
+    }
+
+    private func zoteroResultMessage(_ result: ZoteroSendResult) -> String {
+        String(format: String(localized: "document.share.zotero.result %lld %lld",
+                              defaultValue: "Added %lld document and %lld notes to Zotero."),
+               Int64(result.addedItems), Int64(result.addedNotes))
+    }
+
+    // MARK: - Send
+
+    /// Pushes the document into the user's Zotero library via the Web API (no collection).
+    private func sendToZoteroLibrary(vol: VolumeManifestEntry) async {
+        let store = ZoteroAccountStore.shared
+        guard let apiKey = store.retrieveKey(), let userID = store.userID else {
+            zoteroError = ZoteroAPIError.missingCredentials.errorDescription
+            return
+        }
+        zoteroSending = true
+        defer { zoteroSending = false }
+        do {
+            let result = try await ZoteroAPIClient().send(
+                items: [zoteroItem(vol: vol)], collectionName: nil,
+                apiKey: apiKey, userID: userID, username: store.username)
+            zoteroResult = result
+        } catch {
+            zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    /// Saves a Zotero-importable file via `NSSavePanel`, then opens it in Zotero
+    /// (if installed) or reveals it in Finder.
+    private func sendToZoteroFile(_ content: String, ext: String, type: UTType) {
+        guard let data = content.data(using: .utf8) else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [type]
+        panel.nameFieldStringValue = "\(entry.volumeId)-\(entry.documentId).\(ext)"
+        panel.title = "Export for Zotero"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = "Could Not Save File"
+                alert.informativeText = error.localizedDescription
+                alert.runModal()
+                return
+            }
+            if let zoteroURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "org.zotero.zotero") {
+                NSWorkspace.shared.open([url], withApplicationAt: zoteroURL,
+                                        configuration: NSWorkspace.OpenConfiguration())
+            } else {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+        }
     }
 }
 

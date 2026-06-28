@@ -2776,7 +2776,7 @@ private struct SummarizationPromptsSettingsView: View {
 ///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
-private struct ZoteroIntegrationView: View {
+struct ZoteroIntegrationView: View {
 
     @State private var keyText: String = ""
     @State private var isConnecting = false
@@ -2856,6 +2856,10 @@ private struct ZoteroIntegrationView: View {
                 }
             }
         }
+        #if os(macOS)
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
         .navigationTitle(String(localized: "settings.zotero.title", defaultValue: "Zotero"))
         .onAppear { refresh() }
     }
