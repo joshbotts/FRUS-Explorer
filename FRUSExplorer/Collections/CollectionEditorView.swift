@@ -196,7 +196,7 @@ struct CollectionEditorView: View {
                 smartCollectionSection
                 documentsSection
                 addByTagSection
-                if !sortedEntries.isEmpty {
+                if !sortedEntries.isEmpty || linkedSavedSearchId != nil {
                     actionsSection
                 }
             }
@@ -351,7 +351,7 @@ struct CollectionEditorView: View {
             smartCollectionSection
             documentsSection
             addByTagSection
-            if !sortedEntries.isEmpty { actionsSection }
+            if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
         }
     }
 
@@ -372,7 +372,7 @@ struct CollectionEditorView: View {
                 nameSection
                 noteSection
                 smartCollectionSection
-                if !sortedEntries.isEmpty { actionsSection }
+                if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
             }
             .formStyle(.grouped)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -572,10 +572,17 @@ struct CollectionEditorView: View {
     private var documentsSection: some View {
         Section {
             if sortedEntries.isEmpty {
-                Text(String(localized: "collection.editor.docs.empty",
-                            defaultValue: "No documents yet. Add some using a subject tag below."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                if linkedSavedSearchId != nil {
+                    Text(String(localized: "collection.editor.docs.smartEmpty",
+                                defaultValue: "This is a smart collection. Its documents are resolved from the linked saved search when you export — use Export in Actions below."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(String(localized: "collection.editor.docs.empty",
+                                defaultValue: "No documents yet. Add some using a subject tag below."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 ForEach($sortedEntries, id: \.id) { $entry in
                     EntryRow(
@@ -651,17 +658,23 @@ struct CollectionEditorView: View {
 
     private var actionsSection: some View {
         Section(String(localized: "collection.editor.actions.header", defaultValue: "Actions")) {
-            Button {
-                sortByDate()
-            } label: {
-                Label(
-                    String(localized: "collection.editor.actions.sortByDate",
-                           defaultValue: "Sort by Date"),
-                    systemImage: "calendar"
-                )
+            // "Sort by Date" reorders static entries; a smart collection has none
+            // (its documents are resolved from the saved search at export time),
+            // so only offer it when there are static entries to sort.
+            if !sortedEntries.isEmpty {
+                Button {
+                    sortByDate()
+                } label: {
+                    Label(
+                        String(localized: "collection.editor.actions.sortByDate",
+                               defaultValue: "Sort by Date"),
+                        systemImage: "calendar"
+                    )
+                }
             }
 
             Button {
+                applyEditsForExport()
                 showExport = true
             } label: {
                 Label(
@@ -731,6 +744,30 @@ struct CollectionEditorView: View {
             collection.projectIds.append(projectId)
         }
         try? modelContext.save()
+    }
+
+    /// Syncs the editor's pending edits onto the in-memory `collection` so the
+    /// export sheet sees the current state without requiring a prior Save.
+    ///
+    /// The exporter's smart-collection path reads `collection.savedSearchId`, so
+    /// that link must be applied before presenting `ExportSheetView` — otherwise
+    /// exporting a freshly-linked (but unsaved) smart collection would resolve no
+    /// documents. The collection is already in the model context (inserted in
+    /// `onAppear` for new collections), and nothing is persisted here, so Cancel
+    /// still discards a new collection.
+    ///
+    /// Name/note are copied only for a brand-new collection, whose Save step
+    /// hasn't run yet; for an existing collection they are left untouched so that
+    /// exporting after an unsaved field edit doesn't silently leak that edit —
+    /// matching the static-entry export behavior, which also exports the
+    /// persisted name/note.
+    private func applyEditsForExport() {
+        collection.savedSearchId = linkedSavedSearchId
+        if isNewCollection {
+            collection.name = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedNote = collectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
+            collection.note = trimmedNote.isEmpty ? nil : trimmedNote
+        }
     }
 }
 
@@ -1301,7 +1338,7 @@ struct ExportSheetView: View {
         // Smart collection path: resolve documents via the linked SavedSearch.
         if let searchId = collection.savedSearchId {
             isExporting = true
-            defer { isExporting = false }
+            defer { isExporting = false; summaryGeneratingMessage = nil }
 
             guard let searchService = appState.searchService else {
                 exportError = String(localized: "export.smart.noSearchService",
@@ -1321,10 +1358,40 @@ struct ExportSheetView: View {
                 let smartEntries = results.enumerated().map { i, r in
                     SmartEntry(documentId: r.documentId, volumeId: r.volumeId, sortOrder: i)
                 }
-                let docs = await resolveSmartDocuments(smartEntries)
+                var docs = await resolveSmartDocuments(smartEntries)
+                let options = buildExportOptions()
+
+                // Resolve AI summaries on demand when exporting at .summaryOnly depth,
+                // mirroring the static-collection path below. Without this, a smart
+                // collection exported as "Summary only" would carry no summary text
+                // even when the user has generated summaries for the saved search.
+                if options.bodyDepth == .summaryOnly {
+                    guard let promptId = options.summaryPromptId else {
+                        exportError = String(localized: "export.summaryNoPrompt",
+                                             defaultValue: "Choose a summarization prompt to export as summaries.")
+                        return
+                    }
+                    let bodyTexts = Dictionary(uniqueKeysWithValues:
+                        docs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
+                    let summaries = try await resolveSummaries(for: docs, promptId: promptId,
+                                                               bodyTexts: bodyTexts)
+                    docs = docs.map { doc in
+                        let key = "\(doc.volumeId)/\(doc.documentId)"
+                        guard let text = summaries[key] else { return doc }
+                        return CollectionExportDocument(
+                            documentId: doc.documentId, volumeId: doc.volumeId,
+                            sortOrder: doc.sortOrder, title: doc.title, date: doc.date,
+                            bodyText: doc.bodyText, noteTexts: doc.noteTexts,
+                            citation: doc.citation, historyStateGovURL: doc.historyStateGovURL,
+                            renderModel: doc.renderModel, header: doc.header, dateline: doc.dateline,
+                            summaryText: text, highlights: doc.highlights,
+                            sourceNoteText: doc.sourceNoteText, zoteroItem: doc.zoteroItem
+                        )
+                    }
+                }
+
                 let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
                 let exporter = selectedFormat.makeExporter()
-                let options = buildExportOptions()
                 let url = try await exporter.export(metadata: metadata, documents: docs, options: options)
                 exportedURL = url
                 appState.logEvent(.export(

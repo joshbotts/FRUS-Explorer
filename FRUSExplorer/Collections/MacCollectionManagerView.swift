@@ -442,7 +442,10 @@ private struct CollectionDetailPane: View {
             }
             .help(String(localized: "collection.toolbar.export.help",
                          defaultValue: "Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes"))
-            .disabled(sortedEntries.isEmpty)
+            // A smart collection (savedSearchId set) has no static entries — its
+            // documents are resolved from the linked saved search at export time —
+            // so allow export when it is smart even though sortedEntries is empty.
+            .disabled(sortedEntries.isEmpty && collection.savedSearchId == nil)
         }
     }
 
