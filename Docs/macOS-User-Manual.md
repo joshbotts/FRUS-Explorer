@@ -128,7 +128,9 @@ Directly below the toolbar, the research strip is always visible when a document
 
 - **Add / Edit Note** — Open the note editor for this document.
 - **Highlight** — Enabled when you have selected text in the document body. Click to save the selected passage as a colored highlight. The button is grayed out when no text is selected.
-- **Citation** — Open the citation popover.
+- **Cite** — Open the citation popover (formatted citation, copy, and Copy as… BibTeX/RIS; see Section 9.3).
+- **Share** — Send this document to your Zotero library, export a Zotero file, or share its citation (Section 9.3).
+- **Word Cloud** — Open a word cloud for this document (Section 13.4).
 - **Tags** — Apply or remove user tags.
 
 ![The research strip directly beneath the toolbar with a document open — Add to collection, Add note, Tag, Graph, Sources, Highlight (greyed out until text is selected), Cite, and New Window, sitting above the open document's heading.](screenshots/macos/research-strip.png)
@@ -478,14 +480,17 @@ Click any result to open that document. If the volume is not downloaded, a **Dow
 
 ### 9.3 Copying and Sharing Citations
 
-With a document open, click **Info** in the research strip (or use the document toolbar's **View Citation** / **Copy Citation** / **Share Citation** commands) to work with its formatted citation:
+Two Research-strip buttons separate the *citation itself* from *sending the document somewhere*:
 
-- **Copy Citation** copies the formatted citation text to the clipboard, ready to paste into a paper, email, or notes app.
-- **Share Citation** opens the macOS share sheet with a single message that combines the formatted citation *and* its canonical `history.state.gov` link, so the recipient can both read the citation and open the original source online with one click. This works with any share destination macOS supports — Mail, Messages, Notes, AirDrop, third-party apps, and more.
+- **Cite** opens the citation popover — the formatted citation in your chosen style (switchable per-view), with **Copy citation**, **Copy URL**, and a **Copy as…** menu (BibTeX / RIS, or **Save as .bib**).
+- **Share** opens a popover that gathers the export and send actions:
+  - **Send to Zotero Library** — pushes this document straight into your Zotero library over the Web API, with its tags and research notes (shown only when a Zotero account is connected; see Section 16).
+  - **Export Zotero file (RIS / BibTeX)** — writes a Zotero-importable file and opens it in Zotero (if installed) or reveals it in Finder.
+  - **Share Citation** — opens the macOS share sheet with a single message combining the formatted citation *and* its canonical `history.state.gov` link, so the recipient can both read the citation and open the original source online with one click (Mail, Messages, Notes, AirDrop, third-party apps, and more).
 
-`[SCREENSHOT: Citation popover showing formatted citation with Copy and Share Citation buttons]`
+`[SCREENSHOT: Citation popover (Cite) showing the formatted citation with Copy and Copy as… controls]`
 
-`[SCREENSHOT: macOS share sheet showing a combined citation-and-link message ready to send]`
+`[SCREENSHOT: Document Share popover showing Send to Zotero Library, Export Zotero file, and Share Citation]`
 
 ---
 
@@ -533,7 +538,7 @@ Click **Export** in the Collections window to generate a formatted document.
 | **DOCX** | Microsoft Word format with styles, footnotes, and internal links |
 | **Zotero (RIS)** | Importing the whole collection into Zotero (or any RIS-aware reference manager) — one Book Section record per document, carrying the canonical history.state.gov URL plus your FRUS Explorer tags and (optionally) research notes |
 
-> **Sending one document to Zotero:** From an open document's citation popover, **Send to Zotero** writes a single RIS record you can open straight into Zotero. RIS is used (rather than a Zotero-specific JSON envelope) because standard Zotero imports it on every platform, including iOS.
+> **Sending one document to Zotero:** Use the document's **Share** button (Section 9.3). With a Zotero account connected (Section 16), **Send to Zotero Library** pushes the single document — with its tags and notes — into your library over the Web API; otherwise **Export Zotero file (RIS)** writes a single record you can open straight into Zotero. RIS is used (rather than a Zotero-specific JSON envelope) because standard Zotero imports it on every platform, including iOS. A whole collection can be sent the same way (Send to Zotero Library) or exported as RIS here.
 
 The export sheet offers additional controls:
 
@@ -589,7 +594,7 @@ The summary appears in the strip above the document. If a previously generated s
 
 ### 11.3 Long Documents
 
-Documents that are too long for a single model call are automatically chunked at TEI structural boundaries, each chunk summarized independently, and then combined into a final summary. A **"Summarized in sections"** indicator appears in the summary strip when this has occurred.
+Documents that are too long for a single model call are automatically chunked (at paragraph boundaries, hard-splitting any oversized passage so no piece exceeds the model's context window), each chunk summarized independently, and then combined. For very long documents the combination is **hierarchical** — partial summaries are themselves reduced in stages until a single final summary remains — so even an unusually long policy paper completes rather than failing with a context-window error. A **"Summarized in sections"** indicator appears in the summary strip when this has occurred.
 
 ### 11.4 Background Summarization
 
@@ -691,6 +696,22 @@ Click a bar, point, or table row to **View in Search** — this opens the Search
 
 `[SCREENSHOT: Analytics chart with a "View in Search" action on a selected bar]`
 
+### 13.4 Word Cloud
+
+Where Analytics charts one term over time, a **Word Cloud** shows the most frequent terms in a body of material at a glance. Open one from several places:
+
+- The **Word Cloud** button in the main window toolbar opens the Word Cloud window over the whole corpus, with an in-window **scope picker** to retarget it to any subseries, volume, collection, tag, or saved search.
+- The **Share/Word Cloud** affordances on a document (Research strip), and the per-row buttons in the Corpus Browser's subseries and volume rows, open a cloud for that specific scope.
+
+`[SCREENSHOT: Word Cloud window on macOS — the scope bar, the lens chips, and a packed spiral of sized terms]`
+
+- **Two views.** A packed **spiral cloud** sizes each term by frequency (rotating some terms to pack the space); a **List** view ranks the same terms with a weight bar and exact counts, and is what VoiceOver reads.
+- **Lenses.** A row of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). When a scope lacks enough of a given kind of term, the cloud says so rather than showing a near-empty result.
+- **Act on a term.** Click a word to hand off to Search. The options menu lets you **hide** a word for that scope, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
+- **Tuning.** Settings → Word Cloud sets minimum word length and occurrence count, toggles plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintains your own **hidden-word lists** (global, or per lens).
+
+Corpus- and subseries-wide clouds are cached on disk after the first computation, so reopening them is fast.
+
 ---
 
 ## 14. Chronology
@@ -773,6 +794,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 
 | Pane | Contents |
 |------|----------|
+| **iCloud Sync** | A **Sync Settings Across Devices** toggle that mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices that have it enabled. Off by default — turning it on adopts your existing iCloud settings; leave it off to keep this Mac's settings separate. (Device-specific preferences stay local. Requires iCloud.) |
 | **About** | FRUS series overview, links to history.state.gov and the GitHub source repository, app version and attribution |
 | **Display** | Theme preferences (light, dark, or system) |
 | **Search** | FTS5 configuration — stemming language, ranking parameters |
@@ -784,6 +806,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 | **Projects** | Create, rename, set defaults, delete projects |
 | **Tags** | Rename, merge, delete user tags |
 | **Notes** | View notes filtered by project or tag; logging preferences |
+| **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters) and your custom global + per-lens hidden-word lists (see Section 13.4) |
 
 ### Corpus
 
@@ -798,6 +821,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 | Pane | Contents |
 |------|----------|
 | **NARA API** | API key entry (stored in iCloud Keychain); *Need a Key?* link |
+| **Zotero** | Connect your Zotero account with a Web API key (stored in iCloud Keychain, so the connection follows you to your other devices) so **Send to Zotero Library** can push documents and collections straight into your library; a link creates a key with the right permissions |
 | **Summarization** | Prompt management, summary browser, background summarizer |
 
 ### Reset
