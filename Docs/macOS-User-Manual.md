@@ -671,7 +671,7 @@ Lot file and presidential library lookups require a free NARA Catalog API key. E
 
 The **Analytics** window charts how often a search term appears across the corpus over time.
 
-Open it from the **Analytics** toolbar button in the main window.
+Open it from the **Analytics** toolbar button in the main window, or by clicking a word in a **Word Cloud** (Section 13.4).
 
 ![Corpus Analytics on macOS — a term-frequency chart for "Berlin" by year across the corpus (16,224 documents matched), with the term field, dimension toggles, year-range controls, and a "View in Search" handoff.](screenshots/macos/analytics.png)
 
@@ -707,7 +707,7 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 
 - **Two views.** A packed **spiral cloud** sizes each term by frequency (rotating some terms to pack the space); a **List** view ranks the same terms with a weight bar and exact counts, and is what VoiceOver reads.
 - **Lenses.** A row of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). When a scope lacks enough of a given kind of term, the cloud says so rather than showing a near-empty result.
-- **Act on a term.** Click a word to hand off to Search. The options menu lets you **hide** a word for that scope, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
+- **Act on a term.** Click a word to chart how often it appears across the whole corpus in **Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word for that scope, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
 - **Tuning.** Settings → Word Cloud sets minimum word length and occurrence count, toggles plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintains your own **hidden-word lists** (global, or per lens).
 
 Corpus- and subseries-wide clouds are cached on disk after the first computation, so reopening them is fast.

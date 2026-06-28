@@ -33,7 +33,7 @@ Search (Search tab) takes a phrase or AND/OR, scoped to volumes; long lists load
 
 ## Step 6 — New in this build
 
-- **Word Cloud** — open one for a document, volume, subseries, collection, tag, saved search, or the corpus. Try the **lens chips** (People, Places, Concepts, Sentiment…), tap a word to search it, export it; tune filters in Settings → Research → **Word Cloud**.
+- **Word Cloud** — open one for a document, volume, subseries, collection, tag, saved search, or the corpus. Try the **lens chips** (People, Places, Concepts, Sentiment…); **tapping a word now charts it across the whole corpus in Corpus Analytics** (volume/subseries clouds add a scoped option; Search is on the word's menu). Export it; tune filters in Settings → Research → **Word Cloud**.
 - **Zotero (Web API)** — paste a key in Settings → Integrations → **Zotero**, then a document's **Share → Send to Zotero Library** (or a collection) pushes it — with tags and notes — into your library.
 - **Sync settings across devices** — Settings → iCloud Sync has a new toggle (off by default) to mirror word-cloud filters, citation style, and a few preferences across devices.
 
