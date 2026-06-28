@@ -63,6 +63,7 @@ extension ModelContainer {
             DocumentHighlight.self,
             DocumentTagAssignment.self,
             PersonClusterOverride.self,
+            SyncedPreferences.self,
         ]
     }
 

@@ -108,12 +108,14 @@ struct FRUSSettingsView: View {
         } detail: {
             Group {
                 switch selection {
+                case .sync:           SettingsSyncPane()
                 case .about:          SettingsAboutPane()
                 case .display:        SettingsDisplayPane()
                 case .search:         SettingsSearchPane()
                 case .projects:       SettingsProjectsPane()
                 case .tags:           SettingsTagsPane()
                 case .notes:          SettingsNotesPane()
+                case .wordCloud:      WordCloudSettingsView()
                 case .storage:        SettingsStoragePane()
                 case .downloads:      SettingsAddVolumesPane()
                 case .naraAPI:        SettingsNARAPane()
@@ -131,8 +133,8 @@ struct FRUSSettingsView: View {
 // MARK: - SettingsPane
 
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
-    case about, display, search
-    case projects, tags, notes
+    case sync, about, display, search
+    case projects, tags, notes, wordCloud
     case storage, downloads
     case naraAPI, summarization, data
     case reset
@@ -141,12 +143,14 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
 
     var label: String {
         switch self {
+        case .sync:          return "iCloud Sync"
         case .about:         return "About"
         case .display:       return "Display"
         case .search:        return "Search"
         case .projects:      return "Projects"
         case .tags:          return "Tags"
         case .notes:         return "Notes"
+        case .wordCloud:     return "Word Cloud"
         case .storage:       return "Storage"
         case .downloads:     return "Add Volumes"
         case .naraAPI:       return "NARA API"
@@ -158,12 +162,14 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
 
     var icon: String {
         switch self {
+        case .sync:          return "icloud"
         case .about:         return "info.circle"
         case .display:       return "textformat.size"
         case .search:        return "magnifyingglass"
         case .projects:      return "folder"
         case .tags:          return "tag"
         case .notes:         return "note.text"
+        case .wordCloud:     return "text.word.spacing"
         case .storage:       return "internaldrive"
         case .downloads:     return "plus.circle"
         case .naraAPI:       return "key"
@@ -173,8 +179,8 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         }
     }
 
-    static let general:  [SettingsPane] = [.display, .search]
-    static let research: [SettingsPane] = [.projects, .tags, .notes]
+    static let general:  [SettingsPane] = [.sync, .display, .search]
+    static let research: [SettingsPane] = [.projects, .tags, .notes, .wordCloud]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
     static let advanced: [SettingsPane] = [.naraAPI, .summarization, .data]
     static let resetSection: [SettingsPane] = [.reset]
@@ -317,6 +323,42 @@ private struct SettingsDisplayPane: View {
 }
 
 // MARK: - Search Pane
+
+/// Optional cross-device settings sync (the device-local master toggle).
+private struct SettingsSyncPane: View {
+    @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                PaneHeader(
+                    title: "iCloud Sync",
+                    subtitle: "Optionally share your settings across devices signed in to the same iCloud account."
+                )
+
+                settingsPaneToggleRow(
+                    label: "Sync settings across devices",
+                    detail: "Word-cloud filters & stop lists, citation style, default document mode, and research logging.",
+                    isOn: $syncSettingsEnabled
+                )
+                .disabled(!appState.cloudKitSyncEnabled)
+                .onChange(of: syncSettingsEnabled) { _, newValue in
+                    appState.settingsSync?.handleEnabledChange(newValue)
+                }
+
+                Text(appState.cloudKitSyncEnabled
+                     ? "When on, this device shares those settings with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."
+                     : "Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .padding(.top, 10)
+            }
+            .padding(24)
+        }
+    }
+}
 
 private struct SettingsSearchPane: View {
     @AppStorage(SearchDefaults.scopeDocumentsKey) private var scopeDocuments  = true

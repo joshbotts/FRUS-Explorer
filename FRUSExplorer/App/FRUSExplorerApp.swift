@@ -741,6 +741,12 @@ struct FRUSExplorerApp: App {
             // (SwiftData + CloudKit can't enforce unique `id`s) so they stop
             // appearing twice in lists.
             DuplicateRecordCleanup.run(context: modelContainer.mainContext)
+            // Optional cross-device settings sync: mirror UserDefaults to/from a
+            // CloudKit-synced record when this device has opted in. Starting it
+            // installs the change observer and performs an initial pull if enabled.
+            let settingsSync = SettingsSyncCoordinator(context: modelContainer.mainContext)
+            appState.settingsSync = settingsSync
+            settingsSync.start()
             #if os(iOS)
             // Mirror background-summarization progress onto a Live Activity.
             appState.startObservingSummarizationProgress()
@@ -1039,6 +1045,9 @@ struct FRUSExplorerApp: App {
                         appState.cloudKitSyncState = .syncing
                     } else if succeeded {
                         appState.cloudKitSyncState = .succeeded(endDate)
+                        // A completed import may have brought down updated settings;
+                        // pull them into UserDefaults if this device syncs settings.
+                        appState.settingsSync?.syncNowIfEnabled()
                     } else {
                         let msg = errorMsg ?? String(localized: "cloudkit.error.unknown",
                                                      defaultValue: "Unknown sync error")
@@ -1070,6 +1079,9 @@ struct FRUSExplorerApp: App {
         ) { [appState] _ in
             Task { @MainActor in
                 appState.checkCloudKitHealth()
+                // Returning to the foreground is a natural moment to adopt any settings
+                // changed on another device while this one was suspended.
+                appState.settingsSync?.syncNowIfEnabled()
             }
         }
 
