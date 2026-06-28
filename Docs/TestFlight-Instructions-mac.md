@@ -1,58 +1,44 @@
 # Welcome to FRUS Explorer (Mac)
 
-FRUS Explorer makes research in the *Foreign Relations of the United States* series easier. This guide assumes you've never used the app, and follows standard Mac conventions.
+FRUS Explorer makes research in the *Foreign Relations of the United States* series easier. This guide assumes you've never used the app.
 
 ## Step 1 — Download some volumes (do this first)
 
-The app starts empty. Open the Corpus Browser (⇧⌘B), choose a subseries (a date range, e.g. "1964–1968"), and download two or three volumes. Each is then indexed for search.
-
-Let indexing finish before judging things. Settings (⌘,) → **Index Health** shows the status, index version, and a "Check Integrity" button. Search results and glossary definitions fill in as indexing completes (a few minutes the first time).
+The app starts empty. Open the Corpus Browser (⇧⌘B), choose a subseries (a date range, e.g. "1964–1968"), and download two or three volumes; each is then indexed. Let indexing finish before judging things — Settings (⌘,) → **Index Health** shows status. Results and definitions fill in as it completes (a few minutes the first time).
 
 ## Step 2 — Read a document; follow its links and its source
 
-Open a volume, select a document, and read; move with the Previous/Next buttons, and hover toolbar icons to see what each does. In the text, click anything underlined or colored:
+Open a volume, select a document, and read (Previous/Next to move; hover toolbar icons for tooltips). Click anything underlined or colored:
 
-- A person's name → a panel with front-matter context and how many documents mention them.
-- A term or abbreviation ("UAR," "POL") → its front-matter definition.
-- A raised footnote number → the footnote text.
-- A reference to a document or page ("Document 42," "pp. 311–313") → navigates there, even across volumes; if that volume isn't downloaded, the relationship graph opens instead.
-- A web link → opens in your browser.
+- A **person's name** → a panel with context and mention count.
+- A **term** ("UAR," "POL") → its definition.
+- A **footnote number** → the footnote text.
+- A **reference** ("Document 42," "pp. 311–313") → navigates there, even across volumes (or opens a relationship graph if that volume isn't downloaded).
+- A **web link** → your browser.
 
-To look someone up across the whole corpus, the Corpus Browser lists **People** at the top: an alphabetical, searchable index of everyone mentioned in your indexed volumes. Click a name for their description, a mention count, and **Find all mentions**.
+For a corpus-wide index, the Corpus Browser lists **People** at the top. Also click a document's **source note**: **Source Explorer** resolves where it came from (record group, lot file, central file, presidential library, CIA) with finding-aid links.
 
-Also click the **source note** at the top of the document. The **Source Explorer** resolves where it came from — a National Archives record group, lot file, decimal/central file, presidential library, or CIA collection — with links to the right finding aid and a list of other indexed documents sharing that source.
+## Step 3 — The cross-reference graph (its own window)
 
-Click many of these (and a few source notes); report any that do nothing, error, or land wrong.
+From a document's toolbar, click **Cross-References**: each circle is a document on a date timeline, arrows point citing→cited, bigger = more connected. Hover to preview, click to pin, double-click to re-center, right-click for more; scroll to zoom, drag to pan. Switch Timeline/Network and Depth (1–3 hops).
 
-## Step 3 — Explore the cross-reference graph (its own window)
+## Step 4 — Chronology and Analytics (toolbar)
 
-From a document's toolbar, click Cross-References. Each circle is a document, placed on a timeline by date; arrows point from citing to cited; bigger circles are more connected.
-
-- Hover for a preview; click to pin details in the side panel; double-click to re-center; right-click for more.
-- Scroll to zoom, drag to pan, Reset View to recenter.
-- Switch Timeline/Network layouts and Depth (1–3 hops). Same-period documents bundle into "N docs" clusters — click to expand. Drag the strip below the graph to zoom a date range; the ⓘ button explains the graph.
-
-## Step 4 — The bigger picture: Chronology and Analytics (toolbar)
-
-- **Chronology** (calendar icon) — pick a date range and read every document in it, grouped by date, with a distribution chart anchored to your exact range. Wide-span editorial notes and out-of-range uncertain dates get their own sections; hover a bar for a finer breakdown.
-- **Corpus Analytics** (chart icon) — chart how often a term appears over time, or by subseries/volume. Click a bar to jump into a scoped search.
+- **Chronology** (calendar) — pick a date range and read every document in it, grouped by date, with a distribution chart.
+- **Corpus Analytics** (chart) — chart how often a term appears over time or by subseries/volume; click a bar for a scoped search.
 
 ## Step 5 — Search, organize, summarize, export
 
-Search (⌘F) opens its own window that stays open while you read — try a phrase or AND/OR, scoped to specific volumes. Open documents in new windows, work with search and the graph side by side, and revisit places via History. Add highlights, notes, and tags as you read (the Research window, ⌘⌥R, gathers them). With Apple Intelligence on an Apple Silicon Mac, you can also **Summarize** a document on-device (and queue a whole subseries with the **Background Summarizer** in Settings → Advanced → Summarization). Gather documents into Collections (⇧⌘K) to **export** (PDF, HTML, DOCX, Zotero/RIS); a document's **Cite** and **Share** Research-strip buttons copy a **citation** or **Send to Zotero**.
+Search (⌘F) opens its own window that stays open while you read — a phrase or AND/OR, scoped to volumes. Open documents in new windows and revisit via History. Add highlights, notes, and tags (the Research window, ⌘⌥R, gathers them). On an Apple Silicon Mac, **Summarize** a document on-device — or queue a subseries with the **Background Summarizer** (Settings → Advanced → Summarization). Gather documents into Collections (⇧⌘K) to export (PDF, HTML, DOCX, Zotero/RIS).
 
-## Step 6 — What's new to try in this build
+## Step 6 — New in this build
 
-- **Word Cloud** — The **Word Cloud** toolbar button opens a window with an in-window scope picker (corpus, any subseries/volume/collection/tag/saved search); per-row buttons in the Corpus Browser and the document Research strip open scoped clouds. Try the **lens chips** (People, Places, Concepts, Sentiment, …), click a word to search it, compare two scopes, and export PNG/PDF/CSV. Tune filters and hidden words in Settings → **Word Cloud**.
-- **Zotero (Web API)** — In Settings → Advanced → **Zotero**, paste a Zotero Web API key, then use a document's **Share → Send to Zotero Library** (or a collection) to push it — with your tags and notes — into your Zotero library.
-- **Sync settings across devices** — Settings → **iCloud Sync** has a new toggle to mirror your word-cloud filters, citation style, and a few other preferences across devices (off by default).
+- **Word Cloud** — the toolbar button opens a window with a scope picker (corpus, any subseries/volume/collection/tag/saved search); per-row buttons in the Corpus Browser and the Research strip open scoped clouds. Try the **lens chips** (People, Places, Concepts, Sentiment…), click a word to search it, compare two scopes, export PNG/PDF/CSV; tune filters in Settings → **Word Cloud**.
+- **Zotero (Web API)** — paste a key in Settings → Advanced → **Zotero**, then a document's **Share → Send to Zotero Library** (or a collection) pushes it — with tags and notes — into your library.
+- **Sync settings across devices** — Settings → **iCloud Sync** has a new toggle (off by default) to mirror word-cloud filters, citation style, and a few preferences across devices.
 
-## What to provide feedback on
+## Feedback
 
-Anything that crashes, freezes, looks broken, or behaves unexpectedly — especially links and source notes that misfire, graph interactions (hover/click/zoom/pan/brush), the Chronology and Analytics charts, the **word cloud** (a lens showing the wrong kind of term, or words you'd expect filtered out), **Send to Zotero** (does the document arrive with its tags and notes?), the People index (names that look merged, split, or out of place), multi-window behavior, AI summaries (including very long documents), and searches returning too few or too many results.
+Report anything that crashes, freezes, or behaves unexpectedly — especially misfiring links/source notes, graph and chart interactions, the **word cloud** (wrong-kind terms in a lens, or words you'd expect filtered), **Send to Zotero** (do tags and notes arrive?), the People index (names merged/split/misplaced), multi-window behavior, AI summaries (incl. very long documents), and searches returning too few/many results.
 
-## How to report an issue
-
-Include: your macOS version, the volume and document number (top of the window), what you clicked, expected, and got. Screenshots help; if macOS offers a crash report, paste it in.
-
-Thank you for testing!
+**Reporting an issue:** include your macOS version, the volume/document number (top of window), what you clicked, expected, and got. Screenshots help; paste any crash report. Thank you for testing!
