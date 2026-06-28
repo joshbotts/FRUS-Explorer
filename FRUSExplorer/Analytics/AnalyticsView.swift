@@ -105,12 +105,17 @@ struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     // MARK: - State
 
     @State private var termInput: String = ""
     @State private var committedTerm: String = ""
     @State private var yearData: [YearFrequency] = []
+    /// Per-`(year, volume)` breakdown driving the source color-coding of the By-Year
+    /// and By-Decade charts. Fetched alongside `yearData` so the two stay consistent.
+    @State private var yearVolumeData: [YearVolumeFrequency] = []
     @State private var decadeData: [DecadeFrequency] = []
     @State private var monthData: [MonthFrequency] = []
     @State private var dayData: [DayFrequency] = []
@@ -228,6 +233,17 @@ struct AnalyticsView: View {
         yearRangeStart != 1861 || yearRangeEnd != corpusMaxYear
     }
 
+    /// `true` on a compact-width layout (iPhone portrait, and most iPhones in
+    /// landscape) — used to tighten the year-range bar where horizontal space is scarce.
+    /// Always `false` on macOS / regular-width iPad.
+    private var isCompactWidth: Bool { horizontalSizeClass == .compact }
+
+    /// `true` in iPhone portrait (compact width + regular height), where rotating to
+    /// landscape gives the chart noticeably more room. Drives the landscape hint.
+    private var showsLandscapeHint: Bool {
+        horizontalSizeClass == .compact && verticalSizeClass == .regular
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -251,6 +267,9 @@ struct AnalyticsView: View {
                             searchHandoffBar
                         }
                         Divider()
+                        if showsLandscapeHint && !committedTerm.isEmpty && viewMode == .chart {
+                            landscapeHint
+                        }
                         contentArea
                     }
                 }
@@ -427,6 +446,21 @@ struct AnalyticsView: View {
         runSearch()
     }
 
+    /// Subtle one-line hint, shown only in iPhone portrait, that rotating the device
+    /// widens the chart. Non-modal; disappears in landscape and on iPad / macOS.
+    private var landscapeHint: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "rotate.right")
+            Text(String(localized: "analytics.landscapeHint",
+                        defaultValue: "Rotate to landscape for a wider chart"))
+        }
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .accessibilityHidden(true)
+    }
+
     // MARK: - Year Range Bar
 
     /// Compact year-range filter shown below the search field when the "By Year"
@@ -438,10 +472,14 @@ struct AnalyticsView: View {
                 .foregroundStyle(.secondary)
                 .font(.caption)
 
-            Text(String(localized: "analytics.yearRange.label",
-                        defaultValue: "Year range:"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // The "Year range:" label is dropped on compact width (iPhone): the
+            // calendar icon carries the meaning and the space goes to the fields.
+            if !isCompactWidth {
+                Text(String(localized: "analytics.yearRange.label",
+                            defaultValue: "Year range:"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             yearEntryField(
                 value: $yearRangeStart,
@@ -653,10 +691,129 @@ struct AnalyticsView: View {
         }
     }
 
+    // MARK: - Source Color-Coding (By Year / By Decade)
+
+    /// Palette for the top source volumes — matches the Chronology distribution chart
+    /// so the two surfaces read consistently.
+    private static let sourcePalette: [Color] = [.blue, .orange, .green, .purple, .pink, .teal, .indigo]
+    /// Maximum distinctly-colored source volumes before the rest fold into "Other".
+    private static let maxChartSources = 8
+    /// Series key for the folded long tail of volumes.
+    private static let otherSourceKey = "__other__"
+
+    /// A period-bucketed, source-colored chart segment (one stacked rectangle).
+    private struct SourceSegment: Identifiable {
+        let period: Int
+        let seriesKey: String
+        let count: Int
+        var id: String { "\(period)/\(seriesKey)" }
+    }
+
+    /// One legend entry: a source series key and its total over the rendered slice.
+    private struct SourceSeries: Identifiable {
+        let key: String
+        let total: Int
+        var id: String { key }
+    }
+
+    /// Ranks the volumes in `raw` by total count over the slice, keeps the top
+    /// `maxChartSources`, folds the rest into a single "Other" series, and returns the
+    /// stacked per-period segments plus the ranked series list. Ranking is computed over
+    /// the SAME slice that renders, so the color scale never drops or miscolors a segment.
+    private func sourceColoring(_ raw: [(period: Int, volumeId: String, count: Int)])
+        -> (segments: [SourceSegment], series: [SourceSeries]) {
+        guard !raw.isEmpty else { return ([], []) }
+        var volumeTotals: [String: Int] = [:]
+        for r in raw { volumeTotals[r.volumeId, default: 0] += r.count }
+        let ranked = volumeTotals.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+        let topKeys = Set(ranked.prefix(Self.maxChartSources).map(\.key))
+
+        var segCounts: [String: Int] = [:]   // "period\u{1}seriesKey" → count
+        var seriesTotals: [String: Int] = [:]
+        for r in raw {
+            let sk = topKeys.contains(r.volumeId) ? r.volumeId : Self.otherSourceKey
+            segCounts["\(r.period)\u{1}\(sk)", default: 0] += r.count
+            seriesTotals[sk, default: 0] += r.count
+        }
+        let segments: [SourceSegment] = segCounts.compactMap { keyStr, count in
+            let parts = keyStr.split(separator: "\u{1}", maxSplits: 1)
+            guard parts.count == 2, let p = Int(parts[0]) else { return nil }
+            return SourceSegment(period: p, seriesKey: String(parts[1]), count: count)
+        }
+        .sorted { $0.period != $1.period ? $0.period < $1.period : $0.seriesKey < $1.seriesKey }
+
+        var series: [SourceSeries] = ranked.prefix(Self.maxChartSources).compactMap { entry in
+            seriesTotals[entry.key].map { SourceSeries(key: entry.key, total: $0) }
+        }
+        if let otherTotal = seriesTotals[Self.otherSourceKey] {
+            series.append(SourceSeries(key: Self.otherSourceKey, total: otherTotal))
+        }
+        return (segments, series)
+    }
+
+    /// Color for a source series — palette by rank, gray for the folded "Other".
+    private func sourceColor(_ key: String, index: Int) -> Color {
+        key == Self.otherSourceKey ? .gray : Self.sourcePalette[index % Self.sourcePalette.count]
+    }
+
+    /// Human label for a source series — a distilled volume label, or "Other volumes".
+    private func sourceTitle(_ key: String) -> String {
+        if key == Self.otherSourceKey {
+            return String(localized: "analytics.chart.source.other", defaultValue: "Other volumes")
+        }
+        let subseries = CorpusAnalyticsService.subseries(fromVolumeId: key) ?? ""
+        let title = appState.manifestStore.entry(forVolumeId: key)?.title ?? ""
+        return ChronologyViewModel.distilledVolumeLabel(volumeId: key, subseries: subseries, title: title)
+    }
+
+    /// The color scale (domain + range) for a source-colored chart, in series order.
+    private func sourceScale(_ series: [SourceSeries]) -> (domain: [String], range: [Color]) {
+        (series.map(\.key), series.enumerated().map { sourceColor($0.element.key, index: $0.offset) })
+    }
+
+    /// Textual legend for the source colors — the non-color channel (volume name +
+    /// count) so the encoding is fully available to VoiceOver and color-blind users.
+    private func sourceLegend(_ series: [SourceSeries]) -> some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)],
+            alignment: .leading, spacing: 4
+        ) {
+            ForEach(Array(series.enumerated()), id: \.element.id) { index, s in
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(sourceColor(s.key, index: index))
+                        .frame(width: 10, height: 10)
+                    Text(sourceTitle(s.key))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Text(verbatim: "\(s.total)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                    Spacer(minLength: 0)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(String(
+                    format: String(localized: "analytics.chart.source.legend.a11y %@ %lld",
+                                   defaultValue: "%@, %lld documents"),
+                    sourceTitle(s.key), Int64(s.total))))
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    // MARK: - Year Chart
+
     private var yearChartSection: some View {
         let data = filteredYearData
         let totalAllYears = yearData.reduce(0) { $0 + $1.count }
         let totalFiltered = data.reduce(0) { $0 + $1.count }
+        // Per-(year, volume) segments over the same filtered slice the chart renders.
+        let raw = yearVolumeData
+            .filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
+            .map { (period: $0.year, volumeId: $0.volumeId, count: $0.count) }
+        let coloring = sourceColoring(raw)
+        let scale = sourceScale(coloring.series)
         return VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.year.heading",
@@ -665,19 +822,31 @@ struct AnalyticsView: View {
             .font(.headline)
             .padding(.horizontal)
 
+            if !coloring.series.isEmpty {
+                sourceLegend(coloring.series)
+            }
+
             Chart {
-                ForEach(data) { point in
+                ForEach(coloring.segments) { seg in
                     BarMark(
                         x: .value(
                             String(localized: "analytics.axis.year", defaultValue: "Year"),
-                            point.year
+                            seg.period
                         ),
                         y: .value(
                             String(localized: "analytics.axis.documents", defaultValue: "Documents"),
-                            point.count
+                            seg.count
                         )
                     )
-                    .foregroundStyle(Color.accentColor.opacity(0.65))
+                    .foregroundStyle(by: .value(
+                        String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
+                        seg.seriesKey
+                    ))
+                    .accessibilityLabel(Text(verbatim: "\(seg.period), \(sourceTitle(seg.seriesKey))"))
+                    .accessibilityValue(Text(String(
+                        format: String(localized: "analytics.chart.source.count.a11y %lld",
+                                       defaultValue: "%lld documents"),
+                        Int64(seg.count))))
                 }
                 if showFitLine {
                     ForEach(data) { point in
@@ -692,10 +861,12 @@ struct AnalyticsView: View {
                             )
                         )
                         .interpolationMethod(.catmullRom)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.primary.opacity(0.5))
                     }
                 }
             }
+            .chartForegroundStyleScale(domain: scale.domain, range: scale.range)
+            .chartLegend(.hidden)
             .chartXScale(domain: yearRangeStart...yearRangeEnd)
             .chartXAxis {
                 AxisMarks { value in
@@ -726,6 +897,15 @@ struct AnalyticsView: View {
         let data = filteredDecadeData
         let totalAll = decadeData.reduce(0) { $0 + $1.count }
         let totalFiltered = data.reduce(0) { $0 + $1.count }
+        // Bucket the per-(year, volume) data into decades, keeping decades that
+        // intersect the active year range (matching `filteredDecadeData`).
+        let raw: [(period: Int, volumeId: String, count: Int)] = yearVolumeData.compactMap {
+            let decade = ($0.year / 10) * 10
+            guard decade + 9 >= yearRangeStart && decade <= yearRangeEnd else { return nil }
+            return (period: decade, volumeId: $0.volumeId, count: $0.count)
+        }
+        let coloring = sourceColoring(raw)
+        let scale = sourceScale(coloring.series)
         return VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.decade.heading",
@@ -734,20 +914,32 @@ struct AnalyticsView: View {
             .font(.headline)
             .padding(.horizontal)
 
+            if !coloring.series.isEmpty {
+                sourceLegend(coloring.series)
+            }
+
             Chart {
-                ForEach(data) { point in
+                ForEach(coloring.segments) { seg in
                     BarMark(
                         x: .value(
                             String(localized: "analytics.axis.decade", defaultValue: "Decade"),
-                            point.decadeStart
+                            seg.period
                         ),
                         y: .value(
                             String(localized: "analytics.axis.documents", defaultValue: "Documents"),
-                            point.count
+                            seg.count
                         ),
                         width: .ratio(0.8)
                     )
-                    .foregroundStyle(Color.accentColor.opacity(0.65))
+                    .foregroundStyle(by: .value(
+                        String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
+                        seg.seriesKey
+                    ))
+                    .accessibilityLabel(Text(verbatim: "\(seg.period)s, \(sourceTitle(seg.seriesKey))"))
+                    .accessibilityValue(Text(String(
+                        format: String(localized: "analytics.chart.source.count.a11y %lld",
+                                       defaultValue: "%lld documents"),
+                        Int64(seg.count))))
                 }
                 if showFitLine {
                     ForEach(data) { point in
@@ -762,10 +954,12 @@ struct AnalyticsView: View {
                             )
                         )
                         .interpolationMethod(.catmullRom)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.primary.opacity(0.5))
                     }
                 }
             }
+            .chartForegroundStyleScale(domain: scale.domain, range: scale.range)
+            .chartLegend(.hidden)
             .chartXScale(domain: yearRangeStart...yearRangeEnd)
             .chartXAxis {
                 AxisMarks(values: .stride(by: 10)) { value in
@@ -1429,6 +1623,7 @@ struct AnalyticsView: View {
         isLoading = true
         errorMessage = nil
         yearData = []
+        yearVolumeData = []
         decadeData = []
         monthData = []
         dayData = []
@@ -1442,13 +1637,15 @@ struct AnalyticsView: View {
                 // Fetch every granularity in parallel so switching between
                 // Year / Decade / Month / Day / Subseries is instantaneous after
                 // the initial Search press.
-                async let years     = service.termFrequencyByYear(term: term, volumeIds: scope)
-                async let decades   = service.termFrequencyByDecade(term: term, volumeIds: scope)
-                async let months    = service.termFrequencyByMonth(term: term, volumeIds: scope)
-                async let days      = service.termFrequencyByDay(term: term, volumeIds: scope)
-                async let subseries = service.termFrequencyBySubseries(term: term, volumeIds: scope)
-                async let volumes   = service.termFrequencyByVolume(term: term, volumeIds: scope)
+                async let years       = service.termFrequencyByYear(term: term, volumeIds: scope)
+                async let yearVolumes = service.termFrequencyByYearAndVolume(term: term, volumeIds: scope)
+                async let decades     = service.termFrequencyByDecade(term: term, volumeIds: scope)
+                async let months      = service.termFrequencyByMonth(term: term, volumeIds: scope)
+                async let days        = service.termFrequencyByDay(term: term, volumeIds: scope)
+                async let subseries   = service.termFrequencyBySubseries(term: term, volumeIds: scope)
+                async let volumes     = service.termFrequencyByVolume(term: term, volumeIds: scope)
                 yearData      = try await years
+                yearVolumeData = try await yearVolumes
                 decadeData    = try await decades
                 monthData     = try await months
                 dayData       = try await days

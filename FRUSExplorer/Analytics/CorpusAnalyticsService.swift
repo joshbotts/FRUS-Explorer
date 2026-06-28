@@ -24,6 +24,20 @@ struct YearFrequency: Sendable, Identifiable {
     var id: Int { year }
 }
 
+/// Document frequency for a single `(year, volumeId)` pair — the per-source breakdown
+/// behind the By-Year / By-Decade charts, used to color-code each period by the
+/// volumes contributing the matches (the analytics analogue of the Chronology
+/// distribution chart).
+///
+/// Version history:
+///   1.0 — Session 165: source color-coding for the time-series analytics charts
+struct YearVolumeFrequency: Sendable, Identifiable {
+    let year: Int
+    let volumeId: String
+    let count: Int
+    var id: String { "\(year)/\(volumeId)" }
+}
+
 /// Document frequency broken down by FRUS subseries.
 ///
 /// The subseries is the volume ID with the "frus" prefix and trailing
@@ -239,6 +253,7 @@ actor CorpusAnalyticsService {
     // MARK: - Caches
 
     private var yearFrequencyCache: [String: [YearFrequency]] = [:]
+    private var yearVolumeFrequencyCache: [String: [YearVolumeFrequency]] = [:]
     private var subseriesFrequencyCache: [String: [SubseriesFrequency]] = [:]
     private var volumeFrequencyCache: [String: [VolumeFrequency]] = [:]
     private var decadeFrequencyCache: [String: [DecadeFrequency]] = [:]
@@ -264,6 +279,7 @@ actor CorpusAnalyticsService {
     /// or deleted) so stale analytics results are not served.
     func invalidateCache() {
         yearFrequencyCache.removeAll()
+        yearVolumeFrequencyCache.removeAll()
         subseriesFrequencyCache.removeAll()
         volumeFrequencyCache.removeAll()
         decadeFrequencyCache.removeAll()
@@ -381,6 +397,51 @@ actor CorpusAnalyticsService {
             .sorted { $0.year < $1.year }
 
         insertIntoCache(&yearFrequencyCache, key: cacheKey, value: result)
+        return result
+    }
+
+    /// Returns the count of documents matching `term`, broken down by
+    /// `(year, volumeId)` — the per-source data behind the color-coded By-Year /
+    /// By-Decade charts.
+    ///
+    /// Uses the same per-document year derivation as `termFrequencyByYear`
+    /// (`date_iso` prefix, with the volume start year as a fallback), so summing the
+    /// per-volume counts for a year reproduces that year's `termFrequencyByYear`
+    /// total exactly. Results are sorted by year, then volume ID.
+    ///
+    /// - Parameters:
+    ///   - term: A keyword query (same inline syntax as the other axes).
+    ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
+    ///     these volumes are counted.
+    /// - Returns: Array of `YearVolumeFrequency`.
+    func termFrequencyByYearAndVolume(term: String, volumeIds: Set<String>? = nil) async throws -> [YearVolumeFrequency] {
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
+        if let cached = yearVolumeFrequencyCache[cacheKey] { return cached }
+
+        guard let (keys, dates) = try await matchedDocsAndDates(term: term, volumeIds: volumeIds) else { return [] }
+
+        // Key the counts by "year\u{1}volumeId" to avoid allocating a struct per hit.
+        var counts: [String: Int] = [:]
+        for key in keys {
+            let compositeKey = "\(key.volumeId)/\(key.documentId)"
+            let year: Int?
+            if let iso = dates[compositeKey] {
+                year = Int(iso.prefix(4))
+            } else {
+                year = Self.startYear(fromVolumeId: key.volumeId)
+            }
+            guard let y = year else { continue }
+            counts["\(y)\u{1}\(key.volumeId)", default: 0] += 1
+        }
+
+        let result: [YearVolumeFrequency] = counts.compactMap { pair, count in
+            let parts = pair.split(separator: "\u{1}", maxSplits: 1)
+            guard parts.count == 2, let y = Int(parts[0]) else { return nil }
+            return YearVolumeFrequency(year: y, volumeId: String(parts[1]), count: count)
+        }
+        .sorted { $0.year != $1.year ? $0.year < $1.year : $0.volumeId < $1.volumeId }
+
+        insertIntoCache(&yearVolumeFrequencyCache, key: cacheKey, value: result)
         return result
     }
 

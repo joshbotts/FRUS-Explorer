@@ -586,21 +586,45 @@ struct WordCloudView: View {
                   systemImage: "magnifyingglass")
         }
         Button(role: .destructive) {
-            hideWord(term)
+            hideWordGlobally(term)
         } label: {
-            Label(String(localized: "wordcloud.word.hide", defaultValue: "Hide this word"),
+            Label(String(localized: "wordcloud.word.hide.global",
+                         defaultValue: "Hide this word in all word clouds"),
                   systemImage: "eye.slash")
+        }
+        Button(role: .destructive) {
+            hideWordInLens(term)
+        } label: {
+            Label(String(localized: "wordcloud.word.hide.lens",
+                         defaultValue: "Hide this word in this lens"),
+                  systemImage: "eye.slash.circle")
         }
     }
 
-    /// Hides `term` from this scope's cloud: persists the override and removes it
-    /// from the current result immediately (no recompute), so the effect is instant
-    /// while future loads/exports honour it too.
-    private func hideWord(_ term: String) {
-        WordCloudOverrides.hide(term, for: scope.signature)
-        hiddenWords.insert(term.lowercased())
+    /// Hides `term` from **every** word cloud by adding it to the global custom stop
+    /// list (`WordCloudSettings`), and removes it from the current result immediately
+    /// for instant feedback. Persisting bumps the settings revision, so any open cloud
+    /// recomputes from the authoritative list on the next pass. Manage/un-hide these in
+    /// Settings → Word Cloud.
+    private func hideWordGlobally(_ term: String) {
+        WordCloudSettings.addGlobalStopword(term)
+        removeTermFromResult(term)
+    }
+
+    /// Hides `term` only under the currently-selected lens (its per-lens custom stop
+    /// list), so it stays visible under other lenses. Removes it from the current
+    /// result immediately.
+    private func hideWordInLens(_ term: String) {
+        WordCloudSettings.addLensStopword(term, lens: lens)
+        removeTermFromResult(term)
+    }
+
+    /// Removes `term` from the displayed result without a recompute, so a hide takes
+    /// effect instantly. Case-insensitive because the stop lists store lowercased words.
+    private func removeTermFromResult(_ term: String) {
+        let lower = term.lowercased()
         result = WordCloudResult(
-            terms: result.terms.filter { $0.term != term },
+            terms: result.terms.filter { $0.term.lowercased() != lower },
             documentCount: result.documentCount,
             totalTokenCount: result.totalTokenCount
         )
