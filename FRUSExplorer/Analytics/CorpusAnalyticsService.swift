@@ -128,8 +128,18 @@ struct DayFrequency: Sendable, Identifiable {
 /// stores its range that way — and are converted to `DateRange`'s ISO strings
 /// only when building `SearchParameters` for the reverse handoff.
 ///
+/// ## Word Cloud → Analytics scope
+/// `scopeVolumeIds` carries an optional volume-ID scope used by the
+/// `WordCloud → Analytics` handoff: tapping a word in a volume- or subseries-scoped
+/// cloud opens Analytics restricted to those volumes (`scopeLabel` names the scope
+/// for the UI). Scopes Corpus Analytics cannot express at volume granularity
+/// (a single document, a collection, a user tag, a saved search) fall back to the
+/// whole corpus — `scopeVolumeIds == nil` — per the cross-surface contract.
+///
 /// Version history:
 ///   1.0 — Session 2026-06-07: introduced for Search ↔ Analytics integration
+///   1.1 — Session 164: `scopeVolumeIds` / `scopeLabel` for the Word Cloud → Analytics
+///          handoff (volume / subseries scope, with whole-corpus fallback)
 struct AnalyticsParameters: Sendable, Equatable {
     /// The keyword term to chart. Required — `AnalyticsView.runSearch()` is a
     /// no-op for an empty term.
@@ -143,11 +153,24 @@ struct AnalyticsParameters: Sendable, Equatable {
     /// `AnalyticsView` keeps its default (current calendar year).
     var yearRangeEnd: Int?
 
+    /// Optional volume-ID scope. When non-empty, Corpus Analytics restricts every
+    /// count to documents in these volumes (the Word Cloud → Analytics handoff for
+    /// volume / subseries scopes). `nil` or empty means the whole indexed corpus.
+    var scopeVolumeIds: [String]?
+
+    /// Human-readable label for the active scope (e.g. a volume or subseries title),
+    /// surfaced in the Analytics UI so the user knows the counts are scoped. `nil`
+    /// for a corpus-wide query.
+    var scopeLabel: String?
+
     /// Creates a parameter snapshot to seed `AnalyticsView`.
-    init(term: String, yearRangeStart: Int? = nil, yearRangeEnd: Int? = nil) {
+    init(term: String, yearRangeStart: Int? = nil, yearRangeEnd: Int? = nil,
+         scopeVolumeIds: [String]? = nil, scopeLabel: String? = nil) {
         self.term = term
         self.yearRangeStart = yearRangeStart
         self.yearRangeEnd = yearRangeEnd
+        self.scopeVolumeIds = scopeVolumeIds
+        self.scopeLabel = scopeLabel
     }
 }
 
@@ -284,13 +307,34 @@ actor CorpusAnalyticsService {
     /// `(documentId, volumeId)` keys for the given term along with the cached
     /// document-date dictionary. Returns nil if `term` contains no searchable
     /// keywords.
-    private func matchedDocsAndDates(term: String) async throws
+    ///
+    /// - Parameters:
+    ///   - term: The keyword term, parsed with `FTS5InlineQueryParser`.
+    ///   - volumeIds: Optional volume-ID scope; when non-empty, only keys whose
+    ///     `volumeId` is in the set are returned (the Word Cloud → Analytics scope).
+    private func matchedDocsAndDates(term: String, volumeIds: Set<String>? = nil) async throws
         -> (keys: [(documentId: String, volumeId: String)], dates: [String: String])?
     {
         guard let query = Self.makeQuery(from: term) else { return nil }
-        let keys = try await fts5Store.matchedDocumentKeys(query: query)
+        var keys = try await fts5Store.matchedDocumentKeys(query: query)
+        if let volumeIds, !volumeIds.isEmpty {
+            keys = keys.filter { volumeIds.contains($0.volumeId) }
+        }
         let dates = try await resolvedDocumentDates()
         return (keys, dates)
+    }
+
+    /// Builds the in-memory cache key for a query, folding in any volume-ID scope so
+    /// scoped and corpus-wide results never collide. A corpus-wide query (`nil` or
+    /// empty scope) keys on the bare term, preserving existing unscoped cache entries.
+    ///
+    /// - Parameters:
+    ///   - term: The query term.
+    ///   - volumeIds: The active volume-ID scope, or `nil`/empty for the whole corpus.
+    /// - Returns: A stable cache key unique to the `(term, scope)` pair.
+    private func scopedCacheKey(term: String, volumeIds: Set<String>?) -> String {
+        guard let volumeIds, !volumeIds.isEmpty else { return term }
+        return term + "\u{1}" + volumeIds.sorted().joined(separator: "|")
     }
 
     // MARK: - Frequency Queries
@@ -305,13 +349,16 @@ actor CorpusAnalyticsService {
     ///
     /// Results are sorted by year ascending.
     ///
-    /// - Parameter term: A single keyword to search (no FTS5 operators).
+    /// - Parameters:
+    ///   - term: A single keyword to search (no FTS5 operators).
+    ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
+    ///     these volumes are counted (the Word Cloud → Analytics handoff scope).
     /// - Returns: Array of `YearFrequency` sorted by `year` ascending.
-    func termFrequencyByYear(term: String) async throws -> [YearFrequency] {
-        let cacheKey = term
+    func termFrequencyByYear(term: String, volumeIds: Set<String>? = nil) async throws -> [YearFrequency] {
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = yearFrequencyCache[cacheKey] { return cached }
 
-        guard let (keys, dates) = try await matchedDocsAndDates(term: term) else { return [] }
+        guard let (keys, dates) = try await matchedDocsAndDates(term: term, volumeIds: volumeIds) else { return [] }
 
         var counts: [Int: Int] = [:]
         for key in keys {
@@ -344,16 +391,18 @@ actor CorpusAnalyticsService {
     /// summed within the resulting bucket. Documents with no parseable year
     /// (neither in `date_iso` nor in the volume ID) are silently omitted.
     ///
-    /// - Parameter term: One or more whitespace-separated keywords. Multiple
-    ///   keywords are AND-combined and individually Porter-stemmed (matching
-    ///   the main search behaviour).
+    /// - Parameters:
+    ///   - term: One or more whitespace-separated keywords. Multiple keywords are
+    ///     AND-combined and individually Porter-stemmed (matching the main search
+    ///     behaviour).
+    ///   - volumeIds: Optional volume-ID scope, forwarded to `termFrequencyByYear`.
     /// - Returns: Array of `DecadeFrequency` sorted by `decadeStart` ascending.
-    func termFrequencyByDecade(term: String) async throws -> [DecadeFrequency] {
-        let cacheKey = term
+    func termFrequencyByDecade(term: String, volumeIds: Set<String>? = nil) async throws -> [DecadeFrequency] {
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = decadeFrequencyCache[cacheKey] { return cached }
 
         // Reuse the per-year computation rather than re-walking the FTS5 result set.
-        let yearData = try await termFrequencyByYear(term: term)
+        let yearData = try await termFrequencyByYear(term: term, volumeIds: volumeIds)
         var bucket: [Int: Int] = [:]
         for entry in yearData {
             let decade = (entry.year / 10) * 10
@@ -375,11 +424,16 @@ actor CorpusAnalyticsService {
     /// precision that volume IDs do not encode.
     ///
     /// Results are sorted by date ascending.
-    func termFrequencyByMonth(term: String) async throws -> [MonthFrequency] {
-        let cacheKey = term
+    ///
+    /// - Parameters:
+    ///   - term: One or more keywords (parsed identically to the other axes).
+    ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
+    ///     these volumes are counted.
+    func termFrequencyByMonth(term: String, volumeIds: Set<String>? = nil) async throws -> [MonthFrequency] {
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = monthFrequencyCache[cacheKey] { return cached }
 
-        guard let (keys, dates) = try await matchedDocsAndDates(term: term) else { return [] }
+        guard let (keys, dates) = try await matchedDocsAndDates(term: term, volumeIds: volumeIds) else { return [] }
 
         var counts: [String: Int] = [:]
         for key in keys {
@@ -422,11 +476,16 @@ actor CorpusAnalyticsService {
     /// Results are sorted by date ascending. Note: for high-frequency terms
     /// spanning many decades this returns a very large number of points; callers
     /// should restrict the displayed range via the year-range filter.
-    func termFrequencyByDay(term: String) async throws -> [DayFrequency] {
-        let cacheKey = term
+    ///
+    /// - Parameters:
+    ///   - term: One or more keywords (parsed identically to the other axes).
+    ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
+    ///     these volumes are counted.
+    func termFrequencyByDay(term: String, volumeIds: Set<String>? = nil) async throws -> [DayFrequency] {
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = dayFrequencyCache[cacheKey] { return cached }
 
-        guard let (keys, dates) = try await matchedDocsAndDates(term: term) else { return [] }
+        guard let (keys, dates) = try await matchedDocsAndDates(term: term, volumeIds: volumeIds) else { return [] }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -456,14 +515,20 @@ actor CorpusAnalyticsService {
     /// Results are sorted by subseries string ascending. Documents in volumes
     /// whose IDs cannot be parsed are silently omitted.
     ///
-    /// - Parameter term: One or more whitespace-separated keywords (AND-combined).
+    /// - Parameters:
+    ///   - term: One or more whitespace-separated keywords (AND-combined).
+    ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
+    ///     these volumes are counted.
     /// - Returns: Array of `SubseriesFrequency` sorted by `subseries` ascending.
-    func termFrequencyBySubseries(term: String) async throws -> [SubseriesFrequency] {
-        let cacheKey = term
+    func termFrequencyBySubseries(term: String, volumeIds: Set<String>? = nil) async throws -> [SubseriesFrequency] {
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = subseriesFrequencyCache[cacheKey] { return cached }
 
         guard let query = Self.makeQuery(from: term) else { return [] }
-        let keys = try await fts5Store.matchedDocumentKeys(query: query)
+        var keys = try await fts5Store.matchedDocumentKeys(query: query)
+        if let volumeIds, !volumeIds.isEmpty {
+            keys = keys.filter { volumeIds.contains($0.volumeId) }
+        }
 
         var counts: [String: Int] = [:]
         for key in keys {
@@ -486,15 +551,21 @@ actor CorpusAnalyticsService {
     /// `termFrequencyBySubseries`). The caller resolves each `volumeId` to a display
     /// title via the manifest.
     ///
-    /// - Parameter term: One or more whitespace-separated keywords (AND-combined,
-    ///   individually Porter-stemmed — identical handling to the other axes).
+    /// - Parameters:
+    ///   - term: One or more whitespace-separated keywords (AND-combined,
+    ///     individually Porter-stemmed — identical handling to the other axes).
+    ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
+    ///     these volumes are counted.
     /// - Returns: Array of `VolumeFrequency` sorted by `volumeId` ascending.
-    func termFrequencyByVolume(term: String) async throws -> [VolumeFrequency] {
-        let cacheKey = term
+    func termFrequencyByVolume(term: String, volumeIds: Set<String>? = nil) async throws -> [VolumeFrequency] {
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = volumeFrequencyCache[cacheKey] { return cached }
 
         guard let query = Self.makeQuery(from: term) else { return [] }
-        let keys = try await fts5Store.matchedDocumentKeys(query: query)
+        var keys = try await fts5Store.matchedDocumentKeys(query: query)
+        if let volumeIds, !volumeIds.isEmpty {
+            keys = keys.filter { volumeIds.contains($0.volumeId) }
+        }
 
         var counts: [String: Int] = [:]
         for key in keys {

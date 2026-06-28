@@ -1,6 +1,6 @@
 # Welcome to FRUS Explorer (Mac)
 
-FRUS Explorer makes research in the *Foreign Relations of the United States* series easier. This guide assumes you've never used the app.
+FRUS Explorer makes research in the *Foreign Relations of the United States* series easier. This guide assumes you're new to the app.
 
 ## Step 1 — Download some volumes (do this first)
 
@@ -16,11 +16,11 @@ Open a volume, select a document, and read (Previous/Next to move; hover toolbar
 - A **reference** ("Document 42," "pp. 311–313") → navigates there, even across volumes (or opens a relationship graph if that volume isn't downloaded).
 - A **web link** → your browser.
 
-For a corpus-wide index, the Corpus Browser lists **People** at the top. Also click a document's **source note**: **Source Explorer** resolves where it came from (record group, lot file, central file, presidential library, CIA) with finding-aid links.
+For a corpus-wide index, the Corpus Browser lists **People** at the top. Also click a document's **source note**: **Source Explorer** resolves where it came from (archives, lot files, presidential libraries, CIA) with finding-aid links.
 
 ## Step 3 — The cross-reference graph (its own window)
 
-From a document's toolbar, click **Cross-References**: each circle is a document on a date timeline, arrows point citing→cited, bigger = more connected. Hover to preview, click to pin, double-click to re-center, right-click for more; scroll to zoom, drag to pan. Switch Timeline/Network and Depth (1–3 hops).
+From a document's toolbar, click **Cross-References**: each circle is a document on a date timeline, arrows point citing→cited, bigger = more connected. Hover to preview, click to pin, double-click to re-center; scroll to zoom, drag to pan. Switch Timeline/Network and Depth (1–3).
 
 ## Step 4 — Chronology and Analytics (toolbar)
 
@@ -33,12 +33,12 @@ Search (⌘F) opens its own window that stays open while you read — a phrase o
 
 ## Step 6 — New in this build
 
-- **Word Cloud** — the toolbar button opens a window with a scope picker (corpus, any subseries/volume/collection/tag/saved search); per-row buttons in the Corpus Browser and the Research strip open scoped clouds. Try the **lens chips** (People, Places, Concepts, Sentiment…), click a word to search it, compare two scopes, export PNG/PDF/CSV; tune filters in Settings → **Word Cloud**.
+- **Word Cloud** — the toolbar button opens a window whose scope picker retargets it to any subseries, volume, collection, tag, saved search, or the corpus; per-row buttons in the Browser and Research strip open scoped clouds. Try the **lens chips** (People, Places, Concepts, Sentiment…); **clicking a word now charts it across the corpus in Corpus Analytics** (scoped option on volume/subseries clouds). Compare scopes, export PNG/PDF/CSV; tune in Settings → **Word Cloud**.
 - **Zotero (Web API)** — paste a key in Settings → Advanced → **Zotero**, then a document's **Share → Send to Zotero Library** (or a collection) pushes it — with tags and notes — into your library.
 - **Sync settings across devices** — Settings → **iCloud Sync** has a new toggle (off by default) to mirror word-cloud filters, citation style, and a few preferences across devices.
 
 ## Feedback
 
-Report anything that crashes, freezes, or behaves unexpectedly — especially misfiring links/source notes, graph and chart interactions, the **word cloud** (wrong-kind terms in a lens, or words you'd expect filtered), **Send to Zotero** (do tags and notes arrive?), the People index (names merged/split/misplaced), multi-window behavior, AI summaries (incl. very long documents), and searches returning too few/many results.
+Report anything that crashes, freezes, or behaves unexpectedly — especially misfiring links/source notes, graph and chart interactions, the **word cloud** (wrong-kind or unfiltered terms), **Send to Zotero** (do tags and notes arrive?), the People index, multi-window behavior, AI summaries, and searches returning too few/many.
 
-**Reporting an issue:** include your macOS version, the volume/document number (top of window), what you clicked, expected, and got. Screenshots help; paste any crash report. Thank you for testing!
+**Reporting an issue:** include your macOS version, the volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thank you for testing!

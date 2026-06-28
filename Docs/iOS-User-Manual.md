@@ -514,7 +514,7 @@ If you have a NARA API key configured (see **Settings → Integrations**), Sourc
 
 **Corpus Analytics** charts how often terms appear across the FRUS corpus over time — a quick way to spot when a topic rose or fell in official attention, or to compare how two terms trend against each other.
 
-Open Analytics from the chart-icon button in the Browse tab toolbar (Section 4.4), or via the handoff described below.
+Open Analytics from the chart-icon button in the Browse tab toolbar (Section 4.4), by tapping a word in a **Word Cloud** (Section 13.4), or via the Search handoff described below.
 
 ![Corpus Analytics on iPhone — a term-frequency histogram for "Berlin" by year across the corpus, with the term field, year-range controls, and a "View in Search" handoff.](screenshots/ios/analytics.png)
 
@@ -540,7 +540,7 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 
 - **Two views.** A packed **spiral cloud** sizes each term by frequency (and rotates some terms to pack more in); a **List** view ranks the same terms with a weight bar and exact counts. The List view is also what VoiceOver reads, so the cloud is fully accessible.
 - **Lenses.** A bar of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). If a scope doesn't contain enough of a given kind of term, the cloud says so instead of showing a near-empty result.
-- **Act on a term.** Tap any word to hand off to Search for that term. The options menu lets you **hide** a word for that scope, switch lenses, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG image, a PDF, or a CSV of terms and counts.
+- **Act on a term.** Tap any word to chart how often it appears across the whole corpus in **Corpus Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word for that scope, switch lenses, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG image, a PDF, or a CSV of terms and counts.
 - **Tuning.** Settings → Research → **Word Cloud** lets you set minimum word length and occurrence count, toggle plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintain your own **hidden-word lists** (global, or per lens) — useful for trimming a recurring false positive without affecting other lenses.
 
 Corpus- and subseries-wide clouds can take a moment the first time; on iPhone they're precomputed in the background and cached, so reopening them is instant.

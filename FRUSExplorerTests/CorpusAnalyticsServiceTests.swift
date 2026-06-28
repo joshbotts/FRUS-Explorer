@@ -144,6 +144,59 @@ struct CorpusAnalyticsServiceTests {
         }
     }
 
+    /// A `volumeIds` scope must restrict every axis to documents in those volumes
+    /// (the Word Cloud → Analytics handoff), and scoped results must not collide in
+    /// the cache with the corpus-wide results for the same term. Verifies both the
+    /// filtering and that scoped/unscoped calls in either order each return the
+    /// correct shape.
+    @Test("volumeIds scope restricts counts and does not collide with the corpus-wide cache")
+    func volumeScopeRestrictsAndIsolatesCache() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // "treaty" appears in v01 (×2) and in frus1977-80v01 (×1).
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><p>Negotiation of the treaty continued.</p>"),
+                    ("d2", "<head>2. Memo</head><p>A second treaty draft circulated.</p>"),
+                ]
+            )
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1977-80v01.xml"),
+                volumeId: "frus1977-80v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><p>The treaty was ratified.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1977-80v01")
+
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+            let scope: Set<String> = ["frus1969-76v01"]
+
+            // Corpus-wide first, then scoped — the scoped call must NOT be served the
+            // cached corpus-wide result.
+            let corpusWide = try await service.termFrequencyByVolume(term: "treaty")
+            #expect(corpusWide.count == 2, "Corpus-wide query sees both volumes")
+
+            let scoped = try await service.termFrequencyByVolume(term: "treaty", volumeIds: scope)
+            #expect(scoped.map(\.volumeId) == ["frus1969-76v01"], "Scope restricts to the one volume")
+            #expect(scoped.first?.count == 2, "Per-volume count is preserved under scope")
+
+            // Corpus-wide again must still return both volumes (caches are independent).
+            let corpusWideAgain = try await service.termFrequencyByVolume(term: "treaty")
+            #expect(corpusWideAgain.count == 2, "Corpus-wide cache entry is unaffected by the scoped call")
+
+            // The date axis honours the scope too: only v01's two documents count.
+            let scopedYears = try await service.termFrequencyByYear(term: "treaty", volumeIds: scope)
+            #expect(scopedYears.reduce(0) { $0 + $1.count } == 2,
+                    "By-Year counts are restricted to the scoped volume's documents")
+        }
+    }
+
     /// A quoted phrase must match only adjacent occurrences (like Search), where an
     /// unquoted query is a loose AND of the words. Regression test for analytics
     /// previously stripping quotes and over-reporting phrase queries.
