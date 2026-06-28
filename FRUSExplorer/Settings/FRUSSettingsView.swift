@@ -1040,12 +1040,14 @@ private struct SettingsStoragePane: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
-    // Queries used by Phase 2 to classify volumes as protected (have user data) or
-    // removable. These are loaded only once — the query result is small for typical users.
-    @Query private var allNotes: [ResearchNote]
-    @Query private var allCollectionEntries: [CollectionEntry]
-    @Query private var allSummaries: [GeneratedSummary]
-    @Query(sort: \ReadingHistoryEntry.accessedAt, order: .reverse) private var history: [ReadingHistoryEntry]
+    // Phase 2 classifies volumes as protected (have attached user data) or removable,
+    // and shows when each was last opened. These are computed once by `loadReport()`
+    // via one-shot fetches — deliberately NOT live `@Query` properties. A `@Query`
+    // re-renders the whole pane on every change to its model type, so CloudKit
+    // drip-importing notes/summaries/collections/history rows re-rendered this pane
+    // continuously; left open overnight that pegged a CPU core (Session 160).
+    @State private var protectedVolumeIds: Set<String> = []
+    @State private var lastOpenedByVolumeId: [String: Date] = [:]
 
     @State private var storageReport: StorageReport? = nil
     @State private var reindexingVolumeId: String? = nil
@@ -1214,25 +1216,39 @@ private struct SettingsStoragePane: View {
 
     // MARK: - Phase 2: Protected Volumes and Removal Candidates
 
-    /// Volume IDs that should not be offered for automatic removal because the user has
-    /// research notes, collection entries, or AI summaries attached to documents in them.
-    var protectedVolumeIds: Set<String> {
-        var ids = Set<String>()
-        allNotes.forEach           { ids.insert($0.volumeId) }
-        allCollectionEntries.forEach { ids.insert($0.volumeId) }
-        allSummaries.forEach       { ids.insert($0.volumeId) }
-        return ids
-    }
+    /// Recomputes `protectedVolumeIds` and `lastOpenedByVolumeId` with one-shot
+    /// SwiftData fetches.
+    ///
+    /// Called from `loadReport()` (on appear and after sheet-driven removals) instead
+    /// of using live `@Query` properties: a `@Query` would re-render this entire pane
+    /// on every note/summary/collection/history change, so CloudKit imports of those
+    /// records pegged the CPU when the Settings → Storage window was left open
+    /// (Session 160). Protected status is a snapshot here, refreshed on the same cadence
+    /// as the storage report — acceptable for a storage-management view.
+    @MainActor
+    private func refreshProtectedVolumes() {
+        var protected = Set<String>()
+        if let notes = try? modelContext.fetch(FetchDescriptor<ResearchNote>()) {
+            notes.forEach { protected.insert($0.volumeId) }
+        }
+        if let entries = try? modelContext.fetch(FetchDescriptor<CollectionEntry>()) {
+            entries.forEach { protected.insert($0.volumeId) }
+        }
+        if let summaries = try? modelContext.fetch(FetchDescriptor<GeneratedSummary>()) {
+            summaries.forEach { protected.insert($0.volumeId) }
+        }
+        protectedVolumeIds = protected
 
-    /// Most-recent `accessedAt` date keyed by volume ID, derived from reading history.
-    var lastOpenedByVolumeId: [String: Date] {
-        var result: [String: Date] = [:]
-        for entry in history {
-            if result[entry.volumeId] == nil, let date = entry.accessedAt {
-                result[entry.volumeId] = date
+        var lastOpened: [String: Date] = [:]
+        let descriptor = FetchDescriptor<ReadingHistoryEntry>(
+            sortBy: [SortDescriptor(\.accessedAt, order: .reverse)]
+        )
+        if let historyRows = try? modelContext.fetch(descriptor) {
+            for entry in historyRows where lastOpened[entry.volumeId] == nil {
+                if let date = entry.accessedAt { lastOpened[entry.volumeId] = date }
             }
         }
-        return result
+        lastOpenedByVolumeId = lastOpened
     }
 
     // MARK: - Private helpers
@@ -1313,8 +1329,18 @@ private struct SettingsStoragePane: View {
             Divider()
 
             if let report = storageReport {
+                // `protectedVolumeIds` / `lastOpenedByVolumeId` are cheap @State
+                // snapshots (computed once by `refreshProtectedVolumes()`), so each
+                // row just does a Set/dictionary lookup. They were previously computed
+                // properties that scanned every note/collection/summary (protected) and
+                // all reading-history rows (last-opened) once PER ROW, off live @Query
+                // collections — so rendering N rows was O(N × records) and every
+                // CloudKit drip-import re-ran it, pegging a CPU core overnight
+                // (Session 160, confirmed via a sustained-100%-CPU microstackshot).
                 ForEach(report.perVolume, id: \.volumeId) { entry in
-                    volumeRow(entry)
+                    volumeRow(entry,
+                              isProtected: protectedVolumeIds.contains(entry.volumeId),
+                              lastOpened: lastOpenedByVolumeId[entry.volumeId])
                     Divider().padding(.leading, 10)
                 }
             } else {
@@ -1332,11 +1358,8 @@ private struct SettingsStoragePane: View {
         )
     }
 
-    private func volumeRow(_ entry: VolumeStorageEntry) -> some View {
-        let isProtected = protectedVolumeIds.contains(entry.volumeId)
-        let lastOpened = lastOpenedByVolumeId[entry.volumeId]
-
-        return HStack(spacing: 8) {
+    private func volumeRow(_ entry: VolumeStorageEntry, isProtected: Bool, lastOpened: Date?) -> some View {
+        HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
                     Text(entry.volumeId)
@@ -1642,6 +1665,7 @@ private struct SettingsStoragePane: View {
         // index is reported as 0 bytes. The iOS StorageManagementView already passes this
         // correctly; this was the missing piece on macOS.
         storageReport = try? await dm.storageReport(indexDirectory: appState.indexDirectory)
+        refreshProtectedVolumes()
     }
 
     private func reindexVolume(_ volumeId: String) async {
