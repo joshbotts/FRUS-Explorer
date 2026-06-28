@@ -54,15 +54,18 @@ enum WordCloudViewMode: String, CaseIterable {
 /// Two modes share one data set: a spiral tag **cloud** (font size ∝ √count) and
 /// a ranked **list**. The list doubles as the cloud's `accessibilityRepresentation`,
 /// since a scattered cloud is opaque to VoiceOver. Tapping any term hands off to
-/// **Corpus Analytics** (`pendingAnalytics`), scoped to match this cloud where
-/// Analytics can express it and falling back to the whole corpus otherwise; the word
-/// context menu also keeps a direct "Search for this term" shortcut. The view can be
-/// exported as PNG, PDF, or CSV.
+/// **Corpus Analytics** (`pendingAnalytics`) for a **corpus-wide** frequency view of
+/// that term across the series — the same for every cloud scope, since seeing a term's
+/// arc across the whole FRUS run is the feature's point. For volume- and
+/// subseries-scoped clouds the word context menu adds an "analyze within this
+/// volume/subseries" option, and a direct "Search for this term" shortcut is always
+/// offered. The view can be exported as PNG, PDF, or CSV.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
-///   1.1 — Session 164: word taps hand off to Corpus Analytics (scoped) rather than
-///          Search; Search remains available via the word context menu
+///   1.1 — Session 164: word taps hand off to Corpus Analytics rather than Search,
+///          corpus-wide by default; volume/subseries clouds get an optional scoped
+///          handoff via the word context menu; Search stays on the context menu
 struct WordCloudView: View {
 
     /// The body of material to visualise.
@@ -559,11 +562,22 @@ struct WordCloudView: View {
     /// Shared context-menu actions for a word (cloud glyph or list row).
     @ViewBuilder
     private func wordContextMenu(term: String) -> some View {
+        // Default handoff — corpus-wide frequency of the term across the whole series,
+        // matching a plain tap.
         Button {
             analyze(for: term)
         } label: {
             Label(String(localized: "wordcloud.word.analyze", defaultValue: "Analyze in Corpus Analytics"),
                   systemImage: "chart.bar.xaxis")
+        }
+        // Optional scoped handoff — only offered for volume/subseries clouds, where
+        // Analytics can restrict the chart to the cloud's own volumes.
+        if let scopedLabel = scopedAnalyzeMenuLabel {
+            Button {
+                analyze(for: term, scoped: true)
+            } label: {
+                Label(scopedLabel, systemImage: "chart.bar.xaxis.ascending")
+            }
         }
         Button {
             search(for: term)
@@ -599,14 +613,23 @@ struct WordCloudView: View {
         loadTask = Task { await load() }
     }
 
-    /// Primary word-tap action: hands off to Corpus Analytics seeded with `term`,
-    /// scoped to match this cloud where Analytics can express the scope (volume /
-    /// subseries) and falling back to the whole corpus where it cannot (a single
-    /// document, collection, tag, or saved search). From Analytics the researcher
-    /// reaches the matching documents via its built-in "View in Search" gateway, so
-    /// the cloud no longer needs its own direct Search handoff for the common path.
-    private func analyze(for term: String) {
-        let (volumeIds, label) = analyticsScope()
+    /// Primary word-tap action: hands off to Corpus Analytics seeded with `term`.
+    ///
+    /// By default the handoff is **corpus-wide**, regardless of the cloud's own scope —
+    /// the point of the feature is to see how a term that caught the user's eye appears
+    /// across the whole FRUS series, which is more revealing than a scope-local count.
+    /// Pass `scoped: true` (the volume/subseries-only context-menu action) to instead
+    /// restrict Analytics to the cloud's volumes via `analyticsScope()`. From Analytics
+    /// the researcher reaches the matching documents through its built-in "View in
+    /// Search" gateway.
+    private func analyze(for term: String, scoped: Bool = false) {
+        let volumeIds: [String]?
+        let label: String?
+        if scoped {
+            (volumeIds, label) = analyticsScope()
+        } else {
+            (volumeIds, label) = (nil, nil)
+        }
         appState.pendingAnalytics = AnalyticsParameters(
             term: term, scopeVolumeIds: volumeIds, scopeLabel: label
         )
@@ -621,14 +644,34 @@ struct WordCloudView: View {
         dismiss()
     }
 
-    /// Translates `scope` into the volume-ID scope Corpus Analytics understands.
+    /// Label for the optional scoped-analytics context-menu action, or `nil` when the
+    /// cloud's scope only supports a corpus-wide handoff. Only volume- and
+    /// subseries-scoped clouds can meaningfully restrict Analytics to their own
+    /// volumes; corpus, document, collection, tag, and saved-search clouds offer just
+    /// the corpus-wide handoff.
+    private var scopedAnalyzeMenuLabel: String? {
+        switch scope {
+        case .volume:
+            return String(localized: "wordcloud.word.analyze.volume",
+                          defaultValue: "Analyze within this volume")
+        case .subseries:
+            return String(localized: "wordcloud.word.analyze.subseries",
+                          defaultValue: "Analyze within this subseries")
+        case .corpus, .document, .collection, .userTag, .savedSearch:
+            return nil
+        }
+    }
+
+    /// Translates `scope` into the volume-ID scope Corpus Analytics understands, for
+    /// the optional scoped context-menu handoff.
     ///
     /// Analytics buckets by whole volumes, so only the volume-aligned scopes carry
     /// through: `.volume` → that volume, `.subseries` → the subseries' volumes. The
     /// remaining scopes — `.corpus`, plus the sub-volume / document-set scopes
     /// `.document`, `.collection`, `.userTag`, and `.savedSearch`, which Analytics
-    /// cannot express at volume granularity — fall back to the whole corpus, per the
-    /// cross-surface handoff contract.
+    /// cannot express at volume granularity — return `(nil, nil)` (corpus-wide); these
+    /// scopes never reach this method because `scopedAnalyzeMenuLabel` hides the
+    /// scoped action for them.
     ///
     /// - Returns: The volume-ID scope and its display label, or `(nil, nil)` for a
     ///   corpus-wide query.
