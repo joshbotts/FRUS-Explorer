@@ -943,13 +943,6 @@ struct DocumentView: View {
                           systemImage: "doc.on.clipboard")
                 }
                 .disabled(vm.plainTextFormattedCitation == nil)
-
-                // Share the formatted citation + canonical history.state.gov URL.
-                ShareLink(item: vm.shareableCitationMessage ?? "") {
-                    Label(String(localized: "document.toolbar.shareCitation", defaultValue: "Share Citation"),
-                          systemImage: "square.and.arrow.up")
-                }
-                .disabled(vm.shareableCitationMessage == nil)
             } label: {
                 Label(String(localized: "document.toolbar.citation", defaultValue: "Citation"),
                       systemImage: "quote.bubble")
@@ -958,9 +951,12 @@ struct DocumentView: View {
             .controlHelp(
                 String(localized: "document.toolbar.citation", defaultValue: "Citation"),
                 detail: String(localized: "document.toolbar.citation.help",
-                               defaultValue: "View, copy, or share the formatted citation for this document"),
+                               defaultValue: "View or copy the formatted citation for this document"),
                 systemImage: "quote.bubble"
             )
+
+            // 5b. Share / Export — Zotero (Web API), Zotero files, share citation.
+            DocumentShareMenu(vm: vm)
 
             // 7. Add to Collection
             Button {
@@ -1787,6 +1783,129 @@ struct DocumentView: View {
     }
 }
 
+// MARK: - DocumentShareMenu
+
+/// Document-level Share / Export toolbar menu (iOS) — independent of the citation
+/// sheet. Owns the actions that *send the document somewhere*: into the user's
+/// Zotero library via the Web API, out as a Zotero-importable file (BibTeX/RIS), or
+/// via the system share sheet. Citation viewing/copying stays on the Citation menu.
+///
+/// Version history:
+///   1.0 — Document Share/Export control split out from the citation sheet
+private struct DocumentShareMenu: View {
+    let vm: DocumentViewModel
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
+
+    @State private var bibtexFileURL: URL?
+    @State private var risFileURL: URL?
+    @State private var zoteroItem: ZoteroJSONExporter.Item?
+    @State private var zoteroSending = false
+    @State private var zoteroResult: ZoteroSendResult?
+    @State private var zoteroError: String?
+
+    var body: some View {
+        Menu {
+            if ZoteroAccountStore.shared.isConnected, zoteroItem != nil {
+                Button {
+                    Task { await sendToZoteroLibrary() }
+                } label: {
+                    Label(String(localized: "document.share.sendZoteroLibrary",
+                                 defaultValue: "Send to Zotero Library…"), systemImage: "books.vertical")
+                }
+                .disabled(zoteroSending)
+                Divider()
+            }
+            if let bibtexFileURL {
+                ShareLink(item: bibtexFileURL) {
+                    Label(String(localized: "document.share.bibtexFile",
+                                 defaultValue: "Export Zotero file (BibTeX)…"), systemImage: "doc")
+                }
+            }
+            if let risFileURL {
+                ShareLink(item: risFileURL) {
+                    Label(String(localized: "document.share.risFile",
+                                 defaultValue: "Export Zotero file (RIS)…"), systemImage: "doc")
+                }
+            }
+            if let message = vm.shareableCitationMessage {
+                ShareLink(item: message) {
+                    Label(String(localized: "document.share.citation",
+                                 defaultValue: "Share Citation…"), systemImage: "quote.bubble")
+                }
+            }
+        } label: {
+            Label(String(localized: "document.toolbar.share", defaultValue: "Share"),
+                  systemImage: "square.and.arrow.up")
+        }
+        .controlHelp(
+            String(localized: "document.toolbar.share", defaultValue: "Share"),
+            detail: String(localized: "document.toolbar.share.help",
+                           defaultValue: "Send this document to your Zotero library, export a Zotero file, or share its citation"),
+            systemImage: "square.and.arrow.up"
+        )
+        .task(id: vm.entry.documentId) { prepareExportFiles() }
+        .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
+        .alert(
+            String(localized: "document.share.zotero.error.title", defaultValue: "Couldn't Send to Zotero"),
+            isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
+            presenting: zoteroError
+        ) { _ in
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+        } message: { Text($0) }
+    }
+
+    /// Pushes this single document (with its tags + notes) into the user's Zotero
+    /// library via the Web API. No collection is created — it lands in My Library.
+    private func sendToZoteroLibrary() async {
+        guard let item = zoteroItem else { return }
+        let store = ZoteroAccountStore.shared
+        guard let apiKey = store.retrieveKey(), let userID = store.userID else {
+            zoteroError = ZoteroAPIError.missingCredentials.errorDescription
+            return
+        }
+        zoteroSending = true
+        defer { zoteroSending = false }
+        do {
+            let result = try await ZoteroAPIClient().send(
+                items: [item], collectionName: nil,
+                apiKey: apiKey, userID: userID, username: store.username)
+            zoteroResult = result
+        } catch {
+            zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    private func zoteroResultMessage(_ result: ZoteroSendResult) -> String {
+        String(format: String(localized: "document.share.zotero.result %lld %lld",
+                              defaultValue: "Added %lld document and %lld notes to Zotero."),
+               Int64(result.addedItems), Int64(result.addedNotes))
+    }
+
+    /// Writes the BibTeX and RIS exports to temporary files for `ShareLink`, and
+    /// resolves the document's Zotero item (carrying tags + notes) for the Web API send.
+    private func prepareExportFiles() {
+        if let bibtex = vm.bibtexCitation {
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId).bib")
+            if (try? bibtex.write(to: url, atomically: true, encoding: .utf8)) != nil {
+                bibtexFileURL = url
+            }
+        }
+        let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: vm.entry.documentId, volumeId: vm.entry.volumeId, context: modelContext)
+        if let item = vm.zoteroItem(tags: resolved.tags, notes: resolved.notes) {
+            zoteroItem = item
+            let ris = RISExporter().export(zoteroItem: item)
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId).ris")
+            if (try? ris.write(to: url, atomically: true, encoding: .utf8)) != nil {
+                risFileURL = url
+            }
+        }
+    }
+}
+
 // MARK: - CitationSheetView
 
 /// Displays a formatted citation string in a sheet with Copy/Done actions and
@@ -1806,16 +1925,6 @@ struct DocumentView: View {
 private struct CitationSheetView: View {
     let vm: DocumentViewModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.openURL) private var openURL
-
-    @State private var bibtexFileURL: URL?
-    @State private var risFileURL: URL?
-    /// The document's resolved Zotero item (tags + notes), reused for the Web API send.
-    @State private var zoteroItem: ZoteroJSONExporter.Item?
-    @State private var zoteroSending = false
-    @State private var zoteroResult: ZoteroSendResult?
-    @State private var zoteroError: String?
 
     private var citation: String {
         vm.formattedCitation ?? ""
@@ -1863,17 +1972,6 @@ private struct CitationSheetView: View {
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 220)
         #endif
-        .task {
-            prepareExportFiles()
-        }
-        .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
-        .alert(
-            String(localized: "document.citation.zotero.error.title", defaultValue: "Couldn't Send to Zotero"),
-            isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
-            presenting: zoteroError
-        ) { _ in
-            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
-        } message: { Text($0) }
     }
 
     // MARK: - Export Menu
@@ -1898,103 +1996,14 @@ private struct CitationSheetView: View {
                 Label(String(localized: "document.citation.copyRis", defaultValue: "Copy RIS"), systemImage: "doc.on.clipboard")
             }
             .disabled(vm.risCitation == nil)
-
-            Divider()
-
-            if let bibtexFileURL {
-                ShareLink(item: bibtexFileURL) {
-                    Label(String(localized: "document.citation.sendZoteroBibtex", defaultValue: "Share BibTeX file…"), systemImage: "square.and.arrow.up")
-                }
-            }
-
-            if let risFileURL {
-                ShareLink(item: risFileURL) {
-                    Label(String(localized: "document.citation.sendZoteroRis", defaultValue: "Share RIS file…"), systemImage: "square.and.arrow.up")
-                }
-            }
-
-            if ZoteroAccountStore.shared.isConnected, zoteroItem != nil {
-                Divider()
-                Button {
-                    Task { await sendToZoteroLibrary() }
-                } label: {
-                    Label(String(localized: "document.citation.sendZoteroLibrary",
-                                 defaultValue: "Send to Zotero Library…"),
-                          systemImage: "books.vertical")
-                }
-                .disabled(zoteroSending)
-            }
         } label: {
-            Label(String(localized: "document.citation.export", defaultValue: "Export"), systemImage: "square.and.arrow.up.on.square")
+            Label(String(localized: "document.citation.copyAs", defaultValue: "Copy as…"),
+                  systemImage: "doc.on.doc")
         }
-    }
-
-    /// Pushes this single document (with its tags + notes) into the user's Zotero
-    /// library via the Web API. No collection is created — it lands in My Library.
-    private func sendToZoteroLibrary() async {
-        guard let item = zoteroItem else { return }
-        let store = ZoteroAccountStore.shared
-        guard let apiKey = store.retrieveKey(), let userID = store.userID else {
-            zoteroError = ZoteroAPIError.missingCredentials.errorDescription
-            return
-        }
-        zoteroSending = true
-        defer { zoteroSending = false }
-        do {
-            let result = try await ZoteroAPIClient().send(
-                items: [item], collectionName: nil,
-                apiKey: apiKey, userID: userID, username: store.username
-            )
-            zoteroResult = result
-        } catch {
-            zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
-        }
-    }
-
-    /// Body for the document-level Zotero result alert.
-    private func zoteroResultMessage(_ result: ZoteroSendResult) -> String {
-        String(format: String(localized: "document.citation.zotero.result %lld %lld",
-                              defaultValue: "Added %lld document and %lld notes to Zotero."),
-               Int64(result.addedItems), Int64(result.addedNotes))
     }
 
     private func copyToPasteboard(_ text: String) {
         UIPasteboard.general.string = text
-    }
-
-    /// Writes the BibTeX and RIS exports to temporary files for `ShareLink`.
-    ///
-    /// Both are formats Zotero can import from a shared file. (The previous Zotero-API
-    /// JSON envelope is *not* a Zotero file-import format — Zotero reported "couldn't read
-    /// payload" — so the second option now shares RIS, which Zotero imports reliably.)
-    ///
-    /// The RIS file is rendered from the document's Zotero `Item` so it carries the
-    /// user's FRUS Explorer tags (→ `KW`) and research notes (→ `N1`), matching the
-    /// collection-level Zotero export. BibTeX remains a bibliographic-only citation.
-    private func prepareExportFiles() {
-        if let bibtex = vm.bibtexCitation {
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId).bib")
-            if (try? bibtex.write(to: url, atomically: true, encoding: .utf8)) != nil {
-                bibtexFileURL = url
-            }
-        }
-
-        let resolved = ZoteroJSONExporter.fetchTagsAndNotes(
-            documentId: vm.entry.documentId, volumeId: vm.entry.volumeId, context: modelContext)
-        if let item = vm.zoteroItem(tags: resolved.tags, notes: resolved.notes) {
-            zoteroItem = item
-            let ris = RISExporter().export(zoteroItem: item)
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId).ris")
-            if (try? ris.write(to: url, atomically: true, encoding: .utf8)) != nil {
-                risFileURL = url
-            }
-        }
-
-        #if DEBUG
-        print("[CitationSheetView] export files prepared: bibtex=\(bibtexFileURL != nil), ris=\(risFileURL != nil)")
-        #endif
     }
 }
 

@@ -747,6 +747,9 @@ struct FRUSExplorerApp: App {
             let settingsSync = SettingsSyncCoordinator(context: modelContainer.mainContext)
             appState.settingsSync = settingsSync
             settingsSync.start()
+            // The Zotero API key syncs via iCloud Keychain but its resolved account
+            // identity doesn't; re-resolve it from the synced key on this device.
+            Task { await ZoteroAccountStore.shared.resolveAccountIfNeeded() }
             #if os(iOS)
             // Mirror background-summarization progress onto a Live Activity.
             appState.startObservingSummarizationProgress()
@@ -1082,6 +1085,8 @@ struct FRUSExplorerApp: App {
                 // Returning to the foreground is a natural moment to adopt any settings
                 // changed on another device while this one was suspended.
                 appState.settingsSync?.syncNowIfEnabled()
+                // The Zotero key may have synced in via iCloud Keychain while suspended.
+                await ZoteroAccountStore.shared.resolveAccountIfNeeded()
             }
         }
 

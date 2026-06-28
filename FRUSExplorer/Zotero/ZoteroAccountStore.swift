@@ -93,6 +93,20 @@ public final class ZoteroAccountStore {
     /// `true` when both a key and a resolved user ID are present.
     public var isConnected: Bool { hasKey && userID != nil }
 
+    /// Resolves and stores the account identity when an API key is present but the
+    /// numeric user ID is not.
+    ///
+    /// The API key syncs across devices via iCloud Keychain, but the resolved
+    /// `userID` / `username` live in (non-synced) `UserDefaults`. So on a second
+    /// device the key arrives without the identity and `isConnected` reads `false`.
+    /// Calling this at launch and on foreground re-resolves the identity from the
+    /// synced key, so connecting Zotero on one device connects it on all of them.
+    public func resolveAccountIfNeeded() async {
+        guard hasKey, userID == nil, let key = retrieveKey() else { return }
+        guard let info = try? await ZoteroAPIClient().resolveAccount(key: key) else { return }
+        setAccount(userID: info.userID, username: info.username)
+    }
+
     /// Clears all stored Zotero credentials.
     public func disconnect() {
         deleteKey()
