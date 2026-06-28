@@ -1492,6 +1492,22 @@ public actor IndexingPipeline {
         return ids
     }
 
+    /// Volume IDs that are downloaded on disk but absent from the index.
+    ///
+    /// Returns only genuinely missing volumes, so a healthy, fully-indexed corpus
+    /// yields an empty array. Used by the background task (which cannot reach the
+    /// actor-private `volumesDirectory` directly) so a backgrounding with only
+    /// word-cloud precompute work pending no longer triggers a wholesale reindex.
+    /// Interrupted volumes are not excluded here — callers tracking interruptions
+    /// filter them separately.
+    public func unindexedDownloadedVolumeIds() throws -> [String] {
+        let indexed = try allIndexedVolumeIds()
+        return Self.findDownloadedVolumes(in: volumesDirectory)
+            .map(\.volumeId)
+            .filter { !indexed.contains($0) }
+            .sorted()
+    }
+
     // MARK: - Volume Structure Cache (used by BrowserViewModel)
 
     /// Returns the Browser structure persisted for a volume at index time, or `nil`
