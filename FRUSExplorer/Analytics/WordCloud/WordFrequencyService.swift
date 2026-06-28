@@ -90,6 +90,7 @@ actor WordFrequencyService {
         includeDiplomaticStopwords: Bool,
         extraStopwords: Set<String> = [],
         lens: WordCloudLens = .allTerms,
+        tuning: WordCloudTuning = .standard,
         persistent: Bool = false,
         progress: WordCloudProgress? = nil
     ) async throws -> WordCloudResult {
@@ -98,7 +99,8 @@ actor WordFrequencyService {
         // entries while `.allTerms` keeps its existing (precomputed) keys.
         let effectiveSignature = lens == .allTerms ? signature : "\(signature)|lens=\(lens.rawValue)"
         let cacheKey = Self.cacheKey(signature: effectiveSignature, limit: limit,
-                                     includeDiplomatic: includeDiplomaticStopwords, extras: extrasToken)
+                                     includeDiplomatic: includeDiplomaticStopwords,
+                                     extras: extrasToken, tuning: tuning.cacheToken)
         if let cached = cache[cacheKey] {
             progress?(cached.documentCount, cached.documentCount)
             return cached
@@ -111,7 +113,7 @@ actor WordFrequencyService {
             let key = WordCloudDiskCache.key(
                 signature: effectiveSignature, limit: limit,
                 includeDiplomatic: includeDiplomaticStopwords,
-                extras: extrasToken, fingerprint: fingerprint
+                extras: extrasToken, tuning: tuning.cacheToken, fingerprint: fingerprint
             )
             diskKey = key
             if let disk = WordCloudDiskCache.load(key: key) {
@@ -124,8 +126,11 @@ actor WordFrequencyService {
         let tokenizer = WordCloudTokenizer(
             stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomaticStopwords)
                 .union(extraStopwords),
+            minimumLength: tuning.minimumLength,
+            foldPlurals: tuning.foldPlurals,
             lens: lens,
-            lexicon: WordCloudLexicons.filter(for: lens)
+            lexicon: WordCloudLexicons.filter(for: lens),
+            markings: tuning.filterMarkings ? WordCloudStopwords.markings : []
         )
         let total = keys.count
         var counts: [String: Int] = [:]
@@ -143,7 +148,8 @@ actor WordFrequencyService {
         }
 
         let result = Self.finalize(counts: counts, documentCount: documentCount,
-                                   totalTokens: tokenTotal, limit: limit)
+                                   totalTokens: tokenTotal, limit: limit,
+                                   minimumCount: tuning.minimumCount)
         store(result, for: cacheKey)
         if let diskKey { WordCloudDiskCache.save(result, key: diskKey) }
         return result
@@ -166,6 +172,7 @@ actor WordFrequencyService {
         includeDiplomaticStopwords: Bool,
         extraStopwords: Set<String> = [],
         lens: WordCloudLens = .allTerms,
+        tuning: WordCloudTuning = .standard,
         progress: WordCloudProgress? = nil
     ) async throws -> WordCloudResult {
         let keys = try await pipeline.allDocumentKeys()
@@ -176,6 +183,7 @@ actor WordFrequencyService {
             includeDiplomaticStopwords: includeDiplomaticStopwords,
             extraStopwords: extraStopwords,
             lens: lens,
+            tuning: tuning,
             persistent: true,
             progress: progress
         )
@@ -183,14 +191,17 @@ actor WordFrequencyService {
 
     // MARK: - Private
 
-    /// Builds the descending top-N term list from a raw tally.
+    /// Builds the descending top-N term list from a raw tally, dropping terms below
+    /// the minimum occurrence count.
     private static func finalize(
         counts: [String: Int],
         documentCount: Int,
         totalTokens: Int,
-        limit: Int
+        limit: Int,
+        minimumCount: Int = 1
     ) -> WordCloudResult {
         let top = counts
+            .filter { $0.value >= minimumCount }
             .map { TermCount(term: $0.key, count: $0.value) }
             .sorted { $0.count != $1.count ? $0.count > $1.count : $0.term < $1.term }
             .prefix(limit)
@@ -199,8 +210,9 @@ actor WordFrequencyService {
 
     /// Composite cache key combining the scope signature with the parameters that
     /// also affect the result.
-    private static func cacheKey(signature: String, limit: Int, includeDiplomatic: Bool, extras: String) -> String {
-        "\(signature)|n=\(limit)|diplo=\(includeDiplomatic)|x=\(extras)"
+    private static func cacheKey(signature: String, limit: Int, includeDiplomatic: Bool,
+                                 extras: String, tuning: String) -> String {
+        "\(signature)|n=\(limit)|diplo=\(includeDiplomatic)|x=\(extras)|t=\(tuning)"
     }
 
     /// A stable token summarising a per-scope extra-stopword set for cache keys.

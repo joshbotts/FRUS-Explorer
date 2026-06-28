@@ -90,18 +90,23 @@ enum WordCloudLoader {
         )
         let resolved = try await resolver.resolve(scope)
 
+        // Combine the per-scope hidden words with the user's global and per-lens
+        // custom stop lists, and read the tunable criteria, all from settings.
+        let extras = hiddenWords.union(WordCloudSettings.extraStopwords(for: lens))
+        let tuning = WordCloudSettings.tuning
+
         let isSubseries: Bool = { if case .subseries = scope { return true } else { return false } }()
         let result: WordCloudResult
         if resolved.isCorpus {
             result = try await service.corpusTopTerms(
                 limit: limit, includeDiplomaticStopwords: excludeBoilerplate,
-                extraStopwords: hiddenWords, lens: lens, progress: progress
+                extraStopwords: extras, lens: lens, tuning: tuning, progress: progress
             )
         } else {
             result = try await service.topTerms(
                 signature: scope.signature, keys: resolved.keys,
                 limit: limit, includeDiplomaticStopwords: excludeBoilerplate,
-                extraStopwords: hiddenWords, lens: lens,
+                extraStopwords: extras, lens: lens, tuning: tuning,
                 persistent: isSubseries, progress: isSubseries ? progress : nil
             )
         }

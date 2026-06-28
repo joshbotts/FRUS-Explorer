@@ -70,7 +70,15 @@ struct WordCloudView: View {
 
     /// Excludes FRUS-boilerplate words ("telegram", "department", …) in addition
     /// to the always-on English stopwords. Persisted; defaults on.
-    @AppStorage("frus.wordcloud.excludeBoilerplate") private var excludeBoilerplate = true
+    @AppStorage(WordCloudSettings.Keys.excludeBoilerplate) private var excludeBoilerplate = true
+
+    // Word-cloud criteria mirrored from Settings so changing any of them recomputes
+    // an open cloud. The list-based stop lists are covered by `settingsRevision`.
+    @AppStorage(WordCloudSettings.Keys.filterMarkings) private var filterMarkings = true
+    @AppStorage(WordCloudSettings.Keys.foldPlurals) private var foldPlurals = true
+    @AppStorage(WordCloudSettings.Keys.minLength) private var minLength = WordCloudSettings.defaultMinLength
+    @AppStorage(WordCloudSettings.Keys.minCount) private var minCount = WordCloudSettings.defaultMinCount
+    @AppStorage(WordCloudSettings.Keys.revision) private var settingsRevision = 0
 
     @State private var viewMode: WordCloudViewMode = .cloud
     @State private var result: WordCloudResult = .empty
@@ -124,7 +132,8 @@ struct WordCloudView: View {
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 520)
         #endif
-        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate, lens: lens)) {
+        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate,
+                          lens: lens, settings: settingsToken)) {
             await load()
         }
         .sheet(item: $exportItem) { item in
@@ -590,11 +599,18 @@ struct WordCloudView: View {
 
     // MARK: - Recompute Keys
 
-    /// Drives a reload when the scope, stopword policy, or lens changes.
+    /// A token summarising the Settings-driven criteria; changing any of them (or a
+    /// custom stop list, via the revision) recomputes the cloud.
+    private var settingsToken: String {
+        "m\(filterMarkings ? 1 : 0)f\(foldPlurals ? 1 : 0)l\(minLength)c\(minCount)r\(settingsRevision)"
+    }
+
+    /// Drives a reload when the scope, stopword policy, lens, or criteria change.
     private struct TaskKey: Equatable {
         let signature: String
         let exclude: Bool
         let lens: WordCloudLens
+        let settings: String
     }
 
     /// Drives a spiral relayout when the canvas size, scope, policy, or lens changes.

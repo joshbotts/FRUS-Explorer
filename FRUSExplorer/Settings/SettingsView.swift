@@ -133,6 +133,10 @@ struct SettingsView: View {
                                          defaultValue: "Summarization")) {
                         SummarizationPromptsSettingsView()
                     }
+                    NavigationLink(String(localized: "settings.row.wordCloud",
+                                         defaultValue: "Word Cloud")) {
+                        WordCloudSettingsView()
+                    }
                     Toggle(
                         String(localized: "settings.row.logSessions",
                                defaultValue: "Log Research Sessions"),

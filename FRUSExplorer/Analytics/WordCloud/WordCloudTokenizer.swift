@@ -47,6 +47,10 @@ struct WordCloudTokenizer: Sendable {
     /// base-form words a token must belong to; `nil` for all other lenses.
     let lexicon: Set<String>?
 
+    /// Classification markings and other document-chrome terms (single words and
+    /// multi-word phrases) to reject across every lens. Empty disables the filter.
+    let markings: Set<String>
+
     /// Creates a tokenizer.
     /// - Parameters:
     ///   - stopwords: Terms to exclude after lemmatisation/lowercasing.
@@ -54,13 +58,16 @@ struct WordCloudTokenizer: Sendable {
     ///   - foldPlurals: Whether to apply the plural-folding fallback. Default true.
     ///   - lens: Semantic filter to apply. Default `.allTerms`.
     ///   - lexicon: Membership set for lexicon-backed lenses. Default `nil`.
+    ///   - markings: Classification/chrome terms to reject across all lenses.
     init(stopwords: Set<String>, minimumLength: Int = 3, foldPlurals: Bool = true,
-         lens: WordCloudLens = .allTerms, lexicon: Set<String>? = nil) {
+         lens: WordCloudLens = .allTerms, lexicon: Set<String>? = nil,
+         markings: Set<String> = []) {
         self.stopwords = stopwords
         self.minimumLength = minimumLength
         self.foldPlurals = foldPlurals
         self.lens = lens
         self.lexicon = lexicon
+        self.markings = markings
     }
 
     /// The `NaturalLanguage` name-type tag this lens filters on, if it's an entity lens.
@@ -136,6 +143,8 @@ struct WordCloudTokenizer: Sendable {
             // Lexicon-backed lenses (concepts / sentiment) keep only base-form words
             // that belong to their curated set.
             if let lexicon, !lexicon.contains(candidate) { return true }
+            // Classification markings / document chrome are noise in every lens.
+            if markings.contains(candidate) { return true }
             if isAcceptable(candidate) {
                 counts[candidate, default: 0] += 1
                 added += 1
@@ -217,12 +226,23 @@ struct WordCloudTokenizer: Sendable {
     }
 
     /// Whether a named-entity term should be counted. More permissive than
-    /// `isAcceptable` — multi-word names keep their spaces and periods
-    /// ("john f. kennedy", "united states") — but still drops too-short and
-    /// stopword tokens.
+    /// `isAcceptable` about internal spaces and periods (so multi-word names like
+    /// "john f. kennedy" / "united states" survive), but stricter about what counts
+    /// as a name: it rejects classification markings (the chief source of named-entity
+    /// false positives, e.g. "top secret" tagged as a place), terms containing digits,
+    /// stopwords, and phrases whose every component word is itself a stopword or marking.
     private func isAcceptableEntity(_ term: String) -> Bool {
         guard term.count >= minimumLength else { return false }
         guard term.contains(where: { $0.isLetter }) else { return false }
-        return !stopwords.contains(term)
+        guard !term.contains(where: { $0.isNumber }) else { return false }
+        guard !stopwords.contains(term), !markings.contains(term) else { return false }
+        // Drop phrases made up entirely of stopwords/markings ("top secret", where
+        // the recogniser joined two non-name words).
+        let components = term.split { $0 == " " || $0 == "." }.map(String.init)
+        if !components.isEmpty,
+           components.allSatisfy({ stopwords.contains($0) || markings.contains($0) }) {
+            return false
+        }
+        return true
     }
 }
