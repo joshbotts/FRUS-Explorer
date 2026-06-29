@@ -32,11 +32,15 @@ extension ModelContainer {
     ///          so callers can run the actual CloudKit init failure through
     ///          `FRUSExplorerApp.cloudKitDiagnostic(_:)` and surface the real domain/code/
     ///          description in the UI, instead of a hardcoded "check console" placeholder
+    ///   1.4 — `PersonClusterOverride` (2026-06-17) and `SyncedPreferences` (2026-06-27)
+    ///          added to the schema (now 16 record types). Both are new CloudKit record
+    ///          types — deploy the Development schema to Production before shipping (see note).
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
-    /// `SearchHistoryEntry` (1.2) and, before it, `DocumentTagAssignment` (Session 130) and
-    /// `DocumentHighlight` (Session 102) — introduces a *new CloudKit record type* that does
+    /// `SyncedPreferences` and `PersonClusterOverride`, and before them `SearchHistoryEntry`
+    /// (1.2), `DocumentTagAssignment` (Session 130), and `DocumentHighlight` (Session 102) —
+    /// introduces a *new CloudKit record type* that does
     /// not yet exist in the deployed CloudKit schema. Per the "CloudKit schema note" below,
     /// SwiftData/`NSPersistentCloudKitContainer` creates these record types lazily in the
     /// **Development** schema the first time a record of that type is pushed; they must then
@@ -99,7 +103,7 @@ extension ModelContainer {
     // SavedSearch if no user has saved a search, DocumentHighlight if no one has
     // highlighted text) will be ABSENT from the CloudKit schema until that happens.
     //
-    // To proactively populate the CloudKit schema with all 13 record types:
+    // To proactively populate the CloudKit schema with all 16 record types:
     //   1. Run a Development build with a real iCloud account signed in.
     //   2. Save at least one search → creates SavedSearch schema entry.
     //   3. Highlight text in a document → creates DocumentHighlight schema entry.
