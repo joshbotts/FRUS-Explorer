@@ -174,7 +174,7 @@ A **breadcrumb trail** at the top of the screen shows your current position in t
 
 `[SCREENSHOT: Breadcrumb trail showing Subseries > Volume > Document]`
 
-Volumes that haven't been downloaded yet show a download affordance; tap it to queue the volume (see Settings → Volumes for managing downloads in bulk).
+Volumes you haven't downloaded yet are still browsable. Opening one shows a **Download Volume** button on its page (in place of the contents), and you can also long-press the volume in the list and choose **Download Volume** to queue it without opening the page. (See Settings → Volumes for managing downloads in bulk.) Anywhere you reach a document in an undownloaded volume — including a cross-reference inside another document — the app offers to download the volume rather than dead-ending.
 
 ### 4.2 Filtering to Downloaded Volumes
 
@@ -383,7 +383,7 @@ Open the graph from a document's **Cross-References** toolbar action. It opens f
 | Gesture | Effect |
 |---------|--------|
 | Tap node | Select; show its title and details |
-| Long-press node | Context menu: *Recenter Graph*, *Open Document*, *Documents from Same Lot File* |
+| Long-press node | Context menu: *Recenter Graph*, *Open Document*, *Archival Neighbors* |
 | Pinch | Zoom |
 | Two-finger drag | Pan |
 
@@ -502,7 +502,9 @@ Open Source Explorer from a document's toolbar. It displays the parsed source-no
 
 Source Explorer picks the most precise resolution available for each note type: State Department decimal files route to the right period-specific NARA finding aid; lot files resolve through the NARA Catalog; presidential-library and CIA citations link to the appropriate finding-aid or CREST page; and **pre-1910 Central Files** — 1906–1910 Numerical File rolls and pre-1906 country-arranged diplomatic series — resolve from a **bundled index with no API key required**.
 
-**Documents from This Collection.** Below the resolution, Source Explorer lists other indexed documents that cite the same archival source (the same lot file, decimal-file segment, or collection), so you can read a document alongside its archival neighbors. The section is always shown once a source note is parsed, with a loading state and a plain-language empty state explaining why there are none — it never silently disappears.
+**Documents from This Collection.** Below the resolution, Source Explorer lists other indexed documents that cite the same archival source (the same lot file, central decimal file, record-group series, or presidential-library collection), so you can read a document alongside its archival neighbors. The section is always shown once a source note is parsed, with a loading state and a plain-language empty state explaining why there are none — it never silently disappears.
+
+The same **Archival Neighbors** list is reachable without opening Source Explorer: long-press a node in the cross-reference graph, a search result, or a document in the volume's document list, and choose **Archival Neighbors**; the volume sources list also offers it per source entry.
 
 `[SCREENSHOT: Source Explorer on iPhone showing the resolved source link and the "Documents from This Collection" list of archival neighbors]`
 

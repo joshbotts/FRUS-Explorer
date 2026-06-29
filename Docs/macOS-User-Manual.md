@@ -335,7 +335,7 @@ Each rendered document shows:
 |---------|-----------|--------|
 | Person reference | Underlined person name | Click to open Person Index entry |
 | Glossary term | Styled term | Click to open Terms & Abbreviations entry |
-| Cross-reference | Numbered or inline link | Click to jump to the referenced document |
+| Cross-reference | Numbered or inline link | Click to jump to the referenced document; if its volume isn't downloaded, the app offers to download it |
 | Source note | Text at top of document | Click to open Source Explorer (Section 12) |
 
 `[SCREENSHOT: Document close-up showing a person reference, glossary term, and cross-reference link all visible]`
@@ -434,7 +434,7 @@ Use the **Degree** picker to control how many hops from the focus document are d
 |--------|--------|
 | Hover | Shows the full document title and metadata |
 | Click | Selects the node; opens its details in the reference list panel |
-| Right-click | Context menu: *Recenter Graph*, *Open in Main Window*, *Documents from Same Lot File* (jumps to the Source Explorer's archival neighbors, Section 12) |
+| Right-click | Context menu: *Recenter Graph*, *Open in Main Window*, *Archival Neighbors* (documents from the same archival source — lot file, central file, series, or library; Section 12) |
 | Scroll | Zoom |
 | Drag (background) | Pan |
 
@@ -655,7 +655,7 @@ Select the relevant text (a lot number, decimal file identifier, archival keywor
 
 ### 12.1.2 Documents from This Collection (Archival Neighbors)
 
-Beneath the resolution, Source Explorer lists **other indexed documents that cite the same archival source** — the same lot file, decimal-file segment, or collection — so you can read the document alongside its archival neighbors. The section is always shown when a source note has been parsed, with an explicit loading state and a plain-language empty state explaining *why* there are none (either the note isn't a recognized archival citation, or no other indexed document shares its source) rather than silently disappearing. Click any neighbor to open it. The cross-reference graph's **Documents from Same Lot File** node action (Section 8.4) jumps here directly.
+Beneath the resolution, Source Explorer lists **other indexed documents that cite the same archival source** — the same lot file, central decimal file, record-group series, or presidential-library collection — so you can read the document alongside its archival neighbors. The section is always shown when a source note has been parsed, with an explicit loading state and a plain-language empty state explaining *why* there are none (either the note isn't a recognized archival citation, or no other indexed document shares its source) rather than silently disappearing. Click any neighbor to open it. The same list is exposed as an **Archival Neighbors** action on cross-reference graph nodes (Section 8.4), search results, the browser document list, and each entry in the volume sources list — so provenance neighbors are reachable from wherever you encounter a document.
 
 `[SCREENSHOT: Source Explorer "Documents from This Collection" section listing archival-neighbor documents that share the same lot file]`
 

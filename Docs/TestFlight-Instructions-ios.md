@@ -33,9 +33,10 @@ Search (Search tab) takes a phrase or AND/OR, scoped to volumes; long lists load
 
 ## Step 6 — New in this build
 
-- **Word Cloud** — open one for a document, volume, subseries, collection, tag, saved search, or the corpus. Try the **lens chips** (People, Places, Concepts, Sentiment…); **tapping a word now charts it across the whole corpus in Corpus Analytics** (volume/subseries clouds add a scoped option; Search is on the word's menu). Export it; tune filters in Settings → Research → **Word Cloud**.
-- **Zotero (Web API)** — paste a key in Settings → Integrations → **Zotero**, then a document's **Share → Send to Zotero Library** (or a collection) pushes it — with tags and notes — into your library.
-- **Sync settings across devices** — Settings → iCloud Sync has a new toggle (off by default) to mirror word-cloud filters, citation style, and a few preferences across devices.
+- **Archival Neighbors** — long-press a document (graph node, search result, or volume document list) → **Archival Neighbors** to find other documents from the same archival source (lot file, central file, series, or library). Also in the Sources list and Source Explorer.
+- **Download from anywhere** — an undownloaded volume now shows a **Download Volume** button on its page and a Download action in the browser list; tapping a cross-reference into an undownloaded volume offers to download it rather than dead-ending.
+- **Word cloud — hide a word** in *all* word clouds or just the *current lens* (long-press a word); manage the lists in Settings → Research → **Word Cloud**.
+- **Corpus Analytics** — By-Year / By-Decade charts are colour-coded by top source volume (with a legend); the year range now reaches 1992; the layout adapts on iPhone.
 
 ## Feedback
 
