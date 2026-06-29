@@ -37,6 +37,8 @@ struct VolumeSourcesView: View {
     @State private var sources: [VolumeSourceEntry] = []
     @State private var isLoading = true
     @State private var searchText: String = ""
+    /// When set, presents the Archival Neighbors sheet for a volume source entry.
+    @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
 
     /// Sources filtered by `searchText` (case-insensitive match against rawText).
     private var displaySources: [VolumeSourceEntry] {
@@ -84,12 +86,43 @@ struct VolumeSourcesView: View {
                     defaultValue: "Sources (\(displaySources.count))"
                 ))) {
                     ForEach(Array(displaySources.enumerated()), id: \.offset) { _, entry in
-                        VolumeSourceRow(entry: entry)
+                        VolumeSourceRow(
+                            entry: entry,
+                            onShowNeighbors: makeNeighborsTarget(for: entry).map { target in
+                                { sourceNeighborsTarget = target }
+                            }
+                        )
                     }
                 }
             }
         }
         .task { await loadSources() }
+        .sheet(item: $sourceNeighborsTarget) { target in
+            ArchivalNeighborsSheet(appState: appState) {
+                guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
+                return (try? await pipeline.archivalNeighbors(
+                    forLotFile:  target.lotFile,
+                    recordGroup: target.recordGroup,
+                    series:      target.series
+                )) ?? ([], 0, nil)
+            }
+            .environment(appState)
+        }
+    }
+
+    /// Builds an archival-neighbors target for a source entry, or `nil` when the entry
+    /// has no match key (no lot file and no record-group + series). Used to gate the
+    /// per-row "Archival Neighbors" affordance so it only appears where it can return results.
+    private func makeNeighborsTarget(for entry: VolumeSourceEntry) -> VolumeSourceNeighborsTarget? {
+        let hasLot = entry.lotFile?.trimmingCharacters(in: .whitespaces).isEmpty == false
+        let hasCollection = (entry.recordGroup?.trimmingCharacters(in: .whitespaces).isEmpty == false)
+            && (entry.seriesName?.trimmingCharacters(in: .whitespaces).isEmpty == false)
+        guard hasLot || hasCollection else { return nil }
+        return VolumeSourceNeighborsTarget(
+            lotFile:     entry.lotFile,
+            recordGroup: entry.recordGroup,
+            series:      entry.seriesName
+        )
     }
 
     // MARK: - Data Loading
@@ -108,6 +141,17 @@ struct VolumeSourcesView: View {
     }
 }
 
+// MARK: - VolumeSourceNeighborsTarget
+
+/// Identifiable `.sheet(item:)` target carrying a volume source entry's archival match
+/// keys (lot file, or record group + series) for the Archival Neighbors sheet.
+private struct VolumeSourceNeighborsTarget: Identifiable {
+    let lotFile: String?
+    let recordGroup: String?
+    let series: String?
+    let id = UUID()
+}
+
 // MARK: - VolumeSourceRow
 
 /// A single row in the volume archival sources list.
@@ -117,23 +161,40 @@ struct VolumeSourcesView: View {
 /// when non-nil — useful for eras where the indexing pipeline extracted structured data.
 private struct VolumeSourceRow: View {
     let entry: VolumeSourceEntry
+    /// Non-nil when this entry has an archival match key; shows a button that opens the
+    /// Archival Neighbors sheet for the entry's lot file or record-group series.
+    let onShowNeighbors: (() -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(entry.rawText)
-                .font(.callout)
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(entry.rawText)
+                    .font(.callout)
 
-            Group {
-                if let rg = entry.recordGroup, !rg.isEmpty {
-                    Text(rg)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Group {
+                    if let rg = entry.recordGroup, !rg.isEmpty {
+                        Text(rg)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let repo = entry.repository, !repo.isEmpty {
+                        Text(repo)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
-                if let repo = entry.repository, !repo.isEmpty {
-                    Text(repo)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+            }
+
+            if let onShowNeighbors {
+                Spacer(minLength: 8)
+                Button(action: onShowNeighbors) {
+                    Image(systemName: "archivebox")
                 }
+                .buttonStyle(.borderless)
+                .help(String(localized: "browser.sources.archivalNeighbors.help",
+                             defaultValue: "Show indexed documents drawn from this archival source"))
+                .accessibilityLabel(String(localized: "browser.sources.archivalNeighbors",
+                                           defaultValue: "Archival Neighbors"))
             }
         }
         .padding(.vertical, 3)

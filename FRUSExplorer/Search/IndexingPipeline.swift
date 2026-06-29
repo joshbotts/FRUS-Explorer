@@ -4027,6 +4027,86 @@ public actor IndexingPipeline {
         }
     }
 
+    /// Returns archival neighbors for an already-indexed document, keyed by its
+    /// `volumeId`/`documentId` rather than a pre-parsed source note.
+    ///
+    /// Fetches the document's stored source-note `raw_text` from `document_sources`,
+    /// re-parses it with `SourceNoteParser` (lossless — the structured columns drop the
+    /// decimal file id and presidential-library collection the matcher needs), and runs
+    /// `relatedDocuments(for:)`. Returns an empty result when the document has no stored
+    /// source note (unindexed, or a note with no recognized archival key).
+    ///
+    /// This is the shared entry point for surfaces that have only a document key
+    /// (the cross-reference graph, browser document lists), as opposed to the Source
+    /// Explorer which already holds a parsed note.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The source document's volume.
+    ///   - documentId: The source document's id within the volume.
+    ///   - documentYear: The document's year, for decimal-file chronological segmenting
+    ///     (`relatedByDecimal`); pass the year parsed from the document's date when known.
+    ///   - limit: Maximum neighbors to return. Default 30.
+    /// - Returns: Matched neighbor documents (≤ `limit`), the total match count, and the
+    ///   human-readable archival `basis` (e.g. "Lot 64 D 199"), or `basis == nil` when the
+    ///   note has no recognized archival key.
+    public func archivalNeighbors(
+        forVolumeId volumeId: String,
+        documentId: String,
+        documentYear: Int? = nil,
+        limit: Int = 30
+    ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+        let sql = "SELECT raw_text FROM document_sources WHERE volume_id = ? AND document_id = ? LIMIT 1"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil) == SQLITE_OK, let s = stmt else {
+            return ([], 0, nil)
+        }
+        defer { sqlite3_finalize(s) }
+        sqlite3_bind_text(s, 1, volumeId,   -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(s, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(s) == SQLITE_ROW, let cStr = sqlite3_column_text(s, 0) else {
+            return ([], 0, nil)
+        }
+        let raw = String(cString: cStr)
+        guard !raw.isEmpty else { return ([], 0, nil) }
+        let parsed = SourceNoteParser().parse(raw)
+        let result = try relatedDocuments(
+            for: parsed, limit: limit, documentYear: documentYear,
+            excludingVolumeId: volumeId, excludingDocumentId: documentId
+        )
+        return (result.documents, result.totalCount, parsed.archivalNeighborKey)
+    }
+
+    /// Returns archival neighbors for a **volume-level source entry** (a row in a
+    /// volume's front-matter sources list), which has no document key of its own.
+    ///
+    /// Matches on the entry's lot file when present, else its `(recordGroup, series)`.
+    /// Entries with neither have no document-level match key and return empty.
+    ///
+    /// - Parameters:
+    ///   - lotFile: The entry's lot file (e.g. `"64 D 199"`), if any.
+    ///   - recordGroup: The entry's record group (e.g. `"59"`), if any.
+    ///   - series: The entry's series name, if any.
+    ///   - limit: Maximum neighbors to return. Default 30.
+    /// - Returns: Matched documents (≤ `limit`), the total match count, and the
+    ///   human-readable archival `basis`, or `basis == nil` when nothing matched.
+    public func archivalNeighbors(
+        forLotFile lotFile: String?,
+        recordGroup: String?,
+        series: String?,
+        limit: Int = 30
+    ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+        if let lot = lotFile?.trimmingCharacters(in: .whitespaces), !lot.isEmpty {
+            let r = try relatedByLotFile(lot, limit: limit)
+            return (r.documents, r.totalCount, "Lot \(lot)")
+        }
+        if let rg = recordGroup?.trimmingCharacters(in: .whitespaces), !rg.isEmpty,
+           let s = series?.trimmingCharacters(in: .whitespaces), !s.isEmpty {
+            let r = try relatedByCollection(recordGroup: rg, series: s, limit: limit)
+            return (r.documents, r.totalCount, "RG \(rg): \(s)")
+        }
+        return ([], 0, nil)
+    }
+
     // MARK: - Related Document Helpers
 
     /// SQL fragment + params that exclude the document being viewed from its own neighbors.
