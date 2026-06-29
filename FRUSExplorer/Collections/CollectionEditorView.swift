@@ -1354,7 +1354,13 @@ struct ExportSheetView: View {
                 return
             }
             do {
-                let results = try await searchService.search(parameters: savedSearch.searchParameters)
+                // Resolve the full result set (not just the first page) — the default
+                // `search` limit is `defaultPageSize` (20), which silently truncated
+                // smart-collection exports. Mirror the live saved search's hard limit.
+                let results = try await searchService.search(
+                    parameters: savedSearch.searchParameters,
+                    limit: SearchViewModel.searchHardLimit
+                )
                 let smartEntries = results.enumerated().map { i, r in
                     SmartEntry(documentId: r.documentId, volumeId: r.volumeId, sortOrder: i)
                 }
@@ -1546,7 +1552,11 @@ struct ExportSheetView: View {
             }
             let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })
             guard let savedSearch = try? modelContext.fetch(descriptor).first else { return [] }
-            let results = try await searchService.search(parameters: savedSearch.searchParameters)
+            // Full result set, not the 20-item default page (see runExport).
+            let results = try await searchService.search(
+                parameters: savedSearch.searchParameters,
+                limit: SearchViewModel.searchHardLimit
+            )
             let smart = results.enumerated().map {
                 SmartEntry(documentId: $0.element.documentId, volumeId: $0.element.volumeId, sortOrder: $0.offset)
             }

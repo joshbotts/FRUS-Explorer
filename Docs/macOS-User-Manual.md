@@ -335,7 +335,7 @@ Each rendered document shows:
 |---------|-----------|--------|
 | Person reference | Underlined person name | Click to open Person Index entry |
 | Glossary term | Styled term | Click to open Terms & Abbreviations entry |
-| Cross-reference | Numbered or inline link | Click to jump to the referenced document |
+| Cross-reference | Numbered or inline link | Click to jump to the referenced document; if its volume isn't downloaded, the app offers to download it |
 | Source note | Text at top of document | Click to open Source Explorer (Section 12) |
 
 `[SCREENSHOT: Document close-up showing a person reference, glossary term, and cross-reference link all visible]`
@@ -434,7 +434,7 @@ Use the **Degree** picker to control how many hops from the focus document are d
 |--------|--------|
 | Hover | Shows the full document title and metadata |
 | Click | Selects the node; opens its details in the reference list panel |
-| Right-click | Context menu: *Recenter Graph*, *Open in Main Window*, *Documents from Same Lot File* (jumps to the Source Explorer's archival neighbors, Section 12) |
+| Right-click | Context menu: *Recenter Graph*, *Open in Main Window*, *Archival Neighbors* (documents from the same archival source — lot file, central file, series, or library; Section 12) |
 | Scroll | Zoom |
 | Drag (background) | Pan |
 
@@ -655,7 +655,7 @@ Select the relevant text (a lot number, decimal file identifier, archival keywor
 
 ### 12.1.2 Documents from This Collection (Archival Neighbors)
 
-Beneath the resolution, Source Explorer lists **other indexed documents that cite the same archival source** — the same lot file, decimal-file segment, or collection — so you can read the document alongside its archival neighbors. The section is always shown when a source note has been parsed, with an explicit loading state and a plain-language empty state explaining *why* there are none (either the note isn't a recognized archival citation, or no other indexed document shares its source) rather than silently disappearing. Click any neighbor to open it. The cross-reference graph's **Documents from Same Lot File** node action (Section 8.4) jumps here directly.
+Beneath the resolution, Source Explorer lists **other indexed documents that cite the same archival source** — the same lot file, central decimal file, record-group series, or presidential-library collection — so you can read the document alongside its archival neighbors. The section is always shown when a source note has been parsed, with an explicit loading state and a plain-language empty state explaining *why* there are none (either the note isn't a recognized archival citation, or no other indexed document shares its source) rather than silently disappearing. Click any neighbor to open it. The same list is exposed as an **Archival Neighbors** action on cross-reference graph nodes (Section 8.4), search results, the browser document list, and each entry in the volume sources list — so provenance neighbors are reachable from wherever you encounter a document.
 
 `[SCREENSHOT: Source Explorer "Documents from This Collection" section listing archival-neighbor documents that share the same lot file]`
 
@@ -673,12 +673,12 @@ The **Analytics** window charts how often a search term appears across the corpu
 
 Open it from the **Analytics** toolbar button in the main window, or by clicking a word in a **Word Cloud** (Section 13.4).
 
-![Corpus Analytics on macOS — a term-frequency chart for "Berlin" by year across the corpus (16,224 documents matched), with the term field, dimension toggles, year-range controls, and a "View in Search" handoff.](screenshots/macos/analytics.png)
+![Corpus Analytics on macOS — a term-frequency chart for "Berlin" by year across the corpus (16,224 documents matched), each bar colour-coded by source volume with a legend, plus the term field, dimension toggles, year-range controls, and a "View in Search" handoff.](screenshots/macos/analytics.png)
 
 ### 13.1 Configuring a Chart
 
 1. Type a search term in the field at the top of the window. The same query syntax as the Search window is supported (see Section 5.2), including quoted phrases (Analytics and Search now agree on phrase queries).
-2. Choose a **dimension**: Decade, Year, Month, Day, **Subseries**, or **By Volume**. The time dimensions chart frequency over time; **Subseries** and **By Volume** break the same query down by where in the corpus it appears, omitting subseries or volumes where the query never occurs.
+2. Choose a **dimension**: Decade, Year, Month, Day, **Subseries**, or **By Volume**. The time dimensions chart frequency over time; **Subseries** and **By Volume** break the same query down by where in the corpus it appears, omitting subseries or volumes where the query never occurs. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the top eight source volumes each get a colour, the rest fold into a grey "Other", and a legend names each volume with its count — so you can see which part of the corpus drives a term in any period (the same encoding the Chronology graph uses).
 3. Choose a **grouping**: All subseries combined, or broken out by subseries.
 4. Drag the **Year Range** slider to zoom in on a particular period, and set an optional **volume/subseries scope** — the same scope Search uses, so you can chart and read the identical corpus subset.
 
@@ -707,7 +707,7 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 
 - **Two views.** A packed **spiral cloud** sizes each term by frequency (rotating some terms to pack the space); a **List** view ranks the same terms with a weight bar and exact counts, and is what VoiceOver reads.
 - **Lenses.** A row of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). When a scope lacks enough of a given kind of term, the cloud says so rather than showing a near-empty result.
-- **Act on a term.** Click a word to chart how often it appears across the whole corpus in **Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word for that scope, **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
+- **Act on a term.** Click a word to chart how often it appears across the whole corpus in **Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word — either **in all word clouds** or only **in this lens** (managed afterwards in Settings → Word Cloud) — **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
 - **Tuning.** Settings → Word Cloud sets minimum word length and occurrence count, toggles plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintains your own **hidden-word lists** (global, or per lens).
 
 Corpus- and subseries-wide clouds are cached on disk after the first computation, so reopening them is fast.

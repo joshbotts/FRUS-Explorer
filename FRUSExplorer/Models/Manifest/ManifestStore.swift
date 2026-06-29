@@ -112,18 +112,42 @@ public final class ManifestStore {
 
     /// The date range spanning the earliest to latest FRUS volume.
     ///
-    /// Derived by scanning the leading 4-digit year prefix of every known subseries
-    /// identifier. Falls back to 1861-01-01…1992-12-31 when the manifest is empty.
+    /// The lower bound is the earliest subseries **start** year; the upper bound is the
+    /// latest subseries **end** year (via `subseriesEndYear(_:)`), so a span like
+    /// `"1989-92"` contributes 1992, not 1989 — the documents themselves run to the end
+    /// of the span. Falls back to 1861-01-01…1992-12-31 when the manifest is empty.
     /// Recomputed whenever `diffResult` or `bundledEntries` changes (no manual caching
     /// needed because `@Observable` tracks property access automatically).
     ///
     /// Typical result for the full 552-volume corpus: `1861-01-01...1992-12-31`.
     public var corpusDateRange: ClosedRange<Date> {
         let source = diffResult?.known ?? bundledEntries
-        let years = source.compactMap { Int($0.subseries.prefix(4)) }
-        let minYear = years.min() ?? 1861
-        let maxYear = years.max() ?? 1992
+        let minYear = source.compactMap { Int($0.subseries.prefix(4)) }.min() ?? 1861
+        let maxYear = source.compactMap { Self.subseriesEndYear($0.subseries) }.max() ?? 1992
         return Self.corpusYearStart(minYear)...Self.corpusYearEnd(maxYear)
+    }
+
+    /// The four-digit **end** year of a FRUS subseries identifier.
+    ///
+    /// Subseries identifiers encode a coverage span: `"1969-76"`, `"1989-92"`,
+    /// `"1993-2000"`, or a bare single year like `"1861"`. This returns the span's end
+    /// year, expanding a two-digit end to four digits relative to the start century
+    /// (`"1989-92"` → 1992) and handling century rollover (`"1899-01"` → 1901). A bare
+    /// year returns itself. Returns `nil` when the leading year cannot be parsed.
+    public static func subseriesEndYear(_ subseries: String) -> Int? {
+        let parts = subseries.split(separator: "-", maxSplits: 1)
+        guard let startPart = parts.first, startPart.count == 4, let start = Int(startPart) else {
+            return nil
+        }
+        guard parts.count == 2 else { return start }   // bare single-year subseries
+        let endPart = parts[1]
+        if endPart.count == 4, let end = Int(endPart) { return end }
+        if endPart.count == 2, let twoDigit = Int(endPart) {
+            var end = (start / 100) * 100 + twoDigit
+            if end < start { end += 100 }              // century rollover (e.g. 1899-01 → 1901)
+            return end
+        }
+        return start
     }
 
     /// Returns `Jan 1` of the given year in the Gregorian calendar.

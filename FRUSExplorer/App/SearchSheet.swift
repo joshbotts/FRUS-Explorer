@@ -91,6 +91,8 @@ struct MacSearchWindowView: View {
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var saveSearchName = ""
+    /// When set, presents the Archival Neighbors sheet for a search result's document.
+    @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
 
     /// All user tags fetched from SwiftData. Passed to `SearchResultRow` so tag UUID
     /// strings in results can be resolved to human-readable names.
@@ -176,6 +178,10 @@ struct MacSearchWindowView: View {
             if let filterVM = searchVM.filterVM {
                 SearchFilterView(vm: filterVM)
             }
+        }
+        .sheet(item: $archivalNeighborsTarget) { key in
+            ArchivalNeighborsSheet(appState: appState, docKey: key)
+                .environment(appState)
         }
         .sheet(isPresented: $showCitationLookup) {
             CitationLookupView()
@@ -776,6 +782,19 @@ struct MacSearchWindowView: View {
                             String(localized: "search.result.openNewWindow",
                                    defaultValue: "Open in New Window"),
                             systemImage: "macwindow.on.rectangle"
+                        )
+                    }
+                    Button {
+                        archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                            volumeId:     result.volumeId,
+                            documentId:   result.documentId,
+                            documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
+                        )
+                    } label: {
+                        Label(
+                            String(localized: "search.result.archivalNeighbors",
+                                   defaultValue: "Archival Neighbors…"),
+                            systemImage: "archivebox"
                         )
                     }
                 }

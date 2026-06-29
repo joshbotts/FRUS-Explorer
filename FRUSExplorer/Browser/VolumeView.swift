@@ -38,6 +38,10 @@ struct VolumeView: View {
     let volume: VolumeManifestEntry
 
     @State private var showConnectionGraph = false
+    /// Set when the user taps Download on the "Download Required" placeholder, so the
+    /// button flips to immediate "Download started" feedback (the volume stays
+    /// undownloaded until the transfer + indexing finish, so `isDownloaded` can't drive this).
+    @State private var downloadRequested = false
 
     var body: some View {
         List {
@@ -128,7 +132,7 @@ struct VolumeView: View {
 
         if !isDownloaded {
             Section {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 10) {
                     Label(
                         String(localized: "browser.volume.downloadRequired",
                                defaultValue: "Download Required"),
@@ -139,6 +143,31 @@ struct VolumeView: View {
                                 defaultValue: "Download this volume to browse its contents."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
+
+                    if downloadRequested {
+                        Label(
+                            String(localized: "browser.volume.downloadStarted",
+                                   defaultValue: "Download started."),
+                            systemImage: "checkmark.circle"
+                        )
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    } else {
+                        Button {
+                            guard let dm = vm.downloadManager else { return }
+                            downloadRequested = true
+                            Task { await dm.enqueueDownload(volumeId: volume.volumeId,
+                                                            downloadUrl: volume.downloadUrl) }
+                        } label: {
+                            Label(
+                                String(localized: "browser.volume.downloadAction",
+                                       defaultValue: "Download Volume"),
+                                systemImage: "arrow.down.circle"
+                            )
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(vm.downloadManager == nil)
+                    }
                 }
                 .padding(.vertical, 6)
             }

@@ -33,9 +33,10 @@ Search (⌘F) opens its own window that stays open while you read — a phrase o
 
 ## Step 6 — New in this build
 
-- **Word Cloud** — the toolbar button opens a window whose scope picker retargets it to any subseries, volume, collection, tag, saved search, or the corpus; per-row buttons in the Browser and Research strip open scoped clouds. Try the **lens chips** (People, Places, Concepts, Sentiment…); **clicking a word now charts it across the corpus in Corpus Analytics** (scoped option on volume/subseries clouds). Compare scopes, export PNG/PDF/CSV; tune in Settings → **Word Cloud**.
-- **Zotero (Web API)** — paste a key in Settings → Advanced → **Zotero**, then a document's **Share → Send to Zotero Library** (or a collection) pushes it — with tags and notes — into your library.
-- **Sync settings across devices** — Settings → **iCloud Sync** has a new toggle (off by default) to mirror word-cloud filters, citation style, and a few preferences across devices.
+- **Archival Neighbors** — right-click a document (a cross-reference graph node, a search result, or a row in a volume's document list) → **Archival Neighbors** to find other documents from the same archival source (lot file, central file, record-group series, or library). Also per-entry in a volume's Sources list, and in Source Explorer.
+- **Download from anywhere** — an undownloaded volume shows a **Download Volume** button; a cross-reference into an undownloaded volume offers to download it rather than dead-ending.
+- **Word cloud — hide a word** in *all* word clouds or just the *current lens* (right-click a word); manage in Settings → **Word Cloud**.
+- **Corpus Analytics** — By-Year / By-Decade charts are colour-coded by top source volume (with a legend); the year range now reaches 1992.
 
 ## Feedback
 

@@ -185,6 +185,10 @@ struct DocumentView: View {
     @State private var vm: DocumentViewModel?
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
     @State private var activeSheet: DocumentSheet?
+    /// Set when a cross-reference targets a document in an undownloaded volume; drives a
+    /// prompt offering to download it (or view the connection graph) rather than silently
+    /// redirecting.
+    @State private var crossRefDownloadVolumeId: String? = nil
     /// Selected detent for the cross-reference graph sheet; starts at `.large`
     /// so the graph never opens half-height (Session 161).
     @State private var graphSheetDetent: PresentationDetent = .large
@@ -401,6 +405,38 @@ struct DocumentView: View {
             Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) { }
         } message: {
             Text(vm.summarizationError ?? "")
+        }
+        .alert(
+            String(localized: "document.crossref.download.title",
+                   defaultValue: "Volume Not Downloaded"),
+            isPresented: Binding(
+                get: { crossRefDownloadVolumeId != nil },
+                set: { if !$0 { crossRefDownloadVolumeId = nil } }
+            ),
+            presenting: crossRefDownloadVolumeId
+        ) { volumeId in
+            Button(String(localized: "document.crossref.download.confirm",
+                          defaultValue: "Download Volume")) {
+                if let dm = appState.downloadManager,
+                   let entry = appState.manifestStore.entry(forVolumeId: volumeId) {
+                    Task { await dm.enqueueDownload(volumeId: volumeId,
+                                                    downloadUrl: entry.downloadUrl) }
+                }
+                crossRefDownloadVolumeId = nil
+            }
+            Button(String(localized: "document.crossref.download.viewGraph",
+                          defaultValue: "View Connections")) {
+                crossRefDownloadVolumeId = nil
+                activeSheet = .crossReferenceGraph
+            }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {
+                crossRefDownloadVolumeId = nil
+            }
+        } message: { volumeId in
+            let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+            Text(String(format: String(localized: "document.crossref.download.message %@",
+                                        defaultValue: "The linked document is in “%@”, which isn't downloaded yet. Download it to open the document, or view how it connects to this one."),
+                        title))
         }
         // Single consolidated sheet driven by the DocumentSheet enum (F-024).
         // One .sheet modifier is cheaper than 7 and makes the "only one sheet at a
@@ -720,9 +756,9 @@ struct DocumentView: View {
     private func navigateToCrossRef(documentId: String, volumeId: String) {
         guard !documentId.isEmpty else { return }
         guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volumeId) else {
-            activeSheet = .crossReferenceGraph
+            crossRefDownloadVolumeId = volumeId
             #if DEBUG
-            print("[DocumentView] Cross-ref: \(volumeId) not downloaded, opening graph")
+            print("[DocumentView] Cross-ref: \(volumeId) not downloaded, offering download")
             #endif
             return
         }

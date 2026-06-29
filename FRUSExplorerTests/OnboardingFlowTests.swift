@@ -78,7 +78,7 @@ struct OnboardingFlowTests {
         #expect(minComponents.year  == 1861)
         #expect(minComponents.month == 1)
         #expect(minComponents.day   == 1)
-        #expect(maxComponents.year  == 1977)
+        #expect(maxComponents.year  == 1980)   // end year of the latest subseries "1977-80"
         #expect(maxComponents.month == 12)
         #expect(maxComponents.day   == 31)
     }
@@ -95,6 +95,17 @@ struct OnboardingFlowTests {
 
         #expect(minYear == 1861)
         #expect(maxYear == 1992)
+    }
+
+    @Test("subseriesEndYear — expands 2-digit ends, handles 4-digit ends, bare years, rollover")
+    func subseriesEndYearParsing() {
+        #expect(ManifestStore.subseriesEndYear("1969-76")   == 1976)
+        #expect(ManifestStore.subseriesEndYear("1989-92")   == 1992)   // the reported 1989 cap
+        #expect(ManifestStore.subseriesEndYear("1977-80")   == 1980)
+        #expect(ManifestStore.subseriesEndYear("1993-2000") == 2000)   // 4-digit end
+        #expect(ManifestStore.subseriesEndYear("1861")      == 1861)   // bare single-year
+        #expect(ManifestStore.subseriesEndYear("1899-01")   == 1901)   // century rollover
+        #expect(ManifestStore.subseriesEndYear("notayear")  == nil)
     }
 
     // MARK: - DownloadScope — corpus
@@ -149,7 +160,7 @@ struct OnboardingFlowTests {
         let endYear   = vm.projectDateEnd.map   { cal.component(.year, from: $0) }
 
         #expect(startYear == 1861)
-        #expect(endYear   == 1969)
+        #expect(endYear   == 1976)   // end year of the latest subseries "1969-76"
     }
 
     // MARK: - Subseries sort order

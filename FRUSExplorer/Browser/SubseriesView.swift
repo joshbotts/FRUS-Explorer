@@ -365,6 +365,18 @@ private struct VolumeRowContextMenu: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
+        if let dm = appState.downloadManager, !dm.isVolumeDownloaded(volume.volumeId) {
+            Button {
+                Task { await dm.enqueueDownload(volumeId: volume.volumeId,
+                                                downloadUrl: volume.downloadUrl) }
+            } label: {
+                Label(
+                    String(localized: "browser.volume.download.action",
+                           defaultValue: "Download Volume"),
+                    systemImage: "arrow.down.circle"
+                )
+            }
+        }
         if appState.interruptedVolumeIds.contains(volume.volumeId),
            let pipeline = appState.indexingPipeline {
             Button {

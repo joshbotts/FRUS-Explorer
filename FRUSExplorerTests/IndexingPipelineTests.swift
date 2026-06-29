@@ -824,6 +824,73 @@ struct TextExtractionTests {
     }
 }
 
+// MARK: - ArchivalNeighborsTests
+
+/// Verifies the archival-neighbors entry points added for the cross-reference graph,
+/// search, browser, and volume-sources surfaces: the by-document-key method re-parses a
+/// document's stored source note and finds others sharing its lot file (excluding the
+/// source), and the by-source-entry method finds all documents in a lot file.
+///
+/// Version history:
+///   1.0 — Session 166: archival-neighbors rollout
+@Suite("IndexingPipeline — archival neighbors")
+struct ArchivalNeighborsTests {
+
+    /// `<note type="source">` text that parses to `.lotFile("61-D 146")`
+    /// (the inline-lot-file form exercised by `SourceExplorerTests`).
+    private static let lotNote = "<note type=\"source\">SPA Files: Lot 61-D 146, Box 4581</note>"
+
+    @Test("archivalNeighbors(forVolumeId:) finds documents sharing a lot file, excluding the source")
+    func byDocumentKeyMatchesLotFile() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head>\(Self.lotNote)<p>First.</p>"),
+                    ("d2", "<head>2. Memo</head>\(Self.lotNote)<p>Second.</p>"),
+                    ("d3", "<head>3. Memo</head><note type=\"source\">Source: Department of State, Central Files 1967-69, POL 7 VIET S. Confidential.</note><p>Third.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let result = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids.contains("d2"), "d2 shares the lot file and should be a neighbor")
+            #expect(!ids.contains("d1"), "the source document is excluded from its own neighbors")
+            #expect(!ids.contains("d3"), "a document with a different source is not a lot-file neighbor")
+            #expect(result.basis?.contains("61-D 146") == true, "basis names the shared lot file")
+        }
+    }
+
+    @Test("archivalNeighbors(forLotFile:) finds all documents in a lot file (volume-source entry path)")
+    func byLotFileEntryMatches() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head>\(Self.lotNote)<p>First.</p>"),
+                    ("d2", "<head>2. Memo</head>\(Self.lotNote)<p>Second.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let result = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil)
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids.contains("d1") && ids.contains("d2"),
+                    "both documents in the lot file are returned for the volume-source entry path")
+            #expect(result.basis?.contains("61-D 146") == true)
+        }
+    }
+}
+
 // MARK: - DateIndexingAccuracyTests
 
 /// Verifies that `extractStructuredDate` extracts dates from `.date` AST nodes

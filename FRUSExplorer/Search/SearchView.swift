@@ -80,6 +80,8 @@ struct SearchView: View {
     @State private var showSavedSearches = false
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
+    /// When set, presents the Archival Neighbors sheet for a search result's document.
+    @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
     private let initialParameters: SearchParameters?
 
     init(
@@ -170,6 +172,10 @@ struct SearchView: View {
                 }
                 .sheet(isPresented: $showCitationLookup) {
                     CitationLookupView()
+                }
+                .sheet(item: $archivalNeighborsTarget) { key in
+                    ArchivalNeighborsSheet(appState: appState, docKey: key)
+                        .environment(appState)
                 }
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)
@@ -698,6 +704,19 @@ struct SearchView: View {
                                 systemImage: "rectangle.portrait"
                             )
                         }
+                    }
+                    Button {
+                        archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                            volumeId:     result.volumeId,
+                            documentId:   result.documentId,
+                            documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
+                        )
+                    } label: {
+                        Label(
+                            String(localized: "search.result.archivalNeighbors",
+                                   defaultValue: "Archival Neighbors…"),
+                            systemImage: "archivebox"
+                        )
                     }
                 }
                 #endif

@@ -298,8 +298,16 @@ struct FRUSExplorerApp: App {
                 #endif
                 let volumesToIndex = Array(state.interruptedVolumeIds)
                 if volumesToIndex.isEmpty {
-                    // No specific interrupted volumes; index anything not yet done.
-                    try? await pipeline.indexAllVolumes()
+                    // No interrupted volumes: index only downloaded-but-unindexed
+                    // volumes, never the whole corpus. A healthy, fully-indexed corpus
+                    // yields an empty list, so a backgrounding whose only pending work
+                    // is word-cloud precompute no longer triggers a spurious full
+                    // reindex (which lit the genuine "Indexing…" banner and looked like
+                    // an unexplained reindex after a manual rebuild).
+                    let unindexed = (try? await pipeline.unindexedDownloadedVolumeIds()) ?? []
+                    for volumeId in unindexed {
+                        try? await pipeline.indexVolume(volumeId)
+                    }
                 } else {
                     for volumeId in volumesToIndex {
                         try? await pipeline.indexVolume(volumeId)

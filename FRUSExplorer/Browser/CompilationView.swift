@@ -59,6 +59,9 @@ struct CompilationView: View {
 
     @Environment(AppState.self) private var appState
 
+    /// When set, presents the Archival Neighbors sheet for a document row.
+    @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
+
     private var cacheKey: String {
         vm.compilationKey(volumeId: volumeId, sectionId: section.sectionId)
     }
@@ -111,6 +114,10 @@ struct CompilationView: View {
             if vm.isIndexed(volumeId) {
                 Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
             }
+        }
+        .sheet(item: $archivalNeighborsTarget) { key in
+            ArchivalNeighborsSheet(appState: appState, docKey: key)
+                .environment(appState)
         }
     }
 
@@ -229,6 +236,19 @@ struct CompilationView: View {
                         DocumentRowLabel(doc: doc)
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                                volumeId:     doc.volumeId,
+                                documentId:   doc.documentId,
+                                documentYear: nil
+                            )
+                        } label: {
+                            Label(String(localized: "browser.compilation.archivalNeighbors",
+                                         defaultValue: "Archival Neighbors…"),
+                                  systemImage: "archivebox")
+                        }
+                    }
                 }
             }
         }
