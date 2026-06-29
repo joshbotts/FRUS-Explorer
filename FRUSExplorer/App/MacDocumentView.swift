@@ -65,6 +65,9 @@ struct MacDocumentView: View {
     @State private var nextEntry: DocumentBrowserEntry? = nil
     @State private var showPersonNotFound = false
     @State private var showGlossNotFound  = false
+    /// Set when a cross-reference targets a document in an undownloaded volume; drives
+    /// a prompt offering to download it instead of pushing into a guaranteed load failure.
+    @State private var crossRefDownloadVolumeId: String? = nil
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
     @State private var showTagPicker = false
@@ -134,12 +137,36 @@ struct MacDocumentView: View {
                     .padding(.top, 40)
                     .frame(maxWidth: .infinity)
             } else if let error = vm.loadError {
-                ContentUnavailableView(
-                    "Could not load document",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(error.localizedDescription)
-                )
-                .padding(.top, 40)
+                if let dm = appState.downloadManager, !dm.isVolumeDownloaded(entry.volumeId) {
+                    // The load failed because the volume isn't downloaded (e.g. reached
+                    // via history re-open or a deep link). Offer download rather than a
+                    // bare error, so this is never a dead end.
+                    ContentUnavailableView {
+                        Label(String(localized: "document.notDownloaded.title",
+                                     defaultValue: "Volume Not Downloaded"),
+                              systemImage: "arrow.down.circle")
+                    } description: {
+                        Text(String(localized: "document.notDownloaded.detail",
+                                    defaultValue: "This document is in a volume you haven't downloaded yet."))
+                    } actions: {
+                        Button(String(localized: "document.notDownloaded.download",
+                                      defaultValue: "Download Volume")) {
+                            if let manifestEntry = appState.manifestStore.entry(forVolumeId: entry.volumeId) {
+                                Task { await dm.enqueueDownload(volumeId: entry.volumeId,
+                                                                downloadUrl: manifestEntry.downloadUrl) }
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding(.top, 40)
+                } else {
+                    ContentUnavailableView(
+                        "Could not load document",
+                        systemImage: "exclamationmark.triangle",
+                        description: Text(error.localizedDescription)
+                    )
+                    .padding(.top, 40)
+                }
             } else {
                 // Pre-load state: .task hasn't fired yet, or downloadManager wasn't
                 // ready. Never show a blank view — show a spinner so the user sees
@@ -227,6 +254,33 @@ struct MacDocumentView: View {
         } message: {
             Text(String(localized: "glossNotFound.detail",
                         defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes."))
+        }
+        .alert(
+            String(localized: "document.crossref.download.title",
+                   defaultValue: "Volume Not Downloaded"),
+            isPresented: Binding(
+                get:  { crossRefDownloadVolumeId != nil },
+                set:  { if !$0 { crossRefDownloadVolumeId = nil } }
+            ),
+            presenting: crossRefDownloadVolumeId
+        ) { volumeId in
+            Button(String(localized: "document.crossref.download.confirm",
+                          defaultValue: "Download Volume")) {
+                if let dm = appState.downloadManager,
+                   let entry = appState.manifestStore.entry(forVolumeId: volumeId) {
+                    Task { await dm.enqueueDownload(volumeId: volumeId,
+                                                    downloadUrl: entry.downloadUrl) }
+                }
+                crossRefDownloadVolumeId = nil
+            }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {
+                crossRefDownloadVolumeId = nil
+            }
+        } message: { volumeId in
+            let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+            Text(String(format: String(localized: "document.crossref.download.message %@",
+                                        defaultValue: "The linked document is in “%@”, which isn't downloaded yet. Download it to open the document."),
+                        title))
         }
         .alert(
             String(localized: "highlight.delete.title",
@@ -784,9 +838,18 @@ struct MacDocumentView: View {
         }
     }
 
-    /// Pushes `documentId` in `volumeId` onto the navigation stack.
+    /// Pushes `documentId` in `volumeId` onto the navigation stack, or — when the
+    /// target volume isn't downloaded — prompts to download it rather than pushing
+    /// into a guaranteed load failure (mirrors the iOS cross-ref guard).
     private func navigateToCrossRef(documentId: String, volumeId: String) {
         guard !documentId.isEmpty else { return }
+        if let dm = appState.downloadManager, !dm.isVolumeDownloaded(volumeId) {
+            crossRefDownloadVolumeId = volumeId
+            #if DEBUG
+            print("[MacDocumentView] Cross-ref: \(volumeId) not downloaded, offering download")
+            #endif
+            return
+        }
         let dest = DocumentBrowserEntry(
             documentId: documentId,
             volumeId: volumeId,
