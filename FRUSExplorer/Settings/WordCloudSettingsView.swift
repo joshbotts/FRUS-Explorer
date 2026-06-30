@@ -25,6 +25,8 @@ struct WordCloudSettingsView: View {
     @AppStorage(WordCloudSettings.Keys.foldPlurals) private var foldPlurals = true
     @AppStorage(WordCloudSettings.Keys.minLength) private var minLength = WordCloudSettings.defaultMinLength
     @AppStorage(WordCloudSettings.Keys.minCount) private var minCount = WordCloudSettings.defaultMinCount
+    @AppStorage(WordCloudSettings.Keys.fontDesign) private var fontDesignRaw = WordCloudFontDesign.rounded.rawValue
+    @AppStorage(WordCloudSettings.Keys.density) private var densityRaw = WordCloudDensity.balanced.rawValue
 
     @State private var globalWords: [String] = []
     @State private var newGlobalWord = ""
@@ -36,6 +38,7 @@ struct WordCloudSettingsView: View {
         Form {
             filteringSection
             thresholdsSection
+            appearanceSection
             globalStopwordsSection
             lensStopwordsSection
         }
@@ -94,6 +97,32 @@ struct WordCloudSettingsView: View {
         } footer: {
             Text(String(localized: "settings.wordcloud.thresholds.footer",
                         defaultValue: "Drop terms shorter than the minimum length or appearing fewer than the minimum number of times. Raising either makes a sparser, higher-signal cloud."))
+        }
+    }
+
+    // MARK: - Appearance
+
+    private var appearanceSection: some View {
+        Section {
+            Picker(selection: $fontDesignRaw) {
+                ForEach(WordCloudFontDesign.allCases) { design in
+                    Text(design.label).tag(design.rawValue)
+                }
+            } label: {
+                Text(String(localized: "settings.wordcloud.font", defaultValue: "Font"))
+            }
+            Picker(selection: $densityRaw) {
+                ForEach(WordCloudDensity.allCases) { density in
+                    Text(density.label).tag(density.rawValue)
+                }
+            } label: {
+                Text(String(localized: "settings.wordcloud.density", defaultValue: "Density"))
+            }
+        } header: {
+            Text(String(localized: "settings.wordcloud.appearance.header", defaultValue: "Appearance"))
+        } footer: {
+            Text(String(localized: "settings.wordcloud.appearance.footer",
+                        defaultValue: "Choose the typeface the cloud is drawn in and how tightly its words pack together. Compact fits more terms; airy spaces them out for legibility. These settings apply on this device only."))
         }
     }
 

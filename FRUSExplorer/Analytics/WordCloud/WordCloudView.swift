@@ -88,6 +88,16 @@ struct WordCloudView: View {
     @AppStorage(WordCloudSettings.Keys.minCount) private var minCount = WordCloudSettings.defaultMinCount
     @AppStorage(WordCloudSettings.Keys.revision) private var settingsRevision = 0
 
+    // Device-local appearance: typeface and packing density. Changing either restyles
+    // and re-lays out an open cloud (both feed `LayoutKey`).
+    @AppStorage(WordCloudSettings.Keys.fontDesign) private var fontDesignRaw = WordCloudFontDesign.rounded.rawValue
+    @AppStorage(WordCloudSettings.Keys.density) private var densityRaw = WordCloudDensity.balanced.rawValue
+
+    /// The resolved typeface family for the cloud.
+    private var fontDesign: WordCloudFontDesign { WordCloudFontDesign(rawValue: fontDesignRaw) ?? .rounded }
+    /// The resolved packing density for the cloud.
+    private var density: WordCloudDensity { WordCloudDensity(rawValue: densityRaw) ?? .balanced }
+
     @State private var viewMode: WordCloudViewMode = .cloud
     @State private var result: WordCloudResult = .empty
     @State private var title: String = ""
@@ -284,7 +294,7 @@ struct WordCloudView: View {
             ZStack {
                 ForEach(placements) { word in
                     Text(word.term)
-                        .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
+                        .font(.system(size: word.fontSize, weight: .semibold, design: fontDesign.swiftUIDesign))
                         .foregroundStyle(wordColor(term: word.term, colorIndex: word.colorIndex))
                         .fixedSize()
                         .rotationEffect(.degrees(word.rotationDegrees))
@@ -298,8 +308,12 @@ struct WordCloudView: View {
             .contentShape(Rectangle())
             .task(id: LayoutKey(width: geo.size.width, height: geo.size.height,
                                 signature: scope.signature, exclude: excludeBoilerplate,
-                                lens: lens, termCount: result.terms.count)) {
-                placements = WordCloudLayout.place(terms: result.terms, in: geo.size)
+                                lens: lens, termCount: result.terms.count,
+                                fontDesign: fontDesign, density: density)) {
+                placements = WordCloudLayout.place(
+                    terms: result.terms, in: geo.size,
+                    spacingScale: density.spacingScale, widthFactor: fontDesign.widthFactor
+                )
             }
         }
         .accessibilityRepresentation { rankedList }
@@ -772,6 +786,8 @@ struct WordCloudView: View {
         let exclude: Bool
         let lens: WordCloudLens
         let termCount: Int
+        let fontDesign: WordCloudFontDesign
+        let density: WordCloudDensity
     }
 }
 
