@@ -569,17 +569,8 @@ struct AnalyticsView: View {
                 .foregroundStyle(.secondary)
                 .font(.caption)
 
-            Text(
-                chartAxis.isDateBased
-                    ? String(
-                        localized: "analytics.handoff.prompt.dated",
-                        defaultValue: "See the \(yearRangeStart)–\(yearRangeEnd) documents behind this chart"
-                      )
-                    : String(
-                        localized: "analytics.handoff.prompt.plain",
-                        defaultValue: "See the documents behind this chart"
-                      )
-            )
+            Text(String(localized: "analytics.handoff.prompt.plain",
+                        defaultValue: "See the documents behind this chart"))
             .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)

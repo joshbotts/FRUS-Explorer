@@ -282,11 +282,19 @@ struct OnboardingView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             } else {
-                Text("No volumes are downloading yet — you can add them any time from the Corpus Browser (⇧⌘B).")
+                #if os(macOS)
+                Text("Download volumes whenever you like from the Corpus Browser (⇧⌘B) to search and read them offline.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
+                #else
+                Text("Download volumes whenever you like from the Browse tab to search and read them offline.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                #endif
             }
 
             Text("A default research project has been created for you. You can rename it or create additional projects from the project picker.")
