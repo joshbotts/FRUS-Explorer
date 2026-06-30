@@ -179,6 +179,7 @@ struct ChronologyView: View {
         appState.pendingWordCloud = scope
         #if os(macOS)
         openWindow(id: "frus.wordcloud")
+        bringMacWindowToFront(id: "frus.wordcloud")
         #else
         // The word cloud is presented at the tab-container level (MainTabView) on iOS;
         // dismiss this sheet so it can present on the `pendingWordCloud` change.

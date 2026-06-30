@@ -796,6 +796,7 @@ struct WordCloudView: View {
         #endif
         #if os(macOS)
         openWindow(id: "frus.chronology")
+        bringMacWindowToFront(id: "frus.chronology")
         #else
         // Chronology is presented from the Browse tab on iOS; surface it and dismiss
         // this sheet so `BrowserView` can present it on the `pendingChronology` change.
