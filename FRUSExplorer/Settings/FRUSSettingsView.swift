@@ -268,6 +268,7 @@ private struct SettingsDisplayPane: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
     @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
+    @AppStorage(ChartSeriesPalette.storageKey) private var chartSeriesCount = ChartSeriesPalette.defaultCount
 
     var body: some View {
         ScrollView {
@@ -317,6 +318,17 @@ private struct SettingsDisplayPane: View {
                 .padding(.bottom, 8)
 
                 Text("\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. The in-document Read/Research control always overrides for the current document.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+
+                PaneSectionHeader(title: "Chart colors")
+                Stepper(value: $chartSeriesCount, in: ChartSeriesPalette.range) {
+                    Text("Distinctly-colored volumes: \(chartSeriesCount)")
+                }
+                .frame(maxWidth: 280)
+                .padding(.bottom, 8)
+
+                Text("How many volumes are shown as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }

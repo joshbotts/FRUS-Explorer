@@ -141,7 +141,16 @@ final class ChronologyViewModel {
 
     /// Maximum distinct chart series (coloured volumes). Beyond this the smallest
     /// volumes fold into a single "Other" series so the legend and palette stay legible.
-    nonisolated static let maxChartSeries = 8
+    /// Seeded from the global default (`ChartSeriesPalette`) and overridable per view via
+    /// `applySeriesCount(_:)`.
+    var seriesCount: Int = ChartSeriesPalette.defaultCount
+
+    /// Cached chart inputs so `applySeriesCount(_:)` can rebuild the distribution chart
+    /// when the series count changes, without re-running the (potentially large) date
+    /// query. The aggregate counts are set on the capped path; otherwise the loaded
+    /// `groups` are reused.
+    private var cachedChartCounts: [(bucketKey: String, volumeId: String, count: Int)]?
+    private var cachedViewBucket: DateBucket?
 
     // MARK: - Init
 
@@ -205,9 +214,11 @@ final class ChronologyViewModel {
                 let counts = (try? await pipeline.dateBucketVolumeCounts(
                     range, bucket: viewBucket, scopeVolumeIds: nil)) ?? []
                 if !counts.isEmpty {
+                    cachedChartCounts = counts
+                    cachedViewBucket = viewBucket
                     let chart = Self.makeChart(fromCounts: counts,
                                                viewBucket: viewBucket,
-                                               maxSeries: Self.maxChartSeries)
+                                               maxSeries: seriesCount)
                     chartBuckets = chart.buckets
                     chartSeries = chart.series
                     totalShown = counts.reduce(0) { $0 + $1.count }
@@ -219,14 +230,18 @@ final class ChronologyViewModel {
                 } else {
                     // Defensive fallback: keep the row-derived chart if the aggregate
                     // query returned nothing (e.g. only spanning documents).
-                    let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
+                    cachedChartCounts = nil
+                    cachedViewBucket = nil
+                    let chart = Self.makeChart(from: groups, maxSeries: seriesCount)
                     chartBuckets = chart.buckets
                     chartSeries = chart.series
                     chartShowsFullDistribution = false
                     aggregatedMagnifierBars = [:]
                 }
             } else {
-                let chart = Self.makeChart(from: groups, maxSeries: Self.maxChartSeries)
+                cachedChartCounts = nil
+                cachedViewBucket = nil
+                let chart = Self.makeChart(from: groups, maxSeries: seriesCount)
                 chartBuckets = chart.buckets
                 chartSeries = chart.series
                 chartShowsFullDistribution = false
@@ -244,6 +259,23 @@ final class ChronologyViewModel {
             chartShowsFullDistribution = false
             aggregatedMagnifierBars = [:]
             hasLoaded = true
+        }
+    }
+
+    /// Re-folds the distribution chart for a new colored-series count without re-running
+    /// the date query, by reusing the cached aggregate counts (capped path) or loaded
+    /// `groups`. A no-op when the count is unchanged or no chart has been built yet.
+    func applySeriesCount(_ count: Int) {
+        guard count != seriesCount else { return }
+        seriesCount = count
+        if let counts = cachedChartCounts, let viewBucket = cachedViewBucket {
+            let chart = Self.makeChart(fromCounts: counts, viewBucket: viewBucket, maxSeries: count)
+            chartBuckets = chart.buckets
+            chartSeries = chart.series
+        } else if !groups.isEmpty {
+            let chart = Self.makeChart(from: groups, maxSeries: count)
+            chartBuckets = chart.buckets
+            chartSeries = chart.series
         }
     }
 

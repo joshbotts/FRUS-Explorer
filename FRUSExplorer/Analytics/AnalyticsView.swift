@@ -156,6 +156,12 @@ struct AnalyticsView: View {
     /// Drives the info popover next to the toolbar pickers.
     @State private var showInfoPopover: Bool = false
 
+    /// Global default colored-series count, mirrored from Display settings.
+    @AppStorage(ChartSeriesPalette.storageKey) private var defaultSeriesCount = ChartSeriesPalette.defaultCount
+    /// Per-view colored-series count, seeded from the global default; overrides it for
+    /// this session via the chart-colors menu.
+    @State private var seriesCount = ChartSeriesPalette.defaultCount
+
     /// Parameters this view was opened with — e.g. from `SearchView`'s "Visualize
     /// in Corpus Analytics" handoff when a search hits `searchHardLimit`. Applied
     /// once on appearance via `seedFromInitialParameters()`. `nil` for the normal
@@ -289,6 +295,7 @@ struct AnalyticsView: View {
         // constructor parameter (iOS sheet presentation — a fresh `AnalyticsView`
         // instance is created each time the sheet opens).
         .task {
+            seriesCount = defaultSeriesCount
             seedDefaultYearRange()
             applyAnalyticsParameters(initialParameters)
         }
@@ -684,11 +691,6 @@ struct AnalyticsView: View {
 
     // MARK: - Source Color-Coding (By Year / By Decade)
 
-    /// Palette for the top source volumes — matches the Chronology distribution chart
-    /// so the two surfaces read consistently.
-    private static let sourcePalette: [Color] = [.blue, .orange, .green, .purple, .pink, .teal, .indigo]
-    /// Maximum distinctly-colored source volumes before the rest fold into "Other".
-    private static let maxChartSources = 8
     /// Series key for the folded long tail of volumes.
     private static let otherSourceKey = "__other__"
 
@@ -708,7 +710,7 @@ struct AnalyticsView: View {
     }
 
     /// Ranks the volumes in `raw` by total count over the slice, keeps the top
-    /// `maxChartSources`, folds the rest into a single "Other" series, and returns the
+    /// `seriesCount`, folds the rest into a single "Other" series, and returns the
     /// stacked per-period segments plus the ranked series list. Ranking is computed over
     /// the SAME slice that renders, so the color scale never drops or miscolors a segment.
     private func sourceColoring(_ raw: [(period: Int, volumeId: String, count: Int)])
@@ -717,7 +719,12 @@ struct AnalyticsView: View {
         var volumeTotals: [String: Int] = [:]
         for r in raw { volumeTotals[r.volumeId, default: 0] += r.count }
         let ranked = volumeTotals.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
-        let topKeys = Set(ranked.prefix(Self.maxChartSources).map(\.key))
+        // Show up to `seriesCount` distinct colored volumes total: when more exist, keep
+        // the top (seriesCount - 1) and fold the rest into one "Other" series — matching
+        // the Chronology chart so neither over-colors nor wraps the palette.
+        let usesOther = ranked.count > seriesCount
+        let topRanked = usesOther ? Array(ranked.prefix(seriesCount - 1)) : ranked
+        let topKeys = Set(topRanked.map(\.key))
 
         var segCounts: [String: Int] = [:]   // "period\u{1}seriesKey" → count
         var seriesTotals: [String: Int] = [:]
@@ -733,7 +740,7 @@ struct AnalyticsView: View {
         }
         .sorted { $0.period != $1.period ? $0.period < $1.period : $0.seriesKey < $1.seriesKey }
 
-        var series: [SourceSeries] = ranked.prefix(Self.maxChartSources).compactMap { entry in
+        var series: [SourceSeries] = topRanked.compactMap { entry in
             seriesTotals[entry.key].map { SourceSeries(key: entry.key, total: $0) }
         }
         if let otherTotal = seriesTotals[Self.otherSourceKey] {
@@ -744,7 +751,7 @@ struct AnalyticsView: View {
 
     /// Color for a source series — palette by rank, gray for the folded "Other".
     private func sourceColor(_ key: String, index: Int) -> Color {
-        key == Self.otherSourceKey ? .gray : Self.sourcePalette[index % Self.sourcePalette.count]
+        key == Self.otherSourceKey ? .gray : ChartSeriesPalette.color(at: index)
     }
 
     /// Human label for a source series — a distilled volume label, or "Other volumes".
@@ -1509,6 +1516,26 @@ struct AnalyticsView: View {
                 String(localized: "analytics.fitLine.help",
                        defaultValue: "Toggle the smoothed trend line overlay on the chart.")
             )
+        }
+
+        // Colored-volume count — how many source volumes get a distinct color on the
+        // By-Year / By-Decade charts before the rest fold into "Other".
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Picker(selection: $seriesCount) {
+                    ForEach(Array(ChartSeriesPalette.range), id: \.self) { n in
+                        Text(verbatim: "\(n)").tag(n)
+                    }
+                } label: {
+                    Text(String(localized: "analytics.colors.count", defaultValue: "Colored volumes"))
+                }
+            } label: {
+                Label(String(localized: "analytics.colors.menu", defaultValue: "Chart colors"),
+                      systemImage: "paintpalette")
+            }
+            .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart)
+            .help(String(localized: "analytics.colors.help",
+                         defaultValue: "How many source volumes appear as distinct colors before the rest fold into “Other”"))
         }
 
         // Info button — explains metric semantics, query syntax, and stemming.

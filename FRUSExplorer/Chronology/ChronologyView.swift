@@ -54,15 +54,17 @@ struct ChronologyView: View {
     /// list to documents from that volume. `nil` = show all.
     @State private var selectedSeries: String? = nil
 
+    /// Global default colored-series count, mirrored from Display settings.
+    @AppStorage(ChartSeriesPalette.storageKey) private var defaultSeriesCount = ChartSeriesPalette.defaultCount
+    /// Per-view colored-series count, seeded from the global default; overrides it for
+    /// this session via the chart-colors menu.
+    @State private var seriesCount = ChartSeriesPalette.defaultCount
+
     /// Parameters this view was opened with (a `pendingChronology` handoff). Applied once.
     private let initialParameters: ChronologyParameters?
 
     /// Rows shown in a dense section before the "Show all" expander.
     private static let denseThreshold = 25
-
-    /// Distinct colours for the top chart volumes; the folded "Other" series uses gray.
-    /// System colours so light/dark mode and accessibility contrast are handled by the OS.
-    private static let seriesPalette: [Color] = [.blue, .orange, .green, .purple, .pink, .teal, .indigo]
 
     /// `id` of the spanning section, used as a scroll target from its chip.
     private static let spanningSectionID = "__chronology_spanning__"
@@ -106,6 +108,7 @@ struct ChronologyView: View {
         .frame(minWidth: 640, minHeight: 520)
         #endif
         .task { seedDefaultsAndApply(initialParameters) }
+        .onChange(of: seriesCount) { _, newCount in vm.applySeriesCount(newCount) }
         .onChange(of: appState.pendingChronology) { _, params in
             guard let params else { return }
             apply(params)
@@ -126,6 +129,8 @@ struct ChronologyView: View {
     /// corpus's most recent year (unless a handoff seeds an explicit range).
     private func seedDefaultsAndApply(_ params: ChronologyParameters?) {
         vm.pipeline = appState.indexingPipeline
+        seriesCount = defaultSeriesCount
+        vm.seriesCount = defaultSeriesCount
         if let params {
             apply(params)
             return
@@ -394,7 +399,7 @@ struct ChronologyView: View {
     private func seriesColor(_ key: String, index: Int) -> Color {
         key == chronologyOtherSeriesKey
             ? Color.gray
-            : Self.seriesPalette[index % Self.seriesPalette.count]
+            : ChartSeriesPalette.color(at: index)
     }
 
     /// Colours in `vm.chartSeries` order — shared by the chart's foreground scale and the
@@ -990,6 +995,23 @@ struct ChronologyView: View {
             .disabled(!vm.hasLoaded)
             .help(String(localized: "chronology.sort.help",
                          defaultValue: "Toggle chronological order"))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Picker(selection: $seriesCount) {
+                    ForEach(Array(ChartSeriesPalette.range), id: \.self) { n in
+                        Text(verbatim: "\(n)").tag(n)
+                    }
+                } label: {
+                    Text(String(localized: "chronology.colors.count", defaultValue: "Colored volumes"))
+                }
+            } label: {
+                Label(String(localized: "chronology.colors.menu", defaultValue: "Chart colors"),
+                      systemImage: "paintpalette")
+            }
+            .disabled(!vm.hasLoaded || vm.chartBuckets.isEmpty)
+            .help(String(localized: "chronology.colors.help",
+                         defaultValue: "How many volumes appear as distinct colors before the rest fold into “Other”"))
         }
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {

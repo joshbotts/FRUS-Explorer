@@ -37,6 +37,44 @@ extension AttributedString {
     }
 }
 
+// MARK: - ChartSeriesPalette
+
+/// Shared color palette and configuration for the color-coded series (volumes) in the
+/// Chronology distribution chart and the Corpus Analytics source-colored charts.
+///
+/// Both surfaces previously held their own 7-color palette while capping the colored
+/// series at 8 — so the 8th series wrapped back to the first color. This unifies the
+/// palette (12 perceptually-distinct system colors) and exposes a user-configurable
+/// series count, defaulting to 8, persisted globally and overridable per view.
+///
+/// Version history:
+///   1.0 — Session 168: unified palette + configurable series count
+enum ChartSeriesPalette {
+
+    /// Twelve distinct system colors. System colors so light/dark mode and accessibility
+    /// contrast are handled by the OS. The folded "Other" series always uses gray
+    /// (assigned by the call sites, not from this list).
+    static let colors: [Color] = [
+        .blue, .orange, .green, .purple, .pink, .teal,
+        .indigo, .red, .mint, .cyan, .brown, .yellow,
+    ]
+
+    /// Allowed range for the user-configurable colored-series count.
+    static let range: ClosedRange<Int> = 6...12
+
+    /// Default colored-series count (the historical cap).
+    static let defaultCount = 8
+
+    /// `AppStorage`/`UserDefaults` key for the global default colored-series count.
+    static let storageKey = "frus.display.chartSeriesCount"
+
+    /// Color for the series at rank `index` (wraps if `index` exceeds the palette,
+    /// though the configurable max keeps it within range in practice).
+    static func color(at index: Int) -> Color {
+        colors[index % colors.count]
+    }
+}
+
 // MARK: - FRUSTheme
 
 /// Cross-platform design token namespace for FRUS Explorer.
