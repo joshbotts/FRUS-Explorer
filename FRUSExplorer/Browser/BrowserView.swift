@@ -164,8 +164,8 @@ struct BrowserView: View {
                 Button {
                     appState.pendingWordCloud = .corpus
                 } label: {
-                    Label(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud"),
-                          systemImage: "textformat.size")
+                    Label { Text(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud")) }
+                        icon: { WordCloudGlyph() }
                 }
             } label: {
                 Image(systemName: "chart.bar.xaxis")

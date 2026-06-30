@@ -870,16 +870,15 @@ struct DocumentView: View {
                 appState.pendingWordCloud = .document(
                     volumeId: vm.entry.volumeId, documentId: vm.entry.documentId)
             } label: {
-                Label(
-                    String(localized: "document.toolbar.wordCloud", defaultValue: "Word Cloud"),
-                    systemImage: "textformat.size"
-                )
+                Label {
+                    Text(String(localized: "document.toolbar.wordCloud", defaultValue: "Word Cloud"))
+                } icon: { WordCloudGlyph() }
             }
             .controlHelp(
                 String(localized: "document.toolbar.wordCloud.a11y", defaultValue: "Word cloud"),
                 detail: String(localized: "document.toolbar.wordCloud.help",
                                defaultValue: "Visualise the most frequent terms in this document"),
-                systemImage: "textformat.size"
+                systemImage: WordCloudGlyph.fallbackSymbol
             )
 
             // 3. Create highlight — enabled when text is selected in the web view

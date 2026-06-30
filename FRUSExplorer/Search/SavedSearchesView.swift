@@ -181,9 +181,9 @@ struct SavedSearchesView: View {
                         appState.pendingWordCloud = .savedSearch(id: search.id)
                         dismiss()
                     } label: {
-                        Label(String(localized: "savedSearches.row.wordCloud",
-                                     defaultValue: "Word Cloud"),
-                              systemImage: "textformat.size")
+                        Label { Text(String(localized: "savedSearches.row.wordCloud",
+                                            defaultValue: "Word Cloud")) }
+                            icon: { WordCloudGlyph() }
                     }
                     Button(String(localized: "savedSearches.row.rename",
                                   defaultValue: "Rename")) {

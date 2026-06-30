@@ -293,8 +293,8 @@ struct MainWindowView: View {
                 appState.pendingWordCloud = .corpus
                 openWindow(id: "frus.wordcloud")
             } label: {
-                Label(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud"),
-                      systemImage: "textformat.size")
+                Label { Text(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud")) }
+                    icon: { WordCloudGlyph() }
             }
             .help(String(
                 localized: "mainwindow.tools.wordcloud.help",

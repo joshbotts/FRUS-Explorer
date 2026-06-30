@@ -30,7 +30,7 @@ enum WordCloudViewMode: String, CaseIterable {
     /// SF Symbol for the segmented control.
     var systemImage: String {
         switch self {
-        case .cloud: return "textformat.size"
+        case .cloud: return "cloud"
         case .list:  return "list.number"
         }
     }
@@ -258,7 +258,7 @@ struct WordCloudView: View {
 
     private var scopeHeader: some View {
         HStack(spacing: 8) {
-            Image(systemName: "textformat.size")
+            WordCloudGlyph()
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
@@ -383,7 +383,7 @@ struct WordCloudView: View {
     private var emptyView: some View {
         ContentUnavailableView(
             String(localized: "wordcloud.empty.title", defaultValue: "No Terms"),
-            systemImage: "textformat.size",
+            systemImage: WordCloudGlyph.fallbackSymbol,
             description: Text(String(
                 localized: "wordcloud.empty.detail",
                 defaultValue: "There's no indexed text in this scope yet. Download and index the relevant volumes, then try again."
@@ -779,7 +779,7 @@ struct WordCloudWindowContent: View {
             } else {
                 ContentUnavailableView(
                     String(localized: "wordcloud.window.empty.title", defaultValue: "No Word Cloud"),
-                    systemImage: "textformat.size",
+                    systemImage: WordCloudGlyph.fallbackSymbol,
                     description: Text(String(
                         localized: "wordcloud.window.empty.detail",
                         defaultValue: "Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, or the corpus."
