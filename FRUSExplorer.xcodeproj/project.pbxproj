@@ -2122,7 +2122,7 @@
 				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-AppStore.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FRUSExplorer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
@@ -2145,7 +2145,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				INFOPLIST_FILE = FRUSExplorerWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2326,7 +2326,7 @@
 				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-AppStore.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FRUSExplorer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
@@ -2349,7 +2349,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				INFOPLIST_FILE = FRUSExplorerWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2390,7 +2390,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FRUSExplorerWidgets/FRUSExplorerWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				INFOPLIST_FILE = FRUSExplorerWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2414,7 +2414,7 @@
 				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				INFOPLIST_FILE = FRUSExplorer/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2437,7 +2437,7 @@
 				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				INFOPLIST_FILE = FRUSExplorer/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2479,7 +2479,7 @@
 				CODE_SIGN_ENTITLEMENTS = "FRUSExplorer/FRUSExplorer-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				INFOPLIST_FILE = FRUSExplorer/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2522,7 +2522,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 26;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FRUSExplorer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";

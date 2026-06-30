@@ -7,6 +7,142 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftUI
+
+// MARK: - WordCloudGlyph
+
+/// The app's Word Cloud mark: a cloud with a small text glyph knocked out of it.
+///
+/// Conveys "word cloud" more clearly than a bare `textformat.size` icon (which the
+/// Display settings pane also uses, so the two read identically). Composes two SF
+/// Symbols — `cloud.fill` with a scaled `textformat` overlay — into one scalable view,
+/// since SF Symbols cannot be merged into a single symbol at runtime. It inherits the
+/// ambient font/size and tint, so it works in toolbars, menus, list rows, and large
+/// placeholders alike.
+///
+/// Use `WordCloudGlyph()` wherever a custom icon view is accepted — a `Label`'s `icon:`
+/// closure, a toolbar button's label, or `ContentUnavailableView`'s label closure.
+/// Defined once here and reused everywhere so the mark stays consistent across the app.
+///
+/// Version history:
+///   1.0 — Session 167: replaces the ambiguous `textformat.size` word-cloud icon
+struct WordCloudGlyph: View {
+
+    /// Plain SF Symbol name for the rare API that only accepts a `systemImage:` string
+    /// and cannot take a composite view.
+    static let fallbackSymbol = "cloud"
+
+    var body: some View {
+        Image(systemName: "cloud.fill")
+            .overlay {
+                Image(systemName: "textformat")
+                    .scaleEffect(0.46)
+                    .foregroundStyle(.background)
+            }
+            .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Appearance
+
+/// The typeface family a word cloud is drawn in. A device-local appearance
+/// preference (not synced via iCloud), surfaced in the Word Cloud settings pane.
+///
+/// `widthFactor` is the average glyph-advance ratio used by ``WordCloudLayout`` to
+/// estimate text extents for collision packing, so changing the font also re-tunes
+/// the layout's spacing rather than just restyling the glyphs.
+///
+/// Version history:
+///   1.0 — Word Cloud: font + density appearance controls
+enum WordCloudFontDesign: String, CaseIterable, Sendable, Identifiable {
+    /// SwiftUI's rounded system design (the original word-cloud look).
+    case rounded
+    /// The default system sans-serif.
+    case standard
+    /// A serif design.
+    case serif
+    /// A fixed-width monospaced design.
+    case monospaced
+
+    /// Stable identity for `Picker`/`ForEach`.
+    var id: String { rawValue }
+
+    /// The matching SwiftUI font design.
+    var swiftUIDesign: Font.Design {
+        switch self {
+        case .rounded: return .rounded
+        case .standard: return .default
+        case .serif: return .serif
+        case .monospaced: return .monospaced
+        }
+    }
+
+    /// Average glyph-advance ratio (× point size) for layout extent estimation.
+    /// Monospaced glyphs are widest; serif and rounded run slightly narrower.
+    var widthFactor: CGFloat {
+        switch self {
+        case .rounded: return 0.54
+        case .standard: return 0.54
+        case .serif: return 0.52
+        case .monospaced: return 0.62
+        }
+    }
+
+    /// Localized display name for the settings picker.
+    var label: String {
+        switch self {
+        case .rounded:
+            return String(localized: "wordcloud.font.rounded", defaultValue: "Rounded")
+        case .standard:
+            return String(localized: "wordcloud.font.standard", defaultValue: "Default")
+        case .serif:
+            return String(localized: "wordcloud.font.serif", defaultValue: "Serif")
+        case .monospaced:
+            return String(localized: "wordcloud.font.monospaced", defaultValue: "Monospaced")
+        }
+    }
+}
+
+/// How tightly a word cloud packs its terms. A device-local appearance preference
+/// (not synced via iCloud), surfaced in the Word Cloud settings pane.
+///
+/// `spacingScale` multiplies both the spiral step tightness and the inter-word gap
+/// in ``WordCloudLayout``: below 1 packs words closer (denser), above 1 spreads them.
+///
+/// Version history:
+///   1.0 — Word Cloud: font + density appearance controls
+enum WordCloudDensity: String, CaseIterable, Sendable, Identifiable {
+    /// Tightly packed, maximising the number of visible terms.
+    case compact
+    /// The original balanced spacing.
+    case balanced
+    /// Generous spacing for a more legible, less crowded cloud.
+    case airy
+
+    /// Stable identity for `Picker`/`ForEach`.
+    var id: String { rawValue }
+
+    /// Spacing multiplier applied to the spiral packing (1 = original spacing).
+    var spacingScale: CGFloat {
+        switch self {
+        case .compact: return 0.72
+        case .balanced: return 1.0
+        case .airy: return 1.45
+        }
+    }
+
+    /// Localized display name for the settings picker.
+    var label: String {
+        switch self {
+        case .compact:
+            return String(localized: "wordcloud.density.compact", defaultValue: "Compact")
+        case .balanced:
+            return String(localized: "wordcloud.density.balanced", defaultValue: "Balanced")
+        case .airy:
+            return String(localized: "wordcloud.density.airy", defaultValue: "Airy")
+        }
+    }
+}
 
 // MARK: - WordCloudLens
 
@@ -180,6 +316,9 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
     case userTag(id: UUID)
     /// Every document matching a saved search.
     case savedSearch(id: UUID)
+    /// Every document whose date falls within an inclusive `yyyy-MM-dd` range —
+    /// the bridge between the Chronology browser and the word cloud.
+    case dateRange(startISO: String, endISO: String)
 
     /// Identity for SwiftUI presentation (`.sheet(item:)`); equals `signature`.
     var id: String { signature }
@@ -213,6 +352,10 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
         case "search":
             guard let uuid = UUID(uuidString: value) else { return nil }
             self = .savedSearch(id: uuid)
+        case "daterange":
+            let bounds = value.components(separatedBy: "..")
+            guard bounds.count == 2, !bounds[0].isEmpty, !bounds[1].isEmpty else { return nil }
+            self = .dateRange(startISO: bounds[0], endISO: bounds[1])
         default:
             return nil
         }
@@ -232,7 +375,41 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
         case let .collection(id):                 return "col:\(id.uuidString)"
         case let .userTag(id):                    return "tag:\(id.uuidString)"
         case let .savedSearch(id):                return "search:\(id.uuidString)"
+        case let .dateRange(startISO, endISO):    return "daterange:\(startISO)..\(endISO)"
         }
+    }
+
+    // MARK: - Date-range helpers
+
+    /// Shared `yyyy-MM-dd` formatter (UTC, POSIX locale) for date-range signatures —
+    /// matching the ISO day keys the Chronology date index is queried with.
+    private static func isoFormatter() -> DateFormatter {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f
+    }
+
+    /// The `yyyy-MM-dd` (UTC) day string for a date, for building a `.dateRange` scope.
+    static func isoDay(from date: Date) -> String {
+        isoFormatter().string(from: date)
+    }
+
+    /// Parses a `yyyy-MM-dd` (UTC) day string back to a `Date` (start of that day).
+    static func day(fromISO iso: String) -> Date? {
+        isoFormatter().date(from: iso)
+    }
+
+    /// A readable title for a date-range scope, e.g. "Feb 1969 – Dec 1969".
+    static func dateRangeTitle(startISO: String, endISO: String) -> String {
+        let display = DateFormatter()
+        display.locale = .autoupdatingCurrent
+        display.setLocalizedDateFormatFromTemplate("MMM d, yyyy")
+        let start = day(fromISO: startISO).map(display.string(from:)) ?? startISO
+        let end = day(fromISO: endISO).map(display.string(from:)) ?? endISO
+        return String(format: String(localized: "wordcloud.scope.dateRange.title %@ %@",
+                                      defaultValue: "%@ – %@"), start, end)
     }
 }
 

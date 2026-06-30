@@ -37,6 +37,119 @@ extension AttributedString {
     }
 }
 
+// MARK: - ChartSeriesPalette
+
+/// Shared color palette and configuration for the color-coded series (volumes) in the
+/// Chronology distribution chart and the Corpus Analytics source-colored charts.
+///
+/// Both surfaces previously held their own 7-color palette while capping the colored
+/// series at 8 — so the 8th series wrapped back to the first color. This unifies the
+/// palette (12 perceptually-distinct system colors) and exposes a user-configurable
+/// series count, defaulting to 8, persisted globally and overridable per view.
+///
+/// Version history:
+///   1.0 — Session 168: unified palette + configurable series count
+enum ChartSeriesPalette {
+
+    /// Twelve distinct system colors. System colors so light/dark mode and accessibility
+    /// contrast are handled by the OS. The folded "Other" series always uses gray
+    /// (assigned by the call sites, not from this list).
+    static let colors: [Color] = [
+        .blue, .orange, .green, .purple, .pink, .teal,
+        .indigo, .red, .mint, .cyan, .brown, .yellow,
+    ]
+
+    /// Allowed range for the user-configurable colored-series count.
+    static let range: ClosedRange<Int> = 6...12
+
+    /// Default colored-series count (the historical cap).
+    static let defaultCount = 8
+
+    /// `AppStorage`/`UserDefaults` key for the global default colored-series count.
+    static let storageKey = "frus.display.chartSeriesCount"
+
+    /// Color for the series at rank `index` (wraps if `index` exceeds the palette,
+    /// though the configurable max keeps it within range in practice).
+    static func color(at index: Int) -> Color {
+        colors[index % colors.count]
+    }
+}
+
+// MARK: - FeatureInfoButton
+
+/// One titled explanation row shown inside a `FeatureInfoButton` popover.
+struct FeatureInfoItem: Identifiable {
+    let title: String
+    let detail: String
+    var id: String { title }
+}
+
+/// A toolbar "info" button that presents a popover explaining a feature's semantics —
+/// the shared version of the info affordance already used in Corpus Analytics and the
+/// Cross-Reference Graph, so Source Explorer, the Word Cloud, and Chronology can offer
+/// the same help. Place inside a `ToolbarItem`.
+///
+/// Version history:
+///   1.0 — Session 169: shared feature info popover
+struct FeatureInfoButton: View {
+    /// Popover heading and the button's accessibility label / tooltip.
+    let heading: String
+    /// The titled explanation rows.
+    let items: [FeatureInfoItem]
+
+    @State private var isPresented = false
+
+    var body: some View {
+        Button {
+            isPresented.toggle()
+        } label: {
+            Image(systemName: "info.circle")
+                .accessibilityLabel(heading)
+        }
+        .help(heading)
+        .popover(isPresented: $isPresented, arrowEdge: .top) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(heading).font(.headline)
+                ForEach(items) { item in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(item.detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(16)
+            .frame(width: 360)
+        }
+    }
+
+    /// The shared Source Explorer info button, identical on iOS and macOS so the
+    /// dual-platform views stay in lockstep without duplicating the copy.
+    static var sourceExplorer: FeatureInfoButton {
+        FeatureInfoButton(
+            heading: String(localized: "source.explorer.info.heading", defaultValue: "About Source Explorer"),
+            items: [
+                FeatureInfoItem(
+                    title: String(localized: "source.explorer.info.shows.title", defaultValue: "What you're seeing"),
+                    detail: String(localized: "source.explorer.info.shows.detail",
+                                   defaultValue: "A structured breakdown of one document's source note — the State Department editors' record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.")),
+                FeatureInfoItem(
+                    title: String(localized: "source.explorer.info.why.title", defaultValue: "Why it matters"),
+                    detail: String(localized: "source.explorer.info.why.detail",
+                                   defaultValue: "Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and judge its provenance at a glance.")),
+                FeatureInfoItem(
+                    title: String(localized: "source.explorer.info.catalog.title", defaultValue: "Links to the National Archives"),
+                    detail: String(localized: "source.explorer.info.catalog.detail",
+                                   defaultValue: "Where a note resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.")),
+            ]
+        )
+    }
+}
+
 // MARK: - FRUSTheme
 
 /// Cross-platform design token namespace for FRUS Explorer.

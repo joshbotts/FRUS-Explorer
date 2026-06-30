@@ -135,47 +135,46 @@ struct BrowserView: View {
     /// Chronology + Corpus Analytics buttons, shared by the split (iPad) and stack (iPhone) layouts.
     /// Declared as `ToolbarContent` so it can be composed into each layout's `.toolbar` *inside* the
     /// navigation container (the only place toolbar items actually render).
+    /// Chronology / Corpus Analytics / Word Cloud, grouped into a single explicit
+    /// `Menu` rather than three separate `.primaryAction` buttons.
+    ///
+    /// On iPad the Browse sidebar toolbar previously held five primary items (project
+    /// picker, downloaded-only filter, and these three), which iPadOS collapsed into an
+    /// auto-overflow "…" control that could fail to open — leaving Corpus Analytics
+    /// effectively unreachable from the browser. A dedicated `Menu` is always tappable
+    /// and keeps the toolbar to three primary items.
     @ToolbarContentBuilder
     private var analyticsToolbarItems: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            Button {
-                chronologyParameters = nil
-                showChronology = true
-            } label: {
-                Image(systemName: "calendar.day.timeline.left")
-            }
-            .controlHelp(
-                String(localized: "browse.chronology.a11y", defaultValue: "Chronology"),
-                detail: String(localized: "browse.chronology.help",
-                               defaultValue: "Browse every corpus document within a date range"),
-                systemImage: "calendar.day.timeline.left"
-            )
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                analyticsParameters = nil
-                showAnalytics = true
+            Menu {
+                Button {
+                    chronologyParameters = nil
+                    showChronology = true
+                } label: {
+                    Label(String(localized: "browse.chronology.a11y", defaultValue: "Chronology"),
+                          systemImage: "calendar.day.timeline.left")
+                }
+                Button {
+                    analyticsParameters = nil
+                    showAnalytics = true
+                } label: {
+                    Label(String(localized: "browse.analytics.a11y", defaultValue: "Corpus Analytics"),
+                          systemImage: "chart.bar.xaxis")
+                }
+                Button {
+                    appState.pendingWordCloud = .corpus
+                } label: {
+                    Label { Text(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud")) }
+                        icon: { WordCloudGlyph() }
+                }
             } label: {
                 Image(systemName: "chart.bar.xaxis")
             }
             .controlHelp(
-                String(localized: "browse.analytics.a11y", defaultValue: "Corpus Analytics"),
-                detail: String(localized: "browse.analytics.help",
-                               defaultValue: "Chart term frequencies across your downloaded volumes"),
+                String(localized: "browse.analysisTools.a11y", defaultValue: "Analysis Tools"),
+                detail: String(localized: "browse.analysisTools.help",
+                               defaultValue: "Chronology, Corpus Analytics, and the corpus Word Cloud"),
                 systemImage: "chart.bar.xaxis"
-            )
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                appState.pendingWordCloud = .corpus
-            } label: {
-                Image(systemName: "textformat.size")
-            }
-            .controlHelp(
-                String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud"),
-                detail: String(localized: "browse.wordcloud.help",
-                               defaultValue: "Visualise the most frequent terms across your downloaded volumes"),
-                systemImage: "textformat.size"
             )
         }
     }

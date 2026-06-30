@@ -160,6 +160,9 @@ struct MacSourceExplorerView: View {
                               defaultValue: "Learn About Source Notes")
             )
         }
+        ToolbarItem {
+            FeatureInfoButton.sourceExplorer
+        }
     }
 
     // MARK: - Left Column

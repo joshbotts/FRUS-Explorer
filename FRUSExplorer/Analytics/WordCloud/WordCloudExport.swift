@@ -95,12 +95,15 @@ enum WordCloudExporter {
         // Leave a caption band at the bottom; lay words out above it.
         let captionBand: CGFloat = 56
         let layoutSize = CGSize(width: canvas.width, height: canvas.height - captionBand)
+        let design = WordCloudSettings.fontDesign
         let placements = WordCloudLayout.place(
-            terms: terms, in: layoutSize, maxWords: 140, minFontSize: 16, maxFontSize: 96
+            terms: terms, in: layoutSize, maxWords: 140, minFontSize: 16, maxFontSize: 96,
+            spacingScale: WordCloudSettings.density.spacingScale, widthFactor: design.widthFactor
         )
         let content = WordCloudImageContent(
             placements: placements, title: title, size: canvas,
-            captionBand: captionBand, palette: palette, sentimentColors: sentimentColors
+            captionBand: captionBand, palette: palette, sentimentColors: sentimentColors,
+            fontDesign: design.swiftUIDesign
         )
 
         let renderer = ImageRenderer(content: content)
@@ -175,13 +178,16 @@ enum WordCloudExporter {
 
         let captionBand: CGFloat = 56
         let layoutSize = CGSize(width: canvas.width, height: canvas.height - captionBand)
+        let design = WordCloudSettings.fontDesign
         let placements = WordCloudLayout.place(
             terms: Array(terms.prefix(140)), in: layoutSize,
-            maxWords: 140, minFontSize: 16, maxFontSize: 96
+            maxWords: 140, minFontSize: 16, maxFontSize: 96,
+            spacingScale: WordCloudSettings.density.spacingScale, widthFactor: design.widthFactor
         )
         let content = WordCloudImageContent(
             placements: placements, title: title, size: canvas,
-            captionBand: captionBand, palette: palette
+            captionBand: captionBand, palette: palette,
+            fontDesign: design.swiftUIDesign
         )
         let renderer = ImageRenderer(content: content)
         renderer.scale = 2
@@ -224,13 +230,15 @@ struct WordCloudImageContent: View {
     let palette: [Color]
     /// When `true`, words are coloured by sentiment polarity instead of `palette`.
     var sentimentColors: Bool = false
+    /// Typeface family for the rendered words (mirrors the user's cloud preference).
+    var fontDesign: Font.Design = .rounded
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             Color.white
             ForEach(placements) { word in
                 Text(word.term)
-                    .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
+                    .font(.system(size: word.fontSize, weight: .semibold, design: fontDesign))
                     .foregroundStyle(color(for: word))
                     .fixedSize()
                     .rotationEffect(.degrees(word.rotationDegrees))

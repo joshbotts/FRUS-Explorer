@@ -32,6 +32,9 @@ struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var vm = ChronologyViewModel(
         rangeStart: ChronologyView.defaultStart,
@@ -54,15 +57,17 @@ struct ChronologyView: View {
     /// list to documents from that volume. `nil` = show all.
     @State private var selectedSeries: String? = nil
 
+    /// Global default colored-series count, mirrored from Display settings.
+    @AppStorage(ChartSeriesPalette.storageKey) private var defaultSeriesCount = ChartSeriesPalette.defaultCount
+    /// Per-view colored-series count, seeded from the global default; overrides it for
+    /// this session via the chart-colors menu.
+    @State private var seriesCount = ChartSeriesPalette.defaultCount
+
     /// Parameters this view was opened with (a `pendingChronology` handoff). Applied once.
     private let initialParameters: ChronologyParameters?
 
     /// Rows shown in a dense section before the "Show all" expander.
     private static let denseThreshold = 25
-
-    /// Distinct colours for the top chart volumes; the folded "Other" series uses gray.
-    /// System colours so light/dark mode and accessibility contrast are handled by the OS.
-    private static let seriesPalette: [Color] = [.blue, .orange, .green, .purple, .pink, .teal, .indigo]
 
     /// `id` of the spanning section, used as a scroll target from its chip.
     private static let spanningSectionID = "__chronology_spanning__"
@@ -106,6 +111,7 @@ struct ChronologyView: View {
         .frame(minWidth: 640, minHeight: 520)
         #endif
         .task { seedDefaultsAndApply(initialParameters) }
+        .onChange(of: seriesCount) { _, newCount in vm.applySeriesCount(newCount) }
         .onChange(of: appState.pendingChronology) { _, params in
             guard let params else { return }
             apply(params)
@@ -126,8 +132,18 @@ struct ChronologyView: View {
     /// corpus's most recent year (unless a handoff seeds an explicit range).
     private func seedDefaultsAndApply(_ params: ChronologyParameters?) {
         vm.pipeline = appState.indexingPipeline
+        seriesCount = defaultSeriesCount
+        vm.seriesCount = defaultSeriesCount
+        // Explicit parameters (the iOS sheet) take priority; otherwise pick up a pending
+        // macOS-window handoff set just before `openWindow` (which won't fire `.onChange`
+        // because the value is already in place when this fresh window appears).
         if let params {
             apply(params)
+            return
+        }
+        if let pending = appState.pendingChronology {
+            appState.pendingChronology = nil
+            apply(pending)
             return
         }
         guard !didSeedDefaults else { return }
@@ -151,6 +167,23 @@ struct ChronologyView: View {
     private func reload() {
         selectedSeries = nil
         Task { await vm.reload() }
+    }
+
+    /// Opens a word cloud over the documents in the currently displayed date range —
+    /// the inverse of the word cloud's "View in Chronology" handoff.
+    private func openWordCloudForRange() {
+        let scope = WordCloudScope.dateRange(
+            startISO: WordCloudScope.isoDay(from: min(vm.rangeStart, vm.rangeEnd)),
+            endISO: WordCloudScope.isoDay(from: max(vm.rangeStart, vm.rangeEnd))
+        )
+        appState.pendingWordCloud = scope
+        #if os(macOS)
+        openWindow(id: "frus.wordcloud")
+        #else
+        // The word cloud is presented at the tab-container level (MainTabView) on iOS;
+        // dismiss this sheet so it can present on the `pendingWordCloud` change.
+        dismiss()
+        #endif
     }
 
     // MARK: - Range Bar
@@ -394,7 +427,7 @@ struct ChronologyView: View {
     private func seriesColor(_ key: String, index: Int) -> Color {
         key == chronologyOtherSeriesKey
             ? Color.gray
-            : Self.seriesPalette[index % Self.seriesPalette.count]
+            : ChartSeriesPalette.color(at: index)
     }
 
     /// Colours in `vm.chartSeries` order — shared by the chart's foreground scale and the
@@ -990,6 +1023,61 @@ struct ChronologyView: View {
             .disabled(!vm.hasLoaded)
             .help(String(localized: "chronology.sort.help",
                          defaultValue: "Toggle chronological order"))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Picker(selection: $seriesCount) {
+                    ForEach(Array(ChartSeriesPalette.range), id: \.self) { n in
+                        Text(verbatim: "\(n)").tag(n)
+                    }
+                } label: {
+                    Text(String(localized: "chronology.colors.count", defaultValue: "Colored volumes"))
+                }
+            } label: {
+                Label(String(localized: "chronology.colors.menu", defaultValue: "Chart colors"),
+                      systemImage: "paintpalette")
+            }
+            .disabled(!vm.hasLoaded || vm.chartBuckets.isEmpty)
+            .help(String(localized: "chronology.colors.help",
+                         defaultValue: "How many volumes appear as distinct colors before the rest fold into “Other”"))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                openWordCloudForRange()
+            } label: {
+                Label {
+                    Text(String(localized: "chronology.wordcloud", defaultValue: "Word Cloud for this range"))
+                } icon: {
+                    WordCloudGlyph()
+                }
+            }
+            .disabled(!vm.hasLoaded || vm.totalShown == 0)
+            .help(String(localized: "chronology.wordcloud.help",
+                         defaultValue: "Build a word cloud from the documents in the displayed date range"))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            FeatureInfoButton(
+                heading: String(localized: "chronology.info.heading", defaultValue: "About Chronology"),
+                items: [
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.shows.title", defaultValue: "What you're seeing"),
+                        detail: String(localized: "chronology.info.shows.detail",
+                                       defaultValue: "Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.")),
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.dates.title", defaultValue: "How dates work"),
+                        detail: String(localized: "chronology.info.dates.detail",
+                                       defaultValue: "Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.")),
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.chart.title", defaultValue: "The distribution chart"),
+                        detail: String(localized: "chronology.info.chart.detail",
+                                       defaultValue: "The stacked chart colour-codes documents by source volume (the top volumes, then a grey “Other”). Use the chart-colours menu to choose how many volumes get a distinct colour.")),
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.cap.title", defaultValue: "Wide ranges"),
+                        detail: String(localized: "chronology.info.cap.detail",
+                                       defaultValue: "The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.")),
+                ]
+            )
+            .disabled(!vm.hasLoaded)
         }
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {

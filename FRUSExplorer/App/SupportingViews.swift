@@ -191,7 +191,7 @@ struct ResearchStripView: View {
             // collide with the corpus-scoped Word Cloud button in the main toolbar.
             ResearchStripButton(
                 title: "Word Cloud",
-                systemImage: "textformat.size",
+                systemImage: WordCloudGlyph.fallbackSymbol,
                 isDisabled: isDisabled
             ) {
                 if let entry {
@@ -2807,7 +2807,7 @@ struct CorpusBrowserWindowView: View {
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
             } label: {
-                Image(systemName: "textformat.size")
+                WordCloudGlyph()
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -2823,8 +2823,8 @@ struct CorpusBrowserWindowView: View {
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
             } label: {
-                Label(String(localized: "corpus.subseries.wordCloud", defaultValue: "Word Cloud"),
-                      systemImage: "textformat.size")
+                Label { Text(String(localized: "corpus.subseries.wordCloud", defaultValue: "Word Cloud")) }
+                    icon: { WordCloudGlyph() }
             }
         }
     }
@@ -2954,7 +2954,7 @@ private struct SubseriesVolumeListView: View {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
             } label: {
-                Image(systemName: "textformat.size")
+                WordCloudGlyph()
                     .font(.system(size: 11))
             }
             .buttonStyle(.bordered)
@@ -2987,8 +2987,8 @@ private struct SubseriesVolumeListView: View {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
             } label: {
-                Label(String(localized: "corpus.volume.wordCloud", defaultValue: "Word Cloud"),
-                      systemImage: "textformat.size")
+                Label { Text(String(localized: "corpus.volume.wordCloud", defaultValue: "Word Cloud")) }
+                    icon: { WordCloudGlyph() }
             }
         }
     }

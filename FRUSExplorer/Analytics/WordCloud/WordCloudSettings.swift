@@ -38,6 +38,10 @@ enum WordCloudSettings {
         static let globalStopwords = "frus.wordcloud.customStopwords"
         /// Per-lens custom stop lists (JSON `[lensRawValue: [String]]`).
         static let lensStopwords = "frus.wordcloud.lensStopwords"
+        /// Cloud typeface family (`WordCloudFontDesign` raw value). Device-local.
+        static let fontDesign = "frus.wordcloud.fontDesign"
+        /// Cloud packing density (`WordCloudDensity` raw value). Device-local.
+        static let density = "frus.wordcloud.density"
         /// Monotonic revision bumped whenever a stop list changes.
         static let revision = "frus.wordcloud.settingsRevision"
     }
@@ -69,6 +73,16 @@ enum WordCloudSettings {
     /// Whether classification markings are filtered.
     static var filterMarkings: Bool {
         (store.object(forKey: Keys.filterMarkings) as? Bool) ?? true
+    }
+
+    /// The cloud typeface family (device-local; defaults to ``WordCloudFontDesign/rounded``).
+    static var fontDesign: WordCloudFontDesign {
+        (store.string(forKey: Keys.fontDesign)).flatMap(WordCloudFontDesign.init(rawValue:)) ?? .rounded
+    }
+
+    /// The cloud packing density (device-local; defaults to ``WordCloudDensity/balanced``).
+    static var density: WordCloudDensity {
+        (store.string(forKey: Keys.density)).flatMap(WordCloudDensity.init(rawValue:)) ?? .balanced
     }
 
     /// The current tuning value assembled from the scalar criteria.

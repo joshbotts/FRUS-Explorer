@@ -56,13 +56,19 @@ enum WordCloudLayout {
     ///   - maxWords: Hard cap on the number of words placed.
     ///   - minFontSize: Smallest point size (least frequent term).
     ///   - maxFontSize: Largest point size (most frequent term).
+    ///   - spacingScale: Multiplier on spiral tightness and inter-word gap; below 1
+    ///     packs denser, above 1 spreads words apart. Drives the density preference.
+    ///   - widthFactor: Average glyph-advance ratio (× point size) for text-extent
+    ///     estimation; varies with the chosen font design.
     /// - Returns: The successfully placed words. Words that found no free spot are omitted.
     static func place(
         terms: [TermCount],
         in size: CGSize,
         maxWords: Int = 180,
         minFontSize: CGFloat = 13,
-        maxFontSize: CGFloat = 64
+        maxFontSize: CGFloat = 64,
+        spacingScale: CGFloat = 1,
+        widthFactor: CGFloat = 0.54
     ) -> [PlacedWord] {
         let words = Array(terms.prefix(maxWords))
         guard size.width > 0, size.height > 0,
@@ -81,7 +87,7 @@ enum WordCloudLayout {
             // of the rest 90° to fill vertical gaps. Rank-based so it's deterministic
             // and always produces some vertical words regardless of the term set.
             let vertical = rank > words.count / 4 && rank % 3 == 1
-            var estimate = estimatedSize(term: term.term, fontSize: fontSize)
+            var estimate = estimatedSize(term: term.term, fontSize: fontSize, widthFactor: widthFactor)
             if vertical { estimate = CGSize(width: estimate.height, height: estimate.width) }
 
             // March outward along the spiral until a non-colliding slot is found.
@@ -89,7 +95,7 @@ enum WordCloudLayout {
             // typical landscape/portrait card aspect ratios.
             var angle: CGFloat = 0
             let angleStep: CGFloat = 0.30
-            let spiralTightness: CGFloat = max(estimate.height, minFontSize) * 0.22
+            let spiralTightness: CGFloat = max(estimate.height, minFontSize) * 0.22 * spacingScale
             var slot: CGRect?
             while angle < 70 { // ~11 turns; plenty before giving up
                 let radius = spiralTightness * angle
@@ -120,9 +126,10 @@ enum WordCloudLayout {
                 colorIndex: rank,
                 rotationDegrees: vertical ? 90 : 0
             ))
-            // Pad the occupied rect just enough that neighbours don't touch — tighter
-            // than before for a denser cloud.
-            occupied.append(rect.insetBy(dx: -1.5, dy: -1.5))
+            // Pad the occupied rect just enough that neighbours don't touch — the gap
+            // scales with the density preference (tighter when compact, looser when airy).
+            let gap = -1.5 * spacingScale
+            occupied.append(rect.insetBy(dx: gap, dy: gap))
         }
         return placed
     }
@@ -143,10 +150,11 @@ enum WordCloudLayout {
 
     /// Estimates the rendered bounding box of a term at a given point size.
     ///
-    /// Uses an average glyph-advance heuristic (≈0.54 × point size) plus padding —
-    /// good enough for collision spacing without a graphics context.
-    private static func estimatedSize(term: String, fontSize: CGFloat) -> CGSize {
-        let width = CGFloat(term.count) * fontSize * 0.54 + fontSize * 0.4
+    /// Uses an average glyph-advance heuristic (`widthFactor` × point size, ≈0.54 for
+    /// the default font) plus padding — good enough for collision spacing without a
+    /// graphics context.
+    private static func estimatedSize(term: String, fontSize: CGFloat, widthFactor: CGFloat = 0.54) -> CGSize {
+        let width = CGFloat(term.count) * fontSize * widthFactor + fontSize * 0.4
         let height = fontSize * 1.25
         return CGSize(width: width, height: height)
     }

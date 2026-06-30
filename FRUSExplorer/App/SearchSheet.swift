@@ -649,6 +649,22 @@ struct MacSearchWindowView: View {
                         )
                     )
             }
+
+            // Search → Analytics handoff (Direction B): available for any keyword
+            // search, not only over-cap ones, so the user can always chart the term's
+            // distribution over time.
+            if loaded > 0, !searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty {
+                Spacer(minLength: 8)
+                Button {
+                    openSearchInAnalytics()
+                } label: {
+                    Label("Visualize in Corpus Analytics", systemImage: "chart.bar.xaxis")
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .buttonStyle(.borderless)
+                .help(String(localized: "search.analytics.help",
+                             defaultValue: "Open Corpus Analytics charting how often these keywords appear over time"))
+            }
         }
     }
 
@@ -674,21 +690,8 @@ struct MacSearchWindowView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-
-                // Search → Analytics handoff (Direction B): suggest visualising the
-                // distribution of matches over time so the user can pick a date
-                // range that narrows the result set, instead of guessing at terms.
-                Button {
-                    openOverCapResultsInAnalytics()
-                } label: {
-                    Label("Visualize in Corpus Analytics", systemImage: "chart.bar.xaxis")
-                        .font(.system(size: 10, weight: .medium))
-                }
-                .buttonStyle(.borderless)
-                .help(String(
-                    localized: "search.capped.analytics.help",
-                    defaultValue: "Open Corpus Analytics charting how often these keywords appear over time, so you can pick a date range that narrows your results"
-                ))
+                // The "Visualize in Corpus Analytics" handoff now lives in the result-count
+                // header (available for every keyword search, not only over-cap ones).
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -915,15 +918,16 @@ struct MacSearchWindowView: View {
 
     // MARK: - Actions
 
-    /// Builds an `AnalyticsParameters` snapshot from the current over-cap search
-    /// and hands off to Corpus Analytics via `AppState.pendingAnalytics`.
+    /// Builds an `AnalyticsParameters` snapshot from the current search and hands off
+    /// to Corpus Analytics via `AppState.pendingAnalytics`. Available for any keyword
+    /// search (not only over-cap ones).
     ///
     /// Carries `submittedQuery` as the chart term and — when `parameters.dateRange`
     /// is set — its `earliest`/`latest` ISO years as the chart's year-range bounds,
     /// so the chart opens already focused on the same window the search was scoped
     /// to. `MainWindowView` observes `pendingAnalytics` and opens `frus.analytics`;
     /// `AnalyticsView` applies the parameters and runs the chart query immediately.
-    private func openOverCapResultsInAnalytics() {
+    private func openSearchInAnalytics() {
         let term = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
         guard !term.isEmpty else { return }
         appState.pendingAnalytics = AnalyticsParameters(

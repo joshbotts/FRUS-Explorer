@@ -67,10 +67,19 @@ struct ComparativeCloudColumn: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
+    // Device-local appearance, shared with the main word-cloud view.
+    @AppStorage(WordCloudSettings.Keys.fontDesign) private var fontDesignRaw = WordCloudFontDesign.rounded.rawValue
+    @AppStorage(WordCloudSettings.Keys.density) private var densityRaw = WordCloudDensity.balanced.rawValue
+
     @State private var result: WordCloudResult = .empty
     @State private var title: String = ""
     @State private var isLoading = false
     @State private var placements: [PlacedWord] = []
+
+    /// The resolved typeface family for the column.
+    private var fontDesign: WordCloudFontDesign { WordCloudFontDesign(rawValue: fontDesignRaw) ?? .rounded }
+    /// The resolved packing density for the column.
+    private var density: WordCloudDensity { WordCloudDensity(rawValue: densityRaw) ?? .balanced }
 
     /// Fewer words than the full view — these columns are smaller.
     private static let termLimit = 80
@@ -89,7 +98,7 @@ struct ComparativeCloudColumn: View {
             } else if result.terms.isEmpty {
                 ContentUnavailableView(
                     String(localized: "wordcloud.compare.empty", defaultValue: "No Terms"),
-                    systemImage: "textformat.size"
+                    systemImage: WordCloudGlyph.fallbackSymbol
                 )
             } else {
                 cloud
@@ -123,7 +132,7 @@ struct ComparativeCloudColumn: View {
             ZStack {
                 ForEach(placements) { word in
                     Text(word.term)
-                        .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
+                        .font(.system(size: word.fontSize, weight: .semibold, design: fontDesign.swiftUIDesign))
                         .foregroundStyle(Self.palette[word.colorIndex % Self.palette.count])
                         .fixedSize()
                         .rotationEffect(.degrees(word.rotationDegrees))
@@ -132,10 +141,12 @@ struct ComparativeCloudColumn: View {
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .task(id: LayoutKey(width: geo.size.width, height: geo.size.height,
-                                signature: scope.signature, termCount: result.terms.count)) {
+                                signature: scope.signature, termCount: result.terms.count,
+                                fontDesign: fontDesign, density: density)) {
                 placements = WordCloudLayout.place(
                     terms: result.terms, in: geo.size,
-                    maxWords: Self.termLimit, minFontSize: 11, maxFontSize: 46
+                    maxWords: Self.termLimit, minFontSize: 11, maxFontSize: 46,
+                    spacingScale: density.spacingScale, widthFactor: fontDesign.widthFactor
                 )
             }
         }
@@ -174,5 +185,7 @@ struct ComparativeCloudColumn: View {
         let height: CGFloat
         let signature: String
         let termCount: Int
+        let fontDesign: WordCloudFontDesign
+        let density: WordCloudDensity
     }
 }

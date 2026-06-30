@@ -30,7 +30,7 @@ enum WordCloudViewMode: String, CaseIterable {
     /// SF Symbol for the segmented control.
     var systemImage: String {
         switch self {
-        case .cloud: return "textformat.size"
+        case .cloud: return "cloud"
         case .list:  return "list.number"
         }
     }
@@ -75,6 +75,9 @@ struct WordCloudView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     /// Excludes FRUS-boilerplate words ("telegram", "department", …) in addition
     /// to the always-on English stopwords. Persisted; defaults on.
@@ -87,6 +90,16 @@ struct WordCloudView: View {
     @AppStorage(WordCloudSettings.Keys.minLength) private var minLength = WordCloudSettings.defaultMinLength
     @AppStorage(WordCloudSettings.Keys.minCount) private var minCount = WordCloudSettings.defaultMinCount
     @AppStorage(WordCloudSettings.Keys.revision) private var settingsRevision = 0
+
+    // Device-local appearance: typeface and packing density. Changing either restyles
+    // and re-lays out an open cloud (both feed `LayoutKey`).
+    @AppStorage(WordCloudSettings.Keys.fontDesign) private var fontDesignRaw = WordCloudFontDesign.rounded.rawValue
+    @AppStorage(WordCloudSettings.Keys.density) private var densityRaw = WordCloudDensity.balanced.rawValue
+
+    /// The resolved typeface family for the cloud.
+    private var fontDesign: WordCloudFontDesign { WordCloudFontDesign(rawValue: fontDesignRaw) ?? .rounded }
+    /// The resolved packing density for the cloud.
+    private var density: WordCloudDensity { WordCloudDensity(rawValue: densityRaw) ?? .balanced }
 
     @State private var viewMode: WordCloudViewMode = .cloud
     @State private var result: WordCloudResult = .empty
@@ -258,7 +271,7 @@ struct WordCloudView: View {
 
     private var scopeHeader: some View {
         HStack(spacing: 8) {
-            Image(systemName: "textformat.size")
+            WordCloudGlyph()
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
@@ -284,7 +297,7 @@ struct WordCloudView: View {
             ZStack {
                 ForEach(placements) { word in
                     Text(word.term)
-                        .font(.system(size: word.fontSize, weight: .semibold, design: .rounded))
+                        .font(.system(size: word.fontSize, weight: .semibold, design: fontDesign.swiftUIDesign))
                         .foregroundStyle(wordColor(term: word.term, colorIndex: word.colorIndex))
                         .fixedSize()
                         .rotationEffect(.degrees(word.rotationDegrees))
@@ -298,8 +311,12 @@ struct WordCloudView: View {
             .contentShape(Rectangle())
             .task(id: LayoutKey(width: geo.size.width, height: geo.size.height,
                                 signature: scope.signature, exclude: excludeBoilerplate,
-                                lens: lens, termCount: result.terms.count)) {
-                placements = WordCloudLayout.place(terms: result.terms, in: geo.size)
+                                lens: lens, termCount: result.terms.count,
+                                fontDesign: fontDesign, density: density)) {
+                placements = WordCloudLayout.place(
+                    terms: result.terms, in: geo.size,
+                    spacingScale: density.spacingScale, widthFactor: fontDesign.widthFactor
+                )
             }
         }
         .accessibilityRepresentation { rankedList }
@@ -383,7 +400,7 @@ struct WordCloudView: View {
     private var emptyView: some View {
         ContentUnavailableView(
             String(localized: "wordcloud.empty.title", defaultValue: "No Terms"),
-            systemImage: "textformat.size",
+            systemImage: WordCloudGlyph.fallbackSymbol,
             description: Text(String(
                 localized: "wordcloud.empty.detail",
                 defaultValue: "There's no indexed text in this scope yet. Download and index the relevant volumes, then try again."
@@ -430,7 +447,40 @@ struct WordCloudView: View {
             .labelsHidden()
         }
         ToolbarItem(placement: .primaryAction) {
+            FeatureInfoButton(
+                heading: String(localized: "wordcloud.info.heading", defaultValue: "About the Word Cloud"),
+                items: [
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.shows.title", defaultValue: "What you're seeing"),
+                        detail: String(localized: "wordcloud.info.shows.detail",
+                                       defaultValue: "The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, or the whole corpus — each sized by how often it appears.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.lenses.title", defaultValue: "Lenses"),
+                        detail: String(localized: "wordcloud.info.lenses.detail",
+                                       defaultValue: "The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.filters.title", defaultValue: "What's filtered out"),
+                        detail: String(localized: "wordcloud.info.filters.detail",
+                                       defaultValue: "Common stopwords are always removed. You can also hide diplomatic boilerplate and maintain your own hidden-word lists (globally or per lens) in Settings → Word Cloud.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.tap.title", defaultValue: "Tapping a word"),
+                        detail: String(localized: "wordcloud.info.tap.detail",
+                                       defaultValue: "Charts how often that term appears across the whole corpus in Corpus Analytics; the word's menu also offers a scoped chart and a direct Search.")),
+                ]
+            )
+        }
+        ToolbarItem(placement: .primaryAction) {
             Menu {
+                if isDateRangeScope {
+                    Button {
+                        viewInChronology()
+                    } label: {
+                        Label(String(localized: "wordcloud.viewInChronology",
+                                     defaultValue: "View in Chronology"),
+                              systemImage: "calendar.day.timeline.left")
+                    }
+                    Divider()
+                }
                 Toggle(String(localized: "wordcloud.filter.boilerplate",
                               defaultValue: "Hide common diplomatic words"),
                        isOn: $excludeBoilerplate)
@@ -681,7 +731,7 @@ struct WordCloudView: View {
         case .subseries:
             return String(localized: "wordcloud.word.analyze.subseries",
                           defaultValue: "Analyze within this subseries")
-        case .corpus, .document, .collection, .userTag, .savedSearch:
+        case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return nil
         }
     }
@@ -709,7 +759,7 @@ struct WordCloudView: View {
                 .map(\.volumeId)
             guard !volumeIds.isEmpty else { return (nil, nil) }
             return (volumeIds, title.isEmpty ? subseriesId : title)
-        case .corpus, .document, .collection, .userTag, .savedSearch:
+        case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return (nil, nil)
         }
     }
@@ -723,6 +773,35 @@ struct WordCloudView: View {
         print("[WordCloudView] Handoff to Search — term: \"\(term)\"")
         #endif
         dismiss()
+    }
+
+    /// Whether this cloud is scoped to a date range, gating the "View in Chronology"
+    /// handoff (only a date-range cloud maps cleanly back onto the Chronology browser).
+    private var isDateRangeScope: Bool {
+        if case .dateRange = scope { return true }
+        return false
+    }
+
+    /// Opens the Chronology browser for this cloud's date range — the inverse of the
+    /// "Word Cloud for this range" handoff from Chronology. Only meaningful for a
+    /// `.dateRange` scope.
+    private func viewInChronology() {
+        guard case let .dateRange(startISO, endISO) = scope else { return }
+        appState.pendingChronology = ChronologyParameters(
+            rangeStart: WordCloudScope.day(fromISO: startISO),
+            rangeEnd: WordCloudScope.day(fromISO: endISO)
+        )
+        #if DEBUG
+        print("[WordCloudView] Handoff to Chronology — range: \(startISO)…\(endISO)")
+        #endif
+        #if os(macOS)
+        openWindow(id: "frus.chronology")
+        #else
+        // Chronology is presented from the Browse tab on iOS; surface it and dismiss
+        // this sheet so `BrowserView` can present it on the `pendingChronology` change.
+        appState.activeTab = .browse
+        dismiss()
+        #endif
     }
 
     // MARK: - Recompute Keys
@@ -749,6 +828,8 @@ struct WordCloudView: View {
         let exclude: Bool
         let lens: WordCloudLens
         let termCount: Int
+        let fontDesign: WordCloudFontDesign
+        let density: WordCloudDensity
     }
 }
 
@@ -779,7 +860,7 @@ struct WordCloudWindowContent: View {
             } else {
                 ContentUnavailableView(
                     String(localized: "wordcloud.window.empty.title", defaultValue: "No Word Cloud"),
-                    systemImage: "textformat.size",
+                    systemImage: WordCloudGlyph.fallbackSymbol,
                     description: Text(String(
                         localized: "wordcloud.window.empty.detail",
                         defaultValue: "Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, or the corpus."
@@ -885,16 +966,48 @@ private struct WordCloudScopeBar: View {
                         }
                     }
                 }
+                Divider()
+                Button(String(localized: "wordcloud.scope.dateRange", defaultValue: "Date Range")) {
+                    scope = defaultDateRangeScope()
+                }
             } label: {
                 Text(currentLabel)
                     .font(.subheadline.weight(.semibold))
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
+            if case let .dateRange(startISO, endISO) = scope {
+                DatePicker("", selection: Binding(
+                    get: { WordCloudScope.day(fromISO: startISO) ?? .distantPast },
+                    set: { scope = .dateRange(startISO: WordCloudScope.isoDay(from: $0), endISO: endISO) }
+                ), in: ...(WordCloudScope.day(fromISO: endISO) ?? .now), displayedComponents: .date)
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .accessibilityLabel(String(localized: "wordcloud.scope.dateRange.from", defaultValue: "Range start"))
+                Text(verbatim: "–").foregroundStyle(.tertiary)
+                DatePicker("", selection: Binding(
+                    get: { WordCloudScope.day(fromISO: endISO) ?? .now },
+                    set: { scope = .dateRange(startISO: startISO, endISO: WordCloudScope.isoDay(from: $0)) }
+                ), in: (WordCloudScope.day(fromISO: startISO) ?? .distantPast)..., displayedComponents: .date)
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .accessibilityLabel(String(localized: "wordcloud.scope.dateRange.to", defaultValue: "Range end"))
+            }
             Spacer()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
+    }
+
+    /// A sensible default date-range scope when the user first picks "Date Range":
+    /// the corpus's most recent year, mirroring the Chronology browser's default.
+    private func defaultDateRangeScope() -> WordCloudScope {
+        let corpus = appState.manifestStore.corpusDateRange
+        let cal = Calendar(identifier: .gregorian)
+        let end = corpus.upperBound
+        let start = cal.date(byAdding: .year, value: -1, to: end) ?? corpus.lowerBound
+        return .dateRange(startISO: WordCloudScope.isoDay(from: start),
+                          endISO: WordCloudScope.isoDay(from: end))
     }
 
     /// A readable label for the current scope, resolved against the manifest and
@@ -922,6 +1035,8 @@ private struct WordCloudScopeBar: View {
         case let .savedSearch(id):
             return savedSearches.first { $0.id == id }?.name
                 ?? String(localized: "wordcloud.scope.savedSearch", defaultValue: "Saved Search")
+        case let .dateRange(startISO, endISO):
+            return WordCloudScope.dateRangeTitle(startISO: startISO, endISO: endISO)
         }
     }
 }

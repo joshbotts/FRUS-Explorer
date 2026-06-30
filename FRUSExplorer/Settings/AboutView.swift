@@ -24,6 +24,11 @@ enum AboutLinks {
     static let claude            = "https://claude.ai"
     static let frusExplorerRepo  = "https://github.com/joshbotts/FRUS-Explorer"
 
+    // Platform user manuals (rendered Markdown on GitHub; `HEAD` follows the default
+    // branch so the link never goes stale across renames/merges).
+    static let iosManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md"
+    static let macManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md"
+
     static let allURLStrings: [String] = [
         officeOfHistorian,
         historyAtState,
@@ -31,6 +36,8 @@ enum AboutLinks {
         teiPublisher,
         claude,
         frusExplorerRepo,
+        iosManual,
+        macManual,
     ]
 }
 
@@ -241,10 +248,38 @@ contemporary challenges and the United States's role in the world.
 
     // MARK: - Resources
 
+    /// One Resources-section link row (label + external-link chevron), opened in the
+    /// in-app browser via the `\.openURL` override on `content`.
     @ViewBuilder
+    private func resourceLink(_ title: String, urlString: String, systemImage: String) -> some View {
+        if let url = URL(string: urlString) {
+            Link(destination: url) {
+                HStack {
+                    Label(title, systemImage: systemImage)
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityLabel(Text(verbatim: title) + Text(verbatim: " — ")
+                + Text(String(localized: "about.resources.opensInBrowser", defaultValue: "opens in browser")))
+            .accessibilityAddTraits(.isLink)
+        }
+    }
+
     private var resourcesSection: some View {
         Section(String(localized: "about.resources.header",
                        defaultValue: "Resources")) {
+            // Platform user manual(s) — rendered Markdown on GitHub.
+            #if os(macOS)
+            resourceLink(String(localized: "about.resources.manual.mac", defaultValue: "macOS User Manual"),
+                         urlString: AboutLinks.macManual, systemImage: "book")
+            #else
+            resourceLink(String(localized: "about.resources.manual.ios", defaultValue: "iOS & iPadOS User Manual"),
+                         urlString: AboutLinks.iosManual, systemImage: "book")
+            #endif
+
             if let url = URL(string: AboutLinks.officeOfHistorian) {
                 Link(destination: url) {
                     HStack {

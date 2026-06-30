@@ -3353,6 +3353,7 @@ private struct DisplaySettingsView: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
     @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
+    @AppStorage(ChartSeriesPalette.storageKey) private var chartSeriesCount = ChartSeriesPalette.defaultCount
     #if os(iOS)
     @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
     #endif
@@ -3378,6 +3379,20 @@ private struct DisplaySettingsView: View {
             } footer: {
                 Text(String(localized: "settings.display.textSize.footer",
                             defaultValue: "Adjusts the body text size in the Document view."))
+            }
+
+            Section {
+                Stepper(value: $chartSeriesCount, in: ChartSeriesPalette.range) {
+                    Text(String(format: String(localized: "settings.display.chartColors.value %lld",
+                                               defaultValue: "Distinctly-colored volumes: %lld"),
+                                Int64(chartSeriesCount)))
+                }
+            } header: {
+                Text(String(localized: "settings.display.chartColors.header",
+                            defaultValue: "Chart Colors"))
+            } footer: {
+                Text(String(localized: "settings.display.chartColors.footer",
+                            defaultValue: "How many volumes appear as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view."))
             }
 
             Section {

@@ -501,6 +501,7 @@ struct SearchView: View {
             }
             // Over-cap guidance: shown when the result set hit the hard limit, meaning
             // there are likely more matching documents not visible in the list.
+            // Over-cap guidance — only when the result set hit the hard limit.
             if vm.isResultsCapped {
                 Text(String(
                     format: String(localized: "search.capped.guidance %lld",
@@ -509,16 +510,18 @@ struct SearchView: View {
                 ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+            }
 
-                // Search → Analytics handoff (Direction B): when the cap is hit,
-                // suggest visualising the result distribution over time so the
-                // user can pick a date range that narrows the match set, rather
-                // than guessing at extra keywords.
+            // Search → Analytics handoff (Direction B): available for any keyword
+            // search so the user can always chart the term's distribution over time.
+            // When the result set is capped, it also helps find a date range that
+            // narrows the match set.
+            if !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty {
                 Button {
-                    openCappedResultsInAnalytics()
+                    openSearchInAnalytics()
                 } label: {
                     Label(
-                        String(localized: "search.capped.analytics.button",
+                        String(localized: "search.analytics.button",
                                defaultValue: "Visualize in Corpus Analytics"),
                         systemImage: "chart.bar.xaxis"
                     )
@@ -527,8 +530,8 @@ struct SearchView: View {
                 .buttonStyle(.borderless)
                 .padding(.top, 1)
                 .help(String(
-                    localized: "search.capped.analytics.help",
-                    defaultValue: "Open Corpus Analytics charting how often these keywords appear over time, so you can pick a date range that narrows your results"
+                    localized: "search.analytics.help",
+                    defaultValue: "Open Corpus Analytics charting how often these keywords appear over time"
                 ))
             }
         }
@@ -570,8 +573,9 @@ struct SearchView: View {
         .buttonStyle(.borderless)
     }
 
-    /// Builds an `AnalyticsParameters` snapshot from the current (capped) search
-    /// and hands off to Corpus Analytics via `AppState.pendingAnalytics`.
+    /// Builds an `AnalyticsParameters` snapshot from the current search and hands off
+    /// to Corpus Analytics via `AppState.pendingAnalytics`. Available for any keyword
+    /// search (not only over-cap ones).
     ///
     /// Carries the submitted keywords as the chart term, and — when an explicit
     /// date filter is active — the filter's start/end years as the chart's
@@ -579,7 +583,7 @@ struct SearchView: View {
     /// the search was scoped to. `phrase`/`prefixWildcard` are intentionally not
     /// folded in: `CorpusAnalyticsService` charts a single plain-text term, and
     /// `keywords` is the field most search sessions actually populate.
-    private func openCappedResultsInAnalytics() {
+    private func openSearchInAnalytics() {
         let term = vm.keywords.trimmingCharacters(in: .whitespaces)
         guard !term.isEmpty else { return }
         var startYear: Int? = nil
