@@ -129,7 +129,7 @@ struct CollectionListView: View {
                         } label: {
                             Label { Text(String(localized: "collection.wordCloud",
                                                 defaultValue: "Word Cloud")) }
-                                icon: { WordCloudGlyph() }
+                                icon: { Image(systemName: WordCloudGlyph.symbol) }
                         }
                     }
             }

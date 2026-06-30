@@ -294,7 +294,7 @@ struct MainWindowView: View {
                 openWindow(id: "frus.wordcloud")
             } label: {
                 Label { Text(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud")) }
-                    icon: { WordCloudGlyph() }
+                    icon: { Image(systemName: WordCloudGlyph.symbol) }
             }
             .help(String(
                 localized: "mainwindow.tools.wordcloud.help",

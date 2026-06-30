@@ -1048,7 +1048,7 @@ struct ChronologyView: View {
                 Label {
                     Text(String(localized: "chronology.wordcloud", defaultValue: "Word Cloud for this range"))
                 } icon: {
-                    WordCloudGlyph()
+                    Image(systemName: WordCloudGlyph.symbol)
                 }
             }
             .disabled(!vm.hasLoaded || vm.totalShown == 0)

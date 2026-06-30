@@ -165,7 +165,7 @@ struct BrowserView: View {
                     appState.pendingWordCloud = .corpus
                 } label: {
                     Label { Text(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud")) }
-                        icon: { WordCloudGlyph() }
+                        icon: { Image(systemName: WordCloudGlyph.symbol) }
                 }
             } label: {
                 Image(systemName: "chart.bar.xaxis")

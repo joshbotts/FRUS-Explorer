@@ -11,36 +11,23 @@ import SwiftUI
 
 // MARK: - WordCloudGlyph
 
-/// The app's Word Cloud mark: a cloud with a small text glyph knocked out of it.
+/// The app's Word Cloud mark: a single SF Symbol name, reused everywhere so the icon
+/// is identical across iOS, iPadOS, and macOS.
 ///
-/// Conveys "word cloud" more clearly than a bare `textformat.size` icon (which the
-/// Display settings pane also uses, so the two read identically). Composes two SF
-/// Symbols — `cloud.fill` with a scaled `textformat` overlay — into one scalable view,
-/// since SF Symbols cannot be merged into a single symbol at runtime. It inherits the
-/// ambient font/size and tint, so it works in toolbars, menus, list rows, and large
-/// placeholders alike.
-///
-/// Use `WordCloudGlyph()` wherever a custom icon view is accepted — a `Label`'s `icon:`
-/// closure, a toolbar button's label, or `ContentUnavailableView`'s label closure.
-/// Defined once here and reused everywhere so the mark stays consistent across the app.
+/// `textformat.abc` reads as "words" without the cloud iconography that users mistook
+/// for iCloud / cloud sync. Exposed as a plain symbol-name string (rather than a
+/// composed `View`) so every call site — `Image(systemName:)`, a `Label`'s
+/// `systemImage:`, a toolbar button, or `ContentUnavailableView` — renders the same
+/// stock glyph and inherits the ambient size and tint.
 ///
 /// Version history:
-///   1.0 — Session 167: replaces the ambiguous `textformat.size` word-cloud icon
-struct WordCloudGlyph: View {
-
-    /// Plain SF Symbol name for the rare API that only accepts a `systemImage:` string
-    /// and cannot take a composite view.
-    static let fallbackSymbol = "cloud"
-
-    var body: some View {
-        Image(systemName: "cloud.fill")
-            .overlay {
-                Image(systemName: "textformat")
-                    .scaleEffect(0.46)
-                    .foregroundStyle(.background)
-            }
-            .accessibilityHidden(true)
-    }
+///   1.0 — Session 167: composite `cloud.fill` + `textformat` mark
+///   2.0 — Session 170: reverted the composite view to the stock `textformat.abc`
+///         symbol (the cloud read as iCloud/sync; the composite rendered inconsistently
+///         across platforms)
+enum WordCloudGlyph {
+    /// The SF Symbol name for the Word Cloud feature.
+    static let symbol = "textformat.abc"
 }
 
 // MARK: - Appearance

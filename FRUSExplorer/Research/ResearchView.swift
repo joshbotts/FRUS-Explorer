@@ -434,7 +434,7 @@ struct ResearchView: View {
             appState.pendingWordCloud = scope
         } label: {
             Label { Text(String(localized: "research.wordCloud", defaultValue: "Word Cloud")) }
-                icon: { WordCloudGlyph() }
+                icon: { Image(systemName: WordCloudGlyph.symbol) }
         }
     }
 
