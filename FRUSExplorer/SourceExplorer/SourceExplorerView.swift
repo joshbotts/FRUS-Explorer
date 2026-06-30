@@ -161,6 +161,9 @@ struct SourceExplorerView: View {
                                       defaultValue: "Learn About Source Notes")
                     )
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    FeatureInfoButton.sourceExplorer
+                }
             }
             .task {
                 await load()

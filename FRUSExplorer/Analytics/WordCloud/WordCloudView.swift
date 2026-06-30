@@ -430,6 +430,29 @@ struct WordCloudView: View {
             .labelsHidden()
         }
         ToolbarItem(placement: .primaryAction) {
+            FeatureInfoButton(
+                heading: String(localized: "wordcloud.info.heading", defaultValue: "About the Word Cloud"),
+                items: [
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.shows.title", defaultValue: "What you're seeing"),
+                        detail: String(localized: "wordcloud.info.shows.detail",
+                                       defaultValue: "The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, or the whole corpus — each sized by how often it appears.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.lenses.title", defaultValue: "Lenses"),
+                        detail: String(localized: "wordcloud.info.lenses.detail",
+                                       defaultValue: "The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.filters.title", defaultValue: "What's filtered out"),
+                        detail: String(localized: "wordcloud.info.filters.detail",
+                                       defaultValue: "Common stopwords are always removed. You can also hide diplomatic boilerplate and maintain your own hidden-word lists (globally or per lens) in Settings → Word Cloud.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.tap.title", defaultValue: "Tapping a word"),
+                        detail: String(localized: "wordcloud.info.tap.detail",
+                                       defaultValue: "Charts how often that term appears across the whole corpus in Corpus Analytics; the word's menu also offers a scoped chart and a direct Search.")),
+                ]
+            )
+        }
+        ToolbarItem(placement: .primaryAction) {
             Menu {
                 Toggle(String(localized: "wordcloud.filter.boilerplate",
                               defaultValue: "Hide common diplomatic words"),

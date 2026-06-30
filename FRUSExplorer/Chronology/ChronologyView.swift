@@ -1013,6 +1013,30 @@ struct ChronologyView: View {
             .help(String(localized: "chronology.colors.help",
                          defaultValue: "How many volumes appear as distinct colors before the rest fold into “Other”"))
         }
+        ToolbarItem(placement: .primaryAction) {
+            FeatureInfoButton(
+                heading: String(localized: "chronology.info.heading", defaultValue: "About Chronology"),
+                items: [
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.shows.title", defaultValue: "What you're seeing"),
+                        detail: String(localized: "chronology.info.shows.detail",
+                                       defaultValue: "Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.")),
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.dates.title", defaultValue: "How dates work"),
+                        detail: String(localized: "chronology.info.dates.detail",
+                                       defaultValue: "Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.")),
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.chart.title", defaultValue: "The distribution chart"),
+                        detail: String(localized: "chronology.info.chart.detail",
+                                       defaultValue: "The stacked chart colour-codes documents by source volume (the top volumes, then a grey “Other”). Use the chart-colours menu to choose how many volumes get a distinct colour.")),
+                    FeatureInfoItem(
+                        title: String(localized: "chronology.info.cap.title", defaultValue: "Wide ranges"),
+                        detail: String(localized: "chronology.info.cap.detail",
+                                       defaultValue: "The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.")),
+                ]
+            )
+            .disabled(!vm.hasLoaded)
+        }
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "chronology.done", defaultValue: "Done")) { dismiss() }

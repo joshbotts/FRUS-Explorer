@@ -75,6 +75,81 @@ enum ChartSeriesPalette {
     }
 }
 
+// MARK: - FeatureInfoButton
+
+/// One titled explanation row shown inside a `FeatureInfoButton` popover.
+struct FeatureInfoItem: Identifiable {
+    let title: String
+    let detail: String
+    var id: String { title }
+}
+
+/// A toolbar "info" button that presents a popover explaining a feature's semantics —
+/// the shared version of the info affordance already used in Corpus Analytics and the
+/// Cross-Reference Graph, so Source Explorer, the Word Cloud, and Chronology can offer
+/// the same help. Place inside a `ToolbarItem`.
+///
+/// Version history:
+///   1.0 — Session 169: shared feature info popover
+struct FeatureInfoButton: View {
+    /// Popover heading and the button's accessibility label / tooltip.
+    let heading: String
+    /// The titled explanation rows.
+    let items: [FeatureInfoItem]
+
+    @State private var isPresented = false
+
+    var body: some View {
+        Button {
+            isPresented.toggle()
+        } label: {
+            Image(systemName: "info.circle")
+                .accessibilityLabel(heading)
+        }
+        .help(heading)
+        .popover(isPresented: $isPresented, arrowEdge: .top) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(heading).font(.headline)
+                ForEach(items) { item in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(item.detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(16)
+            .frame(width: 360)
+        }
+    }
+
+    /// The shared Source Explorer info button, identical on iOS and macOS so the
+    /// dual-platform views stay in lockstep without duplicating the copy.
+    static var sourceExplorer: FeatureInfoButton {
+        FeatureInfoButton(
+            heading: String(localized: "source.explorer.info.heading", defaultValue: "About Source Explorer"),
+            items: [
+                FeatureInfoItem(
+                    title: String(localized: "source.explorer.info.shows.title", defaultValue: "What you're seeing"),
+                    detail: String(localized: "source.explorer.info.shows.detail",
+                                   defaultValue: "A structured breakdown of one document's source note — the State Department editors' record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.")),
+                FeatureInfoItem(
+                    title: String(localized: "source.explorer.info.why.title", defaultValue: "Why it matters"),
+                    detail: String(localized: "source.explorer.info.why.detail",
+                                   defaultValue: "Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and judge its provenance at a glance.")),
+                FeatureInfoItem(
+                    title: String(localized: "source.explorer.info.catalog.title", defaultValue: "Links to the National Archives"),
+                    detail: String(localized: "source.explorer.info.catalog.detail",
+                                   defaultValue: "Where a note resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.")),
+            ]
+        )
+    }
+}
+
 // MARK: - FRUSTheme
 
 /// Cross-platform design token namespace for FRUS Explorer.
