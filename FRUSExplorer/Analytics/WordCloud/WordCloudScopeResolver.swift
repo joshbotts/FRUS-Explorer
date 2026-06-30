@@ -113,8 +113,23 @@ struct WordCloudScopeResolver {
                 keys = results.map { WordCloudDocumentKey(volumeId: $0.volumeId, documentId: $0.documentId) }
             }
             return Resolved(scope: scope, title: title, keys: keys, isCorpus: false)
+
+        case let .dateRange(startISO, endISO):
+            let range = DateRange(earliest: startISO, latest: endISO)
+            let rows = (try await pipeline?.documentsInDateRange(
+                range, scopeVolumeIds: nil, ascending: true, limit: Self.dateRangeKeyLimit)) ?? []
+            let keys = rows.map { WordCloudDocumentKey(volumeId: $0.volumeId, documentId: $0.documentId) }
+            return Resolved(
+                scope: scope,
+                title: WordCloudScope.dateRangeTitle(startISO: startISO, endISO: endISO),
+                keys: keys, isCorpus: false
+            )
         }
     }
+
+    /// Hard cap on documents pulled for a date-range cloud, mirroring the Chronology
+    /// browser's load limit so a very wide range stays responsive.
+    private static let dateRangeKeyLimit = 5000
 
     /// Document keys for one volume, or an empty array when the volume isn't indexed.
     private func keys(forVolume volumeId: String) async throws -> [WordCloudDocumentKey] {

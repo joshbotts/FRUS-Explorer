@@ -75,6 +75,9 @@ struct WordCloudView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     /// Excludes FRUS-boilerplate words ("telegram", "department", …) in addition
     /// to the always-on English stopwords. Persisted; defaults on.
@@ -468,6 +471,16 @@ struct WordCloudView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             Menu {
+                if isDateRangeScope {
+                    Button {
+                        viewInChronology()
+                    } label: {
+                        Label(String(localized: "wordcloud.viewInChronology",
+                                     defaultValue: "View in Chronology"),
+                              systemImage: "calendar.day.timeline.left")
+                    }
+                    Divider()
+                }
                 Toggle(String(localized: "wordcloud.filter.boilerplate",
                               defaultValue: "Hide common diplomatic words"),
                        isOn: $excludeBoilerplate)
@@ -718,7 +731,7 @@ struct WordCloudView: View {
         case .subseries:
             return String(localized: "wordcloud.word.analyze.subseries",
                           defaultValue: "Analyze within this subseries")
-        case .corpus, .document, .collection, .userTag, .savedSearch:
+        case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return nil
         }
     }
@@ -746,7 +759,7 @@ struct WordCloudView: View {
                 .map(\.volumeId)
             guard !volumeIds.isEmpty else { return (nil, nil) }
             return (volumeIds, title.isEmpty ? subseriesId : title)
-        case .corpus, .document, .collection, .userTag, .savedSearch:
+        case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return (nil, nil)
         }
     }
@@ -760,6 +773,35 @@ struct WordCloudView: View {
         print("[WordCloudView] Handoff to Search — term: \"\(term)\"")
         #endif
         dismiss()
+    }
+
+    /// Whether this cloud is scoped to a date range, gating the "View in Chronology"
+    /// handoff (only a date-range cloud maps cleanly back onto the Chronology browser).
+    private var isDateRangeScope: Bool {
+        if case .dateRange = scope { return true }
+        return false
+    }
+
+    /// Opens the Chronology browser for this cloud's date range — the inverse of the
+    /// "Word Cloud for this range" handoff from Chronology. Only meaningful for a
+    /// `.dateRange` scope.
+    private func viewInChronology() {
+        guard case let .dateRange(startISO, endISO) = scope else { return }
+        appState.pendingChronology = ChronologyParameters(
+            rangeStart: WordCloudScope.day(fromISO: startISO),
+            rangeEnd: WordCloudScope.day(fromISO: endISO)
+        )
+        #if DEBUG
+        print("[WordCloudView] Handoff to Chronology — range: \(startISO)…\(endISO)")
+        #endif
+        #if os(macOS)
+        openWindow(id: "frus.chronology")
+        #else
+        // Chronology is presented from the Browse tab on iOS; surface it and dismiss
+        // this sheet so `BrowserView` can present it on the `pendingChronology` change.
+        appState.activeTab = .browse
+        dismiss()
+        #endif
     }
 
     // MARK: - Recompute Keys
@@ -924,16 +966,48 @@ private struct WordCloudScopeBar: View {
                         }
                     }
                 }
+                Divider()
+                Button(String(localized: "wordcloud.scope.dateRange", defaultValue: "Date Range")) {
+                    scope = defaultDateRangeScope()
+                }
             } label: {
                 Text(currentLabel)
                     .font(.subheadline.weight(.semibold))
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
+            if case let .dateRange(startISO, endISO) = scope {
+                DatePicker("", selection: Binding(
+                    get: { WordCloudScope.day(fromISO: startISO) ?? .distantPast },
+                    set: { scope = .dateRange(startISO: WordCloudScope.isoDay(from: $0), endISO: endISO) }
+                ), in: ...(WordCloudScope.day(fromISO: endISO) ?? .now), displayedComponents: .date)
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .accessibilityLabel(String(localized: "wordcloud.scope.dateRange.from", defaultValue: "Range start"))
+                Text(verbatim: "–").foregroundStyle(.tertiary)
+                DatePicker("", selection: Binding(
+                    get: { WordCloudScope.day(fromISO: endISO) ?? .now },
+                    set: { scope = .dateRange(startISO: startISO, endISO: WordCloudScope.isoDay(from: $0)) }
+                ), in: (WordCloudScope.day(fromISO: startISO) ?? .distantPast)..., displayedComponents: .date)
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .accessibilityLabel(String(localized: "wordcloud.scope.dateRange.to", defaultValue: "Range end"))
+            }
             Spacer()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
+    }
+
+    /// A sensible default date-range scope when the user first picks "Date Range":
+    /// the corpus's most recent year, mirroring the Chronology browser's default.
+    private func defaultDateRangeScope() -> WordCloudScope {
+        let corpus = appState.manifestStore.corpusDateRange
+        let cal = Calendar(identifier: .gregorian)
+        let end = corpus.upperBound
+        let start = cal.date(byAdding: .year, value: -1, to: end) ?? corpus.lowerBound
+        return .dateRange(startISO: WordCloudScope.isoDay(from: start),
+                          endISO: WordCloudScope.isoDay(from: end))
     }
 
     /// A readable label for the current scope, resolved against the manifest and
@@ -961,6 +1035,8 @@ private struct WordCloudScopeBar: View {
         case let .savedSearch(id):
             return savedSearches.first { $0.id == id }?.name
                 ?? String(localized: "wordcloud.scope.savedSearch", defaultValue: "Saved Search")
+        case let .dateRange(startISO, endISO):
+            return WordCloudScope.dateRangeTitle(startISO: startISO, endISO: endISO)
         }
     }
 }

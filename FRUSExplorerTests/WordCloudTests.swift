@@ -247,7 +247,8 @@ struct WordCloudScopeTests {
             .corpus,
             .collection(id: id),
             .userTag(id: id),
-            .savedSearch(id: id)
+            .savedSearch(id: id),
+            .dateRange(startISO: "1969-01-01", endISO: "1969-12-31")
         ]
         for scope in scopes {
             #expect(WordCloudScope(signature: scope.signature) == scope)
@@ -259,6 +260,18 @@ struct WordCloudScopeTests {
         #expect(WordCloudScope(signature: "bogus") == nil)
         #expect(WordCloudScope(signature: "col:not-a-uuid") == nil)
         #expect(WordCloudScope(signature: "") == nil)
+        #expect(WordCloudScope(signature: "daterange:1969-01-01") == nil)
+        #expect(WordCloudScope(signature: "daterange:") == nil)
+    }
+
+    @Test("WordCloudScope: date-range signature encodes both ISO bounds")
+    func dateRangeSignature() {
+        let scope = WordCloudScope.dateRange(startISO: "1962-10-16", endISO: "1962-10-28")
+        #expect(scope.signature == "daterange:1962-10-16..1962-10-28")
+        // ISO day helpers round-trip through the canonical UTC formatter.
+        let day = WordCloudScope.day(fromISO: "1962-10-16")
+        #expect(day != nil)
+        if let day { #expect(WordCloudScope.isoDay(from: day) == "1962-10-16") }
     }
 }
 

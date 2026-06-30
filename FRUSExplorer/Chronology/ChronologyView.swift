@@ -32,6 +32,9 @@ struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var vm = ChronologyViewModel(
         rangeStart: ChronologyView.defaultStart,
@@ -131,8 +134,16 @@ struct ChronologyView: View {
         vm.pipeline = appState.indexingPipeline
         seriesCount = defaultSeriesCount
         vm.seriesCount = defaultSeriesCount
+        // Explicit parameters (the iOS sheet) take priority; otherwise pick up a pending
+        // macOS-window handoff set just before `openWindow` (which won't fire `.onChange`
+        // because the value is already in place when this fresh window appears).
         if let params {
             apply(params)
+            return
+        }
+        if let pending = appState.pendingChronology {
+            appState.pendingChronology = nil
+            apply(pending)
             return
         }
         guard !didSeedDefaults else { return }
@@ -156,6 +167,23 @@ struct ChronologyView: View {
     private func reload() {
         selectedSeries = nil
         Task { await vm.reload() }
+    }
+
+    /// Opens a word cloud over the documents in the currently displayed date range —
+    /// the inverse of the word cloud's "View in Chronology" handoff.
+    private func openWordCloudForRange() {
+        let scope = WordCloudScope.dateRange(
+            startISO: WordCloudScope.isoDay(from: min(vm.rangeStart, vm.rangeEnd)),
+            endISO: WordCloudScope.isoDay(from: max(vm.rangeStart, vm.rangeEnd))
+        )
+        appState.pendingWordCloud = scope
+        #if os(macOS)
+        openWindow(id: "frus.wordcloud")
+        #else
+        // The word cloud is presented at the tab-container level (MainTabView) on iOS;
+        // dismiss this sheet so it can present on the `pendingWordCloud` change.
+        dismiss()
+        #endif
     }
 
     // MARK: - Range Bar
@@ -1012,6 +1040,20 @@ struct ChronologyView: View {
             .disabled(!vm.hasLoaded || vm.chartBuckets.isEmpty)
             .help(String(localized: "chronology.colors.help",
                          defaultValue: "How many volumes appear as distinct colors before the rest fold into “Other”"))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                openWordCloudForRange()
+            } label: {
+                Label {
+                    Text(String(localized: "chronology.wordcloud", defaultValue: "Word Cloud for this range"))
+                } icon: {
+                    WordCloudGlyph()
+                }
+            }
+            .disabled(!vm.hasLoaded || vm.totalShown == 0)
+            .help(String(localized: "chronology.wordcloud.help",
+                         defaultValue: "Build a word cloud from the documents in the displayed date range"))
         }
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton(
