@@ -27,7 +27,6 @@ enum AboutLinks {
     // Platform user manuals (rendered Markdown on GitHub; `HEAD` follows the default
     // branch so the link never goes stale across renames/merges).
     static let iosManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md"
-    static let iosSupplement = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-Supplement.md"
     static let macManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md"
 
     static let allURLStrings: [String] = [
@@ -38,7 +37,6 @@ enum AboutLinks {
         claude,
         frusExplorerRepo,
         iosManual,
-        iosSupplement,
         macManual,
     ]
 }
@@ -280,10 +278,6 @@ contemporary challenges and the United States's role in the world.
             #else
             resourceLink(String(localized: "about.resources.manual.ios", defaultValue: "iOS & iPadOS User Manual"),
                          urlString: AboutLinks.iosManual, systemImage: "book")
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                resourceLink(String(localized: "about.resources.manual.ipad", defaultValue: "iPad Supplement"),
-                             urlString: AboutLinks.iosSupplement, systemImage: "ipad")
-            }
             #endif
 
             if let url = URL(string: AboutLinks.officeOfHistorian) {
