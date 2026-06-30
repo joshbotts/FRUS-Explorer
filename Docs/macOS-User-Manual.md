@@ -306,7 +306,7 @@ Saved searches can also be linked to Collections to create *smart collections* t
 
 ### 5.6 Visualizing a Search in Corpus Analytics
 
-When a query returns more results than the Search window can display in full, a banner offers to **Visualize in Corpus Analytics**. Clicking it opens the Analytics window (Section 13) pre-seeded with your search terms and any active date-range filter, so you can chart the term's distribution across the corpus and narrow the date range before returning to a more focused search.
+Any search that returns results offers a **Visualize in Corpus Analytics** banner. Clicking it opens the Analytics window (Section 13) pre-seeded with your search terms and any active date-range filter, so you can chart the term's distribution across the corpus and narrow the date range before returning to a more focused search. When a query returns more results than the Search window can display in full, the banner additionally shows the existing guidance about narrowing the range.
 
 `[SCREENSHOT: Search results banner offering "Visualize in Corpus Analytics" above a capped result list]`
 
@@ -618,7 +618,7 @@ Any summary can be promoted into a research note. Click **Use as Draft** in the 
 
 Every FRUS document carries a source note that identifies the archival record behind the published text — a State Department lot file, a presidential library folder, or a NARA record group. The **Source Explorer** resolves that note into links to the relevant archival description.
 
-Click the source note at the top of any open document to open the Source Explorer sheet.
+Click the source note at the top of any open document to open the Source Explorer sheet. An **info** button (ⓘ) in the toolbar opens a popover explaining what the view shows and how to read it.
 
 ![The Source Explorer resolving a document's RG-59 source — the parsed source note and provenance (National Archives, RG 59, Central Files 1967–69) on the left; on the right, the NARA search query, the matched NARA Catalog entry with a "View in NARA Catalog" link, and the Archival Neighbors section.](screenshots/macos/source-explorer.png)
 
@@ -678,11 +678,13 @@ Open it from the **Analytics** toolbar button in the main window, or by clicking
 ### 13.1 Configuring a Chart
 
 1. Type a search term in the field at the top of the window. The same query syntax as the Search window is supported (see Section 5.2), including quoted phrases (Analytics and Search now agree on phrase queries).
-2. Choose a **dimension**: Decade, Year, Month, Day, **Subseries**, or **By Volume**. The time dimensions chart frequency over time; **Subseries** and **By Volume** break the same query down by where in the corpus it appears, omitting subseries or volumes where the query never occurs. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the top eight source volumes each get a colour, the rest fold into a grey "Other", and a legend names each volume with its count — so you can see which part of the corpus drives a term in any period (the same encoding the Chronology graph uses).
+2. Choose a **dimension**: Decade, Year, Month, Day, **Subseries**, or **By Volume**. The time dimensions chart frequency over time; **Subseries** and **By Volume** break the same query down by where in the corpus it appears, omitting subseries or volumes where the query never occurs. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the most-cited source volumes each get a colour, the rest fold into a grey "Other", and a legend names each volume with its count — so you can see which part of the corpus drives a term in any period (the same encoding the Chronology graph uses). The number of distinct colour-coded volumes shown before the remainder fold into "Other" is **configurable** (6–12, default 8): use the **Chart colors** menu in the toolbar to set the count for this view, or set the app-wide default in the Display settings pane (Section 16). 
 3. Choose a **grouping**: All subseries combined, or broken out by subseries.
 4. Drag the **Year Range** slider to zoom in on a particular period, and set an optional **volume/subseries scope** — the same scope Search uses, so you can chart and read the identical corpus subset.
 
 On a **Subseries** or **By Volume** chart, clicking a bar drills straight into a Search scoped to that subseries or volume.
+
+An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it.
 
 ### 13.2 Chart vs. Table
 
@@ -692,7 +694,7 @@ Toggle between **Chart** (bar chart with optional trend line) and **Table** (scr
 
 ### 13.3 From a Chart to a Search
 
-Click a bar, point, or table row to **View in Search** — this opens the Search window with that term and the corresponding year range pre-filled as a date filter, so you can read the actual documents behind that data point. The relationship runs both ways: a capped Search result set can hand its terms and date filter back to Analytics via "Visualize in Corpus Analytics" (Section 5.6), making it easy to move fluidly between charting a trend and reading the documents that drive it.
+Click a bar, point, or table row to **View in Search** — this opens the Search window with that term and the corresponding year range pre-filled as a date filter, so you can read the actual documents behind that data point. The relationship runs both ways: any Search that returns results can hand its terms and date filter back to Analytics via "Visualize in Corpus Analytics" (Section 5.6), making it easy to move fluidly between charting a trend and reading the documents that drive it.
 
 `[SCREENSHOT: Analytics chart with a "View in Search" action on a selected bar]`
 
@@ -700,7 +702,7 @@ Click a bar, point, or table row to **View in Search** — this opens the Search
 
 Where Analytics charts one term over time, a **Word Cloud** shows the most frequent terms in a body of material at a glance. Open one from several places:
 
-- The **Word Cloud** button in the main window toolbar opens the Word Cloud window over the whole corpus, with an in-window **scope picker** to retarget it to any subseries, volume, collection, tag, or saved search.
+- The **Word Cloud** button in the main window toolbar opens the Word Cloud window over the whole corpus, with an in-window **scope picker** to retarget it to any subseries, volume, collection, tag, saved search, or **date range**. Choosing **Date Range** reveals inline start/end date pickers in the scope bar, so you can adjust the range right there in the window.
 - The **Share/Word Cloud** affordances on a document (Research strip), and the per-row buttons in the Corpus Browser's subseries and volume rows, open a cloud for that specific scope.
 
 `[SCREENSHOT: Word Cloud window on macOS — the scope bar, the lens chips, and a packed spiral of sized terms]`
@@ -708,7 +710,9 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 - **Two views.** A packed **spiral cloud** sizes each term by frequency (rotating some terms to pack the space); a **List** view ranks the same terms with a weight bar and exact counts, and is what VoiceOver reads.
 - **Lenses.** A row of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). When a scope lacks enough of a given kind of term, the cloud says so rather than showing a near-empty result.
 - **Act on a term.** Click a word to chart how often it appears across the whole corpus in **Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word — either **in all word clouds** or only **in this lens** (managed afterwards in Settings → Word Cloud) — **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
-- **Tuning.** Settings → Word Cloud sets minimum word length and occurrence count, toggles plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintains your own **hidden-word lists** (global, or per lens).
+- **Date-range clouds and Chronology.** A word cloud can be scoped to a date range in two ways. From **Chronology** (Section 14), the **Word Cloud for this range** toolbar button (a cloud icon) builds a cloud from the documents in the range currently displayed; it draws on the same documents as the Chronology list, up to the same 5,000-document cap, and is disabled when the range contains no documents. From a date-range cloud, the options menu (the "…"/ellipsis menu in the toolbar) adds a **View in Chronology** item that opens the Chronology browser for the same date range. (That item appears only for a date-range cloud.)
+- **Tuning.** Settings → Word Cloud sets minimum word length and occurrence count, toggles plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintains your own **hidden-word lists** (global, or per lens). A separate **Appearance** section sets the cloud's **font** — *Rounded* (the default), *Default*, *Serif*, or *Monospaced* — and its **density** — *Compact* (fits more terms), *Balanced* (default), or *Airy* (spaces terms out for legibility). These are **device-local** preferences (they are not synced via iCloud) and apply to the interactive cloud, the side-by-side comparison columns, and PNG / PDF / collection image exports.
+- **Info.** An **info** button (ⓘ) in the toolbar opens a popover explaining what the cloud shows and how to read it.
 
 Corpus- and subseries-wide clouds are cached on disk after the first computation, so reopening them is fast.
 
@@ -731,6 +735,8 @@ Each document's section carries its **date precision** (day / month / year) and 
 ### 14.2 The Distribution Chart
 
 Above the list, a stacked bar chart shows the document distribution across the range, colored by volume. The legend names each volume by a **concise, distinct label** — its topic plus a compact period/volume tag (e.g. *Soviet Union · 1981-88 v6*) rather than the full title — alongside its count, and doubles as a filter (click a volume to restrict the list to it). The chart's x-axis is **anchored to the exact range you picked**, so it always represents your chosen window rather than stretching to the uncertainty bounds of imprecise dates, and for very wide ranges it shows the **complete distribution** even when the document list below is capped (Section 14.1).
+
+The number of distinct colour-coded volumes shown before the remainder fold into a single grey "Other" series is **configurable** (6–12, default 8): use the **Chart colors** menu in the toolbar to set the count for this view, or set the app-wide default in the Display settings pane (Section 16). A **Word Cloud for this range** toolbar button (a cloud icon) builds a word cloud from the documents currently displayed (Section 13.4); it is disabled when the range contains no documents. An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it.
 
 - **Spans this period** — Wide-span documents (chiefly editorial notes that FRUS stamps with a whole multi-year range) are separated into their own collapsible section rather than smeared across the day-level chart.
 - **Extends beyond this range** — Documents whose *uncertain* date interval begins before or ends after your range are reported in a dedicated section (each annotated "begins YYYY · before range" / "ends YYYY · after range") instead of distorting the chart.
@@ -796,7 +802,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 |------|----------|
 | **iCloud Sync** | A **Sync Settings Across Devices** toggle that mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices that have it enabled. Off by default — turning it on adopts your existing iCloud settings; leave it off to keep this Mac's settings separate. (Device-specific preferences stay local. Requires iCloud.) |
 | **About** | FRUS series overview, links to history.state.gov and the GitHub source repository, app version and attribution |
-| **Display** | Theme preferences (light, dark, or system) |
+| **Display** | Theme preferences (light, dark, or system), and a **Chart Colors** stepper setting the app-wide default number of colour-coded source volumes shown in the Chronology and Corpus Analytics distribution charts before the remainder fold into "Other" (6–12, default 8; each view can override this with its own Chart colors menu) |
 | **Search** | FTS5 configuration — stemming language, ranking parameters |
 
 ### Research
@@ -806,7 +812,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 | **Projects** | Create, rename, set defaults, delete projects |
 | **Tags** | Rename, merge, delete user tags |
 | **Notes** | View notes filtered by project or tag; logging preferences |
-| **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters) and your custom global + per-lens hidden-word lists (see Section 13.4) |
+| **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters), your custom global + per-lens hidden-word lists, and an **Appearance** section setting the cloud's font (Rounded / Default / Serif / Monospaced) and density (Compact / Balanced / Airy) — device-local, not synced (see Section 13.4) |
 
 ### Corpus
 
