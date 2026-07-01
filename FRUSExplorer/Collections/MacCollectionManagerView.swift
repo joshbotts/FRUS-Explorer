@@ -244,6 +244,7 @@ private struct CollectionDetailPane: View {
                 Divider().padding(.vertical, 16)
                 noteSection
                 Divider().padding(.vertical, 16)
+                compositionDisclosure
             }
             .padding([.horizontal, .top], 24)
 
@@ -338,6 +339,24 @@ private struct CollectionDetailPane: View {
                             .allowsHitTesting(false)
                     }
                 }
+        }
+    }
+
+    // MARK: - Composition
+
+    /// Persisted export-content settings for this collection (body depth, footnotes, notes,
+    /// highlights, word cloud). Collapsible so the fixed header stays compact.
+    private var compositionDisclosure: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 10) {
+                CollectionCompositionRows(collection: collection)
+            }
+            .padding(.top, 10)
+        } label: {
+            Text(String(localized: "composition.header", defaultValue: "Composition"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
         }
     }
 

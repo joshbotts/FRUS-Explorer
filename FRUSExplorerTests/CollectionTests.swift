@@ -37,6 +37,48 @@ struct CollectionTests {
         #expect(results.first?.createdAt != nil)
     }
 
+    // MARK: - CompositionDefaultsTest
+
+    @Test("CompositionDefaults: a new collection's composition matches the prior export defaults")
+    func compositionDefaults() {
+        let collection = Collection(name: "Test")
+        // These defaults preserve the pre-Phase-1a behavior for existing/new collections.
+        #expect(collection.defaultBodyDepth == "full")
+        #expect(collection.footnoteStyle == "all")
+        #expect(collection.tocStyle == "citation")
+        #expect(collection.applyHighlights == false)
+        #expect(collection.includeNotes == true)
+        #expect(collection.includeWordCloud == false)
+        #expect(collection.summaryPromptId == nil)
+        // The stored raw values round-trip through the export enums.
+        #expect(CollectionBodyDepth(rawValue: collection.defaultBodyDepth) == .full)
+        #expect(CollectionFootnoteStyle(rawValue: collection.footnoteStyle) == .all)
+        #expect(CollectionToCStyle(rawValue: collection.tocStyle) == .citation)
+    }
+
+    // MARK: - CompositionPersistenceTest
+
+    @Test("CompositionPersistence: edited composition survives a save/fetch round-trip")
+    func compositionPersistence() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let collection = Collection(name: "Briefing")
+        context.insert(collection)
+        collection.defaultBodyDepth = CollectionBodyDepth.summaryOnly.rawValue
+        collection.footnoteStyle = CollectionFootnoteStyle.sourceNoteOnly.rawValue
+        collection.includeNotes = false
+        let promptId = UUID()
+        collection.summaryPromptId = promptId
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Collection>()).first
+        #expect(fetched?.defaultBodyDepth == "summaryOnly")
+        #expect(fetched?.footnoteStyle == "sourceNoteOnly")
+        #expect(fetched?.includeNotes == false)
+        #expect(fetched?.summaryPromptId == promptId)
+    }
+
     // MARK: - DocumentNoteAssociationTest
 
     @Test("DocumentNoteAssociationTest: CollectionEntry stores and retrieves researchNoteId")

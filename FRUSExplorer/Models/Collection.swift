@@ -33,6 +33,9 @@ import SwiftData
 ///          callers now delete associated entries manually before deleting a Collection
 ///   1.2 — Session 97: `savedSearchId` added; when non-nil the collection is a "smart collection"
 ///          whose document list is resolved dynamically from the linked `SavedSearch` at export time
+///   1.3 — Collections rework Phase 1a: persisted composition settings (`defaultBodyDepth`,
+///          `footnoteStyle`, `tocStyle`, `applyHighlights`, `includeNotes`, `includeWordCloud`,
+///          `summaryPromptId`) — the export-content decisions moved out of the ephemeral export sheet
 @Model final class Collection {
 
     // MARK: - Identity
@@ -62,6 +65,52 @@ import SwiftData
     /// dynamically at export time by executing the `SavedSearch` with this ID.
     /// Static `documentEntries` are ignored during export when this is set.
     var savedSearchId: UUID? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Composition (persisted export-content settings)
+
+    /// These describe *what the exported product contains* — the editorial decisions that
+    /// used to be re-chosen ephemerally in the export sheet (before Session-… Phase 1a).
+    /// They are edited in the collection manager and read by `buildExportOptions` at export
+    /// time, so a collection's composition is stable and re-exportable to any format.
+    /// Enum-backed fields store the `rawValue` for CloudKit compatibility.
+
+    /// Default document-body depth for exports — a `CollectionBodyDepth` raw value
+    /// (`"full"`, `"summaryOnly"`, `"index"`). Per-entry overrides may refine it (Phase 1b).
+    var defaultBodyDepth: String = "full" {
+        didSet { lastModified = .now }
+    }
+
+    /// Footnote inclusion style for exports — a `CollectionFootnoteStyle` raw value
+    /// (`"none"`, `"sourceNoteOnly"`, `"all"`).
+    var footnoteStyle: String = "all" {
+        didSet { lastModified = .now }
+    }
+
+    /// Table-of-contents label style for exports — a `CollectionToCStyle` raw value
+    /// (`"citation"`, `"headerAndDateline"`).
+    var tocStyle: String = "citation" {
+        didSet { lastModified = .now }
+    }
+
+    /// When `true`, user highlights are annotated inline in exported document bodies.
+    var applyHighlights: Bool = false {
+        didSet { lastModified = .now }
+    }
+
+    /// When `true`, attached research notes appear below each document in exports.
+    var includeNotes: Bool = true {
+        didSet { lastModified = .now }
+    }
+
+    /// When `true`, a word-cloud overview is prepended to PDF/HTML exports.
+    var includeWordCloud: Bool = false {
+        didSet { lastModified = .now }
+    }
+
+    /// The `SummarizationPrompt.id` used when the body depth is `"summaryOnly"`.
+    var summaryPromptId: UUID? {
         didSet { lastModified = .now }
     }
 
