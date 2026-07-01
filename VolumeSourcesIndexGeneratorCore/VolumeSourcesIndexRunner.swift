@@ -103,13 +103,13 @@ public enum VolumeSourcesIndexRunner {
             apiRGHits = rgMap.count
         }
 
-        // MARK: Phase D — apply resolutions to the trees, then fold the cross-volume authority.
-        var volumes: [String: VolumeSources] = [:]
+        // MARK: Phase D — apply resolutions to the (transient) trees to fold the cross-volume
+        // authority and count coverage. The resolved trees themselves are not serialized —
+        // only the `recordGroups` / `lots` resolution maps and the authority ship.
         var authority: [String: MajorCollection] = [:]
         var totalItems = 0, totalProse = 0, totalHeadings = 0, resolvedNodes = 0
         for vt in volumeTrees {
             let resolved = applyResolution(vt.tree, inheritedRG: nil, bundled: bundled, lotMap: lotMap, rgMap: rgMap)
-            volumes[vt.volumeId] = VolumeSources(prose: vt.prose, collections: resolved)
             totalProse += vt.prose.count
             countTree(resolved, items: &totalItems, headings: &totalHeadings, resolved: &resolvedNodes)
             accumulateAuthority(resolved, volumeId: vt.volumeId, into: &authority)
@@ -119,18 +119,20 @@ public enum VolumeSourcesIndexRunner {
             .map { var c = $0; c.volumeIds.sort(); return c }
             .sorted { $0.occurrences != $1.occurrences ? $0.occurrences > $1.occurrences : $0.key < $1.key }
 
-        let output = VolumeSourcesIndex(schemaVersion: 1, generated: generated,
-                                        volumes: volumes, majorCollections: majorCollections)
+        let output = VolumeSourcesIndex(schemaVersion: 2, generated: generated,
+                                        recordGroups: rgMap, lots: lotMap,
+                                        majorCollections: majorCollections)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(output).write(to: URL(fileURLWithPath: outputPath))
 
         log("""
         volume-sources-index.json written to \(outputPath)
-          volumes with sources: \(volumes.count) / \(xmls.count)
+          volumes with sources: \(volumeTrees.count) / \(xmls.count)
           prose paragraphs:     \(totalProse)
           collection items:     \(totalItems)  (headings: \(totalHeadings))
           resolved nodes:       \(resolvedNodes)  (API lot hits: \(apiLotHits), API RG hits: \(apiRGHits))
+          record groups:        \(rgMap.count)   lot files: \(lotMap.count)
           major collections:    \(majorCollections.count)
         """)
     }

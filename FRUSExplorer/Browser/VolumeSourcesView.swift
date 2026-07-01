@@ -38,6 +38,9 @@ struct VolumeSourcesView: View {
     @State private var isLoading = true
     /// When set, presents the Archival Neighbors sheet for a volume source entry.
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
+    /// When set, presents the cross-volume provenance sheet for a major collection —
+    /// the other volumes whose Sources sections cite the same archival collection.
+    @State private var crossVolumeTarget: CrossVolumeTarget? = nil
 
     /// The narrative "Note on Sources" paragraphs, shown as flowing prose.
     private var proseEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .prose } }
@@ -110,28 +113,71 @@ struct VolumeSourcesView: View {
             }
             .environment(appState)
         }
+        .sheet(item: $crossVolumeTarget) { target in
+            VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
+                .environment(appState)
+        }
     }
 
     /// One archival-collection outline row: its own text (bold for a major named collection —
-    /// a `<hi rend="strong">` heading), with an Archival Neighbors affordance where the node
-    /// carries a resolvable match key (lot file, or record group + series).
+    /// a `<hi rend="strong">` heading), a link to the resolved NARA Catalog record where the
+    /// collection resolved, an Archival Neighbors affordance where the node carries a
+    /// resolvable match key (lot file, or record group + series), and — for a major
+    /// collection cited by more than one volume — a cross-volume provenance affordance.
     private func sourceNodeRow(_ entry: VolumeSourceEntry) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text(entry.rawText)
-                .font(entry.isHeading ? .callout.weight(.semibold) : .callout)
-                .textSelection(.enabled)
-            if let target = makeNeighborsTarget(for: entry) {
+        // O(1) lookups into the bundled resolution index (decoded once, warmed off-main).
+        let resolution = VolumeSourcesIndexStore.shared?.resolution(
+            recordGroup: entry.recordGroup, lotFile: entry.lotFile)
+        let crossVolume: MajorCollectionRecord? = entry.isHeading
+            ? VolumeSourcesIndexStore.shared?.authority(
+                recordGroup: entry.recordGroup, lotFile: entry.lotFile, text: entry.rawText)
+            : nil
+        return VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .top, spacing: 8) {
+                Text(entry.rawText)
+                    .font(entry.isHeading ? .callout.weight(.semibold) : .callout)
+                    .textSelection(.enabled)
                 Spacer(minLength: 8)
+                if let url = resolution?.url {
+                    Link(destination: url) {
+                        Image(systemName: "building.columns")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(String(localized: "browser.sources.catalog.help",
+                                 defaultValue: "View this collection in the National Archives Catalog"))
+                    .accessibilityLabel(String(localized: "browser.sources.catalog",
+                                               defaultValue: "View in National Archives Catalog"))
+                }
+                if let target = makeNeighborsTarget(for: entry) {
+                    Button {
+                        sourceNeighborsTarget = target
+                    } label: {
+                        Image(systemName: "archivebox")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(String(localized: "browser.sources.archivalNeighbors.help",
+                                 defaultValue: "Show indexed documents drawn from this archival source"))
+                    .accessibilityLabel(String(localized: "browser.sources.archivalNeighbors",
+                                               defaultValue: "Archival Neighbors"))
+                }
+            }
+            if let crossVolume, crossVolume.volumeIds.count > 1 {
                 Button {
-                    sourceNeighborsTarget = target
+                    crossVolumeTarget = CrossVolumeTarget(
+                        title: entry.rawText, volumeIds: crossVolume.volumeIds)
                 } label: {
-                    Image(systemName: "archivebox")
+                    Label {
+                        Text(String(localized: "browser.sources.crossVolume",
+                                    defaultValue: "Cited in \(crossVolume.volumeIds.count) volumes"))
+                    } icon: {
+                        Image(systemName: "books.vertical")
+                    }
+                    .font(.caption)
                 }
                 .buttonStyle(.borderless)
-                .help(String(localized: "browser.sources.archivalNeighbors.help",
-                             defaultValue: "Show indexed documents drawn from this archival source"))
-                .accessibilityLabel(String(localized: "browser.sources.archivalNeighbors",
-                                           defaultValue: "Archival Neighbors"))
+                .foregroundStyle(.secondary)
+                .accessibilityHint(String(localized: "browser.sources.crossVolume.hint",
+                                          defaultValue: "Lists the other volumes that cite this collection"))
             }
         }
         .padding(.vertical, 2)
@@ -180,6 +226,9 @@ struct VolumeSourcesView: View {
     // MARK: - Data Loading
 
     private func loadSources() async {
+        // Warm the bundled resolution index (one ~1 MB decode) off the main thread so the
+        // per-row catalog / cross-volume lookups in `sourceNodeRow` never block rendering.
+        await Task.detached(priority: .utility) { _ = VolumeSourcesIndexStore.shared }.value
         guard let pipeline = appState.indexingPipeline else {
             isLoading = false
             return
@@ -214,4 +263,70 @@ struct SourceTreeNode: Identifiable {
     let id = UUID()
     let entry: VolumeSourceEntry
     var children: [SourceTreeNode]?
+}
+
+// MARK: - CrossVolumeTarget
+
+/// Identifiable `.sheet(item:)` target carrying a major collection's cross-volume authority:
+/// the collection's display text and the volumes whose Sources sections cite it.
+private struct CrossVolumeTarget: Identifiable {
+    let title: String
+    let volumeIds: [String]
+    let id = UUID()
+}
+
+// MARK: - VolumeSourcesCrossVolumeSheet
+
+/// Lists the volumes whose front-matter Sources sections cite a given archival collection —
+/// the cross-volume provenance folded by the `VolumeSourcesIndexGenerator`. Read-only: it
+/// answers "which other FRUS volumes drew on this same collection?" for a researcher tracing
+/// a body of records across the series.
+private struct VolumeSourcesCrossVolumeSheet: View {
+
+    /// The collection's display text, shown as context.
+    let collectionTitle: String
+    /// The citing volumes, sorted (as stored in the authority).
+    let volumeIds: [String]
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(volumeIds, id: \.self) { volumeId in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
+                                .font(.callout)
+                            Text(volumeId)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                } header: {
+                    Text(String(localized: "browser.sources.crossVolume.sheet.header",
+                                defaultValue: "Volumes Citing This Collection"))
+                } footer: {
+                    Text(collectionTitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle(String(localized: "browser.sources.crossVolume.sheet.title",
+                                    defaultValue: "Cross-Volume Provenance"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 380, minHeight: 420)
+        #endif
+    }
 }
