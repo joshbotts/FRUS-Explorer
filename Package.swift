@@ -156,6 +156,34 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - VolumeSourcesIndexGenerator
+
+        /// Harvests every volume's front-matter Sources section into `volume-sources-index.json`:
+        /// per-volume prose + a resolved archival-collection outline, plus a deduplicated
+        /// cross-volume authority. Lot files resolve offline against `central-files-index.json`;
+        /// record-group / repository headers are reported for a later NARA Catalog API pass.
+        .target(
+            name: "VolumeSourcesIndexGeneratorCore",
+            path: "VolumeSourcesIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls VolumeSourcesIndexRunner.run() and exits.
+        .executableTarget(
+            name: "VolumeSourcesIndexGenerator",
+            dependencies: [.target(name: "VolumeSourcesIndexGeneratorCore")],
+            path: "VolumeSourcesIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for VolumeSourcesIndexGeneratorCore logic.
+        .testTarget(
+            name: "VolumeSourcesIndexGeneratorTests",
+            dependencies: [.target(name: "VolumeSourcesIndexGeneratorCore")],
+            path: "VolumeSourcesIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - FTS5Store
 
         /// SQLite FTS5 Swift wrapper. Actor-based, async/await, Swift 6 strict concurrency.
