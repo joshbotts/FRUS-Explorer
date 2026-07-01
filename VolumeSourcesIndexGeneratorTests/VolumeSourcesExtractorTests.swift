@@ -88,8 +88,8 @@ struct VolumeSourcesExtractorTests {
         var index = 0
         let tree = VolumeSourcesIndexRunner.buildTree(rows.filter { $0.kind == .item }, &index, depth: 0)
         var lotKeys: [String: String] = [:]
-        var rgNumbers: Set<String> = []
-        VolumeSourcesIndexRunner.gatherKeys(tree, inheritedRG: nil, lotKeys: &lotKeys, rgNumbers: &rgNumbers)
+        var rgHeadings: [String: String] = [:]
+        VolumeSourcesIndexRunner.gatherKeys(tree, inheritedRG: nil, lotKeys: &lotKeys, rgHeadings: &rgHeadings)
         // The RG-59 record nested under "Department of State" carries a lot file; its key
         // is gathered with the record group parsed from its own text ("RG 59").
         #expect(lotKeys.values.contains("59"))

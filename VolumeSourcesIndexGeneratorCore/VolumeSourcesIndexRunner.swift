@@ -66,9 +66,9 @@ public enum VolumeSourcesIndexRunner {
 
         // MARK: Phase B — gather the distinct archival keys to resolve.
         var lotKeys: [String: String] = [:]   // normalizedLot -> inferred record group
-        var rgNumbers: Set<String> = []
-        for vt in volumeTrees { gatherKeys(vt.tree, inheritedRG: nil, lotKeys: &lotKeys, rgNumbers: &rgNumbers) }
-        log("Distinct keys: \(lotKeys.count) lot files, \(rgNumbers.count) record groups")
+        var rgHeadings: [String: String] = [:]   // record group number -> a representative heading title
+        for vt in volumeTrees { gatherKeys(vt.tree, inheritedRG: nil, lotKeys: &lotKeys, rgHeadings: &rgHeadings) }
+        log("Distinct keys: \(lotKeys.count) lot files, \(rgHeadings.count) record groups")
 
         // MARK: Phase C — resolve each distinct key once (offline first, then API).
         var lotMap: [String: ResolvedNAID] = [:]
@@ -85,8 +85,8 @@ public enum VolumeSourcesIndexRunner {
             }
         }
         if let apiClient {
-            for rg in rgNumbers {
-                if let r = try? await apiClient.resolveRecordGroup(number: rg) {
+            for (rg, heading) in rgHeadings {
+                if let r = try? await apiClient.resolveRecordGroup(number: rg, title: heading) {
                     rgMap[rg] = ResolvedNAID(naId: r.naId,
                                              catalogURL: NARACatalogHarvestClient.catalogIDBase + r.naId,
                                              title: r.title, recordGroup: rg, matchType: "api")
@@ -155,15 +155,16 @@ public enum VolumeSourcesIndexRunner {
     }
 
     static func gatherKeys(_ nodes: [CollectionNode], inheritedRG: String?,
-                           lotKeys: inout [String: String], rgNumbers: inout Set<String>) {
+                           lotKeys: inout [String: String], rgHeadings: inout [String: String]) {
         for node in nodes {
             let rg = node.recordGroup ?? inheritedRG
             if let lot = node.lotFile {
                 lotKeys[BundledLotResolver.normalizeLot(lot)] = effectiveRG(node, inherited: inheritedRG)
             } else if let recordGroup = node.recordGroup {
-                rgNumbers.insert(recordGroup)
+                // Keep the first heading text seen for this RG as the title-relevance fallback.
+                if rgHeadings[recordGroup] == nil { rgHeadings[recordGroup] = node.text }
             }
-            gatherKeys(node.children, inheritedRG: rg, lotKeys: &lotKeys, rgNumbers: &rgNumbers)
+            gatherKeys(node.children, inheritedRG: rg, lotKeys: &lotKeys, rgHeadings: &rgHeadings)
         }
     }
 
