@@ -1,8 +1,7 @@
 # User-Manual Screenshots
 
-Screenshots embedded in the user manuals (`../iOS-User-Manual.md`, `../macOS-User-Manual.md`,
-`../iOS-Supplement.md`). Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image
-has not been captured yet.
+Screenshots embedded in the user manuals (`../iOS-User-Manual.md`, `../macOS-User-Manual.md`).
+Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has not been captured yet.
 
 ## Capture conventions
 
