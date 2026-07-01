@@ -208,6 +208,7 @@ private struct CollectionDetailPane: View {
     @State private var sortedEntries: [CollectionEntry]
     @State private var showAddByTag = false
     @State private var showExport = false
+    @State private var showComposition = false
     @State private var noteCreateContext: NoteCreateContext? = nil
     /// Document headers loaded asynchronously from `document_cache`.
     /// Keyed by `"volumeId/documentId"`.
@@ -345,18 +346,32 @@ private struct CollectionDetailPane: View {
     // MARK: - Composition
 
     /// Persisted export-content settings for this collection (body depth, footnotes, notes,
-    /// highlights, word cloud). Collapsible so the fixed header stays compact.
+    /// highlights, word cloud). Presented in a bounded popover — not inline — so it never
+    /// grows the fixed, non-scrolling header past the window. The popover's `Form` gives the
+    /// pickers compact macOS menu styling and scrolls internally when its content overflows.
     private var compositionDisclosure: some View {
-        DisclosureGroup {
-            VStack(alignment: .leading, spacing: 10) {
+        Button {
+            showComposition.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                Text(String(localized: "composition.header", defaultValue: "Composition"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                Image(systemName: "slider.horizontal.3")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showComposition, arrowEdge: .bottom) {
+            Form {
                 CollectionCompositionRows(collection: collection)
             }
-            .padding(.top, 10)
-        } label: {
-            Text(String(localized: "composition.header", defaultValue: "Composition"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
+            .formStyle(.grouped)
+            .frame(width: 380, height: 440)
         }
     }
 
