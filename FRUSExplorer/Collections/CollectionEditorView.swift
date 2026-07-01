@@ -800,6 +800,22 @@ private struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
 
+    /// This entry's body-depth override (`nil` = follow the collection default).
+    private var bodyDepthOverride: Binding<String?> {
+        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
+    }
+
+    /// Depths offered here: those available on this device, plus the entry's current override
+    /// even when it isn't otherwise offered (a synced `.summaryOnly` on an AI-less device).
+    private var entryDepthOptions: [CollectionBodyDepth] {
+        let available = CollectionBodyDepth.available
+        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
+           !available.contains(d) {
+            return available + [d]
+        }
+        return available
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             // Document identity
@@ -813,6 +829,18 @@ private struct EntryRow: View {
             Text(entry.volumeId)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            // Per-entry body depth (overrides the collection default for this document)
+            Picker(selection: bodyDepthOverride) {
+                Text(String(localized: "collection.entry.bodyDepth.default",
+                            defaultValue: "Default")).tag(String?.none)
+                ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
+            } label: {
+                Text(String(localized: "collection.entry.bodyDepth.label",
+                            defaultValue: "Body depth"))
+            }
+            .pickerStyle(.menu)
+            .font(.caption)
 
             // Per-note selection (multi-select)
             if !availableNotes.isEmpty {
@@ -1278,28 +1306,21 @@ struct ExportSheetView: View {
                 // mirroring the static-collection path below. Without this, a smart
                 // collection exported as "Summary only" would carry no summary text
                 // even when the user has generated summaries for the saved search.
-                if options.bodyDepth == .summaryOnly {
+                let summaryDocs = docs.filter { $0.bodyDepth == .summaryOnly }
+                if !summaryDocs.isEmpty {
                     guard let promptId = options.summaryPromptId else {
                         exportError = String(localized: "export.summaryNoPrompt",
-                                             defaultValue: "Choose a summarization prompt to export as summaries.")
+                                             defaultValue: "Choose a summarization prompt in the collection's Composition section to export summaries.")
                         return
                     }
                     let bodyTexts = Dictionary(uniqueKeysWithValues:
-                        docs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
-                    let summaries = try await resolveSummaries(for: docs, promptId: promptId,
+                        summaryDocs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
+                    let summaries = try await resolveSummaries(for: summaryDocs, promptId: promptId,
                                                                bodyTexts: bodyTexts)
                     docs = docs.map { doc in
-                        let key = "\(doc.volumeId)/\(doc.documentId)"
-                        guard let text = summaries[key] else { return doc }
-                        return CollectionExportDocument(
-                            documentId: doc.documentId, volumeId: doc.volumeId,
-                            sortOrder: doc.sortOrder, title: doc.title, date: doc.date,
-                            bodyText: doc.bodyText, noteTexts: doc.noteTexts,
-                            citation: doc.citation, historyStateGovURL: doc.historyStateGovURL,
-                            renderModel: doc.renderModel, header: doc.header, dateline: doc.dateline,
-                            summaryText: text, highlights: doc.highlights,
-                            sourceNoteText: doc.sourceNoteText, zoteroItem: doc.zoteroItem
-                        )
+                        guard doc.bodyDepth == .summaryOnly,
+                              let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return doc }
+                        return doc.withSummary(text)
                     }
                 }
 
@@ -1327,30 +1348,24 @@ struct ExportSheetView: View {
             var docs = try await resolveDocuments()
             let opts = buildExportOptions()
 
-            // Phase 2b: generate summaries on demand when bodyDepth == .summaryOnly.
-            if opts.bodyDepth == .summaryOnly {
+            // Phase 2b: generate summaries on demand for entries whose effective body
+            // depth is .summaryOnly (per-entry — only the documents that need one).
+            let summaryDocs = docs.filter { $0.bodyDepth == .summaryOnly }
+            if !summaryDocs.isEmpty {
                 guard let promptId = opts.summaryPromptId else {
                     exportError = String(localized: "export.summaryNoPrompt",
-                                        defaultValue: "Choose a summarization prompt to export as summaries.")
+                                        defaultValue: "Choose a summarization prompt in the collection's Composition section to export summaries.")
                     isExporting = false
                     return
                 }
                 let bodyTexts = Dictionary(uniqueKeysWithValues:
-                    docs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
-                let summaries = try await resolveSummaries(for: docs, promptId: promptId,
+                    summaryDocs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
+                let summaries = try await resolveSummaries(for: summaryDocs, promptId: promptId,
                                                            bodyTexts: bodyTexts)
                 docs = docs.map { doc in
-                    let key = "\(doc.volumeId)/\(doc.documentId)"
-                    guard let text = summaries[key] else { return doc }
-                    return CollectionExportDocument(
-                        documentId: doc.documentId, volumeId: doc.volumeId,
-                        sortOrder: doc.sortOrder, title: doc.title, date: doc.date,
-                        bodyText: doc.bodyText, noteTexts: doc.noteTexts,
-                        citation: doc.citation, historyStateGovURL: doc.historyStateGovURL,
-                        renderModel: doc.renderModel, header: doc.header, dateline: doc.dateline,
-                        summaryText: text, highlights: doc.highlights,
-                        sourceNoteText: doc.sourceNoteText
-                    )
+                    guard doc.bodyDepth == .summaryOnly,
+                          let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return doc }
+                    return doc.withSummary(text)
                 }
             }
 
@@ -1374,7 +1389,6 @@ struct ExportSheetView: View {
     private func buildExportOptions() -> CollectionExportOptions {
         CollectionExportOptions(
             tocStyle:        CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            bodyDepth:       CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full,
             footnoteStyle:   CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all,
             applyHighlights: collection.applyHighlights,
             includeNotes:    collection.includeNotes,
@@ -1644,9 +1658,13 @@ struct ExportSheetView: View {
                 resolvedNoteTexts = []
             }
 
+            // The per-entry effective body depth: the entry's override, else the collection
+            // default. Drives per-document rendering and gates inline highlights.
+            let effectiveDepth = CollectionBodyDepth(rawValue: entry.bodyDepthOverride ?? collection.defaultBodyDepth) ?? .full
+
             // Highlights (when applyHighlights and body is full)
             let resolvedHighlights: [ExportHighlight]
-            if opts.applyHighlights && opts.bodyDepth == .full {
+            if opts.applyHighlights && effectiveDepth == .full {
                 let allHL = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>())) ?? []
                 resolvedHighlights = allHL
                     .filter { $0.volumeId == entry.volumeId && $0.documentId == entry.documentId }
@@ -1690,6 +1708,7 @@ struct ExportSheetView: View {
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 sortOrder: entry.sortOrder,
+                bodyDepth: effectiveDepth,
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,
@@ -1937,6 +1956,7 @@ struct ExportSheetView: View {
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 sortOrder: entry.sortOrder,
+                bodyDepth: CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full,
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,

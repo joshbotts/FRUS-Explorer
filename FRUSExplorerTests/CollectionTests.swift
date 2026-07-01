@@ -79,6 +79,47 @@ struct CollectionTests {
         #expect(fetched?.summaryPromptId == promptId)
     }
 
+    // MARK: - PerEntryBodyDepthTest
+
+    @Test("PerEntryBodyDepth: override wins; nil follows the collection default")
+    func perEntryBodyDepth() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let collection = Collection(name: "Mixed")
+        collection.defaultBodyDepth = CollectionBodyDepth.full.rawValue
+        context.insert(collection)
+
+        let e1 = CollectionEntry(collectionId: collection.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        let e2 = CollectionEntry(collectionId: collection.id, documentId: "d2", volumeId: "v1", sortOrder: 1)
+        e2.bodyDepthOverride = CollectionBodyDepth.index.rawValue
+        context.insert(e1)
+        context.insert(e2)
+        try context.save()
+
+        // The effective-depth rule used by resolveDocuments: override, else collection default.
+        func effective(_ e: CollectionEntry) -> CollectionBodyDepth {
+            CollectionBodyDepth(rawValue: e.bodyDepthOverride ?? collection.defaultBodyDepth) ?? .full
+        }
+        #expect(e1.bodyDepthOverride == nil)
+        #expect(effective(e1) == .full)          // nil override → collection default
+        #expect(effective(e2) == .index)         // explicit override wins
+    }
+
+    // MARK: - WithSummaryTest
+
+    @Test("WithSummary: sets summary text and preserves the per-document body depth")
+    func withSummaryPreservesDepth() {
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 0,
+            bodyDepth: .summaryOnly, title: "t", bodyText: "body")
+        let out = doc.withSummary("A summary.")
+        #expect(out.summaryText == "A summary.")
+        #expect(out.bodyDepth == .summaryOnly)
+        #expect(out.documentId == "d1")
+        #expect(out.bodyText == "body")
+    }
+
     // MARK: - DocumentNoteAssociationTest
 
     @Test("DocumentNoteAssociationTest: CollectionEntry stores and retrieves researchNoteId")

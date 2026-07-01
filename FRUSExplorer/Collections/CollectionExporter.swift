@@ -207,11 +207,11 @@ final class HighlightPaintTracker {
 ///   1.0 — Session 128: initial implementation
 ///   1.1 — Session 153: added `bodyDepth`, `footnoteStyle`, `applyHighlights`,
 ///          `includeNotes`, and `summaryPromptId`
+///   1.2 — Collections rework Phase 1b: `bodyDepth` moved to per-document
+///          `CollectionExportDocument.bodyDepth` (per-entry override); removed here
 struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     var tocStyle: CollectionToCStyle = .citation
-    /// How much of each document body to render.
-    var bodyDepth: CollectionBodyDepth = .full
     /// Which footnotes to include per document.
     var footnoteStyle: CollectionFootnoteStyle = .all
     /// When `true`, inline user highlights are annotated in the document body.
@@ -309,6 +309,11 @@ struct CollectionExportDocument: Sendable {
     let volumeId: String
     /// Position within the collection (ascending).
     let sortOrder: Int
+    /// How much of this document's body to render — the per-entry effective depth
+    /// (`CollectionEntry.bodyDepthOverride`, else the collection's `defaultBodyDepth`).
+    /// Exporters switch on this per document, so one collection can mix full documents,
+    /// summaries, and citation-only entries.
+    let bodyDepth: CollectionBodyDepth
     /// Human-readable document title (volume title + document ID).
     let title: String
     /// ISO 8601 date string, if known.
@@ -360,6 +365,7 @@ struct CollectionExportDocument: Sendable {
         documentId: String,
         volumeId: String,
         sortOrder: Int,
+        bodyDepth: CollectionBodyDepth = .full,
         title: String,
         date: String? = nil,
         bodyText: String,
@@ -378,6 +384,7 @@ struct CollectionExportDocument: Sendable {
         self.documentId = documentId
         self.volumeId = volumeId
         self.sortOrder = sortOrder
+        self.bodyDepth = bodyDepth
         self.title = title
         self.date = date
         self.bodyText = bodyText
@@ -397,6 +404,19 @@ struct CollectionExportDocument: Sendable {
         self.highlights = highlights
         self.sourceNoteText = sourceNoteText
         self.zoteroItem = zoteroItem
+    }
+
+    /// Returns a copy of this document with `summaryText` set — used after on-demand
+    /// summary generation, which only runs for entries whose effective `bodyDepth`
+    /// is `.summaryOnly`. All other fields (including `bodyDepth`) are preserved.
+    func withSummary(_ text: String) -> CollectionExportDocument {
+        CollectionExportDocument(
+            documentId: documentId, volumeId: volumeId, sortOrder: sortOrder,
+            bodyDepth: bodyDepth, title: title, date: date, bodyText: bodyText,
+            noteTexts: noteTexts, citation: citation, historyStateGovURL: historyStateGovURL,
+            renderModel: renderModel, header: header, dateline: dateline,
+            summaryText: text, highlights: highlights, sourceNoteText: sourceNoteText,
+            zoteroItem: zoteroItem)
     }
 }
 

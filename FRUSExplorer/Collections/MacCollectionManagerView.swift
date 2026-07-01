@@ -568,6 +568,22 @@ private struct MacEntryRow: View {
 
     @Environment(\.openURL) private var openURL
 
+    /// This entry's body-depth override (`nil` = follow the collection default).
+    private var bodyDepthOverride: Binding<String?> {
+        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
+    }
+
+    /// Depths offered here: those available on this device, plus the entry's current override
+    /// even when it isn't otherwise offered (a synced `.summaryOnly` on an AI-less device).
+    private var entryDepthOptions: [CollectionBodyDepth] {
+        let available = CollectionBodyDepth.available
+        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
+           !available.contains(d) {
+            return available + [d]
+        }
+        return available
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             // Document info column
@@ -587,6 +603,20 @@ private struct MacEntryRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+
+                // Per-entry body depth (overrides the collection default for this document)
+                Picker(selection: bodyDepthOverride) {
+                    Text(String(localized: "collection.entry.bodyDepth.default",
+                                defaultValue: "Default")).tag(String?.none)
+                    ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
+                } label: {
+                    Text(String(localized: "collection.entry.bodyDepth.label",
+                                defaultValue: "Body depth"))
+                }
+                .pickerStyle(.menu)
+                .font(.caption)
+                .fixedSize()
+                .padding(.top, 2)
 
                 // Note preview(s)
                 let effective = effectiveNoteIds

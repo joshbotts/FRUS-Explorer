@@ -261,9 +261,9 @@ final class PDFCollectionExporter: CollectionExporter {
         drawHRule(ctx: ctx, y: y, gray: 0.6, thickness: 0.3)
         y -= 12
 
-        // Body — controlled by options.bodyDepth.
+        // Body — controlled by doc.bodyDepth (per-entry effective depth).
         let bodyAttrStr: NSAttributedString
-        switch options.bodyDepth {
+        switch doc.bodyDepth {
         case .full:
             if let model = doc.renderModel {
                 // Highlight offsets are flat-text positions over the render model's

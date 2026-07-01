@@ -286,8 +286,8 @@ final class DocxCollectionExporter: CollectionExporter {
                 body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
             }
 
-            // Body — controlled by options.bodyDepth.
-            switch options.bodyDepth {
+            // Body — controlled by doc.bodyDepth (per-entry effective depth).
+            switch doc.bodyDepth {
             case .full:
                 if let model = doc.renderModel {
                     // Highlight offsets are flat-text positions over the render

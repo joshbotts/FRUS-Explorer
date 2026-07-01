@@ -173,6 +173,7 @@ import SwiftData
 ///   1.1 — Session 128: added `selectedNoteIds` for multi-note per-entry selection;
 ///          `researchNoteId` retained for backward compatibility
 ///   1.2 — Session 153: removed `includeDocumentBody` (moved to export-level `CollectionBodyDepth`)
+///   1.3 — Collections rework Phase 1b: added `bodyDepthOverride` (per-entry body depth)
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -219,6 +220,16 @@ import SwiftData
     /// IDs of `ResearchNote` records to include with this entry in exports.
     /// When non-empty, overrides `researchNoteId`. CloudKit-compatible (same pattern as `Collection.projectIds`).
     var selectedNoteIds: [UUID] = [] {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Composition Override
+
+    /// Per-entry document-body depth — a `CollectionBodyDepth` raw value that overrides the
+    /// collection's `defaultBodyDepth` for this one document. `nil` means "use the collection
+    /// default", letting a single collection mix full documents, summaries, and citation-only
+    /// entries into one product (Collections rework Phase 1b).
+    var bodyDepthOverride: String? {
         didSet { lastModified = .now }
     }
 

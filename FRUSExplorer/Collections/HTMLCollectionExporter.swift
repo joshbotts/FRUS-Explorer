@@ -127,8 +127,8 @@ final class HTMLCollectionExporter: CollectionExporter {
                 body += "  <h2>\(markdownItalics(escaped(heading)))</h2>\n"
             }
 
-            // Body — controlled by options.bodyDepth.
-            switch options.bodyDepth {
+            // Body — controlled by doc.bodyDepth (per-entry effective depth).
+            switch doc.bodyDepth {
             case .full:
                 let includeFootnotes = (options.footnoteStyle == .all)
                 if let model = doc.renderModel {
