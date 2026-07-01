@@ -77,7 +77,10 @@ struct SubseriesView: View {
         #endif
         .navigationTitle(group.subseries)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        // Inline (not large) title: at this depth the large title only restates the last
+        // breadcrumb crumb, wasting a ~52pt band above the content. The breadcrumb bar is
+        // the single location label. (The corpus root keeps its large title.)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
