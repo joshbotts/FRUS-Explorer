@@ -165,11 +165,19 @@ private struct VolumeSourceRow: View {
     /// Archival Neighbors sheet for the entry's lot file or record-group series.
     let onShowNeighbors: (() -> Void)?
 
+    /// `rawText` with interior whitespace runs (hard line breaks and ragged source-note
+    /// indentation carried over from the TEI) collapsed to single spaces, so the citation
+    /// flows as prose instead of wrapping mid-sentence at its original column boundaries.
+    private var flowedText: String {
+        entry.rawText.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(entry.rawText)
+                Text(flowedText)
                     .font(.callout)
+                    .textSelection(.enabled)
 
                 Group {
                     if let rg = entry.recordGroup, !rg.isEmpty {
