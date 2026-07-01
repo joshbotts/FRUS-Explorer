@@ -191,7 +191,7 @@ struct ResearchStripView: View {
             // collide with the corpus-scoped Word Cloud button in the main toolbar.
             ResearchStripButton(
                 title: "Word Cloud",
-                systemImage: WordCloudGlyph.fallbackSymbol,
+                systemImage: WordCloudGlyph.symbol,
                 isDisabled: isDisabled
             ) {
                 if let entry {
@@ -2807,7 +2807,7 @@ struct CorpusBrowserWindowView: View {
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
             } label: {
-                WordCloudGlyph()
+                Image(systemName: WordCloudGlyph.symbol)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -2824,7 +2824,7 @@ struct CorpusBrowserWindowView: View {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
             } label: {
                 Label { Text(String(localized: "corpus.subseries.wordCloud", defaultValue: "Word Cloud")) }
-                    icon: { WordCloudGlyph() }
+                    icon: { Image(systemName: WordCloudGlyph.symbol) }
             }
         }
     }
@@ -2954,7 +2954,7 @@ private struct SubseriesVolumeListView: View {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
             } label: {
-                WordCloudGlyph()
+                Image(systemName: WordCloudGlyph.symbol)
                     .font(.system(size: 11))
             }
             .buttonStyle(.bordered)
@@ -2988,7 +2988,7 @@ private struct SubseriesVolumeListView: View {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
             } label: {
                 Label { Text(String(localized: "corpus.volume.wordCloud", defaultValue: "Word Cloud")) }
-                    icon: { WordCloudGlyph() }
+                    icon: { Image(systemName: WordCloudGlyph.symbol) }
             }
         }
     }

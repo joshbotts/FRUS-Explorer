@@ -98,7 +98,7 @@ struct ComparativeCloudColumn: View {
             } else if result.terms.isEmpty {
                 ContentUnavailableView(
                     String(localized: "wordcloud.compare.empty", defaultValue: "No Terms"),
-                    systemImage: WordCloudGlyph.fallbackSymbol
+                    systemImage: WordCloudGlyph.symbol
                 )
             } else {
                 cloud

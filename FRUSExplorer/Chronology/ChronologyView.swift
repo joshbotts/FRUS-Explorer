@@ -179,6 +179,7 @@ struct ChronologyView: View {
         appState.pendingWordCloud = scope
         #if os(macOS)
         openWindow(id: "frus.wordcloud")
+        bringMacWindowToFront(id: "frus.wordcloud")
         #else
         // The word cloud is presented at the tab-container level (MainTabView) on iOS;
         // dismiss this sheet so it can present on the `pendingWordCloud` change.
@@ -1048,7 +1049,7 @@ struct ChronologyView: View {
                 Label {
                     Text(String(localized: "chronology.wordcloud", defaultValue: "Word Cloud for this range"))
                 } icon: {
-                    WordCloudGlyph()
+                    Image(systemName: WordCloudGlyph.symbol)
                 }
             }
             .disabled(!vm.hasLoaded || vm.totalShown == 0)

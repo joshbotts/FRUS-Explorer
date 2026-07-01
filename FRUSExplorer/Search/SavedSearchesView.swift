@@ -183,7 +183,7 @@ struct SavedSearchesView: View {
                     } label: {
                         Label { Text(String(localized: "savedSearches.row.wordCloud",
                                             defaultValue: "Word Cloud")) }
-                            icon: { WordCloudGlyph() }
+                            icon: { Image(systemName: WordCloudGlyph.symbol) }
                     }
                     Button(String(localized: "savedSearches.row.rename",
                                   defaultValue: "Rename")) {

@@ -271,7 +271,7 @@ struct WordCloudView: View {
 
     private var scopeHeader: some View {
         HStack(spacing: 8) {
-            WordCloudGlyph()
+            Image(systemName: WordCloudGlyph.symbol)
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
@@ -400,7 +400,7 @@ struct WordCloudView: View {
     private var emptyView: some View {
         ContentUnavailableView(
             String(localized: "wordcloud.empty.title", defaultValue: "No Terms"),
-            systemImage: WordCloudGlyph.fallbackSymbol,
+            systemImage: WordCloudGlyph.symbol,
             description: Text(String(
                 localized: "wordcloud.empty.detail",
                 defaultValue: "There's no indexed text in this scope yet. Download and index the relevant volumes, then try again."
@@ -796,6 +796,7 @@ struct WordCloudView: View {
         #endif
         #if os(macOS)
         openWindow(id: "frus.chronology")
+        bringMacWindowToFront(id: "frus.chronology")
         #else
         // Chronology is presented from the Browse tab on iOS; surface it and dismiss
         // this sheet so `BrowserView` can present it on the `pendingChronology` change.
@@ -860,7 +861,7 @@ struct WordCloudWindowContent: View {
             } else {
                 ContentUnavailableView(
                     String(localized: "wordcloud.window.empty.title", defaultValue: "No Word Cloud"),
-                    systemImage: WordCloudGlyph.fallbackSymbol,
+                    systemImage: WordCloudGlyph.symbol,
                     description: Text(String(
                         localized: "wordcloud.window.empty.detail",
                         defaultValue: "Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, or the corpus."

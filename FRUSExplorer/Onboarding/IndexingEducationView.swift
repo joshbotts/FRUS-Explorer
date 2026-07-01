@@ -749,8 +749,8 @@ private extension EducationPage {
                 heading: "Chronology",
                 systemImage: "calendar.day.timeline.left",
                 paragraphs: [
-                    "Pick a date range and browse every indexed document from that period, grouped by date — ideal for reconstructing how a crisis or summit unfolded day by day. A distribution chart shows where documents cluster across the range and which volumes they come from, and dense dates collapse so a busy day stays readable. Tap a chart bar to jump to that date; tap a volume in the legend to filter. Documents that span a wide range of dates (chiefly editorial notes) are listed separately rather than pinned to a single day.",
-                    "Find it from the calendar button on the Browse tab toolbar (iOS) or the Chronology window (Mac)."
+                    "Pick a date range and browse every indexed document from that period, grouped by date — ideal for reconstructing how a crisis or summit unfolded day by day. A distribution chart shows where documents cluster across the range and which volumes they come from, and dense dates collapse so a busy day stays readable. Tap a chart bar to jump to that date; tap a volume in the legend to filter. Documents that span a wide range of dates (chiefly editorial notes) are listed separately rather than pinned to a single day. A Word Cloud for this range button turns whatever span you are viewing into a word cloud.",
+                    "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Chronology window (Mac)."
                 ]
             ),
             EducationSection(
@@ -789,7 +789,19 @@ private extension EducationPage {
                 paragraphs: [
                     "Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.",
                     "A caution: FRUS volumes are selective, uneven proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. Analytics runs entirely on your local index; no network connection is required.",
-                    "Find it from the chart button on the Browse tab toolbar (iOS) or the Corpus Analytics window (Mac)."
+                    "The By-Year and By-Decade charts colour-code each period by its top source volumes; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into \u{201C}Other.\u{201D}",
+                    "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "word-cloud",
+                heading: "Word Cloud",
+                systemImage: WordCloudGlyph.symbol,
+                paragraphs: [
+                    "See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.",
+                    "Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don\u{2019}t want to see, or compare two scopes side by side; export the cloud as a PNG, PDF, or CSV. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud\u{2019}s typeface and density in Settings.",
+                    "Like Analytics, a word cloud reflects what FRUS editors chose to publish, not the full archival record — read it as a finding aid, not as direct evidence.",
+                    "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Word Cloud window (Mac), plus the word-cloud buttons on documents, volumes, subseries, collections, tags, and saved searches."
                 ]
             ),
             EducationSection(
@@ -807,7 +819,8 @@ private extension EducationPage {
                 systemImage: "archivebox",
                 paragraphs: [
                     "Open the Source Explorer from any document to read its source note broken into structured archival fields, and to follow detected citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.",
-                    "You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies use a free NARA Catalog API key you add in Settings."
+                    "You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies use a free NARA Catalog API key you add in Settings.",
+                    "From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document\u{2019}s row in a volume\u{2019}s sources list, a search result, or a node in the cross-reference graph."
                 ]
             ),
             EducationSection(
@@ -868,7 +881,8 @@ private extension EducationPage {
                 heading: "Citations & Bibliographic Export",
                 systemImage: "quote.bubble",
                 paragraphs: [
-                    "Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations — individually or for a whole collection — as BibTeX or RIS for your reference manager (RIS imports into Zotero on the desktop via File \u{2192} Import)."
+                    "Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations — individually or for a whole collection — as BibTeX or RIS for your reference manager (RIS imports into Zotero on the desktop via File \u{2192} Import).",
+                    "If you connect a Zotero account (Settings \u{2192} Zotero), Send to Zotero Library pushes a document — or an entire collection — straight into your Zotero library over the web, carrying your tags and research notes, with no manual import step."
                 ]
             ),
             EducationSection(
@@ -876,7 +890,8 @@ private extension EducationPage {
                 heading: "AI Summaries",
                 systemImage: "sparkles",
                 paragraphs: [
-                    "Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be exported alongside documents in collections. Treat them as orientation only: always read the primary document yourself for your actual research."
+                    "Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be exported alongside documents in collections. Treat them as orientation only: always read the primary document yourself for your actual research.",
+                    "To summarize a large body of material at once, the background summarizer works through an entire subseries, volume, tag, saved search, or date range unattended, reporting progress as it goes — so a stack of summaries is ready when you return."
                 ]
             ),
             EducationSection(

@@ -9,6 +9,7 @@
 #if os(macOS)
 
 import SwiftUI
+import AppKit
 
 /// The root view of the main document window on macOS.
 ///
@@ -130,6 +131,7 @@ struct MainWindowView: View {
         .onChange(of: appState.pendingSearch) { _, params in
             guard params != nil else { return }
             openWindow(id: "frus.search")
+            bringMacWindowToFront(id: "frus.search")
         }
         // Open the Corpus Analytics window when a cross-view pendingAnalytics
         // arrives (Search's "Visualize in Corpus Analytics" over-cap suggestion).
@@ -138,6 +140,7 @@ struct MainWindowView: View {
         .onChange(of: appState.pendingAnalytics) { _, params in
             guard params != nil else { return }
             openWindow(id: "frus.analytics")
+            bringMacWindowToFront(id: "frus.analytics")
         }
         // Open the Word Cloud window when a cross-view pendingWordCloud arrives.
         // The window content reads the current scope from appState (it is not
@@ -145,6 +148,7 @@ struct MainWindowView: View {
         .onChange(of: appState.pendingWordCloud) { _, scope in
             guard scope != nil else { return }
             openWindow(id: "frus.wordcloud")
+            bringMacWindowToFront(id: "frus.wordcloud")
         }
         // Citation Lookup sheet — responds to both the menu command (⌘⇧F) and any
         // code that sets appState.showCitationLookup = true.
@@ -294,7 +298,7 @@ struct MainWindowView: View {
                 openWindow(id: "frus.wordcloud")
             } label: {
                 Label { Text(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud")) }
-                    icon: { WordCloudGlyph() }
+                    icon: { Image(systemName: WordCloudGlyph.symbol) }
             }
             .help(String(
                 localized: "mainwindow.tools.wordcloud.help",
@@ -348,6 +352,33 @@ private struct DocumentPlaceholderView: View {
 struct NARACatalogLookupItem: Identifiable {
     let id  = UUID()
     let text: String
+}
+
+// MARK: - Window foregrounding
+
+/// Brings an already-open SwiftUI `Window(id:)` scene to the foreground.
+///
+/// `openWindow(id:)` reliably *creates* a closed singleton window (and a freshly created
+/// window comes forward on its own), but it does not always re-raise a window that is
+/// already open behind another one. That gap shows up in cross-window hand-offs — e.g.
+/// Corpus Analytics → Search — where the parameters fire into a Search window that stays
+/// buried behind the window the user is looking at. Calling this immediately after
+/// `openWindow(id:)` activates the app and raises the matching window, so the handed-off
+/// window always surfaces (rather than spawning a duplicate, which singleton `Window`
+/// scenes cannot do anyway).
+///
+/// SwiftUI assigns each `Window(id:)` scene's `NSWindow.identifier` from the scene id, so
+/// we match on that (with a prefix fallback for any suffix SwiftUI appends). It is a safe
+/// no-op when no window matches — the just-issued `openWindow(id:)` has already created or
+/// raised the window in that case.
+@MainActor
+func bringMacWindowToFront(id: String) {
+    NSApplication.shared.activate()
+    let target = NSApplication.shared.windows.first { window in
+        guard let raw = window.identifier?.rawValue else { return false }
+        return raw == id || raw.hasPrefix(id)
+    }
+    target?.makeKeyAndOrderFront(nil)
 }
 
 #endif // os(macOS)

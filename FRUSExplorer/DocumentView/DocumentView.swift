@@ -872,13 +872,13 @@ struct DocumentView: View {
             } label: {
                 Label {
                     Text(String(localized: "document.toolbar.wordCloud", defaultValue: "Word Cloud"))
-                } icon: { WordCloudGlyph() }
+                } icon: { Image(systemName: WordCloudGlyph.symbol) }
             }
             .controlHelp(
                 String(localized: "document.toolbar.wordCloud.a11y", defaultValue: "Word cloud"),
                 detail: String(localized: "document.toolbar.wordCloud.help",
                                defaultValue: "Visualise the most frequent terms in this document"),
-                systemImage: WordCloudGlyph.fallbackSymbol
+                systemImage: WordCloudGlyph.symbol
             )
 
             // 3. Create highlight — enabled when text is selected in the web view

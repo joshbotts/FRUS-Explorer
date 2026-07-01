@@ -89,7 +89,7 @@ struct MacCollectionManagerView: View {
                             appState.pendingWordCloud = .collection(id: c.id)
                         } label: {
                             Label { Text(String(localized: "collection.wordCloud", defaultValue: "Word Cloud")) }
-                                icon: { WordCloudGlyph() }
+                                icon: { Image(systemName: WordCloudGlyph.symbol) }
                         }
                         Divider()
                         Button(role: .destructive) {
