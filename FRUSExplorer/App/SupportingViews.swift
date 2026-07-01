@@ -3583,8 +3583,7 @@ private struct DiscoveredMetadataRow: View {
 private struct CorpusSectionDocumentView: View {
     let volumeId: String
     let section: VolumeSection
-    /// The window's detail-column path. Reserved for pushing deeper subsections (item 2);
-    /// a leaf section pushes nothing.
+    /// The window's detail-column path; a subsection row pushes deeper onto it.
     @Binding var path: [CorpusNavValue]
 
     @Environment(AppState.self) private var appState
@@ -3621,17 +3620,8 @@ private struct CorpusSectionDocumentView: View {
                 // VolumeSourcesView emits Section content and must live inside a List.
                 List { VolumeSourcesView(volumeId: volumeId) }
                     .listStyle(.inset)
-            } else if isLoading {
-                ProgressView("Loading…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if documents.isEmpty {
-                ContentUnavailableView(
-                    "No Documents",
-                    systemImage: "doc.text",
-                    description: Text("No indexed documents found in this section.")
-                )
             } else {
-                documentList
+                structuralList
             }
         }
         .navigationTitle(section.title)
@@ -3685,32 +3675,77 @@ private struct CorpusSectionDocumentView: View {
         .padding()
     }
 
-    /// The section's indexed numbered documents. Selecting one opens it in the main window.
-    private var documentList: some View {
-        List(documents, id: \.documentId) { doc in
-            Button {
-                appState.pendingBrowseDocument = doc
-            } label: {
-                DocumentRowLabel(doc: doc)
+    /// A structural section: its child subsections as drill-down rows, plus its own *direct*
+    /// documents — mirroring history.state.gov, where an interior grouping node shows its
+    /// child groups (and any documents attached directly to it), while a leaf lists its
+    /// documents. Drilling into a subsection pushes a deeper `CorpusSectionDocumentView`, so
+    /// arbitrarily-nested volumes work with no new screens.
+    @ViewBuilder
+    private var structuralList: some View {
+        List {
+            if !section.subsections.isEmpty {
+                Section(String(localized: "corpus.section.subsections", defaultValue: "Sections")) {
+                    ForEach(section.subsections) { sub in
+                        Button {
+                            path.append(.section(volumeId: volumeId, section: sub))
+                        } label: {
+                            SectionRowLabel(section: sub)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
-            .buttonStyle(.plain)
-            .contextMenu {
-                Button {
-                    appState.currentGraphEntry = doc
-                    openWindow(id: "frus.crossReferenceGraph")
-                } label: {
-                    Label("Show Cross-Reference Graph",
-                          systemImage: "point.3.connected.trianglepath.dotted")
+            if isLoading {
+                Section {
+                    HStack {
+                        ProgressView()
+                        Text(String(localized: "corpus.section.loading", defaultValue: "Loading…"))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else if !documents.isEmpty {
+                Section(String(format: String(localized: "corpus.section.documents %lld",
+                                              defaultValue: "Documents (%lld)"), Int64(documents.count))) {
+                    ForEach(documents, id: \.documentId) { doc in
+                        documentButton(doc)
+                    }
+                }
+            } else if section.subsections.isEmpty {
+                Section {
+                    Text(String(localized: "corpus.section.noDocuments",
+                                defaultValue: "No documents in this section."))
+                        .foregroundStyle(.secondary)
                 }
             }
         }
         .listStyle(.inset)
     }
 
+    /// A tappable document row that opens the document in the main window.
+    private func documentButton(_ doc: DocumentBrowserEntry) -> some View {
+        Button {
+            appState.pendingBrowseDocument = doc
+        } label: {
+            DocumentRowLabel(doc: doc)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                appState.currentGraphEntry = doc
+                openWindow(id: "frus.crossReferenceGraph")
+            } label: {
+                Label("Show Cross-Reference Graph",
+                      systemImage: "point.3.connected.trianglepath.dotted")
+            }
+        }
+    }
+
     private func loadDocuments() async {
         guard let pipeline = appState.indexingPipeline else { isLoading = false; return }
         let all = (try? await pipeline.documents(forVolume: volumeId)) ?? []
-        let sectionIds = Set(section.allDocumentIds)
+        // Direct documents only (`documentIds`, not `allDocumentIds`); subsections list and
+        // load their own, so a compilation with chapters isn't flattened into one long list.
+        let sectionIds = Set(section.documentIds)
         documents = all.filter { sectionIds.contains($0.documentId) }
         isLoading = false
     }

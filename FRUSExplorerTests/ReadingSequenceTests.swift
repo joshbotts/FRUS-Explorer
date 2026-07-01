@@ -117,4 +117,28 @@ import Foundation
 
         #expect(result.map(\.documentId) == ["d1", "d3"])
     }
+
+    /// The corpus browser lists a section's `documentIds` (direct children), not
+    /// `allDocumentIds` (every descendant), so a compilation with chapters shows those
+    /// chapters as drill-down rows without also flattening every nested document into the
+    /// same list. This guards that direct-vs-recursive distinction the render rule relies on.
+    @Test("VolumeSection: documentIds is direct-only while allDocumentIds recurses")
+    func directVersusDescendantDocumentIds() {
+        let chapter = VolumeSection(
+            sectionId: "ch1", divType: "chapter", title: "Chapter 1",
+            documentIds: ["d1"],
+            subsections: [
+                VolumeSection(sectionId: "sub1", divType: "subchapter", title: "Sub 1",
+                              documentIds: ["d2", "d3"], subsections: []),
+                VolumeSection(sectionId: "sub2", divType: "subchapter", title: "Sub 2",
+                              documentIds: ["d4"], subsections: []),
+            ])
+
+        // Direct children only — the browser renders these as the chapter's own document rows.
+        #expect(chapter.documentIds == ["d1"])
+        // Every descendant — used elsewhere (e.g. reading-sequence coverage), not the browser list.
+        #expect(Set(chapter.allDocumentIds) == ["d1", "d2", "d3", "d4"])
+        // A leaf section: the two are identical, so its full list is unaffected by the rule.
+        #expect(chapter.subsections[0].documentIds == chapter.subsections[0].allDocumentIds)
+    }
 }
