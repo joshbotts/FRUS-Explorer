@@ -45,21 +45,23 @@ final class ZoteroCollectionExporter: CollectionExporter {
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        var items = documents
+        // A Zotero RIS file is a flat reference list — only `.document` items apply; section
+        // headings and prose blocks have no Zotero representation and are dropped.
+        var zoteroItems = items.documents
             .sorted { $0.sortOrder < $1.sortOrder }
             .compactMap(\.zoteroItem)
 
         if !options.includeNotes {
-            for index in items.indices {
-                items[index].notes = nil
+            for index in zoteroItems.indices {
+                zoteroItems[index].notes = nil
             }
         }
 
         let exporter = RISExporter()
-        let ris = items.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
+        let ris = zoteroItems.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
         let data = Data(ris.utf8)
 
         let filename = sanitized(metadata.name) + "-zotero.ris"

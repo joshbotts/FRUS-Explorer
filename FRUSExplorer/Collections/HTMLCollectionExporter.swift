@@ -51,15 +51,15 @@ final class HTMLCollectionExporter: CollectionExporter {
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
         let cloudBase64: String? = options.includeWordCloud
             ? WordCloudExporter.collectionCloudImage(
-                texts: documents.map(\.bodyText), title: metadata.name
+                texts: items.documents.map(\.bodyText), title: metadata.name
               )?.pngBase64
             : nil
-        let html = buildHTML(collection: metadata, documents: documents,
+        let html = buildHTML(collection: metadata, items: items,
                              options: options, wordCloudPNGBase64: cloudBase64)
         let filename = sanitized(metadata.name) + ".html"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
@@ -75,7 +75,7 @@ final class HTMLCollectionExporter: CollectionExporter {
 
     private func buildHTML(
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions,
         wordCloudPNGBase64: String? = nil
     ) -> String {
@@ -99,17 +99,36 @@ final class HTMLCollectionExporter: CollectionExporter {
             body += "</figure>\n\n"
         }
 
-        // Table of contents — label style controlled by options.tocStyle
+        // Table of contents — label style controlled by options.tocStyle.
+        // Headings appear as (non-link) section labels; prose blocks are omitted.
         body += "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
-        for doc in documents {
-            let anchor = anchorId(doc: doc)
-            let label = doc.tocLabel(style: options.tocStyle)
-            body += "    <li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
+        for item in items {
+            switch item {
+            case .document(let doc):
+                let anchor = anchorId(doc: doc)
+                let label = doc.tocLabel(style: options.tocStyle)
+                body += "    <li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
+            case .heading(let heading):
+                body += "    <li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
+            case .prose:
+                break
+            }
         }
         body += "  </ol>\n</nav>\n\n"
 
-        // Document sections
-        for doc in documents {
+        // Body items — documents render as sections; headings and prose interleave in order.
+        for item in items {
+            switch item {
+            case .heading(let heading):
+                body += "<h2 class=\"section-heading\">\(markdownItalics(escaped(heading)))</h2>\n\n"
+            case .prose(let prose):
+                body += "<div class=\"prose-block\">\n"
+                for para in prose.components(separatedBy: "\n\n")
+                where !para.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    body += "  <p>\(markdownItalics(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines))))</p>\n"
+                }
+                body += "</div>\n\n"
+            case .document(let doc):
             let anchor = anchorId(doc: doc)
             // Section heading always shows the citation (regardless of ToC style).
             let heading = doc.citation.isEmpty ? doc.title : doc.citation
@@ -182,6 +201,7 @@ final class HTMLCollectionExporter: CollectionExporter {
             }
 
             body += "</section>\n\n"
+            }
         }
 
         return """

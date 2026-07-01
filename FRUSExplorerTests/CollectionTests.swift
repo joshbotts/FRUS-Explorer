@@ -120,6 +120,41 @@ struct CollectionTests {
         #expect(out.bodyText == "body")
     }
 
+    // MARK: - EntryKindTest
+
+    @Test("EntryKind: kind/text persist; entryKind accessor round-trips; default is document")
+    func entryKindPersistence() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let heading = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        heading.entryKind = .heading
+        heading.text = "Background"
+        context.insert(heading)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<CollectionEntry>()).first
+        #expect(fetched?.kind == "heading")
+        #expect(fetched?.entryKind == .heading)
+        #expect(fetched?.text == "Background")
+
+        // A plain document entry defaults to .document.
+        let doc = CollectionEntry(collectionId: UUID(), documentId: "d1", volumeId: "v1", sortOrder: 1)
+        #expect(doc.entryKind == .document)
+    }
+
+    // MARK: - ExportItemsTest
+
+    @Test("ExportItems: .documents extracts document payloads in order, dropping headings/prose")
+    func exportItemsDocuments() {
+        let d1 = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 0, title: "t1", bodyText: "")
+        let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 1, title: "t2", bodyText: "")
+        let items: [CollectionExportItem] = [.heading("Section"), .document(d1), .prose("a note"), .document(d2)]
+        let docs = items.documents
+        #expect(docs.count == 2)
+        #expect(docs.map(\.documentId) == ["d1", "d2"])
+    }
+
     // MARK: - DocumentNoteAssociationTest
 
     @Test("DocumentNoteAssociationTest: CollectionEntry stores and retrieves researchNoteId")

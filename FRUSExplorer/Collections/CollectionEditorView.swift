@@ -603,10 +603,14 @@ struct CollectionEditorView: View {
                 }
             } else {
                 ForEach($sortedEntries, id: \.id) { $entry in
-                    EntryRow(
-                        entry: $entry,
-                        availableNotes: notes(for: entry)
-                    )
+                    switch entry.entryKind {
+                    case .document:
+                        EntryRow(entry: $entry, availableNotes: notes(for: entry))
+                    case .heading:
+                        CollectionHeadingRow(entry: $entry)
+                    case .prose:
+                        CollectionProseRow(entry: $entry)
+                    }
                 }
                 .onMove { indices, newOffset in
                     sortedEntries.move(fromOffsets: indices, toOffset: newOffset)
@@ -624,6 +628,24 @@ struct CollectionEditorView: View {
             HStack {
                 Text(String(localized: "collection.editor.docs.header", defaultValue: "Documents"))
                 Spacer()
+                Menu {
+                    Button {
+                        addStructuralEntry(kind: .heading)
+                    } label: {
+                        Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
+                              systemImage: "number")
+                    }
+                    Button {
+                        addStructuralEntry(kind: .prose)
+                    } label: {
+                        Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
+                              systemImage: "text.alignleft")
+                    }
+                } label: {
+                    Image(systemName: "plus").font(.caption)
+                }
+                .accessibilityLabel(String(localized: "collection.add.structural",
+                                           defaultValue: "Add a section heading or note block"))
                 if !sortedEntries.isEmpty {
                     Button {
                         showTimeline = true
@@ -706,6 +728,24 @@ struct CollectionEditorView: View {
 
     // MARK: - Helpers
 
+    /// Appends a structural entry (a section heading or a prose block) to the collection.
+    /// Mirrors the document-entry creation path; heading/prose entries carry empty document
+    /// identifiers and use `text` (Phase 3a).
+    private func addStructuralEntry(kind: CollectionEntryKind) {
+        let entry = CollectionEntry(
+            collectionId: collection.id,
+            documentId: "",
+            volumeId: "",
+            sortOrder: sortedEntries.count
+        )
+        entry.entryKind = kind
+        entry.text = ""
+        entry.collection = collection
+        modelContext.insert(entry)
+        sortedEntries.append(entry)
+        reindexEntries()
+    }
+
     private func notes(for entry: CollectionEntry) -> [ResearchNote] {
         allNotes.filter {
             $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
@@ -745,11 +785,13 @@ struct CollectionEditorView: View {
             guard let earliest = entry.dateRange.earliest else { return nil }
             return (entry.volumeId, earliest)
         })
-        sortedEntries.sort { a, b in
-            let aDate = volumeDateMap[a.volumeId] ?? "9999"
-            let bDate = volumeDateMap[b.volumeId] ?? "9999"
-            return aDate < bDate
-        }
+        // Sort only DOCUMENT entries by date; heading/prose entries keep their positions so
+        // the authored structure survives (they carry no date and would otherwise clump).
+        let sortedDocs = sortedEntries
+            .filter { $0.entryKind == .document }
+            .sorted { (volumeDateMap[$0.volumeId] ?? "9999") < (volumeDateMap[$1.volumeId] ?? "9999") }
+        var docs = sortedDocs.makeIterator()
+        sortedEntries = sortedEntries.map { $0.entryKind == .document ? (docs.next() ?? $0) : $0 }
         reindexEntries()
     }
 
@@ -796,6 +838,72 @@ struct CollectionEditorView: View {
 /// Users can:
 /// - Toggle whether the document body is included in the export.
 /// - Select zero or more research notes to include alongside the document.
+// MARK: - CollectionHeadingRow
+
+/// An editable section-heading entry in the collection (Phase 3a). Shared by the iOS editor
+/// and the macOS manager. `onDelete`, when provided, renders an inline delete control —
+/// macOS supplies it (the List has no swipe-to-delete); iOS omits it (swipe handles deletion).
+struct CollectionHeadingRow: View {
+    @Binding var entry: CollectionEntry
+    var onDelete: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "number")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField(String(localized: "collection.heading.placeholder", defaultValue: "Section heading"),
+                      text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }))
+                .font(.headline)
+            structuralDeleteButton(onDelete)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+/// A trailing delete control shared by the heading and prose rows; renders nothing when
+/// `onDelete` is `nil`.
+@MainActor @ViewBuilder
+func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
+    if let onDelete {
+        Button(role: .destructive) {
+            onDelete()
+        } label: {
+            Image(systemName: "trash").foregroundStyle(.red.opacity(0.6))
+        }
+        .buttonStyle(.plain)
+        .help(String(localized: "collection.entry.delete.help",
+                     defaultValue: "Remove this document from the collection"))
+    }
+}
+
+// MARK: - CollectionProseRow
+
+/// An editable editorial prose block in the collection (Phase 3a; plain text — rich text
+/// arrives in Phase 3b). Shared by the iOS editor and the macOS manager. `onDelete`, when
+/// provided, renders an inline delete control (see ``CollectionHeadingRow``).
+struct CollectionProseRow: View {
+    @Binding var entry: CollectionEntry
+    var onDelete: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "text.alignleft")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField(String(localized: "collection.prose.placeholder", defaultValue: "Editorial note…"),
+                      text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }),
+                      axis: .vertical)
+                .font(.callout)
+                .lineLimit(2...8)
+            structuralDeleteButton(onDelete)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - EntryRow
+
 private struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
@@ -1363,12 +1471,12 @@ struct ExportSheetView: View {
         // Phase 2: resolve document content.
         isExporting = true
         do {
-            var docs = try await resolveDocuments()
+            var items = try await resolveItems()
             let opts = buildExportOptions()
 
             // Phase 2b: generate summaries on demand for entries whose effective body
             // depth is .summaryOnly (per-entry — only the documents that need one).
-            let summaryDocs = docs.filter { $0.bodyDepth == .summaryOnly }
+            let summaryDocs = items.documents.filter { $0.bodyDepth == .summaryOnly }
             if !summaryDocs.isEmpty {
                 guard let promptId = opts.summaryPromptId else {
                     exportError = String(localized: "export.summaryNoPrompt",
@@ -1380,20 +1488,20 @@ struct ExportSheetView: View {
                     summaryDocs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
                 let summaries = try await resolveSummaries(for: summaryDocs, promptId: promptId,
                                                            bodyTexts: bodyTexts)
-                docs = docs.map { doc in
-                    guard doc.bodyDepth == .summaryOnly,
-                          let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return doc }
-                    return doc.withSummary(text)
+                items = items.map { item in
+                    guard case .document(let doc) = item, doc.bodyDepth == .summaryOnly,
+                          let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return item }
+                    return .document(doc.withSummary(text))
                 }
             }
 
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
             let exporter = selectedFormat.makeExporter()
-            let url = try await exporter.export(metadata: metadata, documents: docs, options: opts)
+            let url = try await exporter.export(metadata: metadata, items: items, options: opts)
             exportedURL = url
             appState.logEvent(.export(
                 format: selectedFormat.rawValue,
-                documentCount: docs.count
+                documentCount: items.documents.count
             ))
         } catch {
             exportError = error.localizedDescription
@@ -1574,7 +1682,16 @@ struct ExportSheetView: View {
         preparingMessage = nil
     }
 
+    /// Documents-only view of the resolved items — for callers that need a flat document
+    /// list (e.g. the Zotero Web-API send path). Headings and prose are dropped.
     private func resolveDocuments() async throws -> [CollectionExportDocument] {
+        try await resolveItems().documents
+    }
+
+    /// Resolves the collection's ordered entries into export items: each document entry is
+    /// fully resolved into a `.document`; heading/prose entries pass through as `.heading` /
+    /// `.prose`, so the exported product preserves the authored structure (Phase 3a).
+    private func resolveItems() async throws -> [CollectionExportItem] {
         let opts    = buildExportOptions()
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
@@ -1643,7 +1760,13 @@ struct ExportSheetView: View {
         let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
             volumeIds: volumeIds, pipeline: appState.indexingPipeline)
 
-        return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
+        return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry -> CollectionExportItem in
+            // Heading / prose entries pass straight through as structural items.
+            switch entry.entryKind {
+            case .heading: return .heading(entry.text ?? "")
+            case .prose:   return .prose(entry.text ?? "")
+            case .document: break
+            }
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
             let key = "\(entry.volumeId)/\(entry.documentId)"
@@ -1722,7 +1845,7 @@ struct ExportSheetView: View {
                 zoteroItem = nil
             }
 
-            return CollectionExportDocument(
+            return .document(CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 sortOrder: entry.sortOrder,
@@ -1739,7 +1862,7 @@ struct ExportSheetView: View {
                 highlights: resolvedHighlights,
                 sourceNoteText: resolvedSourceNote,
                 zoteroItem: zoteroItem
-            )
+            ))
         }
     }
 
