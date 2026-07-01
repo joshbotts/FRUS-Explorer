@@ -434,9 +434,31 @@ struct CollectionExportMetadata: Sendable {
     let note: String?
 }
 
+// MARK: - CollectionExportItem
+
+/// One item in a composed collection export: a resolved document, a section heading, or an
+/// editorial prose block. Exporters render an ordered `[CollectionExportItem]`, so a
+/// collection can be an authored, sectioned reader rather than a flat document list (Phase 3a).
+enum CollectionExportItem: Sendable {
+    /// A FRUS document, fully resolved.
+    case document(CollectionExportDocument)
+    /// A section heading (the title text).
+    case heading(String)
+    /// An editorial prose block (the body text).
+    case prose(String)
+}
+
+extension Array where Element == CollectionExportItem {
+    /// The `.document` payloads, in order (heading/prose items dropped). Used where an
+    /// exporter needs the documents alone — e.g. the collection word cloud.
+    var documents: [CollectionExportDocument] {
+        compactMap { if case .document(let doc) = $0 { return doc } else { return nil } }
+    }
+}
+
 // MARK: - CollectionExporter
 
-/// Protocol for turning a `CollectionExportMetadata` + its resolved documents into a file on disk.
+/// Protocol for turning a `CollectionExportMetadata` + its ordered items into a file on disk.
 ///
 /// Implementations must write their output to a temporary URL and return it.
 /// The caller is responsible for presenting a share sheet or saving the file.
@@ -450,27 +472,40 @@ struct CollectionExportMetadata: Sendable {
 ///          thread-safety requirements; previously crashed when called off the main thread
 ///   1.3 — Session 128: `options: CollectionExportOptions` parameter added; backward-compat
 ///          no-options overload provided via protocol extension
+///   1.4 — Collections rework Phase 3a: primary parameter is now an ordered
+///          `[CollectionExportItem]` (documents + headings + prose); a `documents:`
+///          convenience overload wraps a flat document list as `.document` items
 protocol CollectionExporter {
-    /// Exports `metadata` and its `documents` to a temporary file using the given `options`.
+    /// Exports `metadata` and its ordered `items` to a temporary file using the given `options`.
     ///
     /// - Returns: A `file://` URL pointing to the written output.
     /// - Throws: `ExportError` on rendering or I/O failure.
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL
 }
 
 extension CollectionExporter {
+    /// Convenience: export a flat list of documents, wrapped as `.document` items.
+    @MainActor
+    func export(
+        metadata: CollectionExportMetadata,
+        documents: [CollectionExportDocument],
+        options: CollectionExportOptions = CollectionExportOptions()
+    ) async throws -> URL {
+        try await export(metadata: metadata, items: documents.map { .document($0) }, options: options)
+    }
+
     /// Backward-compatible overload that uses default `CollectionExportOptions`.
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument]
+        items: [CollectionExportItem]
     ) async throws -> URL {
-        try await export(metadata: metadata, documents: documents, options: CollectionExportOptions())
+        try await export(metadata: metadata, items: items, options: CollectionExportOptions())
     }
 }
 

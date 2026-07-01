@@ -63,10 +63,12 @@ final class DocxCollectionExporter: CollectionExporter {
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        let data = buildDocx(collection: metadata, documents: documents, options: options)
+        // Phase 3a: DOCX renders the documents; section headings and prose blocks are a
+        // scoped follow-up (rendered in HTML today).
+        let data = buildDocx(collection: metadata, documents: items.documents, options: options)
         let filename = sanitized(metadata.name) + ".docx"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
