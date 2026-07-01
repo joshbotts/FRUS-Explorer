@@ -193,6 +193,7 @@ struct CollectionEditorView: View {
             Form {
                 nameSection
                 noteSection
+                compositionSection
                 smartCollectionSection
                 documentsSection
                 addByTagSection
@@ -348,6 +349,7 @@ struct CollectionEditorView: View {
         Form {
             nameSection
             noteSection
+            compositionSection
             smartCollectionSection
             documentsSection
             addByTagSection
@@ -371,6 +373,7 @@ struct CollectionEditorView: View {
             Form {
                 nameSection
                 noteSection
+                compositionSection
                 smartCollectionSection
                 if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
             }
@@ -563,6 +566,21 @@ struct CollectionEditorView: View {
             .lineLimit(3...6)
             .accessibilityLabel(String(localized: "collection.editor.note.accessibility",
                                        defaultValue: "Collection note"))
+        }
+    }
+
+    // MARK: - Composition Section
+
+    /// The persisted export-content settings (body depth, footnotes, notes, highlights, etc.).
+    /// These determine *what an export of this collection contains*, independent of format.
+    private var compositionSection: some View {
+        Section {
+            CollectionCompositionRows(collection: collection)
+        } header: {
+            Text(String(localized: "composition.header", defaultValue: "Composition"))
+        } footer: {
+            Text(String(localized: "composition.footer",
+                        defaultValue: "Determines what an export of this collection contains. Applied to every format."))
         }
     }
 
@@ -991,16 +1009,7 @@ struct ExportSheetView: View {
     let allNotes: [ResearchNote]
     let appState: AppState
 
-    @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
-
     @State private var selectedFormat: ExportFormat = .pdf
-    @State private var tocStyle: CollectionToCStyle = .citation
-    @State private var bodyDepth: CollectionBodyDepth = .full
-    @State private var footnoteStyle: CollectionFootnoteStyle = .all
-    @State private var applyHighlights: Bool = false
-    @State private var includeNotes: Bool = true
-    @State private var includeWordCloud: Bool = false
-    @State private var selectedPromptId: UUID? = nil
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
     @State private var exportError: String? = nil
@@ -1076,75 +1085,14 @@ struct ExportSheetView: View {
                     .labelsHidden()
                 }
 
-                // Document body depth
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: "export.bodyDepth.header", defaultValue: "Document body"))
-                        .font(.callout.weight(.medium))
-                    Picker("", selection: $bodyDepth) {
-                        ForEach(availableBodyDepths) { depth in
-                            Text(depth.displayName).tag(depth)
-                        }
-                    }
-                    .pickerStyle(.radioGroup).labelsHidden()
-                    .onChange(of: bodyDepth) { _, new in
-                        if new == .summaryOnly, selectedPromptId == nil {
-                            selectedPromptId = allPrompts.first?.id
-                        }
-                    }
-                    if bodyDepth == .summaryOnly {
-                        LabeledContent(String(localized: "export.summaryPrompt.label",
-                                             defaultValue: "Prompt")) {
-                            Picker("", selection: $selectedPromptId) {
-                                Text(String(localized: "export.summaryPrompt.none",
-                                            defaultValue: "Select…")).tag(UUID?.none)
-                                ForEach(allPrompts) { p in
-                                    Text(p.name).tag(UUID?.some(p.id))
-                                }
-                            }
-                            .pickerStyle(.menu).labelsHidden().fixedSize()
-                        }
-                        Text(String(localized: "export.summaryPrompt.hint",
-                                    defaultValue: "Summaries will be generated for documents that don't already have one for this prompt. Requires Apple Intelligence."))
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-
-                Divider()
-
-                // Contents section
-                Text(String(localized: "export.contents.header", defaultValue: "Contents"))
-                    .font(.callout.weight(.medium))
-
-                LabeledContent(String(localized: "export.tocStyle.header",
-                                     defaultValue: "Contents list")) {
-                    Picker("", selection: $tocStyle) {
-                        ForEach(CollectionToCStyle.allCases) { s in Text(s.displayName).tag(s) }
-                    }
-                    .pickerStyle(.menu).labelsHidden().fixedSize()
-                }
-
-                LabeledContent(String(localized: "export.footnoteStyle.header",
-                                     defaultValue: "Footnotes")) {
-                    Picker("", selection: $footnoteStyle) {
-                        ForEach(CollectionFootnoteStyle.allCases) { s in Text(s.displayName).tag(s) }
-                    }
-                    .pickerStyle(.menu).labelsHidden().fixedSize()
-                }
-
-                Toggle(String(localized: "export.applyHighlights.label",
-                              defaultValue: "Apply user highlights to body"),
-                       isOn: $applyHighlights)
-                    .disabled(bodyDepth != .full)
-
-                Toggle(String(localized: "export.includeNotes.label",
-                              defaultValue: "Include research notes"),
-                       isOn: $includeNotes)
-
-                if selectedFormat == .pdf || selectedFormat == .html {
-                    Toggle(String(localized: "export.includeWordCloud.label",
-                                  defaultValue: "Include word cloud overview"),
-                           isOn: $includeWordCloud)
-                }
+                // Content composition (body depth, footnotes, notes, highlights, word cloud)
+                // now lives in the collection manager's Composition section and is persisted
+                // on the collection — this sheet is purely format + destination.
+                Text(String(localized: "export.compositionHint",
+                            defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1231,52 +1179,11 @@ struct ExportSheetView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section(String(localized: "export.bodyDepth.header",
-                               defaultValue: "Document body")) {
-                    Picker("", selection: $bodyDepth) {
-                        ForEach(availableBodyDepths) { d in Text(d.displayName).tag(d) }
-                    }
-                    .pickerStyle(.inline).labelsHidden()
-                    .onChange(of: bodyDepth) { _, new in
-                        if new == .summaryOnly, selectedPromptId == nil {
-                            selectedPromptId = allPrompts.first?.id
-                        }
-                    }
-                    if bodyDepth == .summaryOnly {
-                        Picker(String(localized: "export.summaryPrompt.label",
-                                     defaultValue: "Prompt"),
-                               selection: $selectedPromptId) {
-                            Text(String(localized: "export.summaryPrompt.none",
-                                        defaultValue: "Select…")).tag(UUID?.none)
-                            ForEach(allPrompts) { p in Text(p.name).tag(UUID?.some(p.id)) }
-                        }
-                        Text(String(localized: "export.summaryPrompt.hint",
-                                    defaultValue: "Summaries will be generated for documents that don't already have one for this prompt. Requires Apple Intelligence."))
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-
-                Section(String(localized: "export.contents.header", defaultValue: "Contents")) {
-                    Picker(String(localized: "export.tocStyle.header",
-                                 defaultValue: "Contents list"), selection: $tocStyle) {
-                        ForEach(CollectionToCStyle.allCases) { s in Text(s.displayName).tag(s) }
-                    }
-                    Picker(String(localized: "export.footnoteStyle.header",
-                                 defaultValue: "Footnotes"), selection: $footnoteStyle) {
-                        ForEach(CollectionFootnoteStyle.allCases) { s in Text(s.displayName).tag(s) }
-                    }
-                    Toggle(String(localized: "export.applyHighlights.label",
-                                 defaultValue: "Apply user highlights to body"),
-                           isOn: $applyHighlights)
-                        .disabled(bodyDepth != .full)
-                    Toggle(String(localized: "export.includeNotes.label",
-                                 defaultValue: "Include research notes"),
-                           isOn: $includeNotes)
-                    if selectedFormat == .pdf || selectedFormat == .html {
-                        Toggle(String(localized: "export.includeWordCloud.label",
-                                     defaultValue: "Include word cloud overview"),
-                               isOn: $includeWordCloud)
-                    }
+                Section {
+                    Text(String(localized: "export.compositionHint",
+                                defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section {
@@ -1462,25 +1369,17 @@ struct ExportSheetView: View {
         summaryGeneratingMessage = nil
     }
 
-    /// Body depths available given the current device / AI configuration.
-    /// "Summary only" is gated on Apple Intelligence being available.
-    var availableBodyDepths: [CollectionBodyDepth] {
-        if AppleIntelligenceProvider.shared.isAvailable {
-            return CollectionBodyDepth.allCases
-        }
-        return CollectionBodyDepth.allCases.filter { $0 != .summaryOnly }
-    }
-
-    /// Assembles `CollectionExportOptions` from the current picker state.
+    /// Assembles `CollectionExportOptions` from the collection's persisted composition
+    /// (edited in the manager's Composition section) plus the format-dependent word-cloud gate.
     private func buildExportOptions() -> CollectionExportOptions {
         CollectionExportOptions(
-            tocStyle:        tocStyle,
-            bodyDepth:       bodyDepth,
-            footnoteStyle:   footnoteStyle,
-            applyHighlights: applyHighlights,
-            includeNotes:    includeNotes,
-            summaryPromptId: selectedPromptId,
-            includeWordCloud: includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html)
+            tocStyle:        CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
+            bodyDepth:       CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full,
+            footnoteStyle:   CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all,
+            applyHighlights: collection.applyHighlights,
+            includeNotes:    collection.includeNotes,
+            summaryPromptId: collection.summaryPromptId,
+            includeWordCloud: collection.includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html)
         )
     }
 
@@ -2186,5 +2085,95 @@ extension View {
         openURL: OpenURLAction
     ) -> some View {
         modifier(ZoteroResultAlertModifier(result: result, message: message, openURL: openURL))
+    }
+}
+
+// MARK: - CollectionCompositionRows
+
+/// The editorial controls that determine *what an exported product contains* — persisted on
+/// the `Collection` and edited in the manager (not the export sheet). Renders as a group of
+/// form rows shared by the iOS editor (inside a `Section`) and the macOS manager (inside a
+/// `DisclosureGroup`). Enum-backed fields are stored as raw-value strings on the model, so the
+/// pickers bind through small mapping `Binding`s.
+///
+/// Edits apply **live** to the model, matching the iOS editor's other content edits (document
+/// add/remove/reorder and smart-collection linkage) and the fully-live macOS manager. Only a
+/// collection's name and note use the iOS editor's draft/Save step; composition, like the
+/// document list itself, is not part of that draft.
+///
+/// Version history:
+///   1.0 — Collections rework Phase 1a: composition moved out of the ephemeral export sheet
+struct CollectionCompositionRows: View {
+
+    /// The collection whose persisted composition is being edited.
+    @Bindable var collection: Collection
+
+    @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
+
+    private var bodyDepth: Binding<CollectionBodyDepth> {
+        Binding(get: { CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full },
+                set: { collection.defaultBodyDepth = $0.rawValue })
+    }
+
+    /// Body-depth choices: those available on this device, plus the currently-persisted value
+    /// even when it isn't otherwise offered here. A `"summaryOnly"` collection synced from a
+    /// device with Apple Intelligence must still render with a selected row (and stay editable)
+    /// on a device without it — otherwise the picker would show a blank selection.
+    private var bodyDepthOptions: [CollectionBodyDepth] {
+        let available = CollectionBodyDepth.available
+        let current = bodyDepth.wrappedValue
+        return available.contains(current) ? available : available + [current]
+    }
+    private var footnoteStyle: Binding<CollectionFootnoteStyle> {
+        Binding(get: { CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all },
+                set: { collection.footnoteStyle = $0.rawValue })
+    }
+    private var tocStyle: Binding<CollectionToCStyle> {
+        Binding(get: { CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation },
+                set: { collection.tocStyle = $0.rawValue })
+    }
+
+    var body: some View {
+        Picker(String(localized: "composition.bodyDepth", defaultValue: "Document body"),
+               selection: bodyDepth) {
+            ForEach(bodyDepthOptions) { Text($0.displayName).tag($0) }
+        }
+
+        if bodyDepth.wrappedValue == .summaryOnly {
+            Picker(String(localized: "composition.summaryPrompt", defaultValue: "Summary prompt"),
+                   selection: Binding(get: { collection.summaryPromptId },
+                                      set: { collection.summaryPromptId = $0 })) {
+                Text(String(localized: "composition.summaryPrompt.none", defaultValue: "Select…"))
+                    .tag(UUID?.none)
+                ForEach(allPrompts) { Text($0.name).tag(UUID?.some($0.id)) }
+            }
+            Text(String(localized: "composition.summaryPrompt.hint",
+                        defaultValue: "Summaries are generated on demand for documents that don't already have one for this prompt. Requires Apple Intelligence."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        Picker(String(localized: "composition.footnotes", defaultValue: "Footnotes"),
+               selection: footnoteStyle) {
+            ForEach(CollectionFootnoteStyle.allCases) { Text($0.displayName).tag($0) }
+        }
+
+        Picker(String(localized: "composition.tocStyle", defaultValue: "Contents list"),
+               selection: tocStyle) {
+            ForEach(CollectionToCStyle.allCases) { Text($0.displayName).tag($0) }
+        }
+
+        Toggle(String(localized: "composition.applyHighlights",
+                      defaultValue: "Apply highlights to document body"),
+               isOn: $collection.applyHighlights)
+            .disabled(bodyDepth.wrappedValue != .full)
+
+        Toggle(String(localized: "composition.includeNotes",
+                      defaultValue: "Include research notes"),
+               isOn: $collection.includeNotes)
+
+        Toggle(String(localized: "composition.includeWordCloud",
+                      defaultValue: "Include word-cloud overview (PDF and HTML)"),
+               isOn: $collection.includeWordCloud)
     }
 }

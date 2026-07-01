@@ -63,6 +63,15 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
                                          defaultValue: "Index / outline")
         }
     }
+
+    /// The body depths a user can choose given the device / AI configuration.
+    /// `.summaryOnly` is gated on Apple Intelligence being available.
+    @MainActor
+    static var available: [CollectionBodyDepth] {
+        AppleIntelligenceProvider.shared.isAvailable
+            ? allCases
+            : allCases.filter { $0 != .summaryOnly }
+    }
 }
 
 // MARK: - CollectionFootnoteStyle
