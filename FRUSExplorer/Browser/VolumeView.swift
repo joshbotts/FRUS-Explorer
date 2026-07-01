@@ -69,7 +69,9 @@ struct VolumeView: View {
         #endif
         .navigationTitle(volume.title)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        // Inline (not large) title: the large title here only restates the breadcrumb's
+        // volume crumb, wasting a ~52pt band above the content. (Corpus root keeps large.)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
         .task { await vm.loadVolumeStructure(for: volume) }
         .toolbar {

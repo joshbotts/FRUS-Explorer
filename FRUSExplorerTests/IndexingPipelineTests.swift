@@ -2124,8 +2124,13 @@ private func writeRealEncodingVolume(to url: URL, volumeId: String) throws {
           </div>
           <div type="section" subtype="sources" xml:id="sources">
             <head>Sources</head>
+            <p>The sources for this volume are drawn from a diffuse base of records.</p>
             <list>
-              <item>RG 59, Central Files 1969 POL 1, Lot File 70 D 150</item>
+              <item><hi rend="strong">Department of State</hi>
+                <list>
+                  <item>RG 59, Central Files 1969 POL 1, Lot File 70 D 150</item>
+                </list>
+              </item>
             </list>
           </div>
           <div type="section" subtype="index" xml:id="terms">
@@ -2290,6 +2295,36 @@ struct RealCorpusEncodingTests {
             #expect(!sources.isEmpty,
                     "subtype=\"sources\" sections must populate volume_sources")
             #expect(sources.contains { $0.rawText.contains("RG 59") })
+        }
+    }
+
+    @Test("Sources section: prose, bold headings, and nesting are preserved (Session 170)")
+    func sourcesProseHeadingsAndNesting() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            try writeRealEncodingVolume(to: url, volumeId: "frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let sources = try await pipeline.volumeSources(forVolumeId: "frus1969-76v01")
+
+            // The narrative <p> is captured as prose, not misfiled as a source row.
+            #expect(sources.contains { $0.kind == .prose && $0.rawText.contains("diffuse base") })
+            // The <hi rend="strong"> collection heading survives (it isn't destroyed by a
+            // child <list>), at the top level.
+            let heading = try #require(sources.first { $0.isHeading })
+            #expect(heading.rawText.contains("Department of State"))
+            #expect(heading.depth == 0)
+            #expect(heading.kind == .item)
+            // The RG 59 record sits one level deeper, under the heading.
+            let rgRow = try #require(sources.first { $0.rawText.contains("RG 59") })
+            #expect(rgRow.depth == 1)
+            #expect(rgRow.recordGroup == "59")
+            // Document (pre-order) order: the parent heading precedes its child.
+            let headingIdx = try #require(sources.firstIndex { $0.isHeading })
+            let rgIdx = try #require(sources.firstIndex { $0.rawText.contains("RG 59") })
+            #expect(headingIdx < rgIdx)
         }
     }
 

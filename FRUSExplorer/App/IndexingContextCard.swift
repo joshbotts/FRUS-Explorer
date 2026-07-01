@@ -23,7 +23,7 @@ import SwiftUI
 /// 4. **Cross-reference preview** — total cross-reference edge count from metadata.
 ///
 /// ## Placement
-/// - `CorpusVolumeDetailSheet` (macOS): shown below the progress bar in the
+/// - `CorpusVolumeDetailView` (macOS): shown below the progress bar in the
 ///   indexing phase view.
 /// - `IndexingBannerView` (iOS): shown only when `horizontalSizeClass == .regular`
 ///   (iPad), where vertical space permits the card.

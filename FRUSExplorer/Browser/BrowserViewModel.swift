@@ -299,7 +299,13 @@ public final class BrowserViewModel {
 
     /// Loads and caches `DocumentBrowserEntry` values for the given section.
     ///
-    /// Filters the full volume document list down to IDs present in `section.allDocumentIds`.
+    /// Filters the volume's documents down to the section's *direct* documents
+    /// (`section.documentIds`), not every descendant (`allDocumentIds`). A section that has
+    /// subsections lists those as their own drill-down rows, and each subsection loads its
+    /// own direct documents — so a compilation with chapters no longer also lists every
+    /// descendant document here (which double-counted them). For a leaf section the two are
+    /// identical, so its full document list is unaffected. Mirrors history.state.gov, where
+    /// an interior grouping node shows only its child groups (and any direct documents).
     public func loadDocuments(for section: VolumeSection, volumeId: String) async {
         let key = compilationKey(volumeId: volumeId, sectionId: section.sectionId)
         guard compilationDocuments[key] == nil else { return }
@@ -307,7 +313,7 @@ public final class BrowserViewModel {
         isLoadingDocuments = true
         do {
             let all = try await pipeline.documents(forVolume: volumeId)
-            let sectionIds = Set(section.allDocumentIds)
+            let sectionIds = Set(section.documentIds)
             compilationDocuments[key] = all.filter { sectionIds.contains($0.documentId) }
         } catch {
             #if DEBUG

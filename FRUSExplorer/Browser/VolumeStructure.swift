@@ -31,7 +31,7 @@ import Foundation
 ///          (`isFrontMatterKind`, `canReadDirectly`, `isPersonsList`, …) centralise
 ///          the routing rules previously duplicated across `VolumeView`,
 ///          `CompilationView`, and the macOS corpus browser.
-public struct VolumeSection: Sendable, Identifiable, Codable {
+public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
 
     /// The `xml:id` attribute of the enclosing `<div>`, or a generated stable string
     /// if the element lacks one. e.g. `"c1"`, `"app1"`, `"front"`.

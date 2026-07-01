@@ -36,16 +36,17 @@ struct VolumeSourcesView: View {
 
     @State private var sources: [VolumeSourceEntry] = []
     @State private var isLoading = true
-    @State private var searchText: String = ""
     /// When set, presents the Archival Neighbors sheet for a volume source entry.
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
 
-    /// Sources filtered by `searchText` (case-insensitive match against rawText).
-    private var displaySources: [VolumeSourceEntry] {
-        guard !searchText.isEmpty else { return sources }
-        let q = searchText.lowercased()
-        return sources.filter { $0.rawText.lowercased().contains(q) }
-    }
+    /// The narrative "Note on Sources" paragraphs, shown as flowing prose.
+    private var proseEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .prose } }
+
+    /// The archival-collection outline, built **once** in `loadSources`. It must be stored
+    /// (not recomputed per render): `SourceTreeNode` ids are `UUID`s, so rebuilding the tree
+    /// on each body evaluation would hand `OutlineGroup` fresh identities and collapse the
+    /// user's expanded disclosure state on any re-render (e.g. opening the neighbors sheet).
+    @State private var collectionTree: [SourceTreeNode] = []
 
     var body: some View {
         Group {
@@ -60,38 +61,39 @@ struct VolumeSourcesView: View {
                     }
                     .padding(.vertical, 4)
                 }
-            } else if displaySources.isEmpty {
+            } else if sources.isEmpty {
                 Section {
-                    if sources.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(String(localized: "browser.sources.empty.title",
-                                        defaultValue: "No Sources Listed"))
-                                .font(.headline)
-                            Text(String(localized: "browser.sources.empty.detail",
-                                        defaultValue: "Index this volume to load its archival sources list."))
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 6)
-                    } else {
-                        Text(String(localized: "browser.sources.noResults",
-                                    defaultValue: "No sources match your search."))
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(String(localized: "browser.sources.empty.title",
+                                    defaultValue: "No Sources Listed"))
+                            .font(.headline)
+                        Text(String(localized: "browser.sources.empty.detail",
+                                    defaultValue: "Index this volume to load its archival sources list."))
                             .font(.callout)
+                            .foregroundStyle(.secondary)
                     }
+                    .padding(.vertical, 6)
                 }
             } else {
-                Section(header: Text(String(
-                    localized: "browser.sources.count.header",
-                    defaultValue: "Sources (\(displaySources.count))"
-                ))) {
-                    ForEach(Array(displaySources.enumerated()), id: \.offset) { _, entry in
-                        VolumeSourceRow(
-                            entry: entry,
-                            onShowNeighbors: makeNeighborsTarget(for: entry).map { target in
-                                { sourceNeighborsTarget = target }
-                            }
-                        )
+                // The section's narrative introduction, then the nested outline of the
+                // archival collections it drew on (mirroring history.state.gov/…/sources).
+                if !proseEntries.isEmpty {
+                    Section(header: Text(String(localized: "browser.sources.about.header",
+                                                defaultValue: "About These Sources"))) {
+                        ForEach(Array(proseEntries.enumerated()), id: \.offset) { _, entry in
+                            Text(entry.rawText)
+                                .font(.callout)
+                                .textSelection(.enabled)
+                                .padding(.vertical, 2)
+                        }
+                    }
+                }
+                if !collectionTree.isEmpty {
+                    Section(header: Text(String(localized: "browser.sources.collections.header",
+                                                defaultValue: "Archival Collections"))) {
+                        OutlineGroup(collectionTree, children: \.children) { node in
+                            sourceNodeRow(node.entry)
+                        }
                     }
                 }
             }
@@ -108,6 +110,56 @@ struct VolumeSourcesView: View {
             }
             .environment(appState)
         }
+    }
+
+    /// One archival-collection outline row: its own text (bold for a major named collection —
+    /// a `<hi rend="strong">` heading), with an Archival Neighbors affordance where the node
+    /// carries a resolvable match key (lot file, or record group + series).
+    private func sourceNodeRow(_ entry: VolumeSourceEntry) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(entry.rawText)
+                .font(entry.isHeading ? .callout.weight(.semibold) : .callout)
+                .textSelection(.enabled)
+            if let target = makeNeighborsTarget(for: entry) {
+                Spacer(minLength: 8)
+                Button {
+                    sourceNeighborsTarget = target
+                } label: {
+                    Image(systemName: "archivebox")
+                }
+                .buttonStyle(.borderless)
+                .help(String(localized: "browser.sources.archivalNeighbors.help",
+                             defaultValue: "Show indexed documents drawn from this archival source"))
+                .accessibilityLabel(String(localized: "browser.sources.archivalNeighbors",
+                                           defaultValue: "Archival Neighbors"))
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    // MARK: - Outline Reconstruction
+
+    /// Rebuilds the collection outline from the flat, pre-ordered `.item` rows using each
+    /// row's `depth` (0 = a top-level collection). Parents precede their children in the
+    /// input, so a single left-to-right pass with a recursive descent suffices.
+    static func buildTree(_ items: [VolumeSourceEntry]) -> [SourceTreeNode] {
+        var index = 0
+        return build(items, &index, depth: 0)
+    }
+
+    private static func build(_ items: [VolumeSourceEntry], _ index: inout Int, depth: Int) -> [SourceTreeNode] {
+        var nodes: [SourceTreeNode] = []
+        while index < items.count {
+            let item = items[index]
+            if item.depth < depth { break }   // belongs to an ancestor level
+            // Process the row at this level, then collect children relative to its *own*
+            // depth. A row deeper than expected (an orphan from a skipped/empty container
+            // level) is clamped here rather than dropped, so no subtree is ever lost.
+            index += 1
+            let children = build(items, &index, depth: item.depth + 1)
+            nodes.append(SourceTreeNode(entry: item, children: children.isEmpty ? nil : children))
+        }
+        return nodes
     }
 
     /// Builds an archival-neighbors target for a source entry, or `nil` when the entry
@@ -134,6 +186,7 @@ struct VolumeSourcesView: View {
         }
         let entries = (try? await pipeline.volumeSources(forVolumeId: volumeId)) ?? []
         sources = entries
+        collectionTree = Self.buildTree(entries.filter { $0.kind == .item })
         isLoading = false
         #if DEBUG
         print("[VolumeSourcesView] Loaded \(entries.count) sources for \(volumeId)")
@@ -152,51 +205,13 @@ private struct VolumeSourceNeighborsTarget: Identifiable {
     let id = UUID()
 }
 
-// MARK: - VolumeSourceRow
+// MARK: - SourceTreeNode
 
-/// A single row in the volume archival sources list.
-///
-/// The `rawText` citation string is always the primary display. Structured metadata
-/// fields (record group, repository, lot file, series) are shown as secondary lines
-/// when non-nil — useful for eras where the indexing pipeline extracted structured data.
-private struct VolumeSourceRow: View {
+/// A node in the reconstructed archival-collection outline, for `OutlineGroup`. `children`
+/// is `nil` for a leaf so the disclosure triangle only appears where there is something to
+/// expand.
+struct SourceTreeNode: Identifiable {
+    let id = UUID()
     let entry: VolumeSourceEntry
-    /// Non-nil when this entry has an archival match key; shows a button that opens the
-    /// Archival Neighbors sheet for the entry's lot file or record-group series.
-    let onShowNeighbors: (() -> Void)?
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(entry.rawText)
-                    .font(.callout)
-
-                Group {
-                    if let rg = entry.recordGroup, !rg.isEmpty {
-                        Text(rg)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let repo = entry.repository, !repo.isEmpty {
-                        Text(repo)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-            }
-
-            if let onShowNeighbors {
-                Spacer(minLength: 8)
-                Button(action: onShowNeighbors) {
-                    Image(systemName: "archivebox")
-                }
-                .buttonStyle(.borderless)
-                .help(String(localized: "browser.sources.archivalNeighbors.help",
-                             defaultValue: "Show indexed documents drawn from this archival source"))
-                .accessibilityLabel(String(localized: "browser.sources.archivalNeighbors",
-                                           defaultValue: "Archival Neighbors"))
-            }
-        }
-        .padding(.vertical, 3)
-    }
+    var children: [SourceTreeNode]?
 }

@@ -583,16 +583,48 @@ public struct VolumeFullParseResult: Sendable {
     public let structureSections: [VolumeSection]
 }
 
-/// One entry from a FRUS volume's front-matter archival sources list.
+/// Whether a `VolumeSourceEntry` is a narrative "Note on Sources" paragraph or a node in
+/// the archival-collection outline.
+public enum VolumeSourceKind: String, Sendable {
+    /// A narrative paragraph from the section's prose introduction.
+    case prose
+    /// An archival-collection outline node (a repository, record group, series, or lot file).
+    case item
+}
+
+/// One row of a FRUS volume's front-matter Sources section.
+///
+/// The section has two parts: narrative `.prose` paragraphs (the "Note on Sources"
+/// introduction) followed by a nested `.item` outline of the archival collections the
+/// volume drew on. Rows are produced flat in document (pre-order) order; `depth`
+/// (0 = a top-level collection) and `isHeading` (the item wrapped a `<hi rend="strong">` —
+/// i.e. a major named collection) let the browser rebuild and render the outline.
 ///
 /// Produced by `SourcesParserDelegate` when it encounters a `<div type="sources">`,
 /// `<div type="listofworks">`, or `<listBibl>` section.
 public struct VolumeSourceEntry: Sendable {
+    public let kind: VolumeSourceKind
+    public let depth: Int
+    public let isHeading: Bool
     public let repository: String?
     public let recordGroup: String?
     public let lotFile: String?
     public let seriesName: String?
+    /// The entry's own text (whitespace-collapsed), excluding any nested child items.
     public let rawText: String
+
+    public init(kind: VolumeSourceKind, depth: Int = 0, isHeading: Bool = false,
+                repository: String? = nil, recordGroup: String? = nil, lotFile: String? = nil,
+                seriesName: String? = nil, rawText: String) {
+        self.kind = kind
+        self.depth = depth
+        self.isHeading = isHeading
+        self.repository = repository
+        self.recordGroup = recordGroup
+        self.lotFile = lotFile
+        self.seriesName = seriesName
+        self.rawText = rawText
+    }
 }
 
 // MARK: - Parser Error
@@ -1651,27 +1683,47 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
 /// from the current indentation level.
 private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
+    /// Flat, document-order (pre-order) rows: the narrative `.prose` paragraphs first, then
+    /// the archival-collection `.item` outline (parents before their children).
     var entries: [VolumeSourceEntry] = []
 
     private var inSourcesSection = false
-    private var inItem           = false
-    private var textBuffer       = ""
-    private var elementDepth     = 0
-    private var sectionDepth     = -1
-    private var sortOrder        = 0
+    private var elementDepth = 0
+    private var sectionDepth = -1
 
-    // Context carried across items to resolve hierarchical structure
-    private var currentRepository: String?
-    private var currentRecordGroup: String?
+    /// Monotonic open-order counter. Assigned when a paragraph or item *opens*, so the
+    /// final list can be sorted into document (pre-order) order — necessary because
+    /// `<item>` elements close inner-first, which would otherwise emit children before
+    /// their parents.
+    private var openCounter = 0
+    private var collected: [(order: Int, entry: VolumeSourceEntry)] = []
+
+    /// A top-level narrative `<p>` being accumulated (outside any collection `<item>`).
+    private var inProse = false
+    private var proseBuffer = ""
+    private var proseOrder = 0
+
+    /// Stack of in-progress collection `<item>`s. Each frame captures the item's *own* text
+    /// (characters directly inside it, before/outside its child `<list>`), whether it wrapped
+    /// a `<hi rend="strong">` heading, its list-nesting `depth`, and its open order.
+    private struct ItemFrame {
+        var text = ""
+        var isHeading = false
+        let depth: Int
+        let order: Int
+    }
+    private var itemStack: [ItemFrame] = []
+    private var listDepth = 0
 
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
     private static let lotPat = try? NSRegularExpression(
         pattern: #"\bLot\s+([\w\s\-]+?D\s*\d+)\b"#, options: .caseInsensitive)
 
+    // Deliberately excludes "listofabbreviations": that glossary is a `terms` section owned
+    // by `TermsParserDelegate`; matching it here double-consumed it as bogus source items.
     private static let sourceSectionTypes: Set<String> = [
-        "sources", "listofworks", "listofworks", "listofabbreviations",
-        "sources-and-abbreviations"
+        "sources", "listofworks", "sources-and-abbreviations"
     ]
 
     func parser(_ parser: XMLParser,
@@ -1696,15 +1748,42 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             }
         }
         guard inSourcesSection else { return }
-        if elementName == "item" || elementName == "p" {
-            inItem     = true
-            textBuffer = ""
+        switch elementName {
+        case "list":
+            listDepth += 1
+        case "item":
+            openCounter += 1
+            itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter))
+        case "p":
+            // A narrative paragraph, but only at the top level — `<p>` never appears inside
+            // a collection `<item>` in this encoding, and treating it as one is exactly the
+            // bug that turned the "Note on Sources" prose into bogus source rows.
+            if itemStack.isEmpty {
+                openCounter += 1
+                proseOrder = openCounter
+                inProse = true
+                proseBuffer = ""
+            }
+        case "hi":
+            // Bold `<hi rend="strong">` marks a major named collection (Department of State,
+            // Record Group 59, Nixon Presidential Materials, …) — the headings a flat parse
+            // used to lose. Flag the innermost open item.
+            if attributeDict["rend"]?.lowercased() == "strong", !itemStack.isEmpty {
+                itemStack[itemStack.count - 1].isHeading = true
+            }
+        default:
+            break
         }
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard inItem else { return }
-        textBuffer += string
+        guard inSourcesSection else { return }
+        // Characters belong to the innermost open item, else the current prose paragraph.
+        if !itemStack.isEmpty {
+            itemStack[itemStack.count - 1].text += string
+        } else if inProse {
+            proseBuffer += string
+        }
     }
 
     func parser(_ parser: XMLParser,
@@ -1714,27 +1793,58 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         defer { elementDepth -= 1 }
         guard inSourcesSection else { return }
 
-        if elementName == "item" || elementName == "p" {
-            let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !raw.isEmpty {
-                let entry = parseSourceEntry(raw)
-                entries.append(entry)
-                sortOrder += 1
+        switch elementName {
+        case "list":
+            listDepth = max(0, listDepth - 1)
+        case "item":
+            if let frame = itemStack.popLast() {
+                let text = Self.collapseWhitespace(frame.text)
+                if !text.isEmpty {
+                    collected.append((frame.order,
+                                      Self.makeItemEntry(text: text, depth: frame.depth,
+                                                         isHeading: frame.isHeading)))
+                }
             }
-            inItem     = false
-            textBuffer = ""
+        case "p":
+            if inProse && itemStack.isEmpty {
+                let text = Self.collapseWhitespace(proseBuffer)
+                if !text.isEmpty {
+                    collected.append((proseOrder, VolumeSourceEntry(kind: .prose, rawText: text)))
+                }
+                inProse = false
+                proseBuffer = ""
+            }
+        default:
+            break
         }
 
         if elementDepth <= sectionDepth {
+            // Section closed — append this section's rows in document (pre-order) order.
+            // Append (don't assign): a volume can legitimately have more than one matching
+            // section (e.g. a bibliography plus a combined sources-and-abbreviations list),
+            // and each should accumulate rather than the last overwriting the rest.
+            entries.append(contentsOf: collected.sorted { $0.order < $1.order }.map(\.entry))
+            collected.removeAll()
             inSourcesSection = false
-            sectionDepth     = -1
+            sectionDepth = -1
+            inProse = false
+            proseBuffer = ""
+            itemStack.removeAll()
+            listDepth = 0
         }
     }
 
-    private func parseSourceEntry(_ text: String) -> VolumeSourceEntry {
-        // Extract record group
+    /// Collapses interior whitespace runs (hard line breaks, ragged TEI indentation) to
+    /// single spaces so a citation flows as one line instead of wrapping at its source column.
+    private static func collapseWhitespace(_ s: String) -> String {
+        s.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// Builds an `.item` entry, extracting record group / lot file / repository / series from
+    /// the node's own text (heuristics unchanged from the previous flat parser).
+    private static func makeItemEntry(text: String, depth: Int, isHeading: Bool) -> VolumeSourceEntry {
         var rg: String?
-        if let regex = Self.rgPat {
+        if let regex = rgPat {
             let ns = NSRange(text.startIndex..., in: text)
             if let m = regex.firstMatch(in: text, range: ns) {
                 if m.range(at: 1).location != NSNotFound, let r = Range(m.range(at: 1), in: text) {
@@ -1745,9 +1855,8 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             }
         }
 
-        // Extract lot file
         var lot: String?
-        if let regex = Self.lotPat {
+        if let regex = lotPat {
             let ns = NSRange(text.startIndex..., in: text)
             if let m = regex.firstMatch(in: text, range: ns),
                let r = Range(m.range(at: 1), in: text) {
@@ -1755,7 +1864,6 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             }
         }
 
-        // Heuristic repository detection
         let repoKeywords = [
             "National Archives", "Library of Congress", "Washington National Records Center",
             "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
@@ -1772,11 +1880,8 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             }
         }
 
-        // Series name: everything that isn't repository/RG/lot
-        // Use the trimmed text as the series description when there's a lot or RG
         let seriesName: String?
         if rg != nil || lot != nil {
-            // Strip RG and lot from text to get the series description
             var s = text
             if let r = rg { s = s.replacingOccurrences(of: "RG \(r)", with: "", options: .caseInsensitive) }
             s = s.components(separatedBy: ",").last?.trimmingCharacters(in: .whitespaces) ?? s
@@ -1786,11 +1891,9 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         }
 
         return VolumeSourceEntry(
-            repository: repo,
-            recordGroup: rg,
-            lotFile: lot,
-            seriesName: seriesName,
-            rawText: text
+            kind: .item, depth: depth, isHeading: isHeading,
+            repository: repo, recordGroup: rg, lotFile: lot,
+            seriesName: seriesName, rawText: text
         )
     }
 }

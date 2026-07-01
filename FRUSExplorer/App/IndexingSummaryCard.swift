@@ -15,7 +15,7 @@ import SwiftUI
 /// Renders in two layout modes depending on platform:
 /// - **iOS** (`.banner`): compact two-row strip above the tab bar, matching the height of
 ///   `IndexingBannerView`. Wraps itself in a `VStack + Divider + .bar` background.
-/// - **macOS** (`.sheet`): full-size centred card for use inside `CorpusVolumeDetailSheet`.
+/// - **macOS** (`.sheet`): full-size centred card for use inside `CorpusVolumeDetailView`.
 ///
 /// Auto-dismisses after 6 seconds via a `.task` modifier; the task is cancelled automatically
 /// when the card disappears (e.g. when the caller clears `completedIndexingMetadata`), so

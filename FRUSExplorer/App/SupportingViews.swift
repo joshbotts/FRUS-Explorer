@@ -2675,11 +2675,27 @@ struct GlossDetailSheet: View {
 
 // MARK: - CorpusBrowserWindowView
 
+/// A value pushed onto the corpus browser's detail-column navigation stack, so deeper
+/// levels (a volume's structure, a section's documents) open in the resizable window
+/// instead of progressively smaller fixed-size sheets.
+///
+/// Version history:
+///   1.0 — Session 170: replaces the nested volume/section sheets with push navigation
+enum CorpusNavValue: Hashable {
+    /// A volume's structural overview, keyed by id (the entry is re-looked-up from the manifest).
+    case volume(volumeId: String)
+    /// A section's document list or structured front-matter view within a volume.
+    case section(volumeId: String, section: VolumeSection)
+}
+
 /// Standalone macOS window listing all FRUS subseries and their volumes.
 ///
-/// Uses a `NavigationSplitView`: subseries in the sidebar, volumes in the detail
-/// column. Selecting a volume opens `CorpusVolumeDetailSheet` which shows the volume
-/// structure (chapters, compilations) and handles download/indexing when needed.
+/// Uses a `NavigationSplitView`: subseries in the sidebar, volumes in the detail column.
+/// The detail column hosts a `NavigationStack` (`detailPath`), so selecting a volume — and
+/// then a section within it — **pushes** progressively deeper views that each fill the
+/// resizable window, rather than opening a stack of progressively smaller fixed-size sheets.
+/// Only genuinely modal tasks (the per-volume cross-reference graph, the People index) stay
+/// as sheets.
 ///
 /// ## Sidebar controls
 /// - **Sort**: toggle between newest-first (descending) and oldest-first (ascending)
@@ -2689,8 +2705,10 @@ struct GlossDetailSheet: View {
 ///   1.0 — initial implementation
 ///   1.1 — sort and filter sidebar controls; volume-structure sheet with in-app
 ///          download/indexing; `CorpusVolumeDocumentListView` replaced by
-///          `CorpusVolumeDetailSheet` + `CorpusSectionDocumentListView`
+///          `CorpusVolumeDetailView` + `CorpusSectionDocumentView`
 ///   1.2 — Session 87: People toolbar button opens `PersonIndexView` sheet
+///   1.3 — Session 170: volume/section drill-down became a resizable detail-column
+///          `NavigationStack` (`CorpusNavValue`) instead of nested fixed-size sheets
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -2700,6 +2718,9 @@ struct CorpusBrowserWindowView: View {
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
     @State private var showPeopleSheet: Bool = false
+    /// Drill-down path for the detail column: volume → section → deeper section. Owned by
+    /// the window so it survives detail re-renders and is shared by every pushed level.
+    @State private var detailPath: [CorpusNavValue] = []
 
     private var allEntries: [VolumeManifestEntry] {
         appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -2760,16 +2781,32 @@ struct CorpusBrowserWindowView: View {
                 }
             }
         } detail: {
-            if let sub = selectedSubseries {
-                volumeList(for: sub)
-            } else {
-                ContentUnavailableView(
-                    "Select a Subseries",
-                    systemImage: "books.vertical",
-                    description: Text("Choose a subseries from the list to browse its volumes.")
-                )
+            NavigationStack(path: $detailPath) {
+                Group {
+                    if let sub = selectedSubseries {
+                        volumeList(for: sub)
+                    } else {
+                        ContentUnavailableView(
+                            "Select a Subseries",
+                            systemImage: "books.vertical",
+                            description: Text("Choose a subseries from the list to browse its volumes.")
+                        )
+                    }
+                }
+                .navigationDestination(for: CorpusNavValue.self) { value in
+                    switch value {
+                    case .volume(let volumeId):
+                        if let entry = allEntries.first(where: { $0.volumeId == volumeId }) {
+                            CorpusVolumeDetailView(volume: entry, path: $detailPath)
+                        }
+                    case .section(let volumeId, let section):
+                        CorpusSectionDocumentView(volumeId: volumeId, section: section, path: $detailPath)
+                    }
+                }
             }
         }
+        // Switching subseries returns to the volume-list root (avoids a stale pushed volume).
+        .onChange(of: selectedSubseries) { _, _ in detailPath = [] }
         .frame(minWidth: 540, minHeight: 440)
         .sheet(isPresented: $showPeopleSheet) {
             VStack(spacing: 0) {
@@ -2839,7 +2876,8 @@ struct CorpusBrowserWindowView: View {
         SubseriesVolumeListView(
             subseries: subseries,
             filteredVolumes: filtered,
-            searchText: $searchText
+            searchText: $searchText,
+            path: $detailPath
         )
     }
 }
@@ -2864,22 +2902,14 @@ private struct SubseriesVolumeListView: View {
     let filteredVolumes: [VolumeManifestEntry]
 
     @Binding var searchText: String
+    /// The window's detail-column drill-down path; tapping a volume pushes onto it.
+    @Binding var path: [CorpusNavValue]
 
     @Environment(AppState.self) private var appState
 
-    // MARK: - Sheet
-
-    private enum SheetContent: Identifiable {
-        case detail(VolumeManifestEntry)
-        case graph(VolumeManifestEntry)
-        var id: String {
-            switch self {
-            case .detail(let v): return "detail-\(v.volumeId)"
-            case .graph(let v):  return "graph-\(v.volumeId)"
-            }
-        }
-    }
-    @State private var sheetContent: SheetContent?
+    /// The volume whose cross-reference graph sheet is showing. The graph stays a sheet
+    /// (a self-contained modal task); only the structural drill-down became push navigation.
+    @State private var graphVolume: VolumeManifestEntry?
 
     // MARK: - Body
 
@@ -2892,29 +2922,24 @@ private struct SubseriesVolumeListView: View {
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
         .navigationTitle(subseries)
-        .sheet(item: $sheetContent) { content in
-            switch content {
-            case .detail(let vol):
-                CorpusVolumeDetailSheet(volume: vol)
-            case .graph(let vol):
-                // macOS: remove NavigationStack chrome; Done button in bottom bar
-                VStack(spacing: 0) {
-                    VolumeConnectionGraphView(volumeId: vol.volumeId)
-                        .environment(appState)
-                    Divider()
-                    HStack {
-                        Spacer()
-                        Button(String(localized: "corpus.graph.done",
-                                      defaultValue: "Done")) {
-                            sheetContent = nil
-                        }
-                        .keyboardShortcut(.defaultAction)
+        .sheet(item: $graphVolume) { vol in
+            // macOS: remove NavigationStack chrome; Done button in bottom bar
+            VStack(spacing: 0) {
+                VolumeConnectionGraphView(volumeId: vol.volumeId)
+                    .environment(appState)
+                Divider()
+                HStack {
+                    Spacer()
+                    Button(String(localized: "corpus.graph.done",
+                                  defaultValue: "Done")) {
+                        graphVolume = nil
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
+                    .keyboardShortcut(.defaultAction)
                 }
-                .frame(minWidth: 680, minHeight: 520)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
+            .frame(minWidth: 680, minHeight: 520)
         }
     }
 
@@ -2966,7 +2991,7 @@ private struct SubseriesVolumeListView: View {
                        defaultValue: "Word cloud for \(vol.volumeId)")
             )
             Button {
-                sheetContent = .graph(vol)
+                graphVolume = vol
             } label: {
                 Image(systemName: "point.3.connected.trianglepath.dotted")
                     .font(.system(size: 11))
@@ -2982,7 +3007,7 @@ private struct SubseriesVolumeListView: View {
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
-        .onTapGesture { sheetContent = .detail(vol) }
+        .onTapGesture { path.append(.volume(volumeId: vol.volumeId)) }
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
@@ -2994,9 +3019,10 @@ private struct SubseriesVolumeListView: View {
     }
 }
 
-// MARK: - CorpusVolumeDetailSheet
+// MARK: - CorpusVolumeDetailView
 
-/// Sheet showing a volume's structural overview (chapters, compilations) in the corpus browser.
+/// A volume's structural overview (chapters, compilations), pushed into the corpus browser
+/// window's resizable detail column.
 ///
 /// ## Phase machine
 /// ```
@@ -3004,7 +3030,7 @@ private struct SubseriesVolumeListView: View {
 /// downloading ──(complete)──► indexing   [app auto-indexes after download]
 /// notIndexed ──(Index Now)──► indexing
 /// indexing ──(pipeline done)──► loadingStructure ──► ready
-/// ready ──(tap section)──► CorpusSectionDocumentListView sheet
+/// ready ──(tap section)──► pushes CorpusSectionDocumentView onto the detail path
 /// ```
 ///
 /// Download progress is inferred from `AppState.downloadQueue` transitions.
@@ -3017,10 +3043,11 @@ private struct SubseriesVolumeListView: View {
 ///   1.2 — Session 115: `.interrupted` phase added; amber warning view with Re-index Now button
 ///   1.3 — Session 2026-06-09: `frontMatterTypes` + `extractFrontMatter` added; `structureView`
 ///          now splits sections into "Front Matter" and "Contents" headers, matching `VolumeView`
-private struct CorpusVolumeDetailSheet: View {
+private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
+    /// The window's detail-column path; opening a section pushes onto it.
+    @Binding var path: [CorpusNavValue]
     @Environment(AppState.self) private var appState
-    @Environment(\.dismiss) private var dismiss
 
     enum Phase {
         case notDownloaded, downloading, indexing, loadingStructure, notIndexed, interrupted
@@ -3030,31 +3057,15 @@ private struct CorpusVolumeDetailSheet: View {
 
     @State private var phase: Phase = .notDownloaded
     @State private var liveProgress: IndexingProgressUpdate? = nil
-    @State private var selectedSection: VolumeSection? = nil
     @State private var showingSummaryCard = false
     private let parser = FRUSDocumentParser()
 
     var body: some View {
-        // macOS-native layout: title + Close button in header row, content below.
-        // NavigationStack is not appropriate inside a sheet on macOS.
-        VStack(spacing: 0) {
-            HStack(alignment: .center) {
-                Text(volume.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Button("Close") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-
-            Divider()
-
-            phaseContent
-        }
-        .frame(minWidth: 500, minHeight: 440)
-        .task { await determinePhase() }
+        // Pushed into the browser window's resizable detail column (not a sheet), so the
+        // structure list, and any section drilled into, inherit the window's size.
+        phaseContent
+            .navigationTitle(volume.title)
+            .task { await determinePhase() }
         // Download completion: queue no longer contains volumeId AND file now exists → auto-index begins
         .onChange(of: appState.downloadQueue) { _, queue in
             if case .downloading = phase,
@@ -3255,9 +3266,9 @@ private struct CorpusVolumeDetailSheet: View {
             volumeTitle: title,
             onSearchVolume: { volumeId in
                 // Setting pendingSearch triggers MainWindowView.onChange to open the search window.
+                // The browser stays where it is (this view is pushed, not a sheet to dismiss).
                 appState.pendingSearch = SearchParameters(volumeIds: [volumeId])
                 appState.completedIndexingMetadata = nil
-                dismiss()
             },
             onDismiss: {
                 showingSummaryCard = false
@@ -3373,10 +3384,10 @@ private struct CorpusVolumeDetailSheet: View {
     ///
     /// Prose-readable sections (preface, introduction, errata, etc.) open straight
     /// into the main window on the first tap — the same one-tap behaviour as a
-    /// numbered document — by posting to `AppState.pendingBrowseDocument` and
-    /// dismissing the sheet. Sections that need an intermediate list or a structured
-    /// view (compilations with documents, the Persons glossary, the Sources list)
-    /// present the `CorpusSectionDocumentListView` sheet instead.
+    /// numbered document — by posting to `AppState.pendingBrowseDocument`. Sections that
+    /// need an intermediate list or a structured view (compilations with documents, the
+    /// Persons glossary, the Sources list) push `CorpusSectionDocumentView` onto the
+    /// detail-column path instead.
     private func openSection(_ section: VolumeSection) {
         if section.canReadDirectly {
             appState.pendingBrowseDocument = DocumentBrowserEntry(
@@ -3384,9 +3395,8 @@ private struct CorpusVolumeDetailSheet: View {
                 volumeId: volume.volumeId,
                 header: section.title
             )
-            dismiss()
         } else {
-            selectedSection = section
+            path.append(.section(volumeId: volume.volumeId, section: section))
         }
     }
 
@@ -3437,12 +3447,6 @@ private struct CorpusVolumeDetailSheet: View {
                 }
             }
             .listStyle(.inset)
-            .sheet(item: $selectedSection) { section in
-                CorpusSectionDocumentListView(volume: volume, section: section) { doc in
-                    appState.pendingBrowseDocument = doc
-                    dismiss()
-                }
-            }
         }
     }
 
@@ -3472,7 +3476,7 @@ private struct CorpusVolumeDetailSheet: View {
 
 // MARK: - DiscoveredMetadataRow
 
-/// Two-column grid of aggregate discovery counts shown inside `CorpusVolumeDetailSheet`
+/// Two-column grid of aggregate discovery counts shown inside `CorpusVolumeDetailView`
 /// once `VolumeMetadataDiscovered` arrives from the pipeline's metadata stream.
 ///
 /// Omits any row whose value is zero. Includes a date-range line when present.
@@ -3554,33 +3558,35 @@ private struct DiscoveredMetadataRow: View {
     }
 }
 
-// MARK: - CorpusSectionDocumentListView
+// MARK: - CorpusSectionDocumentView
 
-/// Sheet presenting the content for a single section selected from `CorpusVolumeDetailSheet`.
+/// The content for a single section, pushed into the corpus browser window's detail column
+/// from `CorpusVolumeDetailView`.
 ///
 /// Routes to the appropriate view based on section type:
 /// - **Prose sections** (`preface`, `intro`, `introduction`, `errata`, `prefatoryNote`,
 ///   `terms`) with an explicit `xml:id` show a "Read" button that opens the section as a
-///   document via `onDocumentSelected`.
+///   document.
 /// - **`"persons"`** sections embed `FrontMatterPersonsView` inside a `List` (since that
 ///   view emits `Section` content rather than a root container).
 /// - **`"sources"`** sections embed `VolumeSourcesView` inside a `List` for the same reason.
 /// - All other sections fetch the indexed document list and display rows.
 ///
-/// Tapping a document (or the "Read" button) calls `onDocumentSelected`, which posts the
-/// entry to `AppState.pendingBrowseDocument` and dismisses all corpus browser sheets so the
-/// main window can navigate to the document.
+/// Tapping a document (or the "Read" button) posts the entry to
+/// `AppState.pendingBrowseDocument` so the main window navigates to it; the browser window
+/// stays where it is. The system back button returns to the volume overview.
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation (document list only)
 ///   1.1 — Session 2026-06-09: front-matter routing — persons, sources, prose sections
-private struct CorpusSectionDocumentListView: View {
-    let volume: VolumeManifestEntry
+///   1.2 — Session 170: pushed into the detail column instead of presented as a sheet
+private struct CorpusSectionDocumentView: View {
+    let volumeId: String
     let section: VolumeSection
-    let onDocumentSelected: (DocumentBrowserEntry) -> Void
+    /// The window's detail-column path; a subsection row pushes deeper onto it.
+    @Binding var path: [CorpusNavValue]
 
     @Environment(AppState.self) private var appState
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.openWindow) private var openWindow
 
     @State private var documents: [DocumentBrowserEntry] = []
@@ -3590,7 +3596,6 @@ private struct CorpusSectionDocumentListView: View {
 
     /// `true` when this section is a prose-only front-matter div that can be opened
     /// directly as a document, bypassing the indexed document list.
-    /// Delegates to the shared `VolumeSection.canReadDirectly` kind helper.
     private var canReadSectionDirectly: Bool { section.canReadDirectly }
 
     /// `true` when this section is the structured Persons list.
@@ -3602,113 +3607,24 @@ private struct CorpusSectionDocumentListView: View {
     // MARK: - Body
 
     var body: some View {
-        // macOS-native layout: section title row + content + Done button bar.
-        // NavigationStack is not appropriate inside a sheet on macOS.
-        VStack(spacing: 0) {
-            Text(section.title)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-
-            Divider()
-
+        // Pushed into the browser window's resizable detail column (not a sheet), so the
+        // title comes from `.navigationTitle` and the system back button handles dismissal.
+        Group {
             if canReadSectionDirectly {
-                // Prose front-matter section — bypass document list and open directly.
-                VStack(spacing: 16) {
-                    Image(systemName: "doc.text")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.secondary)
-                    Text(String(localized: "corpus.section.proseSection",
-                                defaultValue: "Prose Section"))
-                        .font(.headline)
-                    Text(String(localized: "corpus.section.proseSection.detail",
-                                defaultValue: "This section contains prose content rather than individual numbered documents."))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 320)
-                    Button {
-                        let entry = DocumentBrowserEntry(
-                            documentId: section.sectionId,
-                            volumeId: volume.volumeId,
-                            documentNumber: nil,
-                            header: section.title,
-                            dateline: nil,
-                            sourceNote: nil
-                        )
-                        dismiss()
-                        onDocumentSelected(entry)
-                    } label: {
-                        Label(
-                            String(
-                                format: String(localized: "browser.compilation.readSection",
-                                               defaultValue: "Read %@"),
-                                section.title
-                            ),
-                            systemImage: "doc.text"
-                        )
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding()
+                proseSectionView
             } else if isPersonsSection {
-                // Persons section — FrontMatterPersonsView emits Section content
-                // and must be embedded inside a List.
-                List {
-                    FrontMatterPersonsView(volumeId: volume.volumeId)
-                }
-                .listStyle(.inset)
+                // FrontMatterPersonsView emits Section content and must live inside a List.
+                List { FrontMatterPersonsView(volumeId: volumeId) }
+                    .listStyle(.inset)
             } else if isSourcesSection {
-                // Sources section — VolumeSourcesView emits Section content
-                // and must be embedded inside a List.
-                List {
-                    VolumeSourcesView(volumeId: volume.volumeId)
-                }
-                .listStyle(.inset)
-            } else if isLoading {
-                ProgressView("Loading…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if documents.isEmpty {
-                ContentUnavailableView(
-                    "No Documents",
-                    systemImage: "doc.text",
-                    description: Text("No indexed documents found in this section.")
-                )
+                // VolumeSourcesView emits Section content and must live inside a List.
+                List { VolumeSourcesView(volumeId: volumeId) }
+                    .listStyle(.inset)
             } else {
-                List(documents, id: \.documentId) { doc in
-                    Button {
-                        dismiss()
-                        onDocumentSelected(doc)
-                    } label: {
-                        DocumentRowLabel(doc: doc)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button {
-                            appState.currentGraphEntry = doc
-                            openWindow(id: "frus.crossReferenceGraph")
-                        } label: {
-                            Label("Show Cross-Reference Graph",
-                                  systemImage: "point.3.connected.trianglepath.dotted")
-                        }
-                    }
-                }
-                .listStyle(.inset)
+                structuralList
             }
-
-            Divider()
-
-            HStack {
-                Spacer()
-                Button("Done") { dismiss() }
-                    .keyboardShortcut(.defaultAction)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
         }
-        .frame(minWidth: 460, minHeight: 400)
+        .navigationTitle(section.title)
         .task {
             // Skip the document-list fetch for sections handled by dedicated views.
             if canReadSectionDirectly || isPersonsSection || isSourcesSection {
@@ -3719,10 +3635,117 @@ private struct CorpusSectionDocumentListView: View {
         }
     }
 
+    /// Prose front-matter section — a single "Read" action that opens it in the main window.
+    private var proseSectionView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text(String(localized: "corpus.section.proseSection",
+                        defaultValue: "Prose Section"))
+                .font(.headline)
+            Text(String(localized: "corpus.section.proseSection.detail",
+                        defaultValue: "This section contains prose content rather than individual numbered documents."))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+            Button {
+                appState.pendingBrowseDocument = DocumentBrowserEntry(
+                    documentId: section.sectionId,
+                    volumeId: volumeId,
+                    documentNumber: nil,
+                    header: section.title,
+                    dateline: nil,
+                    sourceNote: nil
+                )
+            } label: {
+                Label(
+                    String(
+                        format: String(localized: "browser.compilation.readSection",
+                                       defaultValue: "Read %@"),
+                        section.title
+                    ),
+                    systemImage: "doc.text"
+                )
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+
+    /// A structural section: its child subsections as drill-down rows, plus its own *direct*
+    /// documents — mirroring history.state.gov, where an interior grouping node shows its
+    /// child groups (and any documents attached directly to it), while a leaf lists its
+    /// documents. Drilling into a subsection pushes a deeper `CorpusSectionDocumentView`, so
+    /// arbitrarily-nested volumes work with no new screens.
+    @ViewBuilder
+    private var structuralList: some View {
+        List {
+            if !section.subsections.isEmpty {
+                Section(String(localized: "corpus.section.subsections", defaultValue: "Sections")) {
+                    ForEach(section.subsections) { sub in
+                        Button {
+                            path.append(.section(volumeId: volumeId, section: sub))
+                        } label: {
+                            SectionRowLabel(section: sub)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            if isLoading {
+                Section {
+                    HStack {
+                        ProgressView()
+                        Text(String(localized: "corpus.section.loading", defaultValue: "Loading…"))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else if !documents.isEmpty {
+                Section(String(format: String(localized: "corpus.section.documents %lld",
+                                              defaultValue: "Documents (%lld)"), Int64(documents.count))) {
+                    ForEach(documents, id: \.documentId) { doc in
+                        documentButton(doc)
+                    }
+                }
+            } else if section.subsections.isEmpty {
+                Section {
+                    Text(String(localized: "corpus.section.noDocuments",
+                                defaultValue: "No documents in this section."))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .listStyle(.inset)
+    }
+
+    /// A tappable document row that opens the document in the main window.
+    private func documentButton(_ doc: DocumentBrowserEntry) -> some View {
+        Button {
+            appState.pendingBrowseDocument = doc
+        } label: {
+            DocumentRowLabel(doc: doc)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                appState.currentGraphEntry = doc
+                openWindow(id: "frus.crossReferenceGraph")
+            } label: {
+                Label("Show Cross-Reference Graph",
+                      systemImage: "point.3.connected.trianglepath.dotted")
+            }
+        }
+    }
+
     private func loadDocuments() async {
         guard let pipeline = appState.indexingPipeline else { isLoading = false; return }
-        let all = (try? await pipeline.documents(forVolume: volume.volumeId)) ?? []
-        let sectionIds = Set(section.allDocumentIds)
+        let all = (try? await pipeline.documents(forVolume: volumeId)) ?? []
+        // Direct documents only (`documentIds`, not `allDocumentIds`); subsections list and
+        // load their own, so a compilation with chapters isn't flattened into one long list.
+        let sectionIds = Set(section.documentIds)
         documents = all.filter { sectionIds.contains($0.documentId) }
         isLoading = false
     }
