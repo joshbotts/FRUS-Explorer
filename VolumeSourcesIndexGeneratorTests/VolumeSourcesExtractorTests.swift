@@ -82,6 +82,27 @@ struct VolumeSourcesExtractorTests {
         #expect(dept.occurrences == 2)
     }
 
+    @Test("Schema v2 output carries the resolution maps and drops per-volume trees")
+    func schemaV2RoundTrips() throws {
+        let index = VolumeSourcesIndex(
+            schemaVersion: 2, generated: "2026-07-01",
+            recordGroups: ["59": ResolvedNAID(naId: "388",
+                                              catalogURL: "https://catalog.archives.gov/id/388",
+                                              title: "General Records of the Department of State",
+                                              recordGroup: "59", matchType: "api")],
+            lots: ["80D212": ResolvedNAID(naId: "1", catalogURL: "https://catalog.archives.gov/id/1",
+                                          title: "Lot 80 D 212", recordGroup: "59", matchType: "lot")],
+            majorCollections: [])
+        let encoded = try JSONEncoder().encode(index)
+        let decoded = try JSONDecoder().decode(VolumeSourcesIndex.self, from: encoded)
+        #expect(decoded.schemaVersion == 2)
+        #expect(decoded.recordGroups["59"]?.naId == "388")
+        #expect(decoded.lots["80D212"]?.naId == "1")
+        // The trimmed schema exposes only the resolution maps + authority — no `volumes` key.
+        let json = try #require(String(data: encoded, encoding: .utf8))
+        #expect(!json.contains("\"volumes\""))
+    }
+
     @Test("Lot files inherit the ancestor record group when gathering resolution keys")
     func ancestorRecordGroupInference() {
         let rows = VolumeSourcesExtractor.extract(fromXML: xml)

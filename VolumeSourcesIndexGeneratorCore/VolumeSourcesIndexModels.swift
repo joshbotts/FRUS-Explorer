@@ -8,27 +8,29 @@
 
 import Foundation
 
-/// The bundled `volume-sources-index.json` artifact: every volume's front-matter Sources
-/// section (prose + a nested collection outline with resolved NARA Catalog records), plus a
-/// cross-volume authority of the major collections and which volumes cite each.
+/// The bundled `volume-sources-index.json` artifact (schema v2): the *resolutions* the app
+/// cannot derive on its own — record-group headers and lot-file citations mapped to their
+/// NARA Catalog records — plus a cross-volume authority of the major collections and which
+/// volumes cite each.
+///
+/// The per-volume collection trees are deliberately **not** stored: the app already re-parses
+/// each volume's Sources section into the `volume_sources` table at index time, so bundling
+/// the trees again would duplicate ~10× the data. The app resolves its own parsed nodes by
+/// looking them up in `recordGroups` / `lots`.
 public struct VolumeSourcesIndex: Codable, Sendable, Equatable {
     public var schemaVersion: Int
     public var generated: String
-    /// Per volume, keyed by `volumeId`.
-    public var volumes: [String: VolumeSources]
+    /// Record-group headers → their resolved record, keyed by record-group **number** (`"59"`).
+    public var recordGroups: [String: ResolvedNAID]
+    /// Lot-file citations → their resolved record, keyed by **normalized** lot number
+    /// (`BundledLotResolver.normalizeLot`, e.g. `"80D212"`).
+    public var lots: [String: ResolvedNAID]
     /// Deduplicated cross-volume authority of named collections.
     public var majorCollections: [MajorCollection]
 }
 
-/// One volume's Sources section.
-public struct VolumeSources: Codable, Sendable, Equatable {
-    /// The narrative "Note on Sources" paragraphs, in order.
-    public var prose: [String]
-    /// The archival-collection outline (top-level nodes; each may nest `children`).
-    public var collections: [CollectionNode]
-}
-
-/// A node in a volume's archival-collection outline.
+/// A node in a volume's archival-collection outline. Built transiently during generation to
+/// gather resolution keys and fold the cross-volume authority; it is **not** serialized.
 public struct CollectionNode: Codable, Sendable, Equatable {
     public var text: String
     public var isHeading: Bool
