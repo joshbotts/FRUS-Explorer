@@ -388,6 +388,28 @@ private struct CollectionDetailPane: View {
                 .disabled(sortedEntries.isEmpty)
                 .help(String(localized: "collection.sort.date.help",
                              defaultValue: "Re-order documents chronologically by volume date"))
+
+                Menu {
+                    Button {
+                        addStructuralEntry(kind: .heading)
+                    } label: {
+                        Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
+                              systemImage: "number")
+                    }
+                    Button {
+                        addStructuralEntry(kind: .prose)
+                    } label: {
+                        Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
+                              systemImage: "text.alignleft")
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "collection.add.structural",
+                             defaultValue: "Add a section heading or note block"))
             }
 
             if sortedEntries.isEmpty {
@@ -399,24 +421,39 @@ private struct CollectionDetailPane: View {
             } else {
                 List {
                     ForEach(Array(sortedEntries.enumerated()), id: \.element.id) { idx, entry in
-                        let nodeKey = "\(entry.volumeId)/\(entry.documentId)"
-                        MacEntryRow(
-                            entry: $sortedEntries[idx],
-                            availableNotes: notes(for: entry),
-                            volumeTitle: volumeTitle(for: entry),
-                            documentHeader: documentHeaders[nodeKey],
-                            onNewNote: {
-                                noteCreateContext = NoteCreateContext(
-                                    documentId: entry.documentId,
-                                    volumeId: entry.volumeId,
-                                    entryIndex: idx)
-                            },
-                            onDelete: {
+                        switch entry.entryKind {
+                        case .document:
+                            let nodeKey = "\(entry.volumeId)/\(entry.documentId)"
+                            MacEntryRow(
+                                entry: $sortedEntries[idx],
+                                availableNotes: notes(for: entry),
+                                volumeTitle: volumeTitle(for: entry),
+                                documentHeader: documentHeaders[nodeKey],
+                                onNewNote: {
+                                    noteCreateContext = NoteCreateContext(
+                                        documentId: entry.documentId,
+                                        volumeId: entry.volumeId,
+                                        entryIndex: idx)
+                                },
+                                onDelete: {
+                                    modelContext.delete(sortedEntries[idx])
+                                    sortedEntries.remove(at: idx)
+                                    reindexEntries()
+                                }
+                            )
+                        case .heading:
+                            CollectionHeadingRow(entry: $sortedEntries[idx], onDelete: {
                                 modelContext.delete(sortedEntries[idx])
                                 sortedEntries.remove(at: idx)
                                 reindexEntries()
-                            }
-                        )
+                            })
+                        case .prose:
+                            CollectionProseRow(entry: $sortedEntries[idx], onDelete: {
+                                modelContext.delete(sortedEntries[idx])
+                                sortedEntries.remove(at: idx)
+                                reindexEntries()
+                            })
+                        }
                     }
                     .onMove { from, to in
                         sortedEntries.move(fromOffsets: from, toOffset: to)
@@ -486,6 +523,23 @@ private struct CollectionDetailPane: View {
         try? modelContext.save()
     }
 
+    /// Appends a structural entry (a section heading or a prose block) to the collection.
+    /// Heading/prose entries carry empty document identifiers and use `text` (Phase 3a).
+    private func addStructuralEntry(kind: CollectionEntryKind) {
+        let entry = CollectionEntry(
+            collectionId: collection.id,
+            documentId: "",
+            volumeId: "",
+            sortOrder: sortedEntries.count
+        )
+        entry.entryKind = kind
+        entry.text = ""
+        entry.collection = collection
+        modelContext.insert(entry)
+        sortedEntries.append(entry)
+        reindexEntries()
+    }
+
     private func appendEntries(_ pairs: [(documentId: String, volumeId: String)]) {
         var next = sortedEntries.count
         for pair in pairs {
@@ -526,17 +580,18 @@ private struct CollectionDetailPane: View {
                 volumeDateMap[entry.volumeId] = d
             }
         }
-        sortedEntries.sort { a, b in
-            let aKey = "\(a.volumeId)/\(a.documentId)"
-            let bKey = "\(b.volumeId)/\(b.documentId)"
-            let aDate = documentDates[aKey]
-                     ?? volumeDateMap[a.volumeId]
-                     ?? "9999"
-            let bDate = documentDates[bKey]
-                     ?? volumeDateMap[b.volumeId]
-                     ?? "9999"
-            return aDate < bDate
-        }
+        // Sort only DOCUMENT entries by date; section headings and prose blocks keep their
+        // positions so the authored structure survives (they carry no date and would
+        // otherwise all clump at the "9999" sentinel).
+        let sortedDocs = sortedEntries
+            .filter { $0.entryKind == .document }
+            .sorted { a, b in
+                let aDate = documentDates["\(a.volumeId)/\(a.documentId)"] ?? volumeDateMap[a.volumeId] ?? "9999"
+                let bDate = documentDates["\(b.volumeId)/\(b.documentId)"] ?? volumeDateMap[b.volumeId] ?? "9999"
+                return aDate < bDate
+            }
+        var docs = sortedDocs.makeIterator()
+        sortedEntries = sortedEntries.map { $0.entryKind == .document ? (docs.next() ?? $0) : $0 }
         reindexEntries()
     }
 
@@ -567,6 +622,24 @@ private struct MacEntryRow: View {
     let onDelete: () -> Void
 
     @Environment(\.openURL) private var openURL
+    @Environment(AppState.self) private var appState
+    @State private var showInspector = false
+
+    /// This entry's body-depth override (`nil` = follow the collection default).
+    private var bodyDepthOverride: Binding<String?> {
+        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
+    }
+
+    /// Depths offered here: those available on this device, plus the entry's current override
+    /// even when it isn't otherwise offered (a synced `.summaryOnly` on an AI-less device).
+    private var entryDepthOptions: [CollectionBodyDepth] {
+        let available = CollectionBodyDepth.available
+        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
+           !available.contains(d) {
+            return available + [d]
+        }
+        return available
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -587,6 +660,20 @@ private struct MacEntryRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+
+                // Per-entry body depth (overrides the collection default for this document)
+                Picker(selection: bodyDepthOverride) {
+                    Text(String(localized: "collection.entry.bodyDepth.default",
+                                defaultValue: "Default")).tag(String?.none)
+                    ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
+                } label: {
+                    Text(String(localized: "collection.entry.bodyDepth.label",
+                                defaultValue: "Body depth"))
+                }
+                .pickerStyle(.menu)
+                .font(.caption)
+                .fixedSize()
+                .padding(.top, 2)
 
                 // Note preview(s)
                 let effective = effectiveNoteIds
@@ -616,6 +703,17 @@ private struct MacEntryRow: View {
 
             // Action controls
             HStack(spacing: 6) {
+                // Document details inspector
+                Button {
+                    showInspector = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "collection.entry.inspect.help",
+                             defaultValue: "Show this document's notes, highlights, tags, and provenance"))
+
                 // Open on history.state.gov
                 Button {
                     if let url = URL(string:
@@ -648,6 +746,10 @@ private struct MacEntryRow: View {
             .padding(.top, 2)
         }
         .padding(.vertical, 4)
+        .sheet(isPresented: $showInspector) {
+            CollectionEntryInspector(entry: entry)
+                .environment(appState)
+        }
     }
 
     // MARK: - Note Menu

@@ -87,15 +87,15 @@ final class PDFCollectionExporter: CollectionExporter {
     @MainActor
     func export(
         metadata: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
         let wordCloud: CGImage? = options.includeWordCloud
             ? WordCloudExporter.collectionCloudImage(
-                texts: documents.map(\.bodyText), title: metadata.name
+                texts: items.documents.map(\.bodyText), title: metadata.name
               )?.cgImage
             : nil
-        let data = try buildPDF(collection: metadata, documents: documents,
+        let data = try buildPDF(collection: metadata, items: items,
                                 options: options, wordCloud: wordCloud)
         let filename = sanitized(metadata.name) + ".pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
@@ -111,10 +111,14 @@ final class PDFCollectionExporter: CollectionExporter {
 
     private func buildPDF(
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions,
         wordCloud: CGImage? = nil
     ) throws -> Data {
+        // Phase 3a: the PDF renders the documents; section headings and prose blocks are not
+        // yet drawn in the page-per-document paginated flow (they render in HTML today) — a
+        // scoped follow-up. `documents` drives the cover-page count and the word-cloud source.
+        let documents = items.documents
         let mutableData = NSMutableData()
         var mediaBox = Self.pageRect
         guard let consumer = CGDataConsumer(data: mutableData as CFMutableData),
@@ -261,9 +265,9 @@ final class PDFCollectionExporter: CollectionExporter {
         drawHRule(ctx: ctx, y: y, gray: 0.6, thickness: 0.3)
         y -= 12
 
-        // Body — controlled by options.bodyDepth.
+        // Body — controlled by doc.bodyDepth (per-entry effective depth).
         let bodyAttrStr: NSAttributedString
-        switch options.bodyDepth {
+        switch doc.bodyDepth {
         case .full:
             if let model = doc.renderModel {
                 // Highlight offsets are flat-text positions over the render model's

@@ -157,9 +157,26 @@ import SwiftData
     }
 }
 
+// MARK: - CollectionEntryKind
+
+/// What a `CollectionEntry` contributes to the composed collection (Phase 3a).
+///
+/// A collection is an ordered sequence of these: `document` entries are the FRUS documents;
+/// `heading` entries start a section; `prose` entries are the researcher's own editorial note
+/// blocks. This turns a flat document list into an authored, sectioned reader.
+enum CollectionEntryKind: String, CaseIterable, Sendable {
+    /// A FRUS document (uses `documentId`/`volumeId`).
+    case document
+    /// A section heading (uses `text` as the title).
+    case heading
+    /// An editorial prose block (uses `text` as the body).
+    case prose
+}
+
 // MARK: - CollectionEntry
 
-/// A single document in a `Collection`, with an explicit sort order.
+/// A single item in a `Collection` — a document, a section heading, or a prose block — with
+/// an explicit sort order.
 ///
 /// `collectionId` carries the parent collection's `id` for reference without
 /// requiring the full `Collection` object to be in memory. The relationship
@@ -173,6 +190,9 @@ import SwiftData
 ///   1.1 — Session 128: added `selectedNoteIds` for multi-note per-entry selection;
 ///          `researchNoteId` retained for backward compatibility
 ///   1.2 — Session 153: removed `includeDocumentBody` (moved to export-level `CollectionBodyDepth`)
+///   1.3 — Collections rework Phase 1b: added `bodyDepthOverride` (per-entry body depth)
+///   1.4 — Collections rework Phase 3a: added `kind` + `text` (heterogeneous entries:
+///          document / section heading / editorial prose block)
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -220,6 +240,39 @@ import SwiftData
     /// When non-empty, overrides `researchNoteId`. CloudKit-compatible (same pattern as `Collection.projectIds`).
     var selectedNoteIds: [UUID] = [] {
         didSet { lastModified = .now }
+    }
+
+    // MARK: - Composition Override
+
+    /// Per-entry document-body depth — a `CollectionBodyDepth` raw value that overrides the
+    /// collection's `defaultBodyDepth` for this one document. `nil` means "use the collection
+    /// default", letting a single collection mix full documents, summaries, and citation-only
+    /// entries into one product (Collections rework Phase 1b).
+    var bodyDepthOverride: String? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Entry Kind (Phase 3a)
+
+    /// What this entry contributes to the composed collection — a `CollectionEntryKind` raw
+    /// value. Defaults to `"document"` so every existing entry stays a document. A `"heading"`
+    /// starts a section; a `"prose"` is an editorial note block. Heading/prose entries use
+    /// `text` and ignore `documentId`/`volumeId`. Stored raw for CloudKit compatibility.
+    var kind: String = "document" {
+        didSet { lastModified = .now }
+    }
+
+    /// The section title (for a `heading` entry) or the editorial body (for a `prose` entry).
+    /// `nil` for document entries. In Phase 3a this is plain text; Phase 3b (rich-text prose)
+    /// layers an attributed representation over prose entries.
+    var text: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// Typed accessor for `kind` (not persisted; `kind` is the stored raw value).
+    var entryKind: CollectionEntryKind {
+        get { CollectionEntryKind(rawValue: kind) ?? .document }
+        set { kind = newValue.rawValue }
     }
 
     // MARK: - Timestamps

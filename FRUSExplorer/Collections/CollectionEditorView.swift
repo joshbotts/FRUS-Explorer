@@ -603,10 +603,14 @@ struct CollectionEditorView: View {
                 }
             } else {
                 ForEach($sortedEntries, id: \.id) { $entry in
-                    EntryRow(
-                        entry: $entry,
-                        availableNotes: notes(for: entry)
-                    )
+                    switch entry.entryKind {
+                    case .document:
+                        EntryRow(entry: $entry, availableNotes: notes(for: entry))
+                    case .heading:
+                        CollectionHeadingRow(entry: $entry)
+                    case .prose:
+                        CollectionProseRow(entry: $entry)
+                    }
                 }
                 .onMove { indices, newOffset in
                     sortedEntries.move(fromOffsets: indices, toOffset: newOffset)
@@ -624,6 +628,24 @@ struct CollectionEditorView: View {
             HStack {
                 Text(String(localized: "collection.editor.docs.header", defaultValue: "Documents"))
                 Spacer()
+                Menu {
+                    Button {
+                        addStructuralEntry(kind: .heading)
+                    } label: {
+                        Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
+                              systemImage: "number")
+                    }
+                    Button {
+                        addStructuralEntry(kind: .prose)
+                    } label: {
+                        Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
+                              systemImage: "text.alignleft")
+                    }
+                } label: {
+                    Image(systemName: "plus").font(.caption)
+                }
+                .accessibilityLabel(String(localized: "collection.add.structural",
+                                           defaultValue: "Add a section heading or note block"))
                 if !sortedEntries.isEmpty {
                     Button {
                         showTimeline = true
@@ -706,6 +728,24 @@ struct CollectionEditorView: View {
 
     // MARK: - Helpers
 
+    /// Appends a structural entry (a section heading or a prose block) to the collection.
+    /// Mirrors the document-entry creation path; heading/prose entries carry empty document
+    /// identifiers and use `text` (Phase 3a).
+    private func addStructuralEntry(kind: CollectionEntryKind) {
+        let entry = CollectionEntry(
+            collectionId: collection.id,
+            documentId: "",
+            volumeId: "",
+            sortOrder: sortedEntries.count
+        )
+        entry.entryKind = kind
+        entry.text = ""
+        entry.collection = collection
+        modelContext.insert(entry)
+        sortedEntries.append(entry)
+        reindexEntries()
+    }
+
     private func notes(for entry: CollectionEntry) -> [ResearchNote] {
         allNotes.filter {
             $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
@@ -745,11 +785,13 @@ struct CollectionEditorView: View {
             guard let earliest = entry.dateRange.earliest else { return nil }
             return (entry.volumeId, earliest)
         })
-        sortedEntries.sort { a, b in
-            let aDate = volumeDateMap[a.volumeId] ?? "9999"
-            let bDate = volumeDateMap[b.volumeId] ?? "9999"
-            return aDate < bDate
-        }
+        // Sort only DOCUMENT entries by date; heading/prose entries keep their positions so
+        // the authored structure survives (they carry no date and would otherwise clump).
+        let sortedDocs = sortedEntries
+            .filter { $0.entryKind == .document }
+            .sorted { (volumeDateMap[$0.volumeId] ?? "9999") < (volumeDateMap[$1.volumeId] ?? "9999") }
+        var docs = sortedDocs.makeIterator()
+        sortedEntries = sortedEntries.map { $0.entryKind == .document ? (docs.next() ?? $0) : $0 }
         reindexEntries()
     }
 
@@ -796,23 +838,131 @@ struct CollectionEditorView: View {
 /// Users can:
 /// - Toggle whether the document body is included in the export.
 /// - Select zero or more research notes to include alongside the document.
+// MARK: - CollectionHeadingRow
+
+/// An editable section-heading entry in the collection (Phase 3a). Shared by the iOS editor
+/// and the macOS manager. `onDelete`, when provided, renders an inline delete control —
+/// macOS supplies it (the List has no swipe-to-delete); iOS omits it (swipe handles deletion).
+struct CollectionHeadingRow: View {
+    @Binding var entry: CollectionEntry
+    var onDelete: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "number")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField(String(localized: "collection.heading.placeholder", defaultValue: "Section heading"),
+                      text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }))
+                .font(.headline)
+            structuralDeleteButton(onDelete)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+/// A trailing delete control shared by the heading and prose rows; renders nothing when
+/// `onDelete` is `nil`.
+@MainActor @ViewBuilder
+func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
+    if let onDelete {
+        Button(role: .destructive) {
+            onDelete()
+        } label: {
+            Image(systemName: "trash").foregroundStyle(.red.opacity(0.6))
+        }
+        .buttonStyle(.plain)
+        .help(String(localized: "collection.entry.delete.help",
+                     defaultValue: "Remove this document from the collection"))
+    }
+}
+
+// MARK: - CollectionProseRow
+
+/// An editable editorial prose block in the collection (Phase 3a; plain text — rich text
+/// arrives in Phase 3b). Shared by the iOS editor and the macOS manager. `onDelete`, when
+/// provided, renders an inline delete control (see ``CollectionHeadingRow``).
+struct CollectionProseRow: View {
+    @Binding var entry: CollectionEntry
+    var onDelete: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "text.alignleft")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextField(String(localized: "collection.prose.placeholder", defaultValue: "Editorial note…"),
+                      text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }),
+                      axis: .vertical)
+                .font(.callout)
+                .lineLimit(2...8)
+            structuralDeleteButton(onDelete)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - EntryRow
+
 private struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
 
+    @Environment(AppState.self) private var appState
+    @State private var showInspector = false
+
+    /// This entry's body-depth override (`nil` = follow the collection default).
+    private var bodyDepthOverride: Binding<String?> {
+        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
+    }
+
+    /// Depths offered here: those available on this device, plus the entry's current override
+    /// even when it isn't otherwise offered (a synced `.summaryOnly` on an AI-less device).
+    private var entryDepthOptions: [CollectionBodyDepth] {
+        let available = CollectionBodyDepth.available
+        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
+           !available.contains(d) {
+            return available + [d]
+        }
+        return available
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Document identity
-            Text(entry.documentId)
-                .font(.body)
-                .accessibilityLabel(
-                    String(localized: "collection.entry.document.accessibility",
-                           defaultValue: "Document \(entry.documentId)")
-                )
+            // Document identity + inspector affordance
+            HStack(alignment: .firstTextBaseline) {
+                Text(entry.documentId)
+                    .font(.body)
+                    .accessibilityLabel(
+                        String(localized: "collection.entry.document.accessibility",
+                               defaultValue: "Document \(entry.documentId)")
+                    )
+                Spacer(minLength: 8)
+                Button {
+                    showInspector = true
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "collection.entry.inspect",
+                                           defaultValue: "Document details"))
+            }
 
             Text(entry.volumeId)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            // Per-entry body depth (overrides the collection default for this document)
+            Picker(selection: bodyDepthOverride) {
+                Text(String(localized: "collection.entry.bodyDepth.default",
+                            defaultValue: "Default")).tag(String?.none)
+                ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
+            } label: {
+                Text(String(localized: "collection.entry.bodyDepth.label",
+                            defaultValue: "Body depth"))
+            }
+            .pickerStyle(.menu)
+            .font(.caption)
 
             // Per-note selection (multi-select)
             if !availableNotes.isEmpty {
@@ -860,6 +1010,10 @@ private struct EntryRow: View {
             }
         }
         .padding(.vertical, 4)
+        .sheet(isPresented: $showInspector) {
+            CollectionEntryInspector(entry: entry)
+                .environment(appState)
+        }
     }
 
     private func noteLabel(_ note: ResearchNote) -> String {
@@ -1278,28 +1432,21 @@ struct ExportSheetView: View {
                 // mirroring the static-collection path below. Without this, a smart
                 // collection exported as "Summary only" would carry no summary text
                 // even when the user has generated summaries for the saved search.
-                if options.bodyDepth == .summaryOnly {
+                let summaryDocs = docs.filter { $0.bodyDepth == .summaryOnly }
+                if !summaryDocs.isEmpty {
                     guard let promptId = options.summaryPromptId else {
                         exportError = String(localized: "export.summaryNoPrompt",
-                                             defaultValue: "Choose a summarization prompt to export as summaries.")
+                                             defaultValue: "Choose a summarization prompt in the collection's Composition section to export summaries.")
                         return
                     }
                     let bodyTexts = Dictionary(uniqueKeysWithValues:
-                        docs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
-                    let summaries = try await resolveSummaries(for: docs, promptId: promptId,
+                        summaryDocs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
+                    let summaries = try await resolveSummaries(for: summaryDocs, promptId: promptId,
                                                                bodyTexts: bodyTexts)
                     docs = docs.map { doc in
-                        let key = "\(doc.volumeId)/\(doc.documentId)"
-                        guard let text = summaries[key] else { return doc }
-                        return CollectionExportDocument(
-                            documentId: doc.documentId, volumeId: doc.volumeId,
-                            sortOrder: doc.sortOrder, title: doc.title, date: doc.date,
-                            bodyText: doc.bodyText, noteTexts: doc.noteTexts,
-                            citation: doc.citation, historyStateGovURL: doc.historyStateGovURL,
-                            renderModel: doc.renderModel, header: doc.header, dateline: doc.dateline,
-                            summaryText: text, highlights: doc.highlights,
-                            sourceNoteText: doc.sourceNoteText, zoteroItem: doc.zoteroItem
-                        )
+                        guard doc.bodyDepth == .summaryOnly,
+                              let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return doc }
+                        return doc.withSummary(text)
                     }
                 }
 
@@ -1324,43 +1471,37 @@ struct ExportSheetView: View {
         // Phase 2: resolve document content.
         isExporting = true
         do {
-            var docs = try await resolveDocuments()
+            var items = try await resolveItems()
             let opts = buildExportOptions()
 
-            // Phase 2b: generate summaries on demand when bodyDepth == .summaryOnly.
-            if opts.bodyDepth == .summaryOnly {
+            // Phase 2b: generate summaries on demand for entries whose effective body
+            // depth is .summaryOnly (per-entry — only the documents that need one).
+            let summaryDocs = items.documents.filter { $0.bodyDepth == .summaryOnly }
+            if !summaryDocs.isEmpty {
                 guard let promptId = opts.summaryPromptId else {
                     exportError = String(localized: "export.summaryNoPrompt",
-                                        defaultValue: "Choose a summarization prompt to export as summaries.")
+                                        defaultValue: "Choose a summarization prompt in the collection's Composition section to export summaries.")
                     isExporting = false
                     return
                 }
                 let bodyTexts = Dictionary(uniqueKeysWithValues:
-                    docs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
-                let summaries = try await resolveSummaries(for: docs, promptId: promptId,
+                    summaryDocs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
+                let summaries = try await resolveSummaries(for: summaryDocs, promptId: promptId,
                                                            bodyTexts: bodyTexts)
-                docs = docs.map { doc in
-                    let key = "\(doc.volumeId)/\(doc.documentId)"
-                    guard let text = summaries[key] else { return doc }
-                    return CollectionExportDocument(
-                        documentId: doc.documentId, volumeId: doc.volumeId,
-                        sortOrder: doc.sortOrder, title: doc.title, date: doc.date,
-                        bodyText: doc.bodyText, noteTexts: doc.noteTexts,
-                        citation: doc.citation, historyStateGovURL: doc.historyStateGovURL,
-                        renderModel: doc.renderModel, header: doc.header, dateline: doc.dateline,
-                        summaryText: text, highlights: doc.highlights,
-                        sourceNoteText: doc.sourceNoteText
-                    )
+                items = items.map { item in
+                    guard case .document(let doc) = item, doc.bodyDepth == .summaryOnly,
+                          let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return item }
+                    return .document(doc.withSummary(text))
                 }
             }
 
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
             let exporter = selectedFormat.makeExporter()
-            let url = try await exporter.export(metadata: metadata, documents: docs, options: opts)
+            let url = try await exporter.export(metadata: metadata, items: items, options: opts)
             exportedURL = url
             appState.logEvent(.export(
                 format: selectedFormat.rawValue,
-                documentCount: docs.count
+                documentCount: items.documents.count
             ))
         } catch {
             exportError = error.localizedDescription
@@ -1374,7 +1515,6 @@ struct ExportSheetView: View {
     private func buildExportOptions() -> CollectionExportOptions {
         CollectionExportOptions(
             tocStyle:        CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            bodyDepth:       CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full,
             footnoteStyle:   CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all,
             applyHighlights: collection.applyHighlights,
             includeNotes:    collection.includeNotes,
@@ -1542,7 +1682,16 @@ struct ExportSheetView: View {
         preparingMessage = nil
     }
 
+    /// Documents-only view of the resolved items — for callers that need a flat document
+    /// list (e.g. the Zotero Web-API send path). Headings and prose are dropped.
     private func resolveDocuments() async throws -> [CollectionExportDocument] {
+        try await resolveItems().documents
+    }
+
+    /// Resolves the collection's ordered entries into export items: each document entry is
+    /// fully resolved into a `.document`; heading/prose entries pass through as `.heading` /
+    /// `.prose`, so the exported product preserves the authored structure (Phase 3a).
+    private func resolveItems() async throws -> [CollectionExportItem] {
         let opts    = buildExportOptions()
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
@@ -1611,7 +1760,13 @@ struct ExportSheetView: View {
         let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
             volumeIds: volumeIds, pipeline: appState.indexingPipeline)
 
-        return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
+        return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry -> CollectionExportItem in
+            // Heading / prose entries pass straight through as structural items.
+            switch entry.entryKind {
+            case .heading: return .heading(entry.text ?? "")
+            case .prose:   return .prose(entry.text ?? "")
+            case .document: break
+            }
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
             let key = "\(entry.volumeId)/\(entry.documentId)"
@@ -1644,9 +1799,13 @@ struct ExportSheetView: View {
                 resolvedNoteTexts = []
             }
 
+            // The per-entry effective body depth: the entry's override, else the collection
+            // default. Drives per-document rendering and gates inline highlights.
+            let effectiveDepth = CollectionBodyDepth(rawValue: entry.bodyDepthOverride ?? collection.defaultBodyDepth) ?? .full
+
             // Highlights (when applyHighlights and body is full)
             let resolvedHighlights: [ExportHighlight]
-            if opts.applyHighlights && opts.bodyDepth == .full {
+            if opts.applyHighlights && effectiveDepth == .full {
                 let allHL = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>())) ?? []
                 resolvedHighlights = allHL
                     .filter { $0.volumeId == entry.volumeId && $0.documentId == entry.documentId }
@@ -1686,10 +1845,11 @@ struct ExportSheetView: View {
                 zoteroItem = nil
             }
 
-            return CollectionExportDocument(
+            return .document(CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 sortOrder: entry.sortOrder,
+                bodyDepth: effectiveDepth,
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,
@@ -1702,7 +1862,7 @@ struct ExportSheetView: View {
                 highlights: resolvedHighlights,
                 sourceNoteText: resolvedSourceNote,
                 zoteroItem: zoteroItem
-            )
+            ))
         }
     }
 
@@ -1937,6 +2097,7 @@ struct ExportSheetView: View {
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 sortOrder: entry.sortOrder,
+                bodyDepth: CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full,
                 title: "\(volumeTitle) — \(entry.documentId)",
                 date: manifestEntry?.dateRange.earliest,
                 bodyText: bodyText,
@@ -2085,6 +2246,185 @@ extension View {
         openURL: OpenURLAction
     ) -> some View {
         modifier(ZoteroResultAlertModifier(result: result, message: message, openURL: openURL))
+    }
+}
+
+// MARK: - CollectionEntryInspector
+
+/// A read-only "what does this document contribute" surface for one collection entry: its
+/// identity (header, volume), the user's own annotations for it (research notes, highlights,
+/// tags, AI summary), and its archival provenance (source note, cross-reference count).
+///
+/// Opened from an entry row so the manager is a place to *see* the full range of
+/// document-level data while composing — volume-derived and user-generated alike. It reuses
+/// the app's existing stores (`CrossReferenceStore`, `IndexingPipeline`, SwiftData) and reads
+/// no new data. Cross-reference *inclusion* in exports is deferred (decision D4, Phase 3);
+/// here the count is informational.
+///
+/// Version history:
+///   1.0 — Collections rework Phase 2: editorial data surface
+struct CollectionEntryInspector: View {
+
+    /// The entry whose document is being inspected.
+    let entry: CollectionEntry
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var header: String?
+    @State private var volumeTitle = ""
+    @State private var sourceNote: String?
+    @State private var summaryPreview: String?
+    @State private var noteTexts: [String] = []
+    @State private var tags: [String] = []
+    @State private var highlightCount = 0
+    @State private var crossRefCount = 0
+    @State private var isLoading = true
+
+    var body: some View {
+        NavigationStack {
+            List {
+                identitySection
+                if isLoading {
+                    Section {
+                        HStack {
+                            ProgressView()
+                            Text(String(localized: "collection.inspector.loading",
+                                        defaultValue: "Loading document details…"))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } else {
+                    annotationsSection
+                    provenanceSection
+                }
+            }
+            .navigationTitle(String(localized: "collection.inspector.title",
+                                    defaultValue: "Document Details"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                }
+            }
+            .task { await load() }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 480)
+        #endif
+    }
+
+    private var identitySection: some View {
+        Section {
+            if let header, !header.isEmpty {
+                Text(header).font(.headline).textSelection(.enabled)
+            }
+            LabeledContent(String(localized: "collection.inspector.document", defaultValue: "Document"),
+                           value: entry.documentId)
+            LabeledContent(String(localized: "collection.inspector.volume", defaultValue: "Volume"),
+                           value: volumeTitle.isEmpty ? entry.volumeId : volumeTitle)
+        }
+    }
+
+    @ViewBuilder private var annotationsSection: some View {
+        Section(String(localized: "collection.inspector.yourData", defaultValue: "Your Annotations")) {
+            if noteTexts.isEmpty {
+                Label(String(localized: "collection.inspector.noNotes", defaultValue: "No research notes"),
+                      systemImage: "note.text")
+                    .foregroundStyle(.secondary).font(.callout)
+            } else {
+                ForEach(Array(noteTexts.enumerated()), id: \.offset) { _, text in
+                    Label { Text(text).font(.callout).lineLimit(3) }
+                        icon: { Image(systemName: "note.text") }
+                }
+            }
+
+            Label {
+                Text(highlightCount == 1
+                     ? String(localized: "collection.inspector.highlight.one", defaultValue: "1 highlight")
+                     : String(localized: "collection.inspector.highlight.many",
+                              defaultValue: "\(highlightCount) highlights"))
+                    .font(.callout)
+                    .foregroundStyle(highlightCount == 0 ? .secondary : .primary)
+            } icon: { Image(systemName: "highlighter") }
+
+            if !tags.isEmpty {
+                Label { Text(tags.joined(separator: ", ")).font(.callout) }
+                    icon: { Image(systemName: "tag") }
+            }
+
+            if let summaryPreview, !summaryPreview.isEmpty {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(localized: "collection.inspector.summary", defaultValue: "AI summary"))
+                            .font(.caption).foregroundStyle(.secondary)
+                        Text(summaryPreview).font(.callout).lineLimit(3)
+                    }
+                } icon: { Image(systemName: "sparkles") }
+            }
+        }
+    }
+
+    @ViewBuilder private var provenanceSection: some View {
+        Section(String(localized: "collection.inspector.provenance", defaultValue: "Provenance")) {
+            if let sourceNote, !sourceNote.isEmpty {
+                Label { Text(sourceNote).font(.callout).textSelection(.enabled) }
+                    icon: { Image(systemName: "archivebox") }
+            } else {
+                Label(String(localized: "collection.inspector.noSource",
+                             defaultValue: "No archival source note indexed"),
+                      systemImage: "archivebox")
+                    .foregroundStyle(.secondary).font(.callout)
+            }
+            if crossRefCount > 0 {
+                Label {
+                    Text(crossRefCount == 1
+                         ? String(localized: "collection.inspector.crossRef.one",
+                                  defaultValue: "1 cross-reference")
+                         : String(localized: "collection.inspector.crossRef.many",
+                                  defaultValue: "\(crossRefCount) cross-references"))
+                        .font(.callout)
+                } icon: { Image(systemName: "arrow.triangle.branch") }
+            }
+        }
+    }
+
+    /// Gathers the document's data from the app's existing stores. Fast SwiftData reads run
+    /// inline; header / cross-refs / source note come from the actor-isolated stores.
+    private func load() async {
+        let vid = entry.volumeId
+        let did = entry.documentId
+
+        volumeTitle = appState.manifestStore.entry(forVolumeId: vid)?.title ?? ""
+
+        let (docTags, docNotes) = ZoteroJSONExporter.fetchTagsAndNotes(
+            documentId: did, volumeId: vid, context: modelContext)
+        tags = docTags
+        noteTexts = docNotes
+
+        let highlights = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>(
+            predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? []
+        highlightCount = highlights.count
+
+        let summaries = (try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? []
+        summaryPreview = summaries.first(where: { !$0.responseText.isEmpty })?.responseText
+
+        if let store = appState.crossReferenceStore {
+            header = (try? await store.documentHeaders(
+                for: [(volumeId: vid, documentId: did)]))?["\(vid)/\(did)"]
+            let inbound = (try? await store.inboundEdges(forDocumentId: did, volumeId: vid))?.count ?? 0
+            let outbound = (try? await store.outboundEdges(forDocumentId: did, volumeId: vid))?.count ?? 0
+            crossRefCount = inbound + outbound
+        }
+
+        sourceNote = try? await appState.indexingPipeline?
+            .fetchDocumentSourceNote(volumeId: vid, documentId: did)
+
+        isLoading = false
     }
 }
 
