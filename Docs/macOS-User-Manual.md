@@ -659,6 +659,14 @@ Beneath the resolution, Source Explorer lists **other indexed documents that cit
 
 `[SCREENSHOT: Source Explorer "Documents from This Collection" section listing archival-neighbor documents that share the same lot file]`
 
+### 12.1.3 Volume Sources List — Collection Links and Cross-Volume Provenance
+
+The provenance above is per document. Recent volumes also describe, in their front matter, the archival collections their editors consulted for the *whole* volume. Browse to a volume's **Sources** section to see that list: an "About These Sources" note, followed by a nested **Archival Collections** outline of record groups, lot files, and named collections.
+
+Each collection that resolves to a National Archives record — a record group or a lot file — carries a **catalog link** (the columns icon) that opens the record in the embedded browser, the same authority records the Source Explorer links to for individual documents. Where a major collection is cited by more than one volume, a **Cited in N volumes** control opens a sheet listing those volumes, so you can trace a single body of records across the series. Together with per-entry **Archival Neighbors** (Section 12.1.2), the Sources list gives you both volume-level and document-level views of where a volume's records came from.
+
+`[SCREENSHOT: A volume's Sources section showing the Archival Collections outline with a NARA catalog link and a "Cited in N volumes" control on a major collection]`
+
 ### 12.2 NARA API Key
 
 Lot file and presidential library lookups require a free NARA Catalog API key. Enter your key once in **Settings → Advanced → NARA API**; it is stored in iCloud Keychain and syncs automatically to all your devices. Central file, decimal file, and CIA resolution work without a key.

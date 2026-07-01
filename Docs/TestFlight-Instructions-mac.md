@@ -18,6 +18,8 @@ Open a volume, select a document, and read (Previous/Next to move; hover toolbar
 
 For a corpus-wide index, the Corpus Browser lists **People** at the top. Also click a document's **source note**: **Source Explorer** resolves where it came from (archives, lot files, presidential libraries, CIA) with finding-aid links. To find other documents from that same archival source (lot file, central file, record-group series, or library), right-click a document → **Archival Neighbors** (also available per-entry in a volume's Sources list and in Source Explorer).
 
+Then browse to a volume's **Sources** section (in its front matter): resolved collections show a **catalog link** (columns icon) to the National Archives record, and a collection cited by several volumes shows a **Cited in N volumes** control that lists them. Try both and report anything that misfires or looks wrong.
+
 ## Step 3 — The cross-reference graph (its own window)
 
 From a document's toolbar, click **Cross-References**: each circle is a document on a date timeline, arrows point citing→cited, bigger = more connected. Hover to preview, click to pin, double-click to re-center; scroll to zoom, drag to pan. Switch Timeline/Network and Depth (1–3).
