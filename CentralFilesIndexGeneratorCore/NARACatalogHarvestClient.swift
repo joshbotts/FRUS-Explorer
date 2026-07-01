@@ -278,11 +278,18 @@ public actor NARACatalogHarvestClient {
     /// record-group record (NAID + title). Used to give a volume's `<hi rend="strong">`
     /// record-group headers a catalog link.
     ///
-    /// The outcome (hit or confirmed miss) is cached to disk per RG number so re-runs never
-    /// re-query. **Verify the query shape on the first live run**: it searches the record-group
-    /// level by number and takes the first `recordGroup`-level hit; NARA's parameter naming for
-    /// level filtering has changed across API revisions.
-    public func resolveRecordGroup(number: String, retryMisses: Bool = false) async throws -> CatalogRecord? {
+    /// Query shape (confirmed against the live v2 API, 2026-07): the record-group node is
+    /// found by filtering to `levelOfDescription=recordGroup` (a top-level facet — *not*
+    /// `description.levelOfDescription`) and narrowing by number, then by the heading's title
+    /// text as a fallback. **Only a `recordGroup`-level hit is accepted** — never a descendant
+    /// series/item — so a header is left unresolved rather than mislinked. An unconstrained
+    /// `description.recordGroupNumber` is rejected by the API, so it is always paired with the
+    /// level filter. Every outcome (hit or confirmed miss) is cached per RG number.
+    ///
+    /// - Parameter title: the heading's descriptive text (e.g. "Records of the Department of
+    ///   State"), used as a relevance fallback when the numeric filter finds nothing.
+    public func resolveRecordGroup(number: String, title: String? = nil,
+                                   retryMisses: Bool = false) async throws -> CatalogRecord? {
         let rg = number.trimmingCharacters(in: .whitespaces)
         guard !rg.isEmpty else { return nil }
         if let cached = cachedRG(number: rg), !refresh {
@@ -293,18 +300,40 @@ public actor NARACatalogHarvestClient {
                                      levelOfDescription: "recordGroup", recordGroupNumber: rg)
             }
         }
-        let results = try await search(queryItems: [
+        // Primary: numeric filter constrained to the record-group level.
+        var hit = try? await recordGroupHit(queryItems: [
             URLQueryItem(name: "description.recordGroupNumber", value: rg),
-            URLQueryItem(name: "description.levelOfDescription", value: "recordGroup"),
-            URLQueryItem(name: "resultType", value: "description"),
-            URLQueryItem(name: "rows", value: "10"),
+            URLQueryItem(name: "levelOfDescription", value: "recordGroup"),
+            URLQueryItem(name: "rows", value: "5"),
         ])
-        if let hit = results.first(where: { $0.levelOfDescription == "recordGroup" }) ?? results.first {
+        // Fallback: title relevance among record-group-level nodes. Strip the leading
+        // "Record Group N," / "RG N," from the heading so the query targets the descriptive
+        // title (e.g. "Records of the Department of State") rather than the number token.
+        if hit == nil, let title {
+            let q = title.replacingOccurrences(
+                of: #"^\s*(record group|rg)\s+\S+[,.:]?\s*"#,
+                with: "", options: [.regularExpression, .caseInsensitive])
+                .trimmingCharacters(in: .whitespaces)
+            if !q.isEmpty {
+                hit = try? await recordGroupHit(queryItems: [
+                    URLQueryItem(name: "q", value: q),
+                    URLQueryItem(name: "levelOfDescription", value: "recordGroup"),
+                    URLQueryItem(name: "rows", value: "8"),
+                ])
+            }
+        }
+        if let hit {
             writeRGCache(RGResolution(naId: hit.naId, title: hit.title), number: rg)
             return hit
         }
         writeRGCache(RGResolution(naId: "", title: ""), number: rg)
         return nil
+    }
+
+    /// Runs a search and returns the first genuine `recordGroup`-level record, or `nil`.
+    /// Never falls back to a non-record-group hit (which would mislink a header to a series).
+    private func recordGroupHit(queryItems: [URLQueryItem]) async throws -> CatalogRecord? {
+        try await search(queryItems: queryItems).first { $0.levelOfDescription == "recordGroup" }
     }
 
     private func rgCacheURL(number: String) -> URL? {
