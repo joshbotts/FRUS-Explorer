@@ -877,25 +877,57 @@ func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
     }
 }
 
+// MARK: - ProseRichText
+
+/// Bridges a `prose` entry's stored body to an editable `AttributedString` (Phase 3b).
+///
+/// Rich text is persisted as the **`AttributedString`'s own `Codable` encoding** in
+/// `CollectionEntry.richText`, which preserves the Foundation formatting attributes the
+/// rich-text editor produces (bold/italic via `inlinePresentationIntent`). `CollectionEntry.text`
+/// is kept in sync as the plain-text projection for search and plain renderers.
+enum ProseRichText {
+
+    /// The entry's editable attributed body — decoded from `richText`, else the plain `text`.
+    static func attributedString(from entry: CollectionEntry) -> AttributedString {
+        if let data = entry.richText,
+           let decoded = try? JSONDecoder().decode(AttributedString.self, from: data) {
+            return decoded
+        }
+        return AttributedString(entry.text ?? "")
+    }
+
+    /// Stores an edited attributed body onto the entry: the encoded `AttributedString` into
+    /// `richText`, its plain characters into `text`.
+    static func store(_ attributed: AttributedString, into entry: CollectionEntry) {
+        entry.richText = try? JSONEncoder().encode(attributed)
+        entry.text = String(attributed.characters)
+    }
+}
+
 // MARK: - CollectionProseRow
 
-/// An editable editorial prose block in the collection (Phase 3a; plain text — rich text
-/// arrives in Phase 3b). Shared by the iOS editor and the macOS manager. `onDelete`, when
-/// provided, renders an inline delete control (see ``CollectionHeadingRow``).
+/// An editable editorial prose block in the collection — rich text (Phase 3b). Shared by the
+/// iOS editor and the macOS manager. `onDelete`, when provided, renders an inline delete
+/// control (see ``CollectionHeadingRow``). Formatting uses the system rich-text editing
+/// affordances (bold/italic via ⌘B/⌘I and the edit menu).
 struct CollectionProseRow: View {
     @Binding var entry: CollectionEntry
     var onDelete: (() -> Void)? = nil
+
+    /// The prose body as an editable `AttributedString`, persisted via ``ProseRichText``.
+    private var attributedBody: Binding<AttributedString> {
+        Binding(get: { ProseRichText.attributedString(from: entry) },
+                set: { ProseRichText.store($0, into: entry) })
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "text.alignleft")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            TextField(String(localized: "collection.prose.placeholder", defaultValue: "Editorial note…"),
-                      text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }),
-                      axis: .vertical)
+            TextEditor(text: attributedBody)
                 .font(.callout)
-                .lineLimit(2...8)
+                .frame(minHeight: 44, maxHeight: 220)
             structuralDeleteButton(onDelete)
         }
         .padding(.vertical, 4)
@@ -1764,7 +1796,7 @@ struct ExportSheetView: View {
             // Heading / prose entries pass straight through as structural items.
             switch entry.entryKind {
             case .heading: return .heading(entry.text ?? "")
-            case .prose:   return .prose(entry.text ?? "")
+            case .prose:   return .prose(ProseRichText.attributedString(from: entry))
             case .document: break
             }
             let manifestEntry = manifestMap[entry.volumeId]

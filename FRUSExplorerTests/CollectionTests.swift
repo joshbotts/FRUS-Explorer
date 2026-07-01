@@ -149,10 +149,38 @@ struct CollectionTests {
     func exportItemsDocuments() {
         let d1 = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 0, title: "t1", bodyText: "")
         let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 1, title: "t2", bodyText: "")
-        let items: [CollectionExportItem] = [.heading("Section"), .document(d1), .prose("a note"), .document(d2)]
+        let items: [CollectionExportItem] = [.heading("Section"), .document(d1),
+                                             .prose(AttributedString("a note")), .document(d2)]
         let docs = items.documents
         #expect(docs.count == 2)
         #expect(docs.map(\.documentId) == ["d1", "d2"])
+    }
+
+    // MARK: - ProseRichTextTest
+
+    @Test("ProseRichText: plain text round-trips and stays in sync with the RTF form")
+    func proseRichTextPlain() {
+        let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        entry.entryKind = .prose
+        ProseRichText.store(AttributedString("Editorial commentary."), into: entry)
+        #expect(entry.text == "Editorial commentary.")   // plain-text projection kept in sync
+        #expect(entry.richText != nil)                    // RTF stored
+        let decoded = ProseRichText.attributedString(from: entry)
+        #expect(String(decoded.characters) == "Editorial commentary.")
+    }
+
+    @Test("ProseRichText: bold (inlinePresentationIntent) survives the store/load round-trip")
+    func proseRichTextBold() {
+        var attr = AttributedString("Bold")
+        attr.inlinePresentationIntent = .stronglyEmphasized
+        let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        entry.entryKind = .prose
+        ProseRichText.store(attr, into: entry)
+
+        let decoded = ProseRichText.attributedString(from: entry)
+        let sawBold = decoded.runs.contains { $0.inlinePresentationIntent?.contains(.stronglyEmphasized) == true }
+        #expect(sawBold)
+        #expect(entry.text == "Bold")
     }
 
     // MARK: - DocumentNoteAssociationTest
