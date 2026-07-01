@@ -18,6 +18,8 @@ Open a volume, tap a document, and read (Previous/Next to move between them). Ta
 
 For a corpus-wide index, open Browse → **People**. From the toolbar, **Source Explorer** resolves where a document came from (NARA record group, lot file, decimal/central file, presidential library, CIA) and links to the finding aid. To find other documents drawn from the same archival source (lot file, central file, series, or library), long-press a document — in the graph, a search result, or a volume's document list — and choose **Archival Neighbors**. Tap many of these; report any that misfire.
 
+Also open a volume's **Sources** section (in its front matter): resolved collections show a **catalog link** (columns icon) to the National Archives record, and a collection cited by several volumes shows a **Cited in N volumes** control. Try both and report anything that misfires or looks wrong.
+
 ## Step 3 — The cross-reference graph
 
 From a document's toolbar, tap **Cross-References**: each circle is a document on a date timeline, arrows point citing→cited, bigger = more connected. Switch Timeline/Network and Depth (1–3 hops); on iPhone a List/Graph control toggles the view. Tap a circle to open it; drag the strip below to zoom a date range.

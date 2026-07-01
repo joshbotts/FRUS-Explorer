@@ -511,6 +511,8 @@ The same **Archival Neighbors** list is reachable without opening Source Explore
 
 `[SCREENSHOT: Source Explorer on iPhone showing the resolved source link and the "Documents from This Collection" list of archival neighbors]`
 
+**Volume Sources list.** Recent volumes list, in their front matter, the archival collections their editors consulted. Open a volume's **Sources** section from the browser to see that list as an "About These Sources" note followed by a nested **Archival Collections** outline. Each collection that resolves to a National Archives record — a record group or a lot file — shows a **catalog link** (the columns icon) that opens the record in the embedded browser. Where a major collection is cited by more than one volume, a **Cited in N volumes** control lists those volumes, so you can trace a body of records across the series. This is volume-level provenance, complementing the per-document Archival Neighbors above.
+
 If you have a NARA API key configured (see **Settings → Integrations**), Source Explorer can enrich lot-file and presidential-library lookups with live catalog data. Central-file, decimal-file, pre-1910, and CIA resolution work without a key.
 
 ---
