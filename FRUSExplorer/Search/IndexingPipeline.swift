@@ -1535,7 +1535,7 @@ public actor IndexingPipeline {
     /// Used by `VolumeSourcesView` to display the front-matter sources section.
     public func volumeSources(forVolumeId volumeId: String) throws -> [VolumeSourceEntry] {
         let sql = """
-            SELECT repository, record_group, lot_file, series_name, entry_text
+            SELECT repository, record_group, lot_file, series_name, entry_text, kind, depth, is_heading
             FROM volume_sources
             WHERE volume_id = ?
             ORDER BY sort_order
@@ -1546,6 +1546,9 @@ public actor IndexingPipeline {
         var entries: [VolumeSourceEntry] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             entries.append(VolumeSourceEntry(
+                kind:        VolumeSourceKind(rawValue: auxColumnString(stmt, 5) ?? "item") ?? .item,
+                depth:       auxColumnIntOptional(stmt, 6) ?? 0,
+                isHeading:   (auxColumnIntOptional(stmt, 7) ?? 0) != 0,
                 repository:  auxColumnString(stmt, 0),
                 recordGroup: auxColumnString(stmt, 1),
                 lotFile:     auxColumnString(stmt, 2),
@@ -2294,6 +2297,9 @@ public actor IndexingPipeline {
                     lotFile: entry.lotFile,
                     seriesName: entry.seriesName,
                     entryText: entry.rawText,
+                    kind: entry.kind.rawValue,
+                    depth: entry.depth,
+                    isHeading: entry.isHeading,
                     sortOrder: i
                 )
             }
@@ -2412,6 +2418,10 @@ public actor IndexingPipeline {
         try auxInsertPersons(data.persons)
         try auxInsertTerms(data.terms)
         try auxInsertDocumentSources(data.documentSources)
+        // Clear this volume's prior source rows before re-inserting: INSERT OR REPLACE keys
+        // on (volume_id, sort_order), so a re-index that yields *fewer* rows would otherwise
+        // leave stale trailing rows (sort_order ≥ new count) behind as phantom entries.
+        try auxDeleteVolumeSources(forVolumeId: data.volumeId)
         try auxInsertVolumeSources(data.volumeSources)
         try auxInsertVolumeStructure(volumeId: data.volumeId, structureJSON: data.structureJSON)
     }
@@ -3108,6 +3118,25 @@ public actor IndexingPipeline {
                 throw IndexingError.sqliteError(code: rc, message: msg)
             }
         }
+        // Schema-introspection helpers for idempotent migrations. `name`/`table` are always
+        // hardcoded literals here, so string interpolation is safe (no user input).
+        func tableExists(_ name: String) -> Bool {
+            var stmt: OpaquePointer?
+            defer { sqlite3_finalize(stmt) }
+            let sql = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='\(name)' LIMIT 1"
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+            return sqlite3_step(stmt) == SQLITE_ROW
+        }
+        func columnExists(_ column: String, inTable table: String) -> Bool {
+            var stmt: OpaquePointer?
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_prepare_v2(db, "PRAGMA table_info(\(table))", -1, &stmt, nil) == SQLITE_OK
+            else { return false }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let c = sqlite3_column_text(stmt, 1), String(cString: c) == column { return true }
+            }
+            return false
+        }
         try exec("PRAGMA journal_mode=WAL")
         try exec("PRAGMA synchronous=NORMAL")
         // Wait up to 5 s for a competing writer instead of failing immediately with
@@ -3300,6 +3329,15 @@ public actor IndexingPipeline {
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot ON document_sources(lot_file)")
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_era_series ON document_sources(citation_era, series_name)")
 
+        // Session 170: volume_sources rewritten to a prose + collection-outline model
+        // (kind / depth / is_heading), and the primary key changed from
+        // (volume_id, entry_text) to (volume_id, sort_order) so repeated collection headings
+        // no longer silently de-duplicate. SQLite can't ALTER a primary key, so a pre-170
+        // table (detected by the absent `kind` column) is dropped and recreated below. The
+        // table is derived from the TEI, so it repopulates on the next (re)index.
+        if tableExists("volume_sources") && !columnExists("kind", inTable: "volume_sources") {
+            try? exec("DROP TABLE volume_sources")
+        }
         try exec("""
             CREATE TABLE IF NOT EXISTS volume_sources (
                 volume_id    TEXT NOT NULL,
@@ -3308,8 +3346,11 @@ public actor IndexingPipeline {
                 lot_file     TEXT,
                 series_name  TEXT,
                 entry_text   TEXT NOT NULL,
+                kind         TEXT NOT NULL DEFAULT 'item',
+                depth        INTEGER NOT NULL DEFAULT 0,
+                is_heading   INTEGER NOT NULL DEFAULT 0,
                 sort_order   INTEGER NOT NULL DEFAULT 0,
-                PRIMARY KEY (volume_id, entry_text)
+                PRIMARY KEY (volume_id, sort_order)
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_rg ON volume_sources(volume_id, record_group)")
@@ -3626,8 +3667,9 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO volume_sources
-            (volume_id, repository, record_group, lot_file, series_name, entry_text, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (volume_id, repository, record_group, lot_file, series_name, entry_text,
+             kind, depth, is_heading, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -3639,7 +3681,10 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 4, row.lotFile)
                 auxBindOptional(stmt, 5, row.seriesName)
                 sqlite3_bind_text(stmt, 6, row.entryText, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_int64(stmt, 7, Int64(row.sortOrder))
+                sqlite3_bind_text(stmt, 7, row.kind, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 8, Int64(row.depth))
+                sqlite3_bind_int64(stmt, 9, row.isHeading ? 1 : 0)
+                sqlite3_bind_int64(stmt, 10, Int64(row.sortOrder))
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -3719,6 +3764,13 @@ public actor IndexingPipeline {
     /// query joins on page ranges and would return duplicate entries silently.
     private func auxDeletePageRanges(forVolumeId volumeId: String) throws {
         let stmt = try auxPrepare("DELETE FROM page_ranges WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    private func auxDeleteVolumeSources(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM volume_sources WHERE volume_id = ?")
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(stmt)
@@ -4708,6 +4760,9 @@ private struct VolumeSourceRow: Sendable {
     let lotFile: String?
     let seriesName: String?
     let entryText: String
+    let kind: String
+    let depth: Int
+    let isHeading: Bool
     let sortOrder: Int
 }
 
