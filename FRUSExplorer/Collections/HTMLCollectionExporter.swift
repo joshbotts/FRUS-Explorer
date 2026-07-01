@@ -122,12 +122,7 @@ final class HTMLCollectionExporter: CollectionExporter {
             case .heading(let heading):
                 body += "<h2 class=\"section-heading\">\(markdownItalics(escaped(heading)))</h2>\n\n"
             case .prose(let prose):
-                body += "<div class=\"prose-block\">\n"
-                for para in prose.components(separatedBy: "\n\n")
-                where !para.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    body += "  <p>\(markdownItalics(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines))))</p>\n"
-                }
-                body += "</div>\n\n"
+                body += proseHTML(prose)
             case .document(let doc):
             let anchor = anchorId(doc: doc)
             // Section heading always shows the citation (regardless of ToC style).
@@ -378,6 +373,43 @@ final class HTMLCollectionExporter: CollectionExporter {
     """
 
     // MARK: - Helpers
+
+    /// Renders a rich-text prose block (Phase 3b) to an HTML fragment: bold/italic runs
+    /// (`inlinePresentationIntent`) map to `<strong>`/`<em>`, blank lines to `<p>` boundaries,
+    /// single newlines to `<br>`. Plain prose renders as plain paragraphs.
+    private func proseHTML(_ attributed: AttributedString) -> String {
+        guard !attributed.characters.isEmpty else { return "" }
+
+        // A formatted span (its text and whether it is bold/italic). Paragraph breaks are
+        // resolved *before* tags are emitted, so open/close tags never straddle a `<p>`
+        // boundary even when a single run spans a blank line.
+        struct Span { let text: String; let bold: Bool; let italic: Bool }
+        var paragraphs: [[Span]] = [[]]
+        for run in attributed.runs {
+            let bold = run.inlinePresentationIntent?.contains(.stronglyEmphasized) == true
+            let italic = run.inlinePresentationIntent?.contains(.emphasized) == true
+            let parts = String(attributed[run.range].characters).components(separatedBy: "\n\n")
+            for (index, part) in parts.enumerated() {
+                if index > 0 { paragraphs.append([]) }   // a blank line starts a new paragraph
+                if !part.isEmpty { paragraphs[paragraphs.count - 1].append(Span(text: part, bold: bold, italic: italic)) }
+            }
+        }
+
+        var out = "<div class=\"prose-block\">\n"
+        for paragraph in paragraphs {
+            let html = paragraph.map { span -> String in
+                var open = "", close = ""
+                if span.bold   { open += "<strong>"; close = "</strong>" + close }
+                if span.italic { open += "<em>";     close = "</em>" + close }
+                return open + escaped(span.text).replacingOccurrences(of: "\n", with: "<br>\n") + close
+            }.joined()
+            if !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                out += "  <p>\(html)</p>\n"
+            }
+        }
+        out += "</div>\n\n"
+        return out
+    }
 
     /// Converts `_text_` spans (already HTML-escaped) to `<em>text</em>`.
     /// Apply to `escaped(note)` so that `_` in the original text is still present

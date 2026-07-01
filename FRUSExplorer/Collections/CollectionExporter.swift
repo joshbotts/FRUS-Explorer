@@ -444,8 +444,9 @@ enum CollectionExportItem: Sendable {
     case document(CollectionExportDocument)
     /// A section heading (the title text).
     case heading(String)
-    /// An editorial prose block (the body text).
-    case prose(String)
+    /// An editorial prose block, as rich text (Phase 3b). Exporters that don't render
+    /// formatting can use `String(prose.characters)` for the plain-text projection.
+    case prose(AttributedString)
 }
 
 extension Array where Element == CollectionExportItem {

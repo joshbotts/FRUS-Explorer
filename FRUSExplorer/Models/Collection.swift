@@ -193,6 +193,8 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///   1.3 — Collections rework Phase 1b: added `bodyDepthOverride` (per-entry body depth)
 ///   1.4 — Collections rework Phase 3a: added `kind` + `text` (heterogeneous entries:
 ///          document / section heading / editorial prose block)
+///   1.5 — Collections rework Phase 3b: added `richText` (rich-text prose body, an encoded
+///          `AttributedString`; `text` retained as the plain-text projection)
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -263,9 +265,16 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     }
 
     /// The section title (for a `heading` entry) or the editorial body (for a `prose` entry).
-    /// `nil` for document entries. In Phase 3a this is plain text; Phase 3b (rich-text prose)
-    /// layers an attributed representation over prose entries.
+    /// `nil` for document entries. Always the plain-text form — a fallback for plain contexts
+    /// and the source for a `prose` entry with no rich formatting.
     var text: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// Rich-text form of a `prose` entry's body — an `AttributedString` encoded to `Data`
+    /// (Phase 3b). `nil` for headings/documents and for plain prose; `text` is kept in sync as
+    /// the plain-text projection so search and plain renderers keep working.
+    var richText: Data? {
         didSet { lastModified = .now }
     }
 
