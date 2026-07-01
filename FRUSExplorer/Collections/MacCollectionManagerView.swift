@@ -567,6 +567,8 @@ private struct MacEntryRow: View {
     let onDelete: () -> Void
 
     @Environment(\.openURL) private var openURL
+    @Environment(AppState.self) private var appState
+    @State private var showInspector = false
 
     /// This entry's body-depth override (`nil` = follow the collection default).
     private var bodyDepthOverride: Binding<String?> {
@@ -646,6 +648,17 @@ private struct MacEntryRow: View {
 
             // Action controls
             HStack(spacing: 6) {
+                // Document details inspector
+                Button {
+                    showInspector = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "collection.entry.inspect.help",
+                             defaultValue: "Show this document's notes, highlights, tags, and provenance"))
+
                 // Open on history.state.gov
                 Button {
                     if let url = URL(string:
@@ -678,6 +691,10 @@ private struct MacEntryRow: View {
             .padding(.top, 2)
         }
         .padding(.vertical, 4)
+        .sheet(isPresented: $showInspector) {
+            CollectionEntryInspector(entry: entry)
+                .environment(appState)
+        }
     }
 
     // MARK: - Note Menu
