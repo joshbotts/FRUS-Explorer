@@ -48,6 +48,8 @@ swift run TaxonomyGenerator   # Regenerate volume-tag-taxonomy.json
 CATALOG_API_KEY=<key> swift run CentralFilesIndexGenerator   # Harvest NARA Catalog → central-files-index.json (Phase 1: 1906–1910 Numerical File; Phase 2: diplomatic series)
 CATALOG_API_KEY=<key> SURVEY_SERIES=603720 swift run CentralFilesIndexGenerator   # Survey a series' structure. Diplomatic: 603720/593313/594363/597272. Consular (Phase 3): 302031 Despatches / 604019 Instructions / 1076611 Notes-to / 1076629 Notes-from
 CATALOG_API_KEY=<key> CITATIONS_CSV=/path/to/citations.csv swift run CentralFilesIndexGenerator   # Phase 3: pre-resolve distinct lot files (variantControlNumber_is) into the bundled index
+swift run VolumeSourcesIndexGenerator   # Harvest every volume's front-matter Sources section → volume-sources-index.json (per-volume prose + resolved archival-collection outline + cross-volume authority). Offline pass: lot files resolve against central-files-index.json. Env: VOLUMES_DIR, CENTRAL_FILES_INDEX, OUTPUT, GENERATED_DATE
+CATALOG_API_KEY=<key> swift run VolumeSourcesIndexGenerator   # Adds the NARA Catalog resolution pass: lot files the bundle missed (variantControlNumber_is) + record-group headers → NAIDs. Cached to CACHE_DIR (default .cache/volume-sources), so re-runs are free
 ```
 
 **macOS Direct Distribution (notarize + DMG):**
