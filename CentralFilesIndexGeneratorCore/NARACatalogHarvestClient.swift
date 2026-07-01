@@ -300,11 +300,15 @@ public actor NARACatalogHarvestClient {
                                      levelOfDescription: "recordGroup", recordGroupNumber: rg)
             }
         }
-        // Primary: numeric filter constrained to the record-group level.
+        // Primary: exact numeric filter at the record-group level. Confirmed against the live
+        // v2 API (2026-07): `recordGroupNumber` is the top-level facet (NO `description.`
+        // prefix — the prefixed form filters *descendants*, so it was silently ignored on the
+        // RG-node query and collapsed every group to the first record-group record). Returns
+        // hits:1 for a valid RG (RG 59 → 388, RG 84 → 413).
         var hit = try? await recordGroupHit(queryItems: [
-            URLQueryItem(name: "description.recordGroupNumber", value: rg),
+            URLQueryItem(name: "recordGroupNumber", value: rg),
             URLQueryItem(name: "levelOfDescription", value: "recordGroup"),
-            URLQueryItem(name: "rows", value: "5"),
+            URLQueryItem(name: "rows", value: "3"),
         ])
         // Fallback: title relevance among record-group-level nodes. Strip the leading
         // "Record Group N," / "RG N," from the heading so the query targets the descriptive

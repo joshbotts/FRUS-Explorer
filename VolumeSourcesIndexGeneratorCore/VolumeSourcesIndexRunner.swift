@@ -90,9 +90,17 @@ public enum VolumeSourcesIndexRunner {
                     rgMap[rg] = ResolvedNAID(naId: r.naId,
                                              catalogURL: NARACatalogHarvestClient.catalogIDBase + r.naId,
                                              title: r.title, recordGroup: rg, matchType: "api")
-                    apiRGHits += 1
                 }
             }
+            // Guard: distinct record groups must resolve to distinct NAIDs. A collision is
+            // the signature of an ignored filter (every RG collapsing to one record) — discard
+            // those rather than bundle mislinked headers.
+            let byNAID = Dictionary(grouping: rgMap.keys) { rgMap[$0]!.naId }
+            for (naId, rgs) in byNAID where rgs.count > 1 {
+                log("WARNING: \(rgs.count) record groups (\(rgs.sorted().joined(separator: ", "))) all resolved to NAID \(naId) — discarding as a likely ignored-filter bug")
+                for rg in rgs { rgMap[rg] = nil }
+            }
+            apiRGHits = rgMap.count
         }
 
         // MARK: Phase D — apply resolutions to the trees, then fold the cross-volume authority.
