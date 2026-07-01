@@ -72,11 +72,8 @@ struct VolumeSourcesExtractorTests {
     func authorityDedup() {
         let rows = VolumeSourcesExtractor.extract(fromXML: xml)
         let items = rows.filter { $0.kind == .item }
-        var lot = 0, unresolved = 0, index = 0
-        // A resolver over an empty index resolves nothing (offline, no lot hits here).
-        let resolver = try! makeEmptyResolver()
-        let tree = VolumeSourcesIndexRunner.buildTree(items, &index, depth: 0, resolver: resolver,
-                                                      resolvedLot: &lot, unresolved: &unresolved)
+        var index = 0
+        let tree = VolumeSourcesIndexRunner.buildTree(items, &index, depth: 0)
         var authority: [String: MajorCollection] = [:]
         VolumeSourcesIndexRunner.accumulateAuthority(tree, volumeId: "frusA", into: &authority)
         VolumeSourcesIndexRunner.accumulateAuthority(tree, volumeId: "frusB", into: &authority)
@@ -85,11 +82,17 @@ struct VolumeSourcesExtractorTests {
         #expect(dept.occurrences == 2)
     }
 
-    /// A resolver backed by an empty (valid) central-files index, for offline tree tests.
-    private func makeEmptyResolver() throws -> BundledLotResolver {
-        let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("empty-cfi-\(UUID().uuidString).json")
-        try Data(#"{"numericalFile":{"rolls":[]},"lotFiles":[]}"#.utf8).write(to: tmp)
-        return try BundledLotResolver(indexURL: tmp)
+    @Test("Lot files inherit the ancestor record group when gathering resolution keys")
+    func ancestorRecordGroupInference() {
+        let rows = VolumeSourcesExtractor.extract(fromXML: xml)
+        var index = 0
+        let tree = VolumeSourcesIndexRunner.buildTree(rows.filter { $0.kind == .item }, &index, depth: 0)
+        var lotKeys: [String: String] = [:]
+        var rgNumbers: Set<String> = []
+        VolumeSourcesIndexRunner.gatherKeys(tree, inheritedRG: nil, lotKeys: &lotKeys, rgNumbers: &rgNumbers)
+        // The RG-59 record nested under "Department of State" carries a lot file; its key
+        // is gathered with the record group parsed from its own text ("RG 59").
+        #expect(lotKeys.values.contains("59"))
+        #expect(!lotKeys.isEmpty)
     }
 }

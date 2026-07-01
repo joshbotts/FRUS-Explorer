@@ -164,6 +164,7 @@ let package = Package(
         /// record-group / repository headers are reported for a later NARA Catalog API pass.
         .target(
             name: "VolumeSourcesIndexGeneratorCore",
+            dependencies: [.target(name: "CentralFilesIndexGeneratorCore")],
             path: "VolumeSourcesIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

@@ -269,6 +269,58 @@ public actor NARACatalogHarvestClient {
         return nil
     }
 
+    // MARK: Record-group resolution
+
+    /// One cached RG resolution. `naId` empty marks a confirmed miss (so it isn't re-queried).
+    private struct RGResolution: Codable { let naId: String; let title: String }
+
+    /// Resolves a record-group *number* (`"59"`, `"84"`, `"330"`) to its own NARA Catalog
+    /// record-group record (NAID + title). Used to give a volume's `<hi rend="strong">`
+    /// record-group headers a catalog link.
+    ///
+    /// The outcome (hit or confirmed miss) is cached to disk per RG number so re-runs never
+    /// re-query. **Verify the query shape on the first live run**: it searches the record-group
+    /// level by number and takes the first `recordGroup`-level hit; NARA's parameter naming for
+    /// level filtering has changed across API revisions.
+    public func resolveRecordGroup(number: String, retryMisses: Bool = false) async throws -> CatalogRecord? {
+        let rg = number.trimmingCharacters(in: .whitespaces)
+        guard !rg.isEmpty else { return nil }
+        if let cached = cachedRG(number: rg), !refresh {
+            if cached.naId.isEmpty {
+                if !retryMisses { return nil }
+            } else {
+                return CatalogRecord(naId: cached.naId, title: cached.title,
+                                     levelOfDescription: "recordGroup", recordGroupNumber: rg)
+            }
+        }
+        let results = try await search(queryItems: [
+            URLQueryItem(name: "description.recordGroupNumber", value: rg),
+            URLQueryItem(name: "description.levelOfDescription", value: "recordGroup"),
+            URLQueryItem(name: "resultType", value: "description"),
+            URLQueryItem(name: "rows", value: "10"),
+        ])
+        if let hit = results.first(where: { $0.levelOfDescription == "recordGroup" }) ?? results.first {
+            writeRGCache(RGResolution(naId: hit.naId, title: hit.title), number: rg)
+            return hit
+        }
+        writeRGCache(RGResolution(naId: "", title: ""), number: rg)
+        return nil
+    }
+
+    private func rgCacheURL(number: String) -> URL? {
+        cacheDirectory?.appendingPathComponent("rgs", isDirectory: true)
+            .appendingPathComponent("\(number).json")
+    }
+    private func cachedRG(number: String) -> RGResolution? {
+        guard let url = rgCacheURL(number: number), let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(RGResolution.self, from: data)
+    }
+    private func writeRGCache(_ resolution: RGResolution, number: String) {
+        guard let url = rgCacheURL(number: number) else { return }
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(resolution) { try? data.write(to: url, options: .atomic) }
+    }
+
     /// Generates compact / spaced / mixed spellings from a compact lot (`63D135`).
     static func lotVariants(_ compact: String) -> [String] {
         guard let r = compact.range(of: #"^(\d{2,3})([A-Z])(\d+)$"#, options: .regularExpression) else {

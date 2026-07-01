@@ -7,120 +7,184 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import CentralFilesIndexGeneratorCore
 
 /// Harvests the front-matter Sources section of every locally-downloaded FRUS volume into a
 /// bundled `volume-sources-index.json`: per-volume prose + a resolved archival-collection
 /// outline, plus a deduplicated cross-volume authority of the major collections.
 ///
-/// Resolution is offline-first: lot-file citations resolve against the bundled
-/// `central-files-index.json`. Record-group / repository headers that the bundle can't
-/// resolve are left `resolved == nil` and reported; a later pass (with `CATALOG_API_KEY`)
-/// can fill them from the NARA Catalog API.
+/// Resolution is two-stage, and each distinct archival key is resolved **once**:
+/// 1. **Offline** — lot-file citations resolve against the bundled `central-files-index.json`.
+/// 2. **NARA Catalog API** (only when `CATALOG_API_KEY` is set) — lot files the bundle
+///    missed resolve via `variantControlNumber_is`; `<hi rend="strong">` record-group headers
+///    resolve to their record-group record. Every outcome is cached to `CACHE_DIR`, so
+///    re-runs and partial failures never re-query.
 ///
 /// Configuration (environment variables):
 /// - `VOLUMES_DIR` — directory of volume `*.xml` files (default `/Users/jbotts/Development/frus/volumes`)
 /// - `CENTRAL_FILES_INDEX` — bundled index path (default `FRUSExplorer/Resources/central-files-index.json`)
 /// - `OUTPUT` — output path (default `FRUSExplorer/Resources/volume-sources-index.json`)
 /// - `GENERATED_DATE` — override the `generated` stamp (default: today, `yyyy-MM-dd`)
+/// - `CATALOG_API_KEY` — enable the NARA Catalog resolution pass (offline-only when absent)
+/// - `CACHE_DIR` — API resolution cache (default `.cache/volume-sources`)
 public enum VolumeSourcesIndexRunner {
 
-    public static func run() throws {
+    public static func run() async throws {
         let env = ProcessInfo.processInfo.environment
         let volumesDir = URL(fileURLWithPath: env["VOLUMES_DIR"] ?? "/Users/jbotts/Development/frus/volumes")
         let indexPath = env["CENTRAL_FILES_INDEX"] ?? "FRUSExplorer/Resources/central-files-index.json"
         let outputPath = env["OUTPUT"] ?? "FRUSExplorer/Resources/volume-sources-index.json"
-        let generated = env["GENERATED_DATE"] ?? Self.today()
+        let generated = env["GENERATED_DATE"] ?? today()
 
-        let resolver = try BundledLotResolver(indexURL: URL(fileURLWithPath: indexPath))
-        FileHandle.standardError.write(Data("Loaded bundled index: \(resolver.lotFileCount) lot files\n".utf8))
+        let bundled = try BundledLotResolver(indexURL: URL(fileURLWithPath: indexPath))
+        log("Loaded bundled index: \(bundled.lotFileCount) lot files")
 
+        // NARA Catalog client — nil (offline only) when no API key is provided.
+        let apiClient: NARACatalogHarvestClient? = env["CATALOG_API_KEY"].map { key in
+            let cacheDir = URL(fileURLWithPath: env["CACHE_DIR"] ?? ".cache/volume-sources")
+            return NARACatalogHarvestClient(apiKey: key, cacheDirectory: cacheDir)
+        }
+        log(apiClient == nil ? "No CATALOG_API_KEY — offline pass only" : "API pass enabled")
+
+        // MARK: Phase A — parse every volume into an unresolved collection tree.
         let xmls = try FileManager.default.contentsOfDirectory(at: volumesDir, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "xml" }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
-        guard !xmls.isEmpty else {
-            throw RunError.noVolumes(volumesDir.path)
-        }
+        guard !xmls.isEmpty else { throw RunError.noVolumes(volumesDir.path) }
 
-        var volumes: [String: VolumeSources] = [:]
-        var authority: [String: MajorCollection] = [:]
-        var totalItems = 0, totalProse = 0, totalHeadings = 0
-        var resolvedLot = 0, unresolved = 0
-
+        var volumeTrees: [(volumeId: String, prose: [String], tree: [CollectionNode])] = []
         for url in xmls {
             let volumeId = url.deletingPathExtension().lastPathComponent
             guard let data = try? Data(contentsOf: url) else { continue }
             let rows = VolumeSourcesExtractor.extract(fromXML: data)
             guard !rows.isEmpty else { continue }
-
             let prose = rows.filter { $0.kind == .prose }.map(\.text)
-            let items = rows.filter { $0.kind == .item }
             var index = 0
-            let tree = Self.buildTree(items, &index, depth: 0, resolver: resolver,
-                                      resolvedLot: &resolvedLot, unresolved: &unresolved)
+            let tree = buildTree(rows.filter { $0.kind == .item }, &index, depth: 0)
+            volumeTrees.append((volumeId, prose, tree))
+        }
 
-            volumes[volumeId] = VolumeSources(prose: prose, collections: tree)
-            totalProse += prose.count
-            totalItems += items.count
-            totalHeadings += items.filter(\.isHeading).count
+        // MARK: Phase B — gather the distinct archival keys to resolve.
+        var lotKeys: [String: String] = [:]   // normalizedLot -> inferred record group
+        var rgNumbers: Set<String> = []
+        for vt in volumeTrees { gatherKeys(vt.tree, inheritedRG: nil, lotKeys: &lotKeys, rgNumbers: &rgNumbers) }
+        log("Distinct keys: \(lotKeys.count) lot files, \(rgNumbers.count) record groups")
 
-            Self.accumulateAuthority(tree, volumeId: volumeId, into: &authority)
+        // MARK: Phase C — resolve each distinct key once (offline first, then API).
+        var lotMap: [String: ResolvedNAID] = [:]
+        var rgMap: [String: ResolvedNAID] = [:]
+        var apiLotHits = 0, apiRGHits = 0
+        for (lot, rg) in lotKeys {
+            if let hit = bundled.resolve(rawLot: lot) { lotMap[lot] = hit; continue }
+            guard let apiClient else { continue }
+            if let r = try? await apiClient.resolveLotFile(normalized: lot, recordGroup: rg) {
+                lotMap[lot] = ResolvedNAID(naId: r.record.naId,
+                                           catalogURL: NARACatalogHarvestClient.catalogIDBase + r.record.naId,
+                                           title: r.record.title, recordGroup: rg, matchType: r.matchType)
+                apiLotHits += 1
+            }
+        }
+        if let apiClient {
+            for rg in rgNumbers {
+                if let r = try? await apiClient.resolveRecordGroup(number: rg) {
+                    rgMap[rg] = ResolvedNAID(naId: r.naId,
+                                             catalogURL: NARACatalogHarvestClient.catalogIDBase + r.naId,
+                                             title: r.title, recordGroup: rg, matchType: "api")
+                    apiRGHits += 1
+                }
+            }
+        }
+
+        // MARK: Phase D — apply resolutions to the trees, then fold the cross-volume authority.
+        var volumes: [String: VolumeSources] = [:]
+        var authority: [String: MajorCollection] = [:]
+        var totalItems = 0, totalProse = 0, totalHeadings = 0, resolvedNodes = 0
+        for vt in volumeTrees {
+            let resolved = applyResolution(vt.tree, inheritedRG: nil, bundled: bundled, lotMap: lotMap, rgMap: rgMap)
+            volumes[vt.volumeId] = VolumeSources(prose: vt.prose, collections: resolved)
+            totalProse += vt.prose.count
+            countTree(resolved, items: &totalItems, headings: &totalHeadings, resolved: &resolvedNodes)
+            accumulateAuthority(resolved, volumeId: vt.volumeId, into: &authority)
         }
 
         let majorCollections = authority.values
             .map { var c = $0; c.volumeIds.sort(); return c }
             .sorted { $0.occurrences != $1.occurrences ? $0.occurrences > $1.occurrences : $0.key < $1.key }
 
-        let output = VolumeSourcesIndex(
-            schemaVersion: 1, generated: generated,
-            volumes: volumes, majorCollections: majorCollections)
-
+        let output = VolumeSourcesIndex(schemaVersion: 1, generated: generated,
+                                        volumes: volumes, majorCollections: majorCollections)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let json = try encoder.encode(output)
-        try json.write(to: URL(fileURLWithPath: outputPath))
+        try encoder.encode(output).write(to: URL(fileURLWithPath: outputPath))
 
-        // Summary to stderr so stdout can carry the artifact path if piped.
-        let summary = """
+        log("""
         volume-sources-index.json written to \(outputPath)
           volumes with sources: \(volumes.count) / \(xmls.count)
           prose paragraphs:     \(totalProse)
           collection items:     \(totalItems)  (headings: \(totalHeadings))
-          resolved (lot files): \(resolvedLot)
-          unresolved (need API):\(unresolved)
+          resolved nodes:       \(resolvedNodes)  (API lot hits: \(apiLotHits), API RG hits: \(apiRGHits))
           major collections:    \(majorCollections.count)
-        """
-        FileHandle.standardError.write(Data((summary + "\n").utf8))
+        """)
     }
 
-    // MARK: - Tree building + resolution
+    // MARK: - Tree building (structure only; resolution applied later)
 
-    /// Recursively rebuilds the collection outline from flat pre-ordered rows, resolving each
-    /// node against the bundled index as it goes. Gap-tolerant: an orphan depth-jump is
-    /// clamped rather than dropped (matching the app's `VolumeSourcesView.build`).
-    static func buildTree(_ items: [SourceRow], _ index: inout Int, depth: Int,
-                          resolver: BundledLotResolver,
-                          resolvedLot: inout Int, unresolved: inout Int) -> [CollectionNode] {
+    /// Rebuilds the collection outline from flat pre-ordered rows. Gap-tolerant: an orphan
+    /// depth-jump is clamped rather than dropped (matching the app's `VolumeSourcesView.build`).
+    static func buildTree(_ items: [SourceRow], _ index: inout Int, depth: Int) -> [CollectionNode] {
         var nodes: [CollectionNode] = []
         while index < items.count {
             let item = items[index]
             if item.depth < depth { break }
             index += 1
-            let children = buildTree(items, &index, depth: item.depth + 1, resolver: resolver,
-                                     resolvedLot: &resolvedLot, unresolved: &unresolved)
-            var resolved: ResolvedNAID?
-            if let lot = item.lotFile, let hit = resolver.resolve(rawLot: lot) {
-                resolved = hit
-                resolvedLot += 1
-            } else if item.isHeading || item.recordGroup != nil || item.lotFile != nil {
-                // A collection node the bundle couldn't resolve — a candidate for the API pass.
-                unresolved += 1
-            }
+            let children = buildTree(items, &index, depth: item.depth + 1)
             nodes.append(CollectionNode(
                 text: item.text, isHeading: item.isHeading, depth: item.depth,
                 recordGroup: item.recordGroup, lotFile: item.lotFile, repository: item.repository,
-                resolved: resolved, children: children))
+                resolved: nil, children: children))
         }
         return nodes
+    }
+
+    // MARK: - Key gathering & resolution application (ancestor RG carried down)
+
+    /// The record group in effect for a node: its own, else the nearest ancestor heading's,
+    /// else a State-Department default (`"59"` — most FRUS lots are RG 59).
+    private static func effectiveRG(_ node: CollectionNode, inherited: String?) -> String {
+        node.recordGroup ?? inherited ?? "59"
+    }
+
+    static func gatherKeys(_ nodes: [CollectionNode], inheritedRG: String?,
+                           lotKeys: inout [String: String], rgNumbers: inout Set<String>) {
+        for node in nodes {
+            let rg = node.recordGroup ?? inheritedRG
+            if let lot = node.lotFile {
+                lotKeys[BundledLotResolver.normalizeLot(lot)] = effectiveRG(node, inherited: inheritedRG)
+            } else if let recordGroup = node.recordGroup {
+                rgNumbers.insert(recordGroup)
+            }
+            gatherKeys(node.children, inheritedRG: rg, lotKeys: &lotKeys, rgNumbers: &rgNumbers)
+        }
+    }
+
+    static func applyResolution(_ nodes: [CollectionNode], inheritedRG: String?,
+                                bundled: BundledLotResolver,
+                                lotMap: [String: ResolvedNAID], rgMap: [String: ResolvedNAID]) -> [CollectionNode] {
+        nodes.map { node in
+            let rg = node.recordGroup ?? inheritedRG
+            var resolved: ResolvedNAID?
+            if let lot = node.lotFile {
+                let key = BundledLotResolver.normalizeLot(lot)
+                resolved = bundled.resolve(rawLot: lot) ?? lotMap[key]
+            } else if let recordGroup = node.recordGroup {
+                resolved = rgMap[recordGroup]
+            }
+            var copy = node
+            copy.resolved = resolved
+            copy.children = applyResolution(node.children, inheritedRG: rg, bundled: bundled,
+                                            lotMap: lotMap, rgMap: rgMap)
+            return copy
+        }
     }
 
     // MARK: - Cross-volume authority
@@ -130,8 +194,6 @@ public enum VolumeSourcesIndexRunner {
     static func accumulateAuthority(_ nodes: [CollectionNode], volumeId: String,
                                     into authority: inout [String: MajorCollection]) {
         for node in nodes {
-            // Only index nodes that name a collection (headings or nodes with archival keys);
-            // plain leaf descriptions without keys are skipped from the cross-volume authority.
             if node.isHeading || node.recordGroup != nil || node.lotFile != nil {
                 let key = node.lotFile.map { "lot:" + BundledLotResolver.normalizeLot($0) }
                     ?? "txt:" + node.text.lowercased()
@@ -154,12 +216,25 @@ public enum VolumeSourcesIndexRunner {
 
     // MARK: - Helpers
 
+    private static func countTree(_ nodes: [CollectionNode], items: inout Int, headings: inout Int, resolved: inout Int) {
+        for node in nodes {
+            items += 1
+            if node.isHeading { headings += 1 }
+            if node.resolved != nil { resolved += 1 }
+            countTree(node.children, items: &items, headings: &headings, resolved: &resolved)
+        }
+    }
+
     private static func today() -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(identifier: "UTC")
         return f.string(from: Date())
+    }
+
+    private static func log(_ message: String) {
+        FileHandle.standardError.write(Data((message + "\n").utf8))
     }
 
     public enum RunError: Error, CustomStringConvertible {

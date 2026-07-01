@@ -24,7 +24,7 @@ import VolumeSourcesIndexGeneratorCore
 /// Optional environment variables: `VOLUMES_DIR`, `CENTRAL_FILES_INDEX`, `OUTPUT`,
 /// `GENERATED_DATE`.
 do {
-    try VolumeSourcesIndexRunner.run()
+    try await VolumeSourcesIndexRunner.run()
 } catch {
     FileHandle.standardError.write(Data("VolumeSourcesIndexGenerator error: \(error)\n".utf8))
     exit(1)
