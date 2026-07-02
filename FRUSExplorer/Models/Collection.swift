@@ -171,6 +171,15 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     case heading
     /// An editorial prose block (uses `text` as the body).
     case prose
+    /// A `kind` raw value written by a newer app version that this build does not
+    /// understand (synced via CloudKit). Never persisted by this build; surfaced as an
+    /// inert row and skipped by resolve/export so future entry kinds degrade gracefully
+    /// instead of being misread as junk document entries (Authoring Phase 1 sync guard).
+    case unrecognized
+
+    /// Excludes `.unrecognized`: it is a decode fallback, not an authorable kind, so any
+    /// menu or picker iterating the cases never offers it.
+    static var allCases: [CollectionEntryKind] { [.document, .heading, .prose] }
 }
 
 // MARK: - CollectionEntry
@@ -195,6 +204,8 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          document / section heading / editorial prose block)
 ///   1.5 — Collections rework Phase 3b: added `richText` (rich-text prose body, an encoded
 ///          `AttributedString`; `text` retained as the plain-text projection)
+///   1.6 — Authoring Phase 1: unknown `kind` raw values read as `.unrecognized` instead of
+///          `.document` (mixed-build CloudKit sync guard); the setter never persists it
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -279,9 +290,16 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     }
 
     /// Typed accessor for `kind` (not persisted; `kind` is the stored raw value).
+    /// An unknown raw value — written by a newer app version — reads as `.unrecognized`
+    /// rather than silently becoming a junk `.document`.
     var entryKind: CollectionEntryKind {
-        get { CollectionEntryKind(rawValue: kind) ?? .document }
-        set { kind = newValue.rawValue }
+        get { CollectionEntryKind(rawValue: kind) ?? .unrecognized }
+        set {
+            // `.unrecognized` is a decode fallback; persisting its raw value would
+            // round-trip as an unknown kind on every other device. Never write it.
+            guard newValue != .unrecognized else { return }
+            kind = newValue.rawValue
+        }
     }
 
     // MARK: - Timestamps

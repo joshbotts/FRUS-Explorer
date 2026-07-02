@@ -435,11 +435,16 @@ Everything in Sections 10.1–10.4 happens in the manager; 10.5 covers export.
 
 ### 10.1 The Collection Manager
 
-Open the **Collections** tab and tap **New Collection**; give it a name and an optional description. Add documents either from the collection editor's search, or by choosing **Add to Collection** from any open document's toolbar. You can also **Add by Tag** to append every document carrying one of your tags.
+Open the **Collections** tab and tap **New Collection**. The editor opens as its own screen (not a pop-up sheet), with the document list front and center. Every edit **saves as you go** — there is no Save button; just navigate back when you're done. (Backing out of a brand-new collection you never touched discards it.)
+
+- On **iPhone**, the collection's name, description, and smart-collection link live in a collapsible **Details** group above the document list (expanded automatically for a new collection), and **Composition** in a collapsible group below it.
+- On **iPad**, name, description, and composition live in a **details panel** you can show or hide from the toolbar, leaving the full width for the document list.
+
+Each document entry shows its **title, document number, volume, and date** once its volume is indexed. Add documents by choosing **Add to Collection** from any open document's toolbar, or **Add by Tag** to append every document carrying one of your tags.
 
 `[SCREENSHOT: Collection manager showing a mix of documents, a section heading, and a prose block with reorder handles]`
 
-Drag to reorder entries; the order you choose is the order they appear in every export.
+Drag to reorder entries; the order you choose is the order they appear in every export. **Sort by Date** orders documents by their individual dates from the index (falling back to the volume's date range for unindexed volumes), leaving your section headings and prose blocks where you placed them.
 
 ### 10.2 Section Headings and Prose
 

@@ -866,3 +866,74 @@ not-downloaded guard), so the structure never loaded even after a successful dow
   11.8 MB frus1961-63v07-09mSupp (spinner visible) both transitioned Download Required →
   Downloading… → loaded structure without leaving the screen. CodingStandardsAuditTests +
   BrowserViewTests pass (33/33).
+### Session 2026-07-02 — Three-week review + reported-bug fixes (reindex bump, title whitespace, neighbors-sheet loop)
+Multi-agent review of PRs #108–#136 (word-cloud/analytics, archival neighbors, corpus-browser
+rework, volume-sources v2, Collections Phases 1a–4) plus root-cause fixes for the three
+user-reported regressions:
+- **Missing auto-reindex**: the Session 170 `volume_sources` rewrite (dd816df) drops the
+  pre-170 table in its schema migration and only repopulates on a full XML re-parse — its
+  commit message says "Requires a re-index" but `currentDateIndexVersion` was never bumped,
+  so first launch never triggered one and the Sources outline sat empty until a manual
+  reindex. Bumped to **12** with a version-history entry. (03f25f5's spurious-reindex fix
+  is innocent — but before it, backgrounding accidentally re-indexed everything, which is
+  why missed bumps used to self-heal invisibly.)
+- **Corpus-browser title whitespace**: `VolumeStructureParserDelegate` only edge-trimmed
+  joined `<head>` text, so hard-wrapped TEI titles carried interior newlines into
+  `structureJSON`. Titles now collapse interior whitespace at parse time (regression test
+  added); the version-12 re-parse propagates the fix.
+- **Archival Neighbors open/close loop**: `VolumeSourcesView.body` is a `Group` emitting
+  two Sections, and `Group` applies modifiers per child — `.sheet(item:)` was duplicated
+  onto both sections over one shared binding, so the two presenters ping-ponged
+  present/dismiss after close. Sheets now anchor once on the Archival Collections section;
+  the duplicated `.task` (which re-ran `loadSources` and reset the outline's disclosure
+  state) is guarded with `didLoad`. Same guard added to `FrontMatterPersonsView`.
+- **Review fix**: `RelatedDocument` lists keyed by `documentId` alone collide across
+  volumes (ids are volume-local) — added `compositeKey` and rekeyed ArchivalNeighborsSheet
+  + both Source Explorer related-document lists.
+- **Test health**: `WordCloudTokenizerTests.pluralFoldDisabled` was NL-asset-dependent
+  (lemma availability for bare "treaties" varies); now uses a nonsense plural.
+  `SettingsSyncCoordinatorTests` crashes the test host (SwiftData trap) on a **clean v2
+  checkout** — pre-existing, spun off as a follow-up task with 3 other verified review
+  findings (word-cloud cluster, legacy-prose export loss, iOS volume Download button,
+  macOS .fruscollection import feedback).
+- 959 unit tests pass (excluding the pre-existing crashing suite); iOS + macOS build clean.
+- **Next**: collection-editor rework scoping (manager → authoring canvas; see session
+  recommendations), plus the spun-off fix tasks. The next build's TestFlight notes must
+  mention the one-time automatic re-index on first launch.
+
+### Session 2026-07-02 (later) — Collections Authoring scope
+Authored `Planning/Collections-Authoring-Scope.md` — the 6-phase program turning the
+collection editor into an authoring tool for "rich historical products" (the owner's
+2026-07-02 request). Synthesized from a 3-angle design panel (product-first /
+architecture-first / effort-ROI-first + judge) over a verified current-state survey.
+Backbone: §0 target artifact ("the FRUS Reader") → Phase 1 editor shell + unknown-kind
+sync guard → Phase 2 single resolver + live preview → Phase 3 in-editor discovery
+(search/browse/paste-citations/tag) → Phase 4 publication frame (front matter, level-based
+nested sections, `.fruscollection` v2) → Phase 5 annotated document (headnotes, excerpts,
+read-write inspector, footnote tri-state fix) → Phase 6 generated apparatus (bibliography,
+chronology, sources & archives, persons, thematic index as placeable entries). Decision
+points A1–A12 for the owner; Phases 1–3 carry zero schema/format risk. Key safety rails:
+ship the `entryKind` `.unrecognized` fallback first (mixed-build CloudKit sync), never
+re-purpose `sortOrder` (level-derived tree instead of parent pointers), one batched
+`.fruscollection` bump with write-minimum + tolerant reader.
+
+### Session 2026-07-02 (later) — Collections Authoring Phase 1 (implementation)
+Executed Phase 1 of Planning/Collections-Authoring-Scope.md in two PRs:
+- **PR #139 (merged): mechanics.** Mechanical split of CollectionEditorView.swift (2,836 →
+  845 lines + 6 new per-type files, verbatim moves, one visibility change). Unknown-entry-kind
+  sync guard (`CollectionEntryKind.unrecognized`): unknown kinds render inert, are skipped by
+  resolve/native-export/native-import, never persisted, excluded from allCases — must age in
+  the field before Phases 5–6 add new kinds. Shared `CollectionEntryData` (bulk header/date
+  loader + canonical 3-tier date sort) used by both managers; iOS rows show real headers/
+  volume titles/dates; iOS Sort by Date gains per-document precision. fileImporter narrowed
+  to the `.fruscollection` UTI. New `unrecognizedKindGuard` test; 41/41.
+- **PR 2: shell.** `CollectionEditorView.PresentationStyle` — pushed from the Collections tab
+  (navigationDestination; back dismisses), sheet elsewhere (Done button). All-live autosave
+  (A1 cheap): onChange → saveLive(); Save/Cancel and applyEditsForExport deleted; untouched
+  new collection discarded on dismiss, kept-unnamed gets "Untitled Collection". iPhone:
+  entry-list-primary Form — collapsible Details (name/note/smart link; expanded for new) +
+  collapsed Composition disclosure. iPad: `.inspector` panel (toolbar-toggled) for metadata +
+  composition, list gets full width. macOS manager: Composition popover → inline collapsed
+  DisclosureGroup at the top of the scrolling entries List (inline per scope, but inside the
+  scroll region so expansion can't overflow the fixed header — preserves the #126 constraint).
+  Docs rider: iOS/macOS manuals §10 + both TestFlight instructions.
