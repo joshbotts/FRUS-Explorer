@@ -9,6 +9,7 @@
 #if os(macOS)
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - MacCollectionManagerView
 
@@ -43,6 +44,10 @@ struct MacCollectionManagerView: View {
 
     @State private var selectedId: UUID? = nil
     @State private var showNewCollection = false
+    /// Drives the `.fruscollection` file importer.
+    @State private var isImporting = false
+    /// Non-nil to present an import-failure alert.
+    @State private var importError: String? = nil
 
     private var filteredCollections: [Collection] {
         guard let pid = appState.activeProjectId else { return allCollections }
@@ -74,6 +79,40 @@ struct MacCollectionManagerView: View {
         .sheet(isPresented: $showNewCollection) {
             NewCollectionSheet { id in selectedId = id }
                 .environment(appState)
+        }
+        .fileImporter(isPresented: $isImporting,
+                      allowedContentTypes: [.data],
+                      allowsMultipleSelection: false) { result in
+            importCollection(from: result)
+        }
+        .alert(String(localized: "collections.import.error.title",
+                      defaultValue: "Couldn’t Import Collection"),
+               isPresented: Binding(get: { importError != nil },
+                                    set: { if !$0 { importError = nil } })) {
+            Button(String(localized: "collections.import.error.ok", defaultValue: "OK"),
+                   role: .cancel) { importError = nil }
+        } message: {
+            Text(importError ?? "")
+        }
+    }
+
+    /// Imports a user-picked `.fruscollection` file, then selects the reconstructed collection.
+    private func importCollection(from result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            importError = error.localizedDescription
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            do {
+                let imported = try NativeCollectionSerializer.importCollection(from: url, into: modelContext)
+                // Scope the import to the active project (as new collections are) so it isn't
+                // hidden by the sidebar's active-project filter; imported files carry no projectIds.
+                if let pid = appState.activeProjectId { imported.projectIds = [pid] }
+                try modelContext.save()
+                selectedId = imported.id
+            } catch {
+                importError = error.localizedDescription
+            }
         }
     }
 
@@ -109,6 +148,15 @@ struct MacCollectionManagerView: View {
                     Label("New Collection", systemImage: "plus")
                 }
                 .help("Create a new collection")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { isImporting = true } label: {
+                    Label(String(localized: "collections.toolbar.import",
+                                 defaultValue: "Import Collection…"),
+                          systemImage: "square.and.arrow.down")
+                }
+                .help(String(localized: "collections.toolbar.import.help",
+                             defaultValue: "Import a shared .fruscollection file"))
             }
         }
     }

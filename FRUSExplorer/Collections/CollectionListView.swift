@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - CollectionListView
 
@@ -60,6 +61,10 @@ struct CollectionListView: View {
 
     @State private var collectionToEdit: Collection? = nil
     @State private var isCreating = false
+    /// Drives the `.fruscollection` file importer.
+    @State private var isImporting = false
+    /// Non-nil to present an import-failure alert.
+    @State private var importError: String? = nil
 
     /// User override of the active-project filter, toggled from `projectFilterBanner`.
     /// Resets implicitly whenever the view is recreated (e.g. the window is reopened),
@@ -105,12 +110,55 @@ struct CollectionListView: View {
                     .accessibilityLabel(String(localized: "collections.toolbar.new.accessibility",
                                                defaultValue: "Create new collection"))
                 }
+                ToolbarItem(placement: .secondaryAction) {
+                    Button {
+                        isImporting = true
+                    } label: {
+                        Label(String(localized: "collections.toolbar.import",
+                                     defaultValue: "Import Collection…"),
+                              systemImage: "square.and.arrow.down")
+                    }
+                }
             }
             .sheet(isPresented: $isCreating) {
                 CollectionEditorView(collection: nil)
             }
             .sheet(item: $collectionToEdit) { collection in
                 CollectionEditorView(collection: collection)
+            }
+            .fileImporter(isPresented: $isImporting,
+                          allowedContentTypes: [.data],
+                          allowsMultipleSelection: false) { result in
+                importCollection(from: result)
+            }
+            .alert(String(localized: "collections.import.error.title",
+                          defaultValue: "Couldn’t Import Collection"),
+                   isPresented: Binding(get: { importError != nil },
+                                        set: { if !$0 { importError = nil } })) {
+                Button(String(localized: "collections.import.error.ok", defaultValue: "OK"),
+                       role: .cancel) { importError = nil }
+            } message: {
+                Text(importError ?? "")
+            }
+        }
+    }
+
+    /// Imports a user-picked `.fruscollection` file, then opens the reconstructed collection.
+    private func importCollection(from result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            importError = error.localizedDescription
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            do {
+                let imported = try NativeCollectionSerializer.importCollection(from: url, into: modelContext)
+                // Scope the import to the active project (as new collections are) so it isn't
+                // hidden by the active-project filter; imported files carry no projectIds.
+                if let pid = appState.activeProjectId { imported.projectIds = [pid] }
+                try modelContext.save()
+                collectionToEdit = imported
+            } catch {
+                importError = error.localizedDescription
             }
         }
     }
