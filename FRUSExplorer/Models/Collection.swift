@@ -282,9 +282,12 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
         didSet { lastModified = .now }
     }
 
-    /// Rich-text form of a `prose` entry's body — an `AttributedString` encoded to `Data`
-    /// (Phase 3b). `nil` for headings/documents and for plain prose; `text` is kept in sync as
-    /// the plain-text projection so search and plain renderers keep working.
+    /// Rich-text form of a `prose` entry's body, stored as **RTF** `Data`. `nil` for
+    /// headings/documents and for plain prose; `text` is kept in sync as the plain-text
+    /// projection so search and plain renderers keep working. Entries written by a Phase 3b
+    /// build (or synced from one) instead hold that era's JSON-encoded `AttributedString` —
+    /// readers go through `ProseRichText`/`CollectionProse`, which decode both formats and
+    /// migrate legacy blobs to RTF (`ProseRichText.migrateLegacyJSONIfNeeded`).
     var richText: Data? {
         didSet { lastModified = .now }
     }
