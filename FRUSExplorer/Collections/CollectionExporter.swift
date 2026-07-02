@@ -259,12 +259,17 @@ struct CollectionExportOptions: Sendable {
 ///          preserving path on both platforms is the Zotero Web API (separate).
 ///   1.5 — Collections rework Phase 4 (D7): added `.bibtex` (`.bib`) backed by
 ///          `BibTeXCollectionExporter`, for LaTeX / non-Zotero reference managers.
+///   1.6 — Collections rework Phase 4 (D9): added `.fruscollection` — the native,
+///          round-trippable collection file. It is not a `CollectionExporter` (it
+///          serializes the collection's *source* via `NativeCollectionSerializer`), so
+///          `makeExporter()` returns `nil` for it and the export flow special-cases it.
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
     case docx
     case zoteroJSON
     case bibtex
+    case fruscollection
 
     var id: String { rawValue }
 
@@ -277,25 +282,31 @@ enum ExportFormat: String, CaseIterable, Identifiable {
                                         defaultValue: "Zotero RIS (desktop)")
         case .bibtex:     return String(localized: "export.format.bibtex",
                                         defaultValue: "BibTeX")
+        case .fruscollection: return String(localized: "export.format.native",
+                                            defaultValue: "FRUS Collection (shareable)")
         }
     }
 
     var fileExtension: String {
         switch self {
-        case .zoteroJSON: return "ris"
-        case .bibtex:     return "bib"
-        default:          return rawValue
+        case .zoteroJSON:     return "ris"
+        case .bibtex:         return "bib"
+        case .fruscollection: return NativeCollectionSerializer.fileExtension
+        default:              return rawValue
         }
     }
 
-    /// Returns a fresh exporter instance for this format.
-    func makeExporter() -> any CollectionExporter {
+    /// Returns a fresh exporter instance for this format, or `nil` for `.fruscollection`,
+    /// which is produced by `NativeCollectionSerializer` (it serializes the collection's
+    /// source rather than rendering resolved content) and handled directly by the export flow.
+    func makeExporter() -> (any CollectionExporter)? {
         switch self {
-        case .pdf:        return PDFCollectionExporter()
-        case .html:       return HTMLCollectionExporter()
-        case .docx:       return DocxCollectionExporter()
-        case .zoteroJSON: return ZoteroCollectionExporter()
-        case .bibtex:     return BibTeXCollectionExporter()
+        case .pdf:            return PDFCollectionExporter()
+        case .html:           return HTMLCollectionExporter()
+        case .docx:           return DocxCollectionExporter()
+        case .zoteroJSON:     return ZoteroCollectionExporter()
+        case .bibtex:         return BibTeXCollectionExporter()
+        case .fruscollection: return nil
         }
     }
 }
