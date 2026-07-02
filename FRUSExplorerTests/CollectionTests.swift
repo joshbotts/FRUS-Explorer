@@ -1168,6 +1168,117 @@ struct CollectionTests {
         #expect(!state.pendingVolumeIds.contains("gatevol"))
         #expect(await counter.count == 0, "a .preview resolve must trigger no transfers")
     }
+
+    // MARK: - ExporterContractTest (Authoring Phase 2b)
+
+    /// Builds the shared exporter-contract fixture: one item of EVERY `CollectionExportItem`
+    /// case — a section heading, a rich-text prose block (RTF via `ProseRichText`, exactly as
+    /// the native editor stores it), and a resolved document carrying a Zotero item so the
+    /// reference exporters have something to emit.
+    ///
+    /// **Discipline:** every exporter must handle this list without crashing. Whenever a
+    /// `CollectionExportItem` case is added (Phases 4–6), extend this fixture and the two
+    /// contract tests below in the same commit.
+    @MainActor
+    private func makeExporterContractFixture() -> (metadata: CollectionExportMetadata,
+                                                   items: [CollectionExportItem]) {
+        let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 1)
+        entry.entryKind = .prose
+        entry.text = "Editorial contract prose."
+        entry.richText = nil
+        let rtf = ProseRichText.exportRTF(from: entry)
+
+        let zotero = ZoteroJSONExporter.Item(
+            itemType: "bookSection",
+            title: "Contract Memo",
+            bookTitle: "Foreign Relations of the United States, Contract Volume",
+            date: "1972",
+            url: "https://history.state.gov/historicaldocuments/frusvol/d9")
+        let doc = CollectionExportDocument(
+            documentId: "d9", volumeId: "frusvol", sortOrder: 2,
+            title: "Contract Memo",
+            bodyText: "Contract body paragraph.",
+            citation: "Contract Citation Label",
+            historyStateGovURL: "https://history.state.gov/historicaldocuments/frusvol/d9",
+            zoteroItem: zotero)
+
+        let items: [CollectionExportItem] = [
+            .heading("Contract Part I"),
+            .prose(rtf),
+            .document(doc),
+        ]
+        return (CollectionExportMetadata(name: "Exporter Contract", note: nil), items)
+    }
+
+    @Test("ExporterContract: HTML, DOCX, and PDF render every CollectionExportItem case")
+    func exporterContractRenderingFormats() async throws {
+        let (metadata, items) = await makeExporterContractFixture()
+
+        // HTML — all three kinds appear, and the document keeps its stable anchor id.
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.contains("Contract Part I"))                    // .heading
+        #expect(html.contains("class=\"section-heading\""))          // …as a section heading
+        #expect(html.contains("Editorial contract prose."))          // .prose
+        #expect(html.contains("class=\"prose-block\""))              // …as a prose block
+        #expect(html.contains("Contract Citation Label"))            // .document citation heading
+        #expect(html.contains("Contract body paragraph."))           // .document body
+        #expect(html.contains("id=\"doc-frusvol-d9\""))              // stable document anchor
+
+        // DOCX — the stored-mode ZIP keeps document.xml uncompressed, so the emitted XML
+        // text appears verbatim in the archive bytes.
+        let docxURL = try await DocxCollectionExporter().export(metadata: metadata, items: items)
+        let docx = try Data(contentsOf: docxURL)
+        func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
+        #expect(docxContains("Contract Part I"))                     // .heading
+        #expect(docxContains("Editorial contract prose."))           // .prose
+        #expect(docxContains("Contract Citation Label"))             // .document
+
+        // PDF — content streams aren't byte-searchable; rendering the full item mix into a
+        // valid, non-empty %PDF without throwing is the meaningful assertion.
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: items)
+        let pdf = try Data(contentsOf: pdfURL)
+        #expect(!pdf.isEmpty)
+        #expect(pdf.prefix(4) == Data([0x25, 0x50, 0x44, 0x46]))     // "%PDF"
+    }
+
+    @Test("ExporterContract: Zotero RIS and BibTeX export the document and skip structural items")
+    func exporterContractReferenceFormats() async throws {
+        let (metadata, items) = await makeExporterContractFixture()
+
+        // Zotero RIS — a flat reference list: exactly one record (the document);
+        // headings and prose have no Zotero representation and are legitimately dropped.
+        let risURL = try await ZoteroCollectionExporter().export(metadata: metadata, items: items)
+        let ris = try String(contentsOf: risURL, encoding: .utf8)
+        #expect(ris.components(separatedBy: "TY  - ").count - 1 == 1)
+        #expect(ris.contains("Contract Memo"))
+        #expect(!ris.contains("Contract Part I"))
+        #expect(!ris.contains("Editorial contract prose."))
+
+        // BibTeX — same discipline; records are keyed volumeId_documentId.
+        let bibURL = try await BibTeXCollectionExporter().export(metadata: metadata, items: items)
+        let bib = try String(contentsOf: bibURL, encoding: .utf8)
+        #expect(bib.contains("@incollection{frusvol_d9,"))
+        #expect(bib.contains("Contract Memo"))
+        #expect(!bib.contains("Contract Part I"))
+        #expect(!bib.contains("Editorial contract prose."))
+    }
+
+    @Test("SharedRenderer: the HTML export file is byte-identical to CollectionItemHTMLRenderer.pageHTML")
+    func htmlExportMatchesSharedRenderer() async throws {
+        // The no-drift guarantee of Authoring Phase 2b: the exporter writes exactly what the
+        // shared renderer assembles, so the live preview (same pageHTML call) cannot diverge
+        // from the exported file.
+        let (metadata, items) = await makeExporterContractFixture()
+        let options = CollectionExportOptions()
+
+        let url = try await HTMLCollectionExporter().export(
+            metadata: metadata, items: items, options: options)
+        let exported = try String(contentsOf: url, encoding: .utf8)
+        let assembled = CollectionItemHTMLRenderer(options: options)
+            .pageHTML(metadata: metadata, items: items)
+        #expect(exported == assembled)
+    }
 }
 
 // MARK: - Resolver test doubles
