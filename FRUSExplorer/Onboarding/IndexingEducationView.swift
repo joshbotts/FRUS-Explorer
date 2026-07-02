@@ -873,7 +873,8 @@ private extension EducationPage {
                 heading: "Collections & Export",
                 systemImage: "tray.2",
                 paragraphs: [
-                    "Collections are curated document sets you assemble for a purpose — a teaching reader, a policy-brief background packet, a document dossier. Add documents from any volume, attach a note to each entry, then export the whole collection as a PDF, HTML file, or Word document. Export options control body depth (full text, AI summary only, or index only), footnotes, highlight annotations, and whether to include your notes.",
+                    "Collections are curated sets you assemble for a purpose — a teaching reader, a briefing packet, a source dossier. The manager is where you shape the content: add documents from any volume, interleave your own section headings and rich-text prose (bold, italic, underline, colour), attach notes to a document, and inspect a document's notes, highlights, tags, summary, and archival source in place. The composition lives on the collection itself — default body depth (full text, an AI summary, or a compact index), footnotes, table-of-contents style, and whether to include highlights, notes, or a word cloud — and any single document or whole section can override the body depth.",
+                    "Export is simply how you share it. Render the collection — section headings and prose included — as a PDF, HTML file, or Word document; produce a BibTeX or RIS file for a reference manager; or save a native \u{201C}.fruscollection\u{201D} file: an editable copy a colleague opens right back into their own FRUS Explorer, where the documents travel as references they can download. Import one with Import Collection or by opening the file. A smart collection driven by a saved search can be frozen into an editable copy with Create Static Snapshot.",
                     "Find it on the Collections tab (iOS) or the Collections window, ⇧⌘K (Mac)."
                 ]
             ),
@@ -883,7 +884,7 @@ private extension EducationPage {
                 systemImage: "quote.bubble",
                 paragraphs: [
                     "Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations — individually or for a whole collection — as BibTeX or RIS for your reference manager (RIS imports into Zotero on the desktop via File \u{2192} Import).",
-                    "If you connect a Zotero account (Settings \u{2192} Zotero), Send to Zotero Library pushes a document — or an entire collection — straight into your Zotero library over the web, carrying your tags and research notes, with no manual import step."
+                    "Sending to Zotero is one action: connect a Zotero account (Settings \u{2192} Zotero) and Send to Zotero Library pushes a document — or an entire collection — straight into your library over the web, carrying your tags and research notes; without an account it falls back to an RIS file for desktop import."
                 ]
             ),
             EducationSection(

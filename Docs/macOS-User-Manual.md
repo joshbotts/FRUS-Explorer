@@ -302,7 +302,7 @@ Click **Save Search** to bookmark the current query and all active filters. Save
 
 ![The Search window's saved-searches list, opened from the bookmark button in the toolbar — each saved query can be re-run with a single click.](screenshots/macos/saved-searches.png)
 
-Saved searches can also be linked to Collections to create *smart collections* that auto-populate at export time (see Section 10.3).
+Saved searches can also be linked to Collections to create *smart collections* that auto-populate at export time (see Section 10.4).
 
 ### 5.6 Visualizing a Search in Corpus Analytics
 
@@ -494,9 +494,12 @@ Two Research-strip buttons separate the *citation itself* from *sending the docu
 
 ---
 
-## 10. Collections and Export
+## 10. Collections: Manager and Export
 
-Collections are ordered groups of documents that you can export as formatted PDF or HTML. Use them to assemble source packets, share a curated reading list, or build an annotated bibliography.
+A **collection** is a curated, authored set of documents — a source packet, a teaching reader, an annotated bibliography. Collections work in two halves:
+
+- The **manager** (the Collections window) is the editorial place: it's where you decide *what's in* the collection and *how it's composed* — which documents, in what order, interleaved with your own section headings and prose, and how much of each document to show.
+- **Export** is purely for *sharing*: it chooses a **format** and a **destination**. Everything about the content already lives on the collection.
 
 Open the Collections window with **⇧⌘K**.
 
@@ -508,52 +511,69 @@ Open the Collections window with **⇧⌘K**.
 2. Enter a name and an optional collection note.
 3. Click **Create**.
 
-### 10.2 Adding Documents
+### 10.2 Composing: Documents, Section Headings, and Prose
 
 With a collection selected, add documents in two ways:
 
 - **Individually**: Open any document and click **Collections** in the research strip. Choose an existing collection or create a new one.
 - **By Tag**: In the Collections window, click **Add by Tag**, choose a user tag, and all documents with that tag are appended.
 
-Reorder documents by dragging rows within the collection list.
+A collection isn't limited to a flat document list. From the **add** menu you can insert two kinds of editorial entry and place them anywhere in the order:
 
-`[SCREENSHOT: Collection detail view with documents listed and drag handles visible]`
+- **Section headings** — titles that group the documents beneath them (e.g. "Opening Moves"). They appear as headings in the export and its table of contents; in DOCX they become Word headings that show up in Word's own table of contents.
+- **Prose blocks** — your own connecting commentary, written in a **rich-text editor** with **bold**, *italic*, underline, and colour. Your formatting is preserved through PDF, HTML, and DOCX export.
 
-For each document in a collection you can choose which research note (if any) to include in the export. Click the document row's **Note** column to pick from existing notes or write one inline.
+Reorder any entry by dragging rows within the collection list.
 
-### 10.3 Smart Collections
+`[SCREENSHOT: Collection detail with documents, a section heading, and a prose block, drag handles visible]`
 
-Link any saved search to a collection by clicking **Link Search** in the collection detail view. The collection becomes *smart*: at export time, FRUS Explorer resolves the saved search and includes all matching documents automatically. This keeps the collection current as you add new notes and tags.
+For each document you can choose which research note(s) to include — click the row's **Note** control to pick from existing notes or write one inline — and open the row's **inspector (ⓘ)** to see everything the app knows about that document in one place: your notes and highlights, its tags, its AI summary, its archival source note, and its cross-reference count.
+
+### 10.3 Composition Settings
+
+Open the **Composition** control in the collection's toolbar. These settings are **saved on the collection**, so it always exports the same way in any format:
+
+| Setting | Options |
+|---------|---------|
+| **Default body depth** | *Full* (complete body), *Summary only* (requires Apple Intelligence; generates summaries on demand), or *Index only* (citation, date, and notes — no body) |
+| **Footnotes** | *All*, *Source note only*, or *None* |
+| **Table-of-contents label style** | Formatted citation, or header and dateline |
+| **Include highlights** | Annotate your highlights inline — `<mark>` spans in HTML, background shading in PDF, highlighted runs in DOCX |
+| **Include research notes** | Show attached notes below each document |
+| **Include word cloud** | Prepend a frequency overview (PDF and HTML) |
+| **Summary prompt** | Which prompt to use when the body depth is *Summary only* |
+
+**Per-entry and per-section overrides.** The body depth above is a *default*. Any single document can override it, and any **section heading** can set a depth for the documents beneath it. The effective depth is the most specific that applies — the document's own override, else its section's, else the collection default — so one collection can mix full documents, summaries, and citation-only entries.
+
+### 10.4 Smart Collections
+
+Link any saved search to a collection by clicking **Link Search** in the collection detail view. The collection becomes *smart*: at export time, FRUS Explorer resolves the saved search and includes all matching documents automatically, keeping it current as you add notes and tags.
+
+Because a smart collection's membership is resolved dynamically, it can't be hand-edited or shared as a native file. Right-click it and choose **Create Static Snapshot** to capture the current results as a new, ordinary collection — which you can then reorder, section, annotate, and export like any other.
 
 `[SCREENSHOT: Collection detail showing the "Link Search" button and a linked saved search name displayed as a badge]`
 
-### 10.4 Exporting
+### 10.5 Export
 
-Click **Export** in the Collections window to generate a formatted document.
+Click **Export** in the Collections window. Because composition is already set, this sheet is just format + destination.
 
 | Format | Best for |
 |--------|---------|
-| **PDF** | Printing, archiving, sharing with colleagues who do not have FRUS Explorer |
-| **HTML** | Web-based viewing, browser printing with custom CSS, embedding links |
-| **DOCX** | Microsoft Word format with styles, footnotes, and internal links |
-| **Zotero (RIS)** | Importing the whole collection into Zotero (or any RIS-aware reference manager) — one Book Section record per document, carrying the canonical history.state.gov URL plus your FRUS Explorer tags and (optionally) research notes |
+| **PDF** | Printing, archiving, sharing with colleagues who don't have FRUS Explorer — renders section headings and rich prose |
+| **HTML** | Web-based viewing, browser printing with custom CSS, embedding links — renders section headings and prose |
+| **DOCX** | Microsoft Word format with styles, footnotes, and internal links; section headings become Word headings and prose keeps its formatting |
+| **BibTeX** | A `.bib` file (one `@incollection` record per document) for LaTeX and reference managers such as JabRef |
+| **FRUS Collection (shareable)** | A native **`.fruscollection`** file — an *editable* copy of the collection you can hand to a colleague (see below) |
 
-> **Sending one document to Zotero:** Use the document's **Share** button (Section 9.3). With a Zotero account connected (Section 16), **Send to Zotero Library** pushes the single document — with its tags and notes — into your library over the Web API; otherwise **Export Zotero file (RIS)** writes a single record you can open straight into Zotero. RIS is used (rather than a Zotero-specific JSON envelope) because standard Zotero imports it on every platform, including iOS. A whole collection can be sent the same way (Send to Zotero Library) or exported as RIS here.
+**Send to Zotero.** A single **Send to Zotero…** menu handles reference-manager export. With a Zotero account connected (Section 16), **Send to Zotero Library** pushes the whole collection into your library over the Web API, carrying tags and research notes; otherwise it writes an **RIS file** you open straight into Zotero desktop (File → Import). RIS is used rather than a Zotero-specific envelope because standard Zotero imports it everywhere, including iOS.
 
-The export sheet offers additional controls:
+**Sharing an editable collection (`.fruscollection`).** The FRUS Collection format saves a small file carrying the collection's *source* — its document references, composition, section headings, and prose — not a rendered document. A colleague opens it right back into their own FRUS Explorer as a live, editable collection; because documents travel as references, the app offers to download any volumes they don't already have. Your research notes are **not** included unless you turn on **Include my research notes** (off by default).
 
-| Control | Options |
-|---------|---------|
-| **Body depth** | *Full* (complete document body), *Summary only* (requires Apple Intelligence; generates summaries on demand), or *Index only* (citation, date, and notes — no body text) |
-| **Footnotes** | *All* (full footnotes), *Source note only*, or *None* |
-| **Inline highlights** | Toggle to include highlighted passages as `<mark>` annotations (HTML export) |
-| **Research notes** | Toggle to include or exclude attached research notes |
+**Importing.** Bring a shared collection in with **Import Collection…** in the Collections window, or simply **double-click a `.fruscollection` file** (or receive one via AirDrop) — it opens straight into FRUS Explorer.
 
-The export always includes the collection title, a linked table of contents, and any research notes you have attached — unless the notes toggle is turned off.
+The export always includes the collection title and a linked table of contents. After exporting, a Finder reveal button opens the enclosing folder.
 
-After exporting, a Finder reveal button opens the enclosing folder.
-
-`[SCREENSHOT: Export format picker sheet with PDF, HTML, and DOCX options]`
+`[SCREENSHOT: Export sheet showing the format list and the "Include my research notes" toggle]`
 
 ---
 
