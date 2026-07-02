@@ -162,6 +162,40 @@ struct CollectionTests {
         #expect(docs.map(\.documentId) == ["d1", "d2"])
     }
 
+    // MARK: - SectionBodyDepthTest (Phase 3c)
+
+    @Test("SectionBodyDepth: cascade — entry override > section (heading) override > collection default")
+    func sectionBodyDepthCascade() {
+        // Entry override wins over everything.
+        #expect(CollectionBodyDepth.resolve(entryOverride: "index", sectionOverride: "summaryOnly",
+                                            collectionDefault: "full") == .index)
+        // Section (heading) override applies when the entry has none.
+        #expect(CollectionBodyDepth.resolve(entryOverride: nil, sectionOverride: "summaryOnly",
+                                            collectionDefault: "full") == .summaryOnly)
+        // Collection default when neither is set.
+        #expect(CollectionBodyDepth.resolve(entryOverride: nil, sectionOverride: nil,
+                                            collectionDefault: "index") == .index)
+        // A malformed raw value falls back to `.full`.
+        #expect(CollectionBodyDepth.resolve(entryOverride: "bogus", sectionOverride: nil,
+                                            collectionDefault: "full") == .full)
+    }
+
+    @Test("SectionBodyDepth: a heading entry persists a bodyDepthOverride (the section default)")
+    func headingSectionOverridePersists() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let heading = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        heading.entryKind = .heading
+        heading.text = "Cuba"
+        heading.bodyDepthOverride = CollectionBodyDepth.summaryOnly.rawValue
+        context.insert(heading)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<CollectionEntry>()).first
+        #expect(fetched?.entryKind == .heading)
+        #expect(fetched?.bodyDepthOverride == "summaryOnly")
+    }
+
     // MARK: - ProseRichTextTest
 
     @Test("ProseRichText: exportRTF for a plain prose entry yields RTF whose plain text matches")

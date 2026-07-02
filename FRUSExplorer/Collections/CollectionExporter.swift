@@ -72,6 +72,15 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
             ? allCases
             : allCases.filter { $0 != .summaryOnly }
     }
+
+    /// A document's effective body depth (Phase 3c cascade, most specific wins): the entry's
+    /// own override → the section override (the nearest preceding heading's) → the collection
+    /// default. Inputs are `CollectionBodyDepth` raw values; `nil` means "not set".
+    static func resolve(entryOverride: String?,
+                        sectionOverride: String?,
+                        collectionDefault: String) -> CollectionBodyDepth {
+        CollectionBodyDepth(rawValue: entryOverride ?? sectionOverride ?? collectionDefault) ?? .full
+    }
 }
 
 // MARK: - CollectionFootnoteStyle
