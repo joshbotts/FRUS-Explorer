@@ -140,6 +140,9 @@ enum NativeCollectionError: Error, LocalizedError {
 ///
 /// Version history:
 ///   1.0 — Collections rework Phase 4 (D9): initial implementation
+///   1.1 — Session 2026-07-02 data-loss fix: `makeFile` heals a legacy Phase 3b JSON
+///          `richText` blob to RTF before emitting a prose entry, so shared files honour
+///          the schema's "richText is RTF" promise instead of propagating the old encoding
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -227,6 +230,10 @@ enum NativeCollectionSerializer {
                         notes: nil
                     )
                 case .prose:
+                    // The file schema promises RTF, but a pre-RTF (Phase 3b) entry still
+                    // holds a JSON-encoded AttributedString — heal it before emitting so
+                    // shared files never propagate the legacy encoding.
+                    ProseRichText.migrateLegacyJSONIfNeeded(entry)
                     return FRUSCollectionFile.Entry(
                         kind: CollectionEntryKind.prose.rawValue,
                         documentId: nil,

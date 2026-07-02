@@ -62,6 +62,10 @@ import Foundation
 ///          them); rich-text prose blocks render via `proseDocxXML`, mapping the shared
 ///          `CollectionProse` spans to bold/italic/underline/`<w:color>` runs. Per-document
 ///          rendering is factored into `documentSectionXML`.
+///   1.5 — Session 2026-07-02 data-loss fix: `proseDocxXML` no longer silently drops a
+///          prose block whose payload predates the RTF storage format — the shared
+///          `CollectionProse.paragraphs(fromRTF:)` now decodes legacy Phase 3b JSON
+///          `AttributedString` blobs (bold/italic preserved) instead of returning `[]`
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -392,7 +396,8 @@ final class DocxCollectionExporter: CollectionExporter {
         return body
     }
 
-    /// Renders a Phase 3b rich-text prose block (RTF) to Word paragraph XML. Bold/italic/
+    /// Renders a rich-text prose block (RTF, or a legacy Phase 3b JSON blob the shared
+    /// decoder recovers rather than dropping) to Word paragraph XML. Bold/italic/
     /// underline/colour spans (decoded once by `CollectionProse`) map to `<w:r>` run
     /// properties; blank lines split paragraphs; single newlines within a paragraph become
     /// `<w:br/>`. Empty (whitespace-only) paragraphs are dropped.

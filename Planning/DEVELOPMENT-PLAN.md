@@ -846,6 +846,43 @@ is the first comma-delimited component.
   commit the index. Other consular series (Consular Instructions 604019, Notes to/from
   Consuls) and Domestic/Misc Letters remain as further Phase 3 work.
 
+### Session 2026-07-02 — Open-with `.fruscollection` feedback (macOS) + duplicate protection
+Fixed the silent open-with import: double-clicking / AirDropping a `.fruscollection`
+(FRUSExplorerApp.importOpenedCollection) imported correctly but gave no feedback on macOS,
+so users re-opened the file and minted silent CloudKit-synced duplicates (each apply()
+creates a fresh Collection.id); failures were a DEBUG print only.
+- **macOS surfacing**: new `AppState.pendingCollectionSelection` hand-off — set before
+  `openWindow(id: "frus.collections")` + `bringMacWindowToFront` (the 21d2ddd pattern);
+  `MacCollectionManagerView` consumes it (`.task` for a freshly created window,
+  `.onChange` for an open one; consume-and-clear like `pendingSearch`) and selects the
+  imported collection.
+- **Errors**: open-with failures now present a "Couldn't Open Collection" alert on the
+  main window (both platforms), with the DEBUG print retained for the raw error.
+- **Duplicate protection**: session-scoped SHA-256 digest → Collection.id map in the App;
+  re-opening a byte-identical file re-surfaces the collection it created (if it still
+  exists) instead of importing again. Deliberately not persisted — the in-app Import
+  button remains the intentional-copy path.
+- Docs: both user manuals + both TestFlight instructions describe the new behavior.
+### Session 2026-07-02 — VolumeView On-Page Download Completion Fix
+Fixed the dead-end left by the Session 2026-06-28 "downloadable from every surface" work
+(e971585): tapping **Download Volume** on the iOS VolumeView placeholder showed a static
+"Download started." that never progressed — nothing in the view's body observed state that
+changes when the transfer finishes (`vm.isDownloaded()` is a raw FileManager check on the
+non-Observable `DownloadManager`, and the one-shot `.task` had already bailed on the
+not-downloaded guard), so the structure never loaded even after a successful download.
+- **VolumeView 2.3**: injected `@Environment(AppState.self)`; the placeholder now shows a
+  live "Downloading…" row while the volume is in `appState.downloadQueue` (also covers
+  downloads started from other surfaces), and `.onChange(of: appState.downloadQueue)`
+  re-runs `loadVolumeStructure` on the present→absent transition — safe because
+  `DownloadManager` moves the XML into place *before* firing `onStateChanged`. A failed
+  download resets `downloadRequested` so the button is re-offered.
+- Branch reorder: the structure/error/loading chain now falls back to the loading row
+  (instead of a blank section) during the persisted-structure fast path and the brief
+  post-download window, mirroring CompilationView's approach.
+- Verified end-to-end in the iPhone 17 simulator: frus1961-63v06 (fast path) and the
+  11.8 MB frus1961-63v07-09mSupp (spinner visible) both transitioned Download Required →
+  Downloading… → loaded structure without leaving the screen. CodingStandardsAuditTests +
+  BrowserViewTests pass (33/33).
 ### Session 2026-07-02 — Three-week review + reported-bug fixes (reindex bump, title whitespace, neighbors-sheet loop)
 Multi-agent review of PRs #108–#136 (word-cloud/analytics, archival neighbors, corpus-browser
 rework, volume-sources v2, Collections Phases 1a–4) plus root-cause fixes for the three
@@ -917,3 +954,27 @@ Executed Phase 1 of Planning/Collections-Authoring-Scope.md in two PRs:
   DisclosureGroup at the top of the scrolling entries List (inline per scope, but inside the
   scroll region so expansion can't overflow the fixed header — preserves the #126 constraint).
   Docs rider: iOS/macOS manuals §10 + both TestFlight instructions.
+
+### Session 2026-07-02 (later) — Legacy-prose export data-loss fix
+Closed the spun-off "legacy-prose export loss" finding: Phase 3b (9f1c648) persisted
+`CollectionEntry.richText` as a JSON-encoded `AttributedString`; the RTF switch (05d31c7)
+added no migration, so `ProseRichText.exportRTF` returned legacy blobs verbatim,
+`CollectionProse.paragraphs(fromRTF:)` failed the RTF decode and returned `[]`, and all
+three exporters (HTML/DOCX/PDF) silently omitted the prose block — even though the plain
+text sat in `entry.text`. Fix, layered so no reader can drop prose again:
+- **`ProseRichText.exportRTF`** now always emits valid RTF: stored RTF verbatim → legacy
+  JSON converted (bold/italic `inlinePresentationIntent` → concrete font traits, so
+  formatting survives) → plain `text` fallback. Conversion also migrates the entry in
+  place (`migrateLegacyJSONIfNeeded`), so the first export heals the store.
+- **`CollectionProse.paragraphs(fromRTF:)`** — the single decode path shared by all three
+  exporters — falls back to decoding the legacy JSON encoding directly, covering raw
+  legacy payloads that bypass `exportRTF` (pre-fix `.fruscollection` files, tests).
+- **Editor**: `RichTextEditor` loads legacy blobs with formatting intact; the prose row
+  migrates on appear. **Native format**: `makeFile` heals before emitting, so shared
+  `.fruscollection` files honour the schema's "richText is RTF" promise.
+- Unrecognizable blobs (neither format) are left untouched and export the plain `text`
+  projection — never destroyed, never silently dropped.
+- 4 new tests (legacy export+migration, garbage fallback, decoder fallback with paragraph/
+  bold recovery, HTML/DOCX/PDF end-to-end); 30/30 CollectionTests + 15/15
+  CodingStandardsAuditTests pass; exporter version histories bumped (HTML 1.7, DOCX 1.5,
+  PDF 1.8, NativeCollectionSerializer 1.1, ProseRichText 1.1).
