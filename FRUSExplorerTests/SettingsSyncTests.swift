@@ -19,12 +19,18 @@ import Testing
 @Suite(.serialized)
 struct SettingsSyncCoordinatorTests {
 
-    private func makeContext() throws -> ModelContext {
-        let container = try ModelContainer(
+    /// Each test must hold the returned container for its whole body: `mainContext`
+    /// does not keep its container alive, and fetching on a context whose container
+    /// has deallocated SIGTRAPs the test host.
+    ///
+    /// `cloudKitDatabase: .none` keeps the container from adopting the test host's
+    /// iCloud entitlement (the default `.automatic` starts real CloudKit mirroring,
+    /// which has no account in the simulator).
+    private func makeContainer() throws -> ModelContainer {
+        try ModelContainer(
             for: SyncedPreferences.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         )
-        return container.mainContext
     }
 
     private func setEnabled(_ on: Bool) {
@@ -43,7 +49,8 @@ struct SettingsSyncCoordinatorTests {
             setEnabled(false)
         }
 
-        let context = try makeContext()
+        let container = try makeContainer()
+        let context = container.mainContext
         let coordinator = SettingsSyncCoordinator(context: context)
         coordinator.handleEnabledChange(true)
 
@@ -63,7 +70,8 @@ struct SettingsSyncCoordinatorTests {
             setEnabled(false)
         }
 
-        let context = try makeContext()
+        let container = try makeContainer()
+        let context = container.mainContext
         let record = SyncedPreferences()
         record.wcMinCount = 4
         record.citationStyleRaw = "turabian"
@@ -79,9 +87,13 @@ struct SettingsSyncCoordinatorTests {
     @Test("Duplicate records collapse to the earliest-created one")
     func collapsesDuplicates() throws {
         setEnabled(true)
-        defer { setEnabled(false) }
+        defer {
+            UserDefaults.standard.removeObject(forKey: WordCloudSettings.Keys.minCount)
+            setEnabled(false)
+        }
 
-        let context = try makeContext()
+        let container = try makeContainer()
+        let context = container.mainContext
         let older = SyncedPreferences()
         older.createdAt = Date(timeIntervalSince1970: 1_000)
         older.wcMinCount = 2
@@ -98,7 +110,6 @@ struct SettingsSyncCoordinatorTests {
         #expect(records.count == 1)
         // The earliest record is canonical, so its value is what propagates.
         #expect(records.first?.wcMinCount == 2)
-        UserDefaults.standard.removeObject(forKey: WordCloudSettings.Keys.minCount)
     }
 
     @Test("A disabled coordinator never writes UserDefaults")
@@ -107,7 +118,8 @@ struct SettingsSyncCoordinatorTests {
         setEnabled(false)
         defaults.removeObject(forKey: WordCloudSettings.Keys.minCount)
 
-        let context = try makeContext()
+        let container = try makeContainer()
+        let context = container.mainContext
         let record = SyncedPreferences()
         record.wcMinCount = 9
         context.insert(record)
