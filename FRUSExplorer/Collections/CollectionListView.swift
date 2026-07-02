@@ -44,6 +44,8 @@ import UniformTypeIdentifiers
 ///          previously the active-project filter was silent, so a collection visible
 ///          in `ResearchView` (which queries `Collection` with no project filter)
 ///          could appear to be missing here with no indication why or how to see it
+///   1.6 — Authoring Phase 1: import fileImporter narrowed from `.data` to the declared
+///          `.fruscollection` UTI
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -129,7 +131,7 @@ struct CollectionListView: View {
                 CollectionEditorView(collection: collection)
             }
             .fileImporter(isPresented: $isImporting,
-                          allowedContentTypes: [.data],
+                          allowedContentTypes: [.fruscollection],
                           allowsMultipleSelection: false) { result in
                 importCollection(from: result)
             }
