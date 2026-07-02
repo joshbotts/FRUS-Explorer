@@ -880,3 +880,19 @@ user-reported regressions:
 - **Next**: collection-editor rework scoping (manager → authoring canvas; see session
   recommendations), plus the spun-off fix tasks. The next build's TestFlight notes must
   mention the one-time automatic re-index on first launch.
+
+### Session 2026-07-02 (later) — Collections Authoring scope
+Authored `Planning/Collections-Authoring-Scope.md` — the 6-phase program turning the
+collection editor into an authoring tool for "rich historical products" (the owner's
+2026-07-02 request). Synthesized from a 3-angle design panel (product-first /
+architecture-first / effort-ROI-first + judge) over a verified current-state survey.
+Backbone: §0 target artifact ("the FRUS Reader") → Phase 1 editor shell + unknown-kind
+sync guard → Phase 2 single resolver + live preview → Phase 3 in-editor discovery
+(search/browse/paste-citations/tag) → Phase 4 publication frame (front matter, level-based
+nested sections, `.fruscollection` v2) → Phase 5 annotated document (headnotes, excerpts,
+read-write inspector, footnote tri-state fix) → Phase 6 generated apparatus (bibliography,
+chronology, sources & archives, persons, thematic index as placeable entries). Decision
+points A1–A12 for the owner; Phases 1–3 carry zero schema/format risk. Key safety rails:
+ship the `entryKind` `.unrecognized` fallback first (mixed-build CloudKit sync), never
+re-purpose `sortOrder` (level-derived tree instead of parent pointers), one batched
+`.fruscollection` bump with write-minimum + tolerant reader.
