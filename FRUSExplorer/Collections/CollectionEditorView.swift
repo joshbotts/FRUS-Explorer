@@ -1350,13 +1350,17 @@ struct ExportSheetView: View {
         let sortOrder: Int
     }
 
-    /// The formats offered for this collection. The native `.fruscollection` file needs static
-    /// entries, so it's hidden for smart (saved-search) collections until they can be
-    /// snapshotted (D8/D9b).
+    /// The document formats offered in the picker. Zotero RIS is excluded — it now lives in the
+    /// unified "Send to Zotero…" menu (D6) — and the native `.fruscollection` file is hidden for
+    /// smart (saved-search) collections until they're snapshotted (D8/D9b).
     private var availableFormats: [ExportFormat] {
-        collection.savedSearchId == nil
-            ? ExportFormat.allCases
-            : ExportFormat.allCases.filter { $0 != .fruscollection }
+        ExportFormat.allCases.filter { fmt in
+            switch fmt {
+            case .zoteroJSON:     return false
+            case .fruscollection: return collection.savedSearchId == nil
+            default:              return true
+            }
+        }
     }
 
     var body: some View {
@@ -1467,7 +1471,7 @@ struct ExportSheetView: View {
                     }
                 }
 
-                zoteroSendButton
+                zoteroMenu
 
                 Button {
                     Task { await runExport() }
@@ -1548,7 +1552,7 @@ struct ExportSheetView: View {
                             )
                         }
                         .disabled(entries.isEmpty && collection.savedSearchId == nil)
-                        zoteroSendButton
+                        zoteroMenu
                     }
                 }
 
@@ -1778,20 +1782,68 @@ struct ExportSheetView: View {
     /// `true` when a Zotero account is connected (Settings → Integrations → Zotero).
     private var isZoteroConnected: Bool { ZoteroAccountStore.shared.isConnected }
 
-    /// A "Send to Zotero Library…" button, shown only when a Zotero account is
-    /// connected. Pushes the collection's documents — with tags and research notes —
-    /// straight into the user's Zotero library via the Web API.
+    /// A single "Send to Zotero…" menu (D6): one entry point that covers both the
+    /// connected-account Web-API path (annotation-preserving, works on iOS) and the RIS-file
+    /// fallback for Zotero desktop — replacing the former split between a picker format
+    /// ("Zotero RIS") and a separate "Send to Zotero Library" button that behaved differently.
     @ViewBuilder
-    private var zoteroSendButton: some View {
-        if isZoteroConnected {
-            Button {
-                Task { await sendToZoteroLibrary() }
-            } label: {
-                Label(String(localized: "export.zotero.send",
-                             defaultValue: "Send to Zotero Library…"),
-                      systemImage: "books.vertical")
+    private var zoteroMenu: some View {
+        Menu {
+            if isZoteroConnected {
+                Button {
+                    Task { await sendToZoteroLibrary() }
+                } label: {
+                    Label(String(localized: "export.zotero.send",
+                                 defaultValue: "Send to Zotero Library"),
+                          systemImage: "books.vertical")
+                }
+                Button {
+                    Task { await exportZoteroRIS() }
+                } label: {
+                    Label(String(localized: "export.zotero.risAlt",
+                                 defaultValue: "Export RIS File Instead"),
+                          systemImage: "doc.text")
+                }
+            } else {
+                Button {
+                    Task { await exportZoteroRIS() }
+                } label: {
+                    Label(String(localized: "export.zotero.risDesktop",
+                                 defaultValue: "Export RIS File (Zotero desktop)"),
+                          systemImage: "doc.text")
+                }
+                Text(String(localized: "export.zotero.connectHint",
+                            defaultValue: "Connect a Zotero account in Settings to send directly."))
             }
-            .disabled(isExporting)
+        } label: {
+            Label(String(localized: "export.zotero.menu", defaultValue: "Send to Zotero…"),
+                  systemImage: "books.vertical")
+        }
+        .disabled(isExporting || (entries.isEmpty && collection.savedSearchId == nil))
+    }
+
+    /// Produces the Zotero RIS file (desktop-import fallback) and routes it into the shared
+    /// export delivery. Reuses `resolvedZoteroDocuments()` (static + smart paths) so the RIS
+    /// file and the Web-API send always carry the same resolved documents.
+    private func exportZoteroRIS() async {
+        isExporting = true
+        defer { isExporting = false; preparingMessage = nil }
+        do {
+            let docs = try await resolvedZoteroDocuments()
+            guard !docs.isEmpty else {
+                exportError = String(localized: "export.zotero.empty",
+                                     defaultValue: "This collection has no documents to send.")
+                return
+            }
+            let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
+            let url = try await ZoteroCollectionExporter().export(
+                metadata: metadata, documents: docs, options: buildExportOptions())
+            exportedURL = url
+            appState.logEvent(.export(format: ExportFormat.zoteroJSON.rawValue, documentCount: docs.count))
+        } catch is CancellationError {
+            return
+        } catch {
+            exportError = error.localizedDescription
         }
     }
 
