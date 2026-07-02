@@ -75,6 +75,11 @@ import UIKit
 ///          collapsible Details/Composition disclosures; iPad uses a system `.inspector`
 ///          for metadata + composition instead of the two-Form HStack;
 ///          `applyEditsForExport` deleted (redundant under live saves)
+///   2.1 — Authoring Phase 2b: live preview pane — iPhone gains a segmented
+///          Outline | Preview control above the Form; iPad gains a toolbar-toggled
+///          side-by-side `CollectionPreviewView` next to the entries Form (the
+///          metadata `.inspector` keeps working alongside); the preview's Render All
+///          state is hoisted here so pane toggles don't reset it
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -120,6 +125,21 @@ struct CollectionEditorView: View {
     @State private var compositionExpanded = false
     /// iPad metadata/composition inspector visibility.
     @State private var showDetailsInspector = true
+    /// iPhone Outline | Preview pane selection (Authoring Phase 2b; view-local).
+    @State private var editorPane: EditorPane = .outline
+    /// iPad side-by-side preview pane visibility (Authoring Phase 2b).
+    @State private var showPreviewPane = false
+    /// The preview's "Render All" cap lift, hoisted here so it survives pane toggles
+    /// that recreate `CollectionPreviewView` (one editor session = one lift).
+    @State private var previewRenderAll = false
+
+    /// Which surface the compact-width (iPhone) editor shows (Authoring Phase 2b).
+    private enum EditorPane: String, CaseIterable {
+        /// The entries outline — the editing Form.
+        case outline
+        /// The live HTML preview.
+        case preview
+    }
 
     /// How the editor is presented, which decides its navigation chrome (Authoring
     /// Phase 1 shell).
@@ -362,10 +382,10 @@ struct CollectionEditorView: View {
             if sizeClass == .regular {
                 iPadCollectionLayout
             } else {
-                iPhoneCollectionForm
+                iPhoneCollectionLayout
             }
             #else
-            iPhoneCollectionForm
+            iPhoneCollectionLayout
             #endif
         }
         .navigationTitle(isNewCollection
@@ -421,6 +441,33 @@ struct CollectionEditorView: View {
 
     // MARK: - iOS Form Variants
 
+    /// iPhone (compact width) shell: a segmented Outline | Preview control pinned above
+    /// the content (Authoring Phase 2b). Outline shows the editing Form; Preview swaps
+    /// in the live `CollectionPreviewView`. Selection is view-local.
+    private var iPhoneCollectionLayout: some View {
+        VStack(spacing: 0) {
+            Picker(String(localized: "collection.editor.pane.picker", defaultValue: "View"),
+                   selection: $editorPane) {
+                Text(String(localized: "collection.editor.pane.outline",
+                            defaultValue: "Outline")).tag(EditorPane.outline)
+                Text(String(localized: "collection.editor.pane.preview",
+                            defaultValue: "Preview")).tag(EditorPane.preview)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+
+            if editorPane == .outline {
+                iPhoneCollectionForm
+            } else {
+                CollectionPreviewView(collection: collection,
+                                      entries: sortedEntries,
+                                      allNotes: allNotes,
+                                      renderAll: $previewRenderAll)
+            }
+        }
+    }
+
     /// iPhone (compact width): the entry list is the primary surface. Metadata lives in a
     /// collapsible Details group above it (expanded for a new collection so the name field
     /// is immediately available, collapsed to a single row otherwise), and Composition in
@@ -469,16 +516,30 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// iPad (regular width): the entry list fills the screen; metadata + composition live
-    /// in a system `.inspector` panel (the app's established iPad pattern, cf. the
-    /// document notes panel), toggleable from the toolbar.
+    /// iPad (regular width): the entry list fills the screen, with an optional live
+    /// preview pane side-by-side on the right (Authoring Phase 2b, toolbar-toggled);
+    /// metadata + composition live in a system `.inspector` panel (the app's established
+    /// iPad pattern, cf. the document notes panel), toggleable from the toolbar and
+    /// fully independent of the preview pane.
     private var iPadCollectionLayout: some View {
-        Form {
-            documentsSection
-            addByTagSection
-            if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
+        HStack(spacing: 0) {
+            Form {
+                documentsSection
+                addByTagSection
+                if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
+            }
+            .formStyle(.grouped)
+            .frame(maxWidth: .infinity)
+
+            if showPreviewPane {
+                Divider()
+                CollectionPreviewView(collection: collection,
+                                      entries: sortedEntries,
+                                      allNotes: allNotes,
+                                      renderAll: $previewRenderAll)
+                    .frame(minWidth: 320, maxWidth: .infinity)
+            }
         }
-        .formStyle(.grouped)
         .inspector(isPresented: $showDetailsInspector) {
             Form {
                 nameSection
@@ -492,6 +553,15 @@ struct CollectionEditorView: View {
             #endif
         }
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showPreviewPane.toggle()
+                } label: {
+                    Image(systemName: showPreviewPane ? "eye.fill" : "eye")
+                }
+                .accessibilityLabel(String(localized: "collection.editor.preview.toggle",
+                                           defaultValue: "Show live preview"))
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     showDetailsInspector.toggle()

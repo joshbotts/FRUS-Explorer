@@ -35,11 +35,22 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Authoring Phase 2b: extracted verbatim from `HTMLCollectionExporter.buildHTML`
 ///          (v1.7) so the file exporter and the live preview share one item renderer
+///   1.1 — Authoring Phase 2b (preview pane): `citationOnlyVolumeIds` — documents from
+///          these volumes render a bordered citation card instead of a body (the live
+///          preview's un-downloaded-volume treatment; exporters never set it, so export
+///          output is unchanged)
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
     /// footnote inclusion, inline highlight annotation, and research-note visibility.
     let options: CollectionExportOptions
+
+    /// Volume ids whose documents render as **citation-only cards** — a bordered card
+    /// carrying the citation and a "Volume not downloaded" note — instead of a body.
+    /// Set only by the live preview (whose `.preview` resolution yields empty bodies
+    /// for un-downloaded volumes); exporters leave it empty, so the HTML export byte
+    /// output is unaffected.
+    var citationOnlyVolumeIds: Set<String> = []
 
     /// Creates a renderer with the given export options.
     ///
@@ -97,6 +108,12 @@ struct CollectionItemHTMLRenderer {
             body += "  <h2>\(markdownItalics(escaped(heading)))</h2>\n"
         }
 
+        // Preview: a document whose volume is not downloaded has no resolvable body —
+        // render a visibly distinct citation card in its place (never taken by exports).
+        // Research notes still render below: they live in SwiftData, not the volume.
+        if citationOnlyVolumeIds.contains(doc.volumeId) {
+            body += citationOnlyCardHTML(doc)
+        } else {
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
         switch doc.bodyDepth {
         case .full:
@@ -130,6 +147,7 @@ struct CollectionItemHTMLRenderer {
         case .index:
             break  // no body content
         }
+        }  // end citation-only else (body kept at original indentation for diff clarity)
 
         // Source note (footnoteStyle == .sourceNoteOnly)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
@@ -152,6 +170,25 @@ struct CollectionItemHTMLRenderer {
         }
 
         body += "</section>\n\n"
+        return body
+    }
+
+    /// The citation-only card emitted (preview only) for a document whose volume is not
+    /// downloaded: a bordered card with the citation and a localized "Volume not
+    /// downloaded" note. The *download* affordance is native (a bar above the preview's
+    /// web view), never in-page JS.
+    ///
+    /// - Parameter doc: The citation-only document (empty body, no render model).
+    /// - Returns: The card's `<div class="citation-card">…</div>` HTML fragment.
+    private func citationOnlyCardHTML(_ doc: CollectionExportDocument) -> String {
+        let note = String(localized: "collection.preview.volumeNotDownloaded",
+                          defaultValue: "Volume not downloaded — citation only")
+        let citation = doc.citation.isEmpty ? doc.title : doc.citation
+        var body = ""
+        body += "  <div class=\"citation-card\">\n"
+        body += "    <p class=\"citation-card-citation\">\(markdownItalics(escaped(citation)))</p>\n"
+        body += "    <p class=\"citation-card-note\">\(escaped(note))</p>\n"
+        body += "  </div>\n"
         return body
     }
 
@@ -390,6 +427,23 @@ struct CollectionItemHTMLRenderer {
       color: #3a6bc9;
       font-weight: 600;
       margin-bottom: 0.5rem;
+    }
+
+    /* ── Citation-only card (preview: volume not downloaded) ──────────────── */
+    .citation-card {
+      border: 1px dashed #b08c3e;
+      background: #fdf8ee;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .citation-card-citation { font-style: italic; color: #444; }
+    .citation-card-note {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #a06a00;
     }
 
     /* ── Source note (footnoteStyle == sourceNoteOnly) ─────────────────────── */

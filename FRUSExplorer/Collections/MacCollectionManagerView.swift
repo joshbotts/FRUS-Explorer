@@ -43,6 +43,8 @@ import UniformTypeIdentifiers
 ///          collapsed disclosure at the top of the entries List — inline as the scope asks,
 ///          but inside the scrolling region so expansion can never grow the fixed header
 ///          past the window (the constraint that forced the popover)
+///   1.7 — Authoring Phase 2b: detail pane gains a toolbar-toggled side-by-side live
+///          preview (`CollectionPreviewView`) to the right of the editor column
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -337,6 +339,11 @@ private struct CollectionDetailPane: View {
     @State private var showExport = false
     /// Expansion state of the inline Composition disclosure at the top of the entries list.
     @State private var showComposition = false
+    /// Live preview pane visibility (Authoring Phase 2b; toolbar-toggled, not persisted).
+    @State private var showPreview = false
+    /// The preview's "Render All" cap lift, hoisted here so hiding/showing the pane
+    /// doesn't reset it (one detail-pane session = one lift).
+    @State private var previewRenderAll = false
     @State private var noteCreateContext: NoteCreateContext? = nil
     /// Document headers loaded asynchronously from `document_cache`.
     /// Keyed by `"volumeId/documentId"`.
@@ -365,21 +372,19 @@ private struct CollectionDetailPane: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Fixed-height header: name field + collection note.
-            // Padded on all sides except the bottom (the divider provides separation).
-            VStack(alignment: .leading, spacing: 0) {
-                nameSection
-                Divider().padding(.vertical, 16)
-                noteSection
-            }
-            .padding([.horizontal, .top], 24)
-            .padding(.bottom, 16)
+        HStack(spacing: 0) {
+            editorColumn
+                .frame(maxWidth: .infinity)
 
-            // Document list fills the rest of the available window height.
-            documentsSection
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
+            // Live preview pane (Authoring Phase 2b) — side-by-side, toolbar-toggled.
+            if showPreview {
+                Divider()
+                CollectionPreviewView(collection: collection,
+                                      entries: sortedEntries,
+                                      allNotes: allNotes,
+                                      renderAll: $previewRenderAll)
+                    .frame(minWidth: 360, maxWidth: .infinity)
+            }
         }
         .navigationTitle(name.isEmpty ? "Untitled Collection" : name)
         .toolbar { toolbarContent }
@@ -415,6 +420,27 @@ private struct CollectionDetailPane: View {
                 }
             }
             .environment(appState)
+        }
+    }
+
+    /// The editing column (name, note, entries list) — the pre-Phase-2b pane body,
+    /// hoisted so the live preview can sit beside it.
+    private var editorColumn: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed-height header: name field + collection note.
+            // Padded on all sides except the bottom (the divider provides separation).
+            VStack(alignment: .leading, spacing: 0) {
+                nameSection
+                Divider().padding(.vertical, 16)
+                noteSection
+            }
+            .padding([.horizontal, .top], 24)
+            .padding(.bottom, 16)
+
+            // Document list fills the rest of the available window height.
+            documentsSection
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
         }
     }
 
@@ -607,6 +633,16 @@ private struct CollectionDetailPane: View {
             .disabled(allTags.isEmpty)
 
             Divider()
+
+            Button {
+                showPreview.toggle()
+            } label: {
+                Label(String(localized: "collection.toolbar.preview",
+                             defaultValue: "Preview"),
+                      systemImage: showPreview ? "eye.fill" : "eye")
+            }
+            .help(String(localized: "collection.toolbar.preview.help",
+                         defaultValue: "Show a live preview of this collection as it will export — updates as you edit"))
 
             Button {
                 showExport = true
