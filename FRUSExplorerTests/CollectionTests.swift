@@ -1287,6 +1287,202 @@ struct CollectionTests {
             .pageHTML(metadata: metadata, items: items)
         #expect(exported == assembled)
     }
+
+    // MARK: - Phase 3: Citation line pipeline (Add Documents sheet)
+
+    /// A document-level citation match with the given strategy.
+    private static func makeMatch(
+        documentId: String, volumeId: String = "frus1969-76v01",
+        rank: Int = 1, strategy: MatchStrategy = .exactDocumentNumber,
+        note: String? = nil
+    ) -> CitationMatch {
+        CitationMatch(documentId: documentId, volumeId: volumeId, rank: rank,
+                      matchStrategy: strategy, confidenceLabel: "label-\(rank)",
+                      correctionNote: note)
+    }
+
+    @Test("AddDocuments citations: line splitting drops empty lines and trims whitespace")
+    func citationLineSplitting() {
+        let text = "  FRUS, 1969–76, I, doc. 15  \n\n\nline two\n   \nline three\n"
+        let lines = CollectionCitationLineResolver.lines(from: text)
+        #expect(lines == ["FRUS, 1969–76, I, doc. 15", "line two", "line three"])
+    }
+
+    @Test("AddDocuments citations: history.state.gov URLs resolve directly, without the engine")
+    func citationURLRecognition() async {
+        // The URL matcher extracts the exact TEI identifiers from the site path.
+        let ref = CollectionCitationLineResolver.documentReference(
+            inURLLine: "see https://history.state.gov/historicaldocuments/frus1969-76v01/d42 for details")
+        #expect(ref?.volumeId == "frus1969-76v01")
+        #expect(ref?.documentId == "d42")
+        // Non-document paths and non-FRUS volume components are rejected.
+        #expect(CollectionCitationLineResolver.documentReference(
+            inURLLine: "https://history.state.gov/historicaldocuments/frus1969-76v01") == nil)
+        #expect(CollectionCitationLineResolver.documentReference(
+            inURLLine: "https://history.state.gov/historicaldocuments/about-frus/d1") == nil)
+
+        // A URL line never reaches parse/match: both stages would fail loudly here.
+        let resolver = CollectionCitationLineResolver(
+            parse: { _ in CitationInput(rawText: nil) },   // not actionable
+            match: { _ in Issue.record("match must not run for URL lines"); return [] })
+        let outcome = await resolver.resolve(
+            line: "https://history.state.gov/historicaldocuments/frus1861/d7")
+        #expect(outcome == .resolved(volumeId: "frus1861", documentId: "d7", note: nil))
+    }
+
+    @Test("AddDocuments citations: resolved / ambiguous / unresolved bucketing from injected results")
+    func citationLineBucketing() async {
+        // Injected matcher: behavior keyed off the parsed document number — the engine
+        // is never constructed (the per-line pipeline takes parse/match closures).
+        let resolver = CollectionCitationLineResolver(
+            parse: { CitationParser().parse($0) },
+            match: { input in
+                switch input.documentNumber {
+                case 1:   // lone exact match → resolved
+                    return [Self.makeMatch(documentId: "d1")]
+                case 2:   // fuzzy strategy → ambiguous, top match surfaced
+                    return [Self.makeMatch(documentId: "d90", rank: 1,
+                                           strategy: .fuzzyDocumentNumber(nearest: 90))]
+                case 3:   // several document-level candidates, none exact → ambiguous
+                    return [Self.makeMatch(documentId: "d3", volumeId: "frusA", rank: 1,
+                                           strategy: .pageRange),
+                            Self.makeMatch(documentId: "d3", volumeId: "frusB", rank: 2,
+                                           strategy: .pageRange)]
+                case 4:   // volume-only result (un-downloaded volume) → unresolved w/ reason
+                    return [CitationMatch(documentId: "", volumeId: "frusC", rank: 1,
+                                          matchStrategy: .manifestOnly,
+                                          confidenceLabel: "Volume identified",
+                                          requiresDownload: true)]
+                default:  // nothing at all
+                    return []
+                }
+            })
+
+        let text = """
+        FRUS, 1969-76, vol. I, doc. 1
+        FRUS, 1969-76, vol. I, doc. 2
+        FRUS, 1969-76, vol. I, doc. 3
+        FRUS, 1969-76, vol. I, doc. 4
+        FRUS, 1969-76, vol. I, doc. 5
+        not a citation at all
+        """
+        let results = await resolver.resolve(text: text)
+        #expect(results.count == 6)
+
+        // Line 1: lone exact → resolved.
+        #expect(results[0].outcome == .resolved(volumeId: "frus1969-76v01",
+                                                documentId: "d1", note: nil))
+        // Line 2: fuzzy strategy → ambiguous with the engine's rank note.
+        guard case .ambiguous(let vol2, let doc2, _) = results[1].outcome else {
+            Issue.record("expected ambiguous, got \(results[1].outcome)"); return
+        }
+        #expect(vol2 == "frus1969-76v01" && doc2 == "d90")
+        // Line 3: competing candidates → ambiguous, top match surfaced with count.
+        guard case .ambiguous(let vol3, let doc3, let note3) = results[2].outcome else {
+            Issue.record("expected ambiguous, got \(results[2].outcome)"); return
+        }
+        #expect(vol3 == "frusA" && doc3 == "d3")
+        #expect(note3.contains("2"))
+        // Line 4: volume-only → unresolved carrying the engine's explanation.
+        #expect(results[3].outcome == .unresolved(reason: "Volume identified"))
+        // Line 5: empty result set → unresolved.
+        guard case .unresolved = results[4].outcome else {
+            Issue.record("expected unresolved, got \(results[4].outcome)"); return
+        }
+        // Line 6: unparseable → unresolved, never silently dropped.
+        guard case .unresolved = results[5].outcome else {
+            Issue.record("expected unresolved, got \(results[5].outcome)"); return
+        }
+    }
+
+    @Test("AddDocuments citations: a matcher error buckets the line as unresolved")
+    func citationLineMatchError() async {
+        struct StubError: LocalizedError {
+            var errorDescription: String? { "index unavailable" }
+        }
+        let resolver = CollectionCitationLineResolver(
+            parse: { CitationParser().parse($0) },
+            match: { _ in throw StubError() })
+        let outcome = await resolver.resolve(line: "FRUS, 1969-76, vol. I, doc. 12")
+        #expect(outcome == .unresolved(reason: "index unavailable"))
+    }
+
+    // MARK: - Phase 3: Tag-union gathering
+
+    @Test("AddDocuments tags: note tags ∪ DocumentTagAssignment, deduplicated, notes first")
+    @MainActor
+    func tagUnionGathering() throws {
+        let tagId = UUID()
+        let otherTag = UUID()
+
+        let note1 = ResearchNote(documentId: "d1", volumeId: "v1", bodyText: "a")
+        note1.userTagIds = [tagId]
+        let note2 = ResearchNote(documentId: "d2", volumeId: "v1", bodyText: "b")
+        note2.userTagIds = [tagId, otherTag]
+        let noteOther = ResearchNote(documentId: "d9", volumeId: "v1", bodyText: "c")
+        noteOther.userTagIds = [otherTag]
+
+        let assignments = [
+            DocumentTagAssignment(volumeId: "v1", documentId: "d2", tagId: tagId), // dup of note2
+            DocumentTagAssignment(volumeId: "v2", documentId: "d3", tagId: tagId), // unique
+            DocumentTagAssignment(volumeId: "v2", documentId: "d4", tagId: otherTag), // wrong tag
+        ]
+
+        let refs = CollectionDocumentDiscovery.tagDocumentRefs(
+            tagId: tagId, notes: [note1, note2, noteOther], assignments: assignments)
+
+        #expect(refs.map { "\($0.volumeId)/\($0.documentId)" } == ["v1/d1", "v1/d2", "v2/d3"])
+    }
+
+    // MARK: - Phase 3: Duplicate detection (A4)
+
+    @Test("A4 duplicates: duplicateDocumentKeys flags only repeated document entries")
+    @MainActor
+    func duplicateKeyDetection() throws {
+        let collectionId = UUID()
+        func entry(_ doc: String, _ vol: String, kind: CollectionEntryKind = .document,
+                   order: Int) -> CollectionEntry {
+            let e = CollectionEntry(collectionId: collectionId, documentId: doc,
+                                    volumeId: vol, sortOrder: order)
+            e.entryKind = kind
+            return e
+        }
+        let entries = [
+            entry("d1", "v1", order: 0),
+            entry("d2", "v1", order: 1),
+            entry("d1", "v1", order: 2),               // duplicate of d1
+            entry("d1", "v2", order: 3),               // same doc id, different volume — not a dup
+            entry("", "", kind: .heading, order: 4),   // structural entries never count
+            entry("", "", kind: .heading, order: 5),
+        ]
+        let dups = CollectionDocumentDiscovery.duplicateDocumentKeys(in: entries)
+        #expect(dups == ["v1/d1"])
+    }
+
+    @Test("A4 duplicates: appendEntries no longer skips documents already in the collection")
+    @MainActor
+    func appendEntriesAllowsDuplicates() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let collection = Collection(name: "Dup Test")
+        context.insert(collection)
+        var entries: [CollectionEntry] = []
+
+        CollectionDocumentDiscovery.appendEntries(
+            [(documentId: "d1", volumeId: "v1"), (documentId: "d2", volumeId: "v1")],
+            collection: collection, sortedEntries: &entries, modelContext: context)
+        // Re-adding d1 (plus a new d3) appends BOTH — duplicates allowed (A4).
+        CollectionDocumentDiscovery.appendEntries(
+            [(documentId: "d1", volumeId: "v1"), (documentId: "d3", volumeId: "v2")],
+            collection: collection, sortedEntries: &entries, modelContext: context)
+
+        #expect(entries.map(\.documentId) == ["d1", "d2", "d1", "d3"])
+        #expect(entries.map(\.sortOrder) == [0, 1, 2, 3])
+        #expect(entries.allSatisfy { $0.collection === collection })
+        // The repeated document is exactly what the badge set reports.
+        #expect(CollectionDocumentDiscovery.duplicateDocumentKeys(in: entries) == ["v1/d1"])
+    }
 }
 
 // MARK: - Resolver test doubles

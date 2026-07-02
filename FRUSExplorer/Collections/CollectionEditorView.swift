@@ -23,8 +23,8 @@ import UIKit
 /// 2. **Note** — optional free-text note for the whole collection
 /// 3. **Documents** — reorderable list of `CollectionEntry` records; each row
 ///    lets the user pick an associated `ResearchNote` for that document
-/// 4. **Add by Tag** — query notes with a chosen `UserTag` and append their
-///    documents to the collection
+/// 4. **Add Documents** — opens `CollectionAddDocumentsSheet` (search, browse,
+///    pasted citations, or tags) and appends the selection to the collection
 /// 5. **Actions** — Sort by date, Export buttons
 ///
 /// ## Creating vs Editing
@@ -80,6 +80,11 @@ import UIKit
 ///          side-by-side `CollectionPreviewView` next to the entries Form (the
 ///          metadata `.inspector` keeps working alongside); the preview's Render All
 ///          state is hoisted here so pane toggles don't reset it
+///   2.2 — Authoring Phase 3: `AddByTagSheet` replaced by `CollectionAddDocumentsSheet`
+///          (Search | Browse | Citations | Tags); added documents append at the end of
+///          the entry list in selection order; `appendEntries` allows duplicates (A4)
+///          via the shared `CollectionDocumentDiscovery.appendEntries`, with repeated
+///          documents badged "Also in collection" on their rows
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -105,7 +110,7 @@ struct CollectionEditorView: View {
     @State private var sortedEntries: [CollectionEntry]
     @State private var linkedSavedSearchId: UUID?
 
-    @State private var showAddByTag       = false
+    @State private var showAddDocuments   = false
     @State private var showExport         = false
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
@@ -295,7 +300,7 @@ struct CollectionEditorView: View {
                 compositionSection
                 smartCollectionSection
                 documentsSection
-                addByTagSection
+                addDocumentsSection
                 if !sortedEntries.isEmpty || linkedSavedSearchId != nil {
                     actionsSection
                 }
@@ -318,9 +323,13 @@ struct CollectionEditorView: View {
             .padding(.vertical, 14)
         }
         .frame(minWidth: 520, minHeight: 460)
-        .sheet(isPresented: $showAddByTag) {
-            AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
-                appendEntries(newEntries)
+        .sheet(isPresented: $showAddDocuments) {
+            CollectionAddDocumentsSheet(
+                allTags: allTags,
+                allNotes: allNotes,
+                existingDocumentKeys: existingDocumentKeys
+            ) { picks in
+                appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
             }
         }
         .sheet(isPresented: $showExport) {
@@ -404,9 +413,13 @@ struct CollectionEditorView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddByTag) {
-            AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
-                appendEntries(newEntries)
+        .sheet(isPresented: $showAddDocuments) {
+            CollectionAddDocumentsSheet(
+                allTags: allTags,
+                allNotes: allNotes,
+                existingDocumentKeys: existingDocumentKeys
+            ) { picks in
+                appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
             }
         }
         .sheet(isPresented: $showExport) {
@@ -476,7 +489,7 @@ struct CollectionEditorView: View {
         Form {
             detailsSection
             documentsSection
-            addByTagSection
+            addDocumentsSection
             compositionDisclosureSection
             if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
         }
@@ -525,7 +538,7 @@ struct CollectionEditorView: View {
         HStack(spacing: 0) {
             Form {
                 documentsSection
-                addByTagSection
+                addDocumentsSection
                 if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
             }
             .formStyle(.grouped)
@@ -808,11 +821,12 @@ struct CollectionEditorView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     Text(String(localized: "collection.editor.docs.empty",
-                                defaultValue: "No documents yet. Add some using a subject tag below."))
+                                defaultValue: "No documents yet. Add some with Add Documents below."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
             } else {
+                let duplicateKeys = duplicateDocumentKeys
                 ForEach($sortedEntries, id: \.id) { $entry in
                     switch entry.entryKind {
                     case .document:
@@ -821,7 +835,8 @@ struct CollectionEditorView: View {
                                  availableNotes: notes(for: entry),
                                  documentHeader: documentHeaders[key],
                                  volumeTitle: volumeTitle(for: entry),
-                                 documentDate: documentDates[key])
+                                 documentDate: documentDates[key],
+                                 isDuplicate: duplicateKeys.contains(key))
                     case .heading:
                         CollectionHeadingRow(entry: $entry)
                     case .prose:
@@ -848,6 +863,14 @@ struct CollectionEditorView: View {
                 Spacer()
                 Menu {
                     Button {
+                        showAddDocuments = true
+                    } label: {
+                        Label(String(localized: "collection.editor.addDocuments.button",
+                                     defaultValue: "Add Documents…"),
+                              systemImage: "plus.rectangle.on.folder")
+                    }
+                    Divider()
+                    Button {
                         addStructuralEntry(kind: .heading)
                     } label: {
                         Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
@@ -862,8 +885,8 @@ struct CollectionEditorView: View {
                 } label: {
                     Image(systemName: "plus").font(.caption)
                 }
-                .accessibilityLabel(String(localized: "collection.add.structural",
-                                           defaultValue: "Add a section heading or note block"))
+                .accessibilityLabel(String(localized: "collection.add.menu",
+                                           defaultValue: "Add documents, a section heading, or a note block"))
                 if !sortedEntries.isEmpty {
                     Button {
                         showTimeline = true
@@ -890,25 +913,24 @@ struct CollectionEditorView: View {
         }
     }
 
-    // MARK: - Add by Tag Section
+    // MARK: - Add Documents Section
 
-    private var addByTagSection: some View {
+    /// Opens the Phase 3 discovery sheet (Search | Browse | Citations | Tags). Added
+    /// documents are appended at the end of the entry list in selection order.
+    private var addDocumentsSection: some View {
         Section {
             Button {
-                showAddByTag = true
+                showAddDocuments = true
             } label: {
                 Label(
-                    String(localized: "collection.editor.addByTag.button",
-                           defaultValue: "Add Documents by Tag…"),
-                    systemImage: "tag"
+                    String(localized: "collection.editor.addDocuments.button",
+                           defaultValue: "Add Documents…"),
+                    systemImage: "plus.rectangle.on.folder"
                 )
             }
-            .disabled(allTags.isEmpty)
         } footer: {
-            if allTags.isEmpty {
-                Text(String(localized: "collection.editor.addByTag.noTags",
-                            defaultValue: "Create user tags on research notes to use this feature."))
-            }
+            Text(String(localized: "collection.editor.addDocuments.footer",
+                        defaultValue: "Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list."))
         }
     }
 
@@ -945,6 +967,20 @@ struct CollectionEditorView: View {
 
     // MARK: - Helpers
 
+    /// Document keys appearing on more than one entry, for the "Also in collection"
+    /// badge (A4). Cheap O(n) recompute over the pane-level entry list.
+    private var duplicateDocumentKeys: Set<String> {
+        CollectionDocumentDiscovery.duplicateDocumentKeys(in: sortedEntries)
+    }
+
+    /// Keys of every document currently in the collection, handed to the Add Documents
+    /// sheet for its "In collection" row indicator.
+    private var existingDocumentKeys: Set<String> {
+        Set(sortedEntries.filter { $0.entryKind == .document }
+            .map { CollectionDocumentDiscovery.documentKey(volumeId: $0.volumeId,
+                                                           documentId: $0.documentId) })
+    }
+
     /// Appends a structural entry (a section heading or a prose block) to the collection.
     /// Mirrors the document-entry creation path; heading/prose entries carry empty document
     /// identifiers and use `text` (Phase 3a).
@@ -975,24 +1011,13 @@ struct CollectionEditorView: View {
         }
     }
 
+    /// Appends document entries at the end of the entry list in the given order.
+    /// Duplicates are allowed (A4) — repeats get an "Also in collection" badge instead
+    /// of being silently skipped.
     private func appendEntries(_ pairs: [(documentId: String, volumeId: String)]) {
-        var next = sortedEntries.count
-        for pair in pairs {
-            let alreadyPresent = sortedEntries.contains {
-                $0.documentId == pair.documentId && $0.volumeId == pair.volumeId
-            }
-            guard !alreadyPresent else { continue }
-            let entry = CollectionEntry(
-                collectionId: collection.id,
-                documentId: pair.documentId,
-                volumeId: pair.volumeId,
-                sortOrder: next
-            )
-            entry.collection = collection
-            modelContext.insert(entry)
-            sortedEntries.append(entry)
-            next += 1
-        }
+        CollectionDocumentDiscovery.appendEntries(
+            pairs, collection: collection,
+            sortedEntries: &sortedEntries, modelContext: modelContext)
     }
 
     private func sortByDate() {

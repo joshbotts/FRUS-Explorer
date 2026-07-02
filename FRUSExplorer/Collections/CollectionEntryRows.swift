@@ -119,6 +119,12 @@ struct CollectionProseRow: View {
 /// Users can:
 /// - Toggle whether the document body is included in the export.
 /// - Select zero or more research notes to include alongside the document.
+///
+/// Version history:
+///   1.0 — extracted from CollectionEditorView.swift (Session 2026-07-02, Collections
+///          Authoring Phase 1)
+///   1.1 — Authoring Phase 3: `isDuplicate` flag renders the subtle "Also in collection"
+///          badge when the same document appears on more than one entry (A4)
 struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
@@ -130,6 +136,9 @@ struct EntryRow: View {
     var volumeTitle: String? = nil
     /// The document's ISO date (`date_iso`) from the index, shown alongside the volume.
     var documentDate: String? = nil
+    /// Whether this document appears on more than one entry of the collection — shows
+    /// the subtle "Also in collection" badge (A4, duplicates allowed).
+    var isDuplicate: Bool = false
 
     @Environment(AppState.self) private var appState
     @State private var showInspector = false
@@ -183,6 +192,15 @@ struct EntryRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
+
+            // Duplicate marker (A4): the same document appears on another entry.
+            if isDuplicate {
+                Label(String(localized: "collection.entry.duplicate",
+                             defaultValue: "Also in collection"),
+                      systemImage: "doc.on.doc")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
 
             // Per-entry body depth (overrides the collection default for this document)
             Picker(selection: bodyDepthOverride) {

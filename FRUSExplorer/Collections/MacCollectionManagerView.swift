@@ -20,7 +20,7 @@ import UniformTypeIdentifiers
 ///     selection, deletion via context menu, and creating new collections.
 ///   - **Detail** — inline editor for the selected collection: editable name and note
 ///     (auto-saved), reorderable document list, per-document note management, and
-///     toolbar actions for Add by Tag, Sort by Date, and Export.
+///     toolbar actions for Add Documents, Sort by Date, and Export.
 ///
 /// Version history:
 ///   1.0 — Session 73: initial implementation replacing CollectionListView in the
@@ -45,6 +45,12 @@ import UniformTypeIdentifiers
 ///          past the window (the constraint that forced the popover)
 ///   1.7 — Authoring Phase 2b: detail pane gains a toolbar-toggled side-by-side live
 ///          preview (`CollectionPreviewView`) to the right of the editor column
+///   1.8 — Authoring Phase 3: toolbar "Add by Tag" replaced by "Add Documents…"
+///          (`CollectionAddDocumentsSheet`: Search | Browse | Citations | Tags, ⇧⌘A);
+///          added documents append at the end of the entry list in selection order;
+///          `appendEntries` allows duplicates (A4) via the shared
+///          `CollectionDocumentDiscovery.appendEntries`, with repeated documents
+///          badged "Also in collection" on their rows
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -335,7 +341,7 @@ private struct CollectionDetailPane: View {
     @State private var name: String
     @State private var note: String
     @State private var sortedEntries: [CollectionEntry]
-    @State private var showAddByTag = false
+    @State private var showAddDocuments = false
     @State private var showExport = false
     /// Expansion state of the inline Composition disclosure at the top of the entries list.
     @State private var showComposition = false
@@ -395,10 +401,15 @@ private struct CollectionDetailPane: View {
             (documentHeaders, documentDates) =
                 await CollectionEntryData.load(for: sortedEntries, appState: appState)
         }
-        .sheet(isPresented: $showAddByTag) {
-            AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
-                appendEntries(newEntries)
+        .sheet(isPresented: $showAddDocuments) {
+            CollectionAddDocumentsSheet(
+                allTags: allTags,
+                allNotes: allNotes,
+                existingDocumentKeys: existingDocumentKeys
+            ) { picks in
+                appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
             }
+            .environment(appState)
         }
         .sheet(isPresented: $showExport) {
             ExportSheetView(
@@ -558,11 +569,12 @@ private struct CollectionDetailPane: View {
 
                 if sortedEntries.isEmpty {
                     Text(String(localized: "collection.documents.empty",
-                                defaultValue: "No documents yet. Use Add by Tag in the toolbar to add documents."))
+                                defaultValue: "No documents yet. Use Add Documents in the toolbar to add documents."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 } else {
+                    let duplicateKeys = duplicateDocumentKeys
                     ForEach(Array(sortedEntries.enumerated()), id: \.element.id) { idx, entry in
                         switch entry.entryKind {
                         case .document:
@@ -572,6 +584,7 @@ private struct CollectionDetailPane: View {
                                 availableNotes: notes(for: entry),
                                 volumeTitle: volumeTitle(for: entry),
                                 documentHeader: documentHeaders[nodeKey],
+                                isDuplicate: duplicateKeys.contains(nodeKey),
                                 onNewNote: {
                                     noteCreateContext = NoteCreateContext(
                                         documentId: entry.documentId,
@@ -622,15 +635,15 @@ private struct CollectionDetailPane: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
             Button {
-                showAddByTag = true
+                showAddDocuments = true
             } label: {
-                Label(String(localized: "collection.toolbar.addByTag",
-                             defaultValue: "Add by Tag"),
-                      systemImage: "tag")
+                Label(String(localized: "collection.toolbar.addDocuments",
+                             defaultValue: "Add Documents…"),
+                      systemImage: "plus.rectangle.on.folder")
             }
-            .help(String(localized: "collection.toolbar.addByTag.help",
-                         defaultValue: "Add documents to this collection by selecting a research note tag — all notes with that tag are added at once"))
-            .disabled(allTags.isEmpty)
+            .keyboardShortcut("a", modifiers: [.command, .shift])
+            .help(String(localized: "collection.toolbar.addDocuments.help",
+                         defaultValue: "Add documents to this collection (⇧⌘A) — search the index, browse volumes, paste citations or history.state.gov links, or gather a tag"))
 
             Divider()
 
@@ -695,23 +708,27 @@ private struct CollectionDetailPane: View {
         reindexEntries()
     }
 
+    /// Appends document entries at the end of the entry list in the given order.
+    /// Duplicates are allowed (A4) — repeats get an "Also in collection" badge instead
+    /// of being silently skipped.
     private func appendEntries(_ pairs: [(documentId: String, volumeId: String)]) {
-        var next = sortedEntries.count
-        for pair in pairs {
-            guard !sortedEntries.contains(where: {
-                $0.documentId == pair.documentId && $0.volumeId == pair.volumeId
-            }) else { continue }
-            let entry = CollectionEntry(
-                collectionId: collection.id,
-                documentId: pair.documentId,
-                volumeId: pair.volumeId,
-                sortOrder: next
-            )
-            entry.collection = collection
-            modelContext.insert(entry)
-            sortedEntries.append(entry)
-            next += 1
-        }
+        CollectionDocumentDiscovery.appendEntries(
+            pairs, collection: collection,
+            sortedEntries: &sortedEntries, modelContext: modelContext)
+    }
+
+    /// Document keys appearing on more than one entry, for the "Also in collection"
+    /// badge (A4). Cheap O(n) recompute over the pane-level entry list.
+    private var duplicateDocumentKeys: Set<String> {
+        CollectionDocumentDiscovery.duplicateDocumentKeys(in: sortedEntries)
+    }
+
+    /// Keys of every document currently in the collection, handed to the Add Documents
+    /// sheet for its "In collection" row indicator.
+    private var existingDocumentKeys: Set<String> {
+        Set(sortedEntries.filter { $0.entryKind == .document }
+            .map { CollectionDocumentDiscovery.documentKey(volumeId: $0.volumeId,
+                                                           documentId: $0.documentId) })
     }
 
     /// Sorts `sortedEntries` in ascending chronological order, then persists the new
@@ -756,6 +773,9 @@ private struct MacEntryRow: View {
     let volumeTitle: String
     /// Document header fetched from `document_cache` by `CollectionDetailPane`.
     let documentHeader: String?
+    /// Whether this document appears on more than one entry of the collection — shows
+    /// the subtle "Also in collection" badge (A4, duplicates allowed).
+    var isDuplicate: Bool = false
     let onNewNote: () -> Void
     let onDelete: () -> Void
 
@@ -798,6 +818,15 @@ private struct MacEntryRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+
+                // Duplicate marker (A4): the same document appears on another entry.
+                if isDuplicate {
+                    Label(String(localized: "collection.entry.duplicate",
+                                 defaultValue: "Also in collection"),
+                          systemImage: "doc.on.doc")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
 
                 // Per-entry body depth (overrides the collection default for this document)
                 Picker(selection: bodyDepthOverride) {
