@@ -97,6 +97,11 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          per-document loops with `CancellationError` surfaced by the throwing entry
 ///          points; `smartRefs(for:)` exposed and `resolve(smartRefs:…)` added so the
 ///          preview can cap the smart result list *before* per-document resolution
+///   1.2 — Authoring Phase 4: the flat `currentSectionDepth` tracking replaced with
+///          `CollectionOutline.sectionBodyDepthOverrides` (nearest-*ancestor* heading by
+///          level — behavior-identical for all-level-1 collections); `EntryRef` snapshots
+///          the heading `level`, defensively clamped by the outline's resolution so a
+///          synced out-of-range value degrades instead of corrupting
 @MainActor
 class CollectionContentResolver {
 
@@ -382,23 +387,29 @@ class CollectionContentResolver {
         return await resolveItems(from: entryRefs, batch: batch)
     }
 
-    /// Runs the ordered per-entry loop: sorts by `sortOrder`, tracks the Phase 3c section
-    /// body-depth override across headings, and delegates each entry to `resolveEntry`.
+    /// Runs the ordered per-entry loop: sorts by `sortOrder`, resolves each position's
+    /// effective section body-depth override via `CollectionOutline` (the nearest
+    /// *ancestor* heading's override by level — Phase 4's extension of the Phase 3c
+    /// "nearest preceding heading" rule, identical for all-level-1 collections), and
+    /// delegates each entry to `resolveEntry`. Out-of-range heading levels are clamped
+    /// inside the outline resolution, never persisted back.
     ///
     /// Cooperative cancellation (v1.1): a cancelled task stops the loop early and returns
     /// the items resolved so far (partial-safe — every returned item is complete); the
     /// throwing entry points convert the truncation into a thrown `CancellationError`.
     private func resolveItems(from refs: [EntryRef], batch: BatchContext) async -> [CollectionExportItem] {
+        let ordered = refs.sorted { $0.sortOrder < $1.sortOrder }
+        // Single-linearizer discipline: the ancestor cascade is computed by
+        // CollectionOutline, never re-derived here.
+        let sectionDepths = CollectionOutline.sectionBodyDepthOverrides(ordered.map {
+            CollectionOutline.StructuralRef(isHeading: $0.kind == .heading,
+                                            level: $0.level,
+                                            bodyDepthOverride: $0.bodyDepthOverride)
+        })
         var items: [CollectionExportItem] = []
-        // A heading may carry a `bodyDepthOverride` that acts as the section default for the
-        // documents following it, until the next heading (Phase 3c). Tracked across the pass.
-        var currentSectionDepth: String? = nil
-        for ref in refs.sorted(by: { $0.sortOrder < $1.sortOrder }) {
+        for (i, ref) in ordered.enumerated() {
             if Task.isCancelled { break }
-            if ref.kind == .heading {
-                currentSectionDepth = ref.bodyDepthOverride
-            }
-            if let item = await resolveEntry(ref, sectionDepth: currentSectionDepth, batch: batch) {
+            if let item = await resolveEntry(ref, sectionDepth: sectionDepths[i], batch: batch) {
                 items.append(item)
             }
         }
@@ -431,6 +442,9 @@ class CollectionContentResolver {
         let sortOrder: Int
         /// Heading title text (`.heading` entries only).
         let text: String?
+        /// Heading nesting level (`.heading` entries only; raw model value — clamped by
+        /// `CollectionOutline` during resolution, never trusted directly).
+        let level: Int
         /// Prose body as export-ready RTF (`.prose` entries only), produced by
         /// `ProseRichText.exportRTF(from:)` at snapshot time.
         let proseRTF: Data?
@@ -447,6 +461,7 @@ class CollectionContentResolver {
             volumeId = entry.volumeId
             sortOrder = entry.sortOrder
             text = entry.text
+            level = entry.level
             proseRTF = entry.entryKind == .prose ? ProseRichText.exportRTF(from: entry) : nil
             bodyDepthOverride = entry.bodyDepthOverride
             noteResolution = .entrySelection(selectedNoteIds: entry.selectedNoteIds,
@@ -461,6 +476,7 @@ class CollectionContentResolver {
             volumeId = ref.volumeId
             sortOrder = ref.sortOrder
             text = nil
+            level = 1
             proseRTF = nil
             bodyDepthOverride = nil
             noteResolution = .allDocumentNotes

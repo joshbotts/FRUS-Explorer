@@ -36,6 +36,10 @@ import SwiftData
 ///   1.3 — Collections rework Phase 1a: persisted composition settings (`defaultBodyDepth`,
 ///          `footnoteStyle`, `tocStyle`, `applyHighlights`, `includeNotes`, `includeWordCloud`,
 ///          `summaryPromptId`) — the export-content decisions moved out of the ephemeral export sheet
+///   1.4 — Authoring Phase 4: front-matter fields (`subtitle`, `authorLine`,
+///          `introductionText` + `introductionRichText`, `includeColophon`) — all additive,
+///          optional-or-defaulted, CloudKit-safe; defaults reproduce pre-Phase-4 exports exactly.
+///          `note` keeps its existing role as the one-line title-page description
 @Model final class Collection {
 
     // MARK: - Identity
@@ -49,6 +53,42 @@ import SwiftData
     }
 
     var note: String? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Front Matter (Authoring Phase 4)
+
+    /// Optional subtitle rendered under the collection title on exported title pages.
+    /// `nil` (the default) renders nothing, so pre-Phase-4 exports are byte-identical.
+    var subtitle: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// Optional author/byline rendered on exported title pages (e.g. the researcher's name;
+    /// the editor defaults it from the active `Project` name, but it is freely editable).
+    /// `nil` (the default) renders nothing.
+    var authorLine: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// Optional introduction rendered as the first prose flow of an export, before the
+    /// table of contents' documents. Always the plain-text projection of the introduction —
+    /// the fallback for plain contexts and the source when no rich formatting exists
+    /// (the same plain-projection pattern as `CollectionEntry.text`/`richText`).
+    var introductionText: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// Rich-text form of the introduction, stored as **RTF** `Data` (the
+    /// `CollectionEntry.richText` pattern). `nil` when the introduction has no rich
+    /// formatting; `introductionText` is kept in sync as the plain-text projection.
+    var introductionRichText: Data? {
+        didSet { lastModified = .now }
+    }
+
+    /// When `true`, exports append a colophon page (how/when the artifact was produced).
+    /// Defaults to `false` so collections that never opt in export exactly as today.
+    var includeColophon: Bool = false {
         didSet { lastModified = .now }
     }
 
@@ -206,6 +246,8 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          `AttributedString`; `text` retained as the plain-text projection)
 ///   1.6 — Authoring Phase 1: unknown `kind` raw values read as `.unrecognized` instead of
 ///          `.document` (mixed-build CloudKit sync guard); the setter never persists it
+///   1.7 — Authoring Phase 4: added `level` (heading nesting depth, default 1) — the tree is
+///          level-encoded on the flat list; `sortOrder` semantics are untouched
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -237,6 +279,25 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 
     /// Position within the parent collection. Lower values appear first.
     var sortOrder: Int = 0 {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Outline Level (Authoring Phase 4)
+
+    /// Heading nesting depth, meaningful on `.heading` entries only (documents/prose
+    /// ignore it). Defaults to `1`, so every pre-Phase-4 heading — and every heading a
+    /// user never indents — renders exactly as today.
+    ///
+    /// **Level-encoding rationale.** The section tree is *derived*, never stored: the
+    /// entry list stays flat with global `sortOrder` retained, and `CollectionOutline`
+    /// (the single linearizer) computes the tree from heading levels. This is explicitly
+    /// *not* a parent-pointer scheme, because fielded builds reindex `sortOrder` globally
+    /// `0..<n` on every move — re-scoping that synced field's semantics to sibling order
+    /// would corrupt structure across mixed-build iCloud accounts. Nesting is UI-capped
+    /// at `CollectionOutline.maxLevel` (3); a synced value outside `1...3` (from a future
+    /// build or a merge) is clamped at read time by `CollectionOutline`, never migrated —
+    /// degradation is a flattened heading, never corruption.
+    var level: Int = 1 {
         didSet { lastModified = .now }
     }
 

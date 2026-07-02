@@ -1531,6 +1531,394 @@ struct CollectionTests {
         // The repeated document is exactly what the badge set reports.
         #expect(CollectionDocumentDiscovery.duplicateDocumentKeys(in: entries) == ["v1/d1"])
     }
+
+    // MARK: - CollectionOutlineTests (Authoring Phase 4)
+
+    /// Builds one detached entry for outline tests (no persistence needed — the outline
+    /// is a pure derivation).
+    private func outlineEntry(kind: CollectionEntryKind, level: Int = 1, order: Int,
+                              depthOverride: String? = nil,
+                              text: String? = nil) -> CollectionEntry {
+        let e = CollectionEntry(collectionId: UUID(), documentId: kind == .document ? "d\(order)" : "",
+                                volumeId: kind == .document ? "vol" : "", sortOrder: order)
+        e.entryKind = kind
+        e.level = level
+        e.bodyDepthOverride = depthOverride
+        e.text = text
+        return e
+    }
+
+    @Test("Outline: linearize sorts by sortOrder, nests by level, clamps to 1...3, and corrects orphan jumps")
+    func outlineLinearization() {
+        let h1 = outlineEntry(kind: .heading, level: 1, order: 0)
+        let d1 = outlineEntry(kind: .document, order: 1)
+        let h2 = outlineEntry(kind: .heading, level: 2, order: 2)
+        let d2 = outlineEntry(kind: .document, order: 3)
+        let h3 = outlineEntry(kind: .heading, level: 99, order: 4)   // clamps to 3
+        let h4 = outlineEntry(kind: .heading, level: -5, order: 5)   // clamps to 1
+        let orphan = outlineEntry(kind: .heading, level: 3, order: 6) // jump 1→3: clamps to 2
+        let preHeadingDoc = outlineEntry(kind: .document, order: -1)  // before any heading
+
+        // Passed shuffled to prove sortOrder wins.
+        let items = CollectionOutline.linearize([h3, d1, orphan, h1, h4, d2, h2, preHeadingDoc])
+        #expect(items.map(\.entry.sortOrder) == [-1, 0, 1, 2, 3, 4, 5, 6])
+        // Depths: doc before headings = 0; docs take the owning heading's level;
+        // 99 clamps to 3 (2+1 also allows 3); -5 clamps to 1; the 1→3 jump clamps to 2.
+        #expect(items.map(\.depth) == [0, 1, 1, 2, 2, 3, 1, 2])
+        // Linearize never mutates the model.
+        #expect(h3.level == 99)
+        #expect(orphan.level == 3)
+
+        // A first heading deeper than 1 resolves to 1 (no parent exists).
+        let deepFirst = CollectionOutline.linearize([outlineEntry(kind: .heading, level: 3, order: 0)])
+        #expect(deepFirst.map(\.depth) == [1])
+
+        // Normalize writes exactly the resolved depths back onto headings.
+        CollectionOutline.normalize([h1, d1, h2, d2, h3, h4, orphan, preHeadingDoc])
+        #expect(h1.level == 1)
+        #expect(h2.level == 2)
+        #expect(h3.level == 3)
+        #expect(h4.level == 1)
+        #expect(orphan.level == 2)
+        #expect(preHeadingDoc.level == 1)   // non-headings untouched
+    }
+
+    @Test("Outline: sectionRange owns the heading plus everything until a same-or-shallower heading; canIndent/canOutdent enforce the invariants")
+    func outlineSectionRangesAndIndentPredicates() {
+        // 0:H1 "Part I"  1:doc  2:H2  3:doc  4:H2  5:doc  6:H1 "Part II"  7:doc
+        let entries = [
+            outlineEntry(kind: .heading, level: 1, order: 0),
+            outlineEntry(kind: .document, order: 1),
+            outlineEntry(kind: .heading, level: 2, order: 2),
+            outlineEntry(kind: .document, order: 3),
+            outlineEntry(kind: .heading, level: 2, order: 4),
+            outlineEntry(kind: .document, order: 5),
+            outlineEntry(kind: .heading, level: 1, order: 6),
+            outlineEntry(kind: .document, order: 7),
+        ]
+        let items = CollectionOutline.linearize(entries)
+
+        // Part I owns itself + everything until Part II (same level).
+        #expect(CollectionOutline.sectionRange(of: 0, in: items) == 0..<6)
+        // The first H2 owns itself + its doc, stopping at the sibling H2.
+        #expect(CollectionOutline.sectionRange(of: 2, in: items) == 2..<4)
+        // The second H2 stops at the shallower Part II.
+        #expect(CollectionOutline.sectionRange(of: 4, in: items) == 4..<6)
+        // The trailing section runs to the end.
+        #expect(CollectionOutline.sectionRange(of: 6, in: items) == 6..<8)
+        // A non-heading index degenerates to a single-item range.
+        #expect(CollectionOutline.sectionRange(of: 1, in: items) == 1..<2)
+
+        // Indent: the first heading never can (no parent); the first H2 can't go to 3
+        // (its predecessor is only level 1 — orphan jump); its level-2 sibling can (its
+        // predecessor is level 2); Part II (level 1 after a level-2 heading) can indent to 2.
+        #expect(!CollectionOutline.canIndent(0, in: items))     // first heading: no parent
+        #expect(!CollectionOutline.canIndent(2, in: items))     // 2 → 3 needs prev heading >= 2; H1 is 1
+        #expect(CollectionOutline.canIndent(4, in: items))      // sibling H2 → 3 (prev H2 is 2)
+        #expect(CollectionOutline.canIndent(6, in: items))      // Part II 1 → 2 (prev level 2 >= 1)
+        #expect(!CollectionOutline.canIndent(1, in: items))     // non-heading
+
+        // A max-level heading can't indent even with a deep predecessor.
+        let deep = CollectionOutline.linearize([
+            outlineEntry(kind: .heading, level: 1, order: 0),
+            outlineEntry(kind: .heading, level: 2, order: 1),
+            outlineEntry(kind: .heading, level: 3, order: 2),
+            outlineEntry(kind: .heading, level: 3, order: 3),
+        ])
+        #expect(!CollectionOutline.canIndent(3, in: deep))      // 3 is the cap
+        #expect(CollectionOutline.canIndent(2, in: deep) == false) // 3 is the cap
+        #expect(CollectionOutline.canIndent(1, in: deep) == false) // 2→3 needs prev >= 2; prev is 1
+
+        // Outdent: any heading deeper than 1; never level-1 headings or non-headings.
+        #expect(CollectionOutline.canOutdent(2, in: items))
+        #expect(CollectionOutline.canOutdent(4, in: items))
+        #expect(!CollectionOutline.canOutdent(0, in: items))
+        #expect(!CollectionOutline.canOutdent(6, in: items))
+        #expect(!CollectionOutline.canOutdent(1, in: items))
+    }
+
+    @Test("Outline: ancestor body-depth cascade — a deeper heading's override shadows a shallower ancestor's; a heading without one inherits; siblings reset")
+    func outlineAncestorDepthCascade() {
+        // 0:H1(index)  1:doc  2:H2(full)  3:doc  4:H2(nil)  5:doc  6:H1(nil)  7:doc
+        let refs: [CollectionOutline.StructuralRef] = [
+            .init(isHeading: true,  level: 1, bodyDepthOverride: "index"),
+            .init(isHeading: false, level: 1, bodyDepthOverride: nil),
+            .init(isHeading: true,  level: 2, bodyDepthOverride: "full"),
+            .init(isHeading: false, level: 1, bodyDepthOverride: nil),
+            .init(isHeading: true,  level: 2, bodyDepthOverride: nil),
+            .init(isHeading: false, level: 1, bodyDepthOverride: nil),
+            .init(isHeading: true,  level: 1, bodyDepthOverride: nil),
+            .init(isHeading: false, level: 1, bodyDepthOverride: nil),
+        ]
+        let overrides = CollectionOutline.sectionBodyDepthOverrides(refs)
+        #expect(overrides[1] == "index")   // under H1(index)
+        #expect(overrides[3] == "full")    // level-2 override beats the level-1 ancestor
+        #expect(overrides[5] == "index")   // sibling H2 without one inherits the ancestor's
+        #expect(overrides[7] == nil)       // new level-1 section resets everything
+
+        // All-level-1 collections behave exactly like the Phase 3c flat rule: a nil
+        // override on the nearest heading resets the section (no sibling inheritance).
+        let flat: [CollectionOutline.StructuralRef] = [
+            .init(isHeading: true,  level: 1, bodyDepthOverride: "index"),
+            .init(isHeading: false, level: 1, bodyDepthOverride: nil),
+            .init(isHeading: true,  level: 1, bodyDepthOverride: nil),
+            .init(isHeading: false, level: 1, bodyDepthOverride: nil),
+        ]
+        let flatOverrides = CollectionOutline.sectionBodyDepthOverrides(flat)
+        #expect(flatOverrides == ["index", "index", nil, nil])
+
+        // Entries before any heading have no section override.
+        let preamble: [CollectionOutline.StructuralRef] = [
+            .init(isHeading: false, level: 1, bodyDepthOverride: nil),
+            .init(isHeading: true,  level: 1, bodyDepthOverride: "index"),
+        ]
+        #expect(CollectionOutline.sectionBodyDepthOverrides(preamble)[0] == nil)
+    }
+
+    @Test("Resolver + outline: a nested section's documents inherit the nearest ancestor override; a synced out-of-range level clamps instead of corrupting")
+    @MainActor
+    func resolverNestedDepthCascade() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Nested")
+        coll.defaultBodyDepth = "full"
+        context.insert(coll)
+
+        let h1 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        h1.entryKind = .heading
+        h1.text = "Part I"
+        h1.bodyDepthOverride = "index"
+
+        let h2 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 1)
+        h2.entryKind = .heading
+        h2.text = "Subsection"
+        h2.level = 2                       // no override: inherits Part I's "index"
+        let d1 = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "nestvol", sortOrder: 2)
+
+        let h3 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 3)
+        h3.entryKind = .heading
+        h3.text = "Deep dive"
+        h3.level = 42                      // synced junk: clamps (2+1 = 3), never corrupts
+        h3.bodyDepthOverride = "summaryOnly"
+        let d2 = CollectionEntry(collectionId: coll.id, documentId: "d2", volumeId: "nestvol", sortOrder: 4)
+
+        let entries = [h1, h2, d1, h3, d2]
+        for e in entries { context.insert(e) }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(collection: coll, entries: entries,
+                                               allNotes: [], purpose: .preview)
+        let docs = items.documents
+        try #require(docs.count == 2)
+        #expect(docs[0].bodyDepth == .index)         // inherited from the level-1 ancestor
+        #expect(docs[1].bodyDepth == .summaryOnly)   // the deeper heading's own override wins
+    }
+
+    // MARK: - NativeCollectionFormat v2 tests (Authoring Phase 4)
+
+    @Test("NativeFormat v2: front matter and heading levels survive export → import; a v1 file leaves the defaults untouched")
+    func nativeV2RoundTrip() throws {
+        let source = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(source)
+
+        let coll = Collection(name: "Framed", note: "One-liner.")
+        coll.subtitle = "Documents and Commentary"
+        coll.authorLine = "A. Historian"
+        coll.introductionText = "Why these cables matter."
+        coll.introductionRichText = Data("{\\rtf1 intro}".utf8)
+        coll.includeColophon = true
+        sourceCtx.insert(coll)
+
+        let h1 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        h1.entryKind = .heading
+        h1.text = "Part I"
+        h1.collection = coll
+        let h2 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 1)
+        h2.entryKind = .heading
+        h2.text = "Subsection"
+        h2.level = 2
+        h2.collection = coll
+        let d1 = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v14", sortOrder: 2)
+        d1.collection = coll
+        sourceCtx.insert(h1); sourceCtx.insert(h2); sourceCtx.insert(d1)
+        try sourceCtx.save()
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(file.formatVersion == 2)
+        #expect(file.minimumReaderVersion == 1)   // levels/front matter degrade, never raise
+
+        let data = try NativeCollectionSerializer.encode(file)
+        let dest = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(dest)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(data), into: destCtx)
+        try destCtx.save()
+
+        #expect(imported.subtitle == "Documents and Commentary")
+        #expect(imported.authorLine == "A. Historian")
+        #expect(imported.introductionText == "Why these cables matter.")
+        #expect(imported.introductionRichText == Data("{\\rtf1 intro}".utf8))
+        #expect(imported.includeColophon == true)
+        let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        try #require(entries.count == 3)
+        #expect(entries[0].level == 1)
+        #expect(entries[1].level == 2)   // the nested heading survived
+
+        // A v1 file (no v2 keys at all) reconstructs today's defaults.
+        let v1JSON = Data(#"{"format":"fruscollection","formatVersion":1,"name":"Old","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"heading","text":"Part I"}]}"#.utf8)
+        let old = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(v1JSON), into: destCtx)
+        #expect(old.subtitle == nil)
+        #expect(old.authorLine == nil)
+        #expect(old.introductionText == nil)
+        #expect(old.introductionRichText == nil)
+        #expect(old.includeColophon == false)
+        #expect((old.documentEntries ?? []).first?.level == 1)
+    }
+
+    @Test("NativeFormat v2 write-minimum: a collection using no v2 feature emits formatVersion 1 with no v2 keys — byte-identical to a pre-Phase-4 file")
+    func nativeV2WriteMinimum() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+
+        // Structure and composition, but nothing Phase 4 added: level-1 headings only,
+        // no front matter, colophon off (all the defaults).
+        let coll = Collection(name: "Flat", note: "Plain.")
+        coll.defaultBodyDepth = "summaryOnly"
+        ctx.insert(coll)
+        let h = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        h.entryKind = .heading
+        h.text = "Part I"
+        h.bodyDepthOverride = "index"
+        h.collection = coll
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v14", sortOrder: 1)
+        d.collection = coll
+        ctx.insert(h); ctx.insert(d)
+        try ctx.save()
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(file.formatVersion == 1)          // write-minimum, computed from content
+        #expect(file.minimumReaderVersion == nil)
+
+        let data = try NativeCollectionSerializer.encode(file)
+        let json = String(decoding: data, as: UTF8.self)
+        for v2Key in ["minimumReaderVersion", "subtitle", "authorLine",
+                      "introductionText", "introductionRichText", "includeColophon", "level"] {
+            #expect(!json.contains("\"\(v2Key)\""), "write-minimum file must not carry '\(v2Key)'")
+        }
+
+        // Byte-identity: a pre-Phase-4 serializer would have encoded exactly this DTO —
+        // the v1 fields only, formatVersion 1 (the sorted-keys encoder omits every nil
+        // v2 key, so the key set — and therefore the bytes — match the old struct's).
+        let prePhase4 = FRUSCollectionFile(
+            format: "fruscollection",
+            formatVersion: 1,
+            name: "Flat",
+            note: "Plain.",
+            composition: .init(defaultBodyDepth: "summaryOnly", footnoteStyle: "all",
+                               tocStyle: "citation", applyHighlights: false,
+                               includeNotes: true, includeWordCloud: false),
+            entries: [
+                .init(kind: "heading", documentId: nil, volumeId: nil,
+                      bodyDepthOverride: "index", text: "Part I", richText: nil, notes: nil),
+                .init(kind: "document", documentId: "d1", volumeId: "v14",
+                      bodyDepthOverride: nil, text: nil, richText: nil, notes: nil),
+            ])
+        #expect(data == (try NativeCollectionSerializer.encode(prePhase4)))
+
+        // Flipping any single v2 feature flips the file to v2.
+        coll.includeColophon = true
+        let v2 = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(v2.formatVersion == 2)
+        #expect(v2.minimumReaderVersion == 1)
+        coll.includeColophon = false
+        h.level = 2   // orphan first heading: resolves to 1, so still NOT a v2 feature
+        let stillV1 = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(stillV1.formatVersion == 1)
+    }
+
+    @Test("NativeFormat v2 tolerant reader: unknown keys are ignored and unknown entry kinds are skipped, never misdecoded")
+    func nativeV2ForwardCompat() throws {
+        // A hypothetical v3 writer: unknown top-level key, unknown per-entry key, an
+        // unknown entry kind — and minimumReaderVersion 1 because it is all degradable.
+        let v3JSON = Data("""
+        {"format":"fruscollection","formatVersion":3,"minimumReaderVersion":1,
+         "name":"Future","futureTopLevelKey":{"nested":true},
+         "composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation",
+                        "applyHighlights":false,"includeNotes":true,"includeWordCloud":false},
+         "entries":[
+           {"kind":"heading","text":"Part I","level":2,"futureEntryKey":7},
+           {"kind":"hologram","documentId":"d9","volumeId":"v9"},
+           {"kind":"document","documentId":"d1","volumeId":"v14"}
+         ]}
+        """.utf8)
+
+        let file = try NativeCollectionSerializer.decode(v3JSON)   // accepted: 1 <= 2
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let imported = NativeCollectionSerializer.apply(file, into: ctx)
+        try ctx.save()
+
+        let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        try #require(entries.count == 2)                     // the hologram was skipped
+        #expect(entries[0].entryKind == .heading)
+        #expect(entries[0].text == "Part I")
+        // Import clamps the stored level defensively; here the first heading keeps its
+        // file value (2 is within 1...3 — read-time orphan correction is the outline's job).
+        #expect(entries[0].level == 2)
+        #expect(entries[1].entryKind == .document)
+        #expect(entries[1].documentId == "d1")
+
+        // An out-of-range level in a file clamps on import.
+        let clampJSON = Data(#"{"format":"fruscollection","formatVersion":2,"minimumReaderVersion":1,"name":"Clamp","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"heading","text":"Deep","level":99}]}"#.utf8)
+        let clamped = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(clampJSON), into: ctx)
+        #expect((clamped.documentEntries ?? []).first?.level == 3)
+    }
+
+    @Test("NativeFormat v2: minimumReaderVersion gates decoding — a required-3 file rejects; formatVersion 3 with floor 1 accepts; legacy formatVersion-only files keep their gate")
+    func nativeV2MinimumReaderVersion() throws {
+        let composition = #""composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false}"#
+
+        // A file that *requires* a version-3 reader rejects, whatever its formatVersion.
+        let requires3 = Data(#"{"format":"fruscollection","formatVersion":3,"minimumReaderVersion":3,"name":"x",\#(composition),"entries":[]}"#.utf8)
+        #expect(throws: NativeCollectionError.self) {
+            try NativeCollectionSerializer.decode(requires3)
+        }
+
+        // A newer file whose features degrade (floor 1) accepts.
+        let degradable3 = Data(#"{"format":"fruscollection","formatVersion":3,"minimumReaderVersion":1,"name":"x",\#(composition),"entries":[]}"#.utf8)
+        #expect(try NativeCollectionSerializer.decode(degradable3).formatVersion == 3)
+
+        // No minimumReaderVersion: formatVersion is the gate (v1 semantics preserved) —
+        // 2 accepts (defaulted floor 2 <= 2), 3 rejects.
+        let bare2 = Data(#"{"format":"fruscollection","formatVersion":2,"name":"x",\#(composition),"entries":[]}"#.utf8)
+        #expect(try NativeCollectionSerializer.decode(bare2).minimumReaderVersion == nil)
+        let bare3 = Data(#"{"format":"fruscollection","formatVersion":3,"name":"x",\#(composition),"entries":[]}"#.utf8)
+        #expect(throws: NativeCollectionError.self) {
+            try NativeCollectionSerializer.decode(bare3)
+        }
+    }
+
+    @Test("Front matter defaults: a new collection carries no front matter and no colophon (pre-Phase-4 behavior)")
+    func frontMatterDefaults() {
+        let collection = Collection(name: "Defaults")
+        #expect(collection.subtitle == nil)
+        #expect(collection.authorLine == nil)
+        #expect(collection.introductionText == nil)
+        #expect(collection.introductionRichText == nil)
+        #expect(collection.includeColophon == false)
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d1",
+                                    volumeId: "v1", sortOrder: 0)
+        #expect(entry.level == 1)
+    }
 }
 
 // MARK: - Resolver test doubles
