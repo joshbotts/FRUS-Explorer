@@ -88,6 +88,10 @@ import CloudKit
 ///          set from a dead `#if os(macOS)` branch in `BrowserView` (unreachable
 ///          since the file became iOS-only in Session 60) and never read or set
 ///          to `true` anywhere; `showCitationLookup` remains in active use
+///   4.1 — Corpus Analytics cache fix: connectIndexingProgress flushes
+///          `CorpusAnalyticsService`'s result caches on each volume's `.complete`
+///          event (cache keys are bare query terms with no index fingerprint, so
+///          stale pre-index counts otherwise persist for the whole session)
 ///   4.1 — Session 2026-07-02: pendingCollectionSelection (UUID) for the open-with
 ///          `.fruscollection` import → Collections window hand-off on macOS
 
@@ -733,6 +737,14 @@ final class AppState {
                             Double(self.indexingQueueAverageDocumentCount) +
                             (Double(meta.totalDocuments) - Double(self.indexingQueueAverageDocumentCount)) / n
                         )
+                    }
+                    // The index content just changed. Flush Corpus Analytics'
+                    // in-memory result caches — their keys are bare query terms
+                    // with no index fingerprint, so a count computed before this
+                    // volume was indexed would keep serving stale (or empty)
+                    // charts for the rest of the session.
+                    if let analyticsService = self.analyticsService {
+                        Task { await analyticsService.invalidateCache() }
                     }
                     #if os(iOS)
                     self.endIndexingLiveActivity()
