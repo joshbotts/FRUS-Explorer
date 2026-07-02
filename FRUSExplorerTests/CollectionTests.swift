@@ -688,6 +688,15 @@ struct CollectionTests {
         #expect(docEntry?.selectedNoteIds.isEmpty == true)
     }
 
+    @Test("ExportFormat: native format has no CollectionExporter and the .fruscollection extension")
+    func nativeExportFormatWiring() {
+        #expect(ExportFormat.fruscollection.makeExporter() == nil)   // handled by the serializer path
+        #expect(ExportFormat.fruscollection.fileExtension == "fruscollection")
+        #expect(ExportFormat.pdf.makeExporter() != nil)              // rendered formats still make one
+        #expect(ExportFormat.bibtex.makeExporter() != nil)
+        #expect(ExportFormat.allCases.contains(.fruscollection))
+    }
+
     @Test("NativeFormat: decode rejects a non-collection JSON file and a future-version file")
     func nativeDecodeGuards() throws {
         // Wrong format discriminator.

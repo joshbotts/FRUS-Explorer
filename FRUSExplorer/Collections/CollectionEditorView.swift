@@ -1329,6 +1329,10 @@ struct ExportSheetView: View {
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
     @State private var exportError: String? = nil
+    /// D9a privacy default: research notes are excluded from a shared `.fruscollection`
+    /// file unless the user opts in here. Independent of the collection's `includeNotes`
+    /// composition setting (which governs rendered exports, not shared source files).
+    @State private var includeNotesInSharedFile = false
     /// Non-nil while volumes need to be downloaded/indexed before export can proceed.
     @State private var preparingMessage: String? = nil
     /// Non-nil while summaries are being generated on demand.
@@ -1344,6 +1348,15 @@ struct ExportSheetView: View {
         let documentId: String
         let volumeId: String
         let sortOrder: Int
+    }
+
+    /// The formats offered for this collection. The native `.fruscollection` file needs static
+    /// entries, so it's hidden for smart (saved-search) collections until they can be
+    /// snapshotted (D8/D9b).
+    private var availableFormats: [ExportFormat] {
+        collection.savedSearchId == nil
+            ? ExportFormat.allCases
+            : ExportFormat.allCases.filter { $0 != .fruscollection }
     }
 
     var body: some View {
@@ -1393,7 +1406,7 @@ struct ExportSheetView: View {
                         String(localized: "export.format.picker", defaultValue: "Format"),
                         selection: $selectedFormat
                     ) {
-                        ForEach(ExportFormat.allCases) { fmt in
+                        ForEach(availableFormats) { fmt in
                             Text(fmt.displayName).tag(fmt)
                         }
                     }
@@ -1401,14 +1414,18 @@ struct ExportSheetView: View {
                     .labelsHidden()
                 }
 
-                // Content composition (body depth, footnotes, notes, highlights, word cloud)
-                // now lives in the collection manager's Composition section and is persisted
-                // on the collection — this sheet is purely format + destination.
-                Text(String(localized: "export.compositionHint",
-                            defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if selectedFormat == .fruscollection {
+                    nativeShareOptions
+                } else {
+                    // Content composition (body depth, footnotes, notes, highlights, word cloud)
+                    // now lives in the collection manager's Composition section and is persisted
+                    // on the collection — this sheet is purely format + destination.
+                    Text(String(localized: "export.compositionHint",
+                                defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1490,16 +1507,22 @@ struct ExportSheetView: View {
             Form {
                 Section(String(localized: "export.format.header", defaultValue: "Format")) {
                     Picker("", selection: $selectedFormat) {
-                        ForEach(ExportFormat.allCases) { fmt in Text(fmt.displayName).tag(fmt) }
+                        ForEach(availableFormats) { fmt in Text(fmt.displayName).tag(fmt) }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                 }
 
-                Section {
-                    Text(String(localized: "export.compositionHint",
-                                defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                if selectedFormat == .fruscollection {
+                    Section {
+                        nativeShareOptions
+                    }
+                } else {
+                    Section {
+                        Text(String(localized: "export.compositionHint",
+                                    defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section {
@@ -1558,6 +1581,12 @@ struct ExportSheetView: View {
     private func runExport() async {
         exportError = nil
 
+        // Native shareable-collection file (D9): serialize the collection's source directly.
+        if selectedFormat == .fruscollection {
+            runNativeExport()
+            return
+        }
+
         // Smart collection path: resolve documents via the linked SavedSearch.
         if let searchId = collection.savedSearchId {
             isExporting = true
@@ -1613,7 +1642,7 @@ struct ExportSheetView: View {
                 }
 
                 let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
-                let exporter = selectedFormat.makeExporter()
+                guard let exporter = selectedFormat.makeExporter() else { return }
                 let url = try await exporter.export(metadata: metadata, documents: docs, options: options)
                 exportedURL = url
                 appState.logEvent(.export(
@@ -1658,7 +1687,7 @@ struct ExportSheetView: View {
             }
 
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
-            let exporter = selectedFormat.makeExporter()
+            guard let exporter = selectedFormat.makeExporter() else { isExporting = false; return }
             let url = try await exporter.export(metadata: metadata, items: items, options: opts)
             exportedURL = url
             appState.logEvent(.export(
@@ -1683,6 +1712,65 @@ struct ExportSheetView: View {
             summaryPromptId: collection.summaryPromptId,
             includeWordCloud: collection.includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html)
         )
+    }
+
+    // MARK: - Native collection file (Phase 4 / D9)
+
+    /// Options shown when the native `.fruscollection` format is selected: the D9a
+    /// notes-privacy opt-in plus a short explanation of what the shared file carries.
+    @ViewBuilder
+    private var nativeShareOptions: some View {
+        Toggle(String(localized: "export.native.includeNotes",
+                      defaultValue: "Include my research notes"),
+               isOn: $includeNotesInSharedFile)
+        Text(String(localized: "export.native.hint",
+                    defaultValue: "Shares an editable copy of this collection — its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above."))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Serializes the collection to a temporary `.fruscollection` file and routes it into the
+    /// shared export-delivery path. Bypasses document resolution entirely — the native format
+    /// carries the collection's *source* (references + composition + structure), not rendered
+    /// content — so no volume needs to be downloaded to produce it.
+    private func runNativeExport() {
+        exportError = nil
+        // Smart collections have no static entries to serialize yet (D9b); the picker hides the
+        // native format for them, but guard defensively.
+        guard collection.savedSearchId == nil else {
+            exportError = String(localized: "export.native.smartUnsupported",
+                                 defaultValue: "Smart collections can’t be shared as a file yet.")
+            return
+        }
+        isExporting = true
+        defer { isExporting = false }
+        do {
+            let resolveNoteTexts: (CollectionEntry) -> [String] = { entry in
+                let ids = entry.selectedNoteIds.isEmpty
+                    ? (entry.researchNoteId.map { [$0] } ?? [])
+                    : entry.selectedNoteIds
+                return ids.compactMap { id in allNotes.first { $0.id == id }?.bodyText }
+            }
+            let file = NativeCollectionSerializer.makeFile(
+                from: collection,
+                includeNotes: includeNotesInSharedFile,
+                resolveNoteTexts: resolveNoteTexts)
+            let data = try NativeCollectionSerializer.encode(file)
+
+            let safeName = collection.name.components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
+                .joined(separator: "-")
+            let filename = (safeName.isEmpty ? "collection" : safeName)
+                + "." + NativeCollectionSerializer.fileExtension
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            try data.write(to: url, options: .atomic)
+            exportedURL = url
+            appState.logEvent(.export(
+                format: selectedFormat.rawValue,
+                documentCount: entries.filter { $0.entryKind == .document }.count))
+        } catch {
+            exportError = error.localizedDescription
+        }
     }
 
     // MARK: - Send to Zotero Library (Web API)
