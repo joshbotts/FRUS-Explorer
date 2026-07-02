@@ -937,3 +937,27 @@ Executed Phase 1 of Planning/Collections-Authoring-Scope.md in two PRs:
   DisclosureGroup at the top of the scrolling entries List (inline per scope, but inside the
   scroll region so expansion can't overflow the fixed header — preserves the #126 constraint).
   Docs rider: iOS/macOS manuals §10 + both TestFlight instructions.
+
+### Session 2026-07-02 (later) — Legacy-prose export data-loss fix
+Closed the spun-off "legacy-prose export loss" finding: Phase 3b (9f1c648) persisted
+`CollectionEntry.richText` as a JSON-encoded `AttributedString`; the RTF switch (05d31c7)
+added no migration, so `ProseRichText.exportRTF` returned legacy blobs verbatim,
+`CollectionProse.paragraphs(fromRTF:)` failed the RTF decode and returned `[]`, and all
+three exporters (HTML/DOCX/PDF) silently omitted the prose block — even though the plain
+text sat in `entry.text`. Fix, layered so no reader can drop prose again:
+- **`ProseRichText.exportRTF`** now always emits valid RTF: stored RTF verbatim → legacy
+  JSON converted (bold/italic `inlinePresentationIntent` → concrete font traits, so
+  formatting survives) → plain `text` fallback. Conversion also migrates the entry in
+  place (`migrateLegacyJSONIfNeeded`), so the first export heals the store.
+- **`CollectionProse.paragraphs(fromRTF:)`** — the single decode path shared by all three
+  exporters — falls back to decoding the legacy JSON encoding directly, covering raw
+  legacy payloads that bypass `exportRTF` (pre-fix `.fruscollection` files, tests).
+- **Editor**: `RichTextEditor` loads legacy blobs with formatting intact; the prose row
+  migrates on appear. **Native format**: `makeFile` heals before emitting, so shared
+  `.fruscollection` files honour the schema's "richText is RTF" promise.
+- Unrecognizable blobs (neither format) are left untouched and export the plain `text`
+  projection — never destroyed, never silently dropped.
+- 4 new tests (legacy export+migration, garbage fallback, decoder fallback with paragraph/
+  bold recovery, HTML/DOCX/PDF end-to-end); 30/30 CollectionTests + 15/15
+  CodingStandardsAuditTests pass; exporter version histories bumped (HTML 1.7, DOCX 1.5,
+  PDF 1.8, NativeCollectionSerializer 1.1, ProseRichText 1.1).

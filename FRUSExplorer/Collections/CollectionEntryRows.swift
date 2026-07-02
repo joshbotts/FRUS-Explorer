@@ -105,6 +105,10 @@ struct CollectionProseRow: View {
             structuralDeleteButton(onDelete)
         }
         .padding(.vertical, 4)
+        // A pre-RTF (Phase 3b) entry stores its body as a JSON-encoded AttributedString;
+        // heal it to RTF on load so exports, sync, and .fruscollection files see RTF.
+        // The editor itself decodes either format, so display doesn't depend on this.
+        .onAppear { ProseRichText.migrateLegacyJSONIfNeeded(entry) }
     }
 }
 

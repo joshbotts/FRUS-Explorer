@@ -254,6 +254,69 @@ struct CollectionTests {
         #expect(entry.text == "Bold red")
     }
 
+    @Test("ProseRichText: a legacy Phase 3b JSON blob exports as RTF (text + bold intact) and migrates the entry")
+    func proseLegacyJSONBlobExportsAndMigrates() throws {
+        // What a Phase 3b build persisted: the AttributedString's own Codable encoding,
+        // with bold carried as Foundation inlinePresentationIntent — not RTF.
+        var legacy = AttributedString("Legacy prose survives.")
+        if let range = legacy.range(of: "Legacy") {
+            legacy[range].inlinePresentationIntent = .stronglyEmphasized
+        }
+        let blob = try JSONEncoder().encode(legacy)
+
+        let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        entry.entryKind = .prose
+        entry.richText = blob
+        entry.text = "Legacy prose survives."
+
+        let ns = try NSAttributedString(data: ProseRichText.exportRTF(from: entry),
+                                        options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                        documentAttributes: nil)
+        #expect(ns.string == "Legacy prose survives.")
+        var sawBold = false
+        ns.enumerateAttributes(in: NSRange(location: 0, length: ns.length)) { attrs, _, _ in
+            #if canImport(UIKit)
+            if let font = attrs[.font] as? UIFont, font.fontDescriptor.symbolicTraits.contains(.traitBold) { sawBold = true }
+            #elseif canImport(AppKit)
+            if let font = attrs[.font] as? NSFont, font.fontDescriptor.symbolicTraits.contains(.bold) { sawBold = true }
+            #endif
+        }
+        #expect(sawBold)   // Phase 3b bold (inlinePresentationIntent) survives the conversion
+        // exportRTF heals the store in place: the entry now holds RTF, not the legacy JSON.
+        #expect(ProseRichText.decodedRTF(entry.richText ?? Data()) != nil)
+    }
+
+    @Test("ProseRichText: an unrecognizable richText blob falls back to the plain text projection")
+    func proseUnrecognizableBlobFallsBack() throws {
+        let garbage = Data([0x00, 0xFF, 0x13, 0x37])
+        let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        entry.entryKind = .prose
+        entry.richText = garbage
+        entry.text = "Only the plain projection is left."
+
+        let ns = try NSAttributedString(data: ProseRichText.exportRTF(from: entry),
+                                        options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                        documentAttributes: nil)
+        #expect(ns.string == "Only the plain projection is left.")
+        // The unrecognizable blob is left in place (never destroyed), not "migrated".
+        #expect(entry.richText == garbage)
+    }
+
+    @Test("CollectionProse: a legacy Phase 3b JSON payload decodes to paragraphs — the exporter-side data-loss guard")
+    func collectionProseLegacyFallback() throws {
+        var legacy = AttributedString("First paragraph.\n\nSecond, emphasized.")
+        if let range = legacy.range(of: "emphasized") {
+            legacy[range].inlinePresentationIntent = .emphasized
+        }
+        let blob = try JSONEncoder().encode(legacy)
+
+        let paragraphs = CollectionProse.paragraphs(fromRTF: blob)
+        try #require(paragraphs.count == 2)   // blank line still splits paragraphs
+        #expect(paragraphs[0].map(\.text).joined() == "First paragraph.")
+        #expect(paragraphs[1].map(\.text).joined() == "Second, emphasized.")
+        #expect(paragraphs[1].contains { $0.italic && $0.text == "emphasized" })
+    }
+
     // MARK: - DocumentNoteAssociationTest
 
     @Test("DocumentNoteAssociationTest: CollectionEntry stores and retrieves researchNoteId")
@@ -509,6 +572,37 @@ struct CollectionTests {
         let data = try Data(contentsOf: url)
         #expect(!data.isEmpty)
         #expect(data.prefix(4) == Data([0x25, 0x50, 0x44, 0x46])) // "%PDF"
+    }
+
+    // MARK: - LegacyProseExportTest (data-loss guard)
+
+    @Test("LegacyProseExport: a Phase 3b JSON prose payload still appears in HTML, DOCX, and PDF exports")
+    func exportsRecoverLegacyProse() async throws {
+        // A raw legacy blob reaching an exporter directly (e.g. synced from a Phase 3b
+        // device, or carried by a pre-fix .fruscollection file) must render its text —
+        // before the fix, all three exporters silently omitted the block.
+        let blob = try JSONEncoder().encode(AttributedString("Irreplaceable editorial commentary."))
+        let doc = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 1,
+                                           title: "A Memo", bodyText: "Body.")
+        let items: [CollectionExportItem] = [.heading("Part I"), .prose(blob), .document(doc)]
+        let metadata = CollectionExportMetadata(name: "Legacy Prose", note: nil)
+
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.contains("Irreplaceable editorial commentary."))
+
+        // The stored-mode ZIP keeps document.xml uncompressed, so the prose text (in an
+        // otherwise-valid package) appears verbatim in the archive bytes.
+        let docxURL = try await DocxCollectionExporter().export(metadata: metadata, items: items)
+        let docxData = try Data(contentsOf: docxURL)
+        #expect(docxData.range(of: Data("Irreplaceable editorial commentary.".utf8)) != nil)
+
+        // PDF content streams aren't byte-searchable; drawing the recovered prose without
+        // error into a valid %PDF is the meaningful assertion here (span recovery itself is
+        // covered by collectionProseLegacyFallback).
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: items)
+        let pdfData = try Data(contentsOf: pdfURL)
+        #expect(pdfData.prefix(4) == Data([0x25, 0x50, 0x44, 0x46])) // "%PDF"
     }
 
     // MARK: - BibTeXExportTest (Phase 4 / D7)
