@@ -18,8 +18,15 @@ import UIKit
 
 /// Picker + progress view that runs the chosen exporter and presents a share sheet.
 ///
+/// Content resolution lives in `CollectionContentResolver` — this sheet is purely
+/// format selection, progress feedback, and file delivery.
+///
 /// Version history:
 ///   1.0 — extracted from CollectionEditorView.swift (Session 2026-07-02, Collections Authoring Phase 1)
+///   1.1 — Session 2026-07-02 (Collections Authoring Phase 2a): all resolution
+///          (`resolveItems`, `resolveDocuments`, `resolveSmartDocuments`, `resolveSummaries`,
+///          `prepareVolumes`, render-model helpers, `SmartEntry`) moved to
+///          `CollectionContentResolver`; smart and static exports share one resolve path
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -44,16 +51,6 @@ struct ExportSheetView: View {
     @State private var summaryGeneratingMessage: String? = nil
     /// Non-nil after a successful "Send to Zotero Library" run (drives the result alert).
     @State private var zoteroResult: ZoteroSendResult? = nil
-
-    // MARK: - Ephemeral document reference (smart collection path)
-
-    /// Lightweight document reference used for smart-collection resolution.
-    /// Avoids creating SwiftData model instances outside a context.
-    private struct SmartEntry {
-        let documentId: String
-        let volumeId: String
-        let sortOrder: Int
-    }
 
     /// The document formats offered in the picker. Zotero RIS is excluded — it now lives in the
     /// unified "Send to Zotero…" menu (D6) — and the native `.fruscollection` file is hidden for
@@ -287,6 +284,10 @@ struct ExportSheetView: View {
     }
     #endif // os(iOS)
 
+    /// Runs the selected export: native `.fruscollection` files serialize the collection's
+    /// source directly; every rendered format resolves content through
+    /// `CollectionContentResolver` (one path for smart and static collections) and hands
+    /// the resolved items to the format's exporter.
     private func runExport() async {
         exportError = nil
 
@@ -296,108 +297,19 @@ struct ExportSheetView: View {
             return
         }
 
-        // Smart collection path: resolve documents via the linked SavedSearch.
-        if let searchId = collection.savedSearchId {
-            isExporting = true
-            defer { isExporting = false; summaryGeneratingMessage = nil }
-
-            guard let searchService = appState.searchService else {
-                exportError = String(localized: "export.smart.noSearchService",
-                                     defaultValue: "Search service unavailable. Please try again.")
-                return
-            }
-            let descriptor = FetchDescriptor<SavedSearch>(
-                predicate: #Predicate { $0.id == searchId }
-            )
-            guard let savedSearch = try? modelContext.fetch(descriptor).first else {
-                exportError = String(localized: "export.smart.missingSearch",
-                                     defaultValue: "The linked saved search could not be found. It may have been deleted.")
-                return
-            }
-            do {
-                // Resolve the full result set (not just the first page) — the default
-                // `search` limit is `defaultPageSize` (20), which silently truncated
-                // smart-collection exports. Mirror the live saved search's hard limit.
-                let results = try await searchService.search(
-                    parameters: savedSearch.searchParameters,
-                    limit: SearchViewModel.searchHardLimit
-                )
-                let smartEntries = results.enumerated().map { i, r in
-                    SmartEntry(documentId: r.documentId, volumeId: r.volumeId, sortOrder: i)
-                }
-                var docs = await resolveSmartDocuments(smartEntries)
-                let options = buildExportOptions()
-
-                // Resolve AI summaries on demand when exporting at .summaryOnly depth,
-                // mirroring the static-collection path below. Without this, a smart
-                // collection exported as "Summary only" would carry no summary text
-                // even when the user has generated summaries for the saved search.
-                let summaryDocs = docs.filter { $0.bodyDepth == .summaryOnly }
-                if !summaryDocs.isEmpty {
-                    guard let promptId = options.summaryPromptId else {
-                        exportError = String(localized: "export.summaryNoPrompt",
-                                             defaultValue: "Choose a summarization prompt in the collection's Composition section to export summaries.")
-                        return
-                    }
-                    let bodyTexts = Dictionary(uniqueKeysWithValues:
-                        summaryDocs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
-                    let summaries = try await resolveSummaries(for: summaryDocs, promptId: promptId,
-                                                               bodyTexts: bodyTexts)
-                    docs = docs.map { doc in
-                        guard doc.bodyDepth == .summaryOnly,
-                              let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return doc }
-                        return doc.withSummary(text)
-                    }
-                }
-
-                let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
-                guard let exporter = selectedFormat.makeExporter() else { return }
-                let url = try await exporter.export(metadata: metadata, documents: docs, options: options)
-                exportedURL = url
-                appState.logEvent(.export(
-                    format: selectedFormat.rawValue,
-                    documentCount: docs.count
-                ))
-            } catch {
-                exportError = error.localizedDescription
-            }
-            return
-        }
-
-        // Static collection path.
-        // Phase 1: ensure every volume referenced by the collection is downloaded and indexed.
-        await prepareVolumes()
-
-        // Phase 2: resolve document content.
         isExporting = true
+        defer {
+            isExporting = false
+            preparingMessage = nil
+            summaryGeneratingMessage = nil
+        }
         do {
-            var items = try await resolveItems()
-            let opts = buildExportOptions()
-
-            // Phase 2b: generate summaries on demand for entries whose effective body
-            // depth is .summaryOnly (per-entry — only the documents that need one).
-            let summaryDocs = items.documents.filter { $0.bodyDepth == .summaryOnly }
-            if !summaryDocs.isEmpty {
-                guard let promptId = opts.summaryPromptId else {
-                    exportError = String(localized: "export.summaryNoPrompt",
-                                        defaultValue: "Choose a summarization prompt in the collection's Composition section to export summaries.")
-                    isExporting = false
-                    return
-                }
-                let bodyTexts = Dictionary(uniqueKeysWithValues:
-                    summaryDocs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) })
-                let summaries = try await resolveSummaries(for: summaryDocs, promptId: promptId,
-                                                           bodyTexts: bodyTexts)
-                items = items.map { item in
-                    guard case .document(let doc) = item, doc.bodyDepth == .summaryOnly,
-                          let text = summaries["\(doc.volumeId)/\(doc.documentId)"] else { return item }
-                    return .document(doc.withSummary(text))
-                }
-            }
-
+            let items = try await makeResolver().resolve(
+                collection: collection, entries: entries, allNotes: allNotes, purpose: .export)
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
-            guard let exporter = selectedFormat.makeExporter() else { isExporting = false; return }
-            let url = try await exporter.export(metadata: metadata, items: items, options: opts)
+            guard let exporter = selectedFormat.makeExporter() else { return }
+            let url = try await exporter.export(
+                metadata: metadata, items: items, options: buildExportOptions())
             exportedURL = url
             appState.logEvent(.export(
                 format: selectedFormat.rawValue,
@@ -406,8 +318,17 @@ struct ExportSheetView: View {
         } catch {
             exportError = error.localizedDescription
         }
-        isExporting = false
-        summaryGeneratingMessage = nil
+    }
+
+    /// Builds a content resolver whose progress callbacks drive this sheet's
+    /// volume-preparation and summary-generation status messages.
+    private func makeResolver() -> CollectionContentResolver {
+        CollectionContentResolver(
+            appState: appState,
+            modelContext: modelContext,
+            onPreparingStatus: { preparingMessage = $0 },
+            onSummaryStatus: { summaryGeneratingMessage = $0 }
+        )
     }
 
     /// Assembles `CollectionExportOptions` from the collection's persisted composition
@@ -589,27 +510,12 @@ struct ExportSheetView: View {
     }
 
     /// Resolves the collection's export documents for the Zotero send, handling both
-    /// the smart (saved-search) and static collection paths.
+    /// the smart (saved-search) and static collection paths via the shared resolver.
+    /// The Zotero formats render citations and notes — never body content — so this
+    /// deliberately uses `resolveDocuments`, which skips the summary phase.
     private func resolvedZoteroDocuments() async throws -> [CollectionExportDocument] {
-        if let searchId = collection.savedSearchId {
-            guard let searchService = appState.searchService else {
-                throw ZoteroAPIError.network(String(localized: "export.smart.noSearchService",
-                                                    defaultValue: "Search service unavailable."))
-            }
-            let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })
-            guard let savedSearch = try? modelContext.fetch(descriptor).first else { return [] }
-            // Full result set, not the 20-item default page (see runExport).
-            let results = try await searchService.search(
-                parameters: savedSearch.searchParameters,
-                limit: SearchViewModel.searchHardLimit
-            )
-            let smart = results.enumerated().map {
-                SmartEntry(documentId: $0.element.documentId, volumeId: $0.element.volumeId, sortOrder: $0.offset)
-            }
-            return await resolveSmartDocuments(smart)
-        }
-        await prepareVolumes()
-        return try await resolveDocuments()
+        try await makeResolver().resolveDocuments(
+            collection: collection, entries: entries, allNotes: allNotes, purpose: .export)
     }
 
     /// Localised body for the Zotero result alert.
@@ -623,521 +529,6 @@ struct ExportSheetView: View {
                                  Int64(result.failedItems))
         }
         return line
-    }
-
-    /// Downloads and indexes any volumes referenced by the collection that are not yet
-    /// available locally. Updates `preparingMessage` to give the user live feedback.
-    private func prepareVolumes() async {
-        guard let dm = appState.downloadManager,
-              let pipeline = appState.indexingPipeline else { return }
-
-        let manifest = appState.manifestStore.diffResult?.known
-            ?? appState.manifestStore.bundledEntries
-        let neededVolumeIds = Set(entries.map(\.volumeId))
-
-        // Classify each needed volume.
-        var toDownload: [(volumeId: String, downloadUrl: String)] = []
-        var toIndex: [String] = []
-        for vid in neededVolumeIds {
-            if !dm.isVolumeDownloaded(vid) {
-                if let entry = manifest.first(where: { $0.volumeId == vid }) {
-                    toDownload.append((vid, entry.downloadUrl))
-                }
-            } else if (try? !pipeline.isVolumeIndexed(vid)) == true {
-                toIndex.append(vid)
-            }
-        }
-
-        guard !toDownload.isEmpty || !toIndex.isEmpty else { return }
-
-        let totalNeeded = toDownload.count + toIndex.count
-        preparingMessage = String(
-            localized: "export.preparing.volumes",
-            defaultValue: "Preparing \(totalNeeded) volume\(totalNeeded == 1 ? "" : "s")…"
-        )
-
-        // Kick off indexing for downloaded-but-unindexed volumes.
-        for vid in toIndex {
-            Task { try? await pipeline.indexVolume(vid) }
-        }
-        // Enqueue downloads; indexing follows automatically via onVolumeDownloaded.
-        for (vid, url) in toDownload {
-            await dm.enqueueDownload(volumeId: vid, downloadUrl: url)
-        }
-
-        // Poll until every needed volume is indexed (or we time out after ~5 min).
-        let waitSet = Set(toDownload.map(\.volumeId) + toIndex)
-        var remaining = waitSet
-        var elapsedMs = 0
-        let pollInterval = 1_000_000_000   // 1 second in nanoseconds
-        let timeoutMs   = 300_000          // 5 minutes
-
-        while !remaining.isEmpty && elapsedMs < timeoutMs {
-            try? await Task.sleep(nanoseconds: UInt64(pollInterval))
-            elapsedMs += 1_000
-            remaining = remaining.filter { vid in
-                (try? !pipeline.isVolumeIndexed(vid)) != false
-            }
-            let ready = waitSet.count - remaining.count
-            let total = waitSet.count
-            preparingMessage = String(
-                localized: "export.preparing.progress",
-                defaultValue: "Preparing volumes: \(ready) of \(total) ready…"
-            )
-        }
-
-        preparingMessage = nil
-    }
-
-    /// Documents-only view of the resolved items — for callers that need a flat document
-    /// list (e.g. the Zotero Web-API send path). Headings and prose are dropped.
-    private func resolveDocuments() async throws -> [CollectionExportDocument] {
-        try await resolveItems().documents
-    }
-
-    /// Resolves the collection's ordered entries into export items: each document entry is
-    /// fully resolved into a `.document`; heading/prose entries pass through as `.heading` /
-    /// `.prose`, so the exported product preserves the authored structure (Phase 3a).
-    private func resolveItems() async throws -> [CollectionExportItem] {
-        let opts    = buildExportOptions()
-        let manifest = appState.manifestStore.diffResult?.known
-            ?? appState.manifestStore.bundledEntries
-        let manifestMap = Dictionary(uniqueKeysWithValues: manifest.map { ($0.volumeId, $0) })
-        let formatter = HistoryAtStateCitationFormatter()
-
-        // Pre-load body texts: SQLite cache (fast) then XML fallback (slow).
-        // Group by volume so each volume XML is opened at most once on the fallback path.
-        var bodyTexts: [String: String] = [:]
-
-        let volumeIds = Set(entries.map(\.volumeId))
-        for volumeId in volumeIds {
-            let docsInVolume = entries.filter { $0.volumeId == volumeId }
-
-            // SQLite cache path
-            if let pipeline = appState.indexingPipeline {
-                for entry in docsInVolume {
-                    let key = "\(entry.volumeId)/\(entry.documentId)"
-                    if let text = try? await pipeline.fetchDocumentBodyText(
-                        volumeId: entry.volumeId, documentId: entry.documentId) {
-                        bodyTexts[key] = text
-                    }
-                }
-            }
-
-            // XML fallback for anything still uncached
-            let uncached = docsInVolume.filter {
-                bodyTexts["\($0.volumeId)/\($0.documentId)"] == nil
-            }
-            if !uncached.isEmpty, let dm = appState.downloadManager {
-                let volumeURL = dm.volumeURL(for: volumeId)
-                if FileManager.default.fileExists(atPath: volumeURL.path) {
-                    let parser = FRUSDocumentParser()
-                    for entry in uncached {
-                        let key = "\(entry.volumeId)/\(entry.documentId)"
-                        if let ast = try? await parser.parseDocument(
-                            documentId: entry.documentId, volumeURL: volumeURL) {
-                            bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Render models: parse each volume XML to obtain structured render output.
-        // One parse per document — acceptable cost for a user-initiated export.
-        // Falls back gracefully (nil) when the volume file is unavailable.
-        var renderModels: [String: FRUSDocumentRenderModel] = [:]
-        for volumeId in volumeIds {
-            guard let dm = appState.downloadManager else { continue }
-            let volumeURL = dm.volumeURL(for: volumeId)
-            guard FileManager.default.fileExists(atPath: volumeURL.path) else { continue }
-            let docsInVolume = entries.filter { $0.volumeId == volumeId }
-            for entry in docsInVolume {
-                let key = "\(entry.volumeId)/\(entry.documentId)"
-                if let ast = try? await FRUSDocumentParser().parseDocument(
-                    documentId: entry.documentId, volumeURL: volumeURL) {
-                    var converter = ASTToRenderNodeConverter()
-                    renderModels[key] = converter.convert(ast)
-                }
-            }
-        }
-
-        // Editorial-note flags from the index, so collection-level Zotero items
-        // carry the same "Editorial note" extra line as document-level exports.
-        let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
-            volumeIds: volumeIds, pipeline: appState.indexingPipeline)
-
-        var items: [CollectionExportItem] = []
-        // A heading may carry a `bodyDepthOverride` that acts as the section default for the
-        // documents following it, until the next heading (Phase 3c). Tracked across the pass.
-        var currentSectionDepth: String? = nil
-        for entry in entries.sorted(by: { $0.sortOrder < $1.sortOrder }) {
-            // Heading / prose entries pass straight through as structural items.
-            switch entry.entryKind {
-            case .heading:
-                currentSectionDepth = entry.bodyDepthOverride
-                items.append(.heading(entry.text ?? ""))
-                continue
-            case .prose:
-                items.append(.prose(ProseRichText.exportRTF(from: entry)))
-                continue
-            case .unrecognized:
-                // Written by a newer app version — this build cannot render it.
-                // Skip rather than emit a junk document item (Authoring Phase 1 guard).
-                continue
-            case .document:
-                break
-            }
-            // Defensive: a document entry without ids (e.g. malformed sync payload from a
-            // future build) can produce nothing useful downstream.
-            guard !entry.volumeId.isEmpty, !entry.documentId.isEmpty else { continue }
-            let manifestEntry = manifestMap[entry.volumeId]
-            let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
-            let key = "\(entry.volumeId)/\(entry.documentId)"
-            let renderModel = renderModels[key]
-
-            // Extract header and dateline from the render model when available.
-            let (header, dateline) = renderModelHeadAndDateline(renderModel)
-
-            let docNum: String? = entry.documentId.hasPrefix("d")
-                ? Int(entry.documentId.dropFirst()).map { String($0) }
-                : nil
-            let docMeta = FRUSDocumentMetadata(
-                documentId: entry.documentId, documentNumber: docNum,
-                header: header, dateline: dateline)
-            let citation = volMeta.map { formatter.format(document: docMeta, volume: $0) }
-                ?? "\(entry.volumeId)/\(entry.documentId)"
-            let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
-            let volumeTitle = manifestEntry?.title ?? entry.volumeId
-            let bodyText = bodyTexts[key] ?? ""
-
-            // Resolve note texts: selectedNoteIds takes precedence over legacy researchNoteId.
-            let resolvedNoteTexts: [String]
-            if !entry.selectedNoteIds.isEmpty {
-                resolvedNoteTexts = entry.selectedNoteIds.compactMap { nid in
-                    allNotes.first { $0.id == nid }?.bodyText
-                }.filter { !$0.isEmpty }
-            } else if let legacyNote = entry.researchNoteId.flatMap({ nid in allNotes.first { $0.id == nid } }) {
-                resolvedNoteTexts = legacyNote.bodyText.isEmpty ? [] : [legacyNote.bodyText]
-            } else {
-                resolvedNoteTexts = []
-            }
-
-            // Effective body depth cascade (Phase 3c): the entry's own override, else the
-            // section override (nearest preceding heading), else the collection default.
-            // Drives per-document rendering and gates inline highlights.
-            let effectiveDepth = CollectionBodyDepth.resolve(
-                entryOverride: entry.bodyDepthOverride,
-                sectionOverride: currentSectionDepth,
-                collectionDefault: collection.defaultBodyDepth)
-
-            // Highlights (when applyHighlights and body is full)
-            let resolvedHighlights: [ExportHighlight]
-            if opts.applyHighlights && effectiveDepth == .full {
-                let allHL = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>())) ?? []
-                resolvedHighlights = allHL
-                    .filter { $0.volumeId == entry.volumeId && $0.documentId == entry.documentId }
-                    .map { ExportHighlight(startOffset: $0.startOffset,
-                                          endOffset:   $0.endOffset,
-                                          color:       $0.color) }
-            } else {
-                resolvedHighlights = []
-            }
-
-            // Source note (footnoteStyle == .sourceNoteOnly)
-            let resolvedSourceNote: String?
-            if opts.footnoteStyle == .sourceNoteOnly {
-                resolvedSourceNote = try? await appState.indexingPipeline?
-                    .fetchDocumentSourceNote(volumeId: entry.volumeId,
-                                             documentId: entry.documentId)
-            } else {
-                resolvedSourceNote = nil
-            }
-
-            // Zotero JSON item (for ExportFormat.zoteroJSON)
-            let zoteroItem: ZoteroJSONExporter.Item?
-            if let volMeta {
-                let year = FRUSVolumeMetadata.firstYear(in: volMeta.publicationDate).map(String.init) ?? "n.d."
-                let (tags, _) = ZoteroJSONExporter.fetchTagsAndNotes(
-                    documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
-                zoteroItem = ZoteroJSONExporter.makeItem(
-                    document: docMeta,
-                    volume: volMeta,
-                    year: year,
-                    url: urlString,
-                    isEditorialNote: editorialNoteFlags[key] ?? false,
-                    tags: tags,
-                    notes: resolvedNoteTexts
-                )
-            } else {
-                zoteroItem = nil
-            }
-
-            items.append(.document(CollectionExportDocument(
-                documentId: entry.documentId,
-                volumeId: entry.volumeId,
-                sortOrder: entry.sortOrder,
-                bodyDepth: effectiveDepth,
-                title: "\(volumeTitle) — \(entry.documentId)",
-                date: manifestEntry?.dateRange.earliest,
-                bodyText: bodyText,
-                noteTexts: resolvedNoteTexts,
-                citation: citation,
-                historyStateGovURL: urlString,
-                renderModel: renderModel,
-                header: header,
-                dateline: dateline,
-                highlights: resolvedHighlights,
-                sourceNoteText: resolvedSourceNote,
-                zoteroItem: zoteroItem
-            )))
-        }
-        return items
-    }
-
-    /// Generates or fetches summaries for all entries when bodyDepth == .summaryOnly.
-    /// Returns a [key: summaryText] map. Throws if any generation fails.
-    private func resolveSummaries(
-        for docs: [CollectionExportDocument],
-        promptId: UUID,
-        bodyTexts: [String: String]
-    ) async throws -> [String: String] {
-        guard AppleIntelligenceProvider.shared.isAvailable else {
-            throw ExportError.renderingFailed
-        }
-        guard let service = appState.summarizationService else {
-            throw ExportError.renderingFailed
-        }
-        guard let prompt = (try? modelContext.fetch(
-            FetchDescriptor<SummarizationPrompt>(
-                predicate: #Predicate { $0.id == promptId }
-            )))?.first else {
-            throw ExportError.renderingFailed
-        }
-        let snapshot = SummarizationPromptSnapshot(from: prompt)
-
-        var result: [String: String] = [:]
-        let total = docs.count
-
-        for (i, doc) in docs.enumerated() {
-            let key = "\(doc.volumeId)/\(doc.documentId)"
-            await MainActor.run {
-                summaryGeneratingMessage = String(
-                    localized: "export.summaryProgress",
-                    defaultValue: "Generating summaries (\(i + 1) of \(total))…")
-            }
-
-            // Check for existing summary first (capture scalars — #Predicate can't use struct fields).
-            let vid = doc.volumeId
-            let did = doc.documentId
-            let pid = promptId
-            let existingDesc = FetchDescriptor<GeneratedSummary>(
-                predicate: #Predicate<GeneratedSummary> { s in
-                    s.volumeId == vid && s.documentId == did && s.promptId == pid
-                }
-            )
-            if let existing = try? modelContext.fetch(existingDesc).first,
-               !existing.responseText.isEmpty {
-                result[key] = existing.responseText
-                continue
-            }
-
-            // Generate on demand.
-            let text = bodyTexts[key] ?? doc.bodyText
-            guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw ExportError.renderingFailed
-            }
-            let generated = try await service.summarize(
-                documentId:    doc.documentId,
-                volumeId:      doc.volumeId,
-                documentText:  text,
-                prompt:        snapshot,
-                provider:      AppleIntelligenceProvider.shared,
-                activeProjectId: appState.activeProjectId
-            )
-            result[key] = generated.responseText
-        }
-        await MainActor.run { summaryGeneratingMessage = nil }
-        return result
-    }
-
-    // MARK: - Render Model Extraction Helpers
-
-    /// Extracts the first heading and first dateline from a render model's body nodes.
-    private func renderModelHeadAndDateline(_ model: FRUSDocumentRenderModel?) -> (header: String, dateline: String?) {
-        guard let model else { return ("", nil) }
-        var header = ""
-        var dateline: String? = nil
-        for node in model.bodyNodes {
-            if case .heading(let c) = node, header.isEmpty {
-                header = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
-            } else if case .dateline(let c) = node, dateline == nil {
-                let text = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !text.isEmpty { dateline = text }
-            }
-            if !header.isEmpty && dateline != nil { break }
-        }
-        return (header, dateline)
-    }
-
-    /// Recursively extracts plain text from an array of `FRUSRenderNode` values.
-    private func renderNodePlainText(_ nodes: [FRUSRenderNode]) -> String {
-        nodes.map { renderNodePlainText($0) }.joined()
-    }
-
-    /// Recursively extracts plain text from a single `FRUSRenderNode`.
-    private func renderNodePlainText(_ node: FRUSRenderNode) -> String {
-        switch node {
-        case .plainText(let s):
-            return s
-        case .boldText(let c), .italicText(let c), .smallCapsText(let c),
-             .underlineText(let c), .termText(let c), .corrText(let c),
-             .suppliedText(let c), .sicText(let c):
-            return renderNodePlainText(c)
-        case .heading(let c), .dateline(let c), .salutation(let c),
-             .paragraph(let c), .attachmentHeading(let c):
-            return renderNodePlainText(c)
-        case .letterOpener(let c), .letterCloser(let c),
-             .editorialNoteBlock(let c), .titlePageBlock(let c):
-            return renderNodePlainText(c)
-        case .attachmentBlock(_, let c), .unknown(_, let c):
-            return renderNodePlainText(c)
-        case .persNameLink(_, let c, _), .glossLink(_, let c, _),
-             .crossRefLink(_, _, let c):
-            return renderNodePlainText(c)
-        case .formulaText(let s):
-            return s
-        case .lineBreak:
-            return " "
-        case .footnoteMarker(_, let label):
-            return "[\(label)]"
-        case .listBlock(_, let items):
-            return items.map { renderNodePlainText($0) }.joined(separator: " ")
-        case .tableBlock(let rows):
-            return rows.map { row in row.map { renderNodePlainText($0.children) }.joined(separator: " | ") }.joined(separator: "\n")
-        case .footnoteBody, .pageBreak, .figureBlock:
-            return ""
-        }
-    }
-
-    // MARK: - Smart Document Resolution
-
-    /// Resolves documents from a smart collection using pre-fetched search result entries.
-    /// Unlike `resolveDocuments()`, this path has no `prepareVolumes` phase — search results
-    /// are already indexed — and produces no `noteText` since smart entries carry no research note links.
-    private func resolveSmartDocuments(_ smartEntries: [SmartEntry]) async -> [CollectionExportDocument] {
-        let manifest = appState.manifestStore.diffResult?.known
-            ?? appState.manifestStore.bundledEntries
-        let manifestMap = Dictionary(uniqueKeysWithValues: manifest.map { ($0.volumeId, $0) })
-        let formatter = HistoryAtStateCitationFormatter()
-
-        var bodyTexts: [String: String] = [:]
-        let volumeIds = Set(smartEntries.map(\.volumeId))
-
-        for volumeId in volumeIds {
-            let docsInVolume = smartEntries.filter { $0.volumeId == volumeId }
-
-            if let pipeline = appState.indexingPipeline {
-                for entry in docsInVolume {
-                    let key = "\(entry.volumeId)/\(entry.documentId)"
-                    if let text = try? await pipeline.fetchDocumentBodyText(
-                        volumeId: entry.volumeId, documentId: entry.documentId) {
-                        bodyTexts[key] = text
-                    }
-                }
-            }
-
-            let uncached = docsInVolume.filter { bodyTexts["\($0.volumeId)/\($0.documentId)"] == nil }
-            if !uncached.isEmpty, let dm = appState.downloadManager {
-                let volumeURL = dm.volumeURL(for: volumeId)
-                if FileManager.default.fileExists(atPath: volumeURL.path) {
-                    let parser = FRUSDocumentParser()
-                    for entry in uncached {
-                        let key = "\(entry.volumeId)/\(entry.documentId)"
-                        if let ast = try? await parser.parseDocument(
-                            documentId: entry.documentId, volumeURL: volumeURL) {
-                            bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
-                        }
-                    }
-                }
-            }
-        }
-
-        var renderModels: [String: FRUSDocumentRenderModel] = [:]
-        for volumeId in volumeIds {
-            guard let dm = appState.downloadManager else { continue }
-            let volumeURL = dm.volumeURL(for: volumeId)
-            guard FileManager.default.fileExists(atPath: volumeURL.path) else { continue }
-            let docsInVolume = smartEntries.filter { $0.volumeId == volumeId }
-            for entry in docsInVolume {
-                let key = "\(entry.volumeId)/\(entry.documentId)"
-                if let ast = try? await FRUSDocumentParser().parseDocument(
-                    documentId: entry.documentId, volumeURL: volumeURL) {
-                    var converter = ASTToRenderNodeConverter()
-                    renderModels[key] = converter.convert(ast)
-                }
-            }
-        }
-
-        // Editorial-note flags from the index, so collection-level Zotero items
-        // carry the same "Editorial note" extra line as document-level exports.
-        let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
-            volumeIds: volumeIds, pipeline: appState.indexingPipeline)
-
-        return smartEntries.sorted { $0.sortOrder < $1.sortOrder }.map { entry in
-            let manifestEntry = manifestMap[entry.volumeId]
-            let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
-            let key = "\(entry.volumeId)/\(entry.documentId)"
-            let renderModel = renderModels[key]
-
-            let (header, dateline) = renderModelHeadAndDateline(renderModel)
-
-            let docNum: String? = entry.documentId.hasPrefix("d")
-                ? Int(entry.documentId.dropFirst()).map { String($0) }
-                : nil
-            let docMeta = FRUSDocumentMetadata(
-                documentId: entry.documentId, documentNumber: docNum,
-                header: header, dateline: dateline)
-            let citation = volMeta.map { formatter.format(document: docMeta, volume: $0) }
-                ?? "\(entry.volumeId)/\(entry.documentId)"
-            let urlString = "https://history.state.gov/historicaldocuments/\(entry.volumeId)/\(entry.documentId)"
-            let volumeTitle = manifestEntry?.title ?? entry.volumeId
-            let bodyText = bodyTexts[key] ?? ""
-
-            let zoteroItem: ZoteroJSONExporter.Item?
-            if let volMeta {
-                let year = FRUSVolumeMetadata.firstYear(in: volMeta.publicationDate).map(String.init) ?? "n.d."
-                let (tags, notes) = ZoteroJSONExporter.fetchTagsAndNotes(
-                    documentId: entry.documentId, volumeId: entry.volumeId, context: modelContext)
-                zoteroItem = ZoteroJSONExporter.makeItem(
-                    document: docMeta,
-                    volume: volMeta,
-                    year: year,
-                    url: urlString,
-                    isEditorialNote: editorialNoteFlags[key] ?? false,
-                    tags: tags,
-                    notes: notes
-                )
-            } else {
-                zoteroItem = nil
-            }
-
-            return CollectionExportDocument(
-                documentId: entry.documentId,
-                volumeId: entry.volumeId,
-                sortOrder: entry.sortOrder,
-                bodyDepth: CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full,
-                title: "\(volumeTitle) — \(entry.documentId)",
-                date: manifestEntry?.dateRange.earliest,
-                bodyText: bodyText,
-                citation: citation,
-                historyStateGovURL: urlString,
-                renderModel: renderModel,
-                header: header,
-                dateline: dateline,
-                zoteroItem: zoteroItem
-            )
-        }
     }
 }
 

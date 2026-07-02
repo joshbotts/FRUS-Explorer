@@ -913,4 +913,283 @@ struct CollectionTests {
         let future = Data(#"{"format":"fruscollection","formatVersion":9999,"name":"x","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[]}"#.utf8)
         #expect(throws: NativeCollectionError.self) { try NativeCollectionSerializer.decode(future) }
     }
+
+    // MARK: - CollectionContentResolverTests (Authoring Phase 2a)
+
+    /// Short label for an export item's kind, for order assertions.
+    private func kindLabel(_ item: CollectionExportItem) -> String {
+        switch item {
+        case .heading:  return "heading"
+        case .prose:    return "prose"
+        case .document: return "document"
+        }
+    }
+
+    /// The `.document` payload of an item, or `nil`.
+    private func docPayload(_ item: CollectionExportItem) -> CollectionExportDocument? {
+        if case .document(let doc) = item { return doc }
+        return nil
+    }
+
+    @Test("Resolver golden fixture: kinds, order, depth cascade, note links, and citation fallbacks match the pre-extraction resolveItems behavior")
+    @MainActor
+    func resolverGoldenFixture() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()   // no downloadManager/pipeline: volumes resolve citation-only
+
+        let coll = Collection(name: "Golden")
+        coll.defaultBodyDepth = "full"
+        context.insert(coll)
+
+        let selNote = ResearchNote(documentId: "d2", volumeId: "goldenvol", bodyText: "Selected note.")
+        let legNote = ResearchNote(documentId: "d3", volumeId: "goldenvol", bodyText: "Legacy note.")
+        context.insert(selNote)
+        context.insert(legNote)
+
+        // Part I sets a section body-depth override; Part II clears it.
+        let h1 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        h1.entryKind = .heading
+        h1.text = "Part I"
+        h1.bodyDepthOverride = "index"
+
+        let d1 = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "goldenvol", sortOrder: 1)
+
+        let prose = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 2)
+        prose.entryKind = .prose
+        prose.text = "Editorial context."
+
+        let d2 = CollectionEntry(collectionId: coll.id, documentId: "d2", volumeId: "goldenvol", sortOrder: 3)
+        d2.bodyDepthOverride = "full"          // entry override beats the section override
+        d2.selectedNoteIds = [selNote.id]
+
+        let h2 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 4)
+        h2.entryKind = .heading
+        h2.text = "Part II"
+
+        let d3 = CollectionEntry(collectionId: coll.id, documentId: "d3", volumeId: "goldenvol",
+                                 sortOrder: 5, researchNoteId: legNote.id)
+
+        let future = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 6)
+        future.kind = "excerpt"                // unrecognized kind from a newer build — skipped
+
+        let malformed = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 7)
+        // kind stays "document" with empty ids — skipped defensively
+
+        let all = [h1, d1, prose, d2, h2, d3, future, malformed]
+        for entry in all { context.insert(entry) }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        // Entries passed shuffled to prove the resolver orders by sortOrder.
+        let items = try await resolver.resolve(
+            collection: coll,
+            entries: [d2, h1, d3, prose, h2, d1, future, malformed],
+            allNotes: [selNote, legNote],
+            purpose: .export)
+
+        // Kinds and order — unrecognized and malformed entries are dropped.
+        #expect(items.map(kindLabel) == ["heading", "document", "prose", "document", "heading", "document"])
+
+        // Heading texts pass through.
+        if case .heading(let t1) = items[0] { #expect(t1 == "Part I") } else { Issue.record("items[0] should be a heading") }
+        if case .heading(let t2) = items[4] { #expect(t2 == "Part II") } else { Issue.record("items[4] should be a heading") }
+
+        // Prose round-trips through the RTF pipeline.
+        if case .prose(let rtf) = items[2] {
+            let ns = try NSAttributedString(data: rtf,
+                                            options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                            documentAttributes: nil)
+            #expect(ns.string == "Editorial context.")
+        } else {
+            Issue.record("items[2] should be prose")
+        }
+
+        // Documents: depth cascade + note links + citation-only fallbacks (no volume XML).
+        let docs = items.documents
+        try #require(docs.count == 3)
+
+        #expect(docs[0].documentId == "d1")
+        #expect(docs[0].bodyDepth == .index)                 // section override from Part I
+        #expect(docs[0].citation == "goldenvol/d1")          // manifest-less fallback
+        #expect(docs[0].title == "goldenvol — d1")
+        #expect(docs[0].historyStateGovURL == "https://history.state.gov/historicaldocuments/goldenvol/d1")
+        #expect(docs[0].bodyText.isEmpty)
+        #expect(docs[0].renderModel == nil)
+        #expect(docs[0].noteTexts.isEmpty)
+        #expect(docs[0].highlights.isEmpty)
+        #expect(docs[0].sourceNoteText == nil)
+        #expect(docs[0].zoteroItem == nil)                   // no manifest volume metadata
+        #expect(docs[0].date == nil)
+        #expect(docs[0].sortOrder == 1)
+
+        #expect(docs[1].documentId == "d2")
+        #expect(docs[1].bodyDepth == .full)                  // entry override wins over section
+        #expect(docs[1].noteTexts == ["Selected note."])     // selectedNoteIds path
+
+        #expect(docs[2].documentId == "d3")
+        #expect(docs[2].bodyDepth == .full)                  // Part II reset the section override
+        #expect(docs[2].noteTexts == ["Legacy note."])       // legacy researchNoteId path
+    }
+
+    @Test("Unified smart path: smart documents now carry collection-level composition (notes, highlights, body depth)")
+    @MainActor
+    func smartPathHonorsCollectionComposition() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Smart")
+        coll.defaultBodyDepth = "full"
+        coll.applyHighlights = true
+        context.insert(coll)
+
+        let note = ResearchNote(documentId: "d7", volumeId: "smartvol", bodyText: "Smart doc note.")
+        context.insert(note)
+        let hl = DocumentHighlight(volumeId: "smartvol", documentId: "d7",
+                                   startOffset: 0, endOffset: 4,
+                                   colorTag: "green", renderingVersion: "v")
+        context.insert(hl)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let refs = [CollectionContentResolver.SmartDocumentRef(documentId: "d7", volumeId: "smartvol", sortOrder: 0)]
+        let items = await resolver.resolveSmartItems(refs, collection: coll, allNotes: [note])
+
+        try #require(items.count == 1)
+        let doc = try #require(docPayload(items[0]))
+        // Pre-unification, the smart clone dropped all of these.
+        #expect(doc.noteTexts == ["Smart doc note."])        // includeNotes composition honored
+        #expect(doc.highlights.count == 1)                   // applyHighlights honored
+        #expect(doc.highlights.first?.color == .green)
+        #expect(doc.bodyDepth == .full)                      // collection default (no overrides exist)
+        #expect(doc.summaryText == nil)
+
+        // The collection default body depth flows through — including .summaryOnly —
+        // without any generation happening in the core pipeline.
+        coll.defaultBodyDepth = "summaryOnly"
+        let summaryItems = await resolver.resolveSmartItems(refs, collection: coll, allNotes: [note])
+        let summaryDoc = try #require(docPayload(summaryItems[0]))
+        #expect(summaryDoc.bodyDepth == .summaryOnly)
+        #expect(summaryDoc.summaryText == nil)
+    }
+
+    @Test("Preview purpose: never generates summaries — stored summaries attach, missing ones stay nil; export still requires a prompt")
+    @MainActor
+    func previewNeverGeneratesSummaries() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Preview")
+        coll.defaultBodyDepth = "summaryOnly"
+        context.insert(coll)
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "prevvol", sortOrder: 0)
+        context.insert(entry)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+
+        // No prompt configured: preview succeeds with a nil summary…
+        let noPrompt = try await resolver.resolve(collection: coll, entries: [entry],
+                                                  allNotes: [], purpose: .preview)
+        let noPromptDoc = try #require(docPayload(noPrompt[0]))
+        #expect(noPromptDoc.bodyDepth == .summaryOnly)
+        #expect(noPromptDoc.summaryText == nil)
+        // …while export fails exactly as before the extraction.
+        await #expect(throws: CollectionResolveError.self) {
+            _ = try await resolver.resolve(collection: coll, entries: [entry],
+                                           allNotes: [], purpose: .export)
+        }
+
+        // Prompt configured but nothing stored: preview keeps the nil summary (placeholder
+        // territory); export attempts generation and fails (no AI service in tests).
+        let promptId = UUID()
+        coll.summaryPromptId = promptId
+        let unstored = try await resolver.resolve(collection: coll, entries: [entry],
+                                                  allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(unstored[0])).summaryText == nil)
+        await #expect(throws: ExportError.self) {
+            _ = try await resolver.resolve(collection: coll, entries: [entry],
+                                           allNotes: [], purpose: .export)
+        }
+
+        // A stored summary for the prompt attaches in preview — still no generation.
+        let stored = GeneratedSummary(documentId: "d1", volumeId: "prevvol",
+                                      promptId: promptId, responseText: "Stored summary.")
+        context.insert(stored)
+        try context.save()
+        let withStored = try await resolver.resolve(collection: coll, entries: [entry],
+                                                    allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(withStored[0])).summaryText == "Stored summary.")
+    }
+
+    @Test("Preview purpose: never prepares (downloads) volumes; export does")
+    @MainActor
+    func previewNeverPreparesVolumes() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Gate")
+        context.insert(coll)
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "gatevol", sortOrder: 0)
+        context.insert(entry)
+        try context.save()
+
+        // Observe the purpose gating through the overridable preparation seam.
+        let spy = PrepareVolumesSpyResolver(appState: appState, modelContext: context)
+        _ = try await spy.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview)
+        #expect(spy.preparedVolumeIdSets.isEmpty, ".preview must never prepare volumes")
+        _ = try await spy.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export)
+        #expect(spy.preparedVolumeIdSets == [Set(["gatevol"])], ".export prepares exactly the referenced volumes")
+
+        // End-to-end: a live DownloadManager sees no enqueue from a .preview resolve.
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("resolver-preview-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let counter = TransferCallCounter()
+        let dm = DownloadManager(
+            volumesDirectory: dir,
+            concurrencyLimit: 1,
+            downloadTask: { _ in
+                await counter.increment()
+                throw URLError(.cancelled)
+            },
+            onStateChanged: { _ in }
+        )
+        appState.downloadManager = dm
+
+        let real = CollectionContentResolver(appState: appState, modelContext: context)
+        _ = try await real.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview)
+
+        let state = await dm.currentState
+        #expect(!state.activeVolumeIds.contains("gatevol"))
+        #expect(!state.pendingVolumeIds.contains("gatevol"))
+        #expect(await counter.count == 0, "a .preview resolve must trigger no transfers")
+    }
+}
+
+// MARK: - Resolver test doubles
+
+/// Records `prepareVolumesForExport` calls instead of downloading/indexing, proving the
+/// resolver's purpose gating: `.preview` must never reach the preparation step at all.
+@MainActor
+private final class PrepareVolumesSpyResolver: CollectionContentResolver {
+    /// The volume-id set passed to each recorded preparation call, in call order.
+    private(set) var preparedVolumeIdSets: [Set<String>] = []
+
+    /// Records the call; performs no downloads or indexing.
+    override func prepareVolumesForExport(_ neededVolumeIds: Set<String>) async {
+        preparedVolumeIdSets.append(neededVolumeIds)
+    }
+}
+
+/// Serialized invocation counter for observing test download-task calls.
+private actor TransferCallCounter {
+    /// Number of recorded invocations.
+    private(set) var count = 0
+
+    /// Records one invocation.
+    func increment() { count += 1 }
 }
