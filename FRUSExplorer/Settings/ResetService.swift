@@ -43,6 +43,8 @@ import Foundation
 ///   1.0 — Session 153: extracted from `SettingsResetPane.performReset(includeCloudKit:)`
 ///   1.1 — Word Cloud fixes: flushes `WordFrequencyService`'s in-memory cache after
 ///          clearing the index, so an open session can't keep serving stale clouds
+///   1.1 — Corpus Analytics cache fix: flushes `CorpusAnalyticsService`'s caches after
+///          clearing the index, so an open session can't keep serving stale counts
 @MainActor
 struct ResetService {
 
@@ -75,6 +77,10 @@ struct ResetService {
                 // index; unlike the disk cache, the in-memory cache key carries no
                 // index fingerprint, so stale results would otherwise survive here.
                 await appState.wordFrequencyService?.invalidateCache()
+                // Flush Corpus Analytics results computed against the now-empty
+                // index; the cache keys are bare query terms with no index
+                // fingerprint, so stale counts would otherwise survive here.
+                await appState.analyticsService?.invalidateCache()
             } catch {
                 #if DEBUG
                 print("[ResetService] removeAllVolumesFromIndex failed: \(error)")

@@ -8,6 +8,20 @@
 
 import Foundation
 import SwiftData
+import UniformTypeIdentifiers
+
+// MARK: - UTType.fruscollection
+
+extension UTType {
+    /// The exported `.fruscollection` document type, matching the
+    /// `UTExportedTypeDeclarations` entry in both platforms' Info.plists (Phase 4, D6/D9
+    /// OS file-association work). Used by the in-app import `fileImporter`s so the open
+    /// panel only offers native collection files rather than any `.data` file
+    /// (Authoring Phase 1 housekeeping).
+    static var fruscollection: UTType {
+        UTType(exportedAs: "bottsywattsy.FRUS-Explorer.fruscollection")
+    }
+}
 
 // MARK: - FRUSCollectionFile
 
@@ -28,6 +42,9 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Collections rework Phase 4 (D9): initial implementation
+///   1.1 — Authoring Phase 1: `UTType.fruscollection` added; serializer omits
+///          `.unrecognized` entries; importer skips unknown entry kinds instead of
+///          misdecoding them as documents (mixed-version guard)
 struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
@@ -123,6 +140,9 @@ enum NativeCollectionError: Error, LocalizedError {
 ///
 /// Version history:
 ///   1.0 — Collections rework Phase 4 (D9): initial implementation
+///   1.1 — Session 2026-07-02 data-loss fix: `makeFile` heals a legacy Phase 3b JSON
+///          `richText` blob to RTF before emitting a prose entry, so shared files honour
+///          the schema's "richText is RTF" promise instead of propagating the old encoding
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -184,7 +204,7 @@ enum NativeCollectionSerializer {
 
         let entries: [FRUSCollectionFile.Entry] = (collection.documentEntries ?? [])
             .sorted { $0.sortOrder < $1.sortOrder }
-            .map { entry in
+            .compactMap { entry in
                 switch entry.entryKind {
                 case .document:
                     let notes = includeNotes
@@ -210,6 +230,10 @@ enum NativeCollectionSerializer {
                         notes: nil
                     )
                 case .prose:
+                    // The file schema promises RTF, but a pre-RTF (Phase 3b) entry still
+                    // holds a JSON-encoded AttributedString — heal it before emitting so
+                    // shared files never propagate the legacy encoding.
+                    ProseRichText.migrateLegacyJSONIfNeeded(entry)
                     return FRUSCollectionFile.Entry(
                         kind: CollectionEntryKind.prose.rawValue,
                         documentId: nil,
@@ -219,6 +243,11 @@ enum NativeCollectionSerializer {
                         richText: entry.richText,
                         notes: nil
                     )
+                case .unrecognized:
+                    // A kind written by a newer app version: this build cannot represent
+                    // it faithfully, so it is omitted from the file rather than exported
+                    // as a mislabeled entry (Authoring Phase 1 guard).
+                    return nil
                 }
             }
 
@@ -254,7 +283,16 @@ enum NativeCollectionSerializer {
         context.insert(collection)
 
         for (index, dto) in file.entries.enumerated() {
-            let kind = CollectionEntryKind(rawValue: dto.kind) ?? .document
+            // Skip-with-warning, never misdecode: an entry kind this build doesn't know
+            // (a file from a newer app version) is omitted rather than imported as a
+            // junk document entry (Authoring Phase 1 guard). `sortOrder` keeps the
+            // enumeration index, so relative order of the imported entries is preserved.
+            guard let kind = CollectionEntryKind(rawValue: dto.kind), kind != .unrecognized else {
+                #if DEBUG
+                print("[NativeCollectionSerializer] Skipping entry with unrecognized kind '\(dto.kind)'")
+                #endif
+                continue
+            }
             let entry = CollectionEntry(
                 collectionId: collection.id,
                 documentId: dto.documentId ?? "",

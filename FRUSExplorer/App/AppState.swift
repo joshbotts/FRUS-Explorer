@@ -92,6 +92,12 @@ import CloudKit
 ///          result cache on each volume's `.complete` event (its in-memory key
 ///          carries no index fingerprint, so stale pre-index results otherwise
 ///          persist for the whole session)
+///   4.1 — Corpus Analytics cache fix: connectIndexingProgress flushes
+///          `CorpusAnalyticsService`'s result caches on each volume's `.complete`
+///          event (cache keys are bare query terms with no index fingerprint, so
+///          stale pre-index counts otherwise persist for the whole session)
+///   4.1 — Session 2026-07-02: pendingCollectionSelection (UUID) for the open-with
+///          `.fruscollection` import → Collections window hand-off on macOS
 
 // MARK: - CloudKitSyncState
 
@@ -493,6 +499,18 @@ final class AppState {
     /// `pendingSearch` / `pendingAnalytics` pattern.
     var pendingWordCloud: WordCloudScope? = nil
 
+    /// Cross-window hand-off into the Collections manager: the id of a collection
+    /// another surface wants selected there.
+    ///
+    /// Set by `FRUSExplorerApp.importOpenedCollection` (macOS) immediately before
+    /// `openWindow(id: "frus.collections")` when a `.fruscollection` file is opened
+    /// from Finder / Files / AirDrop, so the freshly surfaced Collections window
+    /// lands on the imported collection instead of appearing unchanged.
+    /// `MacCollectionManagerView` consumes it (`.task` for a window created by the
+    /// hand-off, `.onChange` for one already open) and clears it — mirroring the
+    /// `pendingSearch` / `pendingAnalytics` pattern.
+    var pendingCollectionSelection: UUID? = nil
+
     /// Set by cross-reference navigation to push a document into the Browse tab's
     /// NavigationStack/NavigationSplitView. `BrowserView` observes via `.onChange`
     /// and appends the entry to its path, then this property is cleared.
@@ -732,6 +750,13 @@ final class AppState {
                     // "No Terms" for the rest of the session.
                     if let wordFrequencyService = self.wordFrequencyService {
                         Task { await wordFrequencyService.invalidateCache() }
+                    // The index content just changed. Flush Corpus Analytics'
+                    // in-memory result caches — their keys are bare query terms
+                    // with no index fingerprint, so a count computed before this
+                    // volume was indexed would keep serving stale (or empty)
+                    // charts for the rest of the session.
+                    if let analyticsService = self.analyticsService {
+                        Task { await analyticsService.invalidateCache() }
                     }
                     #if os(iOS)
                     self.endIndexingLiveActivity()

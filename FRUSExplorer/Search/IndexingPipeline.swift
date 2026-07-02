@@ -305,7 +305,16 @@ public actor IndexingPipeline {
     ///   role text (and sometimes an active-year range) after each name; the parser previously
     ///   discarded the trailing text. A re-parse repopulates `persons.role`/`start_year`/`end_year`
     ///   so the People browser can show a `role · era` subtitle.
-    public static let currentDateIndexVersion: Int = 11
+    /// - Version 12: front-matter sources outline + structure-title whitespace (Session
+    ///   2026-07-02). The Session 170 `volume_sources` rewrite (prose + collection-outline
+    ///   model: `kind`/`depth`/`is_heading`, PK → `(volume_id, sort_order)`) migrates by
+    ///   dropping any pre-170 table, so already-indexed devices show an empty Sources
+    ///   section until a re-parse repopulates it — the rewrite session omitted this bump,
+    ///   so first launch never auto-reindexed. Additionally, `VolumeStructureParserDelegate`
+    ///   now collapses interior whitespace in section titles at parse time (hard-wrapped
+    ///   TEI `<head>` text previously carried embedded newlines into `structureJSON` and
+    ///   the corpus browser's chapter/compilation rows), which only takes effect on re-parse.
+    public static let currentDateIndexVersion: Int = 12
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -4020,6 +4029,11 @@ public actor IndexingPipeline {
         public let documentNumber: String?
         /// True when this is an editorial note rather than a primary document.
         public let isEditorialNote: Bool
+
+        /// Corpus-unique `"volumeId/documentId"` key. Use this (never `documentId`
+        /// alone) to identify a related document in `ForEach`/dictionaries: neighbor
+        /// results span volumes and document ids are only unique within one volume.
+        public var compositeKey: String { "\(volumeId)/\(documentId)" }
     }
 
     /// Returns documents from the same archival collection as `parsed`.

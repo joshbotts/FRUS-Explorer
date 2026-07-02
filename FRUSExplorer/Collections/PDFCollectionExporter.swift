@@ -55,6 +55,10 @@ import CoreText
 ///          share a continuous "structural flow" page (`drawHeadingFlow`/`drawProseFlow`),
 ///          and the cover-page table of contents lists numbered documents interleaved with
 ///          section-heading labels. Prose formatting is decoded via the shared `CollectionProse`.
+///   1.8 — Session 2026-07-02 data-loss fix: `drawProseFlow` no longer silently drops a
+///          prose block whose payload predates the RTF storage format — the shared
+///          `CollectionProse.paragraphs(fromRTF:)` now decodes legacy Phase 3b JSON
+///          `AttributedString` blobs (bold/italic preserved) instead of returning `[]`
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -889,7 +893,8 @@ final class PDFCollectionExporter: CollectionExporter {
         return result
     }
 
-    /// Builds an `NSAttributedString` for a Phase 3b rich-text prose block (RTF). Bold/italic/
+    /// Builds an `NSAttributedString` for a rich-text prose block (RTF, or a legacy Phase 3b
+    /// JSON blob the shared decoder recovers rather than dropping). Bold/italic/
     /// underline/colour spans (decoded once by the shared `CollectionProse`) map to font-face,
     /// underline, and foreground-colour attributes; paragraphs are separated by a blank line.
     private func proseAttributedString(_ rtf: Data, fontSize: CGFloat = 11) -> NSAttributedString {

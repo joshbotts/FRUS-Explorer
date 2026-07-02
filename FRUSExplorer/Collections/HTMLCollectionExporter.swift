@@ -44,6 +44,10 @@ import SwiftUI
 ///   1.6 — Session 146: document body rendered via `FRUSRenderNodeHTMLSerializer` (replaces
 ///          private `renderModelToHTML` / `blockNodeToHTML` / `inlineNodeToHTML`); CSS replaced
 ///          by shared `HTMLTemplate.documentCSS` + `FRUSTheme.cssVariables` + print overrides
+///   1.7 — Session 2026-07-02 data-loss fix: `proseHTML` no longer silently drops a prose
+///          block whose payload predates the RTF storage format — the shared
+///          `CollectionProse.paragraphs(fromRTF:)` now decodes legacy Phase 3b JSON
+///          `AttributedString` blobs (bold/italic preserved) instead of returning `[]`
 final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -374,7 +378,8 @@ final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - Helpers
 
-    /// Renders a rich-text prose block (Phase 3b) — supplied as **RTF** — to an HTML fragment:
+    /// Renders a rich-text prose block — supplied as **RTF** (or a legacy Phase 3b JSON blob,
+    /// which the shared decoder recovers rather than dropping) — to an HTML fragment:
     /// bold/italic/underline/colour runs map to `<strong>`/`<em>`/`<u>`/`<span style=color>`,
     /// blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is decoded once
     /// by the shared `CollectionProse.paragraphs(fromRTF:)`, which resolves paragraph breaks

@@ -165,7 +165,13 @@ extension ModelContainer {
     /// container attempt does not affect this container. CloudKit sync is disabled.
     static func makeTestContainer() throws -> ModelContainer {
         let schema = Schema(frusModelTypes)
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        // `.none` is explicit: the default `.automatic` adopts the test host app's
+        // iCloud entitlement and spins up real CloudKit sync machinery for the
+        // in-memory container (visible as CKNotificationListener registrations and
+        // no-account recovery errors in the simulator log).
+        let config = ModelConfiguration(
+            schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none
+        )
         return try ModelContainer(for: schema, configurations: [config])
     }
 

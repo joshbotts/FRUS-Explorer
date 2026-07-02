@@ -174,7 +174,7 @@ A **breadcrumb trail** at the top of the screen shows your current position in t
 
 `[SCREENSHOT: Breadcrumb trail showing Subseries > Volume > Document]`
 
-Volumes you haven't downloaded yet are still browsable. Opening one shows a **Download Volume** button on its page (in place of the contents), and you can also long-press the volume in the list and choose **Download Volume** to queue it without opening the page. (See Settings → Volumes for managing downloads in bulk.) Anywhere you reach a document in an undownloaded volume — including a cross-reference inside another document — the app offers to download the volume rather than dead-ending.
+Volumes you haven't downloaded yet are still browsable. Opening one shows a **Download Volume** button on its page (in place of the contents); tap it and the page tracks the download live, loading the volume's contents automatically when it finishes — no need to leave and come back. You can also long-press the volume in the list and choose **Download Volume** to queue it without opening the page. (See Settings → Volumes for managing downloads in bulk.) Anywhere you reach a document in an undownloaded volume — including a cross-reference inside another document — the app offers to download the volume rather than dead-ending.
 
 ### 4.2 Filtering to Downloaded Volumes
 
@@ -435,11 +435,16 @@ Everything in Sections 10.1–10.4 happens in the manager; 10.5 covers export.
 
 ### 10.1 The Collection Manager
 
-Open the **Collections** tab and tap **New Collection**; give it a name and an optional description. Add documents either from the collection editor's search, or by choosing **Add to Collection** from any open document's toolbar. You can also **Add by Tag** to append every document carrying one of your tags.
+Open the **Collections** tab and tap **New Collection**. The editor opens as its own screen (not a pop-up sheet), with the document list front and center. Every edit **saves as you go** — there is no Save button; just navigate back when you're done. (Backing out of a brand-new collection you never touched discards it.)
+
+- On **iPhone**, the collection's name, description, and smart-collection link live in a collapsible **Details** group above the document list (expanded automatically for a new collection), and **Composition** in a collapsible group below it.
+- On **iPad**, name, description, and composition live in a **details panel** you can show or hide from the toolbar, leaving the full width for the document list.
+
+Each document entry shows its **title, document number, volume, and date** once its volume is indexed. Add documents by choosing **Add to Collection** from any open document's toolbar, or **Add by Tag** to append every document carrying one of your tags.
 
 `[SCREENSHOT: Collection manager showing a mix of documents, a section heading, and a prose block with reorder handles]`
 
-Drag to reorder entries; the order you choose is the order they appear in every export.
+Drag to reorder entries; the order you choose is the order they appear in every export. **Sort by Date** orders documents by their individual dates from the index (falling back to the volume's date range for unindexed volumes), leaving your section headings and prose blocks where you placed them.
 
 ### 10.2 Section Headings and Prose
 
@@ -484,7 +489,7 @@ Tap **Export**, choose a format, and share. Because composition is already set, 
 
 **Sharing an editable collection (`.fruscollection`).** Choosing the FRUS Collection format saves a small file that carries the collection's *source* — its document references, composition, section headings, and prose — not a rendered document. A colleague opens it right back into their own FRUS Explorer as a live, editable collection; because documents travel as references, the app offers to download any volumes they don't already have. Your research notes are **not** included unless you turn on the **Include my research notes** switch (off by default).
 
-**Importing.** Bring a shared collection in with **Import Collection…** on the Collections screen, or simply open a `.fruscollection` file — from Files, an email attachment, or AirDrop — and it opens straight into FRUS Explorer.
+**Importing.** Bring a shared collection in with **Import Collection…** on the Collections screen, or simply open a `.fruscollection` file — from Files, an email attachment, or AirDrop — and FRUS Explorer switches to the Collections tab with the import added. Opening the same file again re-surfaces the collection it created rather than importing a duplicate (use **Import Collection…** if you want a second, independent copy). If a file can't be read, an alert explains why.
 
 **Snapshotting a smart collection.** A *smart* collection — one linked to a saved search — resolves its documents from that search at export time, so its contents aren't fixed and can't be hand-edited. Choose **Create Static Snapshot** (from the collection's context menu) to capture the current results as a new, ordinary collection you can then edit, section, annotate, and share as a `.fruscollection`.
 

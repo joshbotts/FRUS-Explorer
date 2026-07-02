@@ -845,3 +845,158 @@ is the first comma-delimited component.
   to regenerate the index with the consular series + validate the Havana golden check, then
   commit the index. Other consular series (Consular Instructions 604019, Notes to/from
   Consuls) and Domestic/Misc Letters remain as further Phase 3 work.
+
+### Session 2026-07-02 — Open-with `.fruscollection` feedback (macOS) + duplicate protection
+Fixed the silent open-with import: double-clicking / AirDropping a `.fruscollection`
+(FRUSExplorerApp.importOpenedCollection) imported correctly but gave no feedback on macOS,
+so users re-opened the file and minted silent CloudKit-synced duplicates (each apply()
+creates a fresh Collection.id); failures were a DEBUG print only.
+- **macOS surfacing**: new `AppState.pendingCollectionSelection` hand-off — set before
+  `openWindow(id: "frus.collections")` + `bringMacWindowToFront` (the 21d2ddd pattern);
+  `MacCollectionManagerView` consumes it (`.task` for a freshly created window,
+  `.onChange` for an open one; consume-and-clear like `pendingSearch`) and selects the
+  imported collection.
+- **Errors**: open-with failures now present a "Couldn't Open Collection" alert on the
+  main window (both platforms), with the DEBUG print retained for the raw error.
+- **Duplicate protection**: session-scoped SHA-256 digest → Collection.id map in the App;
+  re-opening a byte-identical file re-surfaces the collection it created (if it still
+  exists) instead of importing again. Deliberately not persisted — the in-app Import
+  button remains the intentional-copy path.
+- Docs: both user manuals + both TestFlight instructions describe the new behavior.
+### Session 2026-07-02 — VolumeView On-Page Download Completion Fix
+Fixed the dead-end left by the Session 2026-06-28 "downloadable from every surface" work
+(e971585): tapping **Download Volume** on the iOS VolumeView placeholder showed a static
+"Download started." that never progressed — nothing in the view's body observed state that
+changes when the transfer finishes (`vm.isDownloaded()` is a raw FileManager check on the
+non-Observable `DownloadManager`, and the one-shot `.task` had already bailed on the
+not-downloaded guard), so the structure never loaded even after a successful download.
+- **VolumeView 2.3**: injected `@Environment(AppState.self)`; the placeholder now shows a
+  live "Downloading…" row while the volume is in `appState.downloadQueue` (also covers
+  downloads started from other surfaces), and `.onChange(of: appState.downloadQueue)`
+  re-runs `loadVolumeStructure` on the present→absent transition — safe because
+  `DownloadManager` moves the XML into place *before* firing `onStateChanged`. A failed
+  download resets `downloadRequested` so the button is re-offered.
+- Branch reorder: the structure/error/loading chain now falls back to the loading row
+  (instead of a blank section) during the persisted-structure fast path and the brief
+  post-download window, mirroring CompilationView's approach.
+- Verified end-to-end in the iPhone 17 simulator: frus1961-63v06 (fast path) and the
+  11.8 MB frus1961-63v07-09mSupp (spinner visible) both transitioned Download Required →
+  Downloading… → loaded structure without leaving the screen. CodingStandardsAuditTests +
+  BrowserViewTests pass (33/33).
+### Session 2026-07-02 — Three-week review + reported-bug fixes (reindex bump, title whitespace, neighbors-sheet loop)
+Multi-agent review of PRs #108–#136 (word-cloud/analytics, archival neighbors, corpus-browser
+rework, volume-sources v2, Collections Phases 1a–4) plus root-cause fixes for the three
+user-reported regressions:
+- **Missing auto-reindex**: the Session 170 `volume_sources` rewrite (dd816df) drops the
+  pre-170 table in its schema migration and only repopulates on a full XML re-parse — its
+  commit message says "Requires a re-index" but `currentDateIndexVersion` was never bumped,
+  so first launch never triggered one and the Sources outline sat empty until a manual
+  reindex. Bumped to **12** with a version-history entry. (03f25f5's spurious-reindex fix
+  is innocent — but before it, backgrounding accidentally re-indexed everything, which is
+  why missed bumps used to self-heal invisibly.)
+- **Corpus-browser title whitespace**: `VolumeStructureParserDelegate` only edge-trimmed
+  joined `<head>` text, so hard-wrapped TEI titles carried interior newlines into
+  `structureJSON`. Titles now collapse interior whitespace at parse time (regression test
+  added); the version-12 re-parse propagates the fix.
+- **Archival Neighbors open/close loop**: `VolumeSourcesView.body` is a `Group` emitting
+  two Sections, and `Group` applies modifiers per child — `.sheet(item:)` was duplicated
+  onto both sections over one shared binding, so the two presenters ping-ponged
+  present/dismiss after close. Sheets now anchor once on the Archival Collections section;
+  the duplicated `.task` (which re-ran `loadSources` and reset the outline's disclosure
+  state) is guarded with `didLoad`. Same guard added to `FrontMatterPersonsView`.
+- **Review fix**: `RelatedDocument` lists keyed by `documentId` alone collide across
+  volumes (ids are volume-local) — added `compositeKey` and rekeyed ArchivalNeighborsSheet
+  + both Source Explorer related-document lists.
+- **Test health**: `WordCloudTokenizerTests.pluralFoldDisabled` was NL-asset-dependent
+  (lemma availability for bare "treaties" varies); now uses a nonsense plural.
+  `SettingsSyncCoordinatorTests` crashes the test host (SwiftData trap) on a **clean v2
+  checkout** — pre-existing, spun off as a follow-up task with 3 other verified review
+  findings (word-cloud cluster, legacy-prose export loss, iOS volume Download button,
+  macOS .fruscollection import feedback).
+- 959 unit tests pass (excluding the pre-existing crashing suite); iOS + macOS build clean.
+- **Next**: collection-editor rework scoping (manager → authoring canvas; see session
+  recommendations), plus the spun-off fix tasks. The next build's TestFlight notes must
+  mention the one-time automatic re-index on first launch.
+
+### Session 2026-07-02 (later) — Collections Authoring scope
+Authored `Planning/Collections-Authoring-Scope.md` — the 6-phase program turning the
+collection editor into an authoring tool for "rich historical products" (the owner's
+2026-07-02 request). Synthesized from a 3-angle design panel (product-first /
+architecture-first / effort-ROI-first + judge) over a verified current-state survey.
+Backbone: §0 target artifact ("the FRUS Reader") → Phase 1 editor shell + unknown-kind
+sync guard → Phase 2 single resolver + live preview → Phase 3 in-editor discovery
+(search/browse/paste-citations/tag) → Phase 4 publication frame (front matter, level-based
+nested sections, `.fruscollection` v2) → Phase 5 annotated document (headnotes, excerpts,
+read-write inspector, footnote tri-state fix) → Phase 6 generated apparatus (bibliography,
+chronology, sources & archives, persons, thematic index as placeable entries). Decision
+points A1–A12 for the owner; Phases 1–3 carry zero schema/format risk. Key safety rails:
+ship the `entryKind` `.unrecognized` fallback first (mixed-build CloudKit sync), never
+re-purpose `sortOrder` (level-derived tree instead of parent pointers), one batched
+`.fruscollection` bump with write-minimum + tolerant reader.
+
+### Session 2026-07-02 (later) — Collections Authoring Phase 1 (implementation)
+Executed Phase 1 of Planning/Collections-Authoring-Scope.md in two PRs:
+- **PR #139 (merged): mechanics.** Mechanical split of CollectionEditorView.swift (2,836 →
+  845 lines + 6 new per-type files, verbatim moves, one visibility change). Unknown-entry-kind
+  sync guard (`CollectionEntryKind.unrecognized`): unknown kinds render inert, are skipped by
+  resolve/native-export/native-import, never persisted, excluded from allCases — must age in
+  the field before Phases 5–6 add new kinds. Shared `CollectionEntryData` (bulk header/date
+  loader + canonical 3-tier date sort) used by both managers; iOS rows show real headers/
+  volume titles/dates; iOS Sort by Date gains per-document precision. fileImporter narrowed
+  to the `.fruscollection` UTI. New `unrecognizedKindGuard` test; 41/41.
+- **PR 2: shell.** `CollectionEditorView.PresentationStyle` — pushed from the Collections tab
+  (navigationDestination; back dismisses), sheet elsewhere (Done button). All-live autosave
+  (A1 cheap): onChange → saveLive(); Save/Cancel and applyEditsForExport deleted; untouched
+  new collection discarded on dismiss, kept-unnamed gets "Untitled Collection". iPhone:
+  entry-list-primary Form — collapsible Details (name/note/smart link; expanded for new) +
+  collapsed Composition disclosure. iPad: `.inspector` panel (toolbar-toggled) for metadata +
+  composition, list gets full width. macOS manager: Composition popover → inline collapsed
+  DisclosureGroup at the top of the scrolling entries List (inline per scope, but inside the
+  scroll region so expansion can't overflow the fixed header — preserves the #126 constraint).
+  Docs rider: iOS/macOS manuals §10 + both TestFlight instructions.
+
+### Session 2026-07-02 (later) — Legacy-prose export data-loss fix
+Closed the spun-off "legacy-prose export loss" finding: Phase 3b (9f1c648) persisted
+`CollectionEntry.richText` as a JSON-encoded `AttributedString`; the RTF switch (05d31c7)
+added no migration, so `ProseRichText.exportRTF` returned legacy blobs verbatim,
+`CollectionProse.paragraphs(fromRTF:)` failed the RTF decode and returned `[]`, and all
+three exporters (HTML/DOCX/PDF) silently omitted the prose block — even though the plain
+text sat in `entry.text`. Fix, layered so no reader can drop prose again:
+- **`ProseRichText.exportRTF`** now always emits valid RTF: stored RTF verbatim → legacy
+  JSON converted (bold/italic `inlinePresentationIntent` → concrete font traits, so
+  formatting survives) → plain `text` fallback. Conversion also migrates the entry in
+  place (`migrateLegacyJSONIfNeeded`), so the first export heals the store.
+- **`CollectionProse.paragraphs(fromRTF:)`** — the single decode path shared by all three
+  exporters — falls back to decoding the legacy JSON encoding directly, covering raw
+  legacy payloads that bypass `exportRTF` (pre-fix `.fruscollection` files, tests).
+- **Editor**: `RichTextEditor` loads legacy blobs with formatting intact; the prose row
+  migrates on appear. **Native format**: `makeFile` heals before emitting, so shared
+  `.fruscollection` files honour the schema's "richText is RTF" promise.
+- Unrecognizable blobs (neither format) are left untouched and export the plain `text`
+  projection — never destroyed, never silently dropped.
+- 4 new tests (legacy export+migration, garbage fallback, decoder fallback with paragraph/
+  bold recovery, HTML/DOCX/PDF end-to-end); 30/30 CollectionTests + 15/15
+  CodingStandardsAuditTests pass; exporter version histories bumped (HTML 1.7, DOCX 1.5,
+  PDF 1.8, NativeCollectionSerializer 1.1, ProseRichText 1.1).
+
+### Session 2026-07-02 (later) — SettingsSyncCoordinatorTests host-crash fix
+All four `SettingsSyncCoordinatorTests` SIGTRAPped the test host ("Restarting after
+unexpected exit…"; each case listed under Failing tests). Root cause was **container
+lifetime, not CloudKit**: the test helper returned `container.mainContext` and dropped
+the `ModelContainer` — `mainContext` does not retain its container, so the first
+`context.fetch` in `SettingsSyncCoordinator.resolveCanonical` trapped inside SwiftData
+(crash report: `EXC_BREAKPOINT` in SwiftData ← `resolveCanonical(create:)`, no fatal
+message emitted). The CKAccountStatusNoAccount noise in the log was a red herring —
+verified by re-running with `cloudKitDatabase: .none` alone, which still crashed.
+- Fix: helper now returns the container; each test holds it for its whole body (the
+  pattern every other suite already used).
+- Hermeticity: test containers now pass `cloudKitDatabase: .none` explicitly — the
+  default `.automatic` adopts the test host's iCloud entitlement and spins up real
+  CloudKit sync machinery (CKNotificationListener registration was visible in the sim
+  log). Same fix applied to `ModelContainer.makeTestContainer()`, whose doc comment
+  already claimed "CloudKit sync is disabled" without actually disabling it.
+- `collapsesDuplicates` UserDefaults cleanup moved into `defer` so a thrown fetch error
+  can't leak the key.
+- The fifth reported failure (`WordCloudTokenizerTests.pluralFoldDisabled`) was already
+  fixed at the v2 tip by 182f297 (nonsense-plural probe); verified passing.
+- Full unit-test bundle: 968 tests in 152 suites, all pass (iPhone 17 sim, iOS 26.5).

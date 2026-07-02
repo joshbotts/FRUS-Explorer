@@ -17,6 +17,7 @@ import SwiftData
 import CoreData       // NSPersistentCloudKitContainer for sync-event monitoring
 import CloudKit       // CKError codes, CKPartialErrorsByItemIDKey for detailed diagnostics
 import CoreSpotlight
+import CryptoKit      // SHA-256 content digest for open-with collection de-duplication
 import TipKit
 #if os(iOS)
 import BackgroundTasks
@@ -93,6 +94,11 @@ import os
 ///   3.8 — Session 2026-06-07: macOS "History" CommandMenu added (Documents Visited /
 ///          Searches Executed submenus, last ten each, "Complete History…" item);
 ///          frus.history Window scene added hosting the new HistoryWindowView
+///   3.9 — Session 2026-07-02: open-with .fruscollection import surfaces its result —
+///          macOS opens/foregrounds the Collections window with the import selected
+///          (pendingCollectionSelection hand-off), failures alert on both platforms
+///          (previously a DEBUG print), and re-opening a byte-identical file
+///          re-surfaces the prior import instead of minting a CloudKit-synced duplicate
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -136,6 +142,20 @@ struct FRUSExplorerApp: App {
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
+
+    /// Non-nil to present an alert for a failed open-with `.fruscollection` import.
+    /// Set by `importOpenedCollection` on both platforms — before Session 2026-07-02
+    /// a malformed file failed with only a DEBUG print, so the double-click looked
+    /// like the app silently ignored it.
+    @State private var collectionOpenError: String? = nil
+
+    /// Session-scoped memory of open-with collection imports: SHA-256 digest of the
+    /// file's bytes → the id of the `Collection` it created. Re-opening a byte-identical
+    /// file re-surfaces that collection (if it still exists) instead of minting a
+    /// duplicate — each `NativeCollectionSerializer.apply` otherwise creates a fresh
+    /// `Collection.id` that syncs everywhere via CloudKit. Deliberately not persisted:
+    /// the in-app Import button remains the way to intentionally import a copy.
+    @State private var openedCollectionImports: [Data: UUID] = [:]
 
     // `makeFRUSContainer()` returns a tuple so the CloudKit-enabled flag (and, on
     // failure, the actual `NSError` — see `bootDownloadManager`'s use of
@@ -645,6 +665,18 @@ struct FRUSExplorerApp: App {
                 .onOpenURL { url in
                     importOpenedCollection(url)
                 }
+                // Failed open-with import → user-visible alert (both platforms). The main
+                // window is what the OS activates on an open-with, so it is where the user
+                // is looking when the import fails.
+                .alert(String(localized: "collections.open.error.title",
+                              defaultValue: "Couldn’t Open Collection"),
+                       isPresented: Binding(get: { collectionOpenError != nil },
+                                            set: { if !$0 { collectionOpenError = nil } })) {
+                    Button(String(localized: "collections.import.error.ok", defaultValue: "OK"),
+                           role: .cancel) { collectionOpenError = nil }
+                } message: {
+                    Text(collectionOpenError ?? "")
+                }
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
@@ -700,24 +732,65 @@ struct FRUSExplorerApp: App {
     /// Imports a native `.fruscollection` file opened from Files / Finder / AirDrop (Phase 4 /
     /// D9): reconstructs the collection into the shared store, scopes it to the active project
     /// (so it's visible under the active-project filter, as new/imported collections are), and
-    /// — on iOS — switches to the Collections tab to surface it. Malformed files are ignored
-    /// (the in-app Import button is the path that surfaces detailed errors).
+    /// surfaces the result — switching to the Collections tab on iOS, opening/foregrounding
+    /// the Collections window with the import selected on macOS (before Session 2026-07-02
+    /// macOS gave no feedback at all, so users re-opened the file and minted silent,
+    /// CloudKit-synced duplicates). Re-opening a byte-identical file this session re-surfaces
+    /// the collection it already created (see `openedCollectionImports`) instead of importing
+    /// a duplicate. Failures present the `collectionOpenError` alert on the main window.
     @MainActor
     private func importOpenedCollection(_ url: URL) {
         guard url.pathExtension.lowercased() == NativeCollectionSerializer.fileExtension else { return }
         let context = modelContainer.mainContext
         do {
-            let imported = try NativeCollectionSerializer.importCollection(from: url, into: context)
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            let data = try Data(contentsOf: url)
+
+            let digest = Data(SHA256.hash(data: data))
+            if let existingId = openedCollectionImports[digest],
+               collectionExists(existingId, in: context) {
+                surfaceOpenedCollection(existingId)
+                return
+            }
+
+            let file = try NativeCollectionSerializer.decode(data)
+            let imported = NativeCollectionSerializer.apply(file, into: context)
             if let pid = appState.activeProjectId { imported.projectIds = [pid] }
             try context.save()
-            #if os(iOS)
-            appState.activeTab = .collections
-            #endif
+            openedCollectionImports[digest] = imported.id
+            surfaceOpenedCollection(imported.id)
         } catch {
             #if DEBUG
             print("[FRUSExplorerApp] .fruscollection import failed: \(error)")
             #endif
+            collectionOpenError = error.localizedDescription
         }
+    }
+
+    /// Surfaces a just-imported (or re-opened) collection: switches to the Collections tab on
+    /// iOS; on macOS opens the Collections window, raises it in front of the main window the
+    /// OS just activated, and hands the id off via `appState.pendingCollectionSelection` so
+    /// `MacCollectionManagerView` selects it. The hand-off is set *before* `openWindow` so a
+    /// freshly created window's `.task` consumer sees it (mirroring the `currentGraphEntry` /
+    /// `currentSourceNote` ordering).
+    @MainActor
+    private func surfaceOpenedCollection(_ id: UUID) {
+        #if os(iOS)
+        appState.activeTab = .collections
+        #else
+        appState.pendingCollectionSelection = id
+        openWindow(id: "frus.collections")
+        bringMacWindowToFront(id: "frus.collections")
+        #endif
+    }
+
+    /// Whether a `Collection` with `id` still exists in the store — a prior open-with import
+    /// may have been deleted since; in that case re-opening the file imports it anew.
+    @MainActor
+    private func collectionExists(_ id: UUID, in context: ModelContext) -> Bool {
+        let descriptor = FetchDescriptor<Collection>(predicate: #Predicate { $0.id == id })
+        return ((try? context.fetchCount(descriptor)) ?? 0) > 0
     }
 
     /// Creates the DownloadManager the first time `.task` fires, then immediately

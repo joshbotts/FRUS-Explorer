@@ -81,9 +81,14 @@ struct WordCloudTokenizerTests {
     func pluralFoldDisabled() {
         let tokenizer = WordCloudTokenizer(stopwords: [], foldPlurals: false)
         var counts: [String: Int] = [:]
-        tokenizer.accumulate(from: "treaties", into: &counts)
+        // A nonsense plural guarantees the lemmatiser has no entry, isolating the
+        // fold-disabled fallback path. (A real word like "treaties" is unreliable
+        // here: whether NLTagger lemmatises a bare token varies with the OS's
+        // NaturalLanguage assets, and a lemma always wins regardless of the flag.)
+        tokenizer.accumulate(from: "zorbeliers", into: &counts)
         // With folding off and no lemma, the surface plural is kept.
-        #expect(counts["treaties"] == 1)
+        #expect(counts["zorbeliers"] == 1)
+        #expect(counts["zorbelier"] == nil)
     }
 
     @Test("WordCloudTokenizer: empty text contributes nothing")

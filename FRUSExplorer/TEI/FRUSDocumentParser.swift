@@ -489,6 +489,14 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
 
     // MARK: - Helpers
 
+    /// Collapses interior whitespace runs to single spaces and trims the ends. TEI `<head>`
+    /// elements are hard-wrapped in the source XML, and `foundCharacters` delivers the text
+    /// in fragments around nested markup, so a joined title otherwise carries embedded
+    /// newlines and ragged indentation into the stored section title.
+    private static func collapseWhitespace(_ s: String) -> String {
+        s.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
     private func popFrame() {
         guard let frame = stack.popLast() else { return }
 
@@ -502,8 +510,7 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
                 if !frame.documentIds.isEmpty {
                     // Top-level documents inside an unknown wrapper still need a
                     // navigable home; emit the wrapper as a generic section.
-                    let rawTitle = frame.headParts.joined()
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let rawTitle = Self.collapseWhitespace(frame.headParts.joined())
                     topLevelSections.append(VolumeSection(
                         sectionId: frame.sectionId,
                         divType: "section",
@@ -519,7 +526,7 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
             return
         }
 
-        let rawTitle = frame.headParts.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawTitle = Self.collapseWhitespace(frame.headParts.joined())
         let title = rawTitle.isEmpty ? humanTitle(for: frame.divType) : rawTitle
         let section = VolumeSection(
             sectionId: frame.sectionId,

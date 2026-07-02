@@ -1109,7 +1109,9 @@ struct SourceExplorerView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(relatedDocs, id: \.documentId) { doc in
+                    // Composite key: related documents span volumes, and document ids
+                    // are only unique within a single volume.
+                    ForEach(relatedDocs, id: \.compositeKey) { doc in
                         Button {
                             dismiss()
                             onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
