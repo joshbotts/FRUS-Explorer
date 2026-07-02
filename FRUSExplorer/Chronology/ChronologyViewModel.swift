@@ -51,6 +51,8 @@ struct ChronologyDateGroup: Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation
+///   1.1 — Word Cloud fixes: `isoDay(_:)` formats in the local timezone (was UTC),
+///          matching `reload()`'s local `startOfDay` bounds
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -764,11 +766,17 @@ final class ChronologyViewModel {
 
     // MARK: - Formatting
 
+    /// The `yyyy-MM-dd` day string for a date, in the user's local timezone.
+    ///
+    /// Must stay in the same timezone as `reload()`'s `Calendar.startOfDay`
+    /// normalisation (local): a UTC formatter here rendered a local midnight as the
+    /// *previous* day for users east of UTC, querying a range one day earlier than
+    /// the pickers showed. Mirrors `WordCloudScope.isoDay(from:)`.
     nonisolated private static func isoDay(_ date: Date) -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
+        f.timeZone = .current
         return f.string(from: date)
     }
 

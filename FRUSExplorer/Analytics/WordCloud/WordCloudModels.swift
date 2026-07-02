@@ -288,6 +288,9 @@ struct WordCloudDocumentKey: Hashable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — Word Cloud fixes: `isoDay(from:)` / `day(fromISO:)` convert in the user's
+///          local timezone (was UTC) so date-range bounds agree with the DatePickers
+///          and Chronology's local-calendar normalisation on every hand-off
 enum WordCloudScope: Hashable, Sendable, Identifiable {
     /// A single document.
     case document(volumeId: String, documentId: String)
@@ -368,22 +371,31 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
 
     // MARK: - Date-range helpers
 
-    /// Shared `yyyy-MM-dd` formatter (UTC, POSIX locale) for date-range signatures —
-    /// matching the ISO day keys the Chronology date index is queried with.
+    /// Shared `yyyy-MM-dd` formatter (user's current timezone, POSIX locale) for
+    /// date-range signatures.
+    ///
+    /// The index's ISO day keys are timezone-less calendar days, so the timezone
+    /// here only governs the `Date` ↔ day-string conversion — and it MUST match
+    /// the local calendar every consuming surface works in (`DatePicker`s, the
+    /// Chronology view model's `Calendar.startOfDay` normalisation, and the
+    /// localized display formatters). A UTC formatter here shifted the bounds by
+    /// one day for any non-UTC user and walked the range a day earlier on each
+    /// Cloud → Chronology round trip.
     private static func isoFormatter() -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
+        f.timeZone = .current
         return f
     }
 
-    /// The `yyyy-MM-dd` (UTC) day string for a date, for building a `.dateRange` scope.
+    /// The `yyyy-MM-dd` day string (in the user's local calendar) for a date, for
+    /// building a `.dateRange` scope.
     static func isoDay(from date: Date) -> String {
         isoFormatter().string(from: date)
     }
 
-    /// Parses a `yyyy-MM-dd` (UTC) day string back to a `Date` (start of that day).
+    /// Parses a `yyyy-MM-dd` day string back to a `Date` (local start of that day).
     static func day(fromISO iso: String) -> Date? {
         isoFormatter().date(from: iso)
     }

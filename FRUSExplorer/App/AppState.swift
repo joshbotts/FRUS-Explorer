@@ -88,6 +88,10 @@ import CloudKit
 ///          set from a dead `#if os(macOS)` branch in `BrowserView` (unreachable
 ///          since the file became iOS-only in Session 60) and never read or set
 ///          to `true` anywhere; `showCitationLookup` remains in active use
+///   4.1 — Word Cloud fixes: connectIndexingProgress flushes the word-cloud
+///          result cache on each volume's `.complete` event (its in-memory key
+///          carries no index fingerprint, so stale pre-index results otherwise
+///          persist for the whole session)
 ///   4.1 — Corpus Analytics cache fix: connectIndexingProgress flushes
 ///          `CorpusAnalyticsService`'s result caches on each volume's `.complete`
 ///          event (cache keys are bare query terms with no index fingerprint, so
@@ -738,6 +742,14 @@ final class AppState {
                             (Double(meta.totalDocuments) - Double(self.indexingQueueAverageDocumentCount)) / n
                         )
                     }
+                    // The index content just changed. Flush the word-cloud service's
+                    // in-memory result cache — unlike its disk cache, the in-memory
+                    // key carries no index fingerprint, so without this an empty
+                    // result computed before the volume was indexed (e.g. opening a
+                    // downloaded-but-unindexed volume's cloud) would keep serving
+                    // "No Terms" for the rest of the session.
+                    if let wordFrequencyService = self.wordFrequencyService {
+                        Task { await wordFrequencyService.invalidateCache() }
                     // The index content just changed. Flush Corpus Analytics'
                     // in-memory result caches — their keys are bare query terms
                     // with no index fingerprint, so a count computed before this
