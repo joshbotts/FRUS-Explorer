@@ -356,6 +356,7 @@
 		B8C370E4638C2FA0A4E92779 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF3800E6EA9F402E0F8B123 /* CorpusView.swift */; };
 		B8E4870D78DC1A83F0B49528 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69230EB5695AC63BFDB59149 /* RISExporter.swift */; };
 		B8FA01376F53D2C3EC044017 /* CitationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6116A9829A1771E680567C25 /* CitationModels.swift */; };
+		B98F32DECC303257F9DD7AAE /* NativeCollectionFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */; };
 		B9D561B055D8E51B6F26774B /* BackgroundDownloadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */; };
 		BA011168F1E4FC343022CE91 /* VolumeConnectionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFFFF3C4599E5F0FCDEEB89 /* VolumeConnectionGraphView.swift */; };
 		BA1B3B4761551F64C8AF2B7B /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A626491C155C769DF2F17 /* DocumentWindowID.swift */; };
@@ -467,6 +468,7 @@
 		EEA25BCD9B78C57EA83B1836 /* IndexingSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985832C6E6AE42CA33A92000 /* IndexingSetupWizardView.swift */; };
 		EF806E0690F2C2A47DAE4256 /* DocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F89AC5BB14EEE61586D263D1 /* DocumentView.swift */; };
 		EFC94D9D2AA50C201591DBFC /* WordCloudScopeResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902A3937D1FAC16D46AAF626 /* WordCloudScopeResolver.swift */; };
+		EFD79D1B370203F3CDBAC9FA /* NativeCollectionFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */; };
 		EFD9C62455CC8C3876EE4B5E /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = FF735149F415370F2B4A807F /* Localizable.strings */; };
 		F00C4E0898E8B97D52E497AB /* AppleIntelligenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A42E5555EB4D3E129B7B9ED3 /* AppleIntelligenceProvider.swift */; };
 		F00F7576B808A34A7A7E86BA /* ReadingHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC00D2D14BDB0E3991932B3 /* ReadingHistoryEntry.swift */; };
@@ -605,6 +607,7 @@
 		423271170536DE4B8160B34A /* CollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionExporter.swift; sourceTree = "<group>"; };
 		43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonClusterOverride.swift; sourceTree = "<group>"; };
 		449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASTToRenderNodeConverter.swift; sourceTree = "<group>"; };
+		4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCollectionFormat.swift; sourceTree = "<group>"; };
 		471EA3C4C3411D61C4EB3994 /* PersonAuthorityIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonAuthorityIndex.swift; sourceTree = "<group>"; };
 		4796534819AD8F60335063F5 /* IndexingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingPipeline.swift; sourceTree = "<group>"; };
 		48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaxonomyModels.swift; sourceTree = "<group>"; };
@@ -1384,6 +1387,7 @@
 				26BB1028F3812398A57E3411 /* DocxCollectionExporter.swift */,
 				1252D064E6BC3892ADE9BFBB /* HTMLCollectionExporter.swift */,
 				C470F300DF7A598FFEE107C5 /* MacCollectionManagerView.swift */,
+				4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */,
 				630AC3EFC3AB0CF434DC57A8 /* PDFCollectionExporter.swift */,
 				B23AC0820031FA7B96F63EE6 /* ZoteroCollectionExporter.swift */,
 			);
@@ -1713,6 +1717,7 @@
 				3273C593F2189ABB7580E82D /* NARAAPIKeyStore.swift in Sources */,
 				6DDFCF59C98CE7A5085A5BA4 /* NARACatalogClient.swift in Sources */,
 				AB50012C979B264526C336D7 /* NARACatalogLookupView.swift in Sources */,
+				EFD79D1B370203F3CDBAC9FA /* NativeCollectionFormat.swift in Sources */,
 				95E58E62F1C53AA8262FB06E /* OnboardingDownloadView.swift in Sources */,
 				9C03AF5FBBCE530B99448B02 /* OnboardingIntroView.swift in Sources */,
 				A720A8CBE9671A43BC31F30B /* OnboardingProjectSetupView.swift in Sources */,
@@ -1914,6 +1919,7 @@
 				4168912A56749F9EAC797FD7 /* NARAAPIKeyStore.swift in Sources */,
 				2CE2897C230039CEEA847CFF /* NARACatalogClient.swift in Sources */,
 				31F50A34087FE24125917128 /* NARACatalogLookupView.swift in Sources */,
+				B98F32DECC303257F9DD7AAE /* NativeCollectionFormat.swift in Sources */,
 				101A80D67DCE40A1B07C7EBA /* OnboardingDownloadView.swift in Sources */,
 				B5504390CC53BC96EC7ABA4A /* OnboardingIntroView.swift in Sources */,
 				FC7A54140CBE7EFD4AE3BFCD /* OnboardingProjectSetupView.swift in Sources */,

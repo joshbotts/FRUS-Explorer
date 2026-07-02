@@ -553,4 +553,149 @@ struct CollectionTests {
         #expect(!offText.contains("annote"))
         #expect(offText.contains("keywords  = {100\\% verified}"))  // tags still kept
     }
+
+    // MARK: - NativeCollectionFormatTests (Phase 4 / D9 core)
+
+    /// Builds a source collection with a heading (section depth), a document (+ a linked note),
+    /// and a rich-text prose block. Returns the collection and the note it created.
+    @discardableResult
+    private func makeNativeSourceCollection(in context: ModelContext) throws -> (Collection, ResearchNote) {
+        let coll = Collection(name: "Berlin Crisis", note: "Key cables.")
+        coll.defaultBodyDepth = "summaryOnly"
+        coll.footnoteStyle = "sourceNoteOnly"
+        coll.tocStyle = "headerAndDateline"
+        coll.applyHighlights = true
+        coll.includeNotes = true
+        coll.includeWordCloud = true
+        context.insert(coll)
+
+        let note = ResearchNote(documentId: "d1", volumeId: "frus1961-63v14",
+                                bodyText: "Compare with the Clay telegrams.")
+        context.insert(note)
+
+        let heading = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        heading.entryKind = .heading
+        heading.text = "Opening Moves"
+        heading.bodyDepthOverride = "index"
+        heading.collection = coll
+
+        let docEntry = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                       volumeId: "frus1961-63v14", sortOrder: 1)
+        docEntry.bodyDepthOverride = "full"
+        docEntry.selectedNoteIds = [note.id]
+        docEntry.collection = coll
+
+        let prose = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 2)
+        prose.entryKind = .prose
+        let m = NSMutableAttributedString(string: "Editorial note.")
+        #if canImport(UIKit)
+        m.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: 12), range: NSRange(location: 0, length: 4))
+        #elseif canImport(AppKit)
+        m.addAttribute(.font, value: NSFontManager.shared.convert(.systemFont(ofSize: 12), toHaveTrait: .boldFontMask),
+                       range: NSRange(location: 0, length: 4))
+        #endif
+        prose.text = m.string
+        prose.richText = try m.data(from: NSRange(location: 0, length: m.length),
+                                    documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+        prose.collection = coll
+
+        context.insert(heading); context.insert(docEntry); context.insert(prose)
+        try context.save()
+        return (coll, note)
+    }
+
+    /// Resolves a document entry's linked note bodies from a context (mirrors the app's export path).
+    private func noteTextResolver(_ context: ModelContext) -> (CollectionEntry) -> [String] {
+        let all = (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? []
+        return { entry in
+            entry.selectedNoteIds.compactMap { id in all.first { $0.id == id }?.bodyText }
+        }
+    }
+
+    @Test("NativeFormat: composition, structure, prose, and opt-in notes round-trip onto a fresh store")
+    func nativeRoundTrip() throws {
+        let source = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(source)
+        let (coll, _) = try makeNativeSourceCollection(in: sourceCtx)
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: true, resolveNoteTexts: noteTextResolver(sourceCtx))
+        let data = try NativeCollectionSerializer.encode(file)
+        #expect(!data.isEmpty)
+
+        // Import into a *fresh* store (simulating another device).
+        let dest = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(dest)
+        let decoded = try NativeCollectionSerializer.decode(data)
+        let imported = NativeCollectionSerializer.apply(decoded, into: destCtx)
+        try destCtx.save()
+
+        // Metadata + composition.
+        #expect(imported.name == "Berlin Crisis")
+        #expect(imported.note == "Key cables.")
+        #expect(imported.defaultBodyDepth == "summaryOnly")
+        #expect(imported.footnoteStyle == "sourceNoteOnly")
+        #expect(imported.tocStyle == "headerAndDateline")
+        #expect(imported.applyHighlights == true)
+        #expect(imported.includeWordCloud == true)
+        #expect(imported.id != coll.id)            // fresh identity
+        #expect(imported.projectIds.isEmpty)       // device-local, dropped
+
+        // Structure, in order.
+        let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        #expect(entries.count == 3)
+        #expect(entries[0].entryKind == .heading)
+        #expect(entries[0].text == "Opening Moves")
+        #expect(entries[0].bodyDepthOverride == "index")     // section depth survives
+        #expect(entries[1].entryKind == .document)
+        #expect(entries[1].documentId == "d1")
+        #expect(entries[1].volumeId == "frus1961-63v14")
+        #expect(entries[1].bodyDepthOverride == "full")
+        #expect(entries[2].entryKind == .prose)
+
+        // Prose rich text survives and stays introspectable.
+        let back = try NSAttributedString(data: #require(entries[2].richText),
+                                          options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                          documentAttributes: nil)
+        #expect(back.string == "Editorial note.")
+
+        // Opt-in note travelled: a new ResearchNote with the same text, linked to the doc entry.
+        let importedNotes = try destCtx.fetch(FetchDescriptor<ResearchNote>())
+        #expect(importedNotes.contains { $0.bodyText == "Compare with the Clay telegrams." })
+        #expect(entries[1].selectedNoteIds.count == 1)
+    }
+
+    @Test("NativeFormat: notes off (D9a default) omits note text and creates no ResearchNote on import")
+    func nativeNotesOptOut() throws {
+        let source = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(source)
+        let (coll, _) = try makeNativeSourceCollection(in: sourceCtx)
+
+        // includeNotes == false: the resolver would return text, but it must not be called/emitted.
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in ["SHOULD NOT APPEAR"] })
+        let data = try NativeCollectionSerializer.encode(file)
+        let json = String(decoding: data, as: UTF8.self)
+        #expect(!json.contains("SHOULD NOT APPEAR"))
+        #expect(!json.contains("Compare with the Clay telegrams."))
+
+        let dest = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(dest)
+        let imported = NativeCollectionSerializer.apply(try NativeCollectionSerializer.decode(data), into: destCtx)
+        try destCtx.save()
+        #expect((try destCtx.fetch(FetchDescriptor<ResearchNote>())).isEmpty)   // no notes created
+        let docEntry = (imported.documentEntries ?? []).first { $0.entryKind == .document }
+        #expect(docEntry?.selectedNoteIds.isEmpty == true)
+    }
+
+    @Test("NativeFormat: decode rejects a non-collection JSON file and a future-version file")
+    func nativeDecodeGuards() throws {
+        // Wrong format discriminator.
+        let notOurs = Data(#"{"format":"other","formatVersion":1,"name":"x","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[]}"#.utf8)
+        #expect(throws: NativeCollectionError.self) { try NativeCollectionSerializer.decode(notOurs) }
+
+        // Future format version.
+        let future = Data(#"{"format":"fruscollection","formatVersion":9999,"name":"x","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[]}"#.utf8)
+        #expect(throws: NativeCollectionError.self) { try NativeCollectionSerializer.decode(future) }
+    }
 }
