@@ -688,6 +688,38 @@ struct CollectionTests {
         #expect(docEntry?.selectedNoteIds.isEmpty == true)
     }
 
+    @Test("NativeFormat: importCollection reads a file from disk, decodes, and reconstructs it")
+    func nativeImportFromFile() throws {
+        let source = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(source)
+        let (coll, _) = try makeNativeSourceCollection(in: sourceCtx)
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        let data = try NativeCollectionSerializer.encode(file)
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("import-test.\(NativeCollectionSerializer.fileExtension)")
+        try data.write(to: url, options: .atomic)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let dest = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(dest)
+        let imported = try NativeCollectionSerializer.importCollection(from: url, into: destCtx)
+        try destCtx.save()
+
+        #expect(imported.name == "Berlin Crisis")
+        #expect((imported.documentEntries ?? []).count == 3)
+        #expect(imported.id != coll.id)
+
+        // A non-collection file surfaces a NativeCollectionError, not a crash.
+        let junkURL = FileManager.default.temporaryDirectory.appendingPathComponent("junk.txt")
+        try Data("not a collection".utf8).write(to: junkURL, options: .atomic)
+        defer { try? FileManager.default.removeItem(at: junkURL) }
+        #expect(throws: (any Error).self) {
+            try NativeCollectionSerializer.importCollection(from: junkURL, into: destCtx)
+        }
+    }
+
     @Test("ExportFormat: native format has no CollectionExporter and the .fruscollection extension")
     func nativeExportFormatWiring() {
         #expect(ExportFormat.fruscollection.makeExporter() == nil)   // handled by the serializer path

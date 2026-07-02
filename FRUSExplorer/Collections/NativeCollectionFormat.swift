@@ -286,4 +286,21 @@ enum NativeCollectionSerializer {
 
         return collection
     }
+
+    // MARK: - Import a file from disk
+
+    /// Reads a `.fruscollection` file at `url`, decodes + validates it, and reconstructs the
+    /// collection into `context`. Handles security-scoped access for a user-picked URL. The
+    /// caller is responsible for saving the context and presenting/selecting the result.
+    ///
+    /// - Throws: `NativeCollectionError` for a non-collection/unsupported file, a `DecodingError`
+    ///   for malformed JSON, or a file-read error.
+    @discardableResult
+    static func importCollection(from url: URL, into context: ModelContext) throws -> Collection {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let data = try Data(contentsOf: url)
+        let file = try decode(data)
+        return apply(file, into: context)
+    }
 }
