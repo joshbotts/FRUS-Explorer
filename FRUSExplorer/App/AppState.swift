@@ -98,6 +98,10 @@ import CloudKit
 ///          stale pre-index counts otherwise persist for the whole session)
 ///   4.1 — Session 2026-07-02: pendingCollectionSelection (UUID) for the open-with
 ///          `.fruscollection` import → Collections window hand-off on macOS
+///   4.2 — Authoring Phase 3 review: connectIndexingProgress notifies
+///          `citationMatchingEngine.noteVolumeDownloaded(_:)` on each volume's
+///          `.complete` event so citation resolution sees newly downloaded volumes
+///          without an app relaunch
 
 // MARK: - CloudKitSyncState
 
@@ -726,6 +730,15 @@ final class AppState {
                     self.currentIndexingProgress = nil
                     self.interruptedVolumeIds.remove(update.volumeId)
                     self.indexedVolumeIds.insert(update.volumeId)
+                    // The volume just became locally available — teach the citation
+                    // matching engine about it. Its downloaded-volume set is otherwise
+                    // a boot-time snapshot, which broke the "download this volume,
+                    // then resolve again" loop advertised by CitationLookupView and
+                    // the collections Add Documents sheet until the next relaunch.
+                    if let engine = self.citationMatchingEngine {
+                        let completedVolumeId = update.volumeId
+                        Task { await engine.noteVolumeDownloaded(completedVolumeId) }
+                    }
                     self.lastIndexingCompletionTime = Date()
                     self.indexingBatchCompletedCount += 1
                     // Update rolling throughput average (Welford online mean).

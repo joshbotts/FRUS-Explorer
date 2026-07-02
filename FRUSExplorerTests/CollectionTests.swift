@@ -1315,6 +1315,12 @@ struct CollectionTests {
             inURLLine: "see https://history.state.gov/historicaldocuments/frus1969-76v01/d42 for details")
         #expect(ref?.volumeId == "frus1969-76v01")
         #expect(ref?.documentId == "d42")
+        // Case-insensitive matching normalizes BOTH components to the canonical
+        // lowercase TEI form — an uppercase volume id would match nothing downstream.
+        let shouty = CollectionCitationLineResolver.documentReference(
+            inURLLine: "HTTPS://HISTORY.STATE.GOV/HISTORICALDOCUMENTS/FRUS1969-76V01/D42")
+        #expect(shouty?.volumeId == "frus1969-76v01")
+        #expect(shouty?.documentId == "d42")
         // Non-document paths and non-FRUS volume components are rejected.
         #expect(CollectionCitationLineResolver.documentReference(
             inURLLine: "https://history.state.gov/historicaldocuments/frus1969-76v01") == nil)
@@ -1405,6 +1411,48 @@ struct CollectionTests {
             match: { _ in throw StubError() })
         let outcome = await resolver.resolve(line: "FRUS, 1969-76, vol. I, doc. 12")
         #expect(outcome == .unresolved(reason: "index unavailable"))
+    }
+
+    @Test("AddDocuments citations: a volume-only candidate outranking the document hit downgrades to ambiguous")
+    func citationOutrankedByVolumeOnlyCandidate() async {
+        // Engine shape when the rank-1 volume isn't downloaded: manifestOnly(volA, rank 1)
+        // then exactDocumentNumber(volB, rank 2). The old bucketer filtered volume-only
+        // matches away and confidently resolved to volB, discarding the engine's own
+        // top-ranked candidate.
+        let resolver = CollectionCitationLineResolver(
+            parse: { CitationParser().parse($0) },
+            match: { _ in
+                [CitationMatch(documentId: "", volumeId: "frus1969-76v01", rank: 1,
+                               matchStrategy: .manifestOnly,
+                               confidenceLabel: "Volume identified — download to find the specific document",
+                               requiresDownload: true),
+                 Self.makeMatch(documentId: "d4", volumeId: "frus1969-76v02", rank: 2)]
+            })
+        let outcome = await resolver.resolve(line: "FRUS, 1969-76, vol. I, doc. 4")
+        guard case .ambiguous(let vol, let doc, let note) = outcome else {
+            Issue.record("expected ambiguous, got \(outcome)"); return
+        }
+        #expect(vol == "frus1969-76v02" && doc == "d4")
+        // The note surfaces the discarded higher-ranked competitor.
+        #expect(note.contains("frus1969-76v01"))
+    }
+
+    @Test("AddDocuments citations: a parse with no volume identity never resolves confidently")
+    func citationNoVolumeIdentityIsAtMostAmbiguous() async {
+        // A bare "Document 129" parses with neither subseries nor volume number, so
+        // the engine matched against an arbitrary manifest prefix — even a lone
+        // exact-strategy hit is a guess, not a resolution.
+        let resolver = CollectionCitationLineResolver(
+            parse: { line in CitationInput(rawText: line, documentNumber: 129) },
+            match: { _ in
+                [Self.makeMatch(documentId: "d129", volumeId: "frus1861",
+                                strategy: .superimposedDocumentNumber)]
+            })
+        let outcome = await resolver.resolve(line: "Document 129")
+        guard case .ambiguous(let vol, let doc, _) = outcome else {
+            Issue.record("expected ambiguous, got \(outcome)"); return
+        }
+        #expect(vol == "frus1861" && doc == "d129")
     }
 
     // MARK: - Phase 3: Tag-union gathering

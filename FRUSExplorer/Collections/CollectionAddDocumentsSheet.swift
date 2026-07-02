@@ -67,10 +67,17 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///    strategy or with competing candidates are ambiguous (the top match is surfaced
 ///    with its rank note); volume-only matches (empty `documentId`, e.g. an
 ///    un-downloaded volume) and empty result sets are unresolved with the engine's
-///    own explanation.
+///    own explanation. Two guards keep "resolved" honest: a document-level hit that
+///    the engine itself outranked with a volume-only candidate (e.g. the better-fit
+///    volume isn't downloaded) is at most ambiguous, and a parse that identifies no
+///    volume at all (no subseries, no volume number — the engine then matched
+///    against an arbitrary manifest slice) is at most ambiguous.
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 3: initial implementation
+///   1.1 — Authoring Phase 3 review: never bucket a line "resolved" when the engine's
+///          own top-ranked candidate was volume-only, or when the parse carried no
+///          volume identity; URL matcher lowercases the volume id (canonical form)
 struct CollectionCitationLineResolver: Sendable {
 
     // MARK: - Outcome
@@ -125,14 +132,18 @@ struct CollectionCitationLineResolver: Sendable {
     ///
     /// The volume component must carry the `frus` prefix and the document component
     /// must be a `d`-number — the same identifiers used by `CollectionEntry`, so a
-    /// hit needs no engine resolution. Returns `nil` when the line carries no such URL.
+    /// hit needs no engine resolution. Matching is case-insensitive (retyped or
+    /// OCR'd links), and both components are normalized to lowercase — the canonical
+    /// form of every FRUS TEI identifier. Returns `nil` when the line carries no
+    /// such URL.
     static func documentReference(inURLLine line: String) -> (volumeId: String, documentId: String)? {
         let pattern = #"history\.state\.gov/historicaldocuments/(frus[A-Za-z0-9\-]+)/(d\d+)\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
               let m = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
               let volRange = Range(m.range(at: 1), in: line),
               let docRange = Range(m.range(at: 2), in: line) else { return nil }
-        return (volumeId: String(line[volRange]), documentId: String(line[docRange]).lowercased())
+        return (volumeId: String(line[volRange]).lowercased(),
+                documentId: String(line[docRange]).lowercased())
     }
 
     // MARK: - Resolution
@@ -171,6 +182,26 @@ struct CollectionCitationLineResolver: Sendable {
 
         let documentLevel = matches.filter { !$0.documentId.isEmpty }
         if let top = documentLevel.first {
+            // The engine's own top-ranked candidate may be volume-only (e.g. the
+            // better-fit volume isn't downloaded, so the engine stopped at a
+            // manifest match and moved on). Presenting a lower-ranked document hit
+            // as confident would silently discard that competitor — surface it.
+            if let overallTop = matches.first, overallTop.rank != top.rank {
+                return .ambiguous(
+                    volumeId: top.volumeId, documentId: top.documentId,
+                    note: String(
+                        localized: "collection.addDocs.citations.outranked",
+                        defaultValue: "\(top.confidenceLabel) — but the engine ranked \(overallTop.volumeId) higher: \(overallTop.confidenceLabel)"))
+            }
+            // A parse with no volume identity at all matched against an arbitrary
+            // slice of the manifest — never confident, whatever the strategy says.
+            if input.subseries == nil && input.volumeNumber == nil {
+                return .ambiguous(
+                    volumeId: top.volumeId, documentId: top.documentId,
+                    note: String(
+                        localized: "collection.addDocs.citations.noVolumeIdentity",
+                        defaultValue: "\(top.confidenceLabel) — the citation doesn't identify a volume, so this match is a guess"))
+            }
             if Self.isExactStrategy(top.matchStrategy),
                top.matchStrategy == .exactDocumentNumber || documentLevel.count == 1 {
                 return .resolved(volumeId: top.volumeId, documentId: top.documentId,
@@ -325,6 +356,11 @@ enum CollectionDocumentDiscovery {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 3: initial implementation, replacing `AddByTagSheet`
+///   1.1 — Authoring Phase 3 review: pre-selection (tags, citations) no longer reverts
+///          explicit deselections; O(1) selection membership via a parallel key set;
+///          macOS Add button no longer captures Return from the text fields; Browse
+///          "Downloading…" tracks the live download queue (failure restores the
+///          Download button); clearing the search field restores the search hint
 struct CollectionAddDocumentsSheet: View {
 
     // MARK: - Inputs
@@ -391,6 +427,18 @@ struct CollectionAddDocumentsSheet: View {
     /// The shared ordered selection all tabs add to / remove from.
     @State private var selection: [CollectionDocumentPick] = []
 
+    /// The keys of `selection`, mirrored for O(1) membership checks (`isSelected`,
+    /// Select All's all-selected test) — the ordered array alone made every check a
+    /// linear scan, quadratic over large volumes. Kept in sync by `toggle(_:)`,
+    /// `select(_:)`, and the Select All / Deselect All handler.
+    @State private var selectedKeys: Set<String> = []
+
+    /// Keys the user explicitly deselected in this sheet session. Pre-selection
+    /// passes (tag drill-ins, citation Resolve) skip them, so re-entering a tag or
+    /// re-running Resolve never silently reverts an explicit deselection. An explicit
+    /// re-selection (row tap, Select All) clears the key again.
+    @State private var explicitlyDeselectedKeys: Set<String> = []
+
     // Search tab
     /// Current search field text (debounced into `runSearch`).
     @State private var searchText = ""
@@ -410,7 +458,11 @@ struct CollectionAddDocumentsSheet: View {
     @State private var browseDocuments: [DocumentBrowserEntry] = []
     /// `true` while the volume's document list loads.
     @State private var isLoadingBrowseDocuments = false
-    /// Volume ids whose download was requested from this sheet (shows progress copy).
+    /// Volume ids whose download was requested from this sheet but hasn't yet reached
+    /// the observable download queue. Bridges the tap → queue-callback gap only: once
+    /// a volume appears in `appState.downloadQueue`, the queue owns the in-progress
+    /// state and the id is dropped (see the `onChange` in `body`), so a failed
+    /// download falls back to the Download button instead of a permanent spinner.
     @State private var requestedDownloads: Set<String> = []
 
     // Citations tab
@@ -432,6 +484,18 @@ struct CollectionAddDocumentsSheet: View {
     // MARK: - Body
 
     var body: some View {
+        platformBody
+            // Once a requested volume reaches the observable queue, the queue owns
+            // its "Downloading…" state; dropping the local flag here means a failed
+            // download (which leaves the queue without ever indexing) restores the
+            // Download button so the user can retry.
+            .onChange(of: appState.downloadQueue) { _, queue in
+                requestedDownloads.subtract(queue)
+            }
+    }
+
+    /// The platform-specific sheet shell.
+    private var platformBody: some View {
         #if os(macOS)
         macBody
         #else
@@ -473,8 +537,11 @@ struct CollectionAddDocumentsSheet: View {
                 }
                 .keyboardShortcut(.cancelAction)
                 Spacer()
+                // Deliberately NOT .keyboardShortcut(.defaultAction): a default
+                // button's Return key-equivalent fires before the focused text
+                // field's editor sees the key, so Return in the Search or Browse
+                // filter fields would commit-and-dismiss the sheet mid-flow.
                 addButton
-                    .keyboardShortcut(.defaultAction)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
@@ -562,25 +629,40 @@ struct CollectionAddDocumentsSheet: View {
 
     // MARK: - Selection
 
-    /// Whether the given document key is currently selected.
+    /// Whether the given document key is currently selected (O(1) via `selectedKeys`).
     private func isSelected(_ key: String) -> Bool {
-        selection.contains { $0.key == key }
+        selectedKeys.contains(key)
     }
 
-    /// Toggles a pick in/out of the shared selection (append order preserved).
+    /// Toggles a pick in/out of the shared selection (append order preserved). An
+    /// explicit deselection is remembered so pre-selection passes never undo it.
     private func toggle(_ pick: CollectionDocumentPick) {
-        if let idx = selection.firstIndex(where: { $0.key == pick.key }) {
-            selection.remove(at: idx)
+        if selectedKeys.contains(pick.key) {
+            selection.removeAll { $0.key == pick.key }
+            selectedKeys.remove(pick.key)
+            explicitlyDeselectedKeys.insert(pick.key)
         } else {
             selection.append(pick)
+            selectedKeys.insert(pick.key)
+            explicitlyDeselectedKeys.remove(pick.key)
         }
     }
 
-    /// Adds picks that aren't yet selected (used by pre-selection and Select All).
+    /// Explicitly adds picks that aren't yet selected (Select All). Overrides any
+    /// remembered deselection — the user asked for these by name.
     private func select(_ picks: [CollectionDocumentPick]) {
-        for pick in picks where !isSelected(pick.key) {
+        for pick in picks where !selectedKeys.contains(pick.key) {
             selection.append(pick)
+            selectedKeys.insert(pick.key)
+            explicitlyDeselectedKeys.remove(pick.key)
         }
+    }
+
+    /// Adds picks on behalf of an automatic pre-selection pass (tag drill-in,
+    /// citation Resolve) — skips any key the user explicitly deselected, so
+    /// re-entering a tag or re-running Resolve respects earlier deselections.
+    private func preselect(_ picks: [CollectionDocumentPick]) {
+        select(picks.filter { !explicitlyDeselectedKeys.contains($0.key) })
     }
 
     // MARK: - Search tab
@@ -606,8 +688,11 @@ struct CollectionAddDocumentsSheet: View {
             Divider()
 
             if searchResults.isEmpty {
+                // "No results" only after a search actually completed for the current
+                // text — not while one is in flight, and not after the field was
+                // cleared (runSearch resets `hasSearched` for short/empty queries).
                 emptyState(
-                    hasSearched
+                    hasSearched && !isSearching
                         ? String(localized: "collection.addDocs.search.noResults",
                                  defaultValue: "No results. Only downloaded and indexed volumes are searchable.")
                         : String(localized: "collection.addDocs.search.hint",
@@ -642,6 +727,9 @@ struct CollectionAddDocumentsSheet: View {
         }
         guard query.count >= 2, let service = appState.searchService else {
             searchResults = []
+            // Un-latch the empty state: a cleared/too-short field shows the search
+            // hint again, not "No results" left over from the previous query.
+            hasSearched = false
             return
         }
         isSearching = true
@@ -846,6 +934,9 @@ struct CollectionAddDocumentsSheet: View {
             if allSelected {
                 let keys = Set(picks.map(\.key))
                 selection.removeAll { keys.contains($0.key) }
+                selectedKeys.subtract(keys)
+                // Explicit bulk deselection: remember it, like a per-row toggle.
+                explicitlyDeselectedKeys.formUnion(keys)
             } else {
                 select(picks)
             }
@@ -855,8 +946,15 @@ struct CollectionAddDocumentsSheet: View {
 
     /// The un-downloaded volume state: explanation + the existing `DownloadManager`
     /// enqueue path (the same one the preview's download bar and the Browser use).
+    ///
+    /// "Downloading…" is driven by the live download queue (plus the brief
+    /// tap-to-callback bridge in `requestedDownloads`), so a failed download — which
+    /// leaves the queue — restores the Download button for a retry instead of
+    /// spinning forever.
     private func notDownloadedState(_ volume: VolumeManifestEntry) -> some View {
-        VStack(spacing: 12) {
+        let inFlight = requestedDownloads.contains(volume.volumeId)
+            || appState.downloadQueue.contains(volume.volumeId)
+        return VStack(spacing: 12) {
             Spacer()
             Image(systemName: "arrow.down.circle")
                 .font(.largeTitle)
@@ -867,7 +965,7 @@ struct CollectionAddDocumentsSheet: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
-            if requestedDownloads.contains(volume.volumeId) {
+            if inFlight {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small)
                     Text(String(localized: "collection.addDocs.browse.downloading",
@@ -878,11 +976,11 @@ struct CollectionAddDocumentsSheet: View {
             } else {
                 Button(String(localized: "collection.addDocs.browse.download",
                               defaultValue: "Download")) {
+                    // Only show progress when something was actually enqueued.
+                    guard let dm = appState.downloadManager else { return }
                     requestedDownloads.insert(volume.volumeId)
-                    if let dm = appState.downloadManager {
-                        Task { await dm.enqueueDownload(volumeId: volume.volumeId,
-                                                        downloadUrl: volume.downloadUrl) }
-                    }
+                    Task { await dm.enqueueDownload(volumeId: volume.volumeId,
+                                                    downloadUrl: volume.downloadUrl) }
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -1051,14 +1149,15 @@ struct CollectionAddDocumentsSheet: View {
 
         citationResults = results
 
-        // Pre-select the confident matches, in line order.
+        // Pre-select the confident matches, in line order (skipping any the user
+        // explicitly deselected on an earlier Resolve pass).
         var picks: [CollectionDocumentPick] = []
         for result in results {
             if case .resolved(let vol, let doc, _) = result.outcome {
                 picks.append(citationPick(volumeId: vol, documentId: doc))
             }
         }
-        select(picks)
+        preselect(picks)
     }
 
     // MARK: - Tags tab
@@ -1182,7 +1281,7 @@ struct CollectionAddDocumentsSheet: View {
                 dateISO: nil)
         }
         selectedTag = tag
-        select(tagPicks)
+        preselect(tagPicks)
     }
 
     // MARK: - Shared helpers
