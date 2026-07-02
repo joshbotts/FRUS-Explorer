@@ -48,6 +48,8 @@ struct MacCollectionManagerView: View {
     @State private var isImporting = false
     /// Non-nil to present an import-failure alert.
     @State private var importError: String? = nil
+    /// Non-nil to present a smart-collection snapshot-failure alert.
+    @State private var snapshotError: String? = nil
 
     private var filteredCollections: [Collection] {
         guard let pid = appState.activeProjectId else { return allCollections }
@@ -94,6 +96,46 @@ struct MacCollectionManagerView: View {
         } message: {
             Text(importError ?? "")
         }
+        .alert(String(localized: "collection.snapshot.error.title",
+                      defaultValue: "Couldn’t Create Snapshot"),
+               isPresented: Binding(get: { snapshotError != nil },
+                                    set: { if !$0 { snapshotError = nil } })) {
+            Button(String(localized: "collections.import.error.ok", defaultValue: "OK"),
+                   role: .cancel) { snapshotError = nil }
+        } message: {
+            Text(snapshotError ?? "")
+        }
+    }
+
+    /// Resolves a smart collection's saved search now and materializes the results into a new
+    /// static collection (D8), then selects it. Non-destructive: the smart collection is untouched.
+    private func snapshotSmartCollection(_ collection: Collection) async {
+        guard let searchId = collection.savedSearchId else { return }
+        guard let searchService = appState.searchService else {
+            snapshotError = String(localized: "export.smart.noSearchService",
+                                   defaultValue: "Search service unavailable. Please try again.")
+            return
+        }
+        let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })
+        guard let savedSearch = try? modelContext.fetch(descriptor).first else {
+            snapshotError = String(localized: "export.smart.missingSearch",
+                                   defaultValue: "The linked saved search could not be found. It may have been deleted.")
+            return
+        }
+        do {
+            let results = try await searchService.search(
+                parameters: savedSearch.searchParameters,
+                limit: SearchViewModel.searchHardLimit)
+            let refs = results.map { (documentId: $0.documentId, volumeId: $0.volumeId) }
+            let snapshot = SmartCollectionSnapshot.create(from: collection, results: refs, into: modelContext)
+            if let pid = appState.activeProjectId, !snapshot.projectIds.contains(pid) {
+                snapshot.projectIds.append(pid)
+            }
+            try modelContext.save()
+            selectedId = snapshot.id
+        } catch {
+            snapshotError = error.localizedDescription
+        }
     }
 
     /// Imports a user-picked `.fruscollection` file, then selects the reconstructed collection.
@@ -129,6 +171,15 @@ struct MacCollectionManagerView: View {
                         } label: {
                             Label { Text(String(localized: "collection.wordCloud", defaultValue: "Word Cloud")) }
                                 icon: { Image(systemName: WordCloudGlyph.symbol) }
+                        }
+                        if c.savedSearchId != nil {
+                            Button {
+                                Task { await snapshotSmartCollection(c) }
+                            } label: {
+                                Label(String(localized: "collection.snapshot.action",
+                                             defaultValue: "Create Static Snapshot"),
+                                      systemImage: "camera")
+                            }
                         }
                         Divider()
                         Button(role: .destructive) {

@@ -14,6 +14,7 @@
 		02E73E72EBD6D1EB6398B17E /* ProjectEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 900970FD30FB61D26AE96F91 /* ProjectEditorView.swift */; };
 		030B7412547F1995F5E49F4A /* SupportingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3F7846242E591D480DD177A /* SupportingViews.swift */; };
 		035369EBD0E679DD153CE5E6 /* IndexingStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED9D81D04E002137249C19F /* IndexingStateTracker.swift */; };
+		049BE254E969256E59CC0AD2 /* SmartCollectionSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F3A45D8A696C52CF1E1FA1 /* SmartCollectionSnapshot.swift */; };
 		049D5CE35BCE468455A59130 /* RISExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00CF1BC1CCEDD32E576EAF25 /* RISExporterTests.swift */; };
 		04B061065FAB3C644473F7F1 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9548E0A9BF3D900143E1777D /* AboutView.swift */; };
 		05A01041FB63560FD4979C46 /* WordCloudOverrides.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55053214F8330B5F2F51CC0 /* WordCloudOverrides.swift */; };
@@ -408,6 +409,7 @@
 		D6279A7A7F7AC7F754EFA06A /* ControlHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C9422F6CC80557BB550335 /* ControlHelp.swift */; };
 		D6AB6B5AF5D52A42A0F13363 /* IndexingSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E62D6B16BC80A92DB71B8F3D /* IndexingSummaryCard.swift */; };
 		D82158288ECE31483FB364A9 /* SubjectTagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9800194D11D2417E1F8E4826 /* SubjectTagStore.swift */; };
+		D8495F418936BCCDF6E87448 /* SmartCollectionSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F3A45D8A696C52CF1E1FA1 /* SmartCollectionSnapshot.swift */; };
 		D8A74378798D06D28EA2D27D /* WordCloudSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E80DA93DED6A670C6150EC07 /* WordCloudSettings.swift */; };
 		D9A7D0ABECF044F462E0E055 /* WordCloudSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79CFD3B1F85F9CF39FD5D72 /* WordCloudSettingsView.swift */; };
 		D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
@@ -790,6 +792,7 @@
 		D707625BB386335733C8C9E5 /* FRUSExplorerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FRUSExplorerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D81475CA28849923822135AD /* BrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewModel.swift; sourceTree = "<group>"; };
 		D8EF6D3CD276F57B49D03422 /* SessionLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLogView.swift; sourceTree = "<group>"; };
+		D8F3A45D8A696C52CF1E1FA1 /* SmartCollectionSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartCollectionSnapshot.swift; sourceTree = "<group>"; };
 		DAAF5658EA508F2B59DBB168 /* FRUSExplorer-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-iOS.entitlements"; sourceTree = "<group>"; };
 		DD78F8E282DB8E257A3895F6 /* IndexingQueueBannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingQueueBannerTests.swift; sourceTree = "<group>"; };
 		DD8875ABB021AA6AA1FE9B5A /* GeoKeyNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoKeyNormalizer.swift; sourceTree = "<group>"; };
@@ -1389,6 +1392,7 @@
 				C470F300DF7A598FFEE107C5 /* MacCollectionManagerView.swift */,
 				4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */,
 				630AC3EFC3AB0CF434DC57A8 /* PDFCollectionExporter.swift */,
+				D8F3A45D8A696C52CF1E1FA1 /* SmartCollectionSnapshot.swift */,
 				B23AC0820031FA7B96F63EE6 /* ZoteroCollectionExporter.swift */,
 			);
 			path = Collections;
@@ -1765,6 +1769,7 @@
 				67FD209B468290636592662C /* SessionLogView.swift in Sources */,
 				ECEC974318BC2D0655189761 /* SettingsSyncCoordinator.swift in Sources */,
 				99D0EF41B0EDD9F3D23D4D38 /* SettingsView.swift in Sources */,
+				049BE254E969256E59CC0AD2 /* SmartCollectionSnapshot.swift in Sources */,
 				5C8CD6B84599C407BA566403 /* SourceExplorerView.swift in Sources */,
 				F03AEF25BF978271CBE13E29 /* SourceNoteParser.swift in Sources */,
 				B59875FEBCCA5ED5B64C80BF /* SubjectTagStore.swift in Sources */,
@@ -1967,6 +1972,7 @@
 				5BFC3C6762D54C63B9A529CC /* SessionLogView.swift in Sources */,
 				3D566F83817E3867DF018348 /* SettingsSyncCoordinator.swift in Sources */,
 				20FD93E148FBC9D2BA2F1C25 /* SettingsView.swift in Sources */,
+				D8495F418936BCCDF6E87448 /* SmartCollectionSnapshot.swift in Sources */,
 				AFF0ACE22C3666027285414C /* SourceExplorerView.swift in Sources */,
 				C3E3F94856F724B973554FD9 /* SourceNoteParser.swift in Sources */,
 				D82158288ECE31483FB364A9 /* SubjectTagStore.swift in Sources */,

@@ -554,6 +554,48 @@ struct CollectionTests {
         #expect(offText.contains("keywords  = {100\\% verified}"))  // tags still kept
     }
 
+    // MARK: - SmartCollectionSnapshotTest (Phase 4 / D8)
+
+    @Test("SmartCollectionSnapshot: materializes results into a new static collection, non-destructively")
+    func smartSnapshot() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let projectId = UUID()
+        let smart = Collection(name: "Cuba 1962", projectIds: [projectId])
+        smart.savedSearchId = UUID()
+        smart.defaultBodyDepth = "summaryOnly"
+        smart.tocStyle = "headerAndDateline"
+        context.insert(smart)
+        try context.save()
+
+        let results: [SmartCollectionSnapshot.DocumentRef] = [
+            (documentId: "d1", volumeId: "frus1961-63v11"),
+            (documentId: "d2", volumeId: "frus1961-63v11"),
+        ]
+        let snap = SmartCollectionSnapshot.create(from: smart, results: results, into: context)
+        try context.save()
+
+        // The snapshot is a static, editable collection with copied composition.
+        #expect(snap.savedSearchId == nil)
+        #expect(snap.id != smart.id)
+        #expect(snap.name.contains("Cuba 1962"))
+        #expect(snap.name.contains("Snapshot"))
+        #expect(snap.defaultBodyDepth == "summaryOnly")
+        #expect(snap.tocStyle == "headerAndDateline")
+        #expect(snap.projectIds == [projectId])
+
+        let entries = (snap.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        #expect(entries.count == 2)
+        #expect(entries.allSatisfy { $0.entryKind == .document })
+        #expect(entries.map(\.documentId) == ["d1", "d2"])
+        #expect(entries.map(\.sortOrder) == [0, 1])
+
+        // Non-destructive: the original smart collection is untouched.
+        #expect(smart.savedSearchId != nil)
+        #expect((smart.documentEntries ?? []).isEmpty)
+    }
+
     // MARK: - NativeCollectionFormatTests (Phase 4 / D9 core)
 
     /// Builds a source collection with a heading (section depth), a document (+ a linked note),
