@@ -846,6 +846,23 @@ is the first comma-delimited component.
   commit the index. Other consular series (Consular Instructions 604019, Notes to/from
   Consuls) and Domestic/Misc Letters remain as further Phase 3 work.
 
+### Session 2026-07-02 — Open-with `.fruscollection` feedback (macOS) + duplicate protection
+Fixed the silent open-with import: double-clicking / AirDropping a `.fruscollection`
+(FRUSExplorerApp.importOpenedCollection) imported correctly but gave no feedback on macOS,
+so users re-opened the file and minted silent CloudKit-synced duplicates (each apply()
+creates a fresh Collection.id); failures were a DEBUG print only.
+- **macOS surfacing**: new `AppState.pendingCollectionSelection` hand-off — set before
+  `openWindow(id: "frus.collections")` + `bringMacWindowToFront` (the 21d2ddd pattern);
+  `MacCollectionManagerView` consumes it (`.task` for a freshly created window,
+  `.onChange` for an open one; consume-and-clear like `pendingSearch`) and selects the
+  imported collection.
+- **Errors**: open-with failures now present a "Couldn't Open Collection" alert on the
+  main window (both platforms), with the DEBUG print retained for the raw error.
+- **Duplicate protection**: session-scoped SHA-256 digest → Collection.id map in the App;
+  re-opening a byte-identical file re-surfaces the collection it created (if it still
+  exists) instead of importing again. Deliberately not persisted — the in-app Import
+  button remains the intentional-copy path.
+- Docs: both user manuals + both TestFlight instructions describe the new behavior.
 ### Session 2026-07-02 — VolumeView On-Page Download Completion Fix
 Fixed the dead-end left by the Session 2026-06-28 "downloadable from every surface" work
 (e971585): tapping **Download Volume** on the iOS VolumeView placeholder showed a static
