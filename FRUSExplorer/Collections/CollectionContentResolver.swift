@@ -102,6 +102,12 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          level — behavior-identical for all-level-1 collections); `EntryRef` snapshots
 ///          the heading `level`, defensively clamped by the outline's resolution so a
 ///          synced out-of-range value degrades instead of corrupting
+///   1.3 — Authoring Phase 4 (exporter frame): `.heading` items carry their
+///          `CollectionOutline`-resolved level; a set collection introduction is emitted
+///          as the leading `.prose` item by the two full-resolve entry points (reusing
+///          the shared RTF prose path, so formatting survives every format and the
+///          preview for free — an unset introduction adds nothing, keeping no-frame
+///          collections byte-identical)
 @MainActor
 class CollectionContentResolver {
 
@@ -213,7 +219,8 @@ class CollectionContentResolver {
         // A cancelled pass returned partial-safe items — surface the cancellation instead
         // of handing a truncated result to a caller that expected the whole collection.
         try Task.checkCancellation()
-        return try await applySummaryPhase(to: items, collection: collection, purpose: purpose)
+        let framed = introductionItems(for: collection) + items
+        return try await applySummaryPhase(to: framed, collection: collection, purpose: purpose)
     }
 
     /// Resolves a pre-fetched (and possibly capped) smart-reference list into export items,
@@ -237,7 +244,26 @@ class CollectionContentResolver {
     ) async throws -> [CollectionExportItem] {
         let items = await resolveSmartItems(refs, collection: collection, allNotes: allNotes)
         try Task.checkCancellation()
-        return try await applySummaryPhase(to: items, collection: collection, purpose: purpose)
+        let framed = introductionItems(for: collection) + items
+        return try await applySummaryPhase(to: framed, collection: collection, purpose: purpose)
+    }
+
+    /// The collection's front-matter items (Authoring Phase 4): the introduction as a
+    /// leading `.prose` item when set, else nothing. Reuses the entry-prose RTF path
+    /// (`ProseRichText`/`CollectionProse`), so introduction formatting survives HTML,
+    /// PDF, DOCX, and the live preview through the exact same code every prose block
+    /// takes. Title page and colophon are metadata-driven instead (see
+    /// `CollectionExportMetadata`), keeping the item stream pure content.
+    ///
+    /// - Parameter collection: The collection whose introduction to snapshot.
+    /// - Returns: `[.prose(introductionRTF)]`, or `[]` when no introduction is set —
+    ///   so a collection without one resolves to exactly the pre-Phase-4 item list.
+    private func introductionItems(for collection: Collection) -> [CollectionExportItem] {
+        guard let rtf = ProseRichText.exportRTF(richText: collection.introductionRichText,
+                                                plainText: collection.introductionText) else {
+            return []
+        }
+        return [.prose(rtf)]
     }
 
     /// Documents-only resolution — for callers that need a flat document list and no
@@ -278,17 +304,24 @@ class CollectionContentResolver {
     ///   - allNotes: All research notes, for resolving the entry's note links.
     ///   - sectionBodyDepth: The `bodyDepthOverride` of the nearest preceding heading, if
     ///     any — the caller tracks section state, since a single entry can't know it.
+    ///   - headingLevel: The entry's outline-resolved heading level, when the caller has
+    ///     run `CollectionOutline` over the full list. `nil` (default) clamps the entry's
+    ///     raw level to `1...maxLevel` — correct except for orphan-jump correction, which
+    ///     needs whole-list context a single-entry resolve cannot have.
     /// - Returns: The resolved item, or `nil` for `.unrecognized` kinds and malformed
     ///   document entries (empty ids), which a full resolve would also skip.
     func resolveItem(
         _ entry: CollectionEntry,
         collection: Collection,
         allNotes: [ResearchNote],
-        sectionBodyDepth: String? = nil
+        sectionBodyDepth: String? = nil,
+        headingLevel: Int? = nil
     ) async -> CollectionExportItem? {
         let ref = EntryRef(entry)
+        let level = headingLevel ?? min(max(ref.level, 1), CollectionOutline.maxLevel)
         let batch = await loadBatchContext(for: [ref], collection: collection, allNotes: allNotes)
-        guard let item = await resolveEntry(ref, sectionDepth: sectionBodyDepth, batch: batch) else {
+        guard let item = await resolveEntry(ref, sectionDepth: sectionBodyDepth,
+                                            headingLevel: level, batch: batch) else {
             return nil
         }
         // Attach a stored summary when available; never generate (preview semantics).
@@ -399,17 +432,22 @@ class CollectionContentResolver {
     /// throwing entry points convert the truncation into a thrown `CancellationError`.
     private func resolveItems(from refs: [EntryRef], batch: BatchContext) async -> [CollectionExportItem] {
         let ordered = refs.sorted { $0.sortOrder < $1.sortOrder }
-        // Single-linearizer discipline: the ancestor cascade is computed by
-        // CollectionOutline, never re-derived here.
-        let sectionDepths = CollectionOutline.sectionBodyDepthOverrides(ordered.map {
+        // Single-linearizer discipline: the ancestor cascade AND the emitted heading
+        // levels are computed by CollectionOutline, never re-derived here — so items
+        // always carry clamped, orphan-corrected depths, whatever the synced raw levels.
+        let structuralRefs = ordered.map {
             CollectionOutline.StructuralRef(isHeading: $0.kind == .heading,
                                             level: $0.level,
                                             bodyDepthOverride: $0.bodyDepthOverride)
-        })
+        }
+        let sectionDepths = CollectionOutline.sectionBodyDepthOverrides(structuralRefs)
+        let resolvedLevels = CollectionOutline.resolvedDepths(structuralRefs)
         var items: [CollectionExportItem] = []
         for (i, ref) in ordered.enumerated() {
             if Task.isCancelled { break }
-            if let item = await resolveEntry(ref, sectionDepth: sectionDepths[i], batch: batch) {
+            if let item = await resolveEntry(ref, sectionDepth: sectionDepths[i],
+                                             headingLevel: max(resolvedLevels[i], 1),
+                                             batch: batch) {
                 items.append(item)
             }
         }
@@ -616,17 +654,20 @@ class CollectionContentResolver {
     /// pass through as structural items; document entries are fully resolved (citation,
     /// body, notes, highlights, source note, Zotero item) per the Phase 3c depth cascade.
     ///
+    /// - Parameter headingLevel: The outline-resolved level emitted on `.heading` items
+    ///   (already clamped/orphan-corrected by the caller via `CollectionOutline`).
     /// - Returns: `nil` for `.unrecognized` kinds (written by a newer app version — this
     ///   build cannot render them) and for document entries with empty ids (malformed
     ///   sync payloads), both of which are skipped rather than emitted as junk items.
     private func resolveEntry(
         _ ref: EntryRef,
         sectionDepth: String?,
+        headingLevel: Int,
         batch: BatchContext
     ) async -> CollectionExportItem? {
         switch ref.kind {
         case .heading:
-            return .heading(ref.text ?? "")
+            return .heading(ref.text ?? "", level: headingLevel)
         case .prose:
             return .prose(ref.proseRTF ?? Data())
         case .unrecognized:

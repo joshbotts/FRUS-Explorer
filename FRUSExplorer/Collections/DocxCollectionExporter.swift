@@ -66,6 +66,16 @@ import Foundation
 ///          prose block whose payload predates the RTF storage format — the shared
 ///          `CollectionProse.paragraphs(fromRTF:)` now decodes legacy Phase 3b JSON
 ///          `AttributedString` blobs (bold/italic preserved) instead of returning `[]`
+///   1.6 — Authoring Phase 4 (publication frame): cover gains subtitle/author paragraphs
+///          (`CollectionSubtitle`/`CollectionAuthor` styles) when set; authored headings
+///          map level → `SectionHeading`/`SectionHeading2`/`SectionHeading3` with
+///          `outlineLvl` 0/1/2 — NOT the built-in `Heading2`/`Heading3`, which document
+///          citations and in-document TEI headings already use (mapping authored sections
+///          onto them would make sections indistinguishable from citations in Word's ToC);
+///          the ToC field widens to `\o "1-3"` (custom outline levels ride the existing
+///          `\u` switch); opt-in trailing colophon paragraph (`Colophon` style). The
+///          introduction needs no code here — it arrives as the resolver's leading
+///          `.prose` item
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -213,6 +223,45 @@ final class DocxCollectionExporter: CollectionExporter {
             </w:pPr>
             <w:rPr><w:b/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr>
           </w:style>
+          <w:style w:type="paragraph" w:styleId="SectionHeading2">
+            <w:name w:val="Section Heading 2"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:spacing w:before="360" w:after="120"/>
+              <w:outlineLvl w:val="1"/>
+            </w:pPr>
+            <w:rPr><w:b/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="SectionHeading3">
+            <w:name w:val="Section Heading 3"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:spacing w:before="240" w:after="80"/>
+              <w:outlineLvl w:val="2"/>
+            </w:pPr>
+            <w:rPr><w:b/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="CollectionSubtitle">
+            <w:name w:val="Collection Subtitle"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="80"/></w:pPr>
+            <w:rPr><w:sz w:val="32"/><w:szCs w:val="32"/><w:color w:val="333333"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="CollectionAuthor">
+            <w:name w:val="Collection Author"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="160"/></w:pPr>
+            <w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/><w:color w:val="555555"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="Colophon">
+            <w:name w:val="Colophon"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:pBdr><w:top w:val="single" w:sz="4" w:space="8" w:color="DDDDDD"/></w:pBdr>
+              <w:spacing w:before="480"/>
+            </w:pPr>
+            <w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:color w:val="777777"/></w:rPr>
+          </w:style>
           <w:style w:type="paragraph" w:styleId="Dateline">
             <w:name w:val="Dateline"/>
             <w:basedOn w:val="Normal"/>
@@ -277,6 +326,15 @@ final class DocxCollectionExporter: CollectionExporter {
         // Cover: collection title
         body += styledPara(escaped(collection.name), styleId: "Heading1")
 
+        // Cover: title-page subtitle and author paragraphs (Authoring Phase 4) — emitted
+        // only when set, so an unset collection's cover is unchanged.
+        if let subtitle = collection.subtitle, !subtitle.isEmpty {
+            body += markdownItalicRuns(subtitle, styleId: "CollectionSubtitle")
+        }
+        if let author = collection.authorLine, !author.isEmpty {
+            body += styledPara(escaped(author), styleId: "CollectionAuthor")
+        }
+
         // Cover: optional note — markdownItalicRuns converts _text_ to italic Word runs.
         if let note = collection.note, !note.isEmpty {
             body += markdownItalicRuns(note, styleId: "CollectionNote")
@@ -291,8 +349,9 @@ final class DocxCollectionExporter: CollectionExporter {
         body += styledPara(info, styleId: "Normal")
 
         // Contents heading + Word TOC field code (updates on first open in Word). The TOC
-        // collects Heading1–Heading2 and SectionHeading (outline level 0), so authored
-        // sections appear in the generated contents alongside document headings.
+        // collects Heading1–Heading3 plus the SectionHeading styles (outline levels 0–2),
+        // so the authored section hierarchy appears in the generated contents alongside
+        // document headings.
         body += styledPara("Contents", styleId: "Heading2")
         body += tocFieldXML()
 
@@ -302,14 +361,24 @@ final class DocxCollectionExporter: CollectionExporter {
         // Composed items — documents, section headings, and prose blocks in authored order.
         for item in items {
             switch item {
-            case .heading(let text):
-                // markdownItalicRuns handles _text_ spans; SectionHeading style is bold.
-                body += markdownItalicRuns(text, styleId: "SectionHeading", bold: true)
+            case .heading(let text, let level):
+                // markdownItalicRuns handles _text_ spans; the SectionHeading styles are
+                // bold. Levels map to SectionHeading/SectionHeading2/SectionHeading3
+                // (outlineLvl 0/1/2 — see the v1.6 note for why not built-in Heading2/3),
+                // so Word's regenerated ToC picks up the authored hierarchy.
+                let styles = ["SectionHeading", "SectionHeading2", "SectionHeading3"]
+                let l = min(max(level, 1), CollectionOutline.maxLevel)
+                body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true)
             case .prose(let rtf):
                 body += proseDocxXML(rtf)
             case .document(let doc):
                 body += documentSectionXML(doc: doc, ctx: ctx, options: options)
             }
+        }
+
+        // Trailing colophon paragraph (Authoring Phase 4) — opt-in only.
+        if collection.includeColophon {
+            body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")
         }
 
         body += "    <w:sectPr/>\n"
@@ -751,13 +820,15 @@ final class DocxCollectionExporter: CollectionExporter {
         return "<w:footnotes xmlns:w=\"\(w)\">\n\(separators)\n\(body)</w:footnotes>"
     }
 
-    /// Word field-code TOC: `\o "1-2"` collects Heading1–Heading2.
-    /// `w:dirty="true"` causes Word to rebuild on first open.
+    /// Word field-code TOC: `\o "1-3"` collects Heading1–Heading3 (Phase 4 widened it from
+    /// `1-2` so a three-deep authored outline is representable); the `\u` switch collects
+    /// the custom `SectionHeading`/`SectionHeading2`/`SectionHeading3` styles by their
+    /// `outlineLvl`. `w:dirty="true"` causes Word to rebuild on first open.
     private func tocFieldXML() -> String {
         "    <w:p>\n"
         + "      <w:pPr><w:pStyle w:val=\"Normal\"/></w:pPr>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"begin\" w:dirty=\"true\"/></w:r>\n"
-        + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"1-2\" \\h \\z \\u </w:instrText></w:r>\n"
+        + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"1-3\" \\h \\z \\u </w:instrText></w:r>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>\n"
         + "      <w:r><w:t>Right-click to update the table of contents.</w:t></w:r>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"end\"/></w:r>\n"

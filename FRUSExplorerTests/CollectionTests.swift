@@ -156,7 +156,7 @@ struct CollectionTests {
     func exportItemsDocuments() {
         let d1 = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 0, title: "t1", bodyText: "")
         let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 1, title: "t2", bodyText: "")
-        let items: [CollectionExportItem] = [.heading("Section"), .document(d1),
+        let items: [CollectionExportItem] = [.heading("Section", level: 1), .document(d1),
                                              .prose(Data()), .document(d2)]
         let docs = items.documents
         #expect(docs.count == 2)
@@ -533,7 +533,7 @@ struct CollectionTests {
         let doc = CollectionExportDocument(
             documentId: "d1", volumeId: "v1", sortOrder: 2,
             title: "A Memorandum", bodyText: "Body text here.")
-        let items: [CollectionExportItem] = [.heading("Chapter One"), .prose(rtf), .document(doc)]
+        let items: [CollectionExportItem] = [.heading("Chapter One", level: 1), .prose(rtf), .document(doc)]
 
         let url = try await DocxCollectionExporter().export(
             metadata: CollectionExportMetadata(name: "Structured", note: nil), items: items)
@@ -564,8 +564,8 @@ struct CollectionTests {
         let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 3,
                                           title: "Second Memo", bodyText: "Beta.")
         let items: [CollectionExportItem] = [
-            .heading("Part I"), .prose(rtf), .document(d1),
-            .heading("Part II"), .document(d2),
+            .heading("Part I", level: 1), .prose(rtf), .document(d1),
+            .heading("Part II", level: 1), .document(d2),
         ]
 
         let url = try await PDFCollectionExporter().export(
@@ -585,7 +585,7 @@ struct CollectionTests {
         let blob = try JSONEncoder().encode(AttributedString("Irreplaceable editorial commentary."))
         let doc = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 1,
                                            title: "A Memo", bodyText: "Body.")
-        let items: [CollectionExportItem] = [.heading("Part I"), .prose(blob), .document(doc)]
+        let items: [CollectionExportItem] = [.heading("Part I", level: 1), .prose(blob), .document(doc)]
         let metadata = CollectionExportMetadata(name: "Legacy Prose", note: nil)
 
         let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
@@ -993,8 +993,14 @@ struct CollectionTests {
         #expect(items.map(kindLabel) == ["heading", "document", "prose", "document", "heading", "document"])
 
         // Heading texts pass through.
-        if case .heading(let t1) = items[0] { #expect(t1 == "Part I") } else { Issue.record("items[0] should be a heading") }
-        if case .heading(let t2) = items[4] { #expect(t2 == "Part II") } else { Issue.record("items[4] should be a heading") }
+        if case .heading(let t1, let l1) = items[0] {
+            #expect(t1 == "Part I")
+            #expect(l1 == 1)   // Phase 4: flat headings resolve to level 1
+        } else { Issue.record("items[0] should be a heading") }
+        if case .heading(let t2, let l2) = items[4] {
+            #expect(t2 == "Part II")
+            #expect(l2 == 1)
+        } else { Issue.record("items[4] should be a heading") }
 
         // Prose round-trips through the RTF pipeline.
         if case .prose(let rtf) = items[2] {
@@ -1204,9 +1210,10 @@ struct CollectionTests {
             zoteroItem: zotero)
 
         let items: [CollectionExportItem] = [
-            .heading("Contract Part I"),
+            .heading("Contract Part I", level: 1),
             .prose(rtf),
             .document(doc),
+            .heading("Contract Nested Sub", level: 2),   // Phase 4: leveled headings
         ]
         return (CollectionExportMetadata(name: "Exporter Contract", note: nil), items)
     }
@@ -1220,6 +1227,8 @@ struct CollectionTests {
         let html = try String(contentsOf: htmlURL, encoding: .utf8)
         #expect(html.contains("Contract Part I"))                    // .heading
         #expect(html.contains("class=\"section-heading\""))          // …as a section heading
+        #expect(html.contains("<h2 class=\"section-heading\">Contract Part I</h2>"))   // level 1 = pre-Phase-4 h2
+        #expect(html.contains("<h3 class=\"section-heading\">Contract Nested Sub</h3>")) // level 2 steps to h3
         #expect(html.contains("Editorial contract prose."))          // .prose
         #expect(html.contains("class=\"prose-block\""))              // …as a prose block
         #expect(html.contains("Contract Citation Label"))            // .document citation heading
@@ -1232,6 +1241,8 @@ struct CollectionTests {
         let docx = try Data(contentsOf: docxURL)
         func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
         #expect(docxContains("Contract Part I"))                     // .heading
+        #expect(docxContains("Contract Nested Sub"))                 // level-2 heading text
+        #expect(docxContains("SectionHeading2"))                     // …styled distinguishably (outlineLvl 1)
         #expect(docxContains("Editorial contract prose."))           // .prose
         #expect(docxContains("Contract Citation Label"))             // .document
 
@@ -1246,6 +1257,7 @@ struct CollectionTests {
             .compactMap { pdfDocument.page(at: $0)?.string }
             .joined(separator: "\n")
         #expect(pdfText.contains("Contract Part I"))                 // .heading
+        #expect(pdfText.contains("Contract Nested Sub"))             // level-2 heading (indent/size stepped)
         #expect(pdfText.contains("Editorial contract prose."))      // .prose
         #expect(pdfText.contains("Contract body paragraph."))       // .document body
     }
@@ -1286,6 +1298,199 @@ struct CollectionTests {
         let assembled = CollectionItemHTMLRenderer(options: options)
             .pageHTML(metadata: metadata, items: items)
         #expect(exported == assembled)
+    }
+
+    // MARK: - Phase 4 publication frame
+
+    @Test("Phase4 frame: a collection using no new feature emits the exact pre-Phase-4 HTML")
+    func htmlFrameDormantByteCompat() {
+        // Frozen pre-Phase-4 fragments: these literals are the byte-identity contract for
+        // old collections — a change here means already-exported files would re-export
+        // differently, which the migration section of the authoring scope forbids.
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 1,
+            title: "Memo", bodyText: "Body.",
+            citation: "Plain Citation",
+            historyStateGovURL: "")
+        let items: [CollectionExportItem] = [.heading("Part I", level: 1), .document(doc)]
+        let metadata = CollectionExportMetadata(name: "Plain", note: "A note.")
+        let renderer = CollectionItemHTMLRenderer()
+
+        // Header block: no subtitle/author lines when unset.
+        #expect(renderer.headerHTML(metadata: metadata) ==
+                "<header>\n  <h1>Plain</h1>\n  <p class=\"collection-note\">A note.</p>\n</header>\n\n")
+
+        // Level-1 heading fragment: the exact pre-Phase-4 <h2>.
+        #expect(renderer.itemHTML(.heading("Part I", level: 1)) ==
+                "<h2 class=\"section-heading\">Part I</h2>\n\n")
+
+        // All-level-1 ToC: the exact pre-Phase-4 flat list — no nested markup.
+        #expect(renderer.tableOfContentsHTML(for: items) ==
+                "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
+                + "    <li class=\"toc-section\">Part I</li>\n"
+                + "    <li><a href=\"#doc-v1-d1\">Plain Citation</a></li>\n"
+                + "  </ol>\n</nav>\n\n")
+
+        // Full page: no frame markup and no frame/preview stylesheet layers — the shared
+        // CSS runs straight into the closing </style> exactly as before Phase 4.
+        let page = renderer.pageHTML(metadata: metadata, items: items)
+        #expect(!page.contains("toc-sub"))
+        #expect(!page.contains("collection-subtitle"))
+        #expect(!page.contains("collection-author"))
+        #expect(!page.contains("colophon"))
+        #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
+    }
+
+    @Test("Phase4 frame: nested headings produce nested ToC lists and stepped heading tags")
+    func htmlNestedToCStructure() {
+        let d1 = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 1,
+                                          title: "t1", bodyText: "", citation: "Doc One")
+        let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 3,
+                                          title: "t2", bodyText: "", citation: "Doc Two")
+        let items: [CollectionExportItem] = [
+            .heading("Part I", level: 1), .document(d1),
+            .heading("Section A", level: 2), .document(d2),
+            .heading("Detail 1", level: 3),
+            .heading("Part II", level: 1),
+        ]
+        let renderer = CollectionItemHTMLRenderer()
+        let toc = renderer.tableOfContentsHTML(for: items)
+
+        // Two nested lists open (level 2 and level 3) and both close again.
+        #expect(toc.components(separatedBy: "<li class=\"toc-sub\"><ol>").count - 1 == 2)
+        #expect(toc.components(separatedBy: "</ol></li>").count - 1 == 2)
+        // The document after the level-2 heading nests inside the sub-list (deeper indent).
+        #expect(toc.contains("      <li><a href=\"#doc-v1-d2\">Doc Two</a></li>"))
+        // Part II returns to base level after both closes.
+        if let lastClose = toc.range(of: "</ol></li>", options: .backwards),
+           let partII = toc.range(of: "    <li class=\"toc-section\">Part II</li>") {
+            #expect(lastClose.upperBound <= partII.lowerBound)
+        } else {
+            Issue.record("expected nested closes and a base-level Part II row in the ToC")
+        }
+
+        // Heading fragments step h2 → h3 → h4; absurd synced levels clamp to the deepest tag.
+        #expect(renderer.itemHTML(.heading("Section A", level: 2)).hasPrefix("<h3 class=\"section-heading\">"))
+        #expect(renderer.itemHTML(.heading("Detail 1", level: 3)).hasPrefix("<h4 class=\"section-heading\">"))
+        #expect(renderer.itemHTML(.heading("X", level: 42)).hasPrefix("<h4 class=\"section-heading\">"))
+        #expect(renderer.itemHTML(.heading("Y", level: -7)).hasPrefix("<h2 class=\"section-heading\">"))
+    }
+
+    @Test("Phase4 frame: title page, introduction, and colophon appear in all three formats only when set")
+    func frontMatterAcrossFormats() async throws {
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "frusframe", sortOrder: 1,
+            title: "Framed Memo", bodyText: "Framed body paragraph.",
+            citation: "Framed Citation")
+        let introRTF = try #require(ProseRichText.exportRTF(
+            richText: nil, plainText: "An introduction to the record."))
+        // The resolver emits the introduction as the leading .prose item (metadata carries
+        // the title page + colophon opt-in) — mirror that shape here.
+        let framedItems: [CollectionExportItem] = [
+            .prose(introRTF), .heading("Part I", level: 1), .document(doc)]
+        let plainItems: [CollectionExportItem] = [
+            .heading("Part I", level: 1), .document(doc)]
+        let framed = CollectionExportMetadata(
+            name: "Framed", note: nil, subtitle: "A Documentary Record",
+            authorLine: "Assembled by the Researcher", includeColophon: true)
+        let plain = CollectionExportMetadata(name: "Framed", note: nil)
+
+        // HTML — present when set…
+        let htmlOnURL = try await HTMLCollectionExporter().export(metadata: framed, items: framedItems)
+        let htmlOn = try String(contentsOf: htmlOnURL, encoding: .utf8)
+        #expect(htmlOn.contains("class=\"collection-subtitle\">A Documentary Record"))
+        #expect(htmlOn.contains("class=\"collection-author\">Assembled by the Researcher"))
+        #expect(htmlOn.contains("An introduction to the record."))
+        #expect(htmlOn.contains("<footer class=\"colophon\">"))
+        #expect(htmlOn.contains("Compiled with FRUS Explorer"))
+        #expect(htmlOn.contains("1 document"))
+        // …and absent when not.
+        let htmlOffURL = try await HTMLCollectionExporter().export(metadata: plain, items: plainItems)
+        let htmlOff = try String(contentsOf: htmlOffURL, encoding: .utf8)
+        #expect(!htmlOff.contains("collection-subtitle"))
+        #expect(!htmlOff.contains("collection-author"))
+        #expect(!htmlOff.contains("colophon"))
+        #expect(!htmlOff.contains("Compiled with FRUS Explorer"))
+
+        // DOCX — the stored-mode ZIP keeps document.xml uncompressed.
+        let docxOn = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: framed, items: framedItems))
+        func onContains(_ s: String) -> Bool { docxOn.range(of: Data(s.utf8)) != nil }
+        #expect(onContains("A Documentary Record"))
+        #expect(onContains("CollectionSubtitle"))       // subtitle style referenced
+        #expect(onContains("Assembled by the Researcher"))
+        #expect(onContains("An introduction to the record."))
+        #expect(onContains("Compiled with FRUS Explorer"))
+        let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: plain, items: plainItems))
+        func offContains(_ s: String) -> Bool { docxOff.range(of: Data(s.utf8)) != nil }
+        #expect(!offContains("A Documentary Record"))
+        #expect(!offContains("Assembled by the Researcher"))
+        #expect(!offContains("Compiled with FRUS Explorer"))
+
+        // PDF — extract page text with PDFKit.
+        let pdfOn = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: framed, items: framedItems))
+        let pdfOnDoc = try #require(PDFDocument(data: pdfOn))
+        let pdfOnText = (0..<pdfOnDoc.pageCount)
+            .compactMap { pdfOnDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(pdfOnText.contains("A Documentary Record"))
+        #expect(pdfOnText.contains("Assembled by the Researcher"))
+        #expect(pdfOnText.contains("An introduction to the record."))
+        #expect(pdfOnText.contains("Compiled with FRUS Explorer"))
+        let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: plain, items: plainItems))
+        let pdfOffDoc = try #require(PDFDocument(data: pdfOff))
+        let pdfOffText = (0..<pdfOffDoc.pageCount)
+            .compactMap { pdfOffDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(!pdfOffText.contains("A Documentary Record"))
+        #expect(!pdfOffText.contains("Compiled with FRUS Explorer"))
+    }
+
+    @Test("Phase4 frame: the resolver prepends a set introduction as the leading prose item")
+    @MainActor
+    func resolverIntroductionItem() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Framed")
+        context.insert(coll)
+        let heading = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        heading.entryKind = .heading
+        heading.text = "Part I"
+        context.insert(heading)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+
+        // No introduction → the pre-Phase-4 item list, exactly.
+        let bare = try await resolver.resolve(
+            collection: coll, entries: [heading], allNotes: [], purpose: .preview)
+        #expect(bare.map(kindLabel) == ["heading"])
+
+        // Plain-text introduction → a leading .prose item carrying it as RTF.
+        coll.introductionText = "Why these documents matter."
+        let framed = try await resolver.resolve(
+            collection: coll, entries: [heading], allNotes: [], purpose: .preview)
+        #expect(framed.map(kindLabel) == ["prose", "heading"])
+        if case .prose(let rtf) = framed[0] {
+            #expect(ProseRichText.decodedRTF(rtf)?.string == "Why these documents matter.")
+        } else {
+            Issue.record("framed[0] should be the introduction prose item")
+        }
+        if case .heading(_, let level) = framed[1] { #expect(level == 1) }
+
+        // Rich introduction wins over the plain projection.
+        let richNS = NSAttributedString(string: "Rich introduction.")
+        coll.introductionRichText = try #require(ProseRichText.rtfData(from: richNS))
+        let rich = try await resolver.resolve(
+            collection: coll, entries: [heading], allNotes: [], purpose: .preview)
+        if case .prose(let rtf) = rich[0] {
+            #expect(ProseRichText.decodedRTF(rtf)?.string == "Rich introduction.")
+        } else {
+            Issue.record("rich[0] should be the introduction prose item")
+        }
     }
 
     // MARK: - Phase 3: Citation line pipeline (Add Documents sheet)

@@ -459,11 +459,67 @@ struct CollectionExportDocument: Sendable {
 /// Extracted from the SwiftData model before crossing async boundaries so that
 /// exporters can run without holding a reference to the `@MainActor`-bound model.
 ///
+/// The Phase 4 title-page fields (`subtitle`, `authorLine`) and the colophon opt-in are
+/// **metadata-driven rendering**, not export items: they are frame furniture with fixed
+/// positions (title block leading, colophon trailing) derived from `Collection` fields,
+/// so `[CollectionExportItem]` stays a pure content stream and the byte-compat guarantee
+/// is provable per renderer — every unset field renders exactly the pre-Phase-4 output.
+///
 /// Version history:
 ///   1.0 — Session 32: introduced to satisfy Swift 6 Sendable requirements
+///   1.1 — Authoring Phase 4: `subtitle`, `authorLine`, `includeColophon` (defaulted so
+///          every existing construction site and no-frame collection is unchanged)
 struct CollectionExportMetadata: Sendable {
+    /// The collection's display name — the export title.
     let name: String
+    /// Optional one-line description rendered under the title (pre-Phase-4 behavior).
     let note: String?
+    /// Optional title-page subtitle (Authoring Phase 4). `nil`/empty renders nothing,
+    /// keeping the export header byte-identical to pre-Phase-4 output.
+    let subtitle: String?
+    /// Optional title-page author/byline (Authoring Phase 4). `nil`/empty renders nothing.
+    let authorLine: String?
+    /// When `true`, renderers append a trailing colophon (`CollectionColophon`).
+    /// Defaults to `false`, so collections that never opt in export exactly as today.
+    let includeColophon: Bool
+
+    /// Creates a metadata snapshot. The Phase 4 parameters default to "feature unused"
+    /// so pre-Phase-4 call sites compile — and render — unchanged.
+    init(name: String, note: String?, subtitle: String? = nil,
+         authorLine: String? = nil, includeColophon: Bool = false) {
+        self.name = name
+        self.note = note
+        self.subtitle = subtitle
+        self.authorLine = authorLine
+        self.includeColophon = includeColophon
+    }
+}
+
+// MARK: - CollectionColophon
+
+/// Shared colophon text builder (Authoring Phase 4) — the single source for the trailing
+/// "how this artifact was produced" line, so HTML, PDF, and DOCX cannot drift. Rendered
+/// only when `CollectionExportMetadata.includeColophon` is set.
+///
+/// Version history:
+///   1.0 — Authoring Phase 4: initial implementation
+enum CollectionColophon {
+    /// The colophon line for a resolved item list: app attribution, document/volume
+    /// counts, and the compilation date.
+    ///
+    /// - Parameters:
+    ///   - items: The resolved items whose `.document` payloads are counted.
+    ///   - date: The compilation date (defaults to now; injectable for tests).
+    /// - Returns: A single localized colophon line.
+    static func text(for items: [CollectionExportItem], date: Date = Date()) -> String {
+        let docs = items.documents
+        let docCount = docs.count
+        let volCount = Set(docs.map(\.volumeId)).count
+        let df = DateFormatter(); df.dateStyle = .long; df.timeStyle = .none
+        return String(
+            localized: "export.colophon.line",
+            defaultValue: "Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))")
+    }
 }
 
 // MARK: - CollectionExportItem
@@ -471,11 +527,19 @@ struct CollectionExportMetadata: Sendable {
 /// One item in a composed collection export: a resolved document, a section heading, or an
 /// editorial prose block. Exporters render an ordered `[CollectionExportItem]`, so a
 /// collection can be an authored, sectioned reader rather than a flat document list (Phase 3a).
+///
+/// Version history (contract changes are compile-caught across all exporters and covered
+/// by the exporter contract tests):
+///   Phase 3a — `document` / `heading` / `prose`
+///   Authoring Phase 4 — `heading` gains `level: Int` (1...`CollectionOutline.maxLevel`);
+///     producers emit `CollectionOutline`-resolved depths, renderers clamp defensively.
+///     Level 1 renders exactly the pre-Phase-4 heading in every format.
 enum CollectionExportItem: Sendable {
     /// A FRUS document, fully resolved.
     case document(CollectionExportDocument)
-    /// A section heading (the title text).
-    case heading(String)
+    /// A section heading: the title text plus its resolved nesting level (1 = top-level,
+    /// exactly the pre-Phase-4 rendering; 2–3 render as stepped sub-section headings).
+    case heading(String, level: Int)
     /// An editorial prose block, as **RTF** data (Phase 3b). Exporters decode it to an
     /// `NSAttributedString` to render bold/italic/underline/colour, or read its `.string` for
     /// the plain-text projection. `Data` (unlike `NSAttributedString`) is `Sendable`.
