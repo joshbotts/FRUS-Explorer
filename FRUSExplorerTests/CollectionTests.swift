@@ -449,4 +449,65 @@ struct CollectionTests {
         #expect(html.contains("Memorandum of Meeting"))
         #expect(html.contains("id=\"doc-"))
     }
+
+    // MARK: - DOCXStructureTest (Phase 3 structure rendering)
+
+    @Test("DOCXStructure: composed section headings and rich prose render into the .docx package")
+    func docxStructure() async throws {
+        // A fully-bold prose block, stored as RTF the way the native editor would.
+        let m = NSMutableAttributedString(string: "Commentary")
+        #if canImport(UIKit)
+        m.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: 12),
+                       range: NSRange(location: 0, length: m.length))
+        #elseif canImport(AppKit)
+        m.addAttribute(.font, value: NSFontManager.shared.convert(.systemFont(ofSize: 12), toHaveTrait: .boldFontMask),
+                       range: NSRange(location: 0, length: m.length))
+        #endif
+        let rtf = try m.data(from: NSRange(location: 0, length: m.length),
+                             documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 2,
+            title: "A Memorandum", bodyText: "Body text here.")
+        let items: [CollectionExportItem] = [.heading("Chapter One"), .prose(rtf), .document(doc)]
+
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Structured", note: nil), items: items)
+        let data = try Data(contentsOf: url)
+        #expect(!data.isEmpty)
+
+        // The stored-mode ZIP keeps document.xml / styles.xml uncompressed, so the emitted
+        // XML appears verbatim in the archive bytes.
+        func contains(_ s: String) -> Bool { data.range(of: Data(s.utf8)) != nil }
+        #expect(contains("SectionHeading"))   // section-heading style defined + referenced
+        #expect(contains("Chapter One"))       // authored heading text present
+        #expect(contains("Commentary"))        // prose text present
+        #expect(contains("A Memorandum"))      // document heading present
+    }
+
+    // MARK: - PDFStructureTest (Phase 3 structure rendering)
+
+    @Test("PDFStructure: a composed collection with headings and long prose writes a valid %PDF")
+    func pdfStructure() async throws {
+        // A long prose block to exercise the multi-page structural flow.
+        let longText = String(repeating: "This is an editorial paragraph exercising the prose flow. ", count: 200)
+        let rtf = try NSAttributedString(string: longText)
+            .data(from: NSRange(location: 0, length: longText.count),
+                  documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+
+        let d1 = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 1,
+                                          title: "First Memo", bodyText: "Alpha.")
+        let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 3,
+                                          title: "Second Memo", bodyText: "Beta.")
+        let items: [CollectionExportItem] = [
+            .heading("Part I"), .prose(rtf), .document(d1),
+            .heading("Part II"), .document(d2),
+        ]
+
+        let url = try await PDFCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Structured PDF", note: nil), items: items)
+        let data = try Data(contentsOf: url)
+        #expect(!data.isEmpty)
+        #expect(data.prefix(4) == Data([0x25, 0x50, 0x44, 0x46])) // "%PDF"
+    }
 }

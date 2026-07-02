@@ -56,6 +56,12 @@ import Foundation
 ///          via `runsXML(for:props:tracker:)`. Footnote rendering always passes
 ///          `tracker: nil` — footnote bodies are outside the flat-text coordinate
 ///          space (see `appendFlatText`), so highlight offsets never point into them.
+///   1.4 — Collections rework Phase 3 (structure): renders the full composed
+///          `[CollectionExportItem]` in authored order. Section headings use a new
+///          `SectionHeading` style (outline level 0, so the Word field-code TOC lists
+///          them); rich-text prose blocks render via `proseDocxXML`, mapping the shared
+///          `CollectionProse` spans to bold/italic/underline/`<w:color>` runs. Per-document
+///          rendering is factored into `documentSectionXML`.
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -66,9 +72,7 @@ final class DocxCollectionExporter: CollectionExporter {
         items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        // Phase 3a: DOCX renders the documents; section headings and prose blocks are a
-        // scoped follow-up (rendered in HTML today).
-        let data = buildDocx(collection: metadata, documents: items.documents, options: options)
+        let data = buildDocx(collection: metadata, items: items, options: options)
         let filename = sanitized(metadata.name) + ".docx"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
@@ -83,13 +87,13 @@ final class DocxCollectionExporter: CollectionExporter {
 
     private func buildDocx(
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions
     ) -> Data {
         let ctx = DocxRenderContext()
         let decl = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 
-        let bodyXML = documentBodyXML(collection: collection, documents: documents,
+        let bodyXML = documentBodyXML(collection: collection, items: items,
                                        ctx: ctx, options: options)
         let wNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         let docXML = "<w:document xmlns:w=\"\(wNS)\">\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
@@ -195,6 +199,16 @@ final class DocxCollectionExporter: CollectionExporter {
             </w:pPr>
             <w:rPr><w:b/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>
           </w:style>
+          <w:style w:type="paragraph" w:styleId="SectionHeading">
+            <w:name w:val="Section Heading"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:pBdr><w:bottom w:val="single" w:sz="6" w:space="4" w:color="999999"/></w:pBdr>
+              <w:spacing w:before="480" w:after="160"/>
+              <w:outlineLvl w:val="0"/>
+            </w:pPr>
+            <w:rPr><w:b/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr>
+          </w:style>
           <w:style w:type="paragraph" w:styleId="Dateline">
             <w:name w:val="Dateline"/>
             <w:basedOn w:val="Normal"/>
@@ -249,11 +263,12 @@ final class DocxCollectionExporter: CollectionExporter {
 
     private func documentBodyXML(
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         ctx: DocxRenderContext,
         options: CollectionExportOptions
     ) -> String {
         var body = ""
+        let documents = items.documents
 
         // Cover: collection title
         body += styledPara(escaped(collection.name), styleId: "Heading1")
@@ -271,86 +286,149 @@ final class DocxCollectionExporter: CollectionExporter {
             + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: Date()))"
         body += styledPara(info, styleId: "Normal")
 
-        // Contents heading + Word TOC field code (updates on first open in Word)
+        // Contents heading + Word TOC field code (updates on first open in Word). The TOC
+        // collects Heading1–Heading2 and SectionHeading (outline level 0), so authored
+        // sections appear in the generated contents alongside document headings.
         body += styledPara("Contents", styleId: "Heading2")
         body += tocFieldXML()
 
-        // Page break before document sections
+        // Page break before the composed body
         body += "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
 
-        // Document sections
-        for doc in documents {
-            // Section heading always shows the citation; markdownItalicRuns handles _text_.
-            let heading = doc.citation.isEmpty ? doc.title : doc.citation
-            body += markdownItalicRuns(heading, styleId: "Heading2", bold: true)
-
-            if !doc.historyStateGovURL.isEmpty {
-                body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
-            }
-
-            // Body — controlled by doc.bodyDepth (per-entry effective depth).
-            switch doc.bodyDepth {
-            case .full:
-                if let model = doc.renderModel {
-                    // Highlight offsets are flat-text positions over the render
-                    // model's body nodes (see `ExportHighlight`); the plain
-                    // `bodyText` paragraph-splitting fallback below uses a
-                    // different extraction path, so painting only applies here.
-                    let tracker: HighlightPaintTracker? =
-                        (options.applyHighlights && !doc.highlights.isEmpty)
-                            ? HighlightPaintTracker(doc.highlights)
-                            : nil
-                    body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker)
-                } else {
-                    let paras = doc.bodyText
-                        .components(separatedBy: "\n\n")
-                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                    for para in paras {
-                        body += styledPara(
-                            escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)
-                                       .replacingOccurrences(of: "\n", with: " ")),
-                            styleId: "Normal")
-                    }
-                }
-            case .summaryOnly:
-                if let summary = doc.summaryText, !summary.isEmpty {
-                    body += styledPara("Summary", styleId: "Heading3")
-                    let summaryParas = summary
-                        .components(separatedBy: "\n\n")
-                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                    for para in summaryParas {
-                        body += styledPara(
-                            escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
-                            styleId: "Normal")
-                    }
-                }
-            case .index:
-                break
-            }
-
-            // Source note (footnoteStyle == .sourceNoteOnly)
-            if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
-                body += styledPara("Source: \(escaped(sourceNote))", styleId: "DocURL")
-            }
-
-            // Research notes — respects options.includeNotes.
-            guard options.includeNotes else { continue }
-            for note in doc.noteTexts where !note.isEmpty {
-                body += researchNoteHeadingPara()
-                let noteParagraphs = note
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in noteParagraphs {
-                    let text = para
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                        .replacingOccurrences(of: "\n", with: " ")
-                    body += markdownItalicRuns(text, styleId: "ResearchNote")
-                }
+        // Composed items — documents, section headings, and prose blocks in authored order.
+        for item in items {
+            switch item {
+            case .heading(let text):
+                // markdownItalicRuns handles _text_ spans; SectionHeading style is bold.
+                body += markdownItalicRuns(text, styleId: "SectionHeading", bold: true)
+            case .prose(let rtf):
+                body += proseDocxXML(rtf)
+            case .document(let doc):
+                body += documentSectionXML(doc: doc, ctx: ctx, options: options)
             }
         }
 
         body += "    <w:sectPr/>\n"
         return body
+    }
+
+    /// Renders one document entry as Word paragraphs: citation heading, source URL, body
+    /// (rich when a render model is present, flat-text fallback otherwise), source note, and
+    /// research notes. Body depth and footnote/highlight/notes options are honoured per entry.
+    private func documentSectionXML(
+        doc: CollectionExportDocument,
+        ctx: DocxRenderContext,
+        options: CollectionExportOptions
+    ) -> String {
+        var body = ""
+
+        // Section heading always shows the citation; markdownItalicRuns handles _text_.
+        let heading = doc.citation.isEmpty ? doc.title : doc.citation
+        body += markdownItalicRuns(heading, styleId: "Heading2", bold: true)
+
+        if !doc.historyStateGovURL.isEmpty {
+            body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
+        }
+
+        // Body — controlled by doc.bodyDepth (per-entry effective depth).
+        switch doc.bodyDepth {
+        case .full:
+            if let model = doc.renderModel {
+                // Highlight offsets are flat-text positions over the render
+                // model's body nodes (see `ExportHighlight`); the plain
+                // `bodyText` paragraph-splitting fallback below uses a
+                // different extraction path, so painting only applies here.
+                let tracker: HighlightPaintTracker? =
+                    (options.applyHighlights && !doc.highlights.isEmpty)
+                        ? HighlightPaintTracker(doc.highlights)
+                        : nil
+                body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker)
+            } else {
+                let paras = doc.bodyText
+                    .components(separatedBy: "\n\n")
+                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                for para in paras {
+                    body += styledPara(
+                        escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)
+                                   .replacingOccurrences(of: "\n", with: " ")),
+                        styleId: "Normal")
+                }
+            }
+        case .summaryOnly:
+            if let summary = doc.summaryText, !summary.isEmpty {
+                body += styledPara("Summary", styleId: "Heading3")
+                let summaryParas = summary
+                    .components(separatedBy: "\n\n")
+                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                for para in summaryParas {
+                    body += styledPara(
+                        escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
+                        styleId: "Normal")
+                }
+            }
+        case .index:
+            break
+        }
+
+        // Source note (footnoteStyle == .sourceNoteOnly)
+        if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
+            body += styledPara("Source: \(escaped(sourceNote))", styleId: "DocURL")
+        }
+
+        // Research notes — respects options.includeNotes.
+        guard options.includeNotes else { return body }
+        for note in doc.noteTexts where !note.isEmpty {
+            body += researchNoteHeadingPara()
+            let noteParagraphs = note
+                .components(separatedBy: "\n\n")
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            for para in noteParagraphs {
+                let text = para
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .replacingOccurrences(of: "\n", with: " ")
+                body += markdownItalicRuns(text, styleId: "ResearchNote")
+            }
+        }
+        return body
+    }
+
+    /// Renders a Phase 3b rich-text prose block (RTF) to Word paragraph XML. Bold/italic/
+    /// underline/colour spans (decoded once by `CollectionProse`) map to `<w:r>` run
+    /// properties; blank lines split paragraphs; single newlines within a paragraph become
+    /// `<w:br/>`. Empty (whitespace-only) paragraphs are dropped.
+    private func proseDocxXML(_ rtf: Data) -> String {
+        let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
+        guard !paragraphs.isEmpty else { return "" }
+        var xml = ""
+        for paragraph in paragraphs {
+            let runs = paragraph.map { proseRunXML($0) }.joined()
+            guard !runs.isEmpty else { continue }
+            xml += wPara(runs: runs, styleId: "Normal")
+        }
+        return xml
+    }
+
+    /// Builds the `<w:r>` run(s) for one prose span, applying bold/italic/underline/colour and
+    /// splitting on single newlines so each intra-paragraph break becomes a `<w:br/>`.
+    private func proseRunXML(_ span: ProseFormattedSpan) -> String {
+        // Emit run properties in CT_RPr schema order (color precedes underline) so the
+        // output validates strictly, not just in lenient consumers like Word/Pages.
+        var props = ""
+        if span.bold      { props += "<w:b/>" }
+        if span.italic    { props += "<w:i/>" }
+        if let hex = span.colorHex { props += "<w:color w:val=\"\(hex)\"/>" }
+        if span.underline { props += "<w:u w:val=\"single\"/>" }
+        let rPr = props.isEmpty ? "" : "<w:rPr>\(props)</w:rPr>"
+
+        let parts = span.text.components(separatedBy: "\n")
+        var runs = ""
+        for (index, part) in parts.enumerated() {
+            if index > 0 { runs += "<w:r>\(rPr)<w:br/></w:r>" }
+            if !part.isEmpty {
+                runs += "<w:r>\(rPr)<w:t xml:space=\"preserve\">\(xmlEscaped(part))</w:t></w:r>"
+            }
+        }
+        return runs
     }
 
     // MARK: - Rich Rendering (Session 83)

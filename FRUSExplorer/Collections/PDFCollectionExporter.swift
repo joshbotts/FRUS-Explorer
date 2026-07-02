@@ -49,6 +49,12 @@ import CoreText
 ///          `CTFrameDraw`. Table-cell rendering now preserves rich attributed
 ///          strings (previously flattened to plain joined text) so highlights and
 ///          inline formatting inside table cells survive export.
+///   1.7 — Collections rework Phase 3 (structure): the full composed
+///          `[CollectionExportItem]` renders in authored order. Documents keep their
+///          page-per-document flow; authored section headings and rich-text prose blocks
+///          share a continuous "structural flow" page (`drawHeadingFlow`/`drawProseFlow`),
+///          and the cover-page table of contents lists numbered documents interleaved with
+///          section-heading labels. Prose formatting is decoded via the shared `CollectionProse`.
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -115,10 +121,6 @@ final class PDFCollectionExporter: CollectionExporter {
         options: CollectionExportOptions,
         wordCloud: CGImage? = nil
     ) throws -> Data {
-        // Phase 3a: the PDF renders the documents; section headings and prose blocks are not
-        // yet drawn in the page-per-document paginated flow (they render in HTML today) — a
-        // scoped follow-up. `documents` drives the cover-page count and the word-cloud source.
-        let documents = items.documents
         let mutableData = NSMutableData()
         var mediaBox = Self.pageRect
         guard let consumer = CGDataConsumer(data: mutableData as CFMutableData),
@@ -126,11 +128,13 @@ final class PDFCollectionExporter: CollectionExporter {
             throw ExportError.renderingFailed
         }
 
+        let H = Self.pageHeight, M = Self.margin, cw = Self.contentWidth
         var pageNumber = 1
 
-        // Cover page
+        // Cover page — the table of contents reflects the composed structure
+        // (numbered documents plus authored section headings).
         ctx.beginPDFPage(nil)
-        drawCoverPage(ctx: ctx, collection: collection, documents: documents, options: options)
+        drawCoverPage(ctx: ctx, collection: collection, items: items, options: options)
         drawPageNumber(ctx: ctx, number: pageNumber)
         ctx.endPDFPage()
         pageNumber += 1
@@ -144,10 +148,99 @@ final class PDFCollectionExporter: CollectionExporter {
             pageNumber += 1
         }
 
-        // Document pages
-        for doc in documents {
-            drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
+        // Composed body. Documents keep their page-per-document flow; section headings and
+        // prose blocks share a continuous "structural flow" page so an authored section
+        // divider and its introductory prose sit together, with documents starting fresh.
+        var flowOpen = false
+        var flowY: CGFloat = 0
+
+        func endFlow() {
+            guard flowOpen else { return }
+            drawPageNumber(ctx: ctx, number: pageNumber)
+            ctx.endPDFPage()
+            pageNumber += 1
+            flowOpen = false
         }
+        func beginFlow() {
+            ctx.beginPDFPage(nil)
+            flowY = H - M
+            flowOpen = true
+        }
+        // Close the current structural-flow page and open a fresh one (mid-item overflow).
+        func flowNewPage() {
+            drawPageNumber(ctx: ctx, number: pageNumber)
+            ctx.endPDFPage()
+            pageNumber += 1
+            ctx.beginPDFPage(nil)
+            flowY = H - M
+        }
+
+        // Draws an authored section heading (bold, with an underline rule) into the flow.
+        func drawHeadingFlow(_ text: String) {
+            if !flowOpen { beginFlow() }
+            let attr = noteAttributedString(text, fontSize: 17, gray: 0.0, bold: true)
+            let h = measureHeight(attr, width: cw)
+            // Need room for the heading, its rule, and a little following space.
+            if flowY - h - 22 < M + 40 { flowNewPage() }
+            if flowY < H - M - 1 { flowY -= 12 }   // top gap unless at the very top
+            draw(attr, in: ctx, rect: CGRect(x: M, y: flowY - h, width: cw, height: h))
+            flowY -= h + 6
+            drawHRule(ctx: ctx, y: flowY, gray: 0.5, thickness: 0.5)
+            flowY -= 16
+        }
+
+        // Flows a rich-text prose block into the structural flow, paginating if needed.
+        func drawProseFlow(_ rtf: Data) {
+            let attr = proseAttributedString(rtf)
+            guard attr.length > 0 else { return }
+            if !flowOpen { beginFlow() }
+            if flowY < H - M - 1 { flowY -= 8 }   // gap above prose unless at page top
+
+            let framesetter = CTFramesetterCreateWithAttributedString(attr)
+            let fullH = measureHeight(attr, width: cw)
+            if fullH <= flowY - (M + 20) {
+                // Fits entirely on the current page.
+                draw(attr, in: ctx, rect: CGRect(x: M, y: flowY - fullH, width: cw, height: fullH))
+                flowY -= fullH + 12
+                return
+            }
+            // Multi-page flow: fill each page top-down, then advance to a fresh page.
+            var charOffset = 0
+            let total = attr.length
+            while charOffset < total {
+                let availH = flowY - (M + 20)
+                if availH < 28 { flowNewPage(); continue }
+                let rect = CGRect(x: M, y: M + 20, width: cw, height: availH)
+                let path = CGPath(rect: rect, transform: nil)
+                let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(charOffset, 0), path, nil)
+                CTFrameDraw(frame, ctx)
+                let visible = CTFrameGetVisibleStringRange(frame)
+                if visible.length == 0 { break }
+                charOffset += visible.length
+                if charOffset < total {
+                    flowNewPage()
+                } else {
+                    // Advance the cursor by the height the final chunk actually consumed.
+                    let used = CTFramesetterSuggestFrameSizeWithConstraints(
+                        framesetter, CFRangeMake(charOffset - visible.length, visible.length),
+                        nil, CGSize(width: cw, height: availH), nil)
+                    flowY -= ceil(used.height) + 12
+                }
+            }
+        }
+
+        for item in items {
+            switch item {
+            case .document(let doc):
+                endFlow()   // documents always start on a fresh page
+                drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
+            case .heading(let text):
+                drawHeadingFlow(text)
+            case .prose(let rtf):
+                drawProseFlow(rtf)
+            }
+        }
+        endFlow()
 
         ctx.closePDF()
         return mutableData as Data
@@ -182,10 +275,10 @@ final class PDFCollectionExporter: CollectionExporter {
     private func drawCoverPage(
         ctx: CGContext,
         collection: CollectionExportMetadata,
-        documents: [CollectionExportDocument],
+        items: [CollectionExportItem],
         options: CollectionExportOptions
     ) {
-        let W = Self.pageWidth, H = Self.pageHeight
+        let H = Self.pageHeight
         let M = Self.margin, cw = Self.contentWidth
 
         var y = H - M - 40
@@ -216,20 +309,36 @@ final class PDFCollectionExporter: CollectionExporter {
              fontSize: 13, bold: true)
         y -= 30
 
-        // ToC entries — label style controlled by options.tocStyle;
-        // _text_ spans in citation labels rendered as italic via noteAttributedString.
-        for (i, doc) in documents.enumerated() {
-            guard y > M + 20 else { break }
-            let rawLabel = "\(i + 1).  \(doc.tocLabel(style: options.tocStyle))"
-            let labelAttr = noteAttributedString(rawLabel, fontSize: 10, gray: 0.1)
-            let lineH = measureHeight(labelAttr, width: cw - 16)
-            let rowH = min(lineH, 40) // cap at ~3 lines
-            draw(labelAttr, in: ctx,
-                 rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH))
-            y -= rowH + 6
+        // ToC entries in authored order: documents are numbered; authored section headings
+        // appear as bold, un-numbered labels; prose blocks are omitted. Document label style
+        // is controlled by options.tocStyle; _text_ spans render as italic.
+        var docNumber = 0
+        for item in items {
+            // Stop before a row could be drawn below the bottom margin: the tallest row
+            // is a section heading (up to a 6-pt top gap + a 44-pt label).
+            guard y >= M + 50 else { break }
+            switch item {
+            case .document(let doc):
+                docNumber += 1
+                let rawLabel = "\(docNumber).  \(doc.tocLabel(style: options.tocStyle))"
+                let labelAttr = noteAttributedString(rawLabel, fontSize: 10, gray: 0.1)
+                let lineH = measureHeight(labelAttr, width: cw - 16)
+                let rowH = min(lineH, 40) // cap at ~3 lines
+                draw(labelAttr, in: ctx,
+                     rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH))
+                y -= rowH + 6
+            case .heading(let text):
+                let labelAttr = noteAttributedString(text, fontSize: 11, gray: 0.0, bold: true)
+                let lineH = measureHeight(labelAttr, width: cw)
+                let rowH = min(lineH, 44)
+                y -= 6   // a little breathing room above a section label
+                draw(labelAttr, in: ctx,
+                     rect: CGRect(x: M, y: y - rowH, width: cw, height: rowH))
+                y -= rowH + 6
+            case .prose:
+                break
+            }
         }
-
-        _ = W // suppress warning
     }
 
     // MARK: - Document Section (multi-page)
@@ -240,7 +349,7 @@ final class PDFCollectionExporter: CollectionExporter {
         options: CollectionExportOptions,
         pageNumber: inout Int
     ) {
-        let H = Self.pageHeight, W = Self.pageWidth, M = Self.margin, cw = Self.contentWidth
+        let H = Self.pageHeight, M = Self.margin, cw = Self.contentWidth
 
         // ── First page of document ──────────────────────────────────────────
         ctx.beginPDFPage(nil)
@@ -778,6 +887,42 @@ final class PDFCollectionExporter: CollectionExporter {
                 attributes: makeStyledAttrs(fontSize: fontSize, bold: bold, gray: gray)))
         }
         return result
+    }
+
+    /// Builds an `NSAttributedString` for a Phase 3b rich-text prose block (RTF). Bold/italic/
+    /// underline/colour spans (decoded once by the shared `CollectionProse`) map to font-face,
+    /// underline, and foreground-colour attributes; paragraphs are separated by a blank line.
+    private func proseAttributedString(_ rtf: Data, fontSize: CGFloat = 11) -> NSAttributedString {
+        let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
+        let result = NSMutableAttributedString()
+        for (index, paragraph) in paragraphs.enumerated() {
+            if index > 0 {
+                result.append(NSAttributedString(string: "\n\n",
+                                                 attributes: makeAttrs(fontSize: fontSize, bold: false)))
+            }
+            for span in paragraph {
+                var attrs = makeStyledAttrs(fontSize: fontSize, bold: span.bold,
+                                            italic: span.italic, gray: 0)
+                if span.underline {
+                    attrs[NSAttributedString.Key(kCTUnderlineStyleAttributeName as String)] =
+                        CTUnderlineStyle.single.rawValue as CFNumber
+                }
+                if let hex = span.colorHex, let color = Self.cgColor(fromHex: hex) {
+                    attrs[NSAttributedString.Key(kCTForegroundColorAttributeName as String)] = color
+                }
+                result.append(NSAttributedString(string: span.text, attributes: attrs))
+            }
+        }
+        return result
+    }
+
+    /// Parses an uppercase `RRGGBB` string into an opaque sRGB `CGColor`, or `nil` if malformed.
+    private static func cgColor(fromHex hex: String) -> CGColor? {
+        guard hex.count == 6, let value = Int(hex, radix: 16) else { return nil }
+        let r = CGFloat((value >> 16) & 0xFF) / 255
+        let g = CGFloat((value >> 8) & 0xFF) / 255
+        let b = CGFloat(value & 0xFF) / 255
+        return CGColor(red: r, green: g, blue: b, alpha: 1)
     }
 
     private func measureHeight(_ text: String, width: CGFloat, fontSize: CGFloat, bold: Bool) -> CGFloat {
