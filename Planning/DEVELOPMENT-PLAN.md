@@ -1023,3 +1023,20 @@ verified by re-running with `cloudKitDatabase: .none` alone, which still crashed
   state, export CSS purity, PDF contract leg). Docs rider: manuals §10.5 Live Preview,
   TestFlight files, IndexingEducationView. PR 2c (scroll-sync/incremental refresh) deferred
   as optional.
+
+### Session 2026-07-02 (later) — Collections Authoring Phase 3 (in-editor discovery)
+`CollectionAddDocumentsSheet` (new): four tabs over one shared multi-select set with a
+persistent "Add N Documents" bar — Search (debounced FTS5, 100-cap), Browse (two-level
+manifest → indexed-document list; download/index affordances for missing volumes),
+Citations (paste footnotes or history.state.gov URLs; per-line resolved/ambiguous/
+unresolved buckets via the closure-injected `CollectionCitationLineResolver`; hsg-URL
+matcher added — none existed), Tags (note-carried tags ∪ `DocumentTagAssignment`,
+replacing + deleting AddByTagSheet). Entry points: iOS "Add Documents…" section + header
+menu; macOS toolbar ⇧⌘A. **A4 resolved cheap**: duplicates allowed; "Also in collection"
+badge on both platforms' rows (composite-key duplicate set at pane level). **A5: deferred.**
+Adversarial review → 8 valid findings fixed pre-PR, incl. citation false-"resolved"
+downgrades (volume-only outranking; subseries-less guesses), macOS Return-key committing
+the sheet mid-flow, and `CitationMatchingEngine.downloadedVolumeIds` upgraded from a
+boot-time snapshot to live updates on indexing completion (fixes download-then-re-resolve
+for CitationLookupView too). 9 new unit tests; docs rider (manuals, TestFlight files,
+IndexingEducationView). Full suite 984/984. Phases 1–3 (the zero-schema-risk arc) complete.
