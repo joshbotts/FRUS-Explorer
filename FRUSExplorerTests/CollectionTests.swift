@@ -9,6 +9,12 @@
 import Testing
 import Foundation
 import SwiftData
+import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 @testable import FRUSExplorer
 
 // MARK: - CollectionTests
@@ -150,7 +156,7 @@ struct CollectionTests {
         let d1 = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 0, title: "t1", bodyText: "")
         let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 1, title: "t2", bodyText: "")
         let items: [CollectionExportItem] = [.heading("Section"), .document(d1),
-                                             .prose(AttributedString("a note")), .document(d2)]
+                                             .prose(Data()), .document(d2)]
         let docs = items.documents
         #expect(docs.count == 2)
         #expect(docs.map(\.documentId) == ["d1", "d2"])
@@ -158,29 +164,60 @@ struct CollectionTests {
 
     // MARK: - ProseRichTextTest
 
-    @Test("ProseRichText: plain text round-trips and stays in sync with the RTF form")
-    func proseRichTextPlain() {
+    @Test("ProseRichText: exportRTF for a plain prose entry yields RTF whose plain text matches")
+    func proseExportRTFPlain() throws {
         let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
         entry.entryKind = .prose
-        ProseRichText.store(AttributedString("Editorial commentary."), into: entry)
-        #expect(entry.text == "Editorial commentary.")   // plain-text projection kept in sync
-        #expect(entry.richText != nil)                    // RTF stored
-        let decoded = ProseRichText.attributedString(from: entry)
-        #expect(String(decoded.characters) == "Editorial commentary.")
+        entry.text = "Editorial commentary."
+        entry.richText = nil
+        let rtf = ProseRichText.exportRTF(from: entry)
+        #expect(!rtf.isEmpty)
+        let ns = try NSAttributedString(data: rtf,
+                                        options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                        documentAttributes: nil)
+        #expect(ns.string == "Editorial commentary.")
     }
 
-    @Test("ProseRichText: bold (inlinePresentationIntent) survives the store/load round-trip")
-    func proseRichTextBold() {
-        var attr = AttributedString("Bold")
-        attr.inlinePresentationIntent = .stronglyEmphasized
+    @Test("ProseRichText: concrete bold + colour in RTF round-trips and stays introspectable (export pipeline)")
+    func proseRTFFormattingRoundTrips() throws {
+        // Simulate what the native editor stores: concrete NSFont bold + coloured text.
+        let m = NSMutableAttributedString(string: "Bold red")
+        #if canImport(UIKit)
+        m.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: 14), range: NSRange(location: 0, length: 4))
+        m.addAttribute(.foregroundColor, value: UIColor.red, range: NSRange(location: 5, length: 3))
+        #elseif canImport(AppKit)
+        m.addAttribute(.font, value: NSFontManager.shared.convert(.systemFont(ofSize: 13), toHaveTrait: .boldFontMask),
+                       range: NSRange(location: 0, length: 4))
+        m.addAttribute(.foregroundColor, value: NSColor.red, range: NSRange(location: 5, length: 3))
+        #endif
+        let rtf = try m.data(from: NSRange(location: 0, length: m.length),
+                             documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+
         let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
         entry.entryKind = .prose
-        ProseRichText.store(attr, into: entry)
+        entry.richText = rtf
+        entry.text = m.string
 
-        let decoded = ProseRichText.attributedString(from: entry)
-        let sawBold = decoded.runs.contains { $0.inlinePresentationIntent?.contains(.stronglyEmphasized) == true }
-        #expect(sawBold)
-        #expect(entry.text == "Bold")
+        let back = try NSAttributedString(data: ProseRichText.exportRTF(from: entry),
+                                          options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                          documentAttributes: nil)
+        var sawBold = false, sawRed = false
+        back.enumerateAttributes(in: NSRange(location: 0, length: back.length)) { a, _, _ in
+            #if canImport(UIKit)
+            if let f = a[.font] as? UIFont, f.fontDescriptor.symbolicTraits.contains(.traitBold) { sawBold = true }
+            if let c = a[.foregroundColor] as? UIColor {
+                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, al: CGFloat = 0
+                c.getRed(&r, green: &g, blue: &b, alpha: &al)
+                if r > 0.5, g < 0.4 { sawRed = true }
+            }
+            #elseif canImport(AppKit)
+            if let f = a[.font] as? NSFont, f.fontDescriptor.symbolicTraits.contains(.bold) { sawBold = true }
+            if let c = (a[.foregroundColor] as? NSColor)?.usingColorSpace(.sRGB), c.redComponent > 0.5, c.greenComponent < 0.4 { sawRed = true }
+            #endif
+        }
+        #expect(sawBold)   // native-editor bold survives store → export
+        #expect(sawRed)    // native-editor colour survives store → export
+        #expect(entry.text == "Bold red")
     }
 
     // MARK: - DocumentNoteAssociationTest
