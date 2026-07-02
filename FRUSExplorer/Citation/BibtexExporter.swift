@@ -30,6 +30,10 @@
 ///
 /// Version history:
 ///   1.0 — Session 86
+///   1.1 — Collections rework Phase 4 (D7): added `export(zoteroItem:volumeId:documentId:)`,
+///          a pre-built-`Item` overload used by `BibTeXCollectionExporter` for whole-collection
+///          `.bib` files (mirrors `RISExporter.export(zoteroItem:)`). Tags → `keywords`,
+///          research notes → `annote`, `extra` lines → `note`.
 public struct BibtexExporter: Sendable {
 
     public init() {}
@@ -82,7 +86,88 @@ public struct BibtexExporter: Sendable {
         return lines.joined(separator: "\n")
     }
 
+    /// Renders a BibTeX record from a pre-built Zotero `Item`, using `volumeId`/`documentId`
+    /// for the citation key. Used by the collection BibTeX export, whose pipeline produces
+    /// `Item`s rather than raw `FRUSDocumentMetadata` (the `Item` carries no IDs, so the key
+    /// components are passed explicitly).
+    ///
+    /// Field mapping: `bookTitle` → `booktitle`; editor/author creators → `editor`/`author`;
+    /// `place` → `address`; `date` → `year`; `extra` lines → `note`; tags → `keywords`;
+    /// research notes → `annote`. Free-text fields (note/keywords/annote) have braces and
+    /// backslashes neutralized so user text cannot break the record structure.
+    ///
+    /// - Parameters:
+    ///   - item: The pre-built Zotero item.
+    ///   - volumeId: The volume identifier, used in the citation key.
+    ///   - documentId: The document identifier, used in the citation key.
+    public func export(
+        zoteroItem item: ZoteroJSONExporter.Item,
+        volumeId: String,
+        documentId: String
+    ) -> String {
+        let key = bibtexKey(volumeId: volumeId, documentId: documentId)
+        var lines: [String] = ["@\(Self.bibtexType(for: item.itemType)){\(key),"]
+        lines.append("  title     = {\(bibtexEscape(item.title))},")
+        if let bookTitle = item.bookTitle, !bookTitle.isEmpty {
+            lines.append("  booktitle = {\(bibtexEscape(bookTitle))},")
+        }
+        let authors = (item.creators ?? []).filter { $0.creatorType == "author" }.map(\.name)
+        let editors = (item.creators ?? []).filter { $0.creatorType == "editor" }.map(\.name)
+        if !authors.isEmpty { lines.append("  author    = {\(editorString(authors))},") }
+        if !editors.isEmpty { lines.append("  editor    = {\(editorString(editors))},") }
+        if let publisher = item.publisher, !publisher.isEmpty {
+            lines.append("  publisher = {\(bibtexEscape(publisher))},")
+        }
+        if let place = item.place, !place.isEmpty {
+            lines.append("  address   = {\(bibtexEscape(place))},")
+        }
+        if let date = item.date, !date.isEmpty {
+            lines.append("  year      = {\(bibtexEscape(date))},")
+        }
+        if let extra = item.extra, !extra.isEmpty {
+            let note = extra.split(separator: "\n", omittingEmptySubsequences: true)
+                .map { bibtexFreeText(String($0)) }
+                .joined(separator: "; ")
+            if !note.isEmpty { lines.append("  note      = {\(note)},") }
+        }
+        let tags = (item.tags ?? []).map(\.tag)
+        if !tags.isEmpty {
+            lines.append("  keywords  = {\(tags.map(bibtexFreeText).joined(separator: ", "))},")
+        }
+        let notes = (item.notes ?? []).map(\.note)
+        if !notes.isEmpty {
+            lines.append("  annote    = {\(notes.map(bibtexFreeText).joined(separator: "\n\n"))},")
+        }
+        if let url = item.url, !url.isEmpty {
+            lines.append("  url       = {\(url)}")
+        } else if var last = lines.last, last.hasSuffix(",") {
+            // Remove the trailing comma from the last field when no url follows.
+            last.removeLast()
+            lines[lines.count - 1] = last
+        }
+        lines.append("}")
+        return lines.joined(separator: "\n")
+    }
+
     // MARK: - Helpers
+
+    /// The BibTeX entry type for a Zotero item type (`book` → `@book`, else `@incollection`).
+    private static func bibtexType(for itemType: String) -> String {
+        itemType == "book" ? "book" : "incollection"
+    }
+
+    /// Escapes a free-text field (user notes/tags) for BibTeX. Neutralizes braces and
+    /// backslashes in the *raw* text first — so arbitrary user text cannot unbalance the
+    /// `{…}` field or introduce a stray control sequence — and only then applies the standard
+    /// `bibtexEscape`. Order matters: `bibtexEscape` turns `%` into `\%`, which must survive,
+    /// so the backslash-neutralizing step has to run *before* the escape, not after.
+    private func bibtexFreeText(_ text: String) -> String {
+        let neutralized = text
+            .replacingOccurrences(of: "\\", with: "/")
+            .replacingOccurrences(of: "{", with: "(")
+            .replacingOccurrences(of: "}", with: ")")
+        return bibtexEscape(neutralized)
+    }
 
     private func bibtexKey(volumeId: String, documentId: String) -> String {
         let safe = { (s: String) in

@@ -133,6 +133,7 @@
 		4B72551F127ADEFB79ED3C2B /* PersonIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D284716EA8E086EC0EB65E /* PersonIndexView.swift */; };
 		4BB8EC42C0AC99951FD992EF /* CitationFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70DCDD8B97981CF1265792C /* CitationFormatter.swift */; };
 		4BC10F9BEA3B25AAEEF23A42 /* ModelContainer+FRUS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */; };
+		4C54A6942258E8E7F18B27BA /* BibTeXCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4103BB6952CE42F549C81F1 /* BibTeXCollectionExporter.swift */; };
 		4C5AFAF48E1844D8DD05ED31 /* OnboardingVolumePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3C71FE56549C748BEDFFDB /* OnboardingVolumePickerView.swift */; };
 		4CA906145CA2B44520C4903C /* CitationFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70DCDD8B97981CF1265792C /* CitationFormatter.swift */; };
 		4CC090CF71D36CF100CAA4CB /* volume-sources-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 00C32999B7E0F055DD196352 /* volume-sources-index.json */; };
@@ -181,6 +182,7 @@
 		6031DF2938466493210A2697 /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */; };
 		60EB74EAF0E29E021314B099 /* ZoteroJSONExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B198234CB42E88D3372AD2 /* ZoteroJSONExporter.swift */; };
 		60F22FAC6A69B29BECC423AC /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175DA5DB0C781AF94092EFC /* SearchView.swift */; };
+		615C888127ECC553641D1813 /* BibTeXCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4103BB6952CE42F549C81F1 /* BibTeXCollectionExporter.swift */; };
 		6299EF251CB1514312C72431 /* taxonomy.json in Resources */ = {isa = PBXBuildFile; fileRef = EC5C8DCD8DD7D1CB8A6B20E2 /* taxonomy.json */; };
 		642BC7EF029DFF8E71B1E780 /* subject-appearances.json in Resources */ = {isa = PBXBuildFile; fileRef = 315FB3EB58D69FFBB9BC2C3C /* subject-appearances.json */; };
 		64E69EF4C03F523D77453A8F /* ManifestStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */; };
@@ -778,6 +780,7 @@
 		D22C46AA5003388AA9EC7A12 /* CitationMatchingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngine.swift; sourceTree = "<group>"; };
 		D2914FB296F951A74A8E2CE5 /* PromptEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptEditorView.swift; sourceTree = "<group>"; };
 		D2EBC1ADEAB3F33E10EF7EC4 /* ResearchGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchGuideView.swift; sourceTree = "<group>"; };
+		D4103BB6952CE42F549C81F1 /* BibTeXCollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibTeXCollectionExporter.swift; sourceTree = "<group>"; };
 		D4822CCAB395C9147304BB90 /* AppActivityTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
 		D506EF1097D8D556812C9287 /* VolumeSourcesIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeSourcesIndex.swift; sourceTree = "<group>"; };
 		D5F8698F22479B30B2FFFB1F /* person-authority-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "person-authority-index.json"; sourceTree = "<group>"; };
@@ -1374,6 +1377,7 @@
 		FB48FD5C9BD51735574DACD9 /* Collections */ = {
 			isa = PBXGroup;
 			children = (
+				D4103BB6952CE42F549C81F1 /* BibTeXCollectionExporter.swift */,
 				7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */,
 				423271170536DE4B8160B34A /* CollectionExporter.swift */,
 				F7F5EEC9CE97A2ED05070E05 /* CollectionListView.swift */,
@@ -1617,6 +1621,7 @@
 				8336749F1376871FD269FE44 /* BackgroundSummarizationRequest.swift in Sources */,
 				1909ED99015C679E65F837DD /* BackgroundSummarizationService.swift in Sources */,
 				C6996397BCE6032367ED085F /* BackgroundSummarizationSettingsView.swift in Sources */,
+				615C888127ECC553641D1813 /* BibTeXCollectionExporter.swift in Sources */,
 				B4C57BF3C0AF41AF7457A307 /* BibtexExporter.swift in Sources */,
 				0B143785B97EC873058060CD /* BrowserBreadcrumbBar.swift in Sources */,
 				540BB0B6C9FF45E63D4FD8CB /* BrowserView.swift in Sources */,
@@ -1817,6 +1822,7 @@
 				AC9A6C8CFB4BFF2B4668819B /* BackgroundSummarizationRequest.swift in Sources */,
 				B3F04AAA86253C42BC399CA3 /* BackgroundSummarizationService.swift in Sources */,
 				FAB4ECAAEDFEAEEEFB72FD3E /* BackgroundSummarizationSettingsView.swift in Sources */,
+				4C54A6942258E8E7F18B27BA /* BibTeXCollectionExporter.swift in Sources */,
 				68BE8F25C547E21D018F7D6C /* BibtexExporter.swift in Sources */,
 				190C71D7C3A51F0A5E615707 /* BrowserBreadcrumbBar.swift in Sources */,
 				C9E4DBB56CAA92B59F71F2C0 /* BrowserView.swift in Sources */,

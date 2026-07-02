@@ -257,11 +257,14 @@ struct CollectionExportOptions: Sendable {
 ///   1.4 — Zotero strategy: `.zoteroJSON` (RIS) is the **Zotero desktop**
 ///          fallback only — iOS Zotero has no RIS import. The annotation-
 ///          preserving path on both platforms is the Zotero Web API (separate).
+///   1.5 — Collections rework Phase 4 (D7): added `.bibtex` (`.bib`) backed by
+///          `BibTeXCollectionExporter`, for LaTeX / non-Zotero reference managers.
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
     case docx
     case zoteroJSON
+    case bibtex
 
     var id: String { rawValue }
 
@@ -272,12 +275,15 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         case .docx:       return "DOCX"
         case .zoteroJSON: return String(localized: "export.format.zotero",
                                         defaultValue: "Zotero RIS (desktop)")
+        case .bibtex:     return String(localized: "export.format.bibtex",
+                                        defaultValue: "BibTeX")
         }
     }
 
     var fileExtension: String {
         switch self {
         case .zoteroJSON: return "ris"
+        case .bibtex:     return "bib"
         default:          return rawValue
         }
     }
@@ -289,6 +295,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         case .html:       return HTMLCollectionExporter()
         case .docx:       return DocxCollectionExporter()
         case .zoteroJSON: return ZoteroCollectionExporter()
+        case .bibtex:     return BibTeXCollectionExporter()
         }
     }
 }
