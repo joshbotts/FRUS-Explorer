@@ -14,7 +14,9 @@ import SwiftUI
 ///
 /// Volume structure is loaded lazily via `BrowserViewModel.loadVolumeStructure(for:)` on
 /// appear. If the volume is not downloaded, a "Download Required" placeholder is shown
-/// instead. Tag chips call `vm.activateTagFilter(slug:forSubseries:)` which pops navigation
+/// instead, with a Download button that tracks the transfer live via
+/// `AppState.downloadQueue` and loads the structure in place when it completes.
+/// Tag chips call `vm.activateTagFilter(slug:forSubseries:)` which pops navigation
 /// back to the Subseries level with the filter applied.
 ///
 /// ## Front Matter Split (Session 2026-06-08)
@@ -32,15 +34,23 @@ import SwiftUI
 ///   2.2 — Session 153: added a toolbar button presenting `VolumeConnectionGraphView`
 ///          in a sheet, closing the iOS gap with the macOS corpus browser's
 ///          per-volume cross-reference graph affordance
+///   2.3 — Session 2026-07-02: on-page downloads now complete in place — the
+///          placeholder shows a live "Downloading…" row driven by
+///          `AppState.downloadQueue`, and the volume structure loads automatically
+///          when the transfer finishes (previously "Download started." never
+///          progressed because nothing observable changed on completion)
 struct VolumeView: View {
 
     let vm: BrowserViewModel
     let volume: VolumeManifestEntry
 
+    @Environment(AppState.self) private var appState
+
     @State private var showConnectionGraph = false
     /// Set when the user taps Download on the "Download Required" placeholder, so the
-    /// button flips to immediate "Download started" feedback (the volume stays
-    /// undownloaded until the transfer + indexing finish, so `isDownloaded` can't drive this).
+    /// button flips to the "Downloading…" row immediately — before the enqueue lands
+    /// in `AppState.downloadQueue`. Reset when the volume leaves the queue so a failed
+    /// download re-offers the button.
     @State private var downloadRequested = false
 
     var body: some View {
@@ -74,6 +84,17 @@ struct VolumeView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .task { await vm.loadVolumeStructure(for: volume) }
+        // Download completion: this volume just left the queue. On success the XML is
+        // already on disk (`DownloadManager` moves the file into place before firing
+        // `onStateChanged`), so the structure loads now; on failure the not-downloaded
+        // guard inside `loadVolumeStructure` no-ops and the Download button is
+        // re-offered because `downloadRequested` resets.
+        .onChange(of: appState.downloadQueue) { oldQueue, newQueue in
+            guard oldQueue.contains(volume.volumeId),
+                  !newQueue.contains(volume.volumeId) else { return }
+            downloadRequested = false
+            Task { await vm.loadVolumeStructure(for: volume) }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 let isIndexed = vm.isIndexed(volume.volumeId)
@@ -146,14 +167,16 @@ struct VolumeView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
 
-                    if downloadRequested {
-                        Label(
-                            String(localized: "browser.volume.downloadStarted",
-                                   defaultValue: "Download started."),
-                            systemImage: "checkmark.circle"
-                        )
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                    // Reading `downloadQueue` here also makes the body observe it, so
+                    // queue changes re-evaluate the `isDownloaded` file check above.
+                    if downloadRequested || appState.downloadQueue.contains(volume.volumeId) {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text(String(localized: "browser.volume.downloading",
+                                        defaultValue: "Downloading… Contents will appear when the download completes."))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
                     } else {
                         Button {
                             guard let dm = vm.downloadManager else { return }
@@ -172,20 +195,6 @@ struct VolumeView: View {
                     }
                 }
                 .padding(.vertical, 6)
-            }
-        } else if vm.isLoadingStructure {
-            Section {
-                HStack {
-                    ProgressView()
-                    Text(String(localized: "browser.volume.loading",
-                                defaultValue: "Loading structure…"))
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                }
-                // minHeight reserves space equal to a typical section list so the
-                // view doesn't visually jump when content loads (F-025).
-                .frame(minHeight: 120, alignment: .center)
-                .padding(.vertical, 4)
             }
         } else if let structure = vm.volumeStructures[volume.volumeId] {
             if structure.isEmpty {
@@ -241,6 +250,25 @@ struct VolumeView: View {
                 )
                 .foregroundStyle(.secondary)
                 .font(.callout)
+            }
+        } else {
+            // Structure not cached yet and no error: `loadVolumeStructure` is either in
+            // flight or about to be kicked off (view appear, or a download that just
+            // completed). Showing the loading row here — rather than gating on
+            // `isLoadingStructure`, which is false during the persisted-structure fast
+            // path — avoids a blank gap during those windows.
+            Section {
+                HStack {
+                    ProgressView()
+                    Text(String(localized: "browser.volume.loading",
+                                defaultValue: "Loading structure…"))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                }
+                // minHeight reserves space equal to a typical section list so the
+                // view doesn't visually jump when content loads (F-025).
+                .frame(minHeight: 120, alignment: .center)
+                .padding(.vertical, 4)
             }
         }
     }

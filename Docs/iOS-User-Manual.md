@@ -174,7 +174,7 @@ A **breadcrumb trail** at the top of the screen shows your current position in t
 
 `[SCREENSHOT: Breadcrumb trail showing Subseries > Volume > Document]`
 
-Volumes you haven't downloaded yet are still browsable. Opening one shows a **Download Volume** button on its page (in place of the contents), and you can also long-press the volume in the list and choose **Download Volume** to queue it without opening the page. (See Settings → Volumes for managing downloads in bulk.) Anywhere you reach a document in an undownloaded volume — including a cross-reference inside another document — the app offers to download the volume rather than dead-ending.
+Volumes you haven't downloaded yet are still browsable. Opening one shows a **Download Volume** button on its page (in place of the contents); tap it and the page tracks the download live, loading the volume's contents automatically when it finishes — no need to leave and come back. You can also long-press the volume in the list and choose **Download Volume** to queue it without opening the page. (See Settings → Volumes for managing downloads in bulk.) Anywhere you reach a document in an undownloaded volume — including a cross-reference inside another document — the app offers to download the volume rather than dead-ending.
 
 ### 4.2 Filtering to Downloaded Volumes
 
