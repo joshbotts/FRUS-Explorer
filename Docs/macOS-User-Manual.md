@@ -531,7 +531,7 @@ For each document you can choose which research note(s) to include — click the
 
 ### 10.3 Composition Settings
 
-Open the **Composition** control in the collection's toolbar. These settings are **saved on the collection**, so it always exports the same way in any format:
+Expand the **Composition** group at the top of the collection's document list. These settings are **saved on the collection**, so it always exports the same way in any format:
 
 | Setting | Options |
 |---------|---------|
