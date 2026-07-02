@@ -719,7 +719,6 @@
 		99B198234CB42E88D3372AD2 /* ZoteroJSONExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroJSONExporter.swift; sourceTree = "<group>"; };
 		99C3C5368784539EAAB2C4D5 /* CentralFilesClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralFilesClassifierTests.swift; sourceTree = "<group>"; };
 		9B54FC01FB64921E1AF6D746 /* PageRangeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageRangeStore.swift; sourceTree = "<group>"; };
-		9D097BA4D63BB3150BA0492E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9D18FFCBBDD8710C84CA7540 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
 		9D2B69CD9C8F98784E45944C /* StorageIndexViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageIndexViewTests.swift; sourceTree = "<group>"; };
 		9ECB12934B74A080479BC4FA /* VolumeMetadataDiscoveredTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeMetadataDiscoveredTests.swift; sourceTree = "<group>"; };
@@ -1315,7 +1314,6 @@
 				9F7E01503E7FB6E36E80C165 /* FRUSExplorer-AppStore.entitlements */,
 				8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */,
 				DAAF5658EA508F2B59DBB168 /* FRUSExplorer-iOS.entitlements */,
-				9D097BA4D63BB3150BA0492E /* Info.plist */,
 				FF735149F415370F2B4A807F /* Localizable.strings */,
 			);
 			path = FRUSExplorer;
@@ -2153,11 +2151,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 27;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = FRUSExplorer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
+				INFOPLIST_FILE = "FRUSExplorer/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -2357,11 +2351,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 27;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = FRUSExplorer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
+				INFOPLIST_FILE = "FRUSExplorer/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -2553,11 +2543,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 27;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = FRUSExplorer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "FRUS Explorer";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_NSUserActivityTypes = "com.joshbotts.frus-explorer.document";
+				INFOPLIST_FILE = "FRUSExplorer/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

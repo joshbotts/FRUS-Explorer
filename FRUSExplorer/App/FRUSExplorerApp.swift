@@ -641,6 +641,10 @@ struct FRUSExplorerApp: App {
                     guard parts.count == 2 else { return }
                     navigateToDocument(volumeId: parts[0], documentId: parts[1], title: activity.title)
                 }
+                // A shared native collection opened from Files / Finder / AirDrop (Phase 4 / D9).
+                .onOpenURL { url in
+                    importOpenedCollection(url)
+                }
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
@@ -692,6 +696,29 @@ struct FRUSExplorerApp: App {
     }
 
     // MARK: - Private
+
+    /// Imports a native `.fruscollection` file opened from Files / Finder / AirDrop (Phase 4 /
+    /// D9): reconstructs the collection into the shared store, scopes it to the active project
+    /// (so it's visible under the active-project filter, as new/imported collections are), and
+    /// — on iOS — switches to the Collections tab to surface it. Malformed files are ignored
+    /// (the in-app Import button is the path that surfaces detailed errors).
+    @MainActor
+    private func importOpenedCollection(_ url: URL) {
+        guard url.pathExtension.lowercased() == NativeCollectionSerializer.fileExtension else { return }
+        let context = modelContainer.mainContext
+        do {
+            let imported = try NativeCollectionSerializer.importCollection(from: url, into: context)
+            if let pid = appState.activeProjectId { imported.projectIds = [pid] }
+            try context.save()
+            #if os(iOS)
+            appState.activeTab = .collections
+            #endif
+        } catch {
+            #if DEBUG
+            print("[FRUSExplorerApp] .fruscollection import failed: \(error)")
+            #endif
+        }
+    }
 
     /// Creates the DownloadManager the first time `.task` fires, then immediately
     /// resumes any queue that was persisted from the previous app session.

@@ -58,6 +58,12 @@ targets:
     bundleId: bottsywattsy.FRUS-Explorer
     sources:
       - path: FRUSExplorer
+        # The generated Info.plist files are INFOPLIST_FILE inputs (see each target's `info:`),
+        # not bundle resources. Exclude them from the shared source glob so neither platform's
+        # plist is copied into the other's app bundle (both targets glob this same folder).
+        excludes:
+          - "Info.plist"
+          - "Info-macOS.plist"
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
     # XcodeGen generates Info.plist at info.path and sets INFOPLIST_FILE accordingly.
@@ -116,6 +122,23 @@ targets:
           - com.joshbotts.frus-explorer.document
         # Required to call Activity.request() and start Live Activities.
         NSSupportsLiveActivities: YES
+        # Native shareable collection file (.fruscollection) — Phase 4 / D9. Declares the
+        # exported UTI and registers the app as an editor for it, so opening a file (share
+        # sheet → "Copy to FRUS Explorer", Files, AirDrop) routes to the app's onOpenURL.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: bottsywattsy.FRUS-Explorer.fruscollection
+            UTTypeDescription: FRUS Collection
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - fruscollection
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: FRUS Collection
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - bottsywattsy.FRUS-Explorer.fruscollection
     dependencies:
       # Embed the widget extension so it is installed alongside the app.
       - target: FRUSExplorerWidgets
@@ -151,18 +174,50 @@ targets:
     bundleId: bottsywattsy.FRUS-Explorer
     sources:
       - path: FRUSExplorer
+        # The generated Info.plist files are INFOPLIST_FILE inputs (see each target's `info:`),
+        # not bundle resources. Exclude them from the shared source glob so neither platform's
+        # plist is copied into the other's app bundle (both targets glob this same folder).
+        excludes:
+          - "Info.plist"
+          - "Info-macOS.plist"
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
+    # Explicit Info.plist (was GENERATE_INFOPLIST_FILE + INFOPLIST_KEY_*). Switched to an
+    # explicit plist because CFBundleDocumentTypes / UTExportedTypeDeclarations are arrays of
+    # dictionaries that cannot be expressed via INFOPLIST_KEY_* (same reason the iOS target
+    # uses an explicit plist for UIBackgroundModes). Mirrors the iOS keys plus the .fruscollection
+    # document type. A distinct path from the iOS Info.plist so the two don't collide. Version
+    # keys are pinned to $(MARKETING_VERSION)/$(CURRENT_PROJECT_VERSION) so XcodeGen's default
+    # "1.0"/"1" can't leak into a notarized/App Store build.
+    info:
+      path: FRUSExplorer/Info-macOS.plist
+      properties:
+        CFBundleDisplayName: "FRUS Explorer"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSApplicationCategoryType: "public.app-category.reference"
+        NSUserActivityTypes:
+          - com.joshbotts.frus-explorer.document
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: bottsywattsy.FRUS-Explorer.fruscollection
+            UTTypeDescription: FRUS Collection
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - fruscollection
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: FRUS Collection
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - bottsywattsy.FRUS-Explorer.fruscollection
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         CURRENT_PROJECT_VERSION: 27
         MARKETING_VERSION: "0.2"
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: "FRUS Explorer"
-        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.reference"
-        INFOPLIST_KEY_NSUserActivityTypes: "com.joshbotts.frus-explorer.document"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
       configs:
