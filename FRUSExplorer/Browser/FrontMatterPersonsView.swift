@@ -35,6 +35,10 @@ struct FrontMatterPersonsView: View {
 
     @State private var persons: [PersonEntry] = []
     @State private var isLoading = true
+    /// Guards `loadPersons()` against duplicate runs: `.task` is attached to the body's
+    /// `Group`, and `Group` modifiers apply to each child — the task re-fires when the
+    /// loading branch swaps to the loaded section, issuing a second identical query.
+    @State private var didLoad = false
     @State private var searchText: String = ""
     @State private var selectedPerson: PersonIndexEntry?
 
@@ -107,6 +111,8 @@ struct FrontMatterPersonsView: View {
     // MARK: - Data Loading
 
     private func loadPersons() async {
+        guard !didLoad else { return }
+        didLoad = true
         guard let store = appState.personMentionStore else {
             isLoading = false
             return

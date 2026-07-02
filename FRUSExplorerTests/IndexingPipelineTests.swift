@@ -2206,6 +2206,41 @@ struct RealCorpusEncodingTests {
         }
     }
 
+    @Test("Structure titles collapse hard-wrapped <head> whitespace to single spaces")
+    func structureTitlesCollapseWhitespace() async throws {
+        try await withTempDir { dir in
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            // The <head> is hard-wrapped with ragged indentation (as in the published TEI)
+            // and contains a nested element, so its text arrives in fragments.
+            let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>t</title></titleStmt>
+              <publicationStmt><date>2010</date></publicationStmt>
+              <sourceDesc><p>f</p></sourceDesc></fileDesc></teiHeader>
+              <text><body>
+                <div type="compilation" xml:id="comp1">
+                  <head>Foundations of
+                      foreign policy,
+                      <date>1969</date>–1972</head>
+                  <div type="document" subtype="historical-document" xml:id="d1">
+                    <head>1. Document</head><p>Text.</p>
+                  </div>
+                </div>
+              </body></text>
+            </TEI>
+            """
+            try xml.data(using: .utf8)!.write(to: url)
+
+            let structure = try await FRUSDocumentParser().parseVolumeStructure(volumeURL: url)
+            let comp = try #require(structure.sections.first { $0.divType == "compilation" })
+            #expect(comp.title == "Foundations of foreign policy, 1969–1972",
+                    "interior newlines and indentation must collapse to single spaces")
+        }
+    }
+
     @Test("Unknown wrapper divs are transparent: nested structure bubbles up intact")
     func unknownWrapperIsTransparent() async throws {
         try await withTempDir { dir in

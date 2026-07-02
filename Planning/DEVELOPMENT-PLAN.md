@@ -845,3 +845,38 @@ is the first comma-delimited component.
   to regenerate the index with the consular series + validate the Havana golden check, then
   commit the index. Other consular series (Consular Instructions 604019, Notes to/from
   Consuls) and Domestic/Misc Letters remain as further Phase 3 work.
+
+### Session 2026-07-02 — Three-week review + reported-bug fixes (reindex bump, title whitespace, neighbors-sheet loop)
+Multi-agent review of PRs #108–#136 (word-cloud/analytics, archival neighbors, corpus-browser
+rework, volume-sources v2, Collections Phases 1a–4) plus root-cause fixes for the three
+user-reported regressions:
+- **Missing auto-reindex**: the Session 170 `volume_sources` rewrite (dd816df) drops the
+  pre-170 table in its schema migration and only repopulates on a full XML re-parse — its
+  commit message says "Requires a re-index" but `currentDateIndexVersion` was never bumped,
+  so first launch never triggered one and the Sources outline sat empty until a manual
+  reindex. Bumped to **12** with a version-history entry. (03f25f5's spurious-reindex fix
+  is innocent — but before it, backgrounding accidentally re-indexed everything, which is
+  why missed bumps used to self-heal invisibly.)
+- **Corpus-browser title whitespace**: `VolumeStructureParserDelegate` only edge-trimmed
+  joined `<head>` text, so hard-wrapped TEI titles carried interior newlines into
+  `structureJSON`. Titles now collapse interior whitespace at parse time (regression test
+  added); the version-12 re-parse propagates the fix.
+- **Archival Neighbors open/close loop**: `VolumeSourcesView.body` is a `Group` emitting
+  two Sections, and `Group` applies modifiers per child — `.sheet(item:)` was duplicated
+  onto both sections over one shared binding, so the two presenters ping-ponged
+  present/dismiss after close. Sheets now anchor once on the Archival Collections section;
+  the duplicated `.task` (which re-ran `loadSources` and reset the outline's disclosure
+  state) is guarded with `didLoad`. Same guard added to `FrontMatterPersonsView`.
+- **Review fix**: `RelatedDocument` lists keyed by `documentId` alone collide across
+  volumes (ids are volume-local) — added `compositeKey` and rekeyed ArchivalNeighborsSheet
+  + both Source Explorer related-document lists.
+- **Test health**: `WordCloudTokenizerTests.pluralFoldDisabled` was NL-asset-dependent
+  (lemma availability for bare "treaties" varies); now uses a nonsense plural.
+  `SettingsSyncCoordinatorTests` crashes the test host (SwiftData trap) on a **clean v2
+  checkout** — pre-existing, spun off as a follow-up task with 3 other verified review
+  findings (word-cloud cluster, legacy-prose export loss, iOS volume Download button,
+  macOS .fruscollection import feedback).
+- 959 unit tests pass (excluding the pre-existing crashing suite); iOS + macOS build clean.
+- **Next**: collection-editor rework scoping (manager → authoring canvas; see session
+  recommendations), plus the spun-off fix tasks. The next build's TestFlight notes must
+  mention the one-time automatic re-index on first launch.
