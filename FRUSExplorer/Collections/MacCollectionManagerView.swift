@@ -33,6 +33,8 @@ import UniformTypeIdentifiers
 ///   1.4 — Session 130: document header (from document_cache) shown in each row;
 ///          per-row delete button; multi-note support via selectedNoteIds; inline
 ///          Sort by Date control in Documents section header; toolbar tooltip improvements
+///   1.5 — Session 2026-07-02: consumes appState.pendingCollectionSelection so an
+///          open-with .fruscollection import lands on the imported collection
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -105,6 +107,24 @@ struct MacCollectionManagerView: View {
         } message: {
             Text(snapshotError ?? "")
         }
+        // Select a collection handed off from another surface — today the open-with
+        // `.fruscollection` import in FRUSExplorerApp, which sets the hand-off right
+        // before opening this window. `.task` consumes a hand-off already pending when
+        // the window is freshly created by that `openWindow(id:)`; `.onChange` consumes
+        // one arriving while the window is already open. Consume-and-clear, mirroring
+        // the `pendingSearch` pattern, so each hand-off fires once.
+        .task { consumePendingCollectionSelection() }
+        .onChange(of: appState.pendingCollectionSelection) { _, id in
+            if id != nil { consumePendingCollectionSelection() }
+        }
+    }
+
+    /// Applies a `pendingCollectionSelection` hand-off to the sidebar selection, then
+    /// clears it so it fires once.
+    private func consumePendingCollectionSelection() {
+        guard let id = appState.pendingCollectionSelection else { return }
+        appState.pendingCollectionSelection = nil
+        selectedId = id
     }
 
     /// Resolves a smart collection's saved search now and materializes the results into a new
