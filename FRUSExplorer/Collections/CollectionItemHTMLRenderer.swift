@@ -39,6 +39,12 @@ import SwiftUI
 ///          these volumes render a bordered citation card instead of a body (the live
 ///          preview's un-downloaded-volume treatment; exporters never set it, so export
 ///          output is unchanged)
+///   1.2 — Authoring Phase 2b (preview-review fixes): `showsSummaryPlaceholders` — the
+///          preview-only placeholder card for a `.summaryOnly` document with no stored
+///          summary (exports still either attach a summary or throw); the preview-only
+///          card CSS (citation card + summary placeholder) moved out of the shared
+///          stylesheet into `previewCSS`, emitted only when a preview affordance is
+///          configured — exported HTML is byte-identical to the pre-Phase-2b output
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -51,6 +57,21 @@ struct CollectionItemHTMLRenderer {
     /// for un-downloaded volumes); exporters leave it empty, so the HTML export byte
     /// output is unaffected.
     var citationOnlyVolumeIds: Set<String> = []
+
+    /// When `true`, a `.summaryOnly` document with no stored summary renders a
+    /// **summary-placeholder card** (styled like the citation card) noting that the
+    /// summary will be generated at export, instead of an empty body. Set only by the
+    /// live preview, whose `.preview` resolution never generates summaries; exporters
+    /// leave it `false` — an `.export` resolve either attaches a summary or throws, so
+    /// export output never contains the placeholder.
+    var showsSummaryPlaceholders: Bool = false
+
+    /// `true` when any preview-only affordance is configured — the gate for emitting the
+    /// preview-only card stylesheet (`previewCSS`). Exporters set neither property, so
+    /// exported HTML stays byte-identical to the pre-preview output.
+    private var isPreviewConfigured: Bool {
+        showsSummaryPlaceholders || !citationOnlyVolumeIds.isEmpty
+    }
 
     /// Creates a renderer with the given export options.
     ///
@@ -143,6 +164,11 @@ struct CollectionItemHTMLRenderer {
                     body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
                 }
                 body += "  </div>\n"
+            } else if showsSummaryPlaceholders {
+                // Preview only: no stored summary, and .preview resolution never
+                // generates one — show the promised placeholder card instead of an
+                // empty body. Never taken by exports (the flag is preview-set only).
+                body += summaryPlaceholderCardHTML()
             }
         case .index:
             break  // no body content
@@ -188,6 +214,23 @@ struct CollectionItemHTMLRenderer {
         body += "  <div class=\"citation-card\">\n"
         body += "    <p class=\"citation-card-citation\">\(markdownItalics(escaped(citation)))</p>\n"
         body += "    <p class=\"citation-card-note\">\(escaped(note))</p>\n"
+        body += "  </div>\n"
+        return body
+    }
+
+    /// The placeholder card emitted (preview only) for a `.summaryOnly` document with no
+    /// stored summary: `.preview` resolution never generates summaries, so the preview
+    /// shows a card (styled like the citation card) noting that the summary will be
+    /// generated at export. Exports never reach this — an `.export` resolve either
+    /// attaches a summary or throws before rendering.
+    ///
+    /// - Returns: The card's `<div class="summary-placeholder">…</div>` HTML fragment.
+    private func summaryPlaceholderCardHTML() -> String {
+        let note = String(localized: "collection.preview.summaryPlaceholder",
+                          defaultValue: "Summary will be generated at export")
+        var body = ""
+        body += "  <div class=\"summary-placeholder\">\n"
+        body += "    <p class=\"summary-placeholder-note\">\(escaped(note))</p>\n"
         body += "  </div>\n"
         return body
     }
@@ -274,6 +317,10 @@ struct CollectionItemHTMLRenderer {
             body += itemHTML(item)
         }
 
+        // Preview-only card styles are appended ONLY when a preview affordance is
+        // configured; the export path interpolates an empty string here, keeping the
+        // exported file byte-identical to the pre-preview output (v1.2).
+        let previewStyles = isPreviewConfigured ? "\n" + Self.previewCSS : ""
         return """
         <!DOCTYPE html>
         <html lang="en">
@@ -282,7 +329,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)
+            \(Self.embeddedCSS)\(previewStyles)
           </style>
         </head>
         <body>
@@ -429,6 +476,22 @@ struct CollectionItemHTMLRenderer {
       margin-bottom: 0.5rem;
     }
 
+    /* ── Source note (footnoteStyle == sourceNoteOnly) ─────────────────────── */
+    .source-note {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #555;
+      border-top: 1px solid #ddd;
+      padding-top: 0.6rem;
+    }
+    """
+
+    /// Preview-only card styles (v1.2) — the citation-only card (volume not downloaded)
+    /// and the summary-placeholder card. Emitted by `pageHTML` **only when a preview
+    /// affordance is configured** (`isPreviewConfigured`), never by exporters, so the
+    /// exported stylesheet — and therefore the exported file's bytes — are identical to
+    /// the pre-Phase-2b output (`htmlExportMatchesSharedRenderer` holds this line).
+    private static let previewCSS = """
     /* ── Citation-only card (preview: volume not downloaded) ──────────────── */
     .citation-card {
       border: 1px dashed #b08c3e;
@@ -446,13 +509,19 @@ struct CollectionItemHTMLRenderer {
       color: #a06a00;
     }
 
-    /* ── Source note (footnoteStyle == sourceNoteOnly) ─────────────────────── */
-    .source-note {
-      margin-top: 1rem;
-      font-size: 0.85rem;
-      color: #555;
-      border-top: 1px solid #ddd;
-      padding-top: 0.6rem;
+    /* ── Summary-placeholder card (preview: summary pending at export) ─────── */
+    .summary-placeholder {
+      border: 1px dashed #3a6bc9;
+      background: #f0f4ff;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .summary-placeholder-note {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #3a6bc9;
     }
     """
 

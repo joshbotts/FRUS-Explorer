@@ -78,12 +78,25 @@ enum CollectionResolveError: Error, LocalizedError {
 /// `.summaryOnly` documents keep a `nil` summary unless one is already stored (the preview
 /// renders placeholders for those, Phase 2b).
 ///
+/// ## Cooperative cancellation (v1.1)
+/// The per-document loops — the batch-context load and the per-entry resolve pass — check
+/// `Task.isCancelled` and stop early, so a superseded preview resolve does not SAX-parse
+/// documents nobody will render. The loops themselves stay non-throwing and return a
+/// *partial-safe* result (fewer loaded contexts / fewer items — never junk); the throwing
+/// entry points (`resolve`, `resolve(smartRefs:…)`, `resolveDocuments`) then convert the
+/// cancellation into a thrown `CancellationError` so no caller can mistake a truncated
+/// result for a complete one.
+///
 /// Version history:
 ///   1.0 — Session 2026-07-02 (Collections Authoring Phase 2a): extracted from
 ///          `ExportSheetView` (`resolveItems`, `resolveDocuments`, `resolveSmartDocuments`,
 ///          `resolveSummaries`, `prepareVolumes`, render-model helpers); smart path unified
 ///          with the static per-document pipeline; AST-cache-backed render models;
 ///          `purpose` gating; per-item incremental API for the Phase 2b preview
+///   1.1 — Authoring Phase 2b (preview-review fixes): cooperative cancellation in the
+///          per-document loops with `CancellationError` surfaced by the throwing entry
+///          points; `smartRefs(for:)` exposed and `resolve(smartRefs:…)` added so the
+///          preview can cap the smart result list *before* per-document resolution
 @MainActor
 class CollectionContentResolver {
 
@@ -182,7 +195,8 @@ class CollectionContentResolver {
     ///   - purpose: Gates volume preparation and summary generation (see `ResolvePurpose`).
     /// - Returns: Ordered export items ready for any `CollectionExporter`.
     /// - Throws: `CollectionResolveError` for smart-resolution and summary-prompt failures,
-    ///   `ExportError.renderingFailed` when on-demand summary generation is impossible.
+    ///   `ExportError.renderingFailed` when on-demand summary generation is impossible,
+    ///   `CancellationError` when the surrounding task was cancelled mid-resolve (v1.1).
     func resolve(
         collection: Collection,
         entries: [CollectionEntry],
@@ -191,6 +205,33 @@ class CollectionContentResolver {
     ) async throws -> [CollectionExportItem] {
         let items = try await resolveWithoutSummaries(
             collection: collection, entries: entries, allNotes: allNotes, purpose: purpose)
+        // A cancelled pass returned partial-safe items — surface the cancellation instead
+        // of handing a truncated result to a caller that expected the whole collection.
+        try Task.checkCancellation()
+        return try await applySummaryPhase(to: items, collection: collection, purpose: purpose)
+    }
+
+    /// Resolves a pre-fetched (and possibly capped) smart-reference list into export items,
+    /// including the summary phase — the preview's smart path (v1.1). The preview fetches
+    /// the lightweight refs with `smartRefs(for:)`, caps them to its render limit, and only
+    /// then pays per-document resolution here, so at most the cap is ever parsed.
+    ///
+    /// - Parameters:
+    ///   - refs: The smart-collection document references to resolve, in order.
+    ///   - collection: The owning collection (composition + default body depth).
+    ///   - allNotes: All research notes, for per-document note attachment.
+    ///   - purpose: Gates the summary phase (see `ResolvePurpose`).
+    /// - Returns: Ordered export items for exactly the given refs.
+    /// - Throws: `CancellationError` when the surrounding task was cancelled mid-resolve;
+    ///   summary-phase errors for `.export` (see `applySummaryPhase`).
+    func resolve(
+        smartRefs refs: [SmartDocumentRef],
+        collection: Collection,
+        allNotes: [ResearchNote],
+        purpose: ResolvePurpose
+    ) async throws -> [CollectionExportItem] {
+        let items = await resolveSmartItems(refs, collection: collection, allNotes: allNotes)
+        try Task.checkCancellation()
         return try await applySummaryPhase(to: items, collection: collection, purpose: purpose)
     }
 
@@ -202,16 +243,20 @@ class CollectionContentResolver {
     ///
     /// - Parameters: See `resolve(collection:entries:allNotes:purpose:)`.
     /// - Returns: The resolved `.document` payloads, in collection order.
-    /// - Throws: `CollectionResolveError` for smart-resolution failures.
+    /// - Throws: `CollectionResolveError` for smart-resolution failures, `CancellationError`
+    ///   when the surrounding task was cancelled mid-resolve (v1.1).
     func resolveDocuments(
         collection: Collection,
         entries: [CollectionEntry],
         allNotes: [ResearchNote],
         purpose: ResolvePurpose
     ) async throws -> [CollectionExportDocument] {
-        try await resolveWithoutSummaries(
+        let documents = try await resolveWithoutSummaries(
             collection: collection, entries: entries, allNotes: allNotes, purpose: purpose)
             .documents
+        // Same discipline as `resolve`: never hand back a cancellation-truncated list.
+        try Task.checkCancellation()
+        return documents
     }
 
     /// Resolves a single entry into its export item — the incremental API for the Phase 2b
@@ -285,9 +330,15 @@ class CollectionContentResolver {
     /// result, in relevance order. Mirrors the pre-extraction smart export flow, including
     /// the full-result-set fetch (`SearchViewModel.searchHardLimit`, not the default page).
     ///
+    /// Internal (v1.1) so the live preview can fetch the *lightweight* result list, cap it
+    /// to its render limit, and resolve only the capped refs via `resolve(smartRefs:…)` —
+    /// the refs are cheap (an FTS5 query); per-document resolution is what parses XML.
+    ///
+    /// - Parameter collection: The smart collection whose saved search to execute.
+    /// - Returns: One reference per search result, `sortOrder` ascending.
     /// - Throws: `CollectionResolveError.searchServiceUnavailable` /
     ///   `.savedSearchMissing`, or any search execution error.
-    private func smartRefs(for collection: Collection) async throws -> [SmartDocumentRef] {
+    func smartRefs(for collection: Collection) async throws -> [SmartDocumentRef] {
         guard let searchId = collection.savedSearchId else { return [] }
         guard let searchService = appState.searchService else {
             throw CollectionResolveError.searchServiceUnavailable
@@ -333,12 +384,17 @@ class CollectionContentResolver {
 
     /// Runs the ordered per-entry loop: sorts by `sortOrder`, tracks the Phase 3c section
     /// body-depth override across headings, and delegates each entry to `resolveEntry`.
+    ///
+    /// Cooperative cancellation (v1.1): a cancelled task stops the loop early and returns
+    /// the items resolved so far (partial-safe — every returned item is complete); the
+    /// throwing entry points convert the truncation into a thrown `CancellationError`.
     private func resolveItems(from refs: [EntryRef], batch: BatchContext) async -> [CollectionExportItem] {
         var items: [CollectionExportItem] = []
         // A heading may carry a `bodyDepthOverride` that acts as the section default for the
         // documents following it, until the next heading (Phase 3c). Tracked across the pass.
         var currentSectionDepth: String? = nil
         for ref in refs.sorted(by: { $0.sortOrder < $1.sortOrder }) {
+            if Task.isCancelled { break }
             if ref.kind == .heading {
                 currentSectionDepth = ref.bodyDepthOverride
             }
@@ -441,6 +497,11 @@ class CollectionContentResolver {
     /// (SQLite document cache first, cached-AST extraction as the XML fallback), render
     /// models (via the shared `DocumentASTCache` — see the type doc for the cache design),
     /// editorial-note flags, and the manifest map.
+    ///
+    /// Cooperative cancellation (v1.1): the per-document load loop — where each miss costs
+    /// a SAX parse — stops early when the task is cancelled. The partially loaded context
+    /// is safe (unloaded documents would merely resolve with empty bodies), and the
+    /// throwing entry points surface `CancellationError` before any such result escapes.
     private func loadBatchContext(
         for refs: [EntryRef],
         collection: Collection,
@@ -458,6 +519,7 @@ class CollectionContentResolver {
             $0.kind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty
         }
         for ref in docRefs {
+            if Task.isCancelled { break }
             let key = "\(ref.volumeId)/\(ref.documentId)"
 
             // SQLite cache path (fast) for the plain body text.

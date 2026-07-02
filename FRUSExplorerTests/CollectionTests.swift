@@ -10,6 +10,7 @@ import Testing
 import Foundation
 import SwiftData
 import SwiftUI
+import PDFKit
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -1234,12 +1235,19 @@ struct CollectionTests {
         #expect(docxContains("Editorial contract prose."))           // .prose
         #expect(docxContains("Contract Citation Label"))             // .document
 
-        // PDF — content streams aren't byte-searchable; rendering the full item mix into a
-        // valid, non-empty %PDF without throwing is the meaningful assertion.
+        // PDF — content streams aren't byte-searchable, so extract the page text with
+        // PDFKit and assert every item kind's content actually made it onto a page
+        // (a bare %PDF check cannot catch silently dropped content).
         let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: items)
         let pdf = try Data(contentsOf: pdfURL)
-        #expect(!pdf.isEmpty)
         #expect(pdf.prefix(4) == Data([0x25, 0x50, 0x44, 0x46]))     // "%PDF"
+        let pdfDocument = try #require(PDFDocument(data: pdf))
+        let pdfText = (0..<pdfDocument.pageCount)
+            .compactMap { pdfDocument.page(at: $0)?.string }
+            .joined(separator: "\n")
+        #expect(pdfText.contains("Contract Part I"))                 // .heading
+        #expect(pdfText.contains("Editorial contract prose."))      // .prose
+        #expect(pdfText.contains("Contract body paragraph."))       // .document body
     }
 
     @Test("ExporterContract: Zotero RIS and BibTeX export the document and skip structural items")

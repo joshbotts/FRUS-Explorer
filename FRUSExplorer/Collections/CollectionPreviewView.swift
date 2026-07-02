@@ -31,16 +31,22 @@ import WebKit
 /// At most `initialDocumentCap` document items are resolved/rendered initially; larger
 /// collections show a native bar with a **Render All** button that lifts the cap for the
 /// editor session (the flag is owned by the presenting editor so pane toggles keep it).
-/// Static collections cap *before* resolution (skipping the parse cost); smart
-/// collections must execute their saved search in full and cap the rendered items only.
+/// Both paths cap *before* per-document resolution, so the parse cost of documents past
+/// the cap is never paid: static collections cap the entry list; smart collections fetch
+/// the lightweight search-result refs (`CollectionContentResolver.smartRefs`), cap those,
+/// and resolve only the capped refs — the true result count still drives the cap bar.
 ///
 /// ## Un-downloaded volumes
 /// `.preview` resolution yields citation-only items for documents in un-downloaded
 /// volumes; those render as a distinct bordered citation card in the HTML (see
 /// `CollectionItemHTMLRenderer.citationOnlyVolumeIds`). The download affordance is
 /// native: a bar above the web view names the missing-volume count and offers a
-/// **Download** button that enqueues them via the existing `DownloadManager` path,
-/// then polls until they arrive and refreshes the preview.
+/// **Download** button that enqueues them via the existing `DownloadManager` path.
+/// Whenever any volumes are missing — regardless of how a download was started (the
+/// preview's own button, the editor's Export, the Browser) — a `.task`-scoped poll
+/// watches for their arrival and refreshes the preview, so citation cards never go
+/// stale while the pane is open. Missing volumes with no manifest entry cannot be
+/// downloaded: they are named in a "not available" note instead of a dead button.
 ///
 /// The web-view shell is a minimal local representable rather than the
 /// `FRUSDocumentWebView`/`FRUSWebViewConfiguration` stack deliberately: the preview page
@@ -55,6 +61,16 @@ import WebKit
 ///   1.0 — Authoring Phase 2b: initial implementation (debounced full-page regeneration,
 ///          25-document initial cap, native missing-volume download bar, honest
 ///          HTML-fidelity caption)
+///   1.1 — Authoring Phase 2b (adversarial-review fixes): smart collections cap the
+///          search-result refs *before* per-document resolution (was: resolve the full
+///          result set, then cap); initial cap lowered 25 → 20 to fit inside the
+///          24-slot `DocumentASTCache` LRU; superseded resolves cancel cooperatively
+///          (resolver v1.1) and their `CancellationError` is discarded silently;
+///          `.summaryOnly` documents without a stored summary render a placeholder card
+///          (renderer v1.2); the volume-arrival poll runs whenever volumes are missing,
+///          not only after the preview's own Download button; missing volumes absent
+///          from the manifest surface a "not available" note and never produce a
+///          phantom downloading state
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -83,7 +99,15 @@ struct CollectionPreviewView: View {
     // MARK: - Constants
 
     /// Maximum number of document items resolved/rendered before the user asks for all.
-    static let initialDocumentCap = 25
+    ///
+    /// Deliberately **below** `DocumentASTCache`'s 24-slot LRU capacity: a capped preview
+    /// re-resolves the same documents sequentially on every refresh, and a scan of 25+
+    /// documents through a 24-slot LRU evicts each entry just before its next use — the
+    /// textbook LRU worst case, missing (and re-parsing) every document every refresh.
+    /// At 20 the whole capped set stays resident, so refreshes after the first are all
+    /// cache hits. Keep this under the cache capacity; do not "fix" it by growing the
+    /// app-wide cache, which is sized for reading windows.
+    static let initialDocumentCap = 20
 
     // MARK: - State
 
@@ -105,11 +129,13 @@ struct CollectionPreviewView: View {
     /// Volume ids referenced by the collection that are not downloaded locally.
     @State private var missingVolumeIds: Set<String> = []
 
+    /// The subset of `missingVolumeIds` with no manifest entry — volumes that cannot be
+    /// downloaded by any path. Named in the bar's "not available" note; excluded from
+    /// the Download affordance and the arrival poll.
+    @State private var unavailableVolumeIds: Set<String> = []
+
     /// `true` after the user tapped Download, until the poll sees the volumes arrive.
     @State private var downloadsInFlight = false
-
-    /// Incremented per Download tap; keys the `.task` that polls for arrival.
-    @State private var downloadPollGeneration = 0
 
     /// Bumped by out-of-band events (download completion) to force a re-resolve.
     @State private var refreshToken = 0
@@ -174,10 +200,12 @@ struct CollectionPreviewView: View {
         .task(id: contentFingerprint) {
             await refresh()
         }
-        // After the user requests downloads, poll until the missing volumes arrive,
-        // then force a refresh. Keyed per Download tap; cancelled with the view.
-        .task(id: downloadPollGeneration) {
-            await pollForDownloads()
+        // Whenever volumes are missing, poll until they arrive — via the preview's own
+        // Download button OR any other path (the editor's Export, the Browser) — then
+        // force a refresh so the citation cards never go stale. Keyed on the missing
+        // set; `.task`-scoped, so it cancels with the pane.
+        .task(id: missingVolumeIds) {
+            await pollForVolumeArrivals()
         }
     }
 
@@ -222,31 +250,42 @@ struct CollectionPreviewView: View {
 
     /// Bar naming the number of un-downloaded volumes with a Download button that
     /// enqueues them through the existing `DownloadManager` path (native affordance —
-    /// no in-page JS).
+    /// no in-page JS). Missing volumes with no manifest entry cannot be downloaded:
+    /// they get a "not available" caption instead, and when *every* missing volume is
+    /// unavailable no Download button is shown at all.
     private var missingVolumesBar: some View {
-        HStack(spacing: 12) {
-            let count = missingVolumeIds.count
-            Label(
-                String(localized: "collection.preview.missingVolumes",
-                       defaultValue: "\(count) volume\(count == 1 ? "" : "s") not downloaded"),
-                systemImage: "arrow.down.circle"
-            )
-            .font(.callout)
-            Spacer()
-            if downloadsInFlight {
-                HStack(spacing: 6) {
-                    ProgressView().controlSize(.small)
-                    Text(String(localized: "collection.preview.downloading",
-                                defaultValue: "Downloading…"))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            } else {
-                Button(String(localized: "collection.preview.download",
-                              defaultValue: "Download")) {
-                    downloadMissingVolumes()
-                }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 12) {
+                let count = missingVolumeIds.count
+                Label(
+                    String(localized: "collection.preview.missingVolumes",
+                           defaultValue: "\(count) volume\(count == 1 ? "" : "s") not downloaded"),
+                    systemImage: "arrow.down.circle"
+                )
                 .font(.callout)
+                Spacer()
+                if downloadsInFlight {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(String(localized: "collection.preview.downloading",
+                                    defaultValue: "Downloading…"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if !missingVolumeIds.subtracting(unavailableVolumeIds).isEmpty {
+                    Button(String(localized: "collection.preview.download",
+                                  defaultValue: "Download")) {
+                        downloadMissingVolumes()
+                    }
+                    .font(.callout)
+                }
+            }
+            if !unavailableVolumeIds.isEmpty {
+                let unavailable = unavailableVolumeIds.count
+                Text(String(localized: "collection.preview.volumesUnavailable",
+                            defaultValue: "\(unavailable) volume\(unavailable == 1 ? " is" : "s are") not available for download"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 12)
@@ -255,11 +294,13 @@ struct CollectionPreviewView: View {
     }
 
     /// Bar shown when the collection exceeds the initial document cap, with the
-    /// Render All button that lifts it for the editor session.
+    /// Render All button that lifts it for the editor session. The "of M" total is the
+    /// true document count — for smart collections, the full search-result count, even
+    /// though only the capped prefix was resolved.
     private var capBar: some View {
         HStack(spacing: 12) {
             Text(String(localized: "collection.preview.capNotice",
-                        defaultValue: "Showing first \(Self.initialDocumentCap) documents"))
+                        defaultValue: "Showing first \(Self.initialDocumentCap) of \(totalDocumentCount) documents"))
                 .font(.callout)
             Spacer()
             Button(String(localized: "collection.preview.renderAll",
@@ -310,19 +351,28 @@ struct CollectionPreviewView: View {
                     .map(\.volumeId))
             missing = neededVolumeIds.filter { !dm.isVolumeDownloaded($0) }
         }
+        // Missing volumes with no manifest entry can never be downloaded — surfaced as
+        // a "not available" note instead of a dead Download affordance.
+        let manifestVolumeIds = Set(
+            (appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries)
+                .map(\.volumeId))
+        let unavailable = missing.filter { !manifestVolumeIds.contains($0) }
 
         let resolver = CollectionContentResolver(appState: appState, modelContext: modelContext)
         do {
             let items: [CollectionExportItem]
             if isSmart {
-                // Smart path: the saved search resolves in full; cap rendered items only.
-                var resolved = try await resolver.resolve(
-                    collection: collection, entries: entries, allNotes: allNotes,
+                // Smart path: fetch the lightweight search-result refs (an FTS5 query —
+                // no parsing), cap them BEFORE per-document resolution so at most the
+                // cap is ever parsed, and keep the true total for the cap bar.
+                let refs = try await resolver.smartRefs(for: collection)
+                let docCount = refs.count
+                let cappedRefs = (renderAll || docCount <= Self.initialDocumentCap)
+                    ? refs
+                    : Array(refs.prefix(Self.initialDocumentCap))
+                let resolved = try await resolver.resolve(
+                    smartRefs: cappedRefs, collection: collection, allNotes: allNotes,
                     purpose: .preview)
-                let docCount = resolved.documents.count
-                if !renderAll && docCount > Self.initialDocumentCap {
-                    resolved = Self.capDocuments(resolved, cap: Self.initialDocumentCap)
-                }
                 if Task.isCancelled { return }
                 totalDocumentCount = docCount
                 items = resolved
@@ -343,6 +393,7 @@ struct CollectionPreviewView: View {
 
             var renderer = CollectionItemHTMLRenderer(options: previewOptions())
             renderer.citationOnlyVolumeIds = missing
+            renderer.showsSummaryPlaceholders = true
             let metadata = CollectionExportMetadata(
                 name: collection.name.isEmpty
                     ? String(localized: "collection.editor.untitled",
@@ -352,12 +403,18 @@ struct CollectionPreviewView: View {
             let page = renderer.pageHTML(metadata: metadata, items: items)
             if Task.isCancelled { return }
             missingVolumeIds = missing
+            unavailableVolumeIds = unavailable
             html = page
             resolveError = nil
             hasRenderedOnce = true
+        } catch is CancellationError {
+            // Superseded by a newer fingerprint — the resolver stopped cooperatively
+            // (resolver v1.1); discard silently, the newer pass owns the state.
+            return
         } catch {
             if Task.isCancelled { return }
             missingVolumeIds = missing
+            unavailableVolumeIds = unavailable
             resolveError = error.localizedDescription
         }
     }
@@ -390,44 +447,43 @@ struct CollectionPreviewView: View {
         return out
     }
 
-    /// Returns the item prefix containing at most `cap` document items (smart path,
-    /// where capping can only happen after the saved search resolves).
-    private static func capDocuments(_ items: [CollectionExportItem], cap: Int) -> [CollectionExportItem] {
-        var documentCount = 0
-        var out: [CollectionExportItem] = []
-        for item in items {
-            if case .document = item {
-                documentCount += 1
-                if documentCount > cap { break }
-            }
-            out.append(item)
-        }
-        return out
-    }
-
     // MARK: - Downloads
 
-    /// Enqueues every missing volume through the existing `DownloadManager` path (the
-    /// same enqueue used by the Browser's volume rows) and starts the arrival poll.
+    /// Enqueues every *downloadable* missing volume (those with a manifest entry) through
+    /// the existing `DownloadManager` path — the same enqueue used by the Browser's volume
+    /// rows. Volumes with no manifest entry are already surfaced via the bar's "not
+    /// available" note; the downloading state is entered only when at least one download
+    /// was actually enqueued, so a manifest-less set can never show a phantom
+    /// "Downloading…". Arrival is observed by the always-on `pollForVolumeArrivals`.
     private func downloadMissingVolumes() {
-        guard let dm = appState.downloadManager, !missingVolumeIds.isEmpty else { return }
+        guard let dm = appState.downloadManager else { return }
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
-        for volumeId in missingVolumeIds {
+        var enqueuedAny = false
+        for volumeId in missingVolumeIds.subtracting(unavailableVolumeIds) {
             guard let entry = manifest.first(where: { $0.volumeId == volumeId }) else { continue }
+            enqueuedAny = true
             Task { await dm.enqueueDownload(volumeId: entry.volumeId,
                                             downloadUrl: entry.downloadUrl) }
         }
-        downloadsInFlight = true
-        downloadPollGeneration += 1
+        if enqueuedAny {
+            downloadsInFlight = true
+        }
     }
 
-    /// Polls (2 s interval, ~5 min budget) until every requested volume is downloaded,
-    /// then bumps `refreshToken` so the preview re-resolves without the debounce.
-    /// Cancelled automatically when the view disappears or a newer poll starts.
-    private func pollForDownloads() async {
-        guard downloadPollGeneration > 0, let dm = appState.downloadManager else { return }
-        let waiting = missingVolumeIds
+    /// Polls (2 s interval, ~5 min budget) while any missing volume could still arrive,
+    /// regardless of what started the download — the preview's own Download button, the
+    /// same editor's Export, or the Browser. When every arrivable volume (those with a
+    /// manifest entry) is downloaded, bumps `refreshToken` so the preview re-resolves
+    /// without the debounce. Keyed on `missingVolumeIds` from the view's `.task`, so it
+    /// restarts when the missing set changes and cancels when the pane closes.
+    private func pollForVolumeArrivals() async {
+        guard let dm = appState.downloadManager else { return }
+        // Volumes absent from the manifest can never arrive; wait only on those that can.
+        let manifestVolumeIds = Set(
+            (appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries)
+                .map(\.volumeId))
+        let waiting = missingVolumeIds.filter { manifestVolumeIds.contains($0) }
         guard !waiting.isEmpty else { return }
         for _ in 0..<150 {
             try? await Task.sleep(nanoseconds: 2_000_000_000)

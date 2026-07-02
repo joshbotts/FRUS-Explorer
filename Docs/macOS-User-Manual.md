@@ -553,7 +553,11 @@ Because a smart collection's membership is resolved dynamically, it can't be han
 
 `[SCREENSHOT: Collection detail showing the "Link Search" button and a linked saved search name displayed as a badge]`
 
-### 10.5 Export
+### 10.5 Live Preview
+
+Click the **eye** button in the Collections window's toolbar to open a **live preview** side-by-side with the collection detail pane — the collection rendered exactly as its HTML export, updating as you edit. The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
+
+### 10.6 Export
 
 Click **Export** in the Collections window. Because composition is already set, this sheet is just format + destination.
 

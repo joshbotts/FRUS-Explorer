@@ -431,7 +431,7 @@ A **collection** is a curated, authored set of documents — for a research pape
 - The **manager** is the editorial place. It's where you decide *what's in* the collection and *how it's composed*: which documents, in what order, interleaved with your own section headings and prose, and how much of each document to show.
 - **Export** is purely for *sharing*. By the time you export, every decision about the content already lives on the collection — export only chooses a **format** and a **destination**.
 
-Everything in Sections 10.1–10.4 happens in the manager; 10.5 covers export.
+Everything in Sections 10.1–10.5 happens in the manager; 10.6 covers export.
 
 ### 10.1 The Collection Manager
 
@@ -473,7 +473,16 @@ Composition settings are **saved on the collection** and edited in the manager's
 
 **Per-entry and per-section overrides.** The default body depth is exactly that — a default. Any single document can override it (a mostly-summary reader with two documents shown in full), and any **section heading** can set a depth for all the documents beneath it. The effective depth is the most specific one that applies: the document's own override, else its section's, else the collection default.
 
-### 10.5 Export
+### 10.5 Live Preview
+
+While you compose, a **live preview** shows the collection rendered exactly as its HTML export, updating as you edit:
+
+- On **iPhone**, switch between **Outline** and **Preview** with the segmented control at the top of the editor.
+- On **iPad**, tap the **eye** button in the toolbar to open the preview side-by-side with the document list.
+
+The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
+
+### 10.6 Export
 
 Tap **Export**, choose a format, and share. Because composition is already set, this sheet is just format + destination.
 
