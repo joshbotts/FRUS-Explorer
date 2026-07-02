@@ -1000,3 +1000,26 @@ verified by re-running with `cloudKitDatabase: .none` alone, which still crashed
 - The fifth reported failure (`WordCloudTokenizerTests.pluralFoldDisabled`) was already
   fixed at the v2 tip by 182f297 (nonsense-plural probe); verified passing.
 - Full unit-test bundle: 968 tests in 152 suites, all pass (iPhone 17 sim, iOS 26.5).
+
+### Session 2026-07-02 (later) — Collections Authoring Phase 2 (resolver + live preview)
+- **PR #148 (merged): CollectionContentResolver.** All resolution extracted from the export
+  sheet (1,272 → 670 lines) into one @MainActor service: unified smart path (smart collections
+  now honor notes/highlights/source-note/summary composition — previously silently dropped),
+  AST-cache-backed render models (cache invalidation rides the existing volume delete/re-index
+  path; one parse serves body text + render model), `.export`/`.preview` purpose gating
+  (.preview never downloads volumes or triggers AI), per-item `resolveItem` API. Golden-file
+  resolve test + smart-composition + preview-gating tests. 972/972.
+- **PR 2b: shared renderer + live preview.** `CollectionItemHTMLRenderer` factored from
+  HTMLCollectionExporter — one per-item HTML function serves export AND preview (byte-identity
+  test proves no drift; export bytes verified identical to pre-2b). Exporter contract test
+  (all 5 exporters × all item kinds; PDF leg asserts extracted text). `CollectionPreviewView`:
+  WKWebView, ~1s debounced re-resolve on an entries+composition fingerprint, 20-doc initial
+  cap ("Render All" lifts; smart searches pre-cap before any parsing), citation cards +
+  native Download bar for missing volumes (poll keyed on the missing set; manifest-absent ids
+  shown "not available"), summary-placeholder cards in preview, honest "HTML export" label
+  (A2 cheap). iPhone Outline|Preview toggle; iPad + macOS side-by-side with eye toggle.
+  Adversarial review pass fixed 9 findings pre-PR (smart-set pre-cap HIGH, LRU cap
+  interaction, resolver cooperative cancellation, stale citation cards, phantom download
+  state, export CSS purity, PDF contract leg). Docs rider: manuals §10.5 Live Preview,
+  TestFlight files, IndexingEducationView. PR 2c (scroll-sync/incremental refresh) deferred
+  as optional.
