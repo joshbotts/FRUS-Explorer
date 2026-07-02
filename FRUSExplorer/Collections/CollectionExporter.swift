@@ -7,6 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(AppKit)
+import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - CollectionToCStyle
 
@@ -464,6 +469,107 @@ extension Array where Element == CollectionExportItem {
     /// exporter needs the documents alone — e.g. the collection word cloud.
     var documents: [CollectionExportDocument] {
         compactMap { if case .document(let doc) = $0 { return doc } else { return nil } }
+    }
+}
+
+// MARK: - ProseFormattedSpan
+
+/// One run of editorial-prose text plus the concrete inline formatting decoded from a
+/// Phase 3b rich-text blob. Bold/italic come from the run's `NSFont`/`UIFont` symbolic
+/// traits, underline from the underline-style attribute, and `colorHex` from the
+/// foreground colour. Produced by `CollectionProse.paragraphs(fromRTF:)`.
+struct ProseFormattedSpan: Sendable {
+    /// The run's text. May contain single `\n` line breaks; paragraph breaks (blank
+    /// lines) are already split out into separate paragraphs by the decoder.
+    let text: String
+    /// `true` when the run's font carries the bold symbolic trait.
+    let bold: Bool
+    /// `true` when the run's font carries the italic symbolic trait.
+    let italic: Bool
+    /// `true` when the run carries a non-zero underline style.
+    let underline: Bool
+    /// Uppercase `RRGGBB` (no leading `#`), or `nil` for (near-)black default text so
+    /// ordinary prose isn't tagged with a redundant colour.
+    let colorHex: String?
+}
+
+// MARK: - CollectionProse
+
+/// Shared decoder that turns a Phase 3b rich-text prose block — supplied as **RTF** `Data`
+/// (as carried by `CollectionExportItem.prose`) — into paragraphs of `ProseFormattedSpan`,
+/// so every exporter (HTML, DOCX, PDF) reads prose formatting through one code path and
+/// cannot drift. Blank lines (`"\n\n"`) split paragraphs; each paragraph is an ordered list
+/// of spans covering its text.
+enum CollectionProse {
+    /// Decodes `rtf` into paragraphs of formatted spans, resolving paragraph breaks *before*
+    /// spans are emitted so callers never straddle a paragraph boundary with a single run.
+    ///
+    /// - Returns: One inner array per paragraph; empty (`[]`) when the data is empty or is
+    ///   not decodable as RTF.
+    static func paragraphs(fromRTF rtf: Data) -> [[ProseFormattedSpan]] {
+        guard !rtf.isEmpty,
+              let ns = try? NSAttributedString(
+                  data: rtf,
+                  options: [.documentType: NSAttributedString.DocumentType.rtf],
+                  documentAttributes: nil),
+              ns.length > 0
+        else { return [] }
+
+        var paragraphs: [[ProseFormattedSpan]] = [[]]
+        let plain = ns.string as NSString
+        ns.enumerateAttributes(in: NSRange(location: 0, length: ns.length), options: []) { attrs, range, _ in
+            var bold = false, italic = false, underline = false
+            var colorHex: String?
+            #if canImport(AppKit)
+            if let font = attrs[.font] as? NSFont {
+                let traits = font.fontDescriptor.symbolicTraits
+                bold = traits.contains(.bold); italic = traits.contains(.italic)
+            }
+            if let color = attrs[.foregroundColor] as? NSColor { colorHex = hexColor(color) }
+            #elseif canImport(UIKit)
+            if let font = attrs[.font] as? UIFont {
+                let traits = font.fontDescriptor.symbolicTraits
+                bold = traits.contains(.traitBold); italic = traits.contains(.traitItalic)
+            }
+            if let color = attrs[.foregroundColor] as? UIColor { colorHex = hexColor(color) }
+            #endif
+            if let style = attrs[.underlineStyle] as? Int, style != 0 { underline = true }
+
+            let parts = plain.substring(with: range).components(separatedBy: "\n\n")
+            for (index, part) in parts.enumerated() {
+                if index > 0 { paragraphs.append([]) }   // a blank line starts a new paragraph
+                if !part.isEmpty {
+                    paragraphs[paragraphs.count - 1].append(
+                        ProseFormattedSpan(text: part, bold: bold, italic: italic,
+                                           underline: underline, colorHex: colorHex))
+                }
+            }
+        }
+        return paragraphs
+    }
+
+    // MARK: - Colour helpers
+
+    #if canImport(AppKit)
+    /// `RRGGBB` for a colour, or `nil` for (near-)black default text.
+    private static func hexColor(_ color: NSColor) -> String? {
+        guard let c = color.usingColorSpace(.sRGB) else { return nil }
+        return hex(r: c.redComponent, g: c.greenComponent, b: c.blueComponent)
+    }
+    #elseif canImport(UIKit)
+    /// `RRGGBB` for a colour, or `nil` for (near-)black default text.
+    private static func hexColor(_ color: UIColor) -> String? {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return hex(r: r, g: g, b: b)
+    }
+    #endif
+
+    /// Formats an RGB triple as uppercase `RRGGBB`, returning `nil` for (near-)black so
+    /// ordinary prose isn't tagged with a redundant colour.
+    private static func hex(r: CGFloat, g: CGFloat, b: CGFloat) -> String? {
+        if r < 0.08, g < 0.08, b < 0.08 { return nil }   // (near-)black default text
+        return String(format: "%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
     }
 }
 
