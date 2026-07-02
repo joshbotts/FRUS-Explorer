@@ -750,6 +750,7 @@ final class AppState {
                     // "No Terms" for the rest of the session.
                     if let wordFrequencyService = self.wordFrequencyService {
                         Task { await wordFrequencyService.invalidateCache() }
+                    }
                     // The index content just changed. Flush Corpus Analytics'
                     // in-memory result caches — their keys are bare query terms
                     // with no index fingerprint, so a count computed before this
