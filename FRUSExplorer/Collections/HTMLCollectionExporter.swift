@@ -8,6 +8,11 @@
 
 import Foundation
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - HTMLCollectionExporter
 
@@ -374,24 +379,56 @@ final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - Helpers
 
-    /// Renders a rich-text prose block (Phase 3b) to an HTML fragment: bold/italic runs
-    /// (`inlinePresentationIntent`) map to `<strong>`/`<em>`, blank lines to `<p>` boundaries,
-    /// single newlines to `<br>`. Plain prose renders as plain paragraphs.
-    private func proseHTML(_ attributed: AttributedString) -> String {
-        guard !attributed.characters.isEmpty else { return "" }
+    /// A formatted prose span: its text plus the concrete formatting read from the RTF.
+    private struct ProseSpan {
+        let text: String
+        let bold: Bool
+        let italic: Bool
+        let underline: Bool
+        let colorHex: String?
+    }
 
-        // A formatted span (its text and whether it is bold/italic). Paragraph breaks are
-        // resolved *before* tags are emitted, so open/close tags never straddle a `<p>`
-        // boundary even when a single run spans a blank line.
-        struct Span { let text: String; let bold: Bool; let italic: Bool }
-        var paragraphs: [[Span]] = [[]]
-        for run in attributed.runs {
-            let bold = run.inlinePresentationIntent?.contains(.stronglyEmphasized) == true
-            let italic = run.inlinePresentationIntent?.contains(.emphasized) == true
-            let parts = String(attributed[run.range].characters).components(separatedBy: "\n\n")
+    /// Renders a rich-text prose block (Phase 3b) — supplied as **RTF** — to an HTML fragment:
+    /// bold/italic/underline/colour runs map to `<strong>`/`<em>`/`<u>`/`<span style=color>`,
+    /// blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is read from the
+    /// concrete `NSFont`/`NSColor`/underline attributes the native editor produced. Paragraph
+    /// breaks are resolved *before* tags are emitted, so open/close tags never straddle a `<p>`.
+    private func proseHTML(_ rtf: Data) -> String {
+        guard !rtf.isEmpty,
+              let ns = try? NSAttributedString(
+                  data: rtf,
+                  options: [.documentType: NSAttributedString.DocumentType.rtf],
+                  documentAttributes: nil),
+              ns.length > 0
+        else { return "" }
+
+        var paragraphs: [[ProseSpan]] = [[]]
+        let plain = ns.string as NSString
+        ns.enumerateAttributes(in: NSRange(location: 0, length: ns.length), options: []) { attrs, range, _ in
+            var bold = false, italic = false, underline = false
+            var colorHex: String?
+            #if canImport(AppKit)
+            if let font = attrs[.font] as? NSFont {
+                let traits = font.fontDescriptor.symbolicTraits
+                bold = traits.contains(.bold); italic = traits.contains(.italic)
+            }
+            if let color = attrs[.foregroundColor] as? NSColor { colorHex = Self.hexColor(color) }
+            #elseif canImport(UIKit)
+            if let font = attrs[.font] as? UIFont {
+                let traits = font.fontDescriptor.symbolicTraits
+                bold = traits.contains(.traitBold); italic = traits.contains(.traitItalic)
+            }
+            if let color = attrs[.foregroundColor] as? UIColor { colorHex = Self.hexColor(color) }
+            #endif
+            if let style = attrs[.underlineStyle] as? Int, style != 0 { underline = true }
+
+            let parts = plain.substring(with: range).components(separatedBy: "\n\n")
             for (index, part) in parts.enumerated() {
                 if index > 0 { paragraphs.append([]) }   // a blank line starts a new paragraph
-                if !part.isEmpty { paragraphs[paragraphs.count - 1].append(Span(text: part, bold: bold, italic: italic)) }
+                if !part.isEmpty {
+                    paragraphs[paragraphs.count - 1].append(
+                        ProseSpan(text: part, bold: bold, italic: italic, underline: underline, colorHex: colorHex))
+                }
             }
         }
 
@@ -399,8 +436,10 @@ final class HTMLCollectionExporter: CollectionExporter {
         for paragraph in paragraphs {
             let html = paragraph.map { span -> String in
                 var open = "", close = ""
-                if span.bold   { open += "<strong>"; close = "</strong>" + close }
-                if span.italic { open += "<em>";     close = "</em>" + close }
+                if span.bold      { open += "<strong>"; close = "</strong>" + close }
+                if span.italic    { open += "<em>";     close = "</em>" + close }
+                if span.underline { open += "<u>";      close = "</u>" + close }
+                if let hex = span.colorHex { open += "<span style=\"color:\(hex)\">"; close = "</span>" + close }
                 return open + escaped(span.text).replacingOccurrences(of: "\n", with: "<br>\n") + close
             }.joined()
             if !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -409,6 +448,26 @@ final class HTMLCollectionExporter: CollectionExporter {
         }
         out += "</div>\n\n"
         return out
+    }
+
+    /// A `#rrggbb` string for a colour, or `nil` for (near-)black — the default text colour —
+    /// so ordinary prose isn't wrapped in a redundant colour span.
+    #if canImport(AppKit)
+    private static func hexColor(_ color: NSColor) -> String? {
+        guard let c = color.usingColorSpace(.sRGB) else { return nil }
+        return hex(r: c.redComponent, g: c.greenComponent, b: c.blueComponent)
+    }
+    #elseif canImport(UIKit)
+    private static func hexColor(_ color: UIColor) -> String? {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return hex(r: r, g: g, b: b)
+    }
+    #endif
+
+    private static func hex(r: CGFloat, g: CGFloat, b: CGFloat) -> String? {
+        if r < 0.08, g < 0.08, b < 0.08 { return nil }   // (near-)black default text
+        return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
     }
 
     /// Converts `_text_` spans (already HTML-escaped) to `<em>text</em>`.

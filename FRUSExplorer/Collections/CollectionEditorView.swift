@@ -8,6 +8,11 @@
 
 import SwiftUI
 import SwiftData
+#if canImport(AppKit)
+import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - CollectionEditorView
 
@@ -879,55 +884,148 @@ func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
 
 // MARK: - ProseRichText
 
-/// Bridges a `prose` entry's stored body to an editable `AttributedString` (Phase 3b).
+/// Bridges a `prose` entry's stored body to/from RTF for the native editor and the exporters.
 ///
-/// Rich text is persisted as the **`AttributedString`'s own `Codable` encoding** in
-/// `CollectionEntry.richText`, which preserves the Foundation formatting attributes the
-/// rich-text editor produces (bold/italic via `inlinePresentationIntent`). `CollectionEntry.text`
-/// is kept in sync as the plain-text projection for search and plain renderers.
+/// Rich text is persisted as **RTF** in `CollectionEntry.richText`. The native ``RichTextEditor``
+/// produces *concrete* `NSFont`/`NSColor`/underline attributes, which RTF preserves and the
+/// exporters can introspect — unlike SwiftUI's opaque `Font`, which cannot be resolved outside a
+/// live view. `CollectionEntry.text` is kept in sync as the plain-text projection.
 enum ProseRichText {
 
-    /// The entry's editable attributed body — decoded from `richText`, else the plain `text`.
-    static func attributedString(from entry: CollectionEntry) -> AttributedString {
-        if let data = entry.richText,
-           let decoded = try? JSONDecoder().decode(AttributedString.self, from: data) {
-            return decoded
-        }
-        return AttributedString(entry.text ?? "")
-    }
-
-    /// Stores an edited attributed body onto the entry: the encoded `AttributedString` into
-    /// `richText`, its plain characters into `text`.
-    static func store(_ attributed: AttributedString, into entry: CollectionEntry) {
-        entry.richText = try? JSONEncoder().encode(attributed)
-        entry.text = String(attributed.characters)
+    /// The RTF payload to render at export time: the entry's stored `richText`, else its plain
+    /// `text` encoded as RTF (so exporters always receive RTF).
+    static func exportRTF(from entry: CollectionEntry) -> Data {
+        if let rtf = entry.richText { return rtf }
+        let ns = NSAttributedString(string: entry.text ?? "")
+        return (try? ns.data(from: NSRange(location: 0, length: ns.length),
+                             documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])) ?? Data()
     }
 }
+
+// MARK: - RichTextEditor
+
+/// A native rich-text editor (`NSTextView` on macOS, `UITextView` on iOS) bound to an entry's
+/// RTF body. Native text views produce concrete `NSFont`/`NSColor` attributes — bold/italic via
+/// ⌘B/⌘I and the edit/format menu, colour via the macOS colour panel — which RTF round-trips and
+/// the exporters can read. Edits are reported as `(rtf, plainText)` via `onChange`.
+struct RichTextEditor {
+    /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
+    let initialRTF: Data?
+    /// Plain-text fallback used when `initialRTF` is `nil` (e.g. a pre-3b plain prose entry).
+    let plainFallback: String
+    /// Called on every edit with the new RTF and its plain-text projection.
+    let onChange: (Data?, String) -> Void
+
+    /// The initial attributed content — from RTF, else the plain fallback.
+    fileprivate func initialAttributed() -> NSAttributedString {
+        if let rtf = initialRTF,
+           let ns = try? NSAttributedString(data: rtf,
+                                            options: [.documentType: NSAttributedString.DocumentType.rtf],
+                                            documentAttributes: nil) {
+            return ns
+        }
+        return NSAttributedString(string: plainFallback)
+    }
+
+    /// Serialises the text view's storage to `(rtf, plainText)` and reports it.
+    fileprivate func report(_ storage: NSAttributedString) {
+        let rtf = try? storage.data(from: NSRange(location: 0, length: storage.length),
+                                    documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+        onChange(rtf, storage.string)
+    }
+}
+
+#if os(macOS)
+extension RichTextEditor: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSScrollView {
+        let textView = NSTextView()
+        textView.isRichText = true
+        textView.allowsUndo = true
+        textView.delegate = context.coordinator
+        textView.font = .systemFont(ofSize: NSFont.systemFontSize)
+        textView.textContainerInset = NSSize(width: 4, height: 6)
+        textView.drawsBackground = false
+        textView.textStorage?.setAttributedString(initialAttributed())
+
+        let scroll = NSScrollView()
+        scroll.documentView = textView
+        scroll.hasVerticalScroller = true
+        scroll.drawsBackground = false
+        scroll.borderType = .noBorder
+        return scroll
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        // Rebind the coordinator's callback to the CURRENT entry. The row (and its text view)
+        // may have been reused for a different entry after a reorder/delete — the managers use
+        // an index-based `$sortedEntries[idx]` binding — so a make-time closure would write to
+        // the wrong entry (or trap on a stale index).
+        context.coordinator.report = report
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(report: report) }
+
+    /// Forwards `NSTextView` edits back to the entry.
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        fileprivate var report: (NSAttributedString) -> Void
+        init(report: @escaping (NSAttributedString) -> Void) { self.report = report }
+        func textDidChange(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView, let storage = tv.textStorage else { return }
+            report(storage)
+        }
+    }
+}
+#elseif os(iOS)
+extension RichTextEditor: UIViewRepresentable {
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.allowsEditingTextAttributes = true   // Bold / Italic / Underline in the edit menu
+        textView.isEditable = true
+        textView.backgroundColor = .clear
+        textView.font = .preferredFont(forTextStyle: .callout)
+        textView.delegate = context.coordinator
+        textView.attributedText = initialAttributed()
+        return textView
+    }
+
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        // Rebind the coordinator's callback to the CURRENT entry (see the macOS note above).
+        context.coordinator.report = report
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(report: report) }
+
+    /// Forwards `UITextView` edits back to the entry.
+    final class Coordinator: NSObject, UITextViewDelegate {
+        fileprivate var report: (NSAttributedString) -> Void
+        init(report: @escaping (NSAttributedString) -> Void) { self.report = report }
+        func textViewDidChange(_ textView: UITextView) {
+            report(textView.attributedText ?? NSAttributedString())
+        }
+    }
+}
+#endif
 
 // MARK: - CollectionProseRow
 
 /// An editable editorial prose block in the collection — rich text (Phase 3b). Shared by the
 /// iOS editor and the macOS manager. `onDelete`, when provided, renders an inline delete
-/// control (see ``CollectionHeadingRow``). Formatting uses the system rich-text editing
-/// affordances (bold/italic via ⌘B/⌘I and the edit menu).
+/// control (see ``CollectionHeadingRow``). Bold/italic/underline/colour are edited with the
+/// native text view and stored as RTF on the entry.
 struct CollectionProseRow: View {
     @Binding var entry: CollectionEntry
     var onDelete: (() -> Void)? = nil
-
-    /// The prose body as an editable `AttributedString`, persisted via ``ProseRichText``.
-    private var attributedBody: Binding<AttributedString> {
-        Binding(get: { ProseRichText.attributedString(from: entry) },
-                set: { ProseRichText.store($0, into: entry) })
-    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "text.alignleft")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            TextEditor(text: attributedBody)
-                .font(.callout)
-                .frame(minHeight: 44, maxHeight: 220)
+            RichTextEditor(initialRTF: entry.richText, plainFallback: entry.text ?? "") { rtf, plain in
+                entry.richText = rtf
+                entry.text = plain
+            }
+            .frame(minHeight: 60, maxHeight: 220)
             structuralDeleteButton(onDelete)
         }
         .padding(.vertical, 4)
@@ -1796,7 +1894,7 @@ struct ExportSheetView: View {
             // Heading / prose entries pass straight through as structural items.
             switch entry.entryKind {
             case .heading: return .heading(entry.text ?? "")
-            case .prose:   return .prose(ProseRichText.attributedString(from: entry))
+            case .prose:   return .prose(ProseRichText.exportRTF(from: entry))
             case .document: break
             }
             let manifestEntry = manifestMap[entry.volumeId]

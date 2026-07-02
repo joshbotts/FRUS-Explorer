@@ -444,9 +444,10 @@ enum CollectionExportItem: Sendable {
     case document(CollectionExportDocument)
     /// A section heading (the title text).
     case heading(String)
-    /// An editorial prose block, as rich text (Phase 3b). Exporters that don't render
-    /// formatting can use `String(prose.characters)` for the plain-text projection.
-    case prose(AttributedString)
+    /// An editorial prose block, as **RTF** data (Phase 3b). Exporters decode it to an
+    /// `NSAttributedString` to render bold/italic/underline/colour, or read its `.string` for
+    /// the plain-text projection. `Data` (unlike `NSAttributedString`) is `Sendable`.
+    case prose(Data)
 }
 
 extension Array where Element == CollectionExportItem {
