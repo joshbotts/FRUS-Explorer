@@ -29,11 +29,16 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 ///
 /// Results are cached in memory keyed by `(scope signature, limit, stopword
 /// policy)`, bounded by a small LRU, and flushed by `invalidateCache()` when the
-/// index changes. Corpus computation can be long-running; callers should invoke
-/// it from a cancellable background `Task` and show progress.
+/// index changes — called by `AppState.connectIndexingProgress` on each volume's
+/// `.complete` event and by `ResetService` after the index is cleared. Corpus
+/// computation can be long-running; callers should invoke it from a cancellable
+/// background `Task` and show progress.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — Word Cloud fixes: `invalidateCache()` is now actually wired to indexing
+///          completion and reset (the in-memory key has no index fingerprint, so
+///          nothing else evicts results computed against a since-changed index)
 actor WordFrequencyService {
 
     // MARK: - Dependencies
@@ -60,7 +65,10 @@ actor WordFrequencyService {
 
     // MARK: - Cache Management
 
-    /// Flushes all cached word-cloud results. Call after the index is modified.
+    /// Flushes all cached word-cloud results. Call after the index is modified —
+    /// wired to `AppState.connectIndexingProgress`'s per-volume `.complete` event
+    /// and to `ResetService.resetLocalData()`. Only the in-memory cache needs this:
+    /// the disk cache keys itself on an index fingerprint.
     func invalidateCache() {
         cache.removeAll()
         cacheOrder.removeAll()

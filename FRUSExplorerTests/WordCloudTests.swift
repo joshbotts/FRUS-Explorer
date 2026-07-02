@@ -268,10 +268,18 @@ struct WordCloudScopeTests {
     func dateRangeSignature() {
         let scope = WordCloudScope.dateRange(startISO: "1962-10-16", endISO: "1962-10-28")
         #expect(scope.signature == "daterange:1962-10-16..1962-10-28")
-        // ISO day helpers round-trip through the canonical UTC formatter.
+        // ISO day helpers round-trip through the local-calendar formatter.
         let day = WordCloudScope.day(fromISO: "1962-10-16")
         #expect(day != nil)
-        if let day { #expect(WordCloudScope.isoDay(from: day) == "1962-10-16") }
+        if let day {
+            #expect(WordCloudScope.isoDay(from: day) == "1962-10-16")
+            // The parsed Date must be a *local* start of day: every consumer
+            // (DatePickers, Chronology's startOfDay normalisation) works in the
+            // local calendar, so a UTC-anchored Date would shift the displayed
+            // and re-encoded day for non-UTC users.
+            #expect(Calendar.current.startOfDay(for: day) == day)
+            #expect(WordCloudScope.isoDay(from: Calendar.current.startOfDay(for: day)) == "1962-10-16")
+        }
     }
 }
 

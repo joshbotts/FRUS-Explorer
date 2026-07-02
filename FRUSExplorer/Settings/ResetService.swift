@@ -41,6 +41,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 153: extracted from `SettingsResetPane.performReset(includeCloudKit:)`
+///   1.1 — Word Cloud fixes: flushes `WordFrequencyService`'s in-memory cache after
+///          clearing the index, so an open session can't keep serving stale clouds
 @MainActor
 struct ResetService {
 
@@ -69,6 +71,10 @@ struct ResetService {
                 try await pipeline.removeAllVolumesFromIndex()
                 appState.indexedVolumeIds = []
                 appState.indexGeneration += 1
+                // Flush cached word-cloud results computed against the now-empty
+                // index; unlike the disk cache, the in-memory cache key carries no
+                // index fingerprint, so stale results would otherwise survive here.
+                await appState.wordFrequencyService?.invalidateCache()
             } catch {
                 #if DEBUG
                 print("[ResetService] removeAllVolumesFromIndex failed: \(error)")

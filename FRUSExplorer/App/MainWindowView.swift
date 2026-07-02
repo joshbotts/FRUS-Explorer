@@ -50,6 +50,9 @@ import AppKit
 ///   1.3 — Session 2026-06-07: opens frus.analytics on a `pendingAnalytics` handoff
 ///          (Search's over-cap "Visualize in Corpus Analytics" suggestion); mirrors
 ///          the existing `pendingSearch` → frus.search window-opening observer
+///   1.4 — Word Cloud fixes: pendingWordCloud is now consumed and cleared by
+///          WordCloudWindowContent, so repeated hand-offs to an identical scope
+///          reopen the window instead of being dropped by `.onChange`
 @MainActor
 struct MainWindowView: View {
 
@@ -143,8 +146,9 @@ struct MainWindowView: View {
             bringMacWindowToFront(id: "frus.analytics")
         }
         // Open the Word Cloud window when a cross-view pendingWordCloud arrives.
-        // The window content reads the current scope from appState (it is not
-        // cleared on macOS, unlike the iOS sheet's item binding).
+        // WordCloudWindowContent applies the scope and clears pendingWordCloud
+        // (mirroring pendingSearch), so a later hand-off to the *same* scope is
+        // still an Equatable change and re-fires this observer.
         .onChange(of: appState.pendingWordCloud) { _, scope in
             guard scope != nil else { return }
             openWindow(id: "frus.wordcloud")

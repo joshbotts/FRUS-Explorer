@@ -66,6 +66,9 @@ enum WordCloudViewMode: String, CaseIterable {
 ///   1.1 — Session 164: word taps hand off to Corpus Analytics rather than Search,
 ///          corpus-wide by default; volume/subseries clouds get an optional scoped
 ///          handoff via the word context menu; Search stays on the context menu
+///   1.2 — Word Cloud fixes: `load()` no longer cancels `loadTask` (a self-cancel
+///          when running inside it left the spinner stuck after "Show hidden words");
+///          call sites cancel the previous load instead
 struct WordCloudView: View {
 
     /// The body of material to visualise.
@@ -155,6 +158,10 @@ struct WordCloudView: View {
         #endif
         .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate,
                           lens: lens, settings: settingsToken)) {
+            // Supersede any manual reload (e.g. "Show hidden words") still in
+            // flight; this criteria-driven load owns the view state from here.
+            loadTask?.cancel()
+            loadTask = nil
             await load()
         }
         .sheet(item: $exportItem) { item in
@@ -573,10 +580,15 @@ struct WordCloudView: View {
 
     // MARK: - Loading & Actions
 
-    /// Resolves the scope and computes its top terms, cancelling any in-flight load.
+    /// Resolves the scope and computes its top terms.
+    ///
+    /// Runs inside either the criteria-driven `.task(id:)` or a manual reload task
+    /// (`loadTask`). Callers cancel any previous load *before* starting a new one;
+    /// `load()` itself must never cancel `loadTask`, because when it runs inside
+    /// `loadTask` a self-cancel aborts the load it is performing — the early
+    /// cancellation return then skips `isLoading = false` and the spinner never clears.
     private func load() async {
         guard appState.wordFrequencyService != nil else { return }
-        loadTask?.cancel()
         isLoading = true
         errorMessage = nil
         progressModel.fraction = nil
@@ -681,6 +693,9 @@ struct WordCloudView: View {
     }
 
     /// Clears this scope's hidden-word overrides and recomputes.
+    ///
+    /// The previous manual load (if any) is cancelled *before* the new task is
+    /// created — never from inside `load()`, which would self-cancel (see `load()`).
     private func resetHiddenWords() {
         WordCloudOverrides.reset(for: scope.signature)
         loadTask?.cancel()
@@ -842,9 +857,17 @@ struct WordCloudView: View {
 /// so the user can retarget the cloud to any available scope — corpus, subseries,
 /// volume, collection, tag, or saved search — directly from this app-level window.
 ///
+/// `pendingWordCloud` is cleared here after each consumption (mirroring how
+/// `MacSearchWindowView` consumes `pendingSearch`). Leaving it set would make
+/// `.onChange` — which only fires on an `Equatable` change — silently drop the
+/// next hand-off whenever it targets the *same* scope (e.g. reopening the same
+/// volume's word cloud after closing this window).
+///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
 ///   2.0 — Word Cloud: in-window scope picker
+///   2.1 — Word Cloud fixes: consume-and-clear `pendingWordCloud` so repeating a
+///          hand-off for an identical scope reopens the window
 struct WordCloudWindowContent: View {
     @Environment(AppState.self) private var appState
 
@@ -870,9 +893,21 @@ struct WordCloudWindowContent: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .onAppear { if scope == nil { scope = appState.pendingWordCloud } }
+        .onAppear {
+            // Consume any hand-off that arrived while this window didn't exist —
+            // the one that opened it, or one made while it was closed. A pending
+            // scope is always fresher than any state this window carries, because
+            // every consumption clears it.
+            if let pending = appState.pendingWordCloud {
+                scope = pending
+                appState.pendingWordCloud = nil
+            }
+        }
         .onChange(of: appState.pendingWordCloud) { _, handedOff in
-            if let handedOff { scope = handedOff }
+            // A hand-off arriving while the window is already open retargets it.
+            guard let handedOff else { return }
+            scope = handedOff
+            appState.pendingWordCloud = nil
         }
     }
 }
