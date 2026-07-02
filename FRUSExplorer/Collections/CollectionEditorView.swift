@@ -848,19 +848,51 @@ struct CollectionEditorView: View {
 /// An editable section-heading entry in the collection (Phase 3a). Shared by the iOS editor
 /// and the macOS manager. `onDelete`, when provided, renders an inline delete control —
 /// macOS supplies it (the List has no swipe-to-delete); iOS omits it (swipe handles deletion).
+///
+/// The heading also carries an optional **section body depth** (Phase 3c): documents under
+/// this heading use it unless they have their own per-entry override. Stored in the heading
+/// entry's `bodyDepthOverride`.
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
     var onDelete: (() -> Void)? = nil
 
+    /// The section's body-depth override (`nil` = documents follow the collection default).
+    private var sectionDepth: Binding<String?> {
+        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
+    }
+
+    /// Depths offered: those available on this device, plus the current override even when it
+    /// isn't otherwise offered (a synced `.summaryOnly` on an AI-less device).
+    private var depthOptions: [CollectionBodyDepth] {
+        let available = CollectionBodyDepth.available
+        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
+           !available.contains(d) {
+            return available + [d]
+        }
+        return available
+    }
+
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "number")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            TextField(String(localized: "collection.heading.placeholder", defaultValue: "Section heading"),
-                      text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }))
-                .font(.headline)
-            structuralDeleteButton(onDelete)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "number")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField(String(localized: "collection.heading.placeholder", defaultValue: "Section heading"),
+                          text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }))
+                    .font(.headline)
+                structuralDeleteButton(onDelete)
+            }
+            // Section body depth — applied to documents under this heading (Phase 3c).
+            Picker(selection: sectionDepth) {
+                Text(String(localized: "collection.section.bodyDepth.default", defaultValue: "Default"))
+                    .tag(String?.none)
+                ForEach(depthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
+            } label: {
+                Text(String(localized: "collection.section.bodyDepth.label", defaultValue: "Section body"))
+            }
+            .pickerStyle(.menu)
+            .font(.caption)
         }
         .padding(.vertical, 4)
     }
@@ -1890,12 +1922,22 @@ struct ExportSheetView: View {
         let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
             volumeIds: volumeIds, pipeline: appState.indexingPipeline)
 
-        return entries.sorted { $0.sortOrder < $1.sortOrder }.map { entry -> CollectionExportItem in
+        var items: [CollectionExportItem] = []
+        // A heading may carry a `bodyDepthOverride` that acts as the section default for the
+        // documents following it, until the next heading (Phase 3c). Tracked across the pass.
+        var currentSectionDepth: String? = nil
+        for entry in entries.sorted(by: { $0.sortOrder < $1.sortOrder }) {
             // Heading / prose entries pass straight through as structural items.
             switch entry.entryKind {
-            case .heading: return .heading(entry.text ?? "")
-            case .prose:   return .prose(ProseRichText.exportRTF(from: entry))
-            case .document: break
+            case .heading:
+                currentSectionDepth = entry.bodyDepthOverride
+                items.append(.heading(entry.text ?? ""))
+                continue
+            case .prose:
+                items.append(.prose(ProseRichText.exportRTF(from: entry)))
+                continue
+            case .document:
+                break
             }
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
@@ -1929,9 +1971,13 @@ struct ExportSheetView: View {
                 resolvedNoteTexts = []
             }
 
-            // The per-entry effective body depth: the entry's override, else the collection
-            // default. Drives per-document rendering and gates inline highlights.
-            let effectiveDepth = CollectionBodyDepth(rawValue: entry.bodyDepthOverride ?? collection.defaultBodyDepth) ?? .full
+            // Effective body depth cascade (Phase 3c): the entry's own override, else the
+            // section override (nearest preceding heading), else the collection default.
+            // Drives per-document rendering and gates inline highlights.
+            let effectiveDepth = CollectionBodyDepth.resolve(
+                entryOverride: entry.bodyDepthOverride,
+                sectionOverride: currentSectionDepth,
+                collectionDefault: collection.defaultBodyDepth)
 
             // Highlights (when applyHighlights and body is full)
             let resolvedHighlights: [ExportHighlight]
@@ -1949,7 +1995,7 @@ struct ExportSheetView: View {
             // Source note (footnoteStyle == .sourceNoteOnly)
             let resolvedSourceNote: String?
             if opts.footnoteStyle == .sourceNoteOnly {
-                resolvedSourceNote = try? appState.indexingPipeline?
+                resolvedSourceNote = try? await appState.indexingPipeline?
                     .fetchDocumentSourceNote(volumeId: entry.volumeId,
                                              documentId: entry.documentId)
             } else {
@@ -1975,7 +2021,7 @@ struct ExportSheetView: View {
                 zoteroItem = nil
             }
 
-            return .document(CollectionExportDocument(
+            items.append(.document(CollectionExportDocument(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
                 sortOrder: entry.sortOrder,
@@ -1992,8 +2038,9 @@ struct ExportSheetView: View {
                 highlights: resolvedHighlights,
                 sourceNoteText: resolvedSourceNote,
                 zoteroItem: zoteroItem
-            ))
+            )))
         }
+        return items
     }
 
     /// Generates or fetches summaries for all entries when bodyDepth == .summaryOnly.
