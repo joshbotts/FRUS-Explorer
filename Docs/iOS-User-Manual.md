@@ -346,7 +346,7 @@ Choose **Create Highlight** from the document toolbar to enter highlight mode. S
 
 `[SCREENSHOT: Highlight color picker showing the four available colors]`
 
-Highlights you create are included automatically when you export a collection that contains the highlighted document — see Section 10.3.
+Highlights you create can be annotated inline when you export a collection that contains the highlighted document — see Section 10.4.
 
 ### 7.3 Tags
 
@@ -424,44 +424,71 @@ The document toolbar separates the *citation itself* from *sending the document 
 
 ---
 
-## 10. Collections and Export
+## 10. Collections: Manager and Export
 
-**Collections** let you assemble curated sets of documents — for a research paper, a teaching unit, a presentation, or simply your own organized reading list — and export them as polished, shareable documents.
+A **collection** is a curated, authored set of documents — for a research paper, a teaching unit, a briefing packet, or your own organized reading list. Collections work in two halves:
 
-### 10.1 Building a Collection
+- The **manager** is the editorial place. It's where you decide *what's in* the collection and *how it's composed*: which documents, in what order, interleaved with your own section headings and prose, and how much of each document to show.
+- **Export** is purely for *sharing*. By the time you export, every decision about the content already lives on the collection — export only chooses a **format** and a **destination**.
 
-Open the **Collections** tab and tap **New Collection**, give it a name and an optional description, then add documents to it either from the collection editor's search, or by choosing **Add to Collection** from any open document's toolbar.
+Everything in Sections 10.1–10.4 happens in the manager; 10.5 covers export.
 
-`[SCREENSHOT: Collection editor showing a list of added documents with reorder handles]`
+### 10.1 The Collection Manager
 
-Drag to reorder documents within a collection; the order you choose becomes the order they appear in any export.
+Open the **Collections** tab and tap **New Collection**; give it a name and an optional description. Add documents either from the collection editor's search, or by choosing **Add to Collection** from any open document's toolbar. You can also **Add by Tag** to append every document carrying one of your tags.
 
-### 10.2 Export Formats
+`[SCREENSHOT: Collection manager showing a mix of documents, a section heading, and a prose block with reorder handles]`
 
-Tap **Export** from a collection to choose a format:
+Drag to reorder entries; the order you choose is the order they appear in every export.
+
+### 10.2 Section Headings and Prose
+
+A collection isn't limited to a flat list of documents. From the manager's **add** menu you can insert two kinds of editorial entry and place them anywhere in the order:
+
+- **Section headings** — titles that group the documents beneath them into sections (e.g. "Opening Moves", "The Crisis Deepens"). They appear as headings in the export and in its table of contents.
+- **Prose blocks** — your own connecting commentary, written in a **rich-text editor**: **bold**, *italic*, underline, and colour are all supported. Your formatting is preserved through export.
+
+Headings and prose turn a collection from a document list into an authored reader.
+
+### 10.3 Inspecting a Document's Data
+
+Tap the **ⓘ** on any document entry to open its **inspector** — a read-only summary of everything the app knows about that document, gathered in one place: your research notes and highlights, the tags you've applied, its AI summary (if any), its archival source note, and its cross-reference count. Use it to decide what belongs in the collection and how to compose it.
+
+### 10.4 Composition Settings
+
+Composition settings are **saved on the collection** and edited in the manager's **Composition** section — so a collection always exports the same way, in any format, without re-choosing anything:
+
+- **Default body depth** — full document text, an **AI summary only** (see Section 11), or a compact **index/outline** (citation, date, and notes, no body).
+- **Footnote style** — all footnotes, only the archival source note, or none.
+- **Table-of-contents label style** — list each document by its formatted citation, or by its header and dateline.
+- **Include highlights** — when on, highlights you've made on the included documents are annotated inline in the export: coloured `<mark>` spans in HTML, background shading in PDF, and highlighted runs in DOCX (DOCX's limited palette renders blue as cyan and pink as magenta — the closest named colours).
+- **Include research notes** — show your attached notes below each document's body.
+- **Include word cloud** — prepend a frequency overview (PDF and HTML).
+- **Summary prompt** — which summarization prompt to use when the body depth is "summary only".
+
+**Per-entry and per-section overrides.** The default body depth is exactly that — a default. Any single document can override it (a mostly-summary reader with two documents shown in full), and any **section heading** can set a depth for all the documents beneath it. The effective depth is the most specific one that applies: the document's own override, else its section's, else the collection default.
+
+### 10.5 Export
+
+Tap **Export**, choose a format, and share. Because composition is already set, this sheet is just format + destination.
 
 | Format | Best for |
 |--------|----------|
-| **PDF** | Print-ready output with consistent pagination, suitable for sharing or archiving |
-| **HTML** | Web-viewable output that preserves rich formatting and is easy to post or embed |
-| **DOCX (Word)** | Editable output for further work in Word, Pages, Google Docs, or similar |
-| **Zotero (RIS)** | Importing the whole collection into Zotero (or any RIS-aware reference manager) as one Book Section record per document, each carrying the canonical history.state.gov URL plus your FRUS Explorer tags and (optionally) research notes |
+| **PDF** | Print-ready output with consistent pagination — renders section headings and rich prose |
+| **HTML** | Web-viewable output that preserves rich formatting — renders section headings and prose |
+| **DOCX (Word)** | Editable output for Word, Pages, or Google Docs — section headings become Word headings (they appear in Word's table of contents) and prose keeps its formatting |
+| **BibTeX** | A `.bib` file (one `@incollection` record per document) for LaTeX and reference managers such as JabRef |
+| **FRUS Collection (shareable)** | A native **`.fruscollection`** file — an *editable* copy of the collection you can hand to a colleague (see below) |
 
-> **Sending one document to Zotero:** Use the document's **Share** menu (Section 9.3). If you've connected a Zotero account (Section 16), **Send to Zotero Library** pushes the single document — with its tags and notes — straight into your library over the Web API. Without an account, **Export Zotero file (RIS)** shares a single RIS record, which imports into standard Zotero on iOS (and everywhere else) without a plugin. A whole collection can likewise be sent to your library or exported as RIS.
+**Send to Zotero.** A single **Send to Zotero…** menu handles reference-manager export. If you've connected a Zotero account (Section 16), **Send to Zotero Library** pushes the whole collection into your library over the Web API, carrying tags and research notes; otherwise it produces an **RIS file** for import into Zotero desktop (File → Import).
 
-`[SCREENSHOT: Export format picker showing PDF, HTML, and DOCX options]`
+**Sharing an editable collection (`.fruscollection`).** Choosing the FRUS Collection format saves a small file that carries the collection's *source* — its document references, composition, section headings, and prose — not a rendered document. A colleague opens it right back into their own FRUS Explorer as a live, editable collection; because documents travel as references, the app offers to download any volumes they don't already have. Your research notes are **not** included unless you turn on the **Include my research notes** switch (off by default).
 
-### 10.3 Export Options
+**Importing.** Bring a shared collection in with **Import Collection…** on the Collections screen, or simply open a `.fruscollection` file — from Files, an email attachment, or AirDrop — and it opens straight into FRUS Explorer.
 
-Before exporting, you can customize:
+**Snapshotting a smart collection.** A *smart* collection — one linked to a saved search — resolves its documents from that search at export time, so its contents aren't fixed and can't be hand-edited. Choose **Create Static Snapshot** (from the collection's context menu) to capture the current results as a new, ordinary collection you can then edit, section, annotate, and share as a `.fruscollection`.
 
-- **Table of contents style** — list each document by its formatted citation, or by its header and dateline
-- **Body depth** — include the full document text, an AI-generated summary only (see Section 11), or a compact citation-and-notes index/outline
-- **Footnotes** — include all footnotes, only the archival source note, or none
-- **Inline highlights** — when enabled, any highlights you've created on the included documents are annotated directly in the exported text: as colored `<mark>` spans in HTML, as background shading in PDF, and as highlighted runs in DOCX (note that DOCX's limited highlight palette renders blue highlights as cyan and pink highlights as magenta — the closest available named colors)
-- **Research notes** — optionally include your attached notes below each document's body
-
-`[SCREENSHOT: Export options sheet showing table-of-contents style, body depth, footnote, and highlight toggles]`
+`[SCREENSHOT: Export sheet showing the format menu and the "Include my research notes" toggle]`
 
 Once exported, the system share sheet appears so you can save the file, print it, or send it anywhere your device supports.
 
@@ -485,7 +512,7 @@ FRUS Explorer ships with a standard summarization prompt, and you can create you
 
 ### 11.3 Summaries in Exports
 
-When building a collection export, choosing **Summary only** as the body depth (Section 10.3) generates summaries on demand for any included document that doesn't already have one for the selected prompt — producing a compact briefing-style export instead of a full-text one.
+When building a collection export, choosing **Summary only** as the body depth (Section 10.4) generates summaries on demand for any included document that doesn't already have one for the selected prompt — producing a compact briefing-style export instead of a full-text one.
 
 ### 11.4 Summarizing Many Documents in the Background
 
