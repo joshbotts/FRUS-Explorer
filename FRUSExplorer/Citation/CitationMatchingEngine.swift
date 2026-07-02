@@ -39,6 +39,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation
+///   1.1 — Authoring Phase 3 review: `noteVolumeDownloaded(_:)` — the downloaded-volume
+///          set was a boot-time snapshot, so the advertised "download, then re-resolve"
+///          loop could not succeed until the next app relaunch
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -46,7 +49,10 @@ public actor CitationMatchingEngine {
     private let manifestStore: ManifestStore
     private let searchService: SearchService?
     private let pageRangeStore: PageRangeStore?
-    private let downloadedVolumeIds: Set<String>
+
+    /// Volume ids present in the local corpus. Seeded from disk at init and kept
+    /// current via `noteVolumeDownloaded(_:)` as volumes finish downloading/indexing.
+    private var downloadedVolumeIds: Set<String>
 
     // MARK: - Init
 
@@ -63,6 +69,17 @@ public actor CitationMatchingEngine {
     }
 
     // MARK: - Public API
+
+    /// Marks a volume as locally available, enabling document-level match strategies
+    /// for it without recreating the engine.
+    ///
+    /// Called from `AppState.connectIndexingProgress` when a volume finishes indexing
+    /// (downloads auto-index), so the "download this volume, then resolve again" loop
+    /// advertised by `CitationLookupView` and the Add Documents sheet works within a
+    /// session — the init-time set is only a boot snapshot of the volumes directory.
+    public func noteVolumeDownloaded(_ volumeId: String) {
+        downloadedVolumeIds.insert(volumeId)
+    }
 
     /// Resolves the input to a ranked list of matches.
     /// Returns an empty array when the input lacks sufficient information.

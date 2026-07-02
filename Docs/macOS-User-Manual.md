@@ -516,7 +516,7 @@ Open the Collections window with **⇧⌘K**.
 With a collection selected, add documents in two ways:
 
 - **Individually**: Open any document and click **Collections** in the research strip. Choose an existing collection or create a new one.
-- **By Tag**: In the Collections window, click **Add by Tag**, choose a user tag, and all documents with that tag are appended.
+- **In bulk**: Click **Add Documents…** in the toolbar (⇧⌘A) for a picker with four ways in — **Search** the full text of your indexed volumes; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge.
 
 A collection isn't limited to a flat document list. From the **add** menu you can insert two kinds of editorial entry and place them anywhere in the order:
 
