@@ -510,4 +510,47 @@ struct CollectionTests {
         #expect(!data.isEmpty)
         #expect(data.prefix(4) == Data([0x25, 0x50, 0x44, 0x46])) // "%PDF"
     }
+
+    // MARK: - BibTeXExportTest (Phase 4 / D7)
+
+    @Test("BibTeXExport: emits @incollection records with citation keys; research notes honor includeNotes")
+    func bibtexExport() async throws {
+        let item = ZoteroJSONExporter.Item(
+            itemType: "bookSection",
+            title: "Memorandum of Conversation",
+            creators: [ZoteroJSONExporter.Creator(creatorType: "editor", name: "Louis J. Smith")],
+            bookTitle: "Foreign Relations of the United States, 1969–1976, Volume I",
+            date: "1972",
+            publisher: "Government Printing Office",
+            place: "Washington, D.C.",
+            url: "https://history.state.gov/historicaldocuments/frus1969-76v01/d1",
+            // A `%` in a tag (BibTeX comment char) must survive as `\%`; braces in a note
+            // must be neutralized so they can't unbalance the field.
+            tags: [ZoteroJSONExporter.Tag(tag: "100% verified")],
+            notes: [ZoteroJSONExporter.Note(note: "Compare with {the} Delegation records.")]
+        )
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "frus1969-76v01", sortOrder: 0,
+            title: "t", bodyText: "", zoteroItem: item)
+        let metadata = CollectionExportMetadata(name: "SALT", note: nil)
+
+        // includeNotes == true (default): research note travels as `annote`.
+        let onURL = try await BibTeXCollectionExporter().export(metadata: metadata, documents: [doc])
+        let onText = try String(contentsOf: onURL, encoding: .utf8)
+        #expect(onText.contains("@incollection{frus1969-76v01_d1,"))
+        #expect(onText.contains("title     = {Memorandum of Conversation}"))
+        #expect(onText.contains("keywords  = {100\\% verified}"))   // `%` stays escaped, not bare
+        #expect(onText.contains("annote"))
+        #expect(onText.contains("Compare with (the) Delegation records."))  // braces neutralized
+        #expect(!onText.contains("{the}"))
+
+        // includeNotes == false: notes stripped, tags kept.
+        var noNotes = CollectionExportOptions()
+        noNotes.includeNotes = false
+        let offURL = try await BibTeXCollectionExporter().export(
+            metadata: metadata, documents: [doc], options: noNotes)
+        let offText = try String(contentsOf: offURL, encoding: .utf8)
+        #expect(!offText.contains("annote"))
+        #expect(offText.contains("keywords  = {100\\% verified}"))  // tags still kept
+    }
 }
