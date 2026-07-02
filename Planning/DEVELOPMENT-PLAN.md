@@ -896,3 +896,24 @@ points A1–A12 for the owner; Phases 1–3 carry zero schema/format risk. Key s
 ship the `entryKind` `.unrecognized` fallback first (mixed-build CloudKit sync), never
 re-purpose `sortOrder` (level-derived tree instead of parent pointers), one batched
 `.fruscollection` bump with write-minimum + tolerant reader.
+
+### Session 2026-07-02 (later) — Collections Authoring Phase 1 (implementation)
+Executed Phase 1 of Planning/Collections-Authoring-Scope.md in two PRs:
+- **PR #139 (merged): mechanics.** Mechanical split of CollectionEditorView.swift (2,836 →
+  845 lines + 6 new per-type files, verbatim moves, one visibility change). Unknown-entry-kind
+  sync guard (`CollectionEntryKind.unrecognized`): unknown kinds render inert, are skipped by
+  resolve/native-export/native-import, never persisted, excluded from allCases — must age in
+  the field before Phases 5–6 add new kinds. Shared `CollectionEntryData` (bulk header/date
+  loader + canonical 3-tier date sort) used by both managers; iOS rows show real headers/
+  volume titles/dates; iOS Sort by Date gains per-document precision. fileImporter narrowed
+  to the `.fruscollection` UTI. New `unrecognizedKindGuard` test; 41/41.
+- **PR 2: shell.** `CollectionEditorView.PresentationStyle` — pushed from the Collections tab
+  (navigationDestination; back dismisses), sheet elsewhere (Done button). All-live autosave
+  (A1 cheap): onChange → saveLive(); Save/Cancel and applyEditsForExport deleted; untouched
+  new collection discarded on dismiss, kept-unnamed gets "Untitled Collection". iPhone:
+  entry-list-primary Form — collapsible Details (name/note/smart link; expanded for new) +
+  collapsed Composition disclosure. iPad: `.inspector` panel (toolbar-toggled) for metadata +
+  composition, list gets full width. macOS manager: Composition popover → inline collapsed
+  DisclosureGroup at the top of the scrolling entries List (inline per scope, but inside the
+  scroll region so expansion can't overflow the fixed header — preserves the #126 constraint).
+  Docs rider: iOS/macOS manuals §10 + both TestFlight instructions.

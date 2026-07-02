@@ -46,6 +46,8 @@ import UniformTypeIdentifiers
 ///          could appear to be missing here with no indication why or how to see it
 ///   1.6 — Authoring Phase 1: import fileImporter narrowed from `.data` to the declared
 ///          `.fruscollection` UTI
+///   1.7 — Authoring Phase 1 shell (iOS): the editor is pushed onto the tab's
+///          NavigationStack (`navigationDestination`) instead of presented as a sheet
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -124,12 +126,23 @@ struct CollectionListView: View {
                     }
                 }
             }
+            // iOS: the editor is a pushed screen — a place, not a sheet (Authoring
+            // Phase 1 shell). Non-iOS presentation contexts keep the modal sheet.
+            #if os(iOS)
+            .navigationDestination(isPresented: $isCreating) {
+                CollectionEditorView(collection: nil, presentationStyle: .pushed)
+            }
+            .navigationDestination(item: $collectionToEdit) { collection in
+                CollectionEditorView(collection: collection, presentationStyle: .pushed)
+            }
+            #else
             .sheet(isPresented: $isCreating) {
                 CollectionEditorView(collection: nil)
             }
             .sheet(item: $collectionToEdit) { collection in
                 CollectionEditorView(collection: collection)
             }
+            #endif
             .fileImporter(isPresented: $isImporting,
                           allowedContentTypes: [.fruscollection],
                           allowsMultipleSelection: false) { result in

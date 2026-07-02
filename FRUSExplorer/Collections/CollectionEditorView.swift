@@ -68,6 +68,13 @@ import UIKit
 ///          dates (parity with the macOS manager) via the shared `CollectionEntryData`
 ///          pane-level loader; Sort by Date gains per-document `date_iso` precision (was
 ///          volume-dates-only); `.unrecognized` entries render as an inert row
+///   2.0 — Authoring Phase 1 shell: `PresentationStyle` (.pushed from the Collections tab,
+///          .sheet elsewhere); all-live autosave replaces the hybrid Save/Cancel draft
+///          model (A1) — an untouched new collection is discarded on dismiss, a kept
+///          unnamed one gets a default name; iPhone layout is entry-list-primary with
+///          collapsible Details/Composition disclosures; iPad uses a system `.inspector`
+///          for metadata + composition instead of the two-Form HStack;
+///          `applyEditsForExport` deleted (redundant under live saves)
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -106,9 +113,30 @@ struct CollectionEditorView: View {
     @State private var documentHeaders: [String: String] = [:]
     @State private var documentDates: [String: String] = [:]
 
+    /// iPhone Details disclosure (name/note/smart-collection). Expanded for a new
+    /// collection so the name field is immediately available; collapsed otherwise.
+    @State private var detailsExpanded: Bool
+    /// iPhone Composition disclosure — collapsed by default.
+    @State private var compositionExpanded = false
+    /// iPad metadata/composition inspector visibility.
+    @State private var showDetailsInspector = true
+
+    /// How the editor is presented, which decides its navigation chrome (Authoring
+    /// Phase 1 shell).
+    enum PresentationStyle {
+        /// Modal sheet (Document view, project context, Stage Manager scenes): the editor
+        /// provides its own `NavigationStack` and a Done button.
+        case sheet
+        /// Pushed onto an existing `NavigationStack` (the Collections tab): no nested
+        /// stack; the back button dismisses.
+        case pushed
+    }
+    private let presentationStyle: PresentationStyle
+
     // MARK: - Init
 
-    init(collection: Collection?) {
+    init(collection: Collection?, presentationStyle: PresentationStyle = .sheet) {
+        self.presentationStyle = presentationStyle
         if let c = collection {
             _collection = State(initialValue: c)
             _collectionName = State(initialValue: c.name)
@@ -117,6 +145,7 @@ struct CollectionEditorView: View {
                 (c.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
             _linkedSavedSearchId = State(initialValue: c.savedSearchId)
             isNewCollection = false
+            _detailsExpanded = State(initialValue: false)
         } else {
             let c = Collection(name: "")
             _collection = State(initialValue: c)
@@ -125,6 +154,7 @@ struct CollectionEditorView: View {
             _sortedEntries = State(initialValue: [])
             _linkedSavedSearchId = State(initialValue: nil)
             isNewCollection = true
+            _detailsExpanded = State(initialValue: true)
         }
     }
 
@@ -143,6 +173,25 @@ struct CollectionEditorView: View {
         .task(id: sortedEntries.map(\.id)) {
             (documentHeaders, documentDates) =
                 await CollectionEntryData.load(for: sortedEntries, appState: appState)
+        }
+        // All-live autosave (A1): every field edit lands on the model immediately, the
+        // same semantics as the macOS manager (and what CloudKit sync implies anyway).
+        .onChange(of: collectionName) { _, _ in saveLive() }
+        .onChange(of: collectionNote) { _, _ in saveLive() }
+        .onChange(of: linkedSavedSearchId) { _, _ in saveLive() }
+        // The one special case: a brand-new collection the user backed out of without
+        // touching anything is discarded; a kept-but-unnamed one gets a default name so
+        // it doesn't render as a blank list row.
+        .onDisappear {
+            guard isNewCollection else { return }
+            let untouched = collection.name.isEmpty && collection.note == nil
+                && sortedEntries.isEmpty && collection.savedSearchId == nil
+            if untouched {
+                modelContext.delete(collection)
+            } else if collection.name.isEmpty {
+                collection.name = String(localized: "collection.editor.untitled",
+                                         defaultValue: "Untitled Collection")
+            }
         }
         .sheet(isPresented: $showTimeline) {
             #if os(macOS)
@@ -235,25 +284,15 @@ struct CollectionEditorView: View {
 
             Divider()
 
-            // Button bar
+            // Button bar. All edits save live (A1); Done just dismisses. The untouched
+            // new-collection discard happens in the shared `onDisappear`.
             HStack {
-                Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
-                    if isNewCollection {
-                        for entry in sortedEntries { modelContext.delete(entry) }
-                        modelContext.delete(collection)
-                    }
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-
                 Spacer()
 
-                Button(String(localized: "collection.editor.save", defaultValue: "Save")) {
-                    save()
+                Button(String(localized: "common.done", defaultValue: "Done")) {
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(collectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
@@ -298,119 +337,171 @@ struct CollectionEditorView: View {
     // MARK: - iOS Body
 
     private var iOSBody: some View {
-        NavigationStack {
-            Group {
-                #if os(iOS)
-                if sizeClass == .regular {
-                    iPadCollectionLayout
-                } else {
-                    iPhoneCollectionForm
+        Group {
+            if presentationStyle == .pushed {
+                // Pushed onto the presenting context's NavigationStack (the Collections
+                // tab): no nested stack, the back button dismisses.
+                iOSContent
+            } else {
+                // Modal sheet (Document view, project context, Stage Manager scenes):
+                // the editor provides its own stack and a Done button.
+                NavigationStack {
+                    iOSContent
                 }
-                #else
-                iPhoneCollectionForm
+                #if os(iOS)
+                .presentationDetents([.large])
                 #endif
             }
-            .navigationTitle(isNewCollection
-                ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
-                : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
+        }
+    }
+
+    /// The editor's iOS content and chrome, shared by the pushed and sheet presentations.
+    private var iOSContent: some View {
+        Group {
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            if sizeClass == .regular {
+                iPadCollectionLayout
+            } else {
+                iPhoneCollectionForm
+            }
+            #else
+            iPhoneCollectionForm
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "collection.editor.cancel", defaultValue: "Cancel")) {
-                        if isNewCollection {
-                            for entry in sortedEntries { modelContext.delete(entry) }
-                            modelContext.delete(collection)
-                        }
-                        dismiss()
-                    }
-                }
+        }
+        .navigationTitle(isNewCollection
+            ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
+            : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar {
+            // All edits save live (A1); a sheet still needs an explicit dismissal control.
+            if presentationStyle == .sheet {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "collection.editor.save", defaultValue: "Save")) {
-                        save()
+                    Button(String(localized: "common.done", defaultValue: "Done")) {
                         dismiss()
                     }
-                    .disabled(collectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .sheet(isPresented: $showAddByTag) {
-                AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
-                    appendEntries(newEntries)
-                }
-            }
-            .sheet(isPresented: $showExport) {
-                ExportSheetView(
-                    collection: collection,
-                    entries: sortedEntries,
-                    allNotes: allNotes,
-                    appState: appState
-                )
-            }
-            .sheet(isPresented: $showLinkSavedSearch) {
-                linkSavedSearchSheet
-            }
-            .alert(
-                String(localized: "collection.editor.export.error.title", defaultValue: "Export Failed"),
-                isPresented: Binding(
-                    get: { exportError != nil },
-                    set: { if !$0 { exportError = nil } }
-                ),
-                presenting: exportError
-            ) { _ in
-                Button(String(localized: "collection.editor.export.error.dismiss", defaultValue: "OK")) {}
-            } message: { msg in
-                Text(msg)
-            }
-            .onAppear {
-                if isNewCollection {
-                    modelContext.insert(collection)
                 }
             }
         }
-        #if os(iOS)
-        .presentationDetents([.large])
-        #endif
+        .sheet(isPresented: $showAddByTag) {
+            AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
+                appendEntries(newEntries)
+            }
+        }
+        .sheet(isPresented: $showExport) {
+            ExportSheetView(
+                collection: collection,
+                entries: sortedEntries,
+                allNotes: allNotes,
+                appState: appState
+            )
+        }
+        .sheet(isPresented: $showLinkSavedSearch) {
+            linkSavedSearchSheet
+        }
+        .alert(
+            String(localized: "collection.editor.export.error.title", defaultValue: "Export Failed"),
+            isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            ),
+            presenting: exportError
+        ) { _ in
+            Button(String(localized: "collection.editor.export.error.dismiss", defaultValue: "OK")) {}
+        } message: { msg in
+            Text(msg)
+        }
+        .onAppear {
+            if isNewCollection {
+                modelContext.insert(collection)
+            }
+        }
     }
 
     // MARK: - iOS Form Variants
 
+    /// iPhone (compact width): the entry list is the primary surface. Metadata lives in a
+    /// collapsible Details group above it (expanded for a new collection so the name field
+    /// is immediately available, collapsed to a single row otherwise), and Composition in
+    /// a collapsed disclosure below.
     private var iPhoneCollectionForm: some View {
         Form {
-            nameSection
-            noteSection
-            compositionSection
-            smartCollectionSection
+            detailsSection
             documentsSection
             addByTagSection
+            compositionDisclosureSection
             if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
         }
     }
 
-    /// Two-column layout for iPad (`horizontalSizeClass == .regular`).
-    /// Left column: document list + add-by-tag. Right column: name, note, smart collection, actions.
-    private var iPadCollectionLayout: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Form {
-                documentsSection
-                addByTagSection
+    /// Collapsible name / note / smart-collection group (iPhone).
+    private var detailsSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $detailsExpanded) {
+                nameField
+                noteField
+                smartCollectionRows
+            } label: {
+                Label {
+                    Text(collectionName.isEmpty
+                        ? String(localized: "collection.editor.details", defaultValue: "Details")
+                        : collectionName)
+                } icon: {
+                    Image(systemName: linkedSavedSearchId != nil ? "bolt.fill" : "info.circle")
+                }
             }
-            .formStyle(.grouped)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
 
-            Divider()
+    /// Collapsed-by-default Composition disclosure (iPhone).
+    private var compositionDisclosureSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $compositionExpanded) {
+                CollectionCompositionRows(collection: collection)
+            } label: {
+                Label(String(localized: "composition.header", defaultValue: "Composition"),
+                      systemImage: "slider.horizontal.3")
+            }
+        } footer: {
+            Text(String(localized: "composition.footer",
+                        defaultValue: "Determines what an export of this collection contains. Applied to every format."))
+        }
+    }
 
+    /// iPad (regular width): the entry list fills the screen; metadata + composition live
+    /// in a system `.inspector` panel (the app's established iPad pattern, cf. the
+    /// document notes panel), toggleable from the toolbar.
+    private var iPadCollectionLayout: some View {
+        Form {
+            documentsSection
+            addByTagSection
+            if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
+        }
+        .formStyle(.grouped)
+        .inspector(isPresented: $showDetailsInspector) {
             Form {
                 nameSection
                 noteSection
                 compositionSection
                 smartCollectionSection
-                if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
             }
             .formStyle(.grouped)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            #if os(iOS)
+            .inspectorColumnWidth(min: 300, ideal: 340, max: 440)
+            #endif
         }
-        .frame(maxHeight: .infinity)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showDetailsInspector.toggle()
+                } label: {
+                    Image(systemName: "sidebar.trailing")
+                }
+                .accessibilityLabel(String(localized: "collection.editor.inspector.toggle",
+                                           defaultValue: "Show collection details"))
+            }
+        }
     }
 
     // MARK: - Smart Collection Section
@@ -418,6 +509,18 @@ struct CollectionEditorView: View {
     @ViewBuilder
     private var smartCollectionSection: some View {
         Section {
+            smartCollectionRows
+        } header: {
+            Text(String(localized: "collection.editor.smart.header",
+                        defaultValue: "Smart Collection"))
+        }
+    }
+
+    /// The smart-collection link/unlink rows, usable inside any container (the iPhone
+    /// Details disclosure or the sectioned forms).
+    @ViewBuilder
+    private var smartCollectionRows: some View {
+        Group {
             if let searchId = linkedSavedSearchId,
                let savedSearch = allSavedSearches.first(where: { $0.id == searchId }) {
                 HStack {
@@ -452,9 +555,6 @@ struct CollectionEditorView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-        } header: {
-            Text(String(localized: "collection.editor.smart.header",
-                        defaultValue: "Smart Collection"))
         }
     }
 
@@ -572,30 +672,41 @@ struct CollectionEditorView: View {
 
     // MARK: - Name Section
 
+    /// The bare name field, usable inside any container (iPhone Details disclosure,
+    /// iPad inspector's `nameSection`, macOS form).
+    private var nameField: some View {
+        TextField(
+            String(localized: "collection.editor.name.placeholder", defaultValue: "Collection Name"),
+            text: $collectionName
+        )
+        .accessibilityLabel(String(localized: "collection.editor.name.accessibility",
+                                   defaultValue: "Collection name"))
+    }
+
     private var nameSection: some View {
         Section(String(localized: "collection.editor.name.header", defaultValue: "Name")) {
-            TextField(
-                String(localized: "collection.editor.name.placeholder", defaultValue: "Collection Name"),
-                text: $collectionName
-            )
-            .accessibilityLabel(String(localized: "collection.editor.name.accessibility",
-                                       defaultValue: "Collection name"))
+            nameField
         }
     }
 
     // MARK: - Note Section
 
+    /// The bare note field, usable inside any container (see `nameField`).
+    private var noteField: some View {
+        TextField(
+            String(localized: "collection.editor.note.placeholder",
+                   defaultValue: "Optional note about this collection…"),
+            text: $collectionNote,
+            axis: .vertical
+        )
+        .lineLimit(3...6)
+        .accessibilityLabel(String(localized: "collection.editor.note.accessibility",
+                                   defaultValue: "Collection note"))
+    }
+
     private var noteSection: some View {
         Section(String(localized: "collection.editor.note.header", defaultValue: "Note")) {
-            TextField(
-                String(localized: "collection.editor.note.placeholder",
-                       defaultValue: "Optional note about this collection…"),
-                text: $collectionNote,
-                axis: .vertical
-            )
-            .lineLimit(3...6)
-            .accessibilityLabel(String(localized: "collection.editor.note.accessibility",
-                                       defaultValue: "Collection note"))
+            noteField
         }
     }
 
@@ -751,7 +862,6 @@ struct CollectionEditorView: View {
             }
 
             Button {
-                applyEditsForExport()
                 showExport = true
             } label: {
                 Label(
@@ -834,7 +944,10 @@ struct CollectionEditorView: View {
         return manifest.first(where: { $0.volumeId == entry.volumeId })?.title ?? entry.volumeId
     }
 
-    private func save() {
+    /// Writes the editor's field state onto the model. Called from `onChange` for every
+    /// name/note/smart-link edit (all-live autosave, A1) — the export sheet and every
+    /// other consumer always see the current state, with no separate Save step.
+    private func saveLive() {
         collection.name = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = collectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
         collection.note = trimmedNote.isEmpty ? nil : trimmedNote
@@ -843,29 +956,5 @@ struct CollectionEditorView: View {
             collection.projectIds.append(projectId)
         }
         try? modelContext.save()
-    }
-
-    /// Syncs the editor's pending edits onto the in-memory `collection` so the
-    /// export sheet sees the current state without requiring a prior Save.
-    ///
-    /// The exporter's smart-collection path reads `collection.savedSearchId`, so
-    /// that link must be applied before presenting `ExportSheetView` — otherwise
-    /// exporting a freshly-linked (but unsaved) smart collection would resolve no
-    /// documents. The collection is already in the model context (inserted in
-    /// `onAppear` for new collections), and nothing is persisted here, so Cancel
-    /// still discards a new collection.
-    ///
-    /// Name/note are copied only for a brand-new collection, whose Save step
-    /// hasn't run yet; for an existing collection they are left untouched so that
-    /// exporting after an unsaved field edit doesn't silently leak that edit —
-    /// matching the static-entry export behavior, which also exports the
-    /// persisted name/note.
-    private func applyEditsForExport() {
-        collection.savedSearchId = linkedSavedSearchId
-        if isNewCollection {
-            collection.name = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-            let trimmedNote = collectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
-            collection.note = trimmedNote.isEmpty ? nil : trimmedNote
-        }
     }
 }

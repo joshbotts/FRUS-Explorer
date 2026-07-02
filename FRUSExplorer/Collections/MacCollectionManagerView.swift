@@ -37,6 +37,10 @@ import UniformTypeIdentifiers
 ///          `CollectionEntryData` (behavior-identical; now also used by the iOS editor);
 ///          `.unrecognized` entries render as an inert row; import fileImporter narrowed
 ///          from `.data` to the declared `.fruscollection` UTI
+///   1.6 — Authoring Phase 1 shell: Composition moved from a bounded popover to an inline
+///          collapsed disclosure at the top of the entries List — inline as the scope asks,
+///          but inside the scrolling region so expansion can never grow the fixed header
+///          past the window (the constraint that forced the popover)
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -311,6 +315,7 @@ private struct CollectionDetailPane: View {
     @State private var sortedEntries: [CollectionEntry]
     @State private var showAddByTag = false
     @State private var showExport = false
+    /// Expansion state of the inline Composition disclosure at the top of the entries list.
     @State private var showComposition = false
     @State private var noteCreateContext: NoteCreateContext? = nil
     /// Document headers loaded asynchronously from `document_cache`.
@@ -347,10 +352,9 @@ private struct CollectionDetailPane: View {
                 nameSection
                 Divider().padding(.vertical, 16)
                 noteSection
-                Divider().padding(.vertical, 16)
-                compositionDisclosure
             }
             .padding([.horizontal, .top], 24)
+            .padding(.bottom, 16)
 
             // Document list fills the rest of the available window height.
             documentsSection
@@ -439,38 +443,6 @@ private struct CollectionDetailPane: View {
         }
     }
 
-    // MARK: - Composition
-
-    /// Persisted export-content settings for this collection (body depth, footnotes, notes,
-    /// highlights, word cloud). Presented in a bounded popover — not inline — so it never
-    /// grows the fixed, non-scrolling header past the window. The popover's `Form` gives the
-    /// pickers compact macOS menu styling and scrolls internally when its content overflows.
-    private var compositionDisclosure: some View {
-        Button {
-            showComposition.toggle()
-        } label: {
-            HStack(spacing: 6) {
-                Text(String(localized: "composition.header", defaultValue: "Composition"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                Image(systemName: "slider.horizontal.3")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .popover(isPresented: $showComposition, arrowEdge: .bottom) {
-            Form {
-                CollectionCompositionRows(collection: collection)
-            }
-            .formStyle(.grouped)
-            .frame(width: 380, height: 440)
-        }
-    }
-
     // MARK: - Documents
 
     @ViewBuilder
@@ -523,14 +495,28 @@ private struct CollectionDetailPane: View {
                              defaultValue: "Add a section heading or note block"))
             }
 
-            if sortedEntries.isEmpty {
-                Text(String(localized: "collection.documents.empty",
-                            defaultValue: "No documents yet. Use Add by Tag in the toolbar to add documents."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 4)
-            } else {
-                List {
+            List {
+                // Composition — inline (Authoring Phase 1 shell), inside the scrolling
+                // list rather than the fixed header, so an expanded group can never grow
+                // the header past the window (the constraint that previously forced a
+                // popover — Session 2026-07-01 layout fix).
+                Section {
+                    DisclosureGroup(isExpanded: $showComposition) {
+                        CollectionCompositionRows(collection: collection)
+                    } label: {
+                        Label(String(localized: "composition.header", defaultValue: "Composition"),
+                              systemImage: "slider.horizontal.3")
+                            .font(.callout)
+                    }
+                }
+
+                if sortedEntries.isEmpty {
+                    Text(String(localized: "collection.documents.empty",
+                                defaultValue: "No documents yet. Use Add by Tag in the toolbar to add documents."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
+                } else {
                     ForEach(Array(sortedEntries.enumerated()), id: \.element.id) { idx, entry in
                         switch entry.entryKind {
                         case .document:
@@ -573,14 +559,14 @@ private struct CollectionDetailPane: View {
                         reindexEntries()
                     }
                 }
-                .listStyle(.inset)
-                .frame(minHeight: 200, maxHeight: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
-                )
             }
+            .listStyle(.inset)
+            .frame(minHeight: 200, maxHeight: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+            )
         }
     }
 
