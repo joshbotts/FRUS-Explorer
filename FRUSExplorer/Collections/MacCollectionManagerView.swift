@@ -33,6 +33,10 @@ import UniformTypeIdentifiers
 ///   1.4 — Session 130: document header (from document_cache) shown in each row;
 ///          per-row delete button; multi-note support via selectedNoteIds; inline
 ///          Sort by Date control in Documents section header; toolbar tooltip improvements
+///   1.5 — Authoring Phase 1: header/date loading and Sort by Date moved to the shared
+///          `CollectionEntryData` (behavior-identical; now also used by the iOS editor);
+///          `.unrecognized` entries render as an inert row; import fileImporter narrowed
+///          from `.data` to the declared `.fruscollection` UTI
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -83,7 +87,7 @@ struct MacCollectionManagerView: View {
                 .environment(appState)
         }
         .fileImporter(isPresented: $isImporting,
-                      allowedContentTypes: [.data],
+                      allowedContentTypes: [.fruscollection],
                       allowsMultipleSelection: false) { result in
             importCollection(from: result)
         }
@@ -359,15 +363,8 @@ private struct CollectionDetailPane: View {
         .onChange(of: note) { _, _ in saveMetadata() }
         // Reload document headers and per-document dates whenever the entry list changes.
         .task(id: sortedEntries.map(\.id)) {
-            let keys = sortedEntries.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-            if let store = appState.crossReferenceStore,
-               let headers = try? await store.documentHeaders(for: keys) {
-                documentHeaders = headers
-            }
-            if let pipeline = appState.indexingPipeline,
-               let dates = try? await pipeline.datesByDocumentKey(keys) {
-                documentDates = dates
-            }
+            (documentHeaders, documentDates) =
+                await CollectionEntryData.load(for: sortedEntries, appState: appState)
         }
         .sheet(isPresented: $showAddByTag) {
             AddByTagSheet(allTags: allTags, allNotes: allNotes) { newEntries in
@@ -567,6 +564,8 @@ private struct CollectionDetailPane: View {
                                 sortedEntries.remove(at: idx)
                                 reindexEntries()
                             })
+                        case .unrecognized:
+                            UnrecognizedEntryRow()
                         }
                     }
                     .onMove { from, to in
@@ -687,25 +686,8 @@ private struct CollectionDetailPane: View {
     private func sortByDate() {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
-        // Volume-level dates as a fallback for documents that lack a date_iso row.
-        var volumeDateMap: [String: String] = [:]
-        for entry in manifest {
-            if let d = entry.dateRange.earliest {
-                volumeDateMap[entry.volumeId] = d
-            }
-        }
-        // Sort only DOCUMENT entries by date; section headings and prose blocks keep their
-        // positions so the authored structure survives (they carry no date and would
-        // otherwise all clump at the "9999" sentinel).
-        let sortedDocs = sortedEntries
-            .filter { $0.entryKind == .document }
-            .sorted { a, b in
-                let aDate = documentDates["\(a.volumeId)/\(a.documentId)"] ?? volumeDateMap[a.volumeId] ?? "9999"
-                let bDate = documentDates["\(b.volumeId)/\(b.documentId)"] ?? volumeDateMap[b.volumeId] ?? "9999"
-                return aDate < bDate
-            }
-        var docs = sortedDocs.makeIterator()
-        sortedEntries = sortedEntries.map { $0.entryKind == .document ? (docs.next() ?? $0) : $0 }
+        sortedEntries = CollectionEntryData.sortedByDate(
+            sortedEntries, documentDates: documentDates, manifest: manifest)
         reindexEntries()
     }
 

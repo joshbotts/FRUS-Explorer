@@ -730,6 +730,44 @@ struct CollectionTests {
         #expect(docEntry?.selectedNoteIds.isEmpty == true)
     }
 
+    @Test("Sync guard: unknown entry kinds read as .unrecognized, are never persisted, and are skipped by native export/import")
+    func unrecognizedKindGuard() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let coll = Collection(name: "Future")
+        ctx.insert(coll)
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        entry.collection = coll
+        // A kind raw value written by a hypothetical newer build (e.g. Phase 5's excerpt).
+        entry.kind = "excerpt"
+        ctx.insert(entry)
+
+        // Accessor: unknown raw values surface as .unrecognized, not as a junk .document.
+        #expect(entry.entryKind == .unrecognized)
+
+        // Setter: the fallback is never persisted — the newer build's raw value survives.
+        entry.entryKind = .unrecognized
+        #expect(entry.kind == "excerpt")
+
+        // Native export omits the entry this build can't represent.
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(file.entries.isEmpty)
+
+        // Native import skips a file entry with an unknown kind instead of misdecoding it.
+        let futureEntry = FRUSCollectionFile.Entry(
+            kind: "excerpt", documentId: "d1", volumeId: "frus1961-63v14",
+            bodyDepthOverride: nil, text: nil, richText: nil, notes: nil)
+        let fileWithFuture = FRUSCollectionFile(
+            format: NativeCollectionSerializer.formatIdentifier, formatVersion: 1,
+            name: "Future", note: nil, composition: file.composition, entries: [futureEntry])
+        let dest = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(dest)
+        let imported = NativeCollectionSerializer.apply(fileWithFuture, into: destCtx)
+        try destCtx.save()
+        #expect((imported.documentEntries ?? []).isEmpty)
+    }
+
     @Test("NativeFormat: importCollection reads a file from disk, decodes, and reconstructs it")
     func nativeImportFromFile() throws {
         let source = try ModelContainer.makeTestContainer()

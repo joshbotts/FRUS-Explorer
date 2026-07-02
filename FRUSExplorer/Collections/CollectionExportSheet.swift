@@ -781,9 +781,16 @@ struct ExportSheetView: View {
             case .prose:
                 items.append(.prose(ProseRichText.exportRTF(from: entry)))
                 continue
+            case .unrecognized:
+                // Written by a newer app version — this build cannot render it.
+                // Skip rather than emit a junk document item (Authoring Phase 1 guard).
+                continue
             case .document:
                 break
             }
+            // Defensive: a document entry without ids (e.g. malformed sync payload from a
+            // future build) can produce nothing useful downstream.
+            guard !entry.volumeId.isEmpty, !entry.documentId.isEmpty else { continue }
             let manifestEntry = manifestMap[entry.volumeId]
             let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
             let key = "\(entry.volumeId)/\(entry.documentId)"

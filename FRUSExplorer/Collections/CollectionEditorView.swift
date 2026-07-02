@@ -64,6 +64,10 @@ import UIKit
 ///          CollectionEntryInspector → CollectionEntryInspector.swift; CollectionCompositionRows →
 ///          CollectionCompositionRows.swift. EntryRow made internal (was private) for the
 ///          cross-file reference; no behavior changes.
+///   1.9 — Authoring Phase 1: entry rows show indexed document headers, volume titles, and
+///          dates (parity with the macOS manager) via the shared `CollectionEntryData`
+///          pane-level loader; Sort by Date gains per-document `date_iso` precision (was
+///          volume-dates-only); `.unrecognized` entries render as an inert row
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -94,6 +98,13 @@ struct CollectionEditorView: View {
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
     @State private var exportError: String?
+
+    /// Bulk-loaded per-document display data (headers + ISO dates from the index), keyed
+    /// `"volumeId/documentId"` — the same pane-level pattern as the macOS manager, so
+    /// entry rows show real document identities and Sort by Date has per-document
+    /// precision (Authoring Phase 1 row parity).
+    @State private var documentHeaders: [String: String] = [:]
+    @State private var documentDates: [String: String] = [:]
 
     // MARK: - Init
 
@@ -126,6 +137,12 @@ struct CollectionEditorView: View {
             #else
             iOSBody
             #endif
+        }
+        // Reload document headers and per-document dates whenever the entry list changes.
+        // (The Group has exactly one child per platform, so this task attaches once.)
+        .task(id: sortedEntries.map(\.id)) {
+            (documentHeaders, documentDates) =
+                await CollectionEntryData.load(for: sortedEntries, appState: appState)
         }
         .sheet(isPresented: $showTimeline) {
             #if os(macOS)
@@ -618,11 +635,18 @@ struct CollectionEditorView: View {
                 ForEach($sortedEntries, id: \.id) { $entry in
                     switch entry.entryKind {
                     case .document:
-                        EntryRow(entry: $entry, availableNotes: notes(for: entry))
+                        let key = "\(entry.volumeId)/\(entry.documentId)"
+                        EntryRow(entry: $entry,
+                                 availableNotes: notes(for: entry),
+                                 documentHeader: documentHeaders[key],
+                                 volumeTitle: volumeTitle(for: entry),
+                                 documentDate: documentDates[key])
                     case .heading:
                         CollectionHeadingRow(entry: $entry)
                     case .prose:
                         CollectionProseRow(entry: $entry)
+                    case .unrecognized:
+                        UnrecognizedEntryRow()
                     }
                 }
                 .onMove { indices, newOffset in
@@ -794,18 +818,20 @@ struct CollectionEditorView: View {
     private func sortByDate() {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
-        let volumeDateMap = Dictionary(uniqueKeysWithValues: manifest.compactMap { entry -> (String, String)? in
-            guard let earliest = entry.dateRange.earliest else { return nil }
-            return (entry.volumeId, earliest)
-        })
-        // Sort only DOCUMENT entries by date; heading/prose entries keep their positions so
-        // the authored structure survives (they carry no date and would otherwise clump).
-        let sortedDocs = sortedEntries
-            .filter { $0.entryKind == .document }
-            .sorted { (volumeDateMap[$0.volumeId] ?? "9999") < (volumeDateMap[$1.volumeId] ?? "9999") }
-        var docs = sortedDocs.makeIterator()
-        sortedEntries = sortedEntries.map { $0.entryKind == .document ? (docs.next() ?? $0) : $0 }
+        // Shared canonical sort (Authoring Phase 1): per-document `date_iso` first, then
+        // volume earliest date, then the "9999" sentinel — previously iOS sorted by volume
+        // dates only, so documents within one volume kept insertion order.
+        sortedEntries = CollectionEntryData.sortedByDate(
+            sortedEntries, documentDates: documentDates, manifest: manifest)
         reindexEntries()
+    }
+
+    /// The manifest display title for an entry's volume, falling back to the raw volume id
+    /// (matches the macOS manager's helper).
+    private func volumeTitle(for entry: CollectionEntry) -> String {
+        let manifest = appState.manifestStore.diffResult?.known
+            ?? appState.manifestStore.bundledEntries
+        return manifest.first(where: { $0.volumeId == entry.volumeId })?.title ?? entry.volumeId
     }
 
     private func save() {

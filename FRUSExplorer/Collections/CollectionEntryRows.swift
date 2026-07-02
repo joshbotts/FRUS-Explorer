@@ -118,6 +118,14 @@ struct CollectionProseRow: View {
 struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
+    /// The document's header/title from the indexed cache, when the volume is indexed
+    /// (Authoring Phase 1 row parity with `MacEntryRow`). `nil` falls back to the id.
+    var documentHeader: String? = nil
+    /// The containing volume's display title from the manifest. `nil` falls back to the
+    /// volume id.
+    var volumeTitle: String? = nil
+    /// The document's ISO date (`date_iso`) from the index, shown alongside the volume.
+    var documentDate: String? = nil
 
     @Environment(AppState.self) private var appState
     @State private var showInspector = false
@@ -140,13 +148,15 @@ struct EntryRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Document identity + inspector affordance
+            // Document identity + inspector affordance. The indexed header is the primary
+            // line when available; the raw id remains the fallback for unindexed volumes.
             HStack(alignment: .firstTextBaseline) {
-                Text(entry.documentId)
+                Text(documentHeader ?? entry.documentId)
                     .font(.body)
+                    .lineLimit(2)
                     .accessibilityLabel(
                         String(localized: "collection.entry.document.accessibility",
-                               defaultValue: "Document \(entry.documentId)")
+                               defaultValue: "Document \(documentHeader ?? entry.documentId)")
                     )
                 Spacer(minLength: 8)
                 Button {
@@ -159,9 +169,16 @@ struct EntryRow: View {
                                            defaultValue: "Document details"))
             }
 
-            Text(entry.volumeId)
+            // Volume context (+ document id and date when the header is shown above, so
+            // the citation stays checkable at a glance).
+            Text([
+                documentHeader != nil ? entry.documentId : nil,
+                volumeTitle ?? entry.volumeId,
+                documentDate,
+            ].compactMap(\.self).joined(separator: " · "))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .lineLimit(2)
 
             // Per-entry body depth (overrides the collection default for this document)
             Picker(selection: bodyDepthOverride) {
@@ -231,5 +248,35 @@ struct EntryRow: View {
         let preview = note.bodyText.prefix(50).trimmingCharacters(in: .whitespacesAndNewlines)
         return preview.isEmpty ? String(localized: "collection.entry.note.emptyPreview",
                                         defaultValue: "Untitled Note") : String(preview)
+    }
+}
+
+// MARK: - UnrecognizedEntryRow
+
+/// Inert placeholder for an entry whose `kind` was written by a newer app version
+/// (`CollectionEntryKind.unrecognized`). Shown by both managers so a future entry kind
+/// synced via CloudKit degrades to an explanatory row instead of a junk document row.
+/// Deliberately offers no controls: the entry's data belongs to the newer build, so this
+/// build must neither edit nor delete it (Authoring Phase 1 sync guard).
+///
+/// Version history:
+///   1.0 — Authoring Phase 1 (Session 2026-07-02)
+struct UnrecognizedEntryRow: View {
+    var body: some View {
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "collection.entry.unrecognized.title",
+                            defaultValue: "Unsupported entry"))
+                    .font(.callout)
+                Text(String(localized: "collection.entry.unrecognized.detail",
+                            defaultValue: "Update FRUS Explorer to view this entry."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: "questionmark.square.dashed")
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
     }
 }
