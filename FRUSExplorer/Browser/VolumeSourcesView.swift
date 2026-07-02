@@ -36,6 +36,12 @@ struct VolumeSourcesView: View {
 
     @State private var sources: [VolumeSourceEntry] = []
     @State private var isLoading = true
+    /// Guards `loadSources()` against duplicate runs. The body is a `Group` emitting list
+    /// sections, and SwiftUI applies `Group` modifiers to each child — so `.task` fires
+    /// again for every section that appears when the loading branch swaps to the loaded
+    /// one. Without the guard each re-run rebuilt `collectionTree` with fresh node UUIDs,
+    /// collapsing the outline's disclosure state.
+    @State private var didLoad = false
     /// When set, presents the Archival Neighbors sheet for a volume source entry.
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
     /// When set, presents the cross-volume provenance sheet for a major collection —
@@ -92,31 +98,38 @@ struct VolumeSourcesView: View {
                     }
                 }
                 if !collectionTree.isEmpty {
+                    // Both sheets are anchored HERE — on the single section whose rows
+                    // present them — and not on the enclosing `Group`. `Group` applies
+                    // modifiers to each of its children, so attaching `.sheet(item:)`
+                    // there duplicated the presenter onto both the prose and collections
+                    // sections: two presenters sharing one item binding ping-pong
+                    // present/dismiss after the user closes the sheet (an endless
+                    // open/close loop of the Archival Neighbors screen).
                     Section(header: Text(String(localized: "browser.sources.collections.header",
                                                 defaultValue: "Archival Collections"))) {
                         OutlineGroup(collectionTree, children: \.children) { node in
                             sourceNodeRow(node.entry)
                         }
                     }
+                    .sheet(item: $sourceNeighborsTarget) { target in
+                        ArchivalNeighborsSheet(appState: appState) {
+                            guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
+                            return (try? await pipeline.archivalNeighbors(
+                                forLotFile:  target.lotFile,
+                                recordGroup: target.recordGroup,
+                                series:      target.series
+                            )) ?? ([], 0, nil)
+                        }
+                        .environment(appState)
+                    }
+                    .sheet(item: $crossVolumeTarget) { target in
+                        VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
+                            .environment(appState)
+                    }
                 }
             }
         }
         .task { await loadSources() }
-        .sheet(item: $sourceNeighborsTarget) { target in
-            ArchivalNeighborsSheet(appState: appState) {
-                guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
-                return (try? await pipeline.archivalNeighbors(
-                    forLotFile:  target.lotFile,
-                    recordGroup: target.recordGroup,
-                    series:      target.series
-                )) ?? ([], 0, nil)
-            }
-            .environment(appState)
-        }
-        .sheet(item: $crossVolumeTarget) { target in
-            VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
-                .environment(appState)
-        }
     }
 
     /// One archival-collection outline row: its own text (bold for a major named collection —
@@ -226,6 +239,8 @@ struct VolumeSourcesView: View {
     // MARK: - Data Loading
 
     private func loadSources() async {
+        guard !didLoad else { return }
+        didLoad = true
         // Warm the bundled resolution index (one ~1 MB decode) off the main thread so the
         // per-row catalog / cross-volume lookups in `sourceNodeRow` never block rendering.
         await Task.detached(priority: .utility) { _ = VolumeSourcesIndexStore.shared }.value

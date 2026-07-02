@@ -996,14 +996,16 @@ struct MacSourceExplorerView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     } else if !relatedDocs.isEmpty {
-                        ForEach(relatedDocs, id: \.documentId) { doc in
+                        // Composite key: related documents span volumes, and document
+                        // ids are only unique within a single volume.
+                        ForEach(relatedDocs, id: \.compositeKey) { doc in
                             Button {
                                 onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
                             } label: {
                                 macRelatedDocumentRow(doc)
                             }
                             .buttonStyle(.plain)
-                            if doc.documentId != relatedDocs.last?.documentId {
+                            if doc.compositeKey != relatedDocs.last?.compositeKey {
                                 Divider().padding(.leading, 8)
                             }
                         }

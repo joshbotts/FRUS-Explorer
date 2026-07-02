@@ -94,7 +94,10 @@ struct ArchivalNeighborsSheet: View {
                     )
                 } else {
                     List {
-                        ForEach(docs, id: \.documentId) { doc in
+                        // Keyed by the composite volume/document pair: neighbors span
+                        // volumes and FRUS document ids are volume-local ("d12" recurs
+                        // in most volumes), so documentId alone collides.
+                        ForEach(docs, id: \.compositeKey) { doc in
                             Button { open(doc) } label: { row(doc) }
                                 .buttonStyle(.plain)
                         }
