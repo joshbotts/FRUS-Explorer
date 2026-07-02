@@ -37,6 +37,26 @@ struct SettingsSyncCoordinatorTests {
         UserDefaults.standard.set(on, forKey: SettingsSyncCoordinator.enabledKey)
     }
 
+    /// Removes every `UserDefaults` key a coordinator pull can write, so tests that
+    /// trigger a pull leave no state behind for other suites or later runs (the
+    /// host app's defaults persist across test invocations in the simulator).
+    private func removePulledKeys() {
+        let defaults = UserDefaults.standard
+        for key in [
+            WordCloudSettings.Keys.minLength,
+            WordCloudSettings.Keys.minCount,
+            WordCloudSettings.Keys.foldPlurals,
+            WordCloudSettings.Keys.filterMarkings,
+            WordCloudSettings.Keys.excludeBoilerplate,
+            WordCloudSettings.Keys.globalStopwords,
+            WordCloudSettings.Keys.lensStopwords,
+            WordCloudSettings.Keys.revision,
+            SettingsKeys.citationStyle,
+            SettingsKeys.defaultDocumentMode,
+            "researchSessionLoggingEnabled",
+        ] { defaults.removeObject(forKey: key) }
+    }
+
     @Test("Enabling sync with no cloud record seeds one from local settings")
     func seedsOnEnable() throws {
         let defaults = UserDefaults.standard
@@ -65,8 +85,7 @@ struct SettingsSyncCoordinatorTests {
         let defaults = UserDefaults.standard
         setEnabled(true)
         defer {
-            defaults.removeObject(forKey: WordCloudSettings.Keys.minCount)
-            defaults.removeObject(forKey: SettingsKeys.citationStyle)
+            removePulledKeys()
             setEnabled(false)
         }
 
@@ -88,7 +107,7 @@ struct SettingsSyncCoordinatorTests {
     func collapsesDuplicates() throws {
         setEnabled(true)
         defer {
-            UserDefaults.standard.removeObject(forKey: WordCloudSettings.Keys.minCount)
+            removePulledKeys()
             setEnabled(false)
         }
 
