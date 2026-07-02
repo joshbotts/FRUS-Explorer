@@ -845,3 +845,24 @@ is the first comma-delimited component.
   to regenerate the index with the consular series + validate the Havana golden check, then
   commit the index. Other consular series (Consular Instructions 604019, Notes to/from
   Consuls) and Domestic/Misc Letters remain as further Phase 3 work.
+
+### Session 2026-07-02 — VolumeView On-Page Download Completion Fix
+Fixed the dead-end left by the Session 2026-06-28 "downloadable from every surface" work
+(e971585): tapping **Download Volume** on the iOS VolumeView placeholder showed a static
+"Download started." that never progressed — nothing in the view's body observed state that
+changes when the transfer finishes (`vm.isDownloaded()` is a raw FileManager check on the
+non-Observable `DownloadManager`, and the one-shot `.task` had already bailed on the
+not-downloaded guard), so the structure never loaded even after a successful download.
+- **VolumeView 2.3**: injected `@Environment(AppState.self)`; the placeholder now shows a
+  live "Downloading…" row while the volume is in `appState.downloadQueue` (also covers
+  downloads started from other surfaces), and `.onChange(of: appState.downloadQueue)`
+  re-runs `loadVolumeStructure` on the present→absent transition — safe because
+  `DownloadManager` moves the XML into place *before* firing `onStateChanged`. A failed
+  download resets `downloadRequested` so the button is re-offered.
+- Branch reorder: the structure/error/loading chain now falls back to the loading row
+  (instead of a blank section) during the persisted-structure fast path and the brief
+  post-download window, mirroring CompilationView's approach.
+- Verified end-to-end in the iPhone 17 simulator: frus1961-63v06 (fast path) and the
+  11.8 MB frus1961-63v07-09mSupp (spinner visible) both transitioned Download Required →
+  Downloading… → loaded structure without leaving the screen. CodingStandardsAuditTests +
+  BrowserViewTests pass (33/33).
