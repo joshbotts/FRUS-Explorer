@@ -978,3 +978,25 @@ text sat in `entry.text`. Fix, layered so no reader can drop prose again:
   bold recovery, HTML/DOCX/PDF end-to-end); 30/30 CollectionTests + 15/15
   CodingStandardsAuditTests pass; exporter version histories bumped (HTML 1.7, DOCX 1.5,
   PDF 1.8, NativeCollectionSerializer 1.1, ProseRichText 1.1).
+
+### Session 2026-07-02 (later) — SettingsSyncCoordinatorTests host-crash fix
+All four `SettingsSyncCoordinatorTests` SIGTRAPped the test host ("Restarting after
+unexpected exit…"; each case listed under Failing tests). Root cause was **container
+lifetime, not CloudKit**: the test helper returned `container.mainContext` and dropped
+the `ModelContainer` — `mainContext` does not retain its container, so the first
+`context.fetch` in `SettingsSyncCoordinator.resolveCanonical` trapped inside SwiftData
+(crash report: `EXC_BREAKPOINT` in SwiftData ← `resolveCanonical(create:)`, no fatal
+message emitted). The CKAccountStatusNoAccount noise in the log was a red herring —
+verified by re-running with `cloudKitDatabase: .none` alone, which still crashed.
+- Fix: helper now returns the container; each test holds it for its whole body (the
+  pattern every other suite already used).
+- Hermeticity: test containers now pass `cloudKitDatabase: .none` explicitly — the
+  default `.automatic` adopts the test host's iCloud entitlement and spins up real
+  CloudKit sync machinery (CKNotificationListener registration was visible in the sim
+  log). Same fix applied to `ModelContainer.makeTestContainer()`, whose doc comment
+  already claimed "CloudKit sync is disabled" without actually disabling it.
+- `collapsesDuplicates` UserDefaults cleanup moved into `defer` so a thrown fetch error
+  can't leak the key.
+- The fifth reported failure (`WordCloudTokenizerTests.pluralFoldDisabled`) was already
+  fixed at the v2 tip by 182f297 (nonsense-plural probe); verified passing.
+- Full unit-test bundle: 968 tests in 152 suites, all pass (iPhone 17 sim, iOS 26.5).
