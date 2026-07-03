@@ -121,6 +121,13 @@ import Foundation
 ///          The `GeneratedRow` + `Hyperlink` styles join `stylesXML` unconditionally —
 ///          the established dormant-style precedent (v1.8): document.xml is unchanged
 ///          for collections without blocks
+///   1.12 — Authoring Phase 6 review fix: generated-block row text and secondary text
+///          run through the `_…_`-to-italic conversion (`markdownItalicRunXML`, the
+///          run-level core factored out of `markdownItalicRuns`) — bibliography and
+///          chronology rows carry the citation formatter's `_Foreign Relations…_`
+///          series title, which HTML/PDF already render as italics; DOCX printed the
+///          literal underscores. Applies inside `<w:hyperlink>` too (each run keeps
+///          the `Hyperlink` rStyle)
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -668,21 +675,23 @@ final class DocxCollectionExporter: CollectionExporter {
                                   ctx: DocxRenderContext) -> String {
         var xml = markdownItalicRuns(block.title, styleId: "SectionHeading", bold: true)
         for row in block.rows {
+            // Row text and secondary text run through the run-level `_…_` conversion:
+            // bibliography/chronology rows carry the citation formatter's italicized
+            // series title, which every other format renders as italics — DOCX must
+            // not print the literal underscores (Phase 6 review fix).
             var runs = ""
-            let textRun = "<w:r><w:t xml:space=\"preserve\">\(xmlEscaped(row.text))</w:t></w:r>"
             if let url = row.url, !url.isEmpty {
                 let relId = ctx.hyperlinkRelId(for: url)
                 runs += "<w:hyperlink r:id=\"\(relId)\">"
-                    + "<w:r><w:rPr><w:rStyle w:val=\"Hyperlink\"/></w:rPr>"
-                    + "<w:t xml:space=\"preserve\">\(xmlEscaped(row.text))</w:t></w:r>"
+                    + markdownItalicRunXML(row.text, baseRPr: "<w:rStyle w:val=\"Hyperlink\"/>")
                     + "</w:hyperlink>"
             } else {
-                runs += textRun
+                runs += markdownItalicRunXML(row.text)
             }
             if let secondary = row.secondaryText, !secondary.isEmpty {
-                runs += "<w:r><w:rPr><w:color w:val=\"555555\"/><w:sz w:val=\"18\"/>"
-                    + "<w:szCs w:val=\"18\"/></w:rPr>"
-                    + "<w:t xml:space=\"preserve\">  \(xmlEscaped(secondary))</w:t></w:r>"
+                runs += markdownItalicRunXML(
+                    "  \(secondary)",
+                    baseRPr: "<w:color w:val=\"555555\"/><w:sz w:val=\"18\"/><w:szCs w:val=\"18\"/>")
             }
             let indent = min(max(row.indentLevel, 0), 4)
             let ind = indent > 0 ? "<w:ind w:left=\"\(indent * 360)\"/>" : ""
@@ -1073,39 +1082,54 @@ final class DocxCollectionExporter: CollectionExporter {
     ///   - styleId: The Word paragraph style to apply.
     ///   - bold: When `true`, the base run properties include `<w:b/>`.
     private func markdownItalicRuns(_ text: String, styleId: String, bold: Bool = false) -> String {
+        let runs = markdownItalicRunXML(text, baseRPr: bold ? "<w:b/>" : "")
+        return runs.isEmpty
+            ? styledPara("", styleId: styleId)
+            : wPara(runs: runs, styleId: styleId)
+    }
+
+    /// The run-level core of `markdownItalicRuns` (Authoring Phase 6 review fix): emits
+    /// alternating normal / italic `<w:r>` runs for `_span_` markers, with **no**
+    /// enclosing `<w:p>` — for renderers that assemble their own paragraphs from
+    /// multiple run groups (the generated-block rows, whose citations carry the
+    /// formatter's `_Foreign Relations…_` series-title markers).
+    ///
+    /// - Parameters:
+    ///   - text: Raw (un-escaped) source text with optional `_span_` markers.
+    ///   - baseRPr: Run-property XML applied to every run (e.g. `<w:b/>`, a
+    ///     `<w:rStyle w:val="Hyperlink"/>`, or the secondary-text colour/size pair);
+    ///     italic spans append `<w:i/>` after it.
+    /// - Returns: The run XML; empty when `text` is empty.
+    private func markdownItalicRunXML(_ text: String, baseRPr: String = "") -> String {
         guard let regex = try? NSRegularExpression(pattern: "_([^_\\n]+)_") else {
-            return styledPara(escaped(text), styleId: styleId)
+            return "<w:r><w:rPr>\(baseRPr)</w:rPr><w:t xml:space=\"preserve\">\(xmlEscaped(text))</w:t></w:r>"
         }
         let ns = text as NSString
         let length = ns.length
         var runs = ""
         var lastEnd = 0
-        var boldTag: String { bold ? "<w:b/>" : "" }
 
         for match in regex.matches(in: text, range: NSRange(location: 0, length: length)) {
             // Normal run before the italic span
             let beforeRange = NSRange(location: lastEnd, length: match.range.location - lastEnd)
             if beforeRange.length > 0 {
                 let chunk = xmlEscaped(ns.substring(with: beforeRange))
-                runs += "<w:r><w:rPr>\(boldTag)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+                runs += "<w:r><w:rPr>\(baseRPr)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
             }
             // Italic run for the matched span content
             let g1 = match.range(at: 1)
             if g1.location != NSNotFound, g1.length > 0 {
                 let chunk = xmlEscaped(ns.substring(with: g1))
-                runs += "<w:r><w:rPr>\(boldTag)<w:i/></w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+                runs += "<w:r><w:rPr>\(baseRPr)<w:i/></w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
             }
             lastEnd = match.range.upperBound
         }
         // Trailing normal run
         if lastEnd < length {
             let chunk = xmlEscaped(ns.substring(from: lastEnd))
-            runs += "<w:r><w:rPr>\(boldTag)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+            runs += "<w:r><w:rPr>\(baseRPr)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
         }
-
-        return runs.isEmpty
-            ? styledPara("", styleId: styleId)
-            : wPara(runs: runs, styleId: styleId)
+        return runs
     }
 
     /// Emits a styled paragraph with a single plain-text run.

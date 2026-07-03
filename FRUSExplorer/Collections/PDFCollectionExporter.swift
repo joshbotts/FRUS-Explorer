@@ -99,6 +99,11 @@ import CoreText
 ///          link annotations, so a clickable link would require per-run geometry +
 ///          `CGPDFContext` link boxes — the documented tradeoff (HTML/DOCX carry the
 ///          real hyperlink)
+///   1.15 — Authoring Phase 6 review fix: a generated row taller than a full page (a
+///          persons-index reference list spanning hundreds of documents) continues on
+///          the next page via the same framesetter continuation `drawProseFlow` uses,
+///          instead of being drawn once into a rect extending below the media box
+///          (which viewers clip — the tail silently vanished from the PDF)
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -357,9 +362,42 @@ final class PDFCollectionExporter: CollectionExporter {
                 }
                 let h = measureHeight(attr, width: width)
                 if flowY - h < M + 20 { flowNewPage() }
-                draw(attr, in: ctx,
-                     rect: CGRect(x: M + indentX, y: flowY - h, width: width, height: h))
-                flowY -= h + 4
+                if h <= flowY - (M + 20) {
+                    draw(attr, in: ctx,
+                         rect: CGRect(x: M + indentX, y: flowY - h, width: width, height: h))
+                    flowY -= h + 4
+                } else {
+                    // A single row taller than a fresh page (e.g. a persons-index
+                    // reference list spanning hundreds of documents): the same
+                    // framesetter continuation drawProseFlow uses, so the overflow
+                    // continues on the next page instead of being clipped below the
+                    // media box (Phase 6 review fix).
+                    let framesetter = CTFramesetterCreateWithAttributedString(attr)
+                    var charOffset = 0
+                    let total = attr.length
+                    while charOffset < total {
+                        let availH = flowY - (M + 20)
+                        if availH < 28 { flowNewPage(); continue }
+                        let rect = CGRect(x: M + indentX, y: M + 20, width: width, height: availH)
+                        let path = CGPath(rect: rect, transform: nil)
+                        let frame = CTFramesetterCreateFrame(
+                            framesetter, CFRangeMake(charOffset, 0), path, nil)
+                        CTFrameDraw(frame, ctx)
+                        let visible = CTFrameGetVisibleStringRange(frame)
+                        if visible.length == 0 { break }
+                        charOffset += visible.length
+                        if charOffset < total {
+                            flowNewPage()
+                        } else {
+                            // Advance by the height the final chunk actually consumed.
+                            let used = CTFramesetterSuggestFrameSizeWithConstraints(
+                                framesetter,
+                                CFRangeMake(charOffset - visible.length, visible.length),
+                                nil, CGSize(width: width, height: availH), nil)
+                            flowY -= ceil(used.height) + 4
+                        }
+                    }
+                }
             }
             flowY -= 8
         }

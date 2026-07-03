@@ -3460,6 +3460,35 @@ struct CollectionTests {
         }
     }
 
+    @Test("Persons Index determinism: distinct identities sharing a canonical name keep a stable order — identity key breaks the tie, launch after launch")
+    @MainActor
+    func generatedPersonsIndexTieBreak() async {
+        typealias Mention = CollectionGeneratedBlocks.PersonMention
+        var fixture = FixtureBlockDataSource()
+        // Two DISTINCT rollups with the same canonical name — routine at FRUS scale —
+        // plus a differently named identity proving names still sort first.
+        fixture.mentions = [
+            Mention(identityKey: "r9", name: "John Smith", description: "the ambassador",
+                    role: nil, volumeId: "v1", documentId: "d1"),
+            Mention(identityKey: "r2", name: "John Smith", description: "the admiral",
+                    role: nil, volumeId: "v1", documentId: "d2"),
+            Mention(identityKey: "r5", name: "Alice", description: nil,
+                    role: nil, volumeId: "v1", documentId: "d1"),
+        ]
+        let documents: [(volumeId: String, documentId: String)] = [("v1", "d1"), ("v1", "d2")]
+        // Dictionary iteration order is seeded per launch and `sorted(by:)` is not
+        // stable, so equal-named rows would swap between runs without the key
+        // tie-break. Resolve repeatedly — the order must be identical every time:
+        // name first, then identityKey ("r2" < "r9").
+        for _ in 0..<8 {
+            let block = await CollectionGeneratedBlocks.resolve(
+                type: .personsIndex, documents: documents, dataSource: fixture)
+            #expect(block.rows.map(\.text) == ["Alice", "John Smith", "John Smith"])
+            #expect(block.rows[1].secondaryText?.hasPrefix("the admiral") == true)
+            #expect(block.rows[2].secondaryText?.hasPrefix("the ambassador") == true)
+        }
+    }
+
     @Test("NativeFormat generated blocks: any block forces v2; only the TYPE serializes (never rows); round-trip reconstructs; an unknown block-type string imports inert and re-exports intact")
     @MainActor
     func nativeGeneratedBlockRoundTrip() throws {
@@ -3557,6 +3586,151 @@ struct CollectionTests {
         // The editors' post-move tail applies unchanged: reindex leaves 0..n.
         for (i, e) in (rowMove ?? []).enumerated() { e.sortOrder = i }
         #expect(rowMove?.map(\.sortOrder) == [0, 1, 2, 3, 4])
+    }
+
+    @Test("Smart path resolves generated blocks: front matter before the smart items, back matter after; fullRefs keeps block membership at the FULL result set under a preview cap; unknown types skipped")
+    @MainActor
+    func smartPathResolvesGeneratedBlocks() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Smart Apparatus")
+        coll.savedSearchId = UUID()   // smart; resolveSmartItems itself is search-free
+        context.insert(coll)
+        let chron = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        chron.entryKind = .generated
+        chron.generatedBlockType = CollectionGeneratedBlockType.chronology.rawValue
+        let bib = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 1)
+        bib.entryKind = .generated
+        bib.generatedBlockType = CollectionGeneratedBlockType.bibliography.rawValue
+        // A newer build's block type: skipped on the smart path too, never junk.
+        let future = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 2)
+        future.entryKind = .generated
+        future.generatedBlockType = "starCharts"
+        for entry in [chron, bib, future] {
+            entry.collection = coll
+            context.insert(entry)
+        }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        typealias Ref = CollectionContentResolver.SmartDocumentRef
+        let refs = [Ref(documentId: "d1", volumeId: "smartvol", sortOrder: 0),
+                    Ref(documentId: "d2", volumeId: "smartvol", sortOrder: 1)]
+
+        // Full resolve: chronology (front matter) frames the smart documents with the
+        // bibliography (back matter) — the smart-collection Apparatus wiring the
+        // editors' ungated menu and the manuals promise.
+        let items = await resolver.resolveSmartItems(refs, collection: coll, allNotes: [])
+        #expect(items.map(kindLabel) == ["generated", "document", "document", "generated"])
+        guard case .generated(let front) = items[0],
+              case .generated(let back) = items[3] else {
+            Issue.record("expected generated items framing the smart documents")
+            return
+        }
+        #expect(front.type == .chronology)
+        #expect(back.type == .bibliography)
+        // Block membership is the smart result set (fallback citations — no manifest
+        // volume metadata in tests).
+        #expect(back.rows.map(\.text) == ["smartvol/d1", "smartvol/d2"])
+
+        // Capped preview: per-document resolution sees only the first ref, but blocks
+        // (fed fullRefs) still reflect the FULL result set — matching the export.
+        let capped = await resolver.resolveSmartItems(
+            Array(refs.prefix(1)), collection: coll, allNotes: [], fullRefs: refs)
+        #expect(capped.map(kindLabel) == ["generated", "document", "generated"])
+        if case .generated(let cappedBack) = capped[2] {
+            #expect(cappedBack.rows.map(\.text) == ["smartvol/d1", "smartvol/d2"])
+        } else {
+            Issue.record("expected the back-matter bibliography in the capped resolve")
+        }
+    }
+
+    @Test("Preview cap: generated entries survive the cap wherever they sit — documents and headings past the cap stay excluded")
+    @MainActor
+    func previewCapKeepsGeneratedEntries() {
+        var entries: [CollectionEntry] = []
+        let chron = outlineEntry(kind: .generated, order: 0)
+        chron.generatedBlockType = CollectionGeneratedBlockType.chronology.rawValue
+        entries.append(chron)
+        for i in 1...25 { entries.append(outlineEntry(kind: .document, order: i)) }
+        entries.append(outlineEntry(kind: .heading, level: 1, order: 26, text: "Past the cap"))
+        let bib = outlineEntry(kind: .generated, order: 27)
+        bib.generatedBlockType = CollectionGeneratedBlockType.bibliography.rawValue
+        entries.append(bib)
+
+        let capped = CollectionPreviewView.capEntries(entries, cap: 20)
+        // Front-matter block + first 20 documents + the trailing back-matter block —
+        // where addGeneratedEntry default-inserts it. The 5 documents and the heading
+        // past the cap are excluded, exactly as before.
+        #expect(capped.count == 22)
+        #expect(capped.first?.entryKind == .generated)
+        #expect(capped.filter { $0.entryKind == .document }.count == 20)
+        #expect(!capped.contains { $0.entryKind == .heading })
+        #expect(capped.last?.entryKind == .generated)
+        #expect(capped.last?.generatedBlockType
+                == CollectionGeneratedBlockType.bibliography.rawValue)
+    }
+
+    @Test("DOCX generated rows: the citation formatter's _…_ series-title markers render as italic runs — never literal underscores (hyperlink and secondary runs included)")
+    @MainActor
+    func docxGeneratedRowItalics() async throws {
+        let block = CollectionGeneratedBlock(
+            type: .bibliography,
+            title: "Bibliography",
+            rows: [
+                CollectionGeneratedRow(
+                    text: "_Foreign Relations of the United States_, 1969–1976, Volume I, Document 5"),
+                CollectionGeneratedRow(
+                    text: "Linked Collection",
+                    secondaryText: "See _Foreign Relations_ series",
+                    url: "https://catalog.archives.gov/id/1"),
+            ])
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Italics", note: nil),
+            items: [.generated(block)])
+        let docx = try Data(contentsOf: url)
+        func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
+        // The marked span became a real italic run…
+        #expect(docxContains(
+            "<w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">Foreign Relations of the United States</w:t>"))
+        // …the hyperlink row keeps the Hyperlink rStyle on its runs…
+        #expect(docxContains(
+            "<w:rStyle w:val=\"Hyperlink\"/></w:rPr><w:t xml:space=\"preserve\">Linked Collection</w:t>"))
+        // …the secondary text's marked span is italic alongside its gray/small rPr…
+        #expect(docxContains(
+            "<w:i/></w:rPr><w:t xml:space=\"preserve\">Foreign Relations</w:t>"))
+        // …and no literal underscore-wrapped series title survives anywhere.
+        #expect(!docxContains("_Foreign Relations"))
+    }
+
+    @Test("PDF generated rows: a single row taller than a full page continues onto following pages instead of being clipped below the media box")
+    @MainActor
+    func pdfGeneratedRowContinuation() async throws {
+        // A persons-index-shaped row whose volume-qualified reference list far
+        // exceeds one page at the row's 9-pt secondary size.
+        let refList = (1...2000).map { "\($0) (frus1969-76v\($0 % 10))" }
+            .joined(separator: ", ")
+        let block = CollectionGeneratedBlock(
+            type: .personsIndex,
+            title: "Persons Index",
+            rows: [CollectionGeneratedRow(text: "Smith, John",
+                                          secondaryText: "Documents " + refList + ", ZZZTAIL")])
+        let url = try await PDFCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Overflow", note: nil),
+            items: [.generated(block)])
+        let pdf = try Data(contentsOf: url)
+        let document = try #require(PDFDocument(data: pdf))
+        let text = (0..<document.pageCount)
+            .compactMap { document.page(at: $0)?.string }
+            .joined(separator: "\n")
+        #expect(text.contains("Smith, John"))
+        // The tail of the overtall row made it onto a page (pre-fix it was drawn into
+        // a rect extending below the media box and clipped away by viewers).
+        #expect(text.contains("ZZZTAIL"))
+        // And the continuation actually spanned pages: cover + several flow pages.
+        #expect(document.pageCount >= 3)
     }
 
     // MARK: - Outline editor engine tests (Authoring Phase 4, editor step)

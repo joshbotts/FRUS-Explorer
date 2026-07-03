@@ -107,8 +107,9 @@ enum CollectionGeneratedBlockType: String, CaseIterable, Identifiable, Sendable 
 protocol CollectionGeneratedBlockDataSource {
 
     /// The history.state.gov-style citation for one document — the same manifest +
-    /// formatter path document items use (header included when the render model is
-    /// loaded). Falls back to `"volumeId/documentId"` for unknown volumes.
+    /// formatter path document items use (header-independent: the formatter reads only
+    /// volume metadata and the document number, so no volume XML is ever needed).
+    /// Falls back to `"volumeId/documentId"` for unknown volumes.
     func citation(volumeId: String, documentId: String) -> String
 
     /// Structured date metadata (`document_dates`) keyed by `"volumeId/documentId"`.
@@ -178,6 +179,9 @@ protocol CollectionGeneratedBlockDataSource {
 ///   1.0 — Authoring Phase 6 (core): the seam + placeholder resolution for all types
 ///   1.1 — Authoring Phase 6 (blocks): the five real resolvers behind the injected
 ///          `CollectionGeneratedBlockDataSource`; placeholders removed
+///   1.2 — Authoring Phase 6 review fixes: persons-index ordering made deterministic
+///          across launches (identity key breaks canonical-name ties — Dictionary
+///          iteration order is seeded per launch and `sorted(by:)` is not stable)
 enum CollectionGeneratedBlocks {
 
     /// Resolves one generated block from the collection's resolved document membership.
@@ -518,7 +522,8 @@ enum CollectionGeneratedBlocks {
     // MARK: - Persons Index
 
     /// Persons Index rows: rollup identities mentioned in the collection's documents,
-    /// alphabetical by canonical name. **Threshold heuristic (no knob):** with ≥ 4
+    /// alphabetical by canonical name (identity key breaks ties, so equal-named
+    /// identities keep a stable order across launches). **Threshold heuristic (no knob):** with ≥ 4
     /// documents in the collection a person must be mentioned in ≥ 2 of them (filters
     /// walk-on mentions); smaller collections list every mentioned person (≥ 1) — a
     /// 2-document collection would otherwise produce a near-empty index. Each row is the
@@ -546,9 +551,18 @@ enum CollectionGeneratedBlocks {
         let threshold = documents.count >= 4 ? 2 : 1
         let multiVolume = spansMultipleVolumes(documents)
 
-        return identities.values
-            .filter { $0.documentKeys.count >= threshold }
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        return identities
+            .filter { $0.value.documentKeys.count >= threshold }
+            // Deterministic order across launches: name first, identity key breaking
+            // ties — Dictionary iteration order is per-launch-seeded and `sorted(by:)`
+            // is not stable, so equal-named identities would otherwise swap between
+            // runs (same collection, differently ordered exports).
+            .sorted { a, b in
+                let nameOrder = a.value.name.localizedStandardCompare(b.value.name)
+                if nameOrder != .orderedSame { return nameOrder == .orderedAscending }
+                return a.key < b.key
+            }
+            .map(\.value)
             .map { identity in
                 // Reference list in collection order (the reader's order).
                 let refs = documents

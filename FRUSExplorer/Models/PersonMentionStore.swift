@@ -118,6 +118,10 @@ public struct PersonRollupMention: Sendable {
 ///          document set resolved through the materialised rollup, for the collections
 ///          Persons Index block (reuses the People-browser identity path; clustering is
 ///          never reimplemented by callers)
+///   1.4 — Authoring Phase 6 review fix: rollupMentions uses an index-usable row-value
+///          IN predicate instead of the concatenated-key form, which forced a full
+///          person_mentions scan per Persons-block resolve (on every debounced preview
+///          refresh)
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -281,7 +285,12 @@ public actor PersonMentionStore {
     /// (rollup × mentioning document) pair. Empty when the rollup hasn't been built
     /// (consolidation not yet run), matching the People browser's behavior.
     ///
-    /// Queries are issued in chunks of 499 keys to stay within SQLite's 999-variable cap.
+    /// Queries are issued in chunks of 499 documents (998 bound variables — two per
+    /// pair) to stay within SQLite's 999-variable cap. The predicate uses row-value
+    /// syntax — `(pm.volume_id, pm.document_id) IN (VALUES (?, ?), …)` — which SQLite
+    /// can satisfy from `idx_person_mentions_doc`; the concatenated-key form
+    /// (`volume_id || '/' || document_id IN (…)`) defeats every index and full-scans
+    /// `person_mentions`, the app's largest per-mention table, on every resolve.
     ///
     /// - Parameter docs: `(volumeId, documentId)` pairs restricting the mention scope.
     /// - Returns: Distinct rollup × document pairs, unordered (callers group and sort).
@@ -290,11 +299,10 @@ public actor PersonMentionStore {
     ) throws -> [PersonRollupMention] {
         guard !docs.isEmpty else { return [] }
         let chunkSize = 499
-        let allKeys = docs.map { "\($0.volumeId)/\($0.documentId)" }
         var results: [PersonRollupMention] = []
-        for start in stride(from: 0, to: allKeys.count, by: chunkSize) {
-            let chunk = Array(allKeys[start..<min(start + chunkSize, allKeys.count)])
-            let placeholders = chunk.map { _ in "?" }.joined(separator: ", ")
+        for start in stride(from: 0, to: docs.count, by: chunkSize) {
+            let chunk = Array(docs[start..<min(start + chunkSize, docs.count)])
+            let placeholders = chunk.map { _ in "(?, ?)" }.joined(separator: ", ")
             let sql = """
                 SELECT DISTINCT r.rollup_id, r.canonical_name, r.description, r.role,
                                 pm.volume_id, pm.document_id
@@ -302,12 +310,13 @@ public actor PersonMentionStore {
                 JOIN person_rollup_member m
                   ON m.volume_id = pm.volume_id AND m.ref = pm.person_ref
                 JOIN person_rollup r ON r.rollup_id = m.rollup_id
-                WHERE pm.volume_id || '/' || pm.document_id IN (\(placeholders))
+                WHERE (pm.volume_id, pm.document_id) IN (VALUES \(placeholders))
                 """
             let stmt = try prepare(sql)
             defer { sqlite3_finalize(stmt) }
-            for (i, key) in chunk.enumerated() {
-                bind(stmt, Int32(i + 1), key)
+            for (i, doc) in chunk.enumerated() {
+                bind(stmt, Int32(i * 2 + 1), doc.volumeId)
+                bind(stmt, Int32(i * 2 + 2), doc.documentId)
             }
             while step(stmt) {
                 results.append(PersonRollupMention(

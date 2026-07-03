@@ -84,6 +84,13 @@ import WebKit
 ///   1.4 — Authoring Phase 6 (generated apparatus): the fingerprint covers
 ///          `generatedBlockType`, so inserting/moving/deleting an apparatus block
 ///          live-refreshes; block rendering arrives free via the shared renderer
+///   1.5 — Authoring Phase 6 review fixes: `capEntries` exempts `.generated` entries —
+///          apparatus blocks cost bounded index queries, never the XML parse the cap
+///          exists to avoid, and back-matter blocks default-insert at the very end
+///          (exactly the capped-out region), so without the exemption a new block was
+///          invisible in every capped preview despite the row caption's promise; the
+///          smart path passes the uncapped refs as `fullRefs`, so generated blocks
+///          (and the A10 membership) reflect the full result set even under the cap
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -414,7 +421,7 @@ struct CollectionPreviewView: View {
                     : Array(refs.prefix(Self.initialDocumentCap))
                 let resolved = try await resolver.resolve(
                     smartRefs: cappedRefs, collection: collection, allNotes: allNotes,
-                    purpose: .preview)
+                    purpose: .preview, fullRefs: refs)
                 if Task.isCancelled { return }
                 totalDocumentCount = docCount
                 items = resolved
@@ -479,14 +486,24 @@ struct CollectionPreviewView: View {
     }
 
     /// Returns the entry prefix (in `sortOrder` order) containing at most `cap`
-    /// document entries — interleaved headings/prose before the cut are kept.
-    private static func capEntries(_ entries: [CollectionEntry], cap: Int) -> [CollectionEntry] {
+    /// document entries — interleaved headings/prose before the cut are kept, and
+    /// `.generated` apparatus entries survive the cap wherever they sit (v1.5): they
+    /// cost bounded index queries, never the per-document XML parse the cap exists to
+    /// avoid, and the back-matter types default-insert past any cap — without the
+    /// exemption a freshly added bibliography was invisible in every capped preview.
+    /// Their rows still reflect the FULL membership (the resolver computes block
+    /// membership from the collection, not the passed prefix), so a capped preview's
+    /// blocks match the export's.
+    ///
+    /// Internal (not private) so tests can pin the cap semantics without a WebKit view.
+    static func capEntries(_ entries: [CollectionEntry], cap: Int) -> [CollectionEntry] {
         var documentCount = 0
         var out: [CollectionEntry] = []
         for entry in entries.sorted(by: { $0.sortOrder < $1.sortOrder }) {
-            if entry.entryKind == .document {
-                documentCount += 1
-                if documentCount > cap { break }
+            if entry.entryKind == .document { documentCount += 1 }
+            if documentCount > cap {
+                if entry.entryKind == .generated { out.append(entry) }
+                continue
             }
             out.append(entry)
         }
