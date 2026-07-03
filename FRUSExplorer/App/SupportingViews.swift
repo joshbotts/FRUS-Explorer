@@ -31,6 +31,10 @@ import UniformTypeIdentifiers
 ///
 /// Session 147: removed `showHighlightMode`, `highlightTextSelection`, and
 /// `createHighlightAction` — the WebKit renderer uses `webKitSelectionRange` instead.
+///
+/// Authoring Phase 5 review fixes: `currentRenderingVersion` removed in favour of
+/// `makeExcerptCaptureAction` — MacDocumentView builds the whole excerpt capture,
+/// re-extracting the frozen passage from the flat text next to its anchors.
 final class HighlightCoordinator {
 
     /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
@@ -42,15 +46,17 @@ final class HighlightCoordinator {
     /// `window.getSelection().toString()`. Pre-populates the NARA Catalog lookup field.
     var webKitSelectedText: String? = nil
 
-    /// The displayed document's current rendering version
-    /// (`ASTToRenderNodeConverter.renderingVersion(for:)`), set by `MacDocumentView`
-    /// after each load. Captured onto excerpt entries created from a selection
-    /// (Authoring Phase 5) so their offsets stay verifiable per decision A9.
-    var currentRenderingVersion: String? = nil
-
     /// Called by `MacDocumentView` to create a `DocumentHighlight` from the
     /// WebKit selection range and colour chosen in `highlightColorPicker`.
     var createWebKitHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
+
+    /// Builds an excerpt capture from the current selection (Authoring Phase 5).
+    /// Registered by `MacDocumentView` — which owns the render model — so the frozen
+    /// passage is re-extracted block-aware from the flat text alongside its offsets
+    /// and rendering version (decision A9), never frozen from the raw
+    /// `sel.toString()` string (which includes `data-skip` footnote-marker digits
+    /// the offsets exclude). Returns `nil` when no selection text is available.
+    var makeExcerptCaptureAction: (() -> CollectionExcerptCapture?)? = nil
 
     /// The `DocumentHighlight.id` of the most recently created highlight.
     /// Non-nil while the "Add Note to Highlight" button should be enabled.
@@ -59,9 +65,9 @@ final class HighlightCoordinator {
     func reset() {
         webKitSelectionRange = nil
         webKitSelectedText   = nil
-        currentRenderingVersion = nil
         pendingHighlightLink = nil
         createWebKitHighlightAction = nil
+        makeExcerptCaptureAction = nil
     }
 }
 
@@ -83,6 +89,10 @@ final class HighlightCoordinator {
 ///   1.4 — Authoring Phase 5 (excerpts): Excerpt button while text is selected —
 ///          freezes the selection (offsets + rendering version when in-document) into
 ///          a `.excerpt` entry via the collection picker's excerpt mode
+///   1.5 — Authoring Phase 5 review fixes: the Excerpt button delegates capture to
+///          `HighlightCoordinator.makeExcerptCaptureAction` (built by MacDocumentView
+///          from the flat text) so the frozen passage matches its stored anchors and
+///          never embeds `data-skip` footnote-marker digits from `sel.toString()`
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
@@ -284,8 +294,10 @@ struct ResearchStripView: View {
 
             // Excerpt — enabled while text is selected: freezes the selection into a
             // `.excerpt` collection entry via the collection picker (Authoring Phase 5).
-            // Offsets + rendering version travel when the selection is in-document
-            // (webKitSelectionRange non-nil); a footnote selection freezes text only.
+            // The capture is built by MacDocumentView (`makeExcerptCaptureAction`),
+            // which re-extracts the passage from the flat text with its offsets +
+            // rendering version when the selection is in-document; a footnote
+            // selection freezes text only.
             if highlightCoordinator.webKitSelectedText != nil {
                 ResearchStripButton(
                     title: String(localized: "researchStrip.excerpt",
@@ -293,19 +305,9 @@ struct ResearchStripView: View {
                     systemImage: "text.quote",
                     isDisabled: isDisabled
                 ) {
-                    guard let entry,
-                          let text = highlightCoordinator.webKitSelectedText,
-                          !text.isEmpty else { return }
-                    let range = highlightCoordinator.webKitSelectionRange
-                    pendingExcerptCapture = CollectionExcerptCapture(
-                        text: text,
-                        volumeId: entry.volumeId,
-                        documentId: entry.documentId,
-                        start: range?.0,
-                        end: range?.1,
-                        renderingVersion: range != nil
-                            ? highlightCoordinator.currentRenderingVersion : nil,
-                        colorTag: nil)
+                    guard let capture = highlightCoordinator.makeExcerptCaptureAction?()
+                    else { return }
+                    pendingExcerptCapture = capture
                     showAddExcerpt = true
                 }
                 .help(String(

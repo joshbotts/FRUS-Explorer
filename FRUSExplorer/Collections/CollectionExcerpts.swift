@@ -18,8 +18,20 @@ import SwiftData
 /// is in-document, text-only otherwise), and the entry inspector's highlight rows — and
 /// all three funnel into `CollectionExcerpts.makeEntry`, so field copying exists once.
 ///
+/// ## The capture contract (all creation paths, both platforms)
+/// When flat-text offsets exist, `text` is re-extracted from the render model with
+/// `flatTextExcerpt(from:start:end:)` — block-aware, so paragraph breaks survive as
+/// `"\n\n"` (the renderers' paragraph separator) and `data-skip` content the offsets
+/// exclude (footnote-marker digits, figure captions) never enters the passage. The
+/// offsets are pure flat-space anchors: they delimit the flat-text *span*, not the
+/// stored string (which contains separators the flat text does not); a future A9
+/// precision-rendering flip must resolve them through `renderingVersion`, never by
+/// slicing the stored text. Offset-less captures (footnote selections) freeze the raw
+/// selection text with `nil` anchors.
+///
 /// Version history:
 ///   1.0 — Authoring Phase 5 (excerpts): initial implementation
+///   1.1 — Authoring Phase 5 review fixes: block-aware capture contract documented
 struct CollectionExcerptCapture: Sendable, Equatable {
     /// The frozen verbatim passage — the excerpt's rendering source of truth (A9).
     let text: String

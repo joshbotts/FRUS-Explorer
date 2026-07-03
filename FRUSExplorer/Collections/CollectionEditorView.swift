@@ -103,6 +103,10 @@ import UIKit
 ///          (movable/deletable like prose, no body-depth controls); document rows'
 ///          inspector gains a per-highlight "Insert as Excerpt" callback that appends
 ///          via the shared `CollectionExcerpts` factory
+///   2.6 — Authoring Phase 5 review fixes: the timeline sheets map only `.document`
+///          entries — excerpt entries carry their source document's provenance ids, so
+///          mapping them too double-counted that document's year and duplicated the
+///          timeline `Item` id
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -265,7 +269,11 @@ struct CollectionEditorView: View {
             // macOS: plain content + bottom button bar (no NavigationStack chrome)
             VStack(spacing: 0) {
                 DocumentTimelineView(
-                    items: sortedEntries.map {
+                    // Document entries only — matching how orderedDocumentKeys and the
+                    // export document counts scope. Excerpts carry their source
+                    // document's provenance ids, so mapping them too would double-count
+                    // that document's year and duplicate the Item id ("volume/doc").
+                    items: sortedEntries.filter { $0.entryKind == .document }.map {
                         DocumentTimelineView.Item(
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
@@ -288,7 +296,9 @@ struct CollectionEditorView: View {
             #else
             NavigationStack {
                 DocumentTimelineView(
-                    items: sortedEntries.map {
+                    // Document entries only — see the macOS branch above for why
+                    // excerpt entries must not contribute timeline items.
+                    items: sortedEntries.filter { $0.entryKind == .document }.map {
                         DocumentTimelineView.Item(
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,

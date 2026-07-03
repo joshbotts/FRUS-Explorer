@@ -2862,6 +2862,51 @@ struct CollectionTests {
         #expect(plainEntry.excerptColorTag == nil)
     }
 
+    @Test("Excerpt capture contract: a flat-text span crossing block boundaries restores paragraph breaks, excludes offset-invisible content, and renders one <p> per paragraph")
+    func blockAwareExcerptCapture() {
+        // Two paragraphs plus a footnote marker: the flat text fuses the paragraphs
+        // with no separator ("…the proposal.The Secretary…") and the marker digit is
+        // offset-invisible (data-skip) — the two defects a raw slice / raw
+        // sel.toString() capture exhibits.
+        let model = FRUSDocumentRenderModel(
+            documentId: "d1",
+            bodyNodes: [
+                .paragraph([.plainText("They agreed to the proposal."),
+                            .footnoteMarker(id: "fn1", displayLabel: "1")]),
+                .paragraph([.plainText("The Secretary replied at once.")]),
+            ],
+            footnotes: [])
+
+        // The block partition is exactly the flat text, re-cut at block seams — so
+        // flat-text offsets index into the joined blocks unchanged.
+        let flat = buildFlatText(from: model)
+        #expect(flat == "They agreed to the proposal.The Secretary replied at once.")
+        #expect(buildFlatTextBlocks(from: model).joined() == flat)
+
+        // A cross-paragraph span keeps its paragraph break; the marker digit the
+        // offsets exclude never appears in the frozen passage.
+        let spanning = flatTextExcerpt(from: model, start: 15, end: flat.utf16.count)
+        #expect(spanning == "the proposal.\n\nThe Secretary replied at once.")
+
+        // A single-block span is exactly the raw flat-text slice (pre-fix behavior).
+        #expect(flatTextExcerpt(from: model, start: 0, end: 4) == "They")
+
+        // Empty/inverted spans return nil — callers fall back to their old behavior.
+        #expect(flatTextExcerpt(from: model, start: 5, end: 5) == nil)
+        #expect(flatTextExcerpt(from: model, start: -1, end: 4) == nil)
+
+        // The frozen two-paragraph passage renders two <p> elements inside the
+        // excerpt blockquote (the HTML renderer serves export, preview, and PDF;
+        // DOCX splits on the same "\n\n").
+        let excerpt = CollectionExportExcerpt(
+            text: spanning ?? "", documentId: "d1", volumeId: "v1",
+            citation: "", colorTag: nil)
+        let html = CollectionItemHTMLRenderer(options: CollectionExportOptions())
+            .itemHTML(.excerpt(excerpt))
+        #expect(html.contains("<p>the proposal.</p>"))
+        #expect(html.contains("<p>The Secretary replied at once.</p>"))
+    }
+
     @Test("Resolver excerpt pass-through: frozen text + citation fallback + colour; empty-text excerpts are skipped; the source volume is never required")
     @MainActor
     func resolverExcerptPassThrough() async throws {

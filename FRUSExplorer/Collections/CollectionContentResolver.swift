@@ -134,6 +134,10 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          line from outbound `cross_references` edges whose targets are also in the
 ///          collection (in collection order, deduped, self excluded). Smart-collection
 ///          entries are synthesized with no overrides, so smart behavior is unchanged
+///   1.7 — Authoring Phase 5 review fixes: static resolves compute the A10 membership
+///          from the owning collection's full entry list (`collectionDocumentRefs`),
+///          not the passed entries — the capped preview passes a prefix, which silently
+///          dropped "See also:" targets past the cap that the export showed
 @MainActor
 class CollectionContentResolver {
 
@@ -398,9 +402,13 @@ class CollectionContentResolver {
         }
 
         let refs = entries.map(EntryRef.init)
+        // Related-documents membership (A10) comes from the owning collection's full
+        // entry list, NOT the passed entries — the preview passes a capped prefix, and
+        // computing the universe from it would silently drop "See also:" targets past
+        // the cap that the export (full list) shows. Matches `resolveItem`'s sourcing.
         let batch = await loadBatchContext(
             for: refs, collection: collection, allNotes: allNotes,
-            collectionDocuments: Self.documentRefs(in: refs))
+            collectionDocuments: Self.collectionDocumentRefs(of: collection))
         return await resolveItems(from: refs, batch: batch)
     }
 
@@ -685,7 +693,9 @@ class CollectionContentResolver {
     }
 
     /// The ordered, deduplicated `(volumeId, documentId)` list of a batch's document
-    /// entries — the related-documents membership for full resolves.
+    /// entries — the related-documents membership for smart resolves, where the passed
+    /// refs ARE the true membership. Static resolves use `collectionDocumentRefs(of:)`
+    /// instead: their refs may be a capped preview prefix of the real membership.
     private static func documentRefs(in refs: [EntryRef]) -> [(volumeId: String, documentId: String)] {
         var seen = Set<String>()
         return refs.sorted { $0.sortOrder < $1.sortOrder }
@@ -697,8 +707,9 @@ class CollectionContentResolver {
     }
 
     /// The ordered, deduplicated document membership of a live collection — the
-    /// related-documents membership for single-entry (`resolveItem`) resolves, so an
-    /// incremental resolve agrees with the full pass.
+    /// related-documents membership for static resolves (full, capped-preview, and
+    /// single-entry `resolveItem`), so every static pass agrees on the A10 universe
+    /// regardless of how its entry list was capped.
     private static func collectionDocumentRefs(of collection: Collection) -> [(volumeId: String, documentId: String)] {
         var seen = Set<String>()
         return (collection.documentEntries ?? [])

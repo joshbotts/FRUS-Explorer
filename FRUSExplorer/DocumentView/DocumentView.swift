@@ -181,6 +181,12 @@ enum DocumentSheet: Identifiable {
 ///          proxy is true on every iPad, so the button previously appeared for
 ///          all iPad users but `openWindow` silently no-ops without Stage
 ///          Manager; the new gate offers it only when a second window can open.
+///   3.6 — Authoring Phase 5 review fixes: highlight `selectedText` and excerpt
+///          captures re-extract via `flatTextExcerpt` (block-aware — paragraph breaks
+///          survive as "\n\n" instead of fusing at the flat text's zero-width block
+///          seams); `lastValidSelectionRange` preserves the in-document selection
+///          offsets across the system overflow menu's false `selectioncleared` blur so
+///          the iPhone "Add Selection as Excerpt" path keeps its A9 anchors.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -209,6 +215,14 @@ struct DocumentView: View {
     @State private var webKitSelectionRange: (Int, Int)? = nil
     /// Raw selected text from the WebKit renderer. Pre-populates the NARA lookup field.
     @State private var webKitSelectedText: String? = nil
+    /// The last *valid in-document* selection range, preserved across the false
+    /// `selectioncleared` the system overflow "···" menu fires when it blurs the web
+    /// view (see `onSelectionCleared`). `webKitSelectedText` already survives that
+    /// blur for the NARA button; this is its offset twin, so the "Add Selection as
+    /// Excerpt" action — which on iPhone lives behind that overflow menu — still
+    /// captures the A9 anchors (offsets + rendering version) instead of freezing
+    /// text-only. Nil'd whenever a selection with no valid offsets replaces it.
+    @State private var lastValidSelectionRange: (Int, Int)? = nil
     /// Offsets of a tapped highlight pending the user's delete confirmation.
     @State private var highlightToDelete: (Int, Int)? = nil
     /// Research panel accordion state (persisted; shared with macOS via AppStorage).
@@ -1325,11 +1339,16 @@ struct DocumentView: View {
                 if start >= 0 {
                     // In-document selection with valid offsets — enables highlights + lookup.
                     webKitSelectionRange = (start, end)
+                    // Preserved past the overflow-menu blur for excerpt capture; must
+                    // always describe the same selection as webKitSelectedText, so it
+                    // is nil'd on the footnote branch below and for empty text.
+                    lastValidSelectionRange = text.isEmpty ? nil : (start, end)
                 } else {
                     // Footnote / out-of-document selection — text only, no valid offsets.
                     // Clear the range so highlight creation is not offered, but keep the
                     // text so NARA lookup remains available.
                     webKitSelectionRange = nil
+                    lastValidSelectionRange = nil
                 }
                 webKitSelectedText = text.isEmpty ? nil : text
             }
@@ -1339,6 +1358,8 @@ struct DocumentView: View {
                 // is released (e.g. when the user opens the More menu on iOS, which causes
                 // the WebView to blur and fire a false selectioncleared event).
                 // webKitSelectedText is cleared when the NARA lookup button is tapped.
+                // lastValidSelectionRange is likewise preserved so the overflow-menu
+                // "Add Selection as Excerpt" action still captures the A9 anchors.
                 webKitSelectionRange = nil
             }
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
@@ -1690,13 +1711,10 @@ struct DocumentView: View {
         guard let range = webKitSelectionRange,
               let model = vm?.renderModel else { return }
         let rv = ASTToRenderNodeConverter.renderingVersion(for: model)
-        let flat = buildFlatText(from: model)
-        let selectedText: String
-        if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
-            selectedText = String(flat[r])
-        } else {
-            selectedText = ""
-        }
+        // Block-aware extraction: a selection spanning paragraph boundaries keeps its
+        // "\n\n" breaks instead of fusing at the flat text's zero-width block seams —
+        // this string is also what excerpt captures freeze (CollectionExcerpts).
+        let selectedText = flatTextExcerpt(from: model, start: range.0, end: range.1) ?? ""
         let highlight = DocumentHighlight(
             volumeId:         entry.volumeId,
             documentId:       entry.documentId,
@@ -1716,13 +1734,16 @@ struct DocumentView: View {
     /// Freezes the current text selection into an excerpt capture (creation path b).
     ///
     /// What the selection APIs expose (see `FRUSDocumentWebView.onSelectionChanged`):
-    /// an in-document selection reports unicode-scalar flat-text offsets
-    /// (`webKitSelectionRange`) plus the raw text; a footnote/out-of-document selection
-    /// reports text only. When offsets exist, the passage is re-extracted from the flat
-    /// text (the same canonicalization `createHighlight` performs) and the document's
-    /// current `renderingVersion` is recorded; otherwise the raw selection text is
-    /// frozen with `nil` anchors — a fully valid excerpt under A9, just not precision-
-    /// renderable later.
+    /// an in-document selection reports flat-text offsets (`webKitSelectionRange`, kept
+    /// alive across the overflow-menu blur by `lastValidSelectionRange`) plus the raw
+    /// text; a footnote/out-of-document selection reports text only. When offsets
+    /// exist, the passage is re-extracted block-aware from the flat text
+    /// (`flatTextExcerpt` — the same canonicalization `createHighlight` stores, with
+    /// paragraph breaks restored at block seams) and the document's current
+    /// `renderingVersion` is recorded; otherwise the raw selection text is frozen with
+    /// `nil` anchors — a fully valid excerpt under A9, just not precision-renderable
+    /// later. Anchors are only ever stored alongside the re-extracted text, so they
+    /// always delimit the flat-text span the frozen passage came from.
     ///
     /// - Parameter vm: The document view model (render model source).
     /// - Returns: The capture, or `nil` when no selection text is available.
@@ -1732,11 +1753,10 @@ struct DocumentView: View {
         var start: Int? = nil
         var end: Int? = nil
         var renderingVersion: String? = nil
-        if let range = webKitSelectionRange, let model = vm.renderModel {
-            let flat = buildFlatText(from: model)
-            if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
-                text = String(flat[r])
-            }
+        if let range = webKitSelectionRange ?? lastValidSelectionRange,
+           let model = vm.renderModel,
+           let sliced = flatTextExcerpt(from: model, start: range.0, end: range.1) {
+            text = sliced
             start = range.0
             end = range.1
             renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)

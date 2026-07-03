@@ -51,6 +51,11 @@ import SwiftData
 ///   1.8 — Authoring Phase 5 (excerpts): publishes the loaded document's rendering
 ///          version to `HighlightCoordinator.currentRenderingVersion` so selection
 ///          excerpt captures carry it (decision A9 anchors)
+///   1.9 — Authoring Phase 5 review fixes: excerpt captures built here (owns the
+///          render model) via `makeExcerptCaptureAction`, re-extracting the passage
+///          block-aware with `flatTextExcerpt` so the frozen text matches its anchors;
+///          highlight `selectedText` gains paragraph breaks the same way;
+///          `currentRenderingVersion` superseded and removed
 @MainActor
 struct MacDocumentView: View {
 
@@ -191,10 +196,10 @@ struct MacDocumentView: View {
             }
             await loadDocument()
             highlightCoordinator.createWebKitHighlightAction = createWebKitHighlight(color:)
-            // Excerpt captures (Authoring Phase 5) record the document's rendering
-            // version alongside selection offsets — see HighlightCoordinator.
-            highlightCoordinator.currentRenderingVersion = vm.renderModel
-                .map { ASTToRenderNodeConverter.renderingVersion(for: $0) }
+            // Excerpt captures (Authoring Phase 5) are built here — this view owns
+            // vm.renderModel, so the passage is re-extracted from the flat text with
+            // its anchors instead of freezing the raw selection string.
+            highlightCoordinator.makeExcerptCaptureAction = makeSelectionExcerptCapture
             appState.logEvent(.documentOpen(
                 volumeId: entry.volumeId,
                 documentId: entry.documentId,
@@ -644,15 +649,12 @@ struct MacDocumentView: View {
         guard let range = highlightCoordinator.webKitSelectionRange,
               let model = vm.renderModel else { return }
         let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
-        // Extract the selected text from the flat-text representation so it's
-        // available for display in the Research window without re-parsing.
-        let flat = buildFlatText(from: model)
-        let selectedText: String
-        if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
-            selectedText = String(flat[r])
-        } else {
-            selectedText = ""
-        }
+        // Extract the selected text block-aware from the flat text so it's available
+        // for display in the Research window without re-parsing — and so paragraph
+        // breaks survive when the string is later frozen into an excerpt
+        // (CollectionExcerpts.capture(from:)). Same canonicalization as iOS
+        // `createHighlight` and both platforms' selection excerpt captures.
+        let selectedText = flatTextExcerpt(from: model, start: range.0, end: range.1) ?? ""
         let highlight = DocumentHighlight(
             volumeId:         entry.volumeId,
             documentId:       entry.documentId,
@@ -665,6 +667,47 @@ struct MacDocumentView: View {
         modelContext.insert(highlight)
         highlightCoordinator.webKitSelectionRange = nil
         highlightCoordinator.pendingHighlightLink = highlight.id
+    }
+
+    // MARK: - Excerpt Capture (Authoring Phase 5)
+
+    /// Freezes the current WebKit selection into an excerpt capture (creation path b) —
+    /// registered as `HighlightCoordinator.makeExcerptCaptureAction` so the research
+    /// strip's Excerpt button captures through this view, which owns `vm.renderModel`.
+    ///
+    /// Mirrors iOS `DocumentView.selectionExcerptCapture`: when in-document offsets
+    /// exist, the passage is re-extracted block-aware from the flat text
+    /// (`flatTextExcerpt` — paragraph breaks restored, `data-skip` content such as
+    /// footnote-marker digits excluded, exactly what a highlight of the same span
+    /// stores) and the document's current `renderingVersion` is recorded. The raw
+    /// `sel.toString()` text is used only for offset-less selections (footnotes),
+    /// which freeze text-only with `nil` anchors — so stored anchors always delimit
+    /// the flat-text span the frozen passage came from.
+    ///
+    /// - Returns: The capture, or `nil` when no selection text is available.
+    @MainActor
+    private func makeSelectionExcerptCapture() -> CollectionExcerptCapture? {
+        var text = highlightCoordinator.webKitSelectedText ?? ""
+        var start: Int? = nil
+        var end: Int? = nil
+        var renderingVersion: String? = nil
+        if let range = highlightCoordinator.webKitSelectionRange,
+           let model = vm.renderModel,
+           let sliced = flatTextExcerpt(from: model, start: range.0, end: range.1) {
+            text = sliced
+            start = range.0
+            end = range.1
+            renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+        }
+        guard !text.isEmpty else { return nil }
+        return CollectionExcerptCapture(
+            text: text,
+            volumeId: entry.volumeId,
+            documentId: entry.documentId,
+            start: start,
+            end: end,
+            renderingVersion: renderingVersion,
+            colorTag: nil)
     }
 
     // MARK: - Document Identity
