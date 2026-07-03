@@ -449,6 +449,10 @@ struct CompilationView: View {
 /// produced repeated numbers (e.g. "1  1. Memorandum…"). The header is the
 /// canonical display text; the `documentNumber` field is retained on the model for
 /// search and sort purposes only.
+///
+/// The label expands to the full row width and declares a rectangular content shape so
+/// the entire row is tappable inside its `.buttonStyle(.plain)` Button — plain buttons
+/// otherwise hit-test only their opaque text (Session 2026-07-03 tap-target fix).
 struct DocumentRowLabel: View {
     let doc: DocumentBrowserEntry
 
@@ -479,5 +483,7 @@ struct DocumentRowLabel: View {
             }
         }
         .padding(.vertical, 3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }

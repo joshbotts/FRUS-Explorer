@@ -424,6 +424,12 @@ private struct VolumeTagChipsView: View {
 
 // MARK: - SectionRowLabel
 
+/// Row label for a volume section (compilation/chapter/front-matter) in the Browse lists.
+///
+/// Used as the label of `.buttonStyle(.plain)` row Buttons in `VolumeView` and
+/// `CompilationView` (and the macOS corpus browser); it expands to the full row width and
+/// declares a rectangular content shape so the entire row is tappable — plain buttons
+/// otherwise hit-test only their opaque text (Session 2026-07-03 tap-target fix).
 struct SectionRowLabel: View {
     let section: VolumeSection
 
@@ -448,6 +454,8 @@ struct SectionRowLabel: View {
             .font(.caption)
         }
         .padding(.vertical, 3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private var sectionTypeLabel: String {
