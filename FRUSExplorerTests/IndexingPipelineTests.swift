@@ -3192,3 +3192,252 @@ struct PersonRollupConsolidationTests {
         }
     }
 }
+
+// MARK: - HeadNestedSourceNoteTests (Source Explorer Phase 1)
+
+/// End-to-end tests for the head-nested source-note extraction fix, using the **real**
+/// corpus encodings (verified against the published TEI on 2026-07-03):
+///
+/// - 1955+ volumes: `<note type="source">` nested inside `<head>` (plain children);
+/// - Nixon–Ford electronic volumes: head-nested `<note type="source">` holding
+///   `<p><seg type="summary">…</seg></p><p><seg type="source">…</seg></p>`;
+/// - 1861–1954 volumes: top-level `<note rend="inline" type="source">` before `<head>`;
+/// - withheld-document notes: `[Source: …]` bracket wrapper.
+///
+/// Each fixture is parsed through `FRUSDocumentParser` and indexed through the full
+/// pipeline, so these tests also prove the parser preserves head-nested notes in the AST.
+@Suite("IndexingPipeline — head-nested source notes (Phase 1)")
+struct HeadNestedSourceNoteTests {
+
+    /// Writes a volume in the real-corpus encoding (`subtype="historical-document"`).
+    private func writeRealVolume(to url: URL, volumeId: String, documents: [(id: String, xml: String)]) throws {
+        let docBlocks = documents.map { doc in
+            "<div type=\"document\" subtype=\"historical-document\" n=\"\(doc.id.dropFirst())\" xml:id=\"\(doc.id)\">\(doc.xml)</div>"
+        }.joined(separator: "\n")
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+          <publicationStmt><date>2010</date></publicationStmt>
+          <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><body>
+            <div type="compilation" xml:id="comp1">
+              <head>Compilation</head>
+              \(docBlocks)
+            </div>
+          </body></text>
+        </TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: url)
+    }
+
+    /// Reads `citation_era` and `classification` for one document straight from the
+    /// `document_sources` table (no public API exposes classification yet — store-only phase).
+    private func documentSourceRow(
+        dbURL: URL, volumeId: String, documentId: String
+    ) throws -> (era: String, classification: String?)? {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+              let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "HeadNestedSourceNoteTests", code: 1)
+        }
+        defer { sqlite3_close_v2(handle) }
+        let sql = "SELECT citation_era, classification FROM document_sources WHERE volume_id = ? AND document_id = ?"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "HeadNestedSourceNoteTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        sqlite3_bind_text(stmt, 2, documentId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        let era = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+        let classification = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
+        return (era, classification)
+    }
+
+    /// The 1955+ encoding: plain head-nested note. Also verifies the structured
+    /// (`citation_era='structured'`) row, the classification split, and the header
+    /// side effect (note text no longer leaks into the stored title).
+    @Test("head-nested plain note: extracted, structured row, classification, clean header")
+    func headNestedPlainNote() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1964-68v19.xml")
+            try writeRealVolume(to: url, volumeId: "frus1964-68v19", documents: [
+                ("d1", """
+                <head>1. Memorandum From the President&#8217;s Special Assistant (Rostow) to \
+                President Johnson<note n=" 1" type="source" xml:id="d1fn1">Source: Johnson \
+                Library, National Security File, Country File, Vietnam, Memos. Secret; Nodis. \
+                Sent for information.</note></head>
+                <p>Body text about negotiations.</p>
+                """),
+            ])
+            try await pipeline.indexVolume("frus1964-68v19")
+
+            let docs = try await pipeline.documents(forVolume: "frus1964-68v19")
+            let d1 = try #require(docs.first { $0.documentId == "d1" })
+
+            // The head-nested note is extracted and stored.
+            #expect(d1.sourceNote == "Source: Johnson Library, National Security File, Country File, Vietnam, Memos. Secret; Nodis. Sent for information.")
+
+            // Header side effect (deliberate): the note text no longer leaks into the title.
+            #expect(d1.header == "1. Memorandum From the President\u{2019}s Special Assistant (Rostow) to President Johnson")
+            #expect(d1.header.contains("Johnson Library") == false)
+
+            // "Source: …" narrative now reaches the structured parser: presidentialLibrary row.
+            let row = try #require(try documentSourceRow(
+                dbURL: dir.appendingPathComponent("test.sqlite"),
+                volumeId: "frus1964-68v19", documentId: "d1"))
+            #expect(row.era == "structured")
+            // S1 classification split: sentence 2 is markings; remarks are not stored.
+            #expect(row.classification == "Secret; Nodis")
+        }
+    }
+
+    /// The Nixon–Ford electronic-volume encoding: head-nested typed note holding
+    /// summary + source `<seg>` paragraphs — only the source segment is the note.
+    @Test("head-nested seg variant: only the source seg is extracted")
+    func headNestedSegVariant() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76ve09p1.xml")
+            try writeRealVolume(to: url, volumeId: "frus1969-76ve09p1", documents: [
+                ("d1", """
+                <head>1. Memorandum From the Deputy Assistant to the President<note n="1" \
+                type="source" xml:id="d1fn1"><p><seg type="summary">Summary: Scowcroft provided \
+                Nixon with a report of a conversation.</seg></p><p><seg type="source">Source: \
+                Library of Congress, Manuscript Division, Kissinger Papers, Box CL 101, \
+                Geopolitical File. Secret; Sensitive; Exclusively Eyes Only.</seg></p></note></head>
+                <p>Body text.</p>
+                """),
+            ])
+            try await pipeline.indexVolume("frus1969-76ve09p1")
+
+            let docs = try await pipeline.documents(forVolume: "frus1969-76ve09p1")
+            let d1 = try #require(docs.first { $0.documentId == "d1" })
+            let note = try #require(d1.sourceNote)
+            #expect(note.hasPrefix("Source: Library of Congress"))
+            #expect(note.contains("Summary:") == false,
+                    "the summary seg must not pollute the stored source note")
+            #expect(d1.header == "1. Memorandum From the Deputy Assistant to the President")
+
+            let row = try #require(try documentSourceRow(
+                dbURL: dir.appendingPathComponent("test.sqlite"),
+                volumeId: "frus1969-76ve09p1", documentId: "d1"))
+            #expect(row.classification == "Secret; Sensitive; Exclusively Eyes Only")
+        }
+    }
+
+    /// Pre-1955 regression: the top-level inline encoding still extracts, the stored
+    /// shape of a bare decimal note is byte-identical, and no classification is invented.
+    @Test("top-level inline note (pre-1955): unchanged extraction, decimal era, nil classification")
+    func topLevelInlineNoteRegression() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1952-54v01.xml")
+            try writeRealVolume(to: url, volumeId: "frus1952-54v01", documents: [
+                ("d1", """
+                <note rend="inline" type="source">711.00/11&#8211;552</note>\
+                <head><hi rend="italic">Memorandum by the Secretary of State</hi></head>
+                <p>Body text.</p>
+                """),
+            ])
+            try await pipeline.indexVolume("frus1952-54v01")
+
+            let docs = try await pipeline.documents(forVolume: "frus1952-54v01")
+            let d1 = try #require(docs.first { $0.documentId == "d1" })
+            #expect(d1.sourceNote == "711.00/11\u{2013}552",
+                    "bare pre-1955 decimal notes keep their stored shape exactly")
+            #expect(d1.header == "Memorandum by the Secretary of State")
+
+            let row = try #require(try documentSourceRow(
+                dbURL: dir.appendingPathComponent("test.sqlite"),
+                volumeId: "frus1952-54v01", documentId: "d1"))
+            #expect(row.era == "decimal")
+            #expect(row.classification == nil)
+        }
+    }
+
+    /// Wrapper stripping is consistent across both encodings: the `[Source: …]`
+    /// bracket wrapper collapses to `Source: …` whether the note is top-level
+    /// (withheld-document inline) or head-nested.
+    @Test("wrapper stripping: [Source: …] normalises in both encodings")
+    func wrapperStrippingBothEncodings() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1961-63v11.xml")
+            try writeRealVolume(to: url, volumeId: "frus1961-63v11", documents: [
+                // Top-level withheld-document note, bracket-wrapped.
+                ("d1", """
+                <head>1. Editorial Heading</head>\
+                <note rend="inline" type="source">[Source: Kennedy Library, National Security \
+                Files, Countries Series, Cuba. Secret; Eyes Only. Not declassified.]</note>
+                <p>[Not declassified.]</p>
+                """),
+                // Head-nested note, bracket-wrapped.
+                ("d2", """
+                <head>2. Telegram<note n="1" type="source" xml:id="d2fn1">[Source: Department \
+                of State, Central Files, 737.00/1&#8211;2661. Confidential; Niact. Not \
+                declassified.]</note></head>
+                <p>Body.</p>
+                """),
+            ])
+            try await pipeline.indexVolume("frus1961-63v11")
+
+            let docs = try await pipeline.documents(forVolume: "frus1961-63v11")
+            let d1 = try #require(docs.first { $0.documentId == "d1" })
+            let d2 = try #require(docs.first { $0.documentId == "d2" })
+
+            #expect(d1.sourceNote?.hasPrefix("Source: Kennedy Library") == true)
+            #expect(d1.sourceNote?.hasSuffix("Not declassified.") == true)
+            #expect(d2.sourceNote?.hasPrefix("Source: Department of State") == true)
+            #expect(d2.sourceNote?.hasSuffix("Not declassified.") == true)
+
+            // The normalised "Source:" prefix drives the structured parser for d1.
+            let row1 = try #require(try documentSourceRow(
+                dbURL: dir.appendingPathComponent("test.sqlite"),
+                volumeId: "frus1961-63v11", documentId: "d1"))
+            #expect(row1.era == "structured")
+            #expect(row1.classification == "Secret; Eyes Only")
+        }
+    }
+
+    /// NARA narratives from the head-nested era produce `citation_era='structured'`
+    /// `.naraCollection` rows — the audit found zero such rows existed before this fix.
+    @Test("structured rows: head-nested NARA narrative yields citation_era='structured'")
+    func structuredNARARow() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76v25.xml")
+            try writeRealVolume(to: url, volumeId: "frus1969-76v25", documents: [
+                ("d1", """
+                <head>1. Telegram From the Department of State<note n=" 1" type="source" \
+                xml:id="d1fn1">Source: National Archives, RG 59, Central Files 1970&#8211;73, \
+                POL 27 ARAB&#8211;ISR. Secret; Nodis.</note></head>
+                <p>Body.</p>
+                """),
+            ])
+            try await pipeline.indexVolume("frus1969-76v25")
+
+            let sources = try await pipeline.documentSourcesByKey([
+                (volumeId: "frus1969-76v25", documentId: "d1")
+            ])
+            let source = try #require(sources["frus1969-76v25/d1"])
+            #expect(source.recordGroup == "59")
+            #expect(source.rawText.hasPrefix("Source: National Archives"))
+
+            let row = try #require(try documentSourceRow(
+                dbURL: dir.appendingPathComponent("test.sqlite"),
+                volumeId: "frus1969-76v25", documentId: "d1"))
+            #expect(row.era == "structured")
+            #expect(row.classification == "Secret; Nodis")
+        }
+    }
+}

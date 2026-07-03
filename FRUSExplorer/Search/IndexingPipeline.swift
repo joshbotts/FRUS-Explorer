@@ -168,6 +168,19 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          purge hardening, clusterer cannot-link/suffix/Mrs guardrails, and the cluster
 ///          authority id picked by majority-of-mentions (`majorityAuthorityId`) instead of
 ///          input order (`currentPersonRollupVersion` → 8).
+///   4.3 — Source Explorer Phase 1 (Session 2026-07-03): `extractSourceNote` ports the
+///          frus-sources locator chain — head/note/p/seg[@type="source"] →
+///          head/note[@type="source"] → top-level inline note — fixing the dominant
+///          audit bug: only top-level notes were scanned, so ~77k documents in 1955–1991
+///          volumes (which nest the note in `<head>`) had no stored source note (<1%
+///          coverage vs 90–95% pre-1955). `[Source: …]` wrappers normalise to
+///          `Source: …` so both encodings store one shape and structured
+///          (`citation_era='structured'`) rows now exist. `extractHeader` excludes
+///          footnote children of `<head>` (cleaner titles — the nested note previously
+///          leaked into `document_cache.header`). `document_sources` gains a
+///          `classification` column (S1: sentence 2 of the note when it matches the
+///          classification-marking vocabulary; store-only).
+///          `currentDateIndexVersion` → 14.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -333,7 +346,20 @@ public actor IndexingPipeline {
     ///   list names collapse interior whitespace at parse time, matching Format A, so the
     ///   hardened `PersonListHeuristics` newline rejection can never discard a real person
     ///   whose name was hard-wrapped in the TEI source.
-    public static let currentDateIndexVersion: Int = 13
+    /// - Version 14: head-nested source-note extraction (Source Explorer Phase 1,
+    ///   Session 2026-07-03). `extractSourceNote` previously scanned top-level AST nodes
+    ///   only, but every volume from 1955 on nests `<note type="source">` inside `<head>`,
+    ///   so ~77,000 documents (1955–1991) stored no source note at all — coverage was
+    ///   <1% for 1955+ vs 90–95% pre-1955, and zero `citation_era='structured'` rows
+    ///   existed corpus-wide. The extractor now ports the frus-sources locator chain
+    ///   (head/note/p/seg[@type="source"] → head/note[@type="source"] → top-level inline
+    ///   note) and normalises the `[Source: …]` wrapper to `Source: …`. Same pass:
+    ///   `extractHeader` excludes footnote children of `<head>` (headers no longer embed
+    ///   the full source-note or head-footnote text), and `document_sources` gains a
+    ///   `classification` column (sentence 2 of the note when it is classification
+    ///   markings). A re-parse repopulates `document_cache.source_note`/`header` and
+    ///   rebuilds `document_sources` corpus-wide.
+    public static let currentDateIndexVersion: Int = 14
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -2390,10 +2416,15 @@ public actor IndexingPipeline {
         let documentSourceRows: [DocumentSourceRow] = cacheRows.compactMap { row in
             guard let raw = row.sourceNote, !raw.isEmpty else { return nil }
             let parsed = sourceNoteParser.parse(raw)
-            return Self.documentSourceRow(
+            var sourceRow = Self.documentSourceRow(
                 volumeId: volumeId, documentId: row.documentId,
                 parsed: parsed, rawText: raw
             )
+            // S1 (Source Explorer Phase 1): sentence 2 of the note is classification
+            // markings when it matches the marking vocabulary; conservative — nil
+            // rather than junk. Store-only this phase.
+            sourceRow.classification = SourceNoteParser.classificationMarking(fromSourceNote: raw)
+            return sourceRow
         }
 
         // Extract embedded archival citations from editorial note body text.
@@ -2595,9 +2626,25 @@ public actor IndexingPipeline {
 
     // MARK: - Static Text Extraction Helpers
 
+    /// Returns the document title from the first `.head` node, **excluding** any
+    /// `.footnote` children.
+    ///
+    /// Every volume from 1955 on nests `<note type="source">` (and often regular
+    /// numbered footnotes) inside `<head>`; including footnote text meant a 1955+
+    /// document's stored header carried the entire source note (and pre-1955 headers
+    /// carried head-level editorial footnotes). Excluding footnotes yields the clean
+    /// printed title everywhere `document_cache.header` surfaces (search results,
+    /// browser rows, citations). Deliberate side effect of the Source Explorer
+    /// Phase 1 extraction fix; repopulated by the version-14 reindex.
     nonisolated static func extractHeader(from nodes: [FRUSASTNode]) -> String {
         for node in nodes {
-            if case .head(let c) = node { return c.map(\.plainText).joined(separator: " ").normalizedWhitespace }
+            if case .head(let c) = node {
+                return c.filter { child in
+                    if case .footnote = child { return false }
+                    return true
+                }
+                .map(\.plainText).joined(separator: " ").normalizedWhitespace
+            }
         }
         return ""
     }
@@ -2616,14 +2663,99 @@ public actor IndexingPipeline {
         return nil
     }
 
+    /// Locates a document's provenance note, porting the Office of the Historian
+    /// frus-sources locator chain (`import/import.xq`). Priority order:
+    ///
+    /// 1. **`<head>`-nested note containing `<seg type="source">`** — Nixon–Ford era
+    ///    electronic volumes pair a `<seg type="summary">` with a `<seg type="source">`
+    ///    inside the head footnote; only the source segment is the provenance note.
+    /// 2. **`<head>`-nested `<note type="source">`** — the encoding used by every volume
+    ///    from 1955 on. When the note holds multiple `<p>` children, the first paragraph
+    ///    beginning `Source:` / `[Source:` is taken; otherwise the whole note.
+    /// 3. **Top-level `<note type="source">`** — the 1861–1954 inline encoding (and
+    ///    withheld-document `rend="inline"` provenance notes). Unchanged behaviour.
+    /// 4. **Top-level untyped note containing `<seg type="source">`** — top-level
+    ///    variant of pattern 1.
+    ///
+    /// Before this chain existed only pattern 3 was scanned, so ~77,000 documents in
+    /// 1955–1991 volumes (which all use pattern 1/2) stored no source note at all.
+    ///
+    /// All returned text is passed through `normalizeSourceNoteWrapper` so the
+    /// `[Source: …]` bracket wrapper collapses to `Source: …` — one stored shape across
+    /// both encodings, and the `Source:` prefix is preserved so `SourceNoteParser`'s
+    /// narrative branch (→ `citation_era='structured'` rows) fires.
     nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
+        // Patterns 1 + 2: <head>-nested notes (1955+ encodings).
         for node in nodes {
-            if case .footnote(_, let type, _, let c) = node, type == .source {
-                let t = c.map(\.plainText).joined(separator: " ").normalizedWhitespace
-                return t.isEmpty ? nil : t
+            guard case .head(let headChildren) = node else { continue }
+            for child in headChildren {
+                guard case .footnote(_, let type, _, let noteChildren) = child,
+                      type == .source || type == .unclassified else { continue }
+                if let seg = segSourceText(in: noteChildren) {
+                    return normalizeSourceNoteWrapper(seg)
+                }
+                if type == .source, let body = sourceNoteBody(fromNoteChildren: noteChildren) {
+                    return normalizeSourceNoteWrapper(body)
+                }
+            }
+        }
+        // Patterns 3 + 4: top-level notes (pre-1955 inline encoding).
+        for node in nodes {
+            guard case .footnote(_, let type, _, let noteChildren) = node else { continue }
+            if type == .source {
+                let t = noteChildren.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                if !t.isEmpty { return normalizeSourceNoteWrapper(t) }
+            } else if type == .unclassified, let seg = segSourceText(in: noteChildren) {
+                return normalizeSourceNoteWrapper(seg)
             }
         }
         return nil
+    }
+
+    /// Returns the plain text of the first `<seg type="source">` in `nodes`, recursing
+    /// into `.paragraph` wrappers (some volumes wrap each seg in a `<p>`). `<seg>` is not
+    /// a first-class AST node — the parser preserves it as `.unknown("seg", …)`.
+    /// Returns `nil` when no non-empty source segment exists.
+    nonisolated static func segSourceText(in nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            switch node {
+            case .unknown(let name, let attrs, let children)
+                    where name == "seg" && attrs["type"] == "source":
+                let t = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                if !t.isEmpty { return t }
+            case .paragraph(let children):
+                if let t = segSourceText(in: children) { return t }
+            default:
+                break
+            }
+        }
+        return nil
+    }
+
+    /// Selects the provenance text from the children of a `<head>`-nested
+    /// `<note type="source">`: when the note holds `<p>` children, the first paragraph
+    /// whose text begins `Source:` / `[Source:` wins (some volumes put a summary
+    /// paragraph first); otherwise the whole note's plain text. Returns `nil` for an
+    /// empty note.
+    nonisolated static func sourceNoteBody(fromNoteChildren noteChildren: [FRUSASTNode]) -> String? {
+        for child in noteChildren {
+            guard case .paragraph(let pChildren) = child else { continue }
+            let t = pChildren.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            if t.hasPrefix("Source:") || t.hasPrefix("[Source:") { return t }
+        }
+        let whole = noteChildren.map(\.plainText).joined(separator: " ").normalizedWhitespace
+        return whole.isEmpty ? nil : whole
+    }
+
+    /// Collapses the `[Source: …]` bracket wrapper (used for withheld-document
+    /// provenance notes) to the unbracketed `Source: …` shape, so both TEI encodings
+    /// store one consistent form. Text not wrapped in brackets is returned unchanged —
+    /// in particular the bare pre-1955 decimal-file notes (`711.00/11–552`) and plain
+    /// `Source: …` narratives keep their stored shape exactly.
+    nonisolated static func normalizeSourceNoteWrapper(_ text: String) -> String {
+        guard text.hasPrefix("[Source:"), text.hasSuffix("]") else { return text }
+        let inner = text.dropFirst("[".count).dropLast("]".count)
+        return String(inner).normalizedWhitespace
     }
 
     nonisolated static func extractBodyText(from nodes: [FRUSASTNode]) -> String {
@@ -3451,17 +3583,26 @@ public actor IndexingPipeline {
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_terms_term ON terms(term)")
 
-        // Session 130: archival citation tables
+        // Session 130: archival citation tables.
+        // Source Explorer Phase 1 (2026-07-03): `classification` column added (sentence 2
+        // of the source note when it is classification markings, e.g. "Secret; Nodis").
+        // The table is fully derived from the TEI, so a pre-Phase-1 table (detected by the
+        // absent `classification` column) is dropped and recreated — the established
+        // volume_sources migration pattern; the version-14 reindex repopulates it.
+        if tableExists("document_sources") && !columnExists("classification", inTable: "document_sources") {
+            try? exec("DROP TABLE document_sources")
+        }
         try exec("""
             CREATE TABLE IF NOT EXISTS document_sources (
-                volume_id    TEXT NOT NULL,
-                document_id  TEXT NOT NULL,
-                repository   TEXT,
-                record_group TEXT,
-                lot_file     TEXT,
-                series_name  TEXT,
-                citation_era TEXT NOT NULL DEFAULT 'unrecognized',
-                raw_text     TEXT NOT NULL,
+                volume_id      TEXT NOT NULL,
+                document_id    TEXT NOT NULL,
+                repository     TEXT,
+                record_group   TEXT,
+                lot_file       TEXT,
+                series_name    TEXT,
+                citation_era   TEXT NOT NULL DEFAULT 'unrecognized',
+                raw_text       TEXT NOT NULL,
+                classification TEXT,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
@@ -3783,8 +3924,8 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO document_sources
-            (volume_id, document_id, repository, record_group, lot_file, series_name, citation_era, raw_text)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (volume_id, document_id, repository, record_group, lot_file, series_name, citation_era, raw_text, classification)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -3798,6 +3939,7 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 6, row.seriesName)
                 sqlite3_bind_text(stmt, 7, row.citationEra, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 8, row.rawText,     -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 9, row.classification)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -4898,6 +5040,10 @@ private struct DocumentSourceRow: Sendable {
     let seriesName: String?
     let citationEra: String
     let rawText: String
+    /// Classification markings from sentence 2 of the source note (frus-sources sentence
+    /// model), e.g. `"Secret; Nodis"`. `nil` when the second sentence does not look like
+    /// markings (Source Explorer Phase 1; store-only, no UI yet).
+    var classification: String? = nil
 }
 
 private struct VolumeSourceRow: Sendable {

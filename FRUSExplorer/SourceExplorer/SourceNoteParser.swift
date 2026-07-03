@@ -195,6 +195,12 @@ public struct ArchiveCitation: Sendable {
 ///          Central Foreign Policy Files and AAD Electronic Telegrams;
 ///          moved CFPF check before tryNARACollection so CFPF notes are correctly
 ///          classified rather than falling into `.naraCollection`
+///   1.4 — Source Explorer Phase 1 (Session 2026-07-03): `classificationMarking(fromSourceNote:)`
+///          added — the frus-sources sentence model splits a source note into
+///          sentence 1 = archival citation, sentence 2 = classification markings
+///          ("Secret; Nodis"), remainder = remarks; the marking sentence is extracted
+///          conservatively (marking vocabulary + shape gate, nil rather than junk) and
+///          stored in `document_sources.classification`
 public struct SourceNoteParser {
 
     public init() {}
@@ -231,6 +237,81 @@ public struct SourceNoteParser {
         }
 
         return .unrecognized(rawText: trimmed)
+    }
+
+    // MARK: - Classification markings (frus-sources sentence model)
+
+    /// Sentence-boundary regex: a terminal `.`/`!`/`?` followed by whitespace and an
+    /// uppercase letter, `[`, or `“`/`"` opener. The lookahead avoids splitting decimal
+    /// file numbers (`711.00/11–552`) and lowercase abbreviations mid-citation.
+    private static let sentenceBoundaryRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"[.!?]\s+(?=[A-Z\[“"])"#,
+        options: []
+    )
+
+    /// First-fragment gate: the classification sentence must open with a recognised
+    /// classification level (or the editors' explicit "no marking" statement).
+    private static let classificationLevelRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Top Secret|Secret|Confidential|Unclassified|Limited Official Use|Official Use Only|Restricted|No classification marking)\b"#,
+        options: []
+    )
+
+    /// Extracts the classification-markings sentence from a source note, per the
+    /// frus-sources sentence model (`import/import.xq`): sentence 1 is the archival
+    /// citation, sentence 2 is classification markings (a short, semicolon-separated
+    /// marking vocabulary — "Secret; Nodis", "Top Secret; Sensitive; Exclusively Eyes
+    /// Only", "No classification marking"), and the remainder is remarks.
+    ///
+    /// Deliberately conservative — returns `nil` rather than junk when sentence 2 does
+    /// not look like markings. Gates applied to the candidate sentence:
+    /// - ≤ 100 characters and contains no digits (dates/times/box numbers are remarks);
+    /// - the first semicolon-separated fragment begins with a classification level
+    ///   (`Top Secret`, `Secret`, `Confidential`, `Unclassified`, `Limited Official
+    ///   Use`, `Official Use Only`, `Restricted`) or `No classification marking`;
+    /// - every fragment is capitalized and at most 4 words (handling caveats such as
+    ///   `Nodis`, `Exdis`, `Eyes Only`, `Sensitive`, `Priority`, `Niact`, `Cherokee`).
+    ///
+    /// - Parameter note: The stored source-note text (wrapper already normalised).
+    /// - Returns: The marking sentence with the trailing period stripped and fragments
+    ///   rejoined with `"; "`, or `nil` when no confident marking sentence exists.
+    public static func classificationMarking(fromSourceNote note: String) -> String? {
+        let text = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, let boundary = sentenceBoundaryRegex else { return nil }
+
+        // Split into sentences on terminal punctuation followed by a capitalized word.
+        let ns = text as NSString
+        var sentences: [String] = []
+        var start = 0
+        for match in boundary.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            let end = match.range.location + match.range.length
+            sentences.append(ns.substring(with: NSRange(location: start, length: end - start))
+                .trimmingCharacters(in: .whitespacesAndNewlines))
+            start = end
+        }
+        if start < ns.length {
+            sentences.append(ns.substring(from: start).trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        guard sentences.count >= 2 else { return nil }
+
+        // Sentence 2 is the classification candidate (sentence 1 is the citation).
+        var candidate = sentences[1]
+        while candidate.hasSuffix(".") { candidate = String(candidate.dropLast()) }
+        candidate = candidate.trimmingCharacters(in: .whitespaces)
+        guard !candidate.isEmpty, candidate.count <= 100,
+              !candidate.contains(where: { $0.isNumber }) else { return nil }
+
+        let fragments = candidate.components(separatedBy: ";")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        guard let first = fragments.first, !first.isEmpty,
+              let levelRegex = classificationLevelRegex,
+              levelRegex.firstMatch(in: first, range: NSRange(first.startIndex..., in: first)) != nil
+        else { return nil }
+        for fragment in fragments {
+            guard !fragment.isEmpty,
+                  fragment.first?.isUppercase == true,
+                  fragment.split(separator: " ").count <= 4 else { return nil }
+        }
+        return fragments.joined(separator: "; ")
     }
 
     /// Extracts embedded archival citations from editorial note body text.

@@ -1994,7 +1994,9 @@ components:
 
         Introduced in Session 23; extended in Session 130 with `.naraCollection`
         and `.ciaCollection` cases; Session 150 added date-based routing for
-        decimal-file citations.
+        decimal-file citations; Source Explorer Phase 1 (2026-07-03) added the
+        `classification` field (sentence 2 of the source note when it is
+        classification markings).
       required:
         - documentId
         - volumeId
@@ -2062,6 +2064,20 @@ components:
             - string
             - "null"
           description: Box number within the series or collection.
+        classification:
+          type:
+            - string
+            - "null"
+          description: |
+            Classification markings from the second sentence of the source note,
+            per the frus-sources sentence model (sentence 1 = archival citation,
+            sentence 2 = markings, remainder = remarks). A short semicolon-separated
+            marking string, e.g. `"Secret; Nodis"` or `"Top Secret; Sensitive;
+            Exclusively Eyes Only"`. Null when the second sentence does not match
+            the classification-marking vocabulary (the extractor stores null rather
+            than junk). Added in Source Explorer Phase 1 (2026-07-03); stored in
+            the `document_sources.classification` column.
+          example: "Secret; Nodis"
 
     # ── Document Highlights (Sessions 102–145) ───────────────────────────────
 
