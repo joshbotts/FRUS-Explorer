@@ -144,16 +144,78 @@ enum ProseRichText {
 // MARK: - RichTextEditor
 
 /// A native rich-text editor (`NSTextView` on macOS, `UITextView` on iOS) bound to an entry's
-/// RTF body. Native text views produce concrete `NSFont`/`NSColor` attributes — bold/italic via
-/// ⌘B/⌘I and the edit/format menu, colour via the macOS colour panel — which RTF round-trips and
-/// the exporters can read. Edits are reported as `(rtf, plainText)` via `onChange`.
-struct RichTextEditor {
+/// RTF body, with a **visible formatting toolbar** (Bold, Italic, Underline, text colour, and
+/// Link) so formatting is discoverable without the system context/format menus. Native text
+/// views produce concrete `NSFont`/`NSColor`/`.link` attributes which RTF round-trips and the
+/// exporters can read. Edits are reported as `(rtf, plainText)` via `onChange`.
+///
+/// - macOS: a compact SF Symbols button bar above the text view; Bold/Italic/Underline
+///   reflect the current selection's state, colour opens the shared `NSColorPanel`, and
+///   Link edits the selection's `.link` attribute via a popover.
+/// - iOS: the same controls as an `inputAccessoryView` toolbar on the keyboard, driving
+///   the standard `toggleBoldface`/`toggleItalics`/`toggleUnderline` actions, a
+///   `UIColorPickerViewController`, and a link alert.
+///
+/// **Why no bulleted/numbered lists.** `NSTextList` paragraph styles do round-trip through
+/// RTF, but the list *markers* are layout-generated, not stored characters — the plain
+/// projection and `CollectionProse`'s inline span model (paragraphs split on blank lines,
+/// spans carrying bold/italic/underline/colour/link only) would render list items as
+/// marker-less tab-indented lines in HTML, PDF, and DOCX. Real support needs paragraph-level
+/// list metadata in `ProseFormattedSpan`'s container, `<ul>`/`<ol>` nesting in the HTML
+/// renderer, a `numbering.xml` part + `<w:numPr>` in DOCX, marker drawing in the PDF flow,
+/// and hand-built list editing UI on iOS (`UITextView` has none). Until that model exists,
+/// shipping a Lists button would silently lose list semantics on every export — so it is
+/// deliberately absent (owner decision rule, Session 2026-07-03).
+///
+/// Version history:
+///   1.0 — PR #127: native representable replacing SwiftUI `TextEditor` (opaque `Font`
+///          attributes cannot be introspected outside a live view; concrete
+///          `NSFont`/`NSColor` can)
+///   1.1 — Session 2026-07-03: visible formatting toolbar on both platforms (bold, italic,
+///          underline, colour, link) — formatting no longer reachable only through the
+///          system context menus; `.link` attributes ride the existing RTF persistence
+struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
     /// Plain-text fallback used when `initialRTF` is `nil` (e.g. a pre-3b plain prose entry).
     let plainFallback: String
     /// Called on every edit with the new RTF and its plain-text projection.
     let onChange: (Data?, String) -> Void
+
+    #if os(macOS)
+    /// Bridges the SwiftUI toolbar to the live `NSTextView` (selection state + actions).
+    @StateObject private var controller = RichTextEditorController()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            RichTextFormattingBar(controller: controller)
+            RichTextPlatformEditor(initialRTF: initialRTF, plainFallback: plainFallback,
+                                   onChange: onChange, controller: controller)
+        }
+    }
+    #else
+    var body: some View {
+        RichTextPlatformEditor(initialRTF: initialRTF, plainFallback: plainFallback,
+                               onChange: onChange)
+    }
+    #endif
+}
+
+// MARK: - RichTextPlatformEditor
+
+/// The platform representable behind ``RichTextEditor``: wraps `NSTextView` (macOS) /
+/// `UITextView` (iOS) and serialises every edit back to `(rtf, plainText)`.
+private struct RichTextPlatformEditor {
+    /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
+    let initialRTF: Data?
+    /// Plain-text fallback used when `initialRTF` is `nil` (e.g. a pre-3b plain prose entry).
+    let plainFallback: String
+    /// Called on every edit with the new RTF and its plain-text projection.
+    let onChange: (Data?, String) -> Void
+    #if os(macOS)
+    /// The toolbar bridge — given the live text view once it exists.
+    let controller: RichTextEditorController
+    #endif
 
     /// The initial attributed content — from RTF, else a legacy Phase 3b JSON blob (converted
     /// with its bold/italic intact, so pre-RTF prose loads faithfully and the first edit
@@ -175,7 +237,234 @@ struct RichTextEditor {
 }
 
 #if os(macOS)
-extension RichTextEditor: NSViewRepresentable {
+
+// MARK: - RichTextEditorController (macOS)
+
+/// Bridges the SwiftUI formatting bar to the live `NSTextView`: publishes the current
+/// selection's formatting state and drives the formatting actions. All text mutations
+/// are bracketed with `shouldChangeText`/`didChangeText`, so undo works and the edit
+/// flows back through the coordinator's `textDidChange` → RTF persistence unchanged.
+@MainActor
+final class RichTextEditorController: NSObject, ObservableObject {
+    /// The live text view, set by the representable on creation.
+    weak var textView: NSTextView?
+    /// `true` when the selection (or the caret's typing attributes) is bold.
+    @Published private(set) var isBold = false
+    /// `true` when the selection (or the caret's typing attributes) is italic.
+    @Published private(set) var isItalic = false
+    /// `true` when the selection (or the caret's typing attributes) is underlined.
+    @Published private(set) var isUnderline = false
+    /// `true` when a non-empty range is selected (required to apply a link).
+    @Published private(set) var hasSelection = false
+    /// The `.link` URL at the selection start, empty when the selection carries no link.
+    @Published private(set) var selectionLink = ""
+
+    /// Toggles bold on the selection (or the typing attributes at the caret).
+    func toggleBold() { toggleTrait(.boldFontMask) }
+
+    /// Toggles italic on the selection (or the typing attributes at the caret).
+    func toggleItalic() { toggleTrait(.italicFontMask) }
+
+    /// Toggles underline via the text view's native action (undo-aware).
+    func toggleUnderline() {
+        guard let tv = textView else { return }
+        tv.underline(nil)
+        refreshSelectionState()
+    }
+
+    /// Opens the shared system colour panel targeted at this editor; picked colours apply
+    /// to the current selection (or the typing attributes at the caret).
+    func showColorPanel() {
+        let panel = NSColorPanel.shared
+        panel.showsAlpha = false
+        panel.setTarget(self)
+        panel.setAction(#selector(colorPanelDidPick(_:)))
+        panel.makeKeyAndOrderFront(nil)
+    }
+
+    /// Applies (or, for an empty string, removes) a `.link` attribute over the selection.
+    /// No-op without a non-empty selection — a link needs visible text to attach to.
+    func applyLink(_ urlString: String) {
+        guard let tv = textView, let storage = tv.textStorage else { return }
+        let range = tv.selectedRange()
+        guard range.length > 0, tv.shouldChangeText(in: range, replacementString: nil) else { return }
+        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            storage.removeAttribute(.link, range: range)
+        } else {
+            storage.addAttribute(.link, value: URL(string: trimmed) ?? trimmed, range: range)
+        }
+        tv.didChangeText()
+        refreshSelectionState()
+    }
+
+    /// Recomputes the published formatting state from the current selection — from the
+    /// first selected character when a range is selected, else the typing attributes.
+    func refreshSelectionState() {
+        guard let tv = textView else {
+            isBold = false; isItalic = false; isUnderline = false
+            hasSelection = false; selectionLink = ""
+            return
+        }
+        let range = tv.selectedRange()
+        hasSelection = range.length > 0
+        let attrs: [NSAttributedString.Key: Any]
+        if let storage = tv.textStorage, range.length > 0, range.location < storage.length {
+            attrs = storage.attributes(at: range.location, effectiveRange: nil)
+        } else {
+            attrs = tv.typingAttributes
+        }
+        let traits = (attrs[.font] as? NSFont).map { NSFontManager.shared.traits(of: $0) } ?? []
+        isBold = traits.contains(.boldFontMask)
+        isItalic = traits.contains(.italicFontMask)
+        isUnderline = (attrs[.underlineStyle] as? Int ?? 0) != 0
+        if let link = attrs[.link] {
+            selectionLink = (link as? URL)?.absoluteString ?? (link as? String ?? "")
+        } else {
+            selectionLink = ""
+        }
+    }
+
+    /// Applies the colour-panel colour to the selection (undo-aware) or, at a bare
+    /// caret, to the typing attributes.
+    @objc private func colorPanelDidPick(_ sender: Any?) {
+        guard let tv = textView else { return }
+        let color = NSColorPanel.shared.color
+        let range = tv.selectedRange()
+        if range.length > 0, let storage = tv.textStorage {
+            guard tv.shouldChangeText(in: range, replacementString: nil) else { return }
+            storage.addAttribute(.foregroundColor, value: color, range: range)
+            tv.didChangeText()
+        } else {
+            tv.typingAttributes[.foregroundColor] = color
+        }
+    }
+
+    /// Toggles one font trait over the selection (undo-aware) or, at a bare caret, on the
+    /// typing attributes — based on the state at the selection start, so a mixed selection
+    /// converges rather than flipping run-by-run.
+    private func toggleTrait(_ trait: NSFontTraitMask) {
+        guard let tv = textView else { return }
+        let manager = NSFontManager.shared
+        let range = tv.selectedRange()
+        let baseFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        let currentlyOn = (trait == .boldFontMask) ? isBold : isItalic
+        func converted(_ font: NSFont) -> NSFont {
+            currentlyOn ? manager.convert(font, toNotHaveTrait: trait)
+                        : manager.convert(font, toHaveTrait: trait)
+        }
+        if range.length > 0, let storage = tv.textStorage {
+            guard tv.shouldChangeText(in: range, replacementString: nil) else { return }
+            storage.beginEditing()
+            storage.enumerateAttribute(.font, in: range) { value, runRange, _ in
+                storage.addAttribute(.font, value: converted((value as? NSFont) ?? baseFont),
+                                     range: runRange)
+            }
+            storage.endEditing()
+            tv.didChangeText()
+        } else {
+            var attrs = tv.typingAttributes
+            attrs[.font] = converted((attrs[.font] as? NSFont) ?? baseFont)
+            tv.typingAttributes = attrs
+        }
+        refreshSelectionState()
+    }
+}
+
+// MARK: - RichTextFormattingBar (macOS)
+
+/// The compact visible formatting bar above each macOS rich-text editor: Bold, Italic,
+/// Underline (reflecting the selection's state), text colour (system colour panel), and
+/// Link (popover URL field applying the `.link` attribute to the selection).
+private struct RichTextFormattingBar: View {
+    /// The bridge to the live text view.
+    @ObservedObject var controller: RichTextEditorController
+    /// Whether the link popover is showing.
+    @State private var showingLinkPopover = false
+    /// The link popover's URL field text.
+    @State private var linkURLText = ""
+
+    var body: some View {
+        HStack(spacing: 2) {
+            formatButton("bold", active: controller.isBold,
+                         help: String(localized: "collection.richtext.bold.help",
+                                      defaultValue: "Bold")) { controller.toggleBold() }
+            formatButton("italic", active: controller.isItalic,
+                         help: String(localized: "collection.richtext.italic.help",
+                                      defaultValue: "Italic")) { controller.toggleItalic() }
+            formatButton("underline", active: controller.isUnderline,
+                         help: String(localized: "collection.richtext.underline.help",
+                                      defaultValue: "Underline")) { controller.toggleUnderline() }
+            formatButton("paintpalette", active: false,
+                         help: String(localized: "collection.richtext.color.help",
+                                      defaultValue: "Text Color")) { controller.showColorPanel() }
+            formatButton("link", active: !controller.selectionLink.isEmpty,
+                         help: String(localized: "collection.richtext.link.help",
+                                      defaultValue: "Link selected text to a URL")) {
+                linkURLText = controller.selectionLink
+                showingLinkPopover = true
+            }
+            .disabled(!controller.hasSelection)
+            .popover(isPresented: $showingLinkPopover, arrowEdge: .bottom) { linkPopover }
+            Spacer()
+        }
+    }
+
+    /// The link popover: a URL field plus Apply / Remove Link buttons.
+    private var linkPopover: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "collection.richtext.link.title",
+                        defaultValue: "Link selection to URL"))
+                .font(.caption.weight(.semibold))
+            TextField(String(localized: "collection.richtext.link.placeholder",
+                             defaultValue: "https://…"),
+                      text: $linkURLText)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 280)
+                .onSubmit { applyLink() }
+            HStack {
+                if !controller.selectionLink.isEmpty {
+                    Button(String(localized: "collection.richtext.link.remove",
+                                  defaultValue: "Remove Link"), role: .destructive) {
+                        controller.applyLink("")
+                        showingLinkPopover = false
+                    }
+                }
+                Spacer()
+                Button(String(localized: "collection.richtext.link.apply",
+                              defaultValue: "Apply")) { applyLink() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(12)
+    }
+
+    /// Applies the popover's URL to the selection and dismisses.
+    private func applyLink() {
+        controller.applyLink(linkURLText)
+        showingLinkPopover = false
+    }
+
+    /// One toolbar button: an SF Symbol with an "active" tint/background when the
+    /// selection already carries the attribute.
+    private func formatButton(_ symbol: String, active: Bool, help: String,
+                              action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .medium))
+                .frame(width: 24, height: 18)
+                .foregroundStyle(active ? Color.accentColor : Color.primary)
+                .background(active ? Color.accentColor.opacity(0.15) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 4))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(help)
+    }
+}
+
+extension RichTextPlatformEditor: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let textView = NSTextView()
         textView.isRichText = true
@@ -185,6 +474,11 @@ extension RichTextEditor: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 4, height: 6)
         textView.drawsBackground = false
         textView.textStorage?.setAttributedString(initialAttributed())
+
+        // Hand the toolbar its text view; defer the state publish out of the view update.
+        controller.textView = textView
+        let controller = self.controller
+        Task { @MainActor in controller.refreshSelectionState() }
 
         let scroll = NSScrollView()
         scroll.documentView = textView
@@ -200,22 +494,33 @@ extension RichTextEditor: NSViewRepresentable {
         // an index-based `$sortedEntries[idx]` binding — so a make-time closure would write to
         // the wrong entry (or trap on a stale index).
         context.coordinator.report = report
+        context.coordinator.controller = controller
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(report: report) }
+    func makeCoordinator() -> Coordinator { Coordinator(report: report, controller: controller) }
 
-    /// Forwards `NSTextView` edits back to the entry.
+    /// Forwards `NSTextView` edits back to the entry and selection changes to the toolbar.
     final class Coordinator: NSObject, NSTextViewDelegate {
         fileprivate var report: (NSAttributedString) -> Void
-        init(report: @escaping (NSAttributedString) -> Void) { self.report = report }
+        /// The toolbar bridge whose published state follows this text view.
+        fileprivate var controller: RichTextEditorController
+        init(report: @escaping (NSAttributedString) -> Void,
+             controller: RichTextEditorController) {
+            self.report = report
+            self.controller = controller
+        }
         func textDidChange(_ notification: Notification) {
             guard let tv = notification.object as? NSTextView, let storage = tv.textStorage else { return }
             report(storage)
+            controller.refreshSelectionState()
+        }
+        func textViewDidChangeSelection(_ notification: Notification) {
+            controller.refreshSelectionState()
         }
     }
 }
 #elseif os(iOS)
-extension RichTextEditor: UIViewRepresentable {
+extension RichTextPlatformEditor: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
         textView.allowsEditingTextAttributes = true   // Bold / Italic / Underline in the edit menu
@@ -224,6 +529,8 @@ extension RichTextEditor: UIViewRepresentable {
         textView.font = .preferredFont(forTextStyle: .callout)
         textView.delegate = context.coordinator
         textView.attributedText = initialAttributed()
+        context.coordinator.textView = textView
+        textView.inputAccessoryView = context.coordinator.makeFormattingToolbar()
         return textView
     }
 
@@ -234,12 +541,195 @@ extension RichTextEditor: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(report: report) }
 
-    /// Forwards `UITextView` edits back to the entry.
-    final class Coordinator: NSObject, UITextViewDelegate {
+    /// Forwards `UITextView` edits back to the entry and hosts the keyboard-attached
+    /// formatting toolbar (Bold, Italic, Underline, text colour, Link).
+    final class Coordinator: NSObject, UITextViewDelegate, UIColorPickerViewControllerDelegate {
         fileprivate var report: (NSAttributedString) -> Void
+        /// The live text view the toolbar drives.
+        fileprivate weak var textView: UITextView?
+        /// The Link toolbar item — enabled only while a non-empty range is selected.
+        private weak var linkItem: UIBarButtonItem?
+        /// The selection captured when the colour picker was presented (the picker takes
+        /// first-responder focus, so the range is applied back afterwards).
+        private var colorTargetRange: NSRange?
+
         init(report: @escaping (NSAttributedString) -> Void) { self.report = report }
+
         func textViewDidChange(_ textView: UITextView) {
             report(textView.attributedText ?? NSAttributedString())
+        }
+
+        func textViewDidChangeSelection(_ textView: UITextView) {
+            linkItem?.isEnabled = textView.selectedRange.length > 0
+        }
+
+        // MARK: Formatting toolbar
+
+        /// Builds the keyboard `inputAccessoryView`: Bold, Italic, Underline (the text
+        /// view's standard toggle actions), text colour, and Link.
+        func makeFormattingToolbar() -> UIToolbar {
+            let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 320, height: 44))
+            func item(_ symbol: String, label: String, action: Selector) -> UIBarButtonItem {
+                let item = UIBarButtonItem(image: UIImage(systemName: symbol),
+                                           style: .plain, target: self, action: action)
+                item.accessibilityLabel = label
+                return item
+            }
+            let bold = item("bold",
+                            label: String(localized: "collection.richtext.bold.help",
+                                          defaultValue: "Bold"),
+                            action: #selector(toggleBold))
+            let italic = item("italic",
+                              label: String(localized: "collection.richtext.italic.help",
+                                            defaultValue: "Italic"),
+                              action: #selector(toggleItalic))
+            let underline = item("underline",
+                                 label: String(localized: "collection.richtext.underline.help",
+                                               defaultValue: "Underline"),
+                                 action: #selector(toggleUnderline))
+            let color = item("paintpalette",
+                             label: String(localized: "collection.richtext.color.help",
+                                           defaultValue: "Text Color"),
+                             action: #selector(pickColor))
+            let link = item("link",
+                            label: String(localized: "collection.richtext.link.help",
+                                          defaultValue: "Link selected text to a URL"),
+                            action: #selector(promptLink))
+            link.isEnabled = false
+            linkItem = link
+            let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace,
+                                        target: nil, action: nil)
+            toolbar.items = [bold, space, italic, space, underline, space, color, space, link]
+            toolbar.sizeToFit()
+            return toolbar
+        }
+
+        /// Toggles bold on the selection via the standard text-view action and persists.
+        @objc private func toggleBold() {
+            textView?.toggleBoldface(nil)
+            reportCurrent()
+        }
+
+        /// Toggles italic on the selection via the standard text-view action and persists.
+        @objc private func toggleItalic() {
+            textView?.toggleItalics(nil)
+            reportCurrent()
+        }
+
+        /// Toggles underline on the selection via the standard text-view action and persists.
+        @objc private func toggleUnderline() {
+            textView?.toggleUnderline(nil)
+            reportCurrent()
+        }
+
+        /// Presents the system colour picker; the chosen colour applies to the selection
+        /// captured at presentation time (or the typing attributes at a bare caret).
+        @objc private func pickColor() {
+            guard let tv = textView, let presenter = presentingViewController(for: tv) else { return }
+            colorTargetRange = tv.selectedRange
+            let picker = UIColorPickerViewController()
+            picker.supportsAlpha = false
+            if let current = tv.typingAttributes[.foregroundColor] as? UIColor {
+                picker.selectedColor = current
+            }
+            picker.delegate = self
+            presenter.present(picker, animated: true)
+        }
+
+        /// Prompts for a URL (prefilled with the selection's existing link) and applies —
+        /// or removes — the `.link` attribute over the selected range.
+        @objc private func promptLink() {
+            guard let tv = textView, let presenter = presentingViewController(for: tv) else { return }
+            let range = tv.selectedRange
+            guard range.length > 0 else { return }
+            let existing = tv.textStorage.attribute(.link, at: range.location, effectiveRange: nil)
+            let existingURL = (existing as? URL)?.absoluteString ?? (existing as? String ?? "")
+
+            let alert = UIAlertController(
+                title: String(localized: "collection.richtext.link.title",
+                              defaultValue: "Link selection to URL"),
+                message: nil, preferredStyle: .alert)
+            alert.addTextField { field in
+                field.placeholder = String(localized: "collection.richtext.link.placeholder",
+                                           defaultValue: "https://…")
+                field.keyboardType = .URL
+                field.autocapitalizationType = .none
+                field.autocorrectionType = .no
+                field.text = existingURL
+            }
+            alert.addAction(UIAlertAction(
+                title: String(localized: "collection.richtext.link.apply", defaultValue: "Apply"),
+                style: .default) { [weak self, weak alert] _ in
+                    let url = alert?.textFields?.first?.text ?? ""
+                    self?.applyLink(url, range: range)
+                })
+            if !existingURL.isEmpty {
+                alert.addAction(UIAlertAction(
+                    title: String(localized: "collection.richtext.link.remove",
+                                  defaultValue: "Remove Link"),
+                    style: .destructive) { [weak self] _ in
+                        self?.applyLink("", range: range)
+                    })
+            }
+            alert.addAction(UIAlertAction(
+                title: String(localized: "collection.richtext.link.cancel", defaultValue: "Cancel"),
+                style: .cancel))
+            presenter.present(alert, animated: true)
+        }
+
+        /// Applies (or, for an empty string, removes) a `.link` attribute over `range`
+        /// and persists the change.
+        private func applyLink(_ urlString: String, range: NSRange) {
+            guard let tv = textView, range.location + range.length <= tv.textStorage.length else { return }
+            let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                tv.textStorage.removeAttribute(.link, range: range)
+            } else {
+                tv.textStorage.addAttribute(.link, value: URL(string: trimmed) ?? trimmed, range: range)
+            }
+            reportCurrent()
+        }
+
+        /// Applies the picked colour to the captured selection (or typing attributes).
+        func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
+            applyColor(viewController.selectedColor)
+        }
+
+        /// Live colour updates while the picker is open (non-continuous events only).
+        func colorPickerViewController(_ viewController: UIColorPickerViewController,
+                                       didSelect color: UIColor, continuously: Bool) {
+            guard !continuously else { return }
+            applyColor(color)
+        }
+
+        /// Applies `color` to the range captured when the picker was presented, else to
+        /// the typing attributes, and persists.
+        private func applyColor(_ color: UIColor) {
+            guard let tv = textView else { return }
+            if let range = colorTargetRange, range.length > 0,
+               range.location + range.length <= tv.textStorage.length {
+                tv.textStorage.addAttribute(.foregroundColor, value: color, range: range)
+                reportCurrent()
+            } else {
+                tv.typingAttributes[.foregroundColor] = color
+            }
+        }
+
+        /// Serialises the text view's current storage back to the entry.
+        private func reportCurrent() {
+            guard let tv = textView else { return }
+            report(tv.attributedText ?? NSAttributedString())
+        }
+
+        /// The nearest view controller up the responder chain — used to present the
+        /// colour picker and link alert from a plain representable.
+        private func presentingViewController(for view: UIView) -> UIViewController? {
+            var responder: UIResponder? = view
+            while let current = responder {
+                if let vc = current as? UIViewController { return vc }
+                responder = current.next
+            }
+            return nil
         }
     }
 }
