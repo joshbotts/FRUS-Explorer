@@ -52,6 +52,12 @@ import SwiftUI
 ///          metadata-driven; the frame stylesheet (`frameCSS`) is emitted ONLY when a
 ///          frame feature is actually used, so a collection using none exports
 ///          byte-identically to the pre-Phase-4 output
+///   1.4 — Authoring Phase 5: footnote inclusion keys off `options.includeFootnotes`
+///          (previously `footnoteStyle == .all`; the caller-side nil-pair derivation
+///          keeps every legacy tri-state value byte-identical); opt-in headnote block —
+///          an italic abstract above the body, or a placeholder note when the entry
+///          requested one and no summary is stored — with its stylesheet (`headnoteCSS`)
+///          emitted ONLY when some document carries a headnote request
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -148,13 +154,20 @@ struct CollectionItemHTMLRenderer {
         // Preview: a document whose volume is not downloaded has no resolvable body —
         // render a visibly distinct citation card in its place (never taken by exports).
         // Research notes still render below: they live in SwiftData, not the volume.
+        // Headnote (Authoring Phase 5) — an italic abstract above the body, rendered in
+        // every body mode (including the citation-only preview card); a requested
+        // headnote with nothing stored renders the placeholder note instead.
+        if doc.includeHeadnote {
+            body += headnoteHTML(doc.headnoteText)
+        }
+
         if citationOnlyVolumeIds.contains(doc.volumeId) {
             body += citationOnlyCardHTML(doc)
         } else {
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
         switch doc.bodyDepth {
         case .full:
-            let includeFootnotes = (options.footnoteStyle == .all)
+            let includeFootnotes = options.includeFootnotes
             if let model = doc.renderModel {
                 body += FRUSRenderNodeHTMLSerializer().serialize(
                     model,
@@ -191,7 +204,7 @@ struct CollectionItemHTMLRenderer {
         }
         }  // end citation-only else (body kept at original indentation for diff clarity)
 
-        // Source note (footnoteStyle == .sourceNoteOnly)
+        // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
             body += "  <p class=\"source-note\"><strong>Source:</strong> \(escaped(sourceNote))</p>\n"
         }
@@ -230,6 +243,35 @@ struct CollectionItemHTMLRenderer {
         body += "  <div class=\"citation-card\">\n"
         body += "    <p class=\"citation-card-citation\">\(markdownItalics(escaped(citation)))</p>\n"
         body += "    <p class=\"citation-card-note\">\(escaped(note))</p>\n"
+        body += "  </div>\n"
+        return body
+    }
+
+    /// The headnote block (Authoring Phase 5): a labeled, italic abstract rendered above
+    /// the document body. When `text` is nil/empty — the entry requested a headnote but
+    /// no summary is stored (headnote resolution never generates) — a placeholder note
+    /// renders instead, in exports and preview alike, so the author sees exactly what
+    /// the artifact will carry.
+    ///
+    /// - Parameter text: The resolved headnote (stored `GeneratedSummary` text), if any.
+    /// - Returns: The `<div class="headnote">…</div>` HTML fragment.
+    private func headnoteHTML(_ text: String?) -> String {
+        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+        var body = ""
+        body += "  <div class=\"headnote\">\n"
+        body += "    <p class=\"headnote-label\">\(escaped(label))</p>\n"
+        if let text, !text.isEmpty {
+            let paragraphs = text
+                .components(separatedBy: "\n\n")
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            for para in paragraphs {
+                body += "    <p><em>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</em></p>\n"
+            }
+        } else {
+            let missing = String(localized: "collection.headnote.missing",
+                                 defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+            body += "    <p class=\"headnote-missing\">\(escaped(missing))</p>\n"
+        }
         body += "  </div>\n"
         return body
     }
@@ -378,6 +420,9 @@ struct CollectionItemHTMLRenderer {
         // exported file byte-identical to the pre-Phase-4 output.
         let frameStyles = Self.usesFrameFeatures(metadata: metadata, items: items)
             ? "\n" + Self.frameCSS : ""
+        // Headnote styles (Authoring Phase 5) are appended ONLY when some document
+        // carries a headnote request — same byte-compat discipline as the frame layer.
+        let headnoteStyles = Self.usesHeadnotes(items: items) ? "\n" + Self.headnoteCSS : ""
         // Preview-only card styles are appended ONLY when a preview affordance is
         // configured; the export path interpolates an empty string here, keeping the
         // exported file byte-identical to the pre-preview output (v1.2).
@@ -390,7 +435,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)\(frameStyles)\(previewStyles)
+            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(previewStyles)
           </style>
         </head>
         <body>
@@ -410,6 +455,16 @@ struct CollectionItemHTMLRenderer {
         if metadata.includeColophon { return true }
         return items.contains {
             if case .heading(_, let level) = $0 { return level > 1 }
+            return false
+        }
+    }
+
+    /// `true` when any document item carries a headnote request (Authoring Phase 5).
+    /// Gates `headnoteCSS` so a collection with no headnotes emits the exact
+    /// pre-Phase-5 stylesheet bytes.
+    static func usesHeadnotes(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            if case .document(let doc) = $0 { return doc.includeHeadnote }
             return false
         }
     }
@@ -587,6 +642,36 @@ struct CollectionItemHTMLRenderer {
       padding-top: 1rem;
       font-size: 0.8rem;
       color: #777;
+    }
+    """
+
+    /// Headnote styles (v1.4, Authoring Phase 5) — the labeled italic abstract above a
+    /// document body and its missing-summary placeholder. Emitted by `pageHTML` **only
+    /// when a document carries a headnote request** (`usesHeadnotes`), so a collection
+    /// with no headnotes exports byte-identically to the pre-Phase-5 output. Kept
+    /// visually consistent with the design's block furniture (`summary-block` accents).
+    private static let headnoteCSS = """
+    /* ── Headnote (Authoring Phase 5) ──────────────────────────────────────── */
+    .headnote {
+      border-left: 3px solid #8a8a86;
+      background: #f7f7f5;
+      padding: 0.9rem 1.25rem;
+      margin: 1rem 0 1.5rem;
+      border-radius: 2px;
+    }
+    .headnote-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .headnote em { color: #333; }
+    .headnote-missing {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: #8a6d1f;
     }
     """
 

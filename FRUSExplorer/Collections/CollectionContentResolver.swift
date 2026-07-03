@@ -55,7 +55,7 @@ enum CollectionResolveError: Error, LocalizedError {
 /// research notes, highlights, and source notes. They now run through the same per-document
 /// pipeline as static entries, so **collection-level composition is honored**: `includeNotes`
 /// (every research note attached to the document travels on `noteTexts`), `applyHighlights`,
-/// `footnoteStyle == .sourceNoteOnly`, and the collection's default body depth (including
+/// `effectiveIncludeSourceNote`, and the collection's default body depth (including
 /// `.summaryOnly`). *Per-entry* overrides still don't apply to smart collections — their
 /// entries are synthesized from search results and carry no overrides or note selections.
 ///
@@ -108,6 +108,15 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          the shared RTF prose path, so formatting survives every format and the
 ///          preview for free — an unset introduction adds nothing, keeping no-frame
 ///          collections byte-identical)
+///   1.4 — Authoring Phase 5 (footnote pair + headnotes): the source note now resolves
+///          whenever `effectiveIncludeSourceNote` (previously gated on the legacy
+///          `footnoteStyle == .sourceNoteOnly` — the nil-pair derivation reproduces that
+///          behavior exactly); document entries with `includeHeadnote` attach a stored
+///          `GeneratedSummary` as `headnoteText` (the chosen `headnoteSummaryId`, else
+///          the collection's prompt's summary, else any stored one). Headnote resolution
+///          **never generates** — in either purpose — so a missing stored summary renders
+///          a placeholder note (generation-on-demand stays exclusive to `.summaryOnly`
+///          bodies, exactly as today; headnote generation-on-demand is out of scope)
 @MainActor
 class CollectionContentResolver {
 
@@ -488,6 +497,10 @@ class CollectionContentResolver {
         let proseRTF: Data?
         /// The entry's own body-depth override raw value, if any.
         let bodyDepthOverride: String?
+        /// Whether this document entry requested a headnote (Authoring Phase 5).
+        let includeHeadnote: Bool
+        /// The chosen `GeneratedSummary.id` for the headnote; `nil` = fallback pick.
+        let headnoteSummaryId: UUID?
         /// How research-note texts are resolved for this entry.
         let noteResolution: NoteResolution
 
@@ -502,6 +515,8 @@ class CollectionContentResolver {
             level = entry.level
             proseRTF = entry.entryKind == .prose ? ProseRichText.exportRTF(from: entry) : nil
             bodyDepthOverride = entry.bodyDepthOverride
+            includeHeadnote = entry.includeHeadnote
+            headnoteSummaryId = entry.headnoteSummaryId
             noteResolution = .entrySelection(selectedNoteIds: entry.selectedNoteIds,
                                              legacyNoteId: entry.researchNoteId)
         }
@@ -517,6 +532,8 @@ class CollectionContentResolver {
             level = 1
             proseRTF = nil
             bodyDepthOverride = nil
+            includeHeadnote = false
+            headnoteSummaryId = nil
             noteResolution = .allDocumentNotes
         }
     }
@@ -636,14 +653,18 @@ class CollectionContentResolver {
     /// resolution work (highlights, source notes, summary prompt). The word-cloud flag is
     /// format-dependent and irrelevant to resolution; exporters receive the export sheet's
     /// own `CollectionExportOptions`, which applies that gate.
-    private func resolutionOptions(for collection: Collection) -> CollectionExportOptions {
+    ///
+    /// Internal (not private) so tests can assert the legacy `footnoteStyle` → Bool-pair
+    /// mapping end-to-end without standing up a full resolve.
+    func resolutionOptions(for collection: Collection) -> CollectionExportOptions {
         CollectionExportOptions(
-            tocStyle:        CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            footnoteStyle:   CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all,
-            applyHighlights: collection.applyHighlights,
-            includeNotes:    collection.includeNotes,
-            summaryPromptId: collection.summaryPromptId,
-            includeWordCloud: collection.includeWordCloud
+            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
+            includeFootnotes:  collection.effectiveIncludeFootnotes,
+            includeSourceNote: collection.effectiveIncludeSourceNote,
+            applyHighlights:   collection.applyHighlights,
+            includeNotes:      collection.includeNotes,
+            summaryPromptId:   collection.summaryPromptId,
+            includeWordCloud:  collection.includeWordCloud
         )
     }
 
@@ -747,15 +768,26 @@ class CollectionContentResolver {
             resolvedHighlights = []
         }
 
-        // Source note (footnoteStyle == .sourceNoteOnly)
+        // Source note — resolved whenever the collection's effective include-source-note
+        // flag is on (Authoring Phase 5; previously gated on the legacy tri-state's
+        // `.sourceNoteOnly`, which the nil-pair derivation reproduces exactly).
         let resolvedSourceNote: String?
-        if batch.options.footnoteStyle == .sourceNoteOnly {
+        if batch.options.includeSourceNote {
             resolvedSourceNote = try? await appState.indexingPipeline?
                 .fetchDocumentSourceNote(volumeId: ref.volumeId,
                                          documentId: ref.documentId)
         } else {
             resolvedSourceNote = nil
         }
+
+        // Headnote (Authoring Phase 5): a stored GeneratedSummary rendered above the
+        // body. Stored summaries only — never generated, in either purpose; renderers
+        // show a placeholder when the entry asked for one and none is stored.
+        let resolvedHeadnote: String? = ref.includeHeadnote
+            ? headnoteText(volumeId: ref.volumeId, documentId: ref.documentId,
+                           summaryId: ref.headnoteSummaryId,
+                           preferredPromptId: batch.options.summaryPromptId)
+            : nil
 
         // Zotero JSON item (for ExportFormat.zoteroJSON)
         let zoteroItem: ZoteroJSONExporter.Item?
@@ -792,8 +824,49 @@ class CollectionContentResolver {
             dateline: dateline,
             highlights: resolvedHighlights,
             sourceNoteText: resolvedSourceNote,
+            includeHeadnote: ref.includeHeadnote,
+            headnoteText: resolvedHeadnote,
             zoteroItem: zoteroItem
         ))
+    }
+
+    /// Resolves the stored `GeneratedSummary` text for a headnote: the explicitly chosen
+    /// `summaryId` when set (and non-empty), else the document's summary for
+    /// `preferredPromptId` (the collection's prompt), else any non-empty stored summary.
+    /// Returns `nil` when nothing is stored — headnote resolution **never** generates
+    /// (renderers emit a placeholder note instead; see the type doc, v1.4).
+    private func headnoteText(
+        volumeId: String,
+        documentId: String,
+        summaryId: UUID?,
+        preferredPromptId: UUID?
+    ) -> String? {
+        // Capture scalars — #Predicate can't use struct fields.
+        let vid = volumeId
+        let did = documentId
+        if let sid = summaryId {
+            let descriptor = FetchDescriptor<GeneratedSummary>(
+                predicate: #Predicate<GeneratedSummary> { $0.id == sid }
+            )
+            if let chosen = try? modelContext.fetch(descriptor).first,
+               !chosen.responseText.isEmpty {
+                return chosen.responseText
+            }
+            // The chosen summary no longer exists (deleted / not yet synced): fall
+            // through to the stored-summary fallback rather than silently dropping
+            // the requested headnote.
+        }
+        let descriptor = FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate<GeneratedSummary> { s in
+                s.volumeId == vid && s.documentId == did
+            }
+        )
+        let stored = ((try? modelContext.fetch(descriptor)) ?? [])
+            .filter { !$0.responseText.isEmpty }
+        if let pid = preferredPromptId, let preferred = stored.first(where: { $0.promptId == pid }) {
+            return preferred.responseText
+        }
+        return stored.first?.responseText
     }
 
     // MARK: - Volume preparation (export only)

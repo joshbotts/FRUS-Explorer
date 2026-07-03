@@ -157,6 +157,9 @@ struct CollectionPreviewView: View {
         hasher.combine(collection.savedSearchId)
         hasher.combine(collection.defaultBodyDepth)
         hasher.combine(collection.footnoteStyle)
+        // Phase 5 footnote pair — the effective values also cover legacy derivation.
+        hasher.combine(collection.includeFootnotes)
+        hasher.combine(collection.includeSourceNote)
         hasher.combine(collection.tocStyle)
         hasher.combine(collection.applyHighlights)
         hasher.combine(collection.includeNotes)
@@ -179,6 +182,9 @@ struct CollectionPreviewView: View {
             hasher.combine(entry.bodyDepthOverride)
             hasher.combine(entry.selectedNoteIds)
             hasher.combine(entry.researchNoteId)
+            // Phase 5 headnote fields — toggling them live-refreshes the preview.
+            hasher.combine(entry.includeHeadnote)
+            hasher.combine(entry.headnoteSummaryId)
         }
         hasher.combine(renderAll)
         hasher.combine(refreshToken)
@@ -433,11 +439,12 @@ struct CollectionPreviewView: View {
     /// minus the format-dependent word cloud (export-only decoration).
     private func previewOptions() -> CollectionExportOptions {
         CollectionExportOptions(
-            tocStyle:        CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            footnoteStyle:   CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all,
-            applyHighlights: collection.applyHighlights,
-            includeNotes:    collection.includeNotes,
-            summaryPromptId: collection.summaryPromptId,
+            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
+            includeFootnotes:  collection.effectiveIncludeFootnotes,
+            includeSourceNote: collection.effectiveIncludeSourceNote,
+            applyHighlights:   collection.applyHighlights,
+            includeNotes:      collection.includeNotes,
+            summaryPromptId:   collection.summaryPromptId,
             includeWordCloud: false
         )
     }

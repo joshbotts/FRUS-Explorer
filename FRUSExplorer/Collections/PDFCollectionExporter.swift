@@ -65,6 +65,11 @@ import CoreText
 ///          indented, un-ruled); the cover ToC indents heading rows by level; opt-in
 ///          trailing colophon page (`CollectionColophon`). The introduction needs no code
 ///          here — it arrives as the resolver's leading `.prose` item
+///   1.10 — Authoring Phase 5: opt-in headnote — a labeled italic abstract prepended to
+///          the body flow (`headnoteAttributedString`); a requested headnote with no
+///          stored summary renders a placeholder note. Footnote rendering here remains
+///          ungated (pre-existing behavior — this exporter never consumed the legacy
+///          `footnoteStyle`), so untouched collections export byte-identically
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -456,7 +461,7 @@ final class PDFCollectionExporter: CollectionExporter {
             bodyAttrStr = NSAttributedString()
         }
 
-        // Source note (footnoteStyle == .sourceNoteOnly)
+        // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
             drawHRule(ctx: ctx, y: y, gray: 0.75, thickness: 0.25)
             y -= 10
@@ -469,10 +474,19 @@ final class PDFCollectionExporter: CollectionExporter {
             y -= snH + 6
         }
 
-        if bodyAttrStr.length > 0 {
-            let framesetter = CTFramesetterCreateWithAttributedString(bodyAttrStr)
+        // Headnote (Authoring Phase 5) — a labeled italic abstract prepended to the body
+        // flow, so a long headnote paginates with the body. A requested headnote with
+        // no stored summary renders the placeholder note (never generated on demand).
+        // Prepending shifts the painted highlight attribute ranges with their text, so
+        // highlight shading stays aligned.
+        let composedBody = doc.includeHeadnote
+            ? headnoteAttributedString(doc.headnoteText, thenBody: bodyAttrStr)
+            : bodyAttrStr
+
+        if composedBody.length > 0 {
+            let framesetter = CTFramesetterCreateWithAttributedString(composedBody)
                 var charOffset = 0
-                let totalChars = bodyAttrStr.length
+                let totalChars = composedBody.length
 
                 while charOffset < totalChars {
                     let availH = y - (M + 20)
@@ -490,7 +504,7 @@ final class PDFCollectionExporter: CollectionExporter {
                     let path = CGPath(rect: rect, transform: nil)
                     let cfRange = CFRangeMake(charOffset, 0)
                     let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
-                    drawFrameWithHighlights(frame, attrStr: bodyAttrStr, in: ctx)
+                    drawFrameWithHighlights(frame, attrStr: composedBody, in: ctx)
 
                     let visible = CTFrameGetVisibleStringRange(frame)
                     if visible.length == 0 { break }
@@ -550,6 +564,41 @@ final class PDFCollectionExporter: CollectionExporter {
             ctx.endPDFPage()
             pageNumber += 1
         }
+    }
+
+    // MARK: - Headnote (Authoring Phase 5)
+
+    /// Builds the document flow for an entry with a headnote request: a small bold
+    /// "Headnote" label, the italic abstract (or the missing-summary placeholder when no
+    /// summary is stored — headnote resolution never generates), a small gap, then the
+    /// body. Prepending keeps a long headnote paginating naturally with the body text.
+    ///
+    /// - Parameters:
+    ///   - text: The resolved headnote text, if any.
+    ///   - body: The already-built body attributed string to follow the headnote.
+    /// - Returns: The combined attributed string.
+    private func headnoteAttributedString(_ text: String?,
+                                          thenBody body: NSAttributedString) -> NSAttributedString {
+        let combined = NSMutableAttributedString()
+        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+        combined.append(NSAttributedString(
+            string: label + "\n",
+            attributes: makeAttrs(fontSize: 8, bold: true, gray: 0.35)))
+        if let text, !text.isEmpty {
+            combined.append(NSAttributedString(
+                string: text + "\n",
+                attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
+        } else {
+            let missing = String(localized: "collection.headnote.missing",
+                                 defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+            combined.append(NSAttributedString(
+                string: missing + "\n",
+                attributes: makeStyledAttrs(fontSize: 9, bold: false, italic: true, gray: 0.45)))
+        }
+        combined.append(NSAttributedString(string: "\n",
+                                           attributes: makeAttrs(fontSize: 4, bold: false)))
+        combined.append(body)
+        return combined
     }
 
     // MARK: - Rich Rendering (Session 81)

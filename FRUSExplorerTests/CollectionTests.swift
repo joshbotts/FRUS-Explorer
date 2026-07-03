@@ -1350,6 +1350,7 @@ struct CollectionTests {
         #expect(!page.contains("collection-subtitle"))
         #expect(!page.contains("collection-author"))
         #expect(!page.contains("colophon"))
+        #expect(!page.contains("headnote"))   // Phase 5 layer stays dormant too
         #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
     }
 
@@ -2025,7 +2026,10 @@ struct CollectionTests {
         let data = try NativeCollectionSerializer.encode(file)
         let json = String(decoding: data, as: UTF8.self)
         for v2Key in ["minimumReaderVersion", "subtitle", "authorLine",
-                      "introductionText", "introductionRichText", "includeColophon", "level"] {
+                      "introductionText", "introductionRichText", "includeColophon", "level",
+                      // Phase 5 optional keys — absent from a write-minimum file.
+                      "includeFootnotes", "includeSourceNote",
+                      "includeHeadnote", "headnoteSummaryId"] {
             #expect(!json.contains("\"\(v2Key)\""), "write-minimum file must not carry '\(v2Key)'")
         }
 
@@ -2135,6 +2139,322 @@ struct CollectionTests {
         let entry = CollectionEntry(collectionId: collection.id, documentId: "d1",
                                     volumeId: "v1", sortOrder: 0)
         #expect(entry.level == 1)
+    }
+
+    // MARK: - Footnote pair + headnotes (Authoring Phase 5)
+
+    @Test("Footnote pair derivation: a nil pair derives each legacy tri-state value exactly; unknown raw values fall back like .all")
+    func footnotePairDerivation() {
+        // The mapping contract: all→(true,false), sourceNoteOnly→(false,true),
+        // none→(false,false) — an untouched collection composes exactly as before.
+        let cases: [(style: String, footnotes: Bool, sourceNote: Bool)] = [
+            ("all",            true,  false),
+            ("sourceNoteOnly", false, true),
+            ("none",           false, false),
+            ("garbage",        true,  false),   // unknown raw → the legacy `?? .all` fallback
+        ]
+        for c in cases {
+            let coll = Collection(name: "Derive-\(c.style)")
+            coll.footnoteStyle = c.style
+            #expect(coll.includeFootnotes == nil)      // untouched: pair stays nil
+            #expect(coll.includeSourceNote == nil)
+            #expect(coll.effectiveIncludeFootnotes == c.footnotes,
+                    "style \(c.style) should derive includeFootnotes=\(c.footnotes)")
+            #expect(coll.effectiveIncludeSourceNote == c.sourceNote,
+                    "style \(c.style) should derive includeSourceNote=\(c.sourceNote)")
+        }
+    }
+
+    @Test("Footnote pair end-to-end: the resolver's options carry the derived pair for every legacy style, and an explicit pair overrides")
+    @MainActor
+    func footnotePairResolutionOptions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let resolver = CollectionContentResolver(appState: AppState(), modelContext: context)
+
+        let coll = Collection(name: "Options")
+        for (style, footnotes, sourceNote) in [("all", true, false),
+                                               ("sourceNoteOnly", false, true),
+                                               ("none", false, false)] {
+            coll.footnoteStyle = style
+            coll.includeFootnotes = nil
+            coll.includeSourceNote = nil
+            let options = resolver.resolutionOptions(for: coll)
+            #expect(options.includeFootnotes == footnotes, "style \(style)")
+            #expect(options.includeSourceNote == sourceNote, "style \(style)")
+        }
+
+        // The previously inexpressible combination: footnotes AND the source note.
+        coll.effectiveIncludeFootnotes = true
+        coll.effectiveIncludeSourceNote = true
+        let both = resolver.resolutionOptions(for: coll)
+        #expect(both.includeFootnotes == true)
+        #expect(both.includeSourceNote == true)
+    }
+
+    @Test("Footnote pair setters: writes freeze both Bools and keep a best-fit legacy footnoteStyle for old readers; (true,true) writes 'all'")
+    func footnotePairWriteThrough() {
+        // Toggling one flag must freeze the OTHER's currently-derived value first —
+        // otherwise rewriting footnoteStyle would silently flip the untouched flag.
+        let coll = Collection(name: "Freeze")
+        coll.footnoteStyle = "sourceNoteOnly"          // derived pair: (false, true)
+        coll.effectiveIncludeFootnotes = true          // user turns footnotes ON
+        #expect(coll.includeFootnotes == true)
+        #expect(coll.includeSourceNote == true)        // frozen, not re-derived from "all"
+        #expect(coll.effectiveIncludeSourceNote == true)
+        // (true, true) is inexpressible in the tri-state: best fit writes "all".
+        #expect(coll.footnoteStyle == "all")
+
+        // Each expressible pair round-trips to its exact legacy raw value.
+        coll.effectiveIncludeSourceNote = false        // (true, false)
+        #expect(coll.footnoteStyle == "all")
+        coll.effectiveIncludeFootnotes = false         // (false, false)
+        #expect(coll.footnoteStyle == "none")
+        coll.effectiveIncludeSourceNote = true         // (false, true)
+        #expect(coll.footnoteStyle == "sourceNoteOnly")
+    }
+
+    @Test("Resolver headnote: chosen summary id wins; nil id prefers the collection prompt's summary; nothing stored keeps a nil headnote (never generates)")
+    @MainActor
+    func resolverHeadnoteResolution() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let promptId = UUID()
+        let coll = Collection(name: "Headnotes")
+        coll.summaryPromptId = promptId
+        context.insert(coll)
+
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                    volumeId: "hnvol", sortOrder: 0)
+        entry.includeHeadnote = true
+        context.insert(entry)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+
+        // Nothing stored: the headnote request travels, the text stays nil — headnote
+        // resolution never generates, in either purpose.
+        let missing = try await resolver.resolve(collection: coll, entries: [entry],
+                                                 allNotes: [], purpose: .preview)
+        let missingDoc = try #require(docPayload(missing[0]))
+        #expect(missingDoc.includeHeadnote == true)
+        #expect(missingDoc.headnoteText == nil)
+
+        // Two stored summaries: with a nil pick, the collection's prompt is preferred.
+        let other = GeneratedSummary(documentId: "d1", volumeId: "hnvol",
+                                     promptId: UUID(), responseText: "Other prompt summary.")
+        let preferred = GeneratedSummary(documentId: "d1", volumeId: "hnvol",
+                                         promptId: promptId, responseText: "Preferred prompt summary.")
+        context.insert(other)
+        context.insert(preferred)
+        try context.save()
+        let auto = try await resolver.resolve(collection: coll, entries: [entry],
+                                              allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(auto[0])).headnoteText == "Preferred prompt summary.")
+
+        // An explicit pick wins over the prompt preference.
+        entry.headnoteSummaryId = other.id
+        let chosen = try await resolver.resolve(collection: coll, entries: [entry],
+                                                allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(chosen[0])).headnoteText == "Other prompt summary.")
+
+        // A dangling pick (deleted summary) falls back rather than dropping the headnote.
+        entry.headnoteSummaryId = UUID()
+        let dangling = try await resolver.resolve(collection: coll, entries: [entry],
+                                                  allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(dangling[0])).headnoteText == "Preferred prompt summary.")
+
+        // An entry that never asked for a headnote carries neither flag nor text.
+        entry.includeHeadnote = false
+        let off = try await resolver.resolve(collection: coll, entries: [entry],
+                                             allNotes: [], purpose: .preview)
+        let offDoc = try #require(docPayload(off[0]))
+        #expect(offDoc.includeHeadnote == false)
+        #expect(offDoc.headnoteText == nil)
+    }
+
+    @Test("Headnote rendering: the italic abstract (or its placeholder) appears in HTML, DOCX, and PDF only when the entry requested one")
+    func headnoteAcrossFormats() async throws {
+        let withHeadnote = CollectionExportDocument(
+            documentId: "d1", volumeId: "hnvol", sortOrder: 1,
+            title: "Headnoted Memo", bodyText: "Headnoted body paragraph.",
+            citation: "Headnoted Citation",
+            includeHeadnote: true, headnoteText: "A concise scholarly abstract.")
+        let placeholder = CollectionExportDocument(
+            documentId: "d2", volumeId: "hnvol", sortOrder: 2,
+            title: "Pending Memo", bodyText: "Pending body paragraph.",
+            citation: "Pending Citation",
+            includeHeadnote: true, headnoteText: nil)
+        let plain = CollectionExportDocument(
+            documentId: "d3", volumeId: "hnvol", sortOrder: 3,
+            title: "Plain Memo", bodyText: "Plain body paragraph.",
+            citation: "Plain Citation")
+        let items: [CollectionExportItem] = [
+            .document(withHeadnote), .document(placeholder), .document(plain)]
+        let plainItems: [CollectionExportItem] = [.document(plain)]
+        // Name must not contain "Headnote" — the absence assertions scan whole outputs.
+        let metadata = CollectionExportMetadata(name: "Abstract Fixture", note: nil)
+
+        // HTML — headnote block, the abstract, and the placeholder note; the headnote
+        // stylesheet is emitted only on this page, never for a headnote-free one.
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.contains("class=\"headnote\""))
+        #expect(html.contains("<em>A concise scholarly abstract.</em>"))
+        #expect(html.contains("class=\"headnote-missing\""))
+        #expect(html.contains("No stored summary for this document"))
+        let htmlOffURL = try await HTMLCollectionExporter().export(metadata: metadata, items: plainItems)
+        let htmlOff = try String(contentsOf: htmlOffURL, encoding: .utf8)
+        #expect(!htmlOff.contains("headnote"))
+
+        // DOCX — label + italic abstract + placeholder; absent without a request.
+        let docx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items))
+        func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
+        #expect(docxContains("Headnote"))
+        #expect(docxContains("A concise scholarly abstract."))
+        #expect(docxContains("No stored summary for this document"))
+        let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: plainItems))
+        #expect(docxOff.range(of: Data("Headnote".utf8)) == nil)
+
+        // PDF — extract page text with PDFKit.
+        let pdf = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items))
+        let pdfDoc = try #require(PDFDocument(data: pdf))
+        let pdfText = (0..<pdfDoc.pageCount)
+            .compactMap { pdfDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(pdfText.contains("Headnote"))
+        #expect(pdfText.contains("A concise scholarly abstract."))
+        #expect(pdfText.contains("No stored summary for this document"))
+        let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: plainItems))
+        let pdfOffDoc = try #require(PDFDocument(data: pdfOff))
+        let pdfOffText = (0..<pdfOffDoc.pageCount)
+            .compactMap { pdfOffDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(!pdfOffText.contains("Headnote"))
+    }
+
+    @Test("HTML footnote gate: options.includeFootnotes drives footnote emission for a rendered model — the legacy .all/.none behaviors, now independently combinable with the source note")
+    func htmlFootnoteGate() {
+        let model = FRUSDocumentRenderModel(
+            documentId: "d1",
+            bodyNodes: [.paragraph([.plainText("Gated body."),
+                                    .footnoteMarker(id: "fn1", displayLabel: "1")])],
+            footnotes: [.footnoteBody(id: "fn1", type: .editorial, printedNumber: "1",
+                                      sequentialNumber: 1, displayLabel: "1",
+                                      children: [.plainText("The footnote text.")])])
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "fnvol", sortOrder: 1,
+            title: "Footnoted", bodyText: "Gated body.",
+            citation: "Footnoted Citation", renderModel: model,
+            sourceNoteText: "RG 59, Central Files.")
+        let items: [CollectionExportItem] = [.document(doc)]
+        let metadata = CollectionExportMetadata(name: "Gate", note: nil)
+
+        // includeFootnotes=true (legacy .all): footnote text renders; source note renders
+        // too — the combination the tri-state could never express.
+        var options = CollectionExportOptions()
+        options.includeFootnotes = true
+        options.includeSourceNote = true
+        let on = CollectionItemHTMLRenderer(options: options).pageHTML(metadata: metadata, items: items)
+        #expect(on.contains("The footnote text."))
+        #expect(on.contains("RG 59, Central Files."))
+
+        // includeFootnotes=false (legacy .none/.sourceNoteOnly): footnotes are stripped.
+        options.includeFootnotes = false
+        let off = CollectionItemHTMLRenderer(options: options).pageHTML(metadata: metadata, items: items)
+        #expect(!off.contains("The footnote text."))
+        #expect(off.contains("RG 59, Central Files."))   // source note is independent now
+    }
+
+    @Test("NativeFormat v2 Phase 5 keys: footnote pair and headnote fields round-trip; absent keys leave the model defaults (nil pair, no headnote)")
+    func nativePhase5RoundTrip() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(container)
+
+        let coll = Collection(name: "P5")
+        coll.effectiveIncludeFootnotes = true
+        coll.effectiveIncludeSourceNote = true
+        sourceCtx.insert(coll)
+        let pickedSummaryId = UUID()
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        d.includeHeadnote = true
+        d.headnoteSummaryId = pickedSummaryId
+        d.collection = coll
+        sourceCtx.insert(d)
+        try sourceCtx.save()
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        // Phase 5 features ride v2 under the tolerant reader — no new bump, floor stays 1.
+        #expect(file.formatVersion == 2)
+        #expect(file.minimumReaderVersion == 1)
+        #expect(file.composition.includeFootnotes == true)
+        #expect(file.composition.includeSourceNote == true)
+        #expect(file.composition.footnoteStyle == "all")   // legacy raw still written
+        #expect(file.entries.first?.includeHeadnote == true)
+        #expect(file.entries.first?.headnoteSummaryId == pickedSummaryId)
+
+        // encode → decode → apply reconstructs everything.
+        let data = try NativeCollectionSerializer.encode(file)
+        let destContainer = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(destContainer)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(data), into: destCtx)
+        try destCtx.save()
+        #expect(imported.includeFootnotes == true)
+        #expect(imported.includeSourceNote == true)
+        #expect(imported.footnoteStyle == "all")
+        let importedEntry = try #require((imported.documentEntries ?? []).first)
+        #expect(importedEntry.includeHeadnote == true)
+        #expect(importedEntry.headnoteSummaryId == pickedSummaryId)
+
+        // A v1 file (no Phase 5 keys) leaves the defaults: nil pair, headnote off.
+        let v1JSON = Data(#"{"format":"fruscollection","formatVersion":1,"name":"Old","composition":{"defaultBodyDepth":"full","footnoteStyle":"sourceNoteOnly","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"document","documentId":"d1","volumeId":"v1"}]}"#.utf8)
+        let old = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(v1JSON), into: destCtx)
+        #expect(old.includeFootnotes == nil)
+        #expect(old.includeSourceNote == nil)
+        #expect(old.effectiveIncludeSourceNote == true)   // derived from the legacy style
+        let oldEntry = try #require((old.documentEntries ?? []).first)
+        #expect(oldEntry.includeHeadnote == false)
+        #expect(oldEntry.headnoteSummaryId == nil)
+    }
+
+    @Test("NativeFormat write-minimum: any Phase 5 feature — a pair member or a headnote — flips the file to v2; clearing them restores v1")
+    func nativePhase5WriteMinimumFlips() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let coll = Collection(name: "Flip")
+        ctx.insert(coll)
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        d.collection = coll
+        ctx.insert(d)
+        try ctx.save()
+
+        func makeFile() -> FRUSCollectionFile {
+            NativeCollectionSerializer.makeFile(
+                from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        }
+        #expect(makeFile().formatVersion == 1)             // untouched: write-minimum v1
+
+        coll.includeFootnotes = true                       // one pair member set → v2
+        #expect(makeFile().formatVersion == 2)
+        coll.includeFootnotes = nil
+        #expect(makeFile().formatVersion == 1)
+
+        d.includeHeadnote = true                           // a headnote request → v2
+        #expect(makeFile().formatVersion == 2)
+        d.includeHeadnote = false
+        #expect(makeFile().formatVersion == 1)
+
+        d.headnoteSummaryId = UUID()                       // a pick alone → v2
+        #expect(makeFile().formatVersion == 2)
+        d.headnoteSummaryId = nil
+        #expect(makeFile().formatVersion == 1)
     }
 
     // MARK: - Outline editor engine tests (Authoring Phase 4, editor step)

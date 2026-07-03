@@ -40,6 +40,11 @@ import SwiftData
 ///          `introductionText` + `introductionRichText`, `includeColophon`) — all additive,
 ///          optional-or-defaulted, CloudKit-safe; defaults reproduce pre-Phase-4 exports exactly.
 ///          `note` keeps its existing role as the one-line title-page description
+///   1.5 — Authoring Phase 5: footnote tri-state fix — `includeFootnotes` +
+///          `includeSourceNote` Bool pair (both optional; `nil` derives from the legacy
+///          `footnoteStyle`, which keeps being written for old readers/devices — never
+///          delete or re-purpose a synced field). "All footnotes AND the source note"
+///          becomes expressible; the effective accessors are the only read surface
 @Model final class Collection {
 
     // MARK: - Identity
@@ -124,8 +129,86 @@ import SwiftData
 
     /// Footnote inclusion style for exports — a `CollectionFootnoteStyle` raw value
     /// (`"none"`, `"sourceNoteOnly"`, `"all"`).
+    ///
+    /// **Legacy field (Authoring Phase 5).** Superseded as the read surface by the
+    /// `includeFootnotes`/`includeSourceNote` Bool pair, but it is a synced field on
+    /// fielded builds, so it is never deleted or re-purposed: the effective setters keep
+    /// writing a best-fit raw value here so old readers and old devices behave sensibly.
     var footnoteStyle: String = "all" {
         didSet { lastModified = .now }
+    }
+
+    /// Whether exported documents include their footnotes (Authoring Phase 5).
+    /// `nil` (every pre-Phase-5 collection) means "derive from the legacy
+    /// `footnoteStyle`" — see `effectiveIncludeFootnotes`, the read surface.
+    /// Prefer the effective accessors; write through them so `footnoteStyle` stays
+    /// consistent for old readers.
+    var includeFootnotes: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Whether exported documents append their archival source note (Authoring Phase 5).
+    /// `nil` (every pre-Phase-5 collection) means "derive from the legacy
+    /// `footnoteStyle`" — see `effectiveIncludeSourceNote`, the read surface.
+    /// Prefer the effective accessors; write through them so `footnoteStyle` stays
+    /// consistent for old readers.
+    var includeSourceNote: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// The effective "include footnotes" flag: the stored Bool when set, else the value
+    /// derived from the legacy `footnoteStyle` (`all` → `true`; `sourceNoteOnly`/`none` →
+    /// `false`) — so an untouched collection composes exactly as it always has.
+    ///
+    /// Setting writes **both** stored Bools (freezing the currently-derived pair so a
+    /// later `footnoteStyle` rewrite cannot shift the other flag) **and** a best-fit
+    /// `footnoteStyle` raw value for old readers — see `bestFitFootnoteStyleRawValue`.
+    var effectiveIncludeFootnotes: Bool {
+        get { includeFootnotes ?? Self.derivedFootnoteFlags(fromStyleRawValue: footnoteStyle).footnotes }
+        set { writeFootnoteFlags(footnotes: newValue, sourceNote: effectiveIncludeSourceNote) }
+    }
+
+    /// The effective "include archival source note" flag: the stored Bool when set, else
+    /// the value derived from the legacy `footnoteStyle` (`sourceNoteOnly` → `true`;
+    /// `all`/`none` → `false`). Setting mirrors `effectiveIncludeFootnotes`.
+    var effectiveIncludeSourceNote: Bool {
+        get { includeSourceNote ?? Self.derivedFootnoteFlags(fromStyleRawValue: footnoteStyle).sourceNote }
+        set { writeFootnoteFlags(footnotes: effectiveIncludeFootnotes, sourceNote: newValue) }
+    }
+
+    /// Maps a legacy `footnoteStyle` raw value to the Bool pair it always meant:
+    /// `all` → (true, false), `sourceNoteOnly` → (false, true), `none` → (false, false).
+    /// An unknown raw value falls back to `all`, matching every pre-Phase-5 read site's
+    /// `CollectionFootnoteStyle(rawValue:) ?? .all`.
+    static func derivedFootnoteFlags(fromStyleRawValue raw: String) -> (footnotes: Bool, sourceNote: Bool) {
+        switch raw {
+        case "sourceNoteOnly": return (false, true)
+        case "none":           return (false, false)
+        default:               return (true, false)   // "all" + unknown values (legacy fallback)
+        }
+    }
+
+    /// The best-fit legacy `footnoteStyle` raw value for a Bool pair, written alongside
+    /// the pair so old readers/devices keep behaving sensibly: (true, false) → `all`,
+    /// (false, true) → `sourceNoteOnly`, (false, false) → `none`. The one combination the
+    /// tri-state cannot express — footnotes **and** the source note — writes `all`
+    /// (documented lossy mapping: an old build shows the footnotes and drops the source
+    /// note, which is the closer of the two degradations to the author's intent).
+    static func bestFitFootnoteStyleRawValue(footnotes: Bool, sourceNote: Bool) -> String {
+        switch (footnotes, sourceNote) {
+        case (true, false):  return "all"
+        case (false, true):  return "sourceNoteOnly"
+        case (false, false): return "none"
+        case (true, true):   return "all"   // inexpressible in the tri-state; see doc
+        }
+    }
+
+    /// Writes the Bool pair and the best-fit legacy `footnoteStyle` in one step — the
+    /// single write path used by both effective setters.
+    private func writeFootnoteFlags(footnotes: Bool, sourceNote: Bool) {
+        includeFootnotes = footnotes
+        includeSourceNote = sourceNote
+        footnoteStyle = Self.bestFitFootnoteStyleRawValue(footnotes: footnotes, sourceNote: sourceNote)
     }
 
     /// Table-of-contents label style for exports — a `CollectionToCStyle` raw value
@@ -248,6 +331,9 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          `.document` (mixed-build CloudKit sync guard); the setter never persists it
 ///   1.7 — Authoring Phase 4: added `level` (heading nesting depth, default 1) — the tree is
 ///          level-encoded on the flat list; `sortOrder` semantics are untouched
+///   1.8 — Authoring Phase 5: added `includeHeadnote` (default `false`) + `headnoteSummaryId`
+///          — an opt-in italic abstract (a chosen `GeneratedSummary`) rendered above the
+///          document body in exports/preview; defaults reproduce pre-Phase-5 output exactly
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -323,6 +409,25 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     /// default", letting a single collection mix full documents, summaries, and citation-only
     /// entries into one product (Collections rework Phase 1b).
     var bodyDepthOverride: String? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Headnote (Authoring Phase 5)
+
+    /// When `true` on a document entry, exports and the live preview render an italic
+    /// abstract (a `GeneratedSummary`) **above** the document body — a headnote, versus
+    /// the body-depth `summaryOnly` summary-*instead-of*-body. Defaults to `false`, so
+    /// every existing entry renders exactly as before. Headnote resolution never
+    /// generates a summary on demand (out of scope for Authoring Phase 5 step 1; the
+    /// renderers show a placeholder note when no stored summary exists).
+    var includeHeadnote: Bool = false {
+        didSet { lastModified = .now }
+    }
+
+    /// The specific `GeneratedSummary.id` to render as this entry's headnote. `nil` with
+    /// `includeHeadnote == true` falls back to a stored summary for the document
+    /// (preferring one generated with the collection's `summaryPromptId`).
+    var headnoteSummaryId: UUID? {
         didSet { lastModified = .now }
     }
 

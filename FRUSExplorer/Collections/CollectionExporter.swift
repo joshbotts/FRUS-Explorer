@@ -92,8 +92,16 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
 
 /// Controls which footnotes are included in each exported document.
 ///
+/// **Legacy vocabulary (Authoring Phase 5).** The tri-state is superseded by the
+/// `Collection.includeFootnotes`/`includeSourceNote` Bool pair (which can express
+/// "all footnotes AND the source note"); the enum remains the raw-value vocabulary of
+/// the synced `Collection.footnoteStyle` field, which keeps being written for old
+/// readers, and of `.fruscollection` files. New code reads the collection's
+/// `effectiveIncludeFootnotes`/`effectiveIncludeSourceNote` instead.
+///
 /// Version history:
 ///   1.0 — Session 153: initial implementation
+///   1.1 — Authoring Phase 5: demoted to the legacy raw-value vocabulary (see above)
 enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
     /// No footnotes — body text only.
     case none
@@ -223,11 +231,23 @@ final class HighlightPaintTracker {
 ///          `includeNotes`, and `summaryPromptId`
 ///   1.2 — Collections rework Phase 1b: `bodyDepth` moved to per-document
 ///          `CollectionExportDocument.bodyDepth` (per-entry override); removed here
+///   1.3 — Authoring Phase 5: `footnoteStyle` replaced by the `includeFootnotes` +
+///          `includeSourceNote` Bool pair (both now expressible together). Callers build
+///          these from `Collection.effectiveIncludeFootnotes`/`effectiveIncludeSourceNote`,
+///          whose nil-pair derivation reproduces each legacy tri-state value exactly
 struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     var tocStyle: CollectionToCStyle = .citation
-    /// Which footnotes to include per document.
-    var footnoteStyle: CollectionFootnoteStyle = .all
+    /// When `true`, document footnotes are rendered where footnote rendering is gated
+    /// (the shared HTML renderer / live preview). Defaults to `true` — the legacy
+    /// `.all` behavior. (The PDF/DOCX exporters have never gated footnotes on the old
+    /// tri-state; that pre-existing behavior is deliberately unchanged so untouched
+    /// collections keep exporting byte-identically.)
+    var includeFootnotes: Bool = true
+    /// When `true`, the resolver fetches each document's archival source note and every
+    /// format appends a "Source:" block. Defaults to `false` — pre-Phase-5, only the
+    /// legacy `.sourceNoteOnly` style resolved it.
+    var includeSourceNote: Bool = false
     /// When `true`, inline user highlights are annotated in the document body.
     /// Implemented for all three export formats: HTML (`FRUSRenderNodeHTMLSerializer.injectHighlights`),
     /// PDF (`PDFCollectionExporter.drawFrameWithHighlights`), and DOCX
@@ -334,6 +354,9 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 ///          replaced single `noteText` with `noteTexts: [String]` (multi-note per entry);
 ///          added `includeDocumentBody: Bool`; `noteText` retained as computed backward-compat accessor
 ///   1.4 — Session 155: added `zoteroItem: ZoteroJSONExporter.Item?` for `.zoteroJSON` export
+///   1.5 — Authoring Phase 5: added `includeHeadnote` + `headnoteText` (an opt-in italic
+///          abstract above the body; a requested headnote with no stored summary renders
+///          a placeholder note — headnote generation-on-demand is out of scope)
 struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     let documentId: String
@@ -372,8 +395,15 @@ struct CollectionExportDocument: Sendable {
     /// `options.applyHighlights == true`; empty otherwise.
     let highlights: [ExportHighlight]
     /// Raw archival source note text. Populated when
-    /// `options.footnoteStyle == .sourceNoteOnly`; `nil` otherwise.
+    /// `options.includeSourceNote == true`; `nil` otherwise.
     let sourceNoteText: String?
+    /// Whether this entry requested a headnote (Authoring Phase 5). When `true` and
+    /// `headnoteText` is empty/nil, renderers emit a placeholder note instead — the
+    /// resolver never generates a summary for a headnote.
+    let includeHeadnote: Bool
+    /// The resolved headnote text — the chosen (or fallback) stored `GeneratedSummary`.
+    /// Rendered as an italic abstract above the body when `includeHeadnote` is `true`.
+    let headnoteText: String?
     /// Pre-built Zotero JSON item for `.zoteroJSON` export. `nil` if volume
     /// metadata was unavailable when this document was resolved.
     let zoteroItem: ZoteroJSONExporter.Item?
@@ -411,6 +441,8 @@ struct CollectionExportDocument: Sendable {
         summaryText: String? = nil,
         highlights: [ExportHighlight] = [],
         sourceNoteText: String? = nil,
+        includeHeadnote: Bool = false,
+        headnoteText: String? = nil,
         zoteroItem: ZoteroJSONExporter.Item? = nil
     ) {
         self.documentId = documentId
@@ -435,6 +467,8 @@ struct CollectionExportDocument: Sendable {
         self.summaryText = summaryText
         self.highlights = highlights
         self.sourceNoteText = sourceNoteText
+        self.includeHeadnote = includeHeadnote
+        self.headnoteText = headnoteText
         self.zoteroItem = zoteroItem
     }
 
@@ -448,6 +482,7 @@ struct CollectionExportDocument: Sendable {
             noteTexts: noteTexts, citation: citation, historyStateGovURL: historyStateGovURL,
             renderModel: renderModel, header: header, dateline: dateline,
             summaryText: text, highlights: highlights, sourceNoteText: sourceNoteText,
+            includeHeadnote: includeHeadnote, headnoteText: headnoteText,
             zoteroItem: zoteroItem)
     }
 }

@@ -11,9 +11,11 @@ import SwiftData
 
 // MARK: - CollectionEntryInspector
 
-/// A read-only "what does this document contribute" surface for one collection entry: its
-/// identity (header, volume), the user's own annotations for it (research notes, highlights,
-/// tags, AI summary), and its archival provenance (source note, cross-reference count).
+/// A "what does this document contribute" surface for one collection entry: its identity
+/// (header, volume), the user's own annotations for it (research notes, highlights, tags,
+/// AI summary), its archival provenance (source note, cross-reference count), and — from
+/// Authoring Phase 5 — the entry's headnote controls (the first read-write affordance on
+/// the way to the full Phase 5 inspector).
 ///
 /// Opened from an entry row so the manager is a place to *see* the full range of
 /// document-level data while composing — volume-derived and user-generated alike. It reuses
@@ -24,7 +26,22 @@ import SwiftData
 /// Version history:
 ///   1.0 — Collections rework Phase 2: editorial data surface
 ///   1.1 — extracted from CollectionEditorView.swift (Session 2026-07-02, Collections Authoring Phase 1)
+///   1.2 — Authoring Phase 5: the "first non-empty summary" display became prompt-aware
+///          (prefers the collection's `summaryPromptId`, labels the producing prompt);
+///          new Headnote section — toggle `includeHeadnote` and pick the
+///          `GeneratedSummary` (`headnoteSummaryId`) rendered above the body in exports
 struct CollectionEntryInspector: View {
+
+    /// One stored summary choice for the headnote picker: identity, producing-prompt
+    /// label, and a short preview.
+    private struct SummaryChoice: Identifiable {
+        /// The `GeneratedSummary.id`.
+        let id: UUID
+        /// The producing prompt's display name, or a fallback when the prompt is gone.
+        let promptName: String
+        /// The summary text (used for the preview row).
+        let text: String
+    }
 
     /// The entry whose document is being inspected.
     let entry: CollectionEntry
@@ -37,6 +54,8 @@ struct CollectionEntryInspector: View {
     @State private var volumeTitle = ""
     @State private var sourceNote: String?
     @State private var summaryPreview: String?
+    @State private var summaryPromptName: String?
+    @State private var summaryChoices: [SummaryChoice] = []
     @State private var noteTexts: [String] = []
     @State private var tags: [String] = []
     @State private var highlightCount = 0
@@ -58,6 +77,7 @@ struct CollectionEntryInspector: View {
                     }
                 } else {
                     annotationsSection
+                    headnoteSection
                     provenanceSection
                 }
             }
@@ -120,11 +140,50 @@ struct CollectionEntryInspector: View {
             if let summaryPreview, !summaryPreview.isEmpty {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(String(localized: "collection.inspector.summary", defaultValue: "AI summary"))
+                        // Prompt-aware label (Phase 5): name the producing prompt when known.
+                        Text(summaryPromptName.map { name in
+                            String(localized: "collection.inspector.summaryFromPrompt",
+                                   defaultValue: "AI summary — \(name)")
+                        } ?? String(localized: "collection.inspector.summary",
+                                    defaultValue: "AI summary"))
                             .font(.caption).foregroundStyle(.secondary)
                         Text(summaryPreview).font(.callout).lineLimit(3)
                     }
                 } icon: { Image(systemName: "sparkles") }
+            }
+        }
+    }
+
+    /// Headnote controls (Authoring Phase 5): opt a document entry into an italic
+    /// abstract above its body in exports/preview, and — when stored summaries exist —
+    /// choose which `GeneratedSummary` supplies it (labeled by producing prompt;
+    /// "Automatic" = the resolver's fallback pick, preferring the collection's prompt).
+    @ViewBuilder private var headnoteSection: some View {
+        Section(String(localized: "collection.inspector.headnote", defaultValue: "Headnote")) {
+            Toggle(String(localized: "collection.inspector.headnote.toggle",
+                          defaultValue: "Show a summary above the document"),
+                   isOn: Binding(get: { entry.includeHeadnote },
+                                 set: { entry.includeHeadnote = $0 }))
+
+            if entry.includeHeadnote {
+                if summaryChoices.isEmpty {
+                    Text(String(localized: "collection.inspector.headnote.none",
+                                defaultValue: "No stored summaries for this document. Exports will show a placeholder until one is generated in the document view."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker(String(localized: "collection.inspector.headnote.pick",
+                                  defaultValue: "Summary"),
+                           selection: Binding(get: { entry.headnoteSummaryId },
+                                              set: { entry.headnoteSummaryId = $0 })) {
+                        Text(String(localized: "collection.inspector.headnote.automatic",
+                                    defaultValue: "Automatic"))
+                            .tag(UUID?.none)
+                        ForEach(summaryChoices) { choice in
+                            Text(choice.promptName).tag(UUID?.some(choice.id))
+                        }
+                    }
+                }
             }
         }
     }
@@ -170,9 +229,27 @@ struct CollectionEntryInspector: View {
             predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? []
         highlightCount = highlights.count
 
-        let summaries = (try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
-            predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? []
-        summaryPreview = summaries.first(where: { !$0.responseText.isEmpty })?.responseText
+        let summaries = ((try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? [])
+            .filter { !$0.responseText.isEmpty }
+        // Prompt-aware pick (Phase 5): prefer the summary produced by the collection's
+        // configured prompt; else fall back to the first non-empty one (prior behavior).
+        let prompts = (try? modelContext.fetch(FetchDescriptor<SummarizationPrompt>())) ?? []
+        let promptNames = Dictionary(prompts.map { ($0.id, $0.name) },
+                                     uniquingKeysWith: { first, _ in first })
+        let collectionPromptId = entry.collection?.summaryPromptId
+        let shown = collectionPromptId.flatMap { pid in summaries.first { $0.promptId == pid } }
+            ?? summaries.first
+        summaryPreview = shown?.responseText
+        summaryPromptName = shown.flatMap { promptNames[$0.promptId] }
+        summaryChoices = summaries.map { summary in
+            SummaryChoice(
+                id: summary.id,
+                promptName: promptNames[summary.promptId]
+                    ?? String(localized: "collection.inspector.headnote.unknownPrompt",
+                              defaultValue: "Deleted prompt"),
+                text: summary.responseText)
+        }
 
         if let store = appState.crossReferenceStore {
             header = (try? await store.documentHeaders(

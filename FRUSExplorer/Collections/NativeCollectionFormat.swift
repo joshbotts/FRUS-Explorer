@@ -49,6 +49,11 @@ extension UTType {
 ///          (defaulted 1 on decode when absent), front-matter block (`subtitle`,
 ///          `authorLine`, `introductionText`/`introductionRichText`, `includeColophon`),
 ///          and `Entry.level` — all optional keys, absent from write-minimum v1 files
+///   2.1 — Authoring Phase 5 (rides formatVersion 2 under the tolerant reader — no new
+///          bump, `minimumReaderVersion` stays 1): `Composition.includeFootnotes` +
+///          `Composition.includeSourceNote` (the Bool pair; the legacy `footnoteStyle`
+///          keeps being written) and `Entry.includeHeadnote` + `Entry.headnoteSummaryId`
+///          — all optional keys, absent from write-minimum files
 struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
@@ -92,7 +97,16 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// `CollectionBodyDepth` raw value (`"full"` / `"summaryOnly"` / `"index"`).
         var defaultBodyDepth: String
         /// `CollectionFootnoteStyle` raw value (`"none"` / `"sourceNoteOnly"` / `"all"`).
+        /// Legacy tri-state, always written — v1 readers and untouched collections keep
+        /// composing from it; the Phase 5 Bool pair below supersedes it when present.
         var footnoteStyle: String
+        /// Phase 5 footnote pair: whether footnotes render (v2 optional key; `nil` in
+        /// write-minimum files and files from pre-Phase-5 writers = derive from
+        /// `footnoteStyle`).
+        var includeFootnotes: Bool?
+        /// Phase 5 footnote pair: whether the archival source note renders (v2 optional
+        /// key; `nil` = derive from `footnoteStyle`).
+        var includeSourceNote: Bool?
         /// `CollectionToCStyle` raw value (`"citation"` / `"headerAndDateline"`).
         var tocStyle: String
         /// Whether user highlights annotate exported bodies.
@@ -127,6 +141,14 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         var text: String?
         /// RTF rich-text prose body (prose entries only); base64 in JSON.
         var richText: Data?
+        /// Whether this document entry renders a headnote (Phase 5; v2 optional key).
+        /// Emitted only when `true`; `nil`/absent = `false`.
+        var includeHeadnote: Bool?
+        /// The chosen `GeneratedSummary.id` for the headnote (Phase 5; v2 optional key).
+        /// Summary ids are meaningful across the author's own CloudKit-synced devices;
+        /// on another user's device the id simply won't resolve and the resolver falls
+        /// back to any stored summary (or the placeholder).
+        var headnoteSummaryId: UUID?
         /// Inline research-note texts for this document (opt-in — populated only when the
         /// exporter's "include my research notes" toggle is on). `nil`/absent otherwise.
         var notes: [String]?
@@ -175,6 +197,10 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          keep opening it; v2 files carry `minimumReaderVersion: 1` (levels and front
 ///          matter are degradable, never meaning-corrupting); `apply` reconstructs the
 ///          front-matter fields and clamped heading levels
+///   1.3 — Authoring Phase 5: the footnote Bool pair and headnote keys ride v2 as
+///          optional keys (no bump; `minimumReaderVersion` stays 1 — a reader ignoring
+///          them degrades to the legacy footnoteStyle / no headnote, never corrupts);
+///          `usesV2Features` extended so untouched collections keep emitting v1 files
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -244,6 +270,10 @@ enum NativeCollectionSerializer {
         let composition = FRUSCollectionFile.Composition(
             defaultBodyDepth: collection.defaultBodyDepth,
             footnoteStyle: collection.footnoteStyle,
+            // Phase 5 pair: carried verbatim — a nil pair stays nil so untouched
+            // collections keep emitting the byte-identical legacy composition block.
+            includeFootnotes: collection.includeFootnotes,
+            includeSourceNote: collection.includeSourceNote,
             tocStyle: collection.tocStyle,
             applyHighlights: collection.applyHighlights,
             includeNotes: collection.includeNotes,
@@ -266,6 +296,10 @@ enum NativeCollectionSerializer {
                         bodyDepthOverride: entry.bodyDepthOverride,
                         text: nil,
                         richText: nil,
+                        // Phase 5 headnote keys — the default (false/nil) is omitted so
+                        // a headnote-free entry carries no v2 key at all.
+                        includeHeadnote: entry.includeHeadnote ? true : nil,
+                        headnoteSummaryId: entry.headnoteSummaryId,
                         notes: notes.isEmpty ? nil : notes
                     )
                 case .heading:
@@ -312,13 +346,17 @@ enum NativeCollectionSerializer {
             .flatMap { $0.isEmpty ? nil : $0 }
 
         // Write-minimum: computed from content, never hardcoded. Any front-matter field
-        // set, a colophon opt-in, or any heading deeper than level 1 requires v2.
+        // set, a colophon opt-in, any heading deeper than level 1, any member of the
+        // Phase 5 footnote Bool pair, or any headnote request/pick requires v2.
         let usesV2Features = subtitle != nil
             || authorLine != nil
             || introductionText != nil
             || introductionRichText != nil
             || collection.includeColophon
             || entries.contains { $0.level != nil }
+            || composition.includeFootnotes != nil
+            || composition.includeSourceNote != nil
+            || entries.contains { $0.includeHeadnote == true || $0.headnoteSummaryId != nil }
 
         guard usesV2Features else {
             // No v2 feature: a pure v1 file, byte-identical to a pre-Phase-4 export
@@ -366,6 +404,10 @@ enum NativeCollectionSerializer {
         let collection = Collection(name: file.name, note: file.note)
         collection.defaultBodyDepth = file.composition.defaultBodyDepth
         collection.footnoteStyle = file.composition.footnoteStyle
+        // Phase 5 pair (absent in v1 / pre-Phase-5 files → nil, i.e. derive from the
+        // legacy footnoteStyle just applied above).
+        collection.includeFootnotes = file.composition.includeFootnotes
+        collection.includeSourceNote = file.composition.includeSourceNote
         collection.tocStyle = file.composition.tocStyle
         collection.applyHighlights = file.composition.applyHighlights
         collection.includeNotes = file.composition.includeNotes
@@ -399,6 +441,11 @@ enum NativeCollectionSerializer {
             entry.bodyDepthOverride = dto.bodyDepthOverride
             entry.text = dto.text
             entry.richText = dto.richText
+            if kind == .document {
+                // Phase 5 headnote keys (absent in older files → the model defaults).
+                entry.includeHeadnote = dto.includeHeadnote ?? false
+                entry.headnoteSummaryId = dto.headnoteSummaryId
+            }
             if kind == .heading {
                 // Defensive clamp on import: a level outside 1...maxLevel (a hand-edited
                 // or future-writer file) degrades to the nearest valid depth, never

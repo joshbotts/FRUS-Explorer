@@ -82,6 +82,11 @@ import Foundation
 ///          headings share ToC level 3 and are indistinguishable there. Opt-in trailing
 ///          colophon paragraph (`Colophon` style). The introduction needs no code here —
 ///          it arrives as the resolver's leading `.prose` item
+///   1.7 — Authoring Phase 5: opt-in headnote — a labeled paragraph plus italic-run
+///          abstract above the body (`headnoteXML`); a requested headnote with no stored
+///          summary renders a placeholder note. Footnote rendering here remains ungated
+///          (pre-existing behavior — this exporter never consumed the legacy
+///          `footnoteStyle`), so untouched collections export byte-identically
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -416,6 +421,13 @@ final class DocxCollectionExporter: CollectionExporter {
             body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
         }
 
+        // Headnote (Authoring Phase 5) — a labeled italic abstract above the body; a
+        // requested headnote with no stored summary renders the placeholder note
+        // (headnote resolution never generates on demand).
+        if doc.includeHeadnote {
+            body += headnoteXML(doc.headnoteText)
+        }
+
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
         switch doc.bodyDepth {
         case .full:
@@ -456,7 +468,7 @@ final class DocxCollectionExporter: CollectionExporter {
             break
         }
 
-        // Source note (footnoteStyle == .sourceNoteOnly)
+        // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
             body += styledPara("Source: \(escaped(sourceNote))", styleId: "DocURL")
         }
@@ -918,6 +930,36 @@ final class DocxCollectionExporter: CollectionExporter {
         + "      <w:pPr><w:pStyle w:val=\"\(styleId)\"/></w:pPr>\n"
         + "      \(runs)\n"
         + "    </w:p>\n"
+    }
+
+    /// Emits the headnote block (Authoring Phase 5): a small bold "Headnote" label
+    /// paragraph followed by the abstract in italic runs — or, when `text` is nil/empty
+    /// (a requested headnote with no stored summary), the italic placeholder note.
+    /// Paragraph breaks in the abstract split into separate paragraphs.
+    private func headnoteXML(_ text: String?) -> String {
+        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+        var xml = wPara(
+            runs: "<w:r><w:rPr><w:b/></w:rPr><w:t xml:space=\"preserve\">\(escaped(label))</w:t></w:r>",
+            styleId: "Normal")
+        let content: String
+        if let text, !text.isEmpty {
+            content = text
+        } else {
+            content = String(localized: "collection.headnote.missing",
+                             defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+        }
+        let paragraphs = content
+            .components(separatedBy: "\n\n")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        for para in paragraphs {
+            let flattened = para
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "\n", with: " ")
+            xml += wPara(
+                runs: "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">\(escaped(flattened))</w:t></w:r>",
+                styleId: "Normal")
+        }
+        return xml
     }
 
     private func researchNoteHeadingPara() -> String {
