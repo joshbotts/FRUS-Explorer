@@ -64,6 +64,12 @@ import SwiftUI
 ///          known — omitted from the ToC like prose; the stylesheet (`excerptCSS`) is
 ///          emitted ONLY when the item list contains an excerpt, so excerpt-free
 ///          collections keep exporting byte-identically
+///   1.6 — Authoring Phase 5 (overrides + related documents): footnote, highlight, and
+///          research-note gates honor the document's resolved per-entry override when
+///          present (`doc.x ?? options.x` — nil payloads keep the collection-level
+///          behavior bit-for-bit); a non-empty `relatedDocumentCitations` renders the
+///          "See also:" line after the source note, with its stylesheet (`relatedCSS`)
+///          emitted ONLY when some document carries the line
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -208,12 +214,15 @@ struct CollectionItemHTMLRenderer {
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
         switch doc.bodyDepth {
         case .full:
-            let includeFootnotes = options.includeFootnotes
+            // Phase 5 overrides: the per-entry/section value when resolved, else the
+            // collection-level option — untouched documents behave exactly as before.
+            let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
+            let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
             if let model = doc.renderModel {
                 body += FRUSRenderNodeHTMLSerializer().serialize(
                     model,
                     includeFootnotes: includeFootnotes,
-                    highlights: options.applyHighlights ? doc.highlights : []
+                    highlights: applyHighlights ? doc.highlights : []
                 )
             } else if !doc.bodyText.isEmpty {
                 let paragraphs = doc.bodyText
@@ -250,8 +259,18 @@ struct CollectionItemHTMLRenderer {
             body += "  <p class=\"source-note\"><strong>Source:</strong> \(escaped(sourceNote))</p>\n"
         }
 
-        // Research notes — respects options.includeNotes.
-        if options.includeNotes {
+        // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
+        // "See also:" citations; empty (every untouched entry) renders nothing.
+        if !doc.relatedDocumentCitations.isEmpty {
+            let label = String(localized: "collection.related.label", defaultValue: "See also:")
+            let joined = doc.relatedDocumentCitations
+                .map { markdownItalics(escaped($0)) }
+                .joined(separator: "; ")
+            body += "  <p class=\"see-also\"><strong>\(escaped(label))</strong> \(joined)</p>\n"
+        }
+
+        // Research notes — the per-entry override when resolved, else options.includeNotes.
+        if doc.includeNotesOverride ?? options.includeNotes {
             for note in doc.noteTexts where !note.isEmpty {
                 body += "  <aside class=\"research-note\">\n"
                 body += "    <strong>Research Note</strong>\n"
@@ -467,6 +486,9 @@ struct CollectionItemHTMLRenderer {
         // Excerpt styles (Authoring Phase 5) are appended ONLY when the item list
         // contains an excerpt — same byte-compat discipline again.
         let excerptStyles = Self.usesExcerpts(items: items) ? "\n" + Self.excerptCSS : ""
+        // Related-documents styles (Authoring Phase 5) are appended ONLY when some
+        // document carries a "See also:" line — same byte-compat discipline again.
+        let relatedStyles = Self.usesRelatedDocuments(items: items) ? "\n" + Self.relatedCSS : ""
         // Preview-only card styles are appended ONLY when a preview affordance is
         // configured; the export path interpolates an empty string here, keeping the
         // exported file byte-identical to the pre-preview output (v1.2).
@@ -479,7 +501,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(previewStyles)
+            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(relatedStyles)\(previewStyles)
           </style>
         </head>
         <body>
@@ -518,6 +540,15 @@ struct CollectionItemHTMLRenderer {
     static func usesExcerpts(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .excerpt = $0 { return true }
+            return false
+        }
+    }
+
+    /// `true` when some document carries a related-documents line (Authoring Phase 5).
+    /// Gates `relatedCSS` so a collection with none emits the exact prior stylesheet bytes.
+    static func usesRelatedDocuments(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            if case .document(let doc) = $0 { return !doc.relatedDocumentCitations.isEmpty }
             return false
         }
     }
@@ -759,6 +790,25 @@ struct CollectionItemHTMLRenderer {
     figure.excerpt-green  { border-left-color: #4fc74f; }
     figure.excerpt-blue   { border-left-color: #4f96f0; }
     figure.excerpt-pink   { border-left-color: #f04fa1; }
+    """
+
+    /// Related-documents styles (v1.6, Authoring Phase 5) — the "See also:" citation
+    /// line, visually paired with the source-note apparatus line above it. Emitted by
+    /// `pageHTML` **only when a document carries the line** (`usesRelatedDocuments`), so
+    /// a collection with none exports byte-identically to the prior output.
+    private static let relatedCSS = """
+    /* ── Related documents (Authoring Phase 5) ─────────────────────────────── */
+    .see-also {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .see-also strong {
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      color: #777;
+    }
     """
 
     /// Preview-only card styles (v1.2) — the citation-only card (volume not downloaded)

@@ -357,6 +357,16 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 ///   1.5 — Authoring Phase 5: added `includeHeadnote` + `headnoteText` (an opt-in italic
 ///          abstract above the body; a requested headnote with no stored summary renders
 ///          a placeholder note — headnote generation-on-demand is out of scope)
+///   1.6 — Authoring Phase 5 (overrides): added the resolved per-entry override trio
+///          `applyHighlightsOverride`/`includeNotesOverride`/`includeFootnotesOverride`
+///          (nil = inherit `options`, so renderers gate on `doc.x ?? options.x`),
+///          `summaryPromptIdOverride` (the effective prompt for `.summaryOnly`
+///          generation/lookup), and `relatedDocumentCitations` — the pre-resolved
+///          "See also:" line (decision A10). Carried on the document payload rather
+///          than a new `CollectionExportItem` case so the exporter contract is
+///          unchanged and every format renders the line inside the document section
+///          it belongs to. All defaulted, so existing construction sites — and every
+///          untouched collection — render byte-identically
 struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     let documentId: String
@@ -404,6 +414,31 @@ struct CollectionExportDocument: Sendable {
     /// The resolved headnote text — the chosen (or fallback) stored `GeneratedSummary`.
     /// Rendered as an italic abstract above the body when `includeHeadnote` is `true`.
     let headnoteText: String?
+    /// The entry/section highlight override resolved by the cascade (Authoring Phase 5).
+    /// `nil` = inherit — renderers gate inline highlights on
+    /// `applyHighlightsOverride ?? options.applyHighlights`, so the default reproduces
+    /// the collection-level behavior exactly.
+    let applyHighlightsOverride: Bool?
+    /// The entry/section research-notes override resolved by the cascade (Phase 5).
+    /// `nil` = inherit — renderers gate note blocks on
+    /// `includeNotesOverride ?? options.includeNotes`.
+    let includeNotesOverride: Bool?
+    /// The entry/section footnote override resolved by the cascade (Phase 5). `nil` =
+    /// inherit — gated where footnote rendering is gated (the shared HTML renderer /
+    /// preview) via `includeFootnotesOverride ?? options.includeFootnotes`; the
+    /// pre-existing PDF/DOCX footnote gap is deliberately unchanged.
+    let includeFootnotesOverride: Bool?
+    /// The entry/section summary-prompt override resolved by the cascade (Phase 5).
+    /// `nil` = inherit the collection's `summaryPromptId`. Drives which prompt's stored
+    /// summary attaches (preview) or generates (export) for a `.summaryOnly` body, and
+    /// the headnote fallback pick.
+    let summaryPromptIdOverride: UUID?
+    /// The resolved "See also:" citations (decision A10, Authoring Phase 5): documents
+    /// this one cross-references that are **also in the collection**, in collection
+    /// order, deduplicated, self excluded. Empty (the default, and whenever the entry's
+    /// `includeRelatedDocuments` resolves off) renders nothing — untouched collections
+    /// are byte-identical.
+    let relatedDocumentCitations: [String]
     /// Pre-built Zotero JSON item for `.zoteroJSON` export. `nil` if volume
     /// metadata was unavailable when this document was resolved.
     let zoteroItem: ZoteroJSONExporter.Item?
@@ -443,6 +478,11 @@ struct CollectionExportDocument: Sendable {
         sourceNoteText: String? = nil,
         includeHeadnote: Bool = false,
         headnoteText: String? = nil,
+        applyHighlightsOverride: Bool? = nil,
+        includeNotesOverride: Bool? = nil,
+        includeFootnotesOverride: Bool? = nil,
+        summaryPromptIdOverride: UUID? = nil,
+        relatedDocumentCitations: [String] = [],
         zoteroItem: ZoteroJSONExporter.Item? = nil
     ) {
         self.documentId = documentId
@@ -469,6 +509,11 @@ struct CollectionExportDocument: Sendable {
         self.sourceNoteText = sourceNoteText
         self.includeHeadnote = includeHeadnote
         self.headnoteText = headnoteText
+        self.applyHighlightsOverride = applyHighlightsOverride
+        self.includeNotesOverride = includeNotesOverride
+        self.includeFootnotesOverride = includeFootnotesOverride
+        self.summaryPromptIdOverride = summaryPromptIdOverride
+        self.relatedDocumentCitations = relatedDocumentCitations
         self.zoteroItem = zoteroItem
     }
 
@@ -483,6 +528,11 @@ struct CollectionExportDocument: Sendable {
             renderModel: renderModel, header: header, dateline: dateline,
             summaryText: text, highlights: highlights, sourceNoteText: sourceNoteText,
             includeHeadnote: includeHeadnote, headnoteText: headnoteText,
+            applyHighlightsOverride: applyHighlightsOverride,
+            includeNotesOverride: includeNotesOverride,
+            includeFootnotesOverride: includeFootnotesOverride,
+            summaryPromptIdOverride: summaryPromptIdOverride,
+            relatedDocumentCitations: relatedDocumentCitations,
             zoteroItem: zoteroItem)
     }
 }

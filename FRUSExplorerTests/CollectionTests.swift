@@ -1073,6 +1073,13 @@ struct CollectionTests {
         #expect(doc.highlights.first?.color == .green)
         #expect(doc.bodyDepth == .full)                      // collection default (no overrides exist)
         #expect(doc.summaryText == nil)
+        // Phase 5 overrides: synthetic smart entries carry none — smart collections
+        // keep collection-level behavior by construction.
+        #expect(doc.applyHighlightsOverride == nil)
+        #expect(doc.includeNotesOverride == nil)
+        #expect(doc.includeFootnotesOverride == nil)
+        #expect(doc.summaryPromptIdOverride == nil)
+        #expect(doc.relatedDocumentCitations.isEmpty)
 
         // The collection default body depth flows through — including .summaryOnly —
         // without any generation happening in the core pipeline.
@@ -1209,6 +1216,9 @@ struct CollectionTests {
             bodyText: "Contract body paragraph.",
             citation: "Contract Citation Label",
             historyStateGovURL: "https://history.state.gov/historicaldocuments/frusvol/d9",
+            // Phase 5: the related-documents payload rides the document (no new item
+            // case) — every rendering format must emit the "See also:" line.
+            relatedDocumentCitations: ["Related Contract Citation"],
             zoteroItem: zotero)
 
         let excerpt = CollectionExportExcerpt(
@@ -1247,6 +1257,10 @@ struct CollectionTests {
         #expect(html.contains("excerpt-block excerpt-green"))        // …styled + colour accent
         #expect(html.contains("class=\"excerpt-source\">Contract Excerpt Citation"))  // source line
         #expect(html.contains("figure.excerpt-block"))               // excerptCSS emitted when used
+        #expect(html.contains("class=\"see-also\""))                 // related-documents line
+        #expect(html.contains("See also:"))
+        #expect(html.contains("Related Contract Citation"))
+        #expect(html.contains(".see-also {"))                        // relatedCSS emitted when used
 
         // DOCX — the stored-mode ZIP keeps document.xml uncompressed, so the emitted XML
         // text appears verbatim in the archive bytes.
@@ -1262,6 +1276,8 @@ struct CollectionTests {
         #expect(docxContains("ExcerptQuote"))                        // …quote-styled paragraphs
         #expect(docxContains("Contract Excerpt Citation"))           // …source line (ExcerptSource)
         #expect(docxContains("ExcerptSource"))
+        #expect(docxContains("See also:"))                           // related-documents line
+        #expect(docxContains("Related Contract Citation"))
         // The ToC field's `\o` level range is content-driven (Phase 4 review fix): this
         // fixture's deepest authored heading is level 2, so the field must stay the exact
         // pre-Phase-4 `\o "1-2"` — because `\o` bounds the `\u` outline-level sweep, a
@@ -1291,6 +1307,8 @@ struct CollectionTests {
         #expect(pdfText.contains("Contract body paragraph."))       // .document body
         #expect(pdfText.contains("Contract excerpt passage."))      // .excerpt passage
         #expect(pdfText.contains("Contract Excerpt Citation"))      // …source line
+        #expect(pdfText.contains("See also:"))                      // related-documents line
+        #expect(pdfText.contains("Related Contract Citation"))
     }
 
     @Test("ExporterContract: Zotero RIS and BibTeX export the document and skip structural items")
@@ -1306,6 +1324,7 @@ struct CollectionTests {
         #expect(!ris.contains("Contract Part I"))
         #expect(!ris.contains("Editorial contract prose."))
         #expect(!ris.contains("Contract excerpt passage."))   // excerpts skipped by design
+        #expect(!ris.contains("Related Contract Citation"))   // related docs skipped too
 
         // BibTeX — same discipline; records are keyed volumeId_documentId.
         let bibURL = try await BibTeXCollectionExporter().export(metadata: metadata, items: items)
@@ -1315,6 +1334,7 @@ struct CollectionTests {
         #expect(!bib.contains("Contract Part I"))
         #expect(!bib.contains("Editorial contract prose."))
         #expect(!bib.contains("Contract excerpt passage."))   // excerpts skipped by design
+        #expect(!bib.contains("Related Contract Citation"))   // related docs skipped too
     }
 
     @Test("SharedRenderer: the HTML export file is byte-identical to CollectionItemHTMLRenderer.pageHTML")
@@ -1373,6 +1393,8 @@ struct CollectionTests {
         #expect(!page.contains("colophon"))
         #expect(!page.contains("headnote"))   // Phase 5 layer stays dormant too
         #expect(!page.contains("excerpt"))    // Phase 5 excerpt layer stays dormant too
+        #expect(!page.contains("see-also"))   // Phase 5 related-documents layer too
+        #expect(!page.contains("See also"))
         #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
     }
 
@@ -2054,7 +2076,13 @@ struct CollectionTests {
                       "includeHeadnote", "headnoteSummaryId",
                       // Phase 5 excerpt anchors — likewise absent.
                       "excerptStart", "excerptEnd",
-                      "excerptRenderingVersion", "excerptColorTag"] {
+                      "excerptRenderingVersion", "excerptColorTag",
+                      // Phase 5 per-entry overrides — likewise absent…
+                      "applyHighlightsOverride", "includeNotesOverride",
+                      "includeSourceNoteOverride", "includeFootnotesOverride",
+                      "summaryPromptIdOverride", "includeRelatedDocuments",
+                      // …and selectedHighlightIds NEVER serializes, in any file.
+                      "selectedHighlightIds"] {
             #expect(!json.contains("\"\(v2Key)\""), "write-minimum file must not carry '\(v2Key)'")
         }
 
@@ -2480,6 +2508,303 @@ struct CollectionTests {
         #expect(makeFile().formatVersion == 2)
         d.headnoteSummaryId = nil
         #expect(makeFile().formatVersion == 1)
+
+        d.applyHighlightsOverride = true                   // any override → v2
+        #expect(makeFile().formatVersion == 2)
+        d.applyHighlightsOverride = nil
+        #expect(makeFile().formatVersion == 1)
+
+        d.includeRelatedDocuments = true                   // the A10 opt-in → v2
+        #expect(makeFile().formatVersion == 2)
+        d.includeRelatedDocuments = nil
+        #expect(makeFile().formatVersion == 1)
+
+        // selectedHighlightIds alone must NOT flip the file: it never serializes
+        // (device-local highlight UUIDs — the highlights don't travel with the file).
+        d.selectedHighlightIds = [UUID()]
+        #expect(makeFile().formatVersion == 1)
+        d.selectedHighlightIds = []
+    }
+
+    // MARK: - Override cascade + related documents (Authoring Phase 5)
+
+    @Test("Outline generic cascade: a deeper heading's value shadows a shallower ancestor's; a valueless sibling resets to the ancestor; typed values, one walk per field")
+    func outlineGenericOverrideCascade() {
+        func heading(_ level: Int) -> CollectionOutline.StructuralRef {
+            .init(isHeading: true, level: level, bodyDepthOverride: nil)
+        }
+        let doc = CollectionOutline.StructuralRef(isHeading: false, level: 1,
+                                                  bodyDepthOverride: nil)
+        // H1(l1,true) H2(l2,false) doc H3(l2,nil) doc H4(l1,nil) doc
+        let refs = [heading(1), heading(2), doc, heading(2), doc, heading(1), doc]
+        let values: [Bool?] = [true, false, nil, nil, nil, nil, nil]
+        let resolved = CollectionOutline.sectionOverrideValues(refs, headingValues: values)
+        #expect(resolved == [true, false, false, true, true, nil, nil])
+
+        // The body-depth cascade is the same core (delegation check).
+        let depthRefs = [
+            CollectionOutline.StructuralRef(isHeading: true, level: 1, bodyDepthOverride: "index"),
+            doc,
+            CollectionOutline.StructuralRef(isHeading: true, level: 1, bodyDepthOverride: nil),
+            doc,
+        ]
+        #expect(CollectionOutline.sectionBodyDepthOverrides(depthRefs) ==
+                ["index", "index", nil, nil])
+    }
+
+    @Test("Override cascade: entry beats section beats collection, per field — resolved through the one resolver pipeline")
+    @MainActor
+    func overrideCascadeResolution() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let promptB = UUID()
+        let promptC = UUID()
+        let coll = Collection(name: "Cascade")
+        coll.defaultBodyDepth = "full"
+        coll.applyHighlights = false          // collection default: highlights off
+        context.insert(coll)
+
+        // One highlight each on d1 and d2, so the highlight gate is observable.
+        for did in ["d1", "d2"] {
+            context.insert(DocumentHighlight(
+                volumeId: "cascvol", documentId: did,
+                startOffset: 0, endOffset: 4,
+                colorTag: "yellow", selectedText: "text",
+                renderingVersion: "cascade000000000"))
+        }
+
+        // d0 precedes every heading: pure collection defaults.
+        let d0 = CollectionEntry(collectionId: coll.id, documentId: "d0",
+                                 volumeId: "cascvol", sortOrder: 0)
+        // The heading sets section defaults for everything below it.
+        let h = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "",
+                                sortOrder: 1)
+        h.entryKind = .heading
+        h.text = "Part I"
+        h.applyHighlightsOverride = true
+        h.includeNotesOverride = false
+        h.includeFootnotesOverride = false
+        h.summaryPromptIdOverride = promptB
+        // d1 has no overrides of its own: the section's apply.
+        let d1 = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                 volumeId: "cascvol", sortOrder: 2)
+        // d2 sets its own: the entry beats the section.
+        let d2 = CollectionEntry(collectionId: coll.id, documentId: "d2",
+                                 volumeId: "cascvol", sortOrder: 3)
+        d2.applyHighlightsOverride = false
+        d2.includeFootnotesOverride = true
+        d2.summaryPromptIdOverride = promptC
+        for entry in [d0, h, d1, d2] { context.insert(entry) }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(collection: coll, entries: [d0, h, d1, d2],
+                                               allNotes: [], purpose: .preview)
+        let docs = items.documents
+        try #require(docs.count == 3)
+
+        // d0: nothing resolved anywhere — payload overrides nil, collection gates apply.
+        #expect(docs[0].applyHighlightsOverride == nil)
+        #expect(docs[0].includeNotesOverride == nil)
+        #expect(docs[0].includeFootnotesOverride == nil)
+        #expect(docs[0].summaryPromptIdOverride == nil)
+        #expect(docs[0].highlights.isEmpty)               // collection applyHighlights false
+
+        // d1: the section defaults apply — including the highlight fetch itself.
+        #expect(docs[1].applyHighlightsOverride == true)
+        #expect(docs[1].includeNotesOverride == false)
+        #expect(docs[1].includeFootnotesOverride == false)
+        #expect(docs[1].summaryPromptIdOverride == promptB)
+        #expect(docs[1].highlights.count == 1)            // section turned highlights on
+
+        // d2: its own overrides beat the section's.
+        #expect(docs[2].applyHighlightsOverride == false)
+        #expect(docs[2].includeFootnotesOverride == true)
+        #expect(docs[2].summaryPromptIdOverride == promptC)
+        #expect(docs[2].highlights.isEmpty)               // entry turned highlights back off
+        #expect(docs[2].includeNotesOverride == false)    // un-overridden field: section's
+    }
+
+    @Test("Per-highlight selection (A8): selectedHighlightIds filter the injected set; empty means all; stale ids just filter")
+    @MainActor
+    func selectedHighlightFiltering() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Selection")
+        coll.defaultBodyDepth = "full"
+        coll.applyHighlights = true
+        context.insert(coll)
+
+        var highlights: [DocumentHighlight] = []
+        for (i, offset) in [0, 10, 20].enumerated() {
+            let hl = DocumentHighlight(
+                volumeId: "selvol", documentId: "d1",
+                startOffset: offset, endOffset: offset + 4,
+                colorTag: i == 1 ? "green" : "yellow",
+                selectedText: "pass", renderingVersion: "selection0000000")
+            context.insert(hl)
+            highlights.append(hl)
+        }
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                    volumeId: "selvol", sortOrder: 0)
+        context.insert(entry)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+
+        // Empty selection = all highlights (the pre-override behavior).
+        let all = try await resolver.resolve(collection: coll, entries: [entry],
+                                             allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(all[0])).highlights.count == 3)
+
+        // A subset selection filters to exactly those highlights.
+        entry.selectedHighlightIds = [highlights[0].id, highlights[2].id]
+        let subset = try await resolver.resolve(collection: coll, entries: [entry],
+                                                allNotes: [], purpose: .preview)
+        let picked = try #require(docPayload(subset[0])).highlights
+        #expect(picked.count == 2)
+        #expect(Set(picked.map(\.startOffset)) == [0, 20])
+
+        // Stale ids (deleted/unsynced highlights) simply filter — never crash, never all.
+        entry.selectedHighlightIds = [UUID()]
+        let stale = try await resolver.resolve(collection: coll, entries: [entry],
+                                               allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(stale[0])).highlights.isEmpty)
+    }
+
+    @Test("Related documents (A10): only in-collection targets survive, in collection order, deduplicated, self excluded")
+    func relatedDocumentsInCollectionOnly() {
+        let membership: [(volumeId: String, documentId: String)] = [
+            ("v1", "d1"), ("v1", "d2"), ("v2", "d5"), ("v1", "d9"),
+        ]
+        // Outbound edges from v1/d1: an in-collection target twice (dedupe), a target
+        // outside the collection (dropped), itself (excluded), and a later member.
+        let targets: [(volumeId: String, documentId: String)] = [
+            ("v1", "d9"), ("v3", "d7"), ("v1", "d1"), ("v1", "d2"), ("v1", "d2"),
+        ]
+        let related = CollectionContentResolver.relatedDocumentTargets(
+            outboundTargets: targets,
+            selfVolumeId: "v1", selfDocumentId: "d1",
+            collectionDocuments: membership)
+        #expect(related.map { "\($0.volumeId)/\($0.documentId)" } == ["v1/d2", "v1/d9"])
+
+        // No outbound edges → empty; a document not in the membership referencing
+        // members still yields collection-ordered results.
+        #expect(CollectionContentResolver.relatedDocumentTargets(
+            outboundTargets: [], selfVolumeId: "v1", selfDocumentId: "d1",
+            collectionDocuments: membership).isEmpty)
+    }
+
+    @Test("Summary prompt override: the effective prompt picks the stored summary per entry; un-overridden entries keep the collection prompt")
+    @MainActor
+    func summaryPromptOverridePick() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let promptA = UUID()
+        let promptB = UUID()
+        let coll = Collection(name: "Prompts")
+        coll.defaultBodyDepth = "summaryOnly"
+        coll.summaryPromptId = promptA
+        context.insert(coll)
+
+        context.insert(GeneratedSummary(documentId: "d1", volumeId: "provol",
+                                        promptId: promptA, responseText: "Prompt A summary."))
+        context.insert(GeneratedSummary(documentId: "d2", volumeId: "provol",
+                                        promptId: promptA, responseText: "Prompt A other."))
+        context.insert(GeneratedSummary(documentId: "d2", volumeId: "provol",
+                                        promptId: promptB, responseText: "Prompt B summary."))
+
+        let e1 = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                 volumeId: "provol", sortOrder: 0)
+        let e2 = CollectionEntry(collectionId: coll.id, documentId: "d2",
+                                 volumeId: "provol", sortOrder: 1)
+        e2.summaryPromptIdOverride = promptB
+        context.insert(e1)
+        context.insert(e2)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(collection: coll, entries: [e1, e2],
+                                               allNotes: [], purpose: .preview)
+        let docs = items.documents
+        try #require(docs.count == 2)
+        #expect(docs[0].summaryText == "Prompt A summary.")   // collection prompt
+        #expect(docs[1].summaryText == "Prompt B summary.")   // entry override wins
+        #expect(docs[1].summaryPromptIdOverride == promptB)
+    }
+
+    @Test("NativeFormat overrides: the six override keys round-trip on documents and headings; selectedHighlightIds never serializes and imports empty")
+    func nativeOverrideRoundTrip() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+
+        let promptId = UUID()
+        let highlightId = UUID()
+        let coll = Collection(name: "Overrides")
+        ctx.insert(coll)
+        let h = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "",
+                                sortOrder: 0)
+        h.entryKind = .heading
+        h.text = "Part I"
+        h.includeNotesOverride = false
+        h.includeRelatedDocuments = true
+        h.collection = coll
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1",
+                                sortOrder: 1)
+        d.applyHighlightsOverride = true
+        d.includeSourceNoteOverride = true
+        d.includeFootnotesOverride = false
+        d.summaryPromptIdOverride = promptId
+        d.selectedHighlightIds = [highlightId]     // device-local: must NOT travel
+        d.collection = coll
+        ctx.insert(h); ctx.insert(d)
+        try ctx.save()
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(file.formatVersion == 2)            // overrides are a v2 feature
+        #expect(file.minimumReaderVersion == 1)     // …but degradable: floor stays 1
+
+        let data = try NativeCollectionSerializer.encode(file)
+        let json = String(decoding: data, as: UTF8.self)
+        for key in ["applyHighlightsOverride", "includeNotesOverride",
+                    "includeSourceNoteOverride", "includeFootnotesOverride",
+                    "summaryPromptIdOverride", "includeRelatedDocuments"] {
+            #expect(json.contains("\"\(key)\""), "override key '\(key)' should serialize")
+        }
+        // The highlight-UUID-leak guard: no key, no value.
+        #expect(!json.contains("selectedHighlightIds"))
+        #expect(!json.contains(highlightId.uuidString))
+
+        // Import onto a fresh store: overrides reconstruct; the highlight selection
+        // resets to empty = all-of-the-recipient's-highlights semantics.
+        let container2 = try ModelContainer.makeTestContainer()
+        let ctx2 = ModelContext(container2)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(data), into: ctx2)
+        try ctx2.save()
+        let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        try #require(entries.count == 2)
+        #expect(entries[0].entryKind == .heading)
+        #expect(entries[0].includeNotesOverride == false)
+        #expect(entries[0].includeRelatedDocuments == true)
+        #expect(entries[0].applyHighlightsOverride == nil)
+        #expect(entries[1].applyHighlightsOverride == true)
+        #expect(entries[1].includeSourceNoteOverride == true)
+        #expect(entries[1].includeFootnotesOverride == false)
+        #expect(entries[1].summaryPromptIdOverride == promptId)
+        #expect(entries[1].selectedHighlightIds.isEmpty)
+
+        // Export → import → export is byte-identical (round-trip invariant).
+        let file2 = NativeCollectionSerializer.makeFile(
+            from: imported, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(try NativeCollectionSerializer.encode(file2) == data)
     }
 
     // MARK: - Excerpt entries (Authoring Phase 5)

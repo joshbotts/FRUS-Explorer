@@ -92,6 +92,12 @@ import Foundation
 ///          `ExcerptSource` source-citation paragraph. The two styles join `stylesXML`
 ///          unconditionally — the same dormant-style precedent as the Phase 4 cover
 ///          styles; an excerpt-free document.xml is unchanged
+///   1.9 — Authoring Phase 5 (overrides + related documents): the highlight and
+///          research-note gates honor the document's resolved per-entry override
+///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
+///          non-empty `relatedDocumentCitations` emits a "See also:" paragraph after
+///          the source note (existing `DocURL` style — no new dormant style needed).
+///          Footnote rendering remains ungated (the pre-existing gap, unchanged)
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -462,8 +468,11 @@ final class DocxCollectionExporter: CollectionExporter {
                 // model's body nodes (see `ExportHighlight`); the plain
                 // `bodyText` paragraph-splitting fallback below uses a
                 // different extraction path, so painting only applies here.
+                // Phase 5: the per-entry/section override when resolved, else the
+                // collection-level option.
+                let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
                 let tracker: HighlightPaintTracker? =
-                    (options.applyHighlights && !doc.highlights.isEmpty)
+                    (applyHighlights && !doc.highlights.isEmpty)
                         ? HighlightPaintTracker(doc.highlights)
                         : nil
                 body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker)
@@ -499,8 +508,17 @@ final class DocxCollectionExporter: CollectionExporter {
             body += styledPara("Source: \(escaped(sourceNote))", styleId: "DocURL")
         }
 
-        // Research notes — respects options.includeNotes.
-        guard options.includeNotes else { return body }
+        // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
+        // "See also:" citations; empty (every untouched entry) emits nothing. Reuses
+        // the DocURL apparatus style, so styles.xml is unchanged.
+        if !doc.relatedDocumentCitations.isEmpty {
+            let label = String(localized: "collection.related.label", defaultValue: "See also:")
+            let joined = doc.relatedDocumentCitations.joined(separator: "; ")
+            body += markdownItalicRuns("\(label) \(joined)", styleId: "DocURL")
+        }
+
+        // Research notes — the per-entry override when resolved, else options.includeNotes.
+        guard doc.includeNotesOverride ?? options.includeNotes else { return body }
         for note in doc.noteTexts where !note.isEmpty {
             body += researchNoteHeadingPara()
             let noteParagraphs = note

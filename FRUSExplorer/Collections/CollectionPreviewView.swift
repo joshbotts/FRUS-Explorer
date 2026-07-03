@@ -75,6 +75,12 @@ import WebKit
 ///          anchor fields (`excerptStart`/`excerptEnd`/`excerptRenderingVersion`/
 ///          `excerptColorTag`); excerpt rendering itself arrives free via the shared
 ///          `CollectionItemHTMLRenderer`
+///   1.3 — Authoring Phase 5 (overrides): the fingerprint covers the per-entry override
+///          fields (`applyHighlightsOverride`/`includeNotesOverride`/
+///          `includeSourceNoteOverride`/`includeFootnotesOverride`/
+///          `summaryPromptIdOverride`/`selectedHighlightIds`/`includeRelatedDocuments`),
+///          so toggling any inspector override live-refreshes the page; the rendering
+///          itself arrives via the shared renderer and resolver cascade
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -195,6 +201,14 @@ struct CollectionPreviewView: View {
             hasher.combine(entry.excerptEnd)
             hasher.combine(entry.excerptRenderingVersion)
             hasher.combine(entry.excerptColorTag)
+            // Phase 5 per-entry overrides — toggling any inspector override refreshes.
+            hasher.combine(entry.applyHighlightsOverride)
+            hasher.combine(entry.includeNotesOverride)
+            hasher.combine(entry.includeSourceNoteOverride)
+            hasher.combine(entry.includeFootnotesOverride)
+            hasher.combine(entry.summaryPromptIdOverride)
+            hasher.combine(entry.selectedHighlightIds)
+            hasher.combine(entry.includeRelatedDocuments)
         }
         hasher.combine(renderAll)
         hasher.combine(refreshToken)

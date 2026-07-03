@@ -74,6 +74,12 @@ import CoreText
 ///          flow as a quote-styled block — indented italic passage with a colour accent
 ///          bar when the source highlight's colour is known, followed by the
 ///          source-citation line — and are omitted from the cover ToC like prose
+///   1.12 — Authoring Phase 5 (overrides + related documents): the highlight and
+///          research-note gates honor the document's resolved per-entry override
+///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
+///          non-empty `relatedDocumentCitations` appends a small "See also:" line to
+///          the body flow (paginating with it). Footnote rendering remains ungated
+///          (the pre-existing gap, unchanged)
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -486,7 +492,10 @@ final class PDFCollectionExporter: CollectionExporter {
                 // body nodes (see `ExportHighlight`); the plain `bodyText` fallback
                 // below uses a different extraction path, so painting is only valid
                 // when a render model is present.
-                highlightPaint = (options.applyHighlights && !doc.highlights.isEmpty)
+                // Phase 5: the per-entry/section override when resolved, else the
+                // collection-level option.
+                let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
+                highlightPaint = (applyHighlights && !doc.highlights.isEmpty)
                     ? HighlightPaintTracker(doc.highlights)
                     : nil
                 bodyAttrStr = renderModelToAttributedString(model)
@@ -526,9 +535,27 @@ final class PDFCollectionExporter: CollectionExporter {
         // no stored summary renders the placeholder note (never generated on demand).
         // Prepending shifts the painted highlight attribute ranges with their text, so
         // highlight shading stays aligned.
-        let composedBody = doc.includeHeadnote
+        let headnotedBody = doc.includeHeadnote
             ? headnoteAttributedString(doc.headnoteText, thenBody: bodyAttrStr)
             : bodyAttrStr
+
+        // Related documents (A10, Authoring Phase 5): a small trailing "See also:" line
+        // appended to the body flow so it paginates with it; empty (every untouched
+        // entry) leaves the flow byte-identical. Appending (after the body) leaves the
+        // painted highlight attribute ranges unshifted.
+        let composedBody: NSAttributedString
+        if doc.relatedDocumentCitations.isEmpty {
+            composedBody = headnotedBody
+        } else {
+            let label = String(localized: "collection.related.label", defaultValue: "See also:")
+            let joined = doc.relatedDocumentCitations.joined(separator: "; ")
+            let combined = NSMutableAttributedString(attributedString: headnotedBody)
+            combined.append(NSAttributedString(string: "\n\n",
+                                               attributes: makeAttrs(fontSize: 4, bold: false)))
+            // noteAttributedString renders _text_ citation spans as italics.
+            combined.append(noteAttributedString("\(label) \(joined)", fontSize: 9, gray: 0.45))
+            composedBody = combined
+        }
 
         if composedBody.length > 0 {
             let framesetter = CTFramesetterCreateWithAttributedString(composedBody)
@@ -574,8 +601,9 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.endPDFPage()
         pageNumber += 1
 
-        // ── Research note pages (one per note, respects options.includeNotes) ─
-        guard options.includeNotes else { return }
+        // ── Research note pages (one per note; the per-entry override when resolved,
+        //    else options.includeNotes — Phase 5) ─
+        guard doc.includeNotesOverride ?? options.includeNotes else { return }
         for note in doc.noteTexts where !note.isEmpty {
             ctx.beginPDFPage(nil)
             var ny = H - M

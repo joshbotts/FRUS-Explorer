@@ -347,6 +347,15 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          source highlight/selection at creation. Per decision A9 the frozen `text`
 ///          is the rendering source of truth today; the anchors make precision slicing
 ///          a later rendering-only flip
+///   1.10 — Authoring Phase 5 (overrides): per-entry composition overrides —
+///          `applyHighlightsOverride`, `includeNotesOverride`, `includeSourceNoteOverride`,
+///          `includeFootnotesOverride`, `summaryPromptIdOverride`, `selectedHighlightIds`
+///          (A8), and `includeRelatedDocuments` (A10). All optional-or-defaulted;
+///          `nil`/empty on every existing entry, reproducing pre-override behavior
+///          exactly. On a `.heading` entry the same fields act as **section-level
+///          defaults** for the documents it owns. Resolution happens in exactly one
+///          place — `CollectionContentResolver`, via the `CollectionOutline` ancestor
+///          cascade (entry override → nearest ancestor heading → collection default)
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -422,6 +431,67 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     /// default", letting a single collection mix full documents, summaries, and citation-only
     /// entries into one product (Collections rework Phase 1b).
     var bodyDepthOverride: String? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Composition Overrides (Authoring Phase 5)
+
+    /// Per-entry override of the collection's `applyHighlights` composition flag.
+    /// `nil` (every existing entry) inherits — the nearest ancestor heading's override
+    /// when one is set, else the collection default. On a `.heading` entry this is the
+    /// section-level default for the documents it owns. Resolved only by
+    /// `CollectionContentResolver` via the `CollectionOutline` cascade.
+    var applyHighlightsOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's `includeNotes` composition flag
+    /// (`nil` = inherit; section default on headings — see `applyHighlightsOverride`).
+    var includeNotesOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's effective include-source-note flag
+    /// (`nil` = inherit; section default on headings — see `applyHighlightsOverride`).
+    var includeSourceNoteOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's effective include-footnotes flag
+    /// (`nil` = inherit; section default on headings — see `applyHighlightsOverride`).
+    /// Like the collection-level flag, footnote gating applies where footnote rendering
+    /// is gated — the shared HTML renderer and the live preview (the PDF/DOCX footnote
+    /// gap predates this field and is deliberately unchanged).
+    var includeFootnotesOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's `summaryPromptId` — which summarization
+    /// prompt supplies this document's `.summaryOnly` body and headnote-fallback pick.
+    /// `nil` = inherit (section default on headings — see `applyHighlightsOverride`).
+    var summaryPromptIdOverride: UUID? {
+        didSet { lastModified = .now }
+    }
+
+    /// IDs of the `DocumentHighlight` records to include when highlights apply to this
+    /// entry (decision A8, mirroring `selectedNoteIds`). **Empty means all highlights**
+    /// — the pre-override behavior — so every existing entry is unchanged. Highlight ids
+    /// are meaningful across the author's own CloudKit-synced devices; they are
+    /// deliberately **never serialized into `.fruscollection` files** (the referenced
+    /// highlights don't travel, so a recipient's export falls back to all-their-highlights
+    /// semantics).
+    var selectedHighlightIds: [UUID] = [] {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry opt-in for the related-documents line (decision A10): when it resolves
+    /// `true`, exports append a "See also:" citation line listing the documents this one
+    /// cross-references **that are also in the collection** (in-collection targets only —
+    /// bounded and meaningful, never the full cross-reference fan-out). `nil` (every
+    /// existing entry) inherits the nearest ancestor heading's value, else **off** — the
+    /// collection has no related-documents default, so untouched collections are
+    /// unchanged. Section default on headings — see `applyHighlightsOverride`.
+    var includeRelatedDocuments: Bool? {
         didSet { lastModified = .now }
     }
 

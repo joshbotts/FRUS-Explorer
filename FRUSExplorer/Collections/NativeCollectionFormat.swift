@@ -61,6 +61,16 @@ extension UTType {
 ///          never device-local highlight UUIDs.** A pre-excerpt reader skips the unknown
 ///          kind (degraded, not corrupted); any excerpt forces the file to v2, so v1
 ///          readers never see one
+///   2.3 — Authoring Phase 5 (overrides; still formatVersion 2, floor stays 1): the
+///          per-entry override keys `applyHighlightsOverride`/`includeNotesOverride`/
+///          `includeSourceNoteOverride`/`includeFootnotesOverride`/
+///          `summaryPromptIdOverride`/`includeRelatedDocuments` on document AND heading
+///          entries (heading = section defaults). A reader ignoring them degrades to
+///          collection-level composition — never corrupts, so the floor stays 1.
+///          `selectedHighlightIds` is **deliberately NOT serialized**: those are
+///          device-local `DocumentHighlight` UUIDs, and the referenced highlights don't
+///          travel in the file — a recipient's export falls back to
+///          all-their-highlights semantics (the field's documented empty-set meaning)
 struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
@@ -171,6 +181,24 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// The source highlight's colour raw value (`"yellow"`/`"green"`/`"blue"`/
         /// `"pink"`; excerpt entries only; v2 optional key) — the quote's accent colour.
         var excerptColorTag: String?
+        /// Per-entry highlight override (Phase 5 overrides; v2 optional key; document
+        /// and heading entries — a heading's is its section default). `nil` = inherit.
+        var applyHighlightsOverride: Bool?
+        /// Per-entry research-notes override (Phase 5 overrides; v2 optional key).
+        var includeNotesOverride: Bool?
+        /// Per-entry source-note override (Phase 5 overrides; v2 optional key).
+        var includeSourceNoteOverride: Bool?
+        /// Per-entry footnote override (Phase 5 overrides; v2 optional key).
+        var includeFootnotesOverride: Bool?
+        /// Per-entry summary-prompt override (Phase 5 overrides; v2 optional key).
+        /// Like `headnoteSummaryId`, prompt ids are meaningful across the author's own
+        /// CloudKit-synced devices; on another user's device the id simply won't
+        /// resolve and the collection-level prompt behavior applies.
+        var summaryPromptIdOverride: UUID?
+        /// Per-entry related-documents opt-in (A10; v2 optional key). `nil` = inherit
+        /// (ultimately off). NOTE: `selectedHighlightIds` has **no** key here by design
+        /// — device-local highlight UUIDs never serialize (see the 2.3 version note).
+        var includeRelatedDocuments: Bool?
         /// Inline research-note texts for this document (opt-in — populated only when the
         /// exporter's "include my research notes" toggle is on). `nil`/absent otherwise.
         var notes: [String]?
@@ -228,6 +256,13 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          any excerpt forces v2 (`usesV2Features`), and a reader that doesn't know
 ///          the kind skips it under the Phase 1 skip-with-warning rule; `apply`
 ///          reconstructs excerpt entries with their anchors
+///   1.5 — Authoring Phase 5 (overrides): the six per-entry override keys ride v2 on
+///          document and heading entries (no bump, floor stays 1 — ignored overrides
+///          degrade to collection composition); `usesV2Features` extended so untouched
+///          collections keep emitting byte-identical v1 files; `apply` reconstructs
+///          them. `selectedHighlightIds` is intentionally omitted from files — the
+///          device-local highlights it references don't travel, so a recipient's
+///          export uses all-their-highlights semantics
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -327,6 +362,15 @@ enum NativeCollectionSerializer {
                         // a headnote-free entry carries no v2 key at all.
                         includeHeadnote: entry.includeHeadnote ? true : nil,
                         headnoteSummaryId: entry.headnoteSummaryId,
+                        // Phase 5 override keys — nil (every untouched entry) emits
+                        // nothing. selectedHighlightIds NEVER serializes (device-local
+                        // highlight UUIDs; the highlights don't travel with the file).
+                        applyHighlightsOverride: entry.applyHighlightsOverride,
+                        includeNotesOverride: entry.includeNotesOverride,
+                        includeSourceNoteOverride: entry.includeSourceNoteOverride,
+                        includeFootnotesOverride: entry.includeFootnotesOverride,
+                        summaryPromptIdOverride: entry.summaryPromptIdOverride,
+                        includeRelatedDocuments: entry.includeRelatedDocuments,
                         notes: notes.isEmpty ? nil : notes
                     )
                 case .heading:
@@ -340,6 +384,13 @@ enum NativeCollectionSerializer {
                         level: item.depth == 1 ? nil : item.depth,
                         text: entry.text,
                         richText: nil,
+                        // Phase 5 override keys — a heading's are its section defaults.
+                        applyHighlightsOverride: entry.applyHighlightsOverride,
+                        includeNotesOverride: entry.includeNotesOverride,
+                        includeSourceNoteOverride: entry.includeSourceNoteOverride,
+                        includeFootnotesOverride: entry.includeFootnotesOverride,
+                        summaryPromptIdOverride: entry.summaryPromptIdOverride,
+                        includeRelatedDocuments: entry.includeRelatedDocuments,
                         notes: nil
                     )
                 case .prose:
@@ -390,8 +441,9 @@ enum NativeCollectionSerializer {
 
         // Write-minimum: computed from content, never hardcoded. Any front-matter field
         // set, a colophon opt-in, any heading deeper than level 1, any member of the
-        // Phase 5 footnote Bool pair, any headnote request/pick, or any excerpt entry
-        // requires v2 (so a v1-only reader can never see an excerpt kind).
+        // Phase 5 footnote Bool pair, any headnote request/pick, any excerpt entry
+        // (so a v1-only reader can never see an excerpt kind), or any per-entry
+        // override requires v2.
         let usesV2Features = subtitle != nil
             || authorLine != nil
             || introductionText != nil
@@ -402,6 +454,14 @@ enum NativeCollectionSerializer {
             || composition.includeSourceNote != nil
             || entries.contains { $0.includeHeadnote == true || $0.headnoteSummaryId != nil }
             || entries.contains { $0.kind == CollectionEntryKind.excerpt.rawValue }
+            || entries.contains {
+                $0.applyHighlightsOverride != nil
+                    || $0.includeNotesOverride != nil
+                    || $0.includeSourceNoteOverride != nil
+                    || $0.includeFootnotesOverride != nil
+                    || $0.summaryPromptIdOverride != nil
+                    || $0.includeRelatedDocuments != nil
+            }
 
         guard usesV2Features else {
             // No v2 feature: a pure v1 file, byte-identical to a pre-Phase-4 export
@@ -490,6 +550,18 @@ enum NativeCollectionSerializer {
                 // Phase 5 headnote keys (absent in older files → the model defaults).
                 entry.includeHeadnote = dto.includeHeadnote ?? false
                 entry.headnoteSummaryId = dto.headnoteSummaryId
+            }
+            if kind == .document || kind == .heading {
+                // Phase 5 override keys (absent → nil, i.e. inherit — the model
+                // defaults). A heading's are its section defaults. selectedHighlightIds
+                // has no file key: the imported entry keeps the default empty set,
+                // which means "all of the recipient's highlights" when highlights apply.
+                entry.applyHighlightsOverride = dto.applyHighlightsOverride
+                entry.includeNotesOverride = dto.includeNotesOverride
+                entry.includeSourceNoteOverride = dto.includeSourceNoteOverride
+                entry.includeFootnotesOverride = dto.includeFootnotesOverride
+                entry.summaryPromptIdOverride = dto.summaryPromptIdOverride
+                entry.includeRelatedDocuments = dto.includeRelatedDocuments
             }
             if kind == .excerpt {
                 // Phase 5 excerpt anchors (content + provenance travel on the shared

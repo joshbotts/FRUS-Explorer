@@ -31,6 +31,10 @@ import SwiftUI
 ///          collapse chevron, and the section context menu (rename / indent / outdent /
 ///          delete-heading-only vs delete-section-with-confirmation); the inline trash
 ///          became `showsInlineDelete` (macOS) with `onDelete` reused by the menu
+///   1.2 — Authoring Phase 5 (overrides): "Section Details…" context-menu item presents
+///          the `CollectionEntryInspector` heading variant — the section-defaults
+///          control surface (highlights / notes / source note / footnotes / summary
+///          prompt / related documents), cascading to the section's documents
 ///   (file) Authoring Phase 5 (excerpts): `CollectionExcerptRow` added below
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
@@ -67,6 +71,10 @@ struct CollectionHeadingRow: View {
     @FocusState private var titleFocused: Bool
     /// Presents the Delete Section confirmation dialog.
     @State private var confirmDeleteSection = false
+    /// Presents the section-defaults inspector (Authoring Phase 5).
+    @State private var showSectionInspector = false
+
+    @Environment(AppState.self) private var appState
 
     /// The section's body-depth override (`nil` = documents follow the collection default).
     private var sectionDepth: Binding<String?> {
@@ -123,6 +131,19 @@ struct CollectionHeadingRow: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
+                // Section-defaults inspector (Authoring Phase 5): the heading variant of
+                // the entry inspector, cascading overrides to the section's documents.
+                Button {
+                    showSectionInspector = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "collection.section.inspect",
+                                           defaultValue: "Section defaults"))
+                .help(String(localized: "collection.section.inspect.help",
+                             defaultValue: "Set export defaults for every document in this section"))
                 structuralDeleteButton(showsInlineDelete ? onDelete : nil)
             }
             // Section body depth — applied to documents under this heading (Phase 3c).
@@ -138,6 +159,10 @@ struct CollectionHeadingRow: View {
         }
         .padding(.vertical, 4)
         .contextMenu { sectionContextMenu }
+        .sheet(isPresented: $showSectionInspector) {
+            CollectionEntryInspector(entry: entry)
+                .environment(appState)
+        }
         .confirmationDialog(
             String(localized: "collection.section.delete.confirm.title",
                    defaultValue: "Delete Section?"),
@@ -156,7 +181,8 @@ struct CollectionHeadingRow: View {
         }
     }
 
-    /// The section context menu: rename, indent/outdent, and the two delete flavors.
+    /// The section context menu: rename, section defaults, indent/outdent, and the two
+    /// delete flavors.
     @ViewBuilder
     private var sectionContextMenu: some View {
         Button {
@@ -164,6 +190,13 @@ struct CollectionHeadingRow: View {
         } label: {
             Label(String(localized: "collection.section.rename", defaultValue: "Rename"),
                   systemImage: "pencil")
+        }
+        Button {
+            showSectionInspector = true
+        } label: {
+            Label(String(localized: "collection.section.defaults",
+                         defaultValue: "Section Defaults…"),
+                  systemImage: "slider.horizontal.3")
         }
         if let onIndent {
             Button(action: onIndent) {
