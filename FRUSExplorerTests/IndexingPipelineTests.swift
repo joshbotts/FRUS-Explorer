@@ -805,6 +805,40 @@ struct TextExtractionTests {
         #expect(IndexingPipeline.extractHeader(from: nodes) == "42. Memorandum From the President")
     }
 
+    @Test("extractHeader excludes a footnote that is a direct child of head")
+    func headerExcludesDirectFootnoteChild() {
+        // 1955+ encoding: <note type="source"> nested directly inside <head> must not
+        // leak into the stored title.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [
+                .text("42. Memorandum From the President"),
+                .footnote(id: "fn1", type: .source, printedNumber: "1",
+                          children: [.text("Source: National Archives, RG 59.")])
+            ])
+        ]
+        #expect(IndexingPipeline.extractHeader(from: nodes) == "42. Memorandum From the President")
+    }
+
+    @Test("extractHeader excludes footnotes nested inside inline head markup")
+    func headerExcludesDeepNestedFootnote() {
+        // 68 corpus documents (frus1914Supp, frus1952-54v13p1, …) nest the head
+        // footnote inside <hi>/<persName>/<p> markup rather than as a direct child;
+        // the exclusion must be recursive (adversarial-review finding 2; modeled on
+        // frus1952-54v13p1 d595).
+        let nodes: [FRUSASTNode] = [
+            .head(children: [
+                .text("595. Memorandum of Discussion at the 187th Meeting"),
+                .emphasis(style: .italic, children: [
+                    .text("Prepared by S. Everett Gleason"),
+                    .footnote(id: "fn1", type: .footnote, printedNumber: "1",
+                              children: [.text("on Mar. 5.")])
+                ])
+            ])
+        ]
+        #expect(IndexingPipeline.extractHeader(from: nodes)
+                == "595. Memorandum of Discussion at the 187th Meeting Prepared by S. Everett Gleason")
+    }
+
     @Test("extractDocumentNumber returns numeric prefix from head")
     func documentNumberExtraction() {
         let nodes: [FRUSASTNode] = [

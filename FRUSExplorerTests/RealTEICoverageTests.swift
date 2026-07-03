@@ -18,9 +18,16 @@ import SQLite3
 /// These tests index **real published volumes** (not synthetic fixtures) through the
 /// full pipeline, so they need a checkout of the Office of the Historian TEI corpus
 /// (https://github.com/HistoryAtState/frus) on the local machine. Set the
-/// `FRUS_TEI_MIRROR` environment variable to the mirror's `volumes/` directory —
-/// via `TEST_RUNNER_FRUS_TEI_MIRROR=…` when invoking `xcodebuild test`. When the
-/// variable is unset or the directory is missing, the suite is skipped (CI-safe).
+/// `FRUS_TEI_MIRROR` environment variable to the mirror's `volumes/` directory.
+/// With `xcodebuild test`, `TEST_RUNNER_FRUS_TEI_MIRROR` must be an **environment
+/// variable on the xcodebuild process** (env-var prefix form):
+///
+///     TEST_RUNNER_FRUS_TEI_MIRROR=/path/to/frus/volumes xcodebuild test …
+///
+/// Passing it as a trailing `KEY=VALUE` build-setting argument does NOT propagate to
+/// the test runner — the suite silently skips and the run still reports TEST
+/// SUCCEEDED. When the variable is unset or the directory is missing, the suite is
+/// skipped (CI-safe).
 enum RealTEICorpus {
     /// The mirror's `volumes/` directory, or `nil` when unavailable on this machine.
     static var volumesDirectory: URL? {
@@ -143,7 +150,8 @@ private func makeMirrorPipeline(dir: URL) async throws -> (pipeline: IndexingPip
 /// target (a): source-note coverage ≥90% for 1955+ volumes, no pre-1955 regression.
 ///
 /// Skipped unless `FRUS_TEI_MIRROR` points at a local frus corpus `volumes/` mirror
-/// (pass `TEST_RUNNER_FRUS_TEI_MIRROR=/path/to/frus/volumes` to `xcodebuild test`).
+/// (run `TEST_RUNNER_FRUS_TEI_MIRROR=/path/to/frus/volumes xcodebuild test …` —
+/// env-var prefix, NOT a trailing xcodebuild argument, which silently skips).
 @Suite("IndexingPipeline — real-TEI source-note coverage (Phase 1)",
        .enabled(if: RealTEICorpus.hasVolumes(["frus1961-63v06", "frus1952-54v01p1"]),
                 "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))

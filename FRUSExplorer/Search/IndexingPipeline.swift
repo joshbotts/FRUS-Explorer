@@ -181,6 +181,15 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `classification` column (S1: sentence 2 of the note when it matches the
 ///          classification-marking vocabulary; store-only).
 ///          `currentDateIndexVersion` → 14.
+///   4.4 — Source Explorer Phase 1 adversarial-review fixes (Session 2026-07-03):
+///          `extractSourceNote` gates the pattern-2 whole-note fallback — a head-nested
+///          `<note type="source">` whose text lacks a `Source:`/`[Source:` prefix is an
+///          editorial remark in the 29 dual-encoding documents, so it now defers to the
+///          top-level note (restoring the real decimal/lot citation in 25 pre-1955 docs)
+///          and is used only when no top-level note yields text (~1,991 docs with no
+///          alternative). `extractHeader` excludes `.footnote` *descendants* of `<head>`
+///          via `plainTextExcludingFootnotes` (68 titles nested the note inside
+///          `<hi>`/`<persName>`/`<p>` markup). `currentDateIndexVersion` → 15.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -359,7 +368,20 @@ public actor IndexingPipeline {
     ///   `classification` column (sentence 2 of the note when it is classification
     ///   markings). A re-parse repopulates `document_cache.source_note`/`header` and
     ///   rebuilds `document_sources` corpus-wide.
-    public static let currentDateIndexVersion: Int = 14
+    /// - Version 15: dual-encoding gate + recursive header cleanup (Source Explorer
+    ///   Phase 1 review fixes, Session 2026-07-03). The version-14 head-first priority
+    ///   dropped the real archival citation in 25 pre-1955 documents where a head-nested
+    ///   editorial remark ("Source text indicates …") co-occurs with a top-level
+    ///   decimal/lot citation (frus1949v01, frus1952-54v01p2/v03/v05p1) — the remark won,
+    ///   `citation_era` degraded to `unrecognized`, and the lot/decimal archival-neighbor
+    ///   keys were lost. `extractSourceNote` now defers a non-`Source:`-prefixed
+    ///   whole-note head candidate until top-level notes have been consulted. Same pass:
+    ///   `extractHeader` strips `.footnote` *descendants* (not just direct children), so
+    ///   the 68 titles with a footnote nested inside `<hi>`/`<persName>`/`<p>` markup
+    ///   (frus1914Supp, frus1952-54v13p1, …) no longer embed footnote text. A re-parse
+    ///   repopulates `document_cache.source_note`/`header` and `document_sources` for the
+    ///   affected documents.
+    public static let currentDateIndexVersion: Int = 15
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -2627,23 +2649,23 @@ public actor IndexingPipeline {
     // MARK: - Static Text Extraction Helpers
 
     /// Returns the document title from the first `.head` node, **excluding** any
-    /// `.footnote` children.
+    /// `.footnote` descendants.
     ///
     /// Every volume from 1955 on nests `<note type="source">` (and often regular
     /// numbered footnotes) inside `<head>`; including footnote text meant a 1955+
     /// document's stored header carried the entire source note (and pre-1955 headers
-    /// carried head-level editorial footnotes). Excluding footnotes yields the clean
-    /// printed title everywhere `document_cache.header` surfaces (search results,
-    /// browser rows, citations). Deliberate side effect of the Source Explorer
-    /// Phase 1 extraction fix; repopulated by the version-14 reindex.
+    /// carried head-level editorial footnotes). The exclusion is *recursive* — 68 corpus
+    /// documents (frus1914Supp, frus1952-54v13p1, …) nest the head footnote one level
+    /// deeper, inside `<hi>`/`<persName>`/`<p>` markup, so filtering only direct children
+    /// still leaked those notes into the title. Excluding all footnote descendants yields
+    /// the clean printed title everywhere `document_cache.header` surfaces (search
+    /// results, browser rows, citations). Deliberate side effect of the Source Explorer
+    /// Phase 1 extraction fix; repopulated by the version-15 reindex.
     nonisolated static func extractHeader(from nodes: [FRUSASTNode]) -> String {
         for node in nodes {
             if case .head(let c) = node {
-                return c.filter { child in
-                    if case .footnote = child { return false }
-                    return true
-                }
-                .map(\.plainText).joined(separator: " ").normalizedWhitespace
+                return c.map(\.plainTextExcludingFootnotes)
+                    .joined(separator: " ").normalizedWhitespace
             }
         }
         return ""
@@ -2672,6 +2694,16 @@ public actor IndexingPipeline {
     /// 2. **`<head>`-nested `<note type="source">`** — the encoding used by every volume
     ///    from 1955 on. When the note holds multiple `<p>` children, the first paragraph
     ///    beginning `Source:` / `[Source:` is taken; otherwise the whole note.
+    ///    **Gate:** a whole-note candidate that does *not* begin `Source:` / `[Source:`
+    ///    is an editorial remark, not necessarily a citation (pre-1955 volumes nest
+    ///    remarks like "Source text indicates this memorandum was dictated Nov. 13."
+    ///    in `<head>`), so it is *deferred*: patterns 3/4 are consulted first and the
+    ///    deferred text is used only when no top-level note yields anything. 29 corpus
+    ///    documents carry both encodings (frus1949v01, frus1952-54v01p2/v03/v05p1/v07p1/
+    ///    v14p1, frus1969-76ve10); in 25 of them the top-level note holds the real
+    ///    decimal/lot citation and the head note is a remark. ~1,991 docs (mostly
+    ///    frus1961-63 microfiche supplements and 1931–48 volumes) have a non-prefixed
+    ///    head note and NO top-level alternative — the deferred fallback serves those.
     /// 3. **Top-level `<note type="source">`** — the 1861–1954 inline encoding (and
     ///    withheld-document `rend="inline"` provenance notes). Unchanged behaviour.
     /// 4. **Top-level untyped note containing `<seg type="source">`** — top-level
@@ -2685,7 +2717,11 @@ public actor IndexingPipeline {
     /// both encodings, and the `Source:` prefix is preserved so `SourceNoteParser`'s
     /// narrative branch (→ `citation_era='structured'` rows) fires.
     nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
-        // Patterns 1 + 2: <head>-nested notes (1955+ encodings).
+        // Patterns 1 + 2: <head>-nested notes (1955+ encodings). A whole-note candidate
+        // without a `Source:` prefix is deferred (see the pattern-2 gate in the doc
+        // comment): when a top-level note also exists, the top-level text is the real
+        // citation and the head note is an editorial remark.
+        var deferredHeadNote: String?
         for node in nodes {
             guard case .head(let headChildren) = node else { continue }
             for child in headChildren {
@@ -2695,7 +2731,10 @@ public actor IndexingPipeline {
                     return normalizeSourceNoteWrapper(seg)
                 }
                 if type == .source, let body = sourceNoteBody(fromNoteChildren: noteChildren) {
-                    return normalizeSourceNoteWrapper(body)
+                    if body.hasPrefix("Source:") || body.hasPrefix("[Source:") {
+                        return normalizeSourceNoteWrapper(body)
+                    }
+                    if deferredHeadNote == nil { deferredHeadNote = body }
                 }
             }
         }
@@ -2708,6 +2747,11 @@ public actor IndexingPipeline {
             } else if type == .unclassified, let seg = segSourceText(in: noteChildren) {
                 return normalizeSourceNoteWrapper(seg)
             }
+        }
+        // Deferred pattern-2 fallback: a non-`Source:`-prefixed head note with no
+        // top-level alternative (~1,991 docs, e.g. frus1961-63 microfiche supplements).
+        if let deferred = deferredHeadNote {
+            return normalizeSourceNoteWrapper(deferred)
         }
         return nil
     }
@@ -5252,6 +5296,21 @@ extension FRUSASTNode {
         case .list(_, let items): return items.map(\.plainText).joined(separator: " ")
         case .listItem(let c):    return c.map(\.plainText).joined(separator: " ")
         case .unknown(_, _, let c): return c.map(\.plainText).joined(separator: " ")
+        }
+    }
+
+    /// Like `plainText`, but with every `.footnote` subtree excluded — at any depth,
+    /// not just among direct children. Used by `IndexingPipeline.extractHeader` so
+    /// footnotes nested inside `<hi>`/`<persName>`/`<p>` markup within `<head>` cannot
+    /// leak into the stored document title.
+    var plainTextExcludingFootnotes: String {
+        switch self {
+        case .footnote:
+            return ""
+        case .text, .formula, .lineBreak, .pageBreak, .document:
+            return plainText
+        default:
+            return children.map(\.plainTextExcludingFootnotes).joined(separator: " ")
         }
     }
 

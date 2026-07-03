@@ -201,6 +201,12 @@ public struct ArchiveCitation: Sendable {
 ///          ("Secret; Nodis"), remainder = remarks; the marking sentence is extracted
 ///          conservatively (marking vocabulary + shape gate, nil rather than junk) and
 ///          stored in `document_sources.classification`
+///   1.5 — Source Explorer Phase 1 adversarial-review fixes (Session 2026-07-03):
+///          `classificationMarking` fragment gate hardened — fragments containing an
+///          interior `.` (abbreviation splits like "Dissemination to U.S", missing-space
+///          run-ons like "Priority.Drafted by Dulles") or starting with a remark verb
+///          (`Drafted`/`Sent`/`Received`/`Repeated`) now return nil, closing the
+///          ~0.01% junk-value residue found by the full-corpus replay
 public struct SourceNoteParser {
 
     public init() {}
@@ -269,7 +275,14 @@ public struct SourceNoteParser {
     ///   (`Top Secret`, `Secret`, `Confidential`, `Unclassified`, `Limited Official
     ///   Use`, `Official Use Only`, `Restricted`) or `No classification marking`;
     /// - every fragment is capitalized and at most 4 words (handling caveats such as
-    ///   `Nodis`, `Exdis`, `Eyes Only`, `Sensitive`, `Priority`, `Niact`, `Cherokee`).
+    ///   `Nodis`, `Exdis`, `Eyes Only`, `Sensitive`, `Priority`, `Niact`, `Cherokee`);
+    /// - no fragment contains an interior `.` — the simple sentence-boundary regex has
+    ///   no abbreviation model, so a `.` inside a fragment means the boundary split a
+    ///   citation mid-abbreviation (`Dissemination to U.S[. Government …]`) or the TEI
+    ///   lacked a space after the terminal period (`Priority.Drafted by Dulles`);
+    /// - no fragment starts with a remark verb (`Drafted`/`Sent`/`Received`/`Repeated`),
+    ///   which rejects short capitalized remarks like `Drafted by Seward (FE/CA/RA)`
+    ///   that otherwise pass the shape gate.
     ///
     /// - Parameter note: The stored source-note text (wrapper already normalised).
     /// - Returns: The marking sentence with the trailing period stripped and fragments
@@ -309,7 +322,11 @@ public struct SourceNoteParser {
         for fragment in fragments {
             guard !fragment.isEmpty,
                   fragment.first?.isUppercase == true,
-                  fragment.split(separator: " ").count <= 4 else { return nil }
+                  fragment.split(separator: " ").count <= 4,
+                  !fragment.contains("."),
+                  fragment.range(of: #"^(?:Drafted|Sent|Received|Repeated)\b"#,
+                                 options: .regularExpression) == nil
+            else { return nil }
         }
         return fragments.joined(separator: "; ")
     }

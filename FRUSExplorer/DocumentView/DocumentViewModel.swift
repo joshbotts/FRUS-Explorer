@@ -50,6 +50,13 @@ import SwiftData
 ///          rollup resolved by `loadPersonMentionCount`, so "Find all mentions" can search
 ///          the cross-corpus rollup identity (the same count the sheet displays) instead of
 ///          the raw per-volume `ref` string, which collides across volumes
+///   1.7 — Source Explorer Phase 1 (Session 2026-07-03): the file's `extractSourceNote`
+///          free function now delegates to `IndexingPipeline.extractSourceNote(from:)`,
+///          the canonical frus-sources locator chain, so the document Source sheet shows
+///          the same note the index stores. Display changes with it: head-nested notes
+///          found first (with the dual-encoding gate deferring non-`Source:`-prefixed
+///          head remarks to top-level citations), `[Source: …]` wrapper stripped,
+///          interior whitespace collapsed, e-volume summary segs excluded
 @Observable
 @MainActor
 public final class DocumentViewModel {
