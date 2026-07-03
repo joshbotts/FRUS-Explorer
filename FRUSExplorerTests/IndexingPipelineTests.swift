@@ -925,6 +925,188 @@ struct ArchivalNeighborsTests {
     }
 }
 
+// MARK: - VolumeSourceMatcherTests (Source Explorer Phase 3 step 2)
+
+/// Verifies the normalized matcher and the new volume-level match paths: the single
+/// `lot_file_norm` lookup (dash variants match in both directions), the comma-boundary
+/// series prefix for record-group collections (with the over-broad guard), the
+/// presidential-library path, the decimal / subject-numeric class-leaf path (S3 lean:
+/// boundary-gated prefix, no period segmenting), and the target gating in
+/// `VolumeSourcesView.makeNeighborsTarget` (bibliography rows excluded).
+///
+/// Version history:
+///   1.0 — Session 2026-07-03: Source Explorer Phase 3 step 2
+@Suite("IndexingPipeline — volume source matcher")
+struct VolumeSourceMatcherTests {
+
+    /// Indexes a volume whose documents carry the given source notes and returns the pipeline.
+    private func indexFixture(
+        dir: URL, notes: [(id: String, note: String)]
+    ) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        try writeTEIVolume(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: notes.enumerated().map { i, doc in
+                (doc.id, "<head>\(i + 1). Memo</head><note type=\"source\">\(doc.note)</note><p>Text.</p>")
+            }
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+        return pipeline
+    }
+
+    @Test("Normalized lot lookup bridges hyphen/en-dash/em-dash variants in both directions")
+    func normalizedLotLookupBridgesDashVariants() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "SPA Files: Lot 61–D 146, Box 4581"),   // en-dash stored
+                ("d2", "SPA Files: Lot 61-D 146, Box 4581"),   // hyphen stored
+                ("d3", "PPS files, lot 64 D 563, memoranda"),  // different lot
+            ])
+
+            // Volume-entry path, queried with a THIRD variant (em-dash): both stored
+            // forms match through the shared compact norm.
+            let byEntry = try await pipeline.archivalNeighbors(
+                forLotFile: "61—D 146", recordGroup: nil, series: nil)
+            let entryIds = Set(byEntry.documents.map(\.documentId))
+            #expect(entryIds == ["d1", "d2"],
+                    "all dash variants of one lot must resolve to the same norm; got \(entryIds)")
+
+            // Document-keyed path: the en-dash document finds the hyphen document.
+            let byDoc = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            #expect(Set(byDoc.documents.map(\.documentId)) == ["d2"],
+                    "cross-variant neighbors must match from the document side too")
+        }
+    }
+
+    @Test("Collection series prefix matches Box tails at a comma boundary, guarded against over-broad prefixes")
+    func collectionSeriesPrefixAndGuard() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: National Archives, RG 84, Moscow Embassy Files, Box 12. Secret."),
+                ("d2", "Source: National Archives, RG 84, Moscow Embassy Files, Box 57. Confidential."),
+                ("d3", "Source: National Archives, RG 84, Moscow Embassy General Records, Box 2. Secret."),
+            ])
+
+            // The front-matter series (no box) prefix-matches the doc side's ", Box N" tails.
+            let hit = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Moscow Embassy Files")
+            #expect(Set(hit.documents.map(\.documentId)) == ["d1", "d2"],
+                    "the series must match both boxes and not the sibling series")
+            #expect(hit.basis?.contains("RG 84") == true)
+
+            // A word prefix without a comma boundary must NOT match (over-broad guard).
+            let word = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Moscow Embassy")
+            #expect(word.totalCount == 0,
+                    "'Moscow Embassy' must not prefix-match into 'Moscow Embassy Files'")
+
+            // Degenerate short series are refused outright.
+            let short = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Mos")
+            #expect(short.totalCount == 0, "series under 4 characters must never match")
+        }
+    }
+
+    @Test("Volume-level presidential-library entries match document-side library rows")
+    func libraryEntryMatchesLibraryRows() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Johnson Library, National Security File, Country File, Vietnam, Box 3. Secret."),
+                ("d2", "Source: Johnson Library, National Security File, Memos to the President, Box 1. Secret."),
+                ("d3", "Source: Kennedy Library, National Security Files, Countries Series, Box 8. Secret."),
+            ])
+
+            let result = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: "National Security File",
+                repository: "Johnson Library")
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids == ["d1", "d2"],
+                    "the Johnson Library collection must match its own rows, not the Kennedy ones; got \(ids)")
+            #expect(result.basis?.contains("Johnson Library") == true)
+
+            // A non-library repository never routes through the library path.
+            let nonLibrary = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: "National Security File",
+                repository: "Department of State")
+            #expect(nonLibrary.totalCount == 0 && nonLibrary.basis == nil,
+                    "only library repositories participate in the library match path")
+        }
+    }
+
+    @Test("Decimal / subject-numeric class leaves match decimal rows at token boundaries")
+    func decimalClassLeafPath() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, Central Files, POL 27 ARAB–ISR. Confidential."),
+                ("d2", "Source: Department of State, Central Files, 711.11/3–1545. Secret."),
+            ])
+
+            // Subject-numeric leaf: matches across the stored sentence tail (". Confidential.").
+            let pol = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "59", series: "POL 27 ARAB–ISR",
+                decimalClass: "POL 27 ARAB–ISR")
+            #expect(Set(pol.documents.map(\.documentId)) == ["d1"])
+            // The class path outranks the rg+series path for a class leaf.
+            #expect(pol.basis?.contains("POL 27 ARAB–ISR") == true)
+            #expect(pol.basis?.contains("RG") != true,
+                    "a class leaf must resolve on the decimal path, not the collection one")
+
+            // Dotted decimal leaf: matches the "/item" suffix form.
+            let dotted = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "711.11")
+            #expect(Set(dotted.documents.map(\.documentId)) == ["d2"])
+
+            // Boundary guard: a shorter class must not match mid-token.
+            let boundary = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "711.1")
+            #expect(boundary.totalCount == 0, "'711.1' must not match '711.11/…' mid-token")
+        }
+    }
+
+    @Test("makeNeighborsTarget gates every kind and excludes bibliography rows")
+    func makeNeighborsTargetKinds() {
+        // Bibliography rows never get a target, even if a key slipped in.
+        let bib = VolumeSourceEntry(kind: .bibliography, lotFile: "64 D 199",
+                                    rawText: "Acheson, Dean. Present at the Creation.")
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: bib) == nil)
+
+        // A class leaf yields a decimal-class target.
+        let leaf = VolumeSourceEntry(kind: .item, depth: 2, repository: "Department of State",
+                                     recordGroup: "59", seriesName: "POL 27 ARAB–ISR",
+                                     decimalClass: "POL 27 ARAB–ISR",
+                                     rawText: "Central Files 1967–69: POL 27 ARAB–ISR")
+        let leafTarget = VolumeSourcesView.makeNeighborsTarget(for: leaf)
+        #expect(leafTarget?.decimalClass == "POL 27 ARAB–ISR")
+
+        // A library child without a gated series name uses its own text as the collection.
+        let libChild = VolumeSourceEntry(kind: .item, depth: 1, repository: "Johnson Library",
+                                         rawText: "National Security File")
+        let libTarget = VolumeSourcesView.makeNeighborsTarget(for: libChild)
+        #expect(libTarget?.repository == "Johnson Library")
+        #expect(libTarget?.series == "National Security File")
+
+        // The library heading row itself (own text naming the repository) gets no target.
+        let heading = VolumeSourceEntry(kind: .item, isHeading: true, repository: "Johnson Library",
+                                        rawText: "Lyndon B. Johnson Library, Austin, Texas")
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: heading) == nil)
+
+        // A record-group series entry keeps the rg+series target, with no library routing.
+        let rgSeries = VolumeSourceEntry(kind: .item, depth: 1, repository: "National Archives",
+                                         recordGroup: "84", seriesName: "Moscow Embassy Files",
+                                         rawText: "Lot-less RG 84 series, Moscow Embassy Files")
+        let rgTarget = VolumeSourcesView.makeNeighborsTarget(for: rgSeries)
+        #expect(rgTarget?.recordGroup == "84" && rgTarget?.series == "Moscow Embassy Files")
+        #expect(rgTarget?.repository == nil)
+
+        // No key on any path → no affordance.
+        let keyless = VolumeSourceEntry(kind: .item, rawText: "Miscellaneous records")
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: keyless) == nil)
+    }
+}
+
 // MARK: - DateIndexingAccuracyTests
 
 /// Verifies that `extractStructuredDate` extracts dates from `.date` AST nodes

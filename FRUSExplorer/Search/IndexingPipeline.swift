@@ -198,6 +198,18 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          series validity gate, `kind='bibliography'` for listofworks rows).
 ///          Drop-and-recreate migration keyed on the missing `lot_file_norm` column;
 ///          `currentDateIndexVersion` → 18.
+///   4.6 — Source Explorer Phase 3 step 2 (Session 2026-07-03): matcher rework — no
+///          parse-output change, so no index-version bump. `relatedByLotFile` is a
+///          single indexed `lot_file_norm` equality (the 4-variant `IN` retired; both
+///          sides write the canonical compact key at parse time, so coverage is
+///          structural). `relatedByCollection` becomes a normalized comma-boundary
+///          prefix match (doc side appends ", Box N") tolerant of both stored
+///          record-group forms ("84" / "RG-84"). New volume-level match paths:
+///          `relatedByDecimalClass` (front-matter class leaves vs decimal/CFPF rows,
+///          S3 lean — prefix match, no period segmenting) and the presidential-library
+///          path (`archivalNeighbors(forLotFile:…)` gains `repository`/`decimalClass`
+///          and routes library repositories through `relatedByPresidentialLibrary`).
+///          LIKE inputs are wildcard-escaped; basis strings localized.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -4447,8 +4459,9 @@ public actor IndexingPipeline {
     ///
     /// | ParsedSourceNote case | Match key | Index used |
     /// |---|---|---|
-    /// | `.lotFile` | Normalized lot number (4 whitespace variants) | `idx_doc_src_lot` |
-    /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot` |
+    /// | `.lotFile` | Canonical compact lot key (`lot_file_norm`) | `idx_doc_src_lot_norm` |
+    /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot_norm` |
+    /// | `.naraCollection` non-RG-59 | RG + comma-boundary series prefix | `idx_doc_src_rg` |
     /// | `.centralFiles` with decimal ID | Base number before `/` | `idx_doc_src_era_series` |
     /// | `.presidentialLibrary` | Library keyword + collection prefix | `idx_doc_src_repo` |
     /// | All other cases | Returns empty result | — |
@@ -4550,13 +4563,25 @@ public actor IndexingPipeline {
     /// Returns archival neighbors for a **volume-level source entry** (a row in a
     /// volume's front-matter sources list), which has no document key of its own.
     ///
-    /// Matches on the entry's lot file when present, else its `(recordGroup, series)`.
-    /// Entries with neither have no document-level match key and return empty.
+    /// Match paths, most-specific first:
+    /// 1. **Lot file** — normalized `lot_file_norm` equality.
+    /// 2. **Decimal / subject-numeric class leaf** — `relatedByDecimalClass` against
+    ///    `citation_era IN ('decimal','cfpf')` rows.
+    /// 3. **Presidential library** — when `repository` names a library
+    ///    (`isLibraryRepository`), the library keyword plus a collection-name prefix
+    ///    against document-side presidential-library rows.
+    /// 4. **Record group + series** — normalized comma-boundary series prefix.
+    ///
+    /// Entries with no key on any path return empty with `basis == nil`.
     ///
     /// - Parameters:
     ///   - lotFile: The entry's lot file (e.g. `"64 D 199"`), if any.
     ///   - recordGroup: The entry's record group (e.g. `"59"`), if any.
-    ///   - series: The entry's series name, if any.
+    ///   - series: The entry's series / collection name, if any (for a library entry
+    ///     this is the collection compared against document `series_name`).
+    ///   - repository: The entry's holding repository, if any; only library
+    ///     repositories participate in matching (path 3).
+    ///   - decimalClass: The entry's decimal / subject-numeric class key, if any.
     ///   - limit: Maximum neighbors to return. Default 30.
     /// - Returns: Matched documents (≤ `limit`), the total match count, and the
     ///   human-readable archival `basis`, or `basis == nil` when nothing matched.
@@ -4564,16 +4589,36 @@ public actor IndexingPipeline {
         forLotFile lotFile: String?,
         recordGroup: String?,
         series: String?,
+        repository: String? = nil,
+        decimalClass: String? = nil,
         limit: Int = 30
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
         if let lot = lotFile?.trimmingCharacters(in: .whitespaces), !lot.isEmpty {
             let r = try relatedByLotFile(lot, limit: limit)
-            return (r.documents, r.totalCount, "Lot \(lot)")
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.lot",
+                           defaultValue: "Lot \(lot)"))
+        }
+        if let cls = decimalClass?.trimmingCharacters(in: .whitespaces), !cls.isEmpty {
+            let r = try relatedByDecimalClass(cls, limit: limit)
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.decimalClass",
+                           defaultValue: "Central files \(cls)"))
+        }
+        if let repo = repository?.trimmingCharacters(in: .whitespaces),
+           Self.isLibraryRepository(repo),
+           let s = series?.trimmingCharacters(in: .whitespaces), !s.isEmpty {
+            let r = try relatedByPresidentialLibrary(library: repo, collection: s, limit: limit)
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.library",
+                           defaultValue: "\(repo): \(s)"))
         }
         if let rg = recordGroup?.trimmingCharacters(in: .whitespaces), !rg.isEmpty,
            let s = series?.trimmingCharacters(in: .whitespaces), !s.isEmpty {
             let r = try relatedByCollection(recordGroup: rg, series: s, limit: limit)
-            return (r.documents, r.totalCount, "RG \(rg): \(s)")
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.collection",
+                           defaultValue: "RG \(rg): \(s)"))
         }
         return ([], 0, nil)
     }
@@ -4586,23 +4631,35 @@ public actor IndexingPipeline {
         return (" AND NOT (ds.volume_id = ? AND ds.document_id = ?)", [v, d])
     }
 
-    /// Returns documents indexed with any normalized form of the given lot number.
+    /// Returns documents indexed with the same canonical compact lot key.
     ///
-    /// Queries `document_sources.lot_file` against four variants so that
-    /// compact (`"63D135"`), spaced (`"63 D 135"`), mixed (`"63 D135"`), and
-    /// raw-with-dashes (`"61-D 146"`) stored forms all match.
+    /// A single indexed equality on `document_sources.lot_file_norm`
+    /// (`SourceNoteParser.lotFileNorm`, e.g. `"64D199"`): the query lot is normalized
+    /// here, so every spacing and hyphen/en-dash/em-dash variant matches in both
+    /// directions. This replaces the former 4-variant `IN` over raw `lot_file`, which
+    /// dash variants defeated (audit §2.4).
+    ///
+    /// **No raw-variant fallback is kept** — norm coverage is structural, not
+    /// statistical: the same inserts that write `lot_file` write `lot_file_norm`
+    /// (`documentSourceRow` for the doc side, `SourcesParserDelegate.makeItemEntry`
+    /// for the front-matter side), and the index-version bumps that introduced the
+    /// columns (16 and 18) force a reindex, so a lot-keyed row without a norm cannot
+    /// exist in a current-version database.
     private func relatedByLotFile(
         _ rawLot: String,
         limit: Int,
         excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
-        let variants = Self.lotVariantsForQuery(rawLot)
-        guard !variants.isEmpty else { return ([], 0) }
+        // Defensive: volume-source entries store the bare number, but accept a
+        // "Lot "-prefixed form from any caller (the retired variant helper did too).
+        let bare = rawLot.replacingOccurrences(
+            of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
+        let norm = SourceNoteParser.lotFileNorm(bare)
+        guard !norm.isEmpty else { return ([], 0) }
 
-        let placeholders = variants.map { _ in "?" }.joined(separator: ", ")
         let ex = exclusion(excluding)
-        let whereClause = "ds.lot_file IN (\(placeholders))\(ex.clause)"
-        let params = variants + ex.params
+        let whereClause = "ds.lot_file_norm = ?\(ex.clause)"
+        let params = [norm] + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -4622,19 +4679,49 @@ public actor IndexingPipeline {
         )
     }
 
-    /// Returns documents from the same non-RG-59 archival collection — an exact match on
-    /// record group **and** series name (e.g. RG 306, "Office of Plans, General Subject
-    /// Files"). Exact series matching avoids lumping sibling series together.
+    /// Returns documents from the same archival collection — record group plus a
+    /// **normalized prefix match** on series name.
+    ///
+    /// ## Normalization (deliberate, per audit §2.4)
+    /// - **Case**: both comparisons use `LIKE`, which is ASCII-case-insensitive.
+    /// - **Whitespace**: collapsed to single spaces at write time on *both* sides
+    ///   (`SourceNoteParser` for `document_sources`, `SourcesParserDelegate` for
+    ///   `volume_sources`), so no runtime mapping is needed.
+    /// - **Dashes**: stored verbatim on both sides — series names come from the same
+    ///   TEI vocabulary (en-dash in year ranges on both sides), unlike lot keys where
+    ///   the corpus genuinely mixes forms (those go through `lot_file_norm`).
+    /// - **Record group**: tolerant of both stored forms — `extractRG` rows store the
+    ///   bare number ("84") while lot/decimal-derived rows store "RG-84".
+    ///
+    /// ## Prefix direction and over-broad guard
+    /// The *query* series (a front-matter entry's cleaned name, or a parsed note's
+    /// series component) is the prefix; the *stored* `series_name` may append
+    /// locator tails (`documentSourceRow` writes `"series, Box N"`). Exact equality
+    /// was therefore the wrong grain (81/539 resolved). The prefix only extends
+    /// across a **comma boundary** (`series + ",…"`), so `"Moscow Embassy"` never
+    /// matches `"Moscow Embassy Files, Box 12"` mid-word, and a ≥4-character minimum
+    /// keeps degenerate prefixes from matching broadly.
     private func relatedByCollection(
         recordGroup: String,
         series: String,
         limit: Int,
         excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
-        guard !series.isEmpty else { return ([], 0) }
+        let s = series.trimmingCharacters(in: .whitespaces)
+        guard s.count >= 4 else { return ([], 0) }
+        // Accept the RG in either stored form regardless of the caller's form.
+        let bareRG = recordGroup
+            .replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
+                                  options: [.regularExpression, .caseInsensitive])
+            .trimmingCharacters(in: .whitespaces)
+        guard !bareRG.isEmpty else { return ([], 0) }
+        let esc = Self.likeEscaped(s)
         let ex = exclusion(excluding)
-        let whereClause = "ds.record_group = ? AND ds.series_name = ?\(ex.clause)"
-        let params = [recordGroup, series] + ex.params
+        let whereClause = """
+            ds.record_group IN (?, ?)
+            AND (ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')\(ex.clause)
+            """
+        let params = [bareRG, "RG-\(bareRG)", esc, esc + ",%"] + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -4720,10 +4807,64 @@ public actor IndexingPipeline {
         return (Array(matched.prefix(limit)), matched.count)
     }
 
+    /// Returns documents citing a decimal / subject-numeric **class** from a
+    /// volume-level front-matter leaf (`"POL 27 ARAB–ISR"`, `"DEF 6 MLF"`, `"711.11"`).
+    ///
+    /// Matches `document_sources.series_name` for `citation_era IN ('decimal','cfpf')`
+    /// rows, where the doc side stores the citation's file identifier verbatim —
+    /// including any trailing sentence tail (`"711.11/3–1545. Secret."`,
+    /// `"POL 27 ARAB–ISR. Confidential."`, `"CFPF P850096–2385"`). The class key
+    /// matches at four boundaries — exact, `class + "/…"` (an item suffix),
+    /// `class + " …"` (a word infix like `"893.51 Manchuria/49"`, or a subject-numeric
+    /// subdivision), and `class + ".…"` (the sentence tail) — plus the same four with
+    /// the `"CFPF "` prefix the CFPF rows carry. Boundaries keep `"711.1"` from
+    /// matching `"711.11/…"` mid-token.
+    ///
+    /// **S3 resolved to its lean — location prefix only, no `DecimalFileSegment`
+    /// period filtering.** Porting the doc-side segmenter did not turn out cheap:
+    /// (1) a front-matter leaf has no `/item` suffix to derive a filing-period year
+    /// from, and the volume's coverage years live in era-dependent prose
+    /// (`"Central Files 1967–69: …"`) that would need its own parser; (2) the
+    /// subject-numeric leaves that dominate the unkeyed bucket (1963–1973) post-date
+    /// the decimal segment table (segments end 1963), so a period filter could never
+    /// apply to them; (3) a front-matter entry names the class as used across the
+    /// volume's whole span, so *all* indexed citations of the class are the honest
+    /// neighbor set for it.
+    private func relatedByDecimalClass(
+        _ classKey: String,
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        let key = classKey.trimmingCharacters(in: .whitespaces)
+        guard key.count >= 3 else { return ([], 0) }
+        let esc = Self.likeEscaped(key)
+        let boundaries = [esc, esc + "/%", esc + " %", esc + ".%"]
+        let patterns = boundaries + boundaries.map { "CFPF " + $0 }
+        let likes = patterns.map { _ in "ds.series_name LIKE ? ESCAPE '\\'" }
+            .joined(separator: " OR ")
+        let whereClause = "ds.citation_era IN ('decimal','cfpf') AND (\(likes))"
+
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: patterns, selectParams: patterns,
+            limit: limit
+        )
+    }
+
     /// Returns documents from the same presidential library collection.
     ///
     /// Uses a LIKE match on `repository` (e.g. `%KENNEDY%`) and a prefix match on
-    /// `series_name` (first 50 characters of the collection name).
+    /// `series_name` (first 50 characters of the collection name, wildcard-escaped).
     private func relatedByPresidentialLibrary(
         library: String,
         collection: String,
@@ -4732,15 +4873,15 @@ public actor IndexingPipeline {
         // Extract a short keyword from the library name for the LIKE query
         let keyword = Self.libraryKeyword(from: library)
         guard !keyword.isEmpty else { return ([], 0) }
-        let repoLike = "%\(keyword)%"
+        let repoLike = "%\(Self.likeEscaped(keyword))%"
 
         // Use a prefix of the collection name (up to 50 chars) for series matching
-        let collectionPrefix = String(collection.prefix(50))
+        let collectionPrefix = Self.likeEscaped(String(collection.prefix(50)))
         let collectionLike = collectionPrefix.isEmpty ? "%" : collectionPrefix + "%"
 
         let whereClause = """
-            UPPER(ds.repository) LIKE UPPER(?)
-            AND UPPER(ds.series_name) LIKE UPPER(?)
+            UPPER(ds.repository) LIKE UPPER(?) ESCAPE '\\'
+            AND UPPER(ds.series_name) LIKE UPPER(?) ESCAPE '\\'
             """
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -4808,21 +4949,22 @@ public actor IndexingPipeline {
         return (docs, totalCount)
     }
 
-    /// Generates normalized lot number variants for a database query.
-    ///
-    /// Returns the 3 standard forms (compact, spaced, mixed) from
-    /// `NARACatalogClient.lotNumberVariants(from:)` plus the raw
-    /// stripped form to cover lot numbers with dashes (e.g. `"61-D 146"`).
-    private static func lotVariantsForQuery(_ raw: String) -> [String] {
-        let variants = NARACatalogClient.lotNumberVariants(from: raw)
-        let rawStripped = raw
-            .replacingOccurrences(of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
-            .trimmingCharacters(in: .whitespaces)
-        var all = variants
-        if !all.contains(rawStripped) { all.append(rawStripped) }
-        // Deduplicate while preserving order
-        var seen = Set<String>()
-        return all.filter { seen.insert($0).inserted }
+    /// Escapes SQL `LIKE` wildcards (`%`, `_`) and the escape character itself so
+    /// corpus text can be embedded in a `LIKE` pattern with `ESCAPE '\'`.
+    private static func likeEscaped(_ s: String) -> String {
+        s.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+    }
+
+    /// Whether a volume-source repository string names a presidential library (or an
+    /// equivalent manuscript repository) — the gate that routes a volume-level source
+    /// entry through the presidential-library match path instead of the record-group
+    /// one. Mirrors `SourcesParserDelegate.repoKeywords`' library entries: the
+    /// "…Library" names, the Nixon Presidential Materials, and the Hoover Institution.
+    static func isLibraryRepository(_ repository: String) -> Bool {
+        let r = repository.lowercased()
+        return r.contains("library") || r.contains("nixon") || r.contains("hoover institution")
     }
 
     /// Extracts a short keyword from a presidential library name for LIKE queries.
