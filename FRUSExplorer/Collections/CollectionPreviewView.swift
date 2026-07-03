@@ -71,6 +71,16 @@ import WebKit
 ///          not only after the preview's own Download button; missing volumes absent
 ///          from the manifest surface a "not available" note and never produce a
 ///          phantom downloading state
+///   1.2 — Authoring Phase 5 (excerpts): the content fingerprint covers the excerpt
+///          anchor fields (`excerptStart`/`excerptEnd`/`excerptRenderingVersion`/
+///          `excerptColorTag`); excerpt rendering itself arrives free via the shared
+///          `CollectionItemHTMLRenderer`
+///   1.3 — Authoring Phase 5 (overrides): the fingerprint covers the per-entry override
+///          fields (`applyHighlightsOverride`/`includeNotesOverride`/
+///          `includeSourceNoteOverride`/`includeFootnotesOverride`/
+///          `summaryPromptIdOverride`/`selectedHighlightIds`/`includeRelatedDocuments`),
+///          so toggling any inspector override live-refreshes the page; the rendering
+///          itself arrives via the shared renderer and resolver cascade
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -157,10 +167,19 @@ struct CollectionPreviewView: View {
         hasher.combine(collection.savedSearchId)
         hasher.combine(collection.defaultBodyDepth)
         hasher.combine(collection.footnoteStyle)
+        // Phase 5 footnote pair — the effective values also cover legacy derivation.
+        hasher.combine(collection.includeFootnotes)
+        hasher.combine(collection.includeSourceNote)
         hasher.combine(collection.tocStyle)
         hasher.combine(collection.applyHighlights)
         hasher.combine(collection.includeNotes)
         hasher.combine(collection.summaryPromptId)
+        // Phase 4 publication frame: title page, introduction, colophon, heading levels.
+        hasher.combine(collection.subtitle)
+        hasher.combine(collection.authorLine)
+        hasher.combine(collection.introductionText)
+        hasher.combine(collection.introductionRichText)
+        hasher.combine(collection.includeColophon)
         for entry in entries {
             hasher.combine(entry.id)
             hasher.combine(entry.kind)
@@ -169,9 +188,27 @@ struct CollectionPreviewView: View {
             hasher.combine(entry.sortOrder)
             hasher.combine(entry.text)
             hasher.combine(entry.richText)
+            hasher.combine(entry.level)
             hasher.combine(entry.bodyDepthOverride)
             hasher.combine(entry.selectedNoteIds)
             hasher.combine(entry.researchNoteId)
+            // Phase 5 headnote fields — toggling them live-refreshes the preview.
+            hasher.combine(entry.includeHeadnote)
+            hasher.combine(entry.headnoteSummaryId)
+            // Phase 5 excerpt anchors — a re-anchored or re-coloured excerpt refreshes
+            // (the passage itself is `text`, already hashed above).
+            hasher.combine(entry.excerptStart)
+            hasher.combine(entry.excerptEnd)
+            hasher.combine(entry.excerptRenderingVersion)
+            hasher.combine(entry.excerptColorTag)
+            // Phase 5 per-entry overrides — toggling any inspector override refreshes.
+            hasher.combine(entry.applyHighlightsOverride)
+            hasher.combine(entry.includeNotesOverride)
+            hasher.combine(entry.includeSourceNoteOverride)
+            hasher.combine(entry.includeFootnotesOverride)
+            hasher.combine(entry.summaryPromptIdOverride)
+            hasher.combine(entry.selectedHighlightIds)
+            hasher.combine(entry.includeRelatedDocuments)
         }
         hasher.combine(renderAll)
         hasher.combine(refreshToken)
@@ -399,7 +436,10 @@ struct CollectionPreviewView: View {
                     ? String(localized: "collection.editor.untitled",
                              defaultValue: "Untitled Collection")
                     : collection.name,
-                note: collection.note)
+                note: collection.note,
+                subtitle: collection.subtitle,
+                authorLine: collection.authorLine,
+                includeColophon: collection.includeColophon)
             let page = renderer.pageHTML(metadata: metadata, items: items)
             if Task.isCancelled { return }
             missingVolumeIds = missing
@@ -423,11 +463,12 @@ struct CollectionPreviewView: View {
     /// minus the format-dependent word cloud (export-only decoration).
     private func previewOptions() -> CollectionExportOptions {
         CollectionExportOptions(
-            tocStyle:        CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            footnoteStyle:   CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all,
-            applyHighlights: collection.applyHighlights,
-            includeNotes:    collection.includeNotes,
-            summaryPromptId: collection.summaryPromptId,
+            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
+            includeFootnotes:  collection.effectiveIncludeFootnotes,
+            includeSourceNote: collection.effectiveIncludeSourceNote,
+            applyHighlights:   collection.applyHighlights,
+            includeNotes:      collection.includeNotes,
+            summaryPromptId:   collection.summaryPromptId,
             includeWordCloud: false
         )
     }

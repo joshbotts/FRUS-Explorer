@@ -446,32 +446,49 @@ Each document entry shows its **title, document number, volume, and date** once 
 
 Drag to reorder entries; the order you choose is the order they appear in every export. **Sort by Date** orders documents by their individual dates from the index (falling back to the volume's date range for unindexed volumes), leaving your section headings and prose blocks where you placed them.
 
-### 10.2 Section Headings and Prose
+### 10.2 Section Headings, Prose, and Excerpts
 
-A collection isn't limited to a flat list of documents. From the manager's **add** menu you can insert two kinds of editorial entry and place them anywhere in the order:
+A collection isn't limited to a flat list of documents. From the manager's **add** menu you can insert three kinds of editorial entry and place them anywhere in the order:
 
 - **Section headings** — titles that group the documents beneath them into sections (e.g. "Opening Moves", "The Crisis Deepens"). They appear as headings in the export and in its table of contents.
 - **Prose blocks** — your own connecting commentary, written in a **rich-text editor**: **bold**, *italic*, underline, and colour are all supported. Your formatting is preserved through export.
+- **Excerpts** — frozen verbatim quotations from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's colour as an accent bar). An excerpt keeps the exact passage you captured, so it renders even when the source volume isn't downloaded.
 
-Headings and prose turn a collection from a document list into an authored reader.
+**Three ways to create an excerpt.** (1) Choose **Add Highlighted Passages…** from the add menu to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and tap **Add Selection as Excerpt** in the toolbar, then choose the collection. (3) Open a document entry's **inspector** (10.3) and tap **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
 
-### 10.3 Inspecting a Document's Data
+**Nested sections.** Sections can nest up to **three levels** — a part containing chapters containing sub-sections. Long-press a heading for its context menu and choose **Indent** or **Outdent** to change its level (the menu also offers **Rename**, **Delete Heading Only** — its contents stay and any sub-headings move up a level — and **Delete Section**, which removes the heading *and* everything in it, after confirming). Rows in the list indent to show the structure, and each heading has a **chevron** to collapse or expand its section while you work (a display convenience only — it never changes the collection). When you drag a heading in edit mode, its **entire section moves with it** as one block; documents still move one row at a time. Exports mirror the nesting: stepped heading sizes and an indented, nested table of contents in every format.
 
-Tap the **ⓘ** on any document entry to open its **inspector** — a read-only summary of everything the app knows about that document, gathered in one place: your research notes and highlights, the tags you've applied, its AI summary (if any), its archival source note, and its cross-reference count. Use it to decide what belongs in the collection and how to compose it.
+**Front matter.** A collection can also carry title-page and introductory material, edited alongside the name: a **subtitle** and an **author line** (the author field suggests your active project's name as a placeholder — it's only used if you type it), an **introduction** written in the same rich-text editor as prose blocks and rendered as the opening prose of the body — after the table of contents, before the first document — and an optional **colophon** — a closing line noting the collection was compiled with FRUS Explorer, with its document and volume counts. On iPhone these live in the **Details** group; on iPad, in the details panel. All are optional — leave them blank and your exports look exactly as before.
+
+Headings, prose, and excerpts turn a collection from a document list into an authored reader; nesting and front matter turn the reader into a publication.
+
+### 10.3 The Inspector: Per-Document Control Surface
+
+Tap the **ⓘ** on any document entry to open its **inspector**. It still gathers everything the app knows about that document in one place — your research notes and highlights, the tags you've applied, its AI summaries, its archival source note, and its cross-reference count — but it is now also where you **shape what that one document contributes to the export**:
+
+- **Headnote** — show a chosen AI summary as an italic abstract *above* the document's full body (labelled by the prompt that produced it; "Automatic" picks the collection prompt's summary). This is different from the "summary only" body depth, which replaces the body.
+- **Export overrides** — per-document **Highlights**, **Research notes**, **Source note**, **Footnotes**, **Summary prompt**, and **Related documents** controls, each **Default / On / Off**. *Default* inherits the section's setting when its heading sets one, else the collection's composition — so overrides are the exception, not a second settings sheet to maintain. (The footnote setting applies to HTML exports and the live preview; PDF and Word exports always include footnotes.)
+- **Per-highlight selection** — each highlight row has a checkbox; when highlights apply to this document, only checked passages are annotated. Leaving everything checked means "all, including future highlights"; unchecking every passage turns highlights off for the document.
+- **Excerpts** — every highlight row offers **Insert as Excerpt**, and an "Excerpts in This Collection" list shows the quotations this document already contributes.
+- **Related documents** — when turned on, exports append a small **"See also:"** line after the document, citing the documents it cross-references *that are also in this collection* (never the full cross-reference fan-out, so the line stays meaningful inside your artifact).
+
+**Section defaults.** Long-press a section heading and choose **Section Defaults…** (or tap its ⓘ) for the same controls applied to every document in that section — the effective value for any document is always the most specific one: its own override, else its section's default, else the collection composition.
+
+Research notes attached to a document still render as trailing **"Research Note"** blocks after the document body in every format — they are your voice, kept typographically separate from the document's own footnotes.
 
 ### 10.4 Composition Settings
 
 Composition settings are **saved on the collection** and edited in the manager's **Composition** section — so a collection always exports the same way, in any format, without re-choosing anything:
 
 - **Default body depth** — full document text, an **AI summary only** (see Section 11), or a compact **index/outline** (citation, date, and notes, no body).
-- **Footnote style** — all footnotes, only the archival source note, or none.
+- **Include footnotes** and **Include source note** — two independent toggles (they used to be one three-way choice): keep or drop each document's footnotes, and separately append its archival "Source:" line. "All footnotes *and* the source note" is now expressible.
 - **Table-of-contents label style** — list each document by its formatted citation, or by its header and dateline.
 - **Include highlights** — when on, highlights you've made on the included documents are annotated inline in the export: coloured `<mark>` spans in HTML, background shading in PDF, and highlighted runs in DOCX (DOCX's limited palette renders blue as cyan and pink as magenta — the closest named colours).
 - **Include research notes** — show your attached notes below each document's body.
 - **Include word cloud** — prepend a frequency overview (PDF and HTML).
 - **Summary prompt** — which summarization prompt to use when the body depth is "summary only".
 
-**Per-entry and per-section overrides.** The default body depth is exactly that — a default. Any single document can override it (a mostly-summary reader with two documents shown in full), and any **section heading** can set a depth for all the documents beneath it. The effective depth is the most specific one that applies: the document's own override, else its section's, else the collection default.
+**Per-entry and per-section overrides.** The default body depth is exactly that — a default. Any single document can override it (a mostly-summary reader with two documents shown in full), and any **section heading** can set a depth for all the documents beneath it. The effective depth is the most specific one that applies: the document's own override, else its section's, else the collection default. Highlights, research notes, source notes, footnotes, and the summary prompt override the same way — from the document inspector and the heading's **Section Defaults** (see 10.3).
 
 ### 10.5 Live Preview
 
@@ -496,7 +513,7 @@ Tap **Export**, choose a format, and share. Because composition is already set, 
 
 **Send to Zotero.** A single **Send to Zotero…** menu handles reference-manager export. If you've connected a Zotero account (Section 16), **Send to Zotero Library** pushes the whole collection into your library over the Web API, carrying tags and research notes; otherwise it produces an **RIS file** for import into Zotero desktop (File → Import).
 
-**Sharing an editable collection (`.fruscollection`).** Choosing the FRUS Collection format saves a small file that carries the collection's *source* — its document references, composition, section headings, and prose — not a rendered document. A colleague opens it right back into their own FRUS Explorer as a live, editable collection; because documents travel as references, the app offers to download any volumes they don't already have. Your research notes are **not** included unless you turn on the **Include my research notes** switch (off by default).
+**Sharing an editable collection (`.fruscollection`).** Choosing the FRUS Collection format saves a small file that carries the collection's *source* — its document references, composition, section headings, and prose — not a rendered document. A colleague opens it right back into their own FRUS Explorer as a live, editable collection; because documents travel as references, the app offers to download any volumes they don't already have. Your research notes are **not** included unless you turn on the **Include my research notes** switch (off by default). The file format upgrades itself automatically: a collection that uses no newer features (nested sections, front matter) is written in the original format that **older versions of the app open unchanged**. Once a collection uses newer features, versions of the app older than this one can no longer open the file (they show a clear "file can't be read" error — ask your colleague to update); future versions will always open today's files, degrading gracefully where needed.
 
 **Importing.** Bring a shared collection in with **Import Collection…** on the Collections screen, or simply open a `.fruscollection` file — from Files, an email attachment, or AirDrop — and FRUS Explorer switches to the Collections tab with the import added. Opening the same file again re-surfaces the collection it created rather than importing a duplicate (use **Import Collection…** if you want a second, independent copy). If a file can't be read, an alert explains why.
 

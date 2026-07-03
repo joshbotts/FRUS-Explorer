@@ -66,6 +66,38 @@ import Foundation
 ///          prose block whose payload predates the RTF storage format — the shared
 ///          `CollectionProse.paragraphs(fromRTF:)` now decodes legacy Phase 3b JSON
 ///          `AttributedString` blobs (bold/italic preserved) instead of returning `[]`
+///   1.6 — Authoring Phase 4 (publication frame): cover gains subtitle/author paragraphs
+///          (`CollectionSubtitle`/`CollectionAuthor` styles) when set; authored headings
+///          map level → `SectionHeading`/`SectionHeading2`/`SectionHeading3` with
+///          `outlineLvl` 0/1/2 — NOT the built-in `Heading2`/`Heading3`, which document
+///          citations and in-document TEI headings already use (mapping authored sections
+///          onto them would make sections indistinguishable from citations in Word's ToC);
+///          the ToC field's `\o` range is content-driven: it stays `"1-2"` (the exact
+///          pre-Phase-4 field) unless an authored level-3 section exists, widening to
+///          `"1-3"` only then — because `\o` bounds the `\u` outline-level sweep, an
+///          unconditional widening would have pulled every in-document TEI heading and
+///          "Summary" label (built-in Heading3, outlineLvl 2) into Word's regenerated
+///          ToC even for collections using no Phase 4 feature. Residual tradeoff for
+///          three-deep collections: authored level-3 sections and in-document TEI
+///          headings share ToC level 3 and are indistinguishable there. Opt-in trailing
+///          colophon paragraph (`Colophon` style). The introduction needs no code here —
+///          it arrives as the resolver's leading `.prose` item
+///   1.7 — Authoring Phase 5: opt-in headnote — a labeled paragraph plus italic-run
+///          abstract above the body (`headnoteXML`); a requested headnote with no stored
+///          summary renders a placeholder note. Footnote rendering here remains ungated
+///          (pre-existing behavior — this exporter never consumed the legacy
+///          `footnoteStyle`), so untouched collections export byte-identically
+///   1.8 — Authoring Phase 5 (excerpts): `.excerpt` items render as quote-styled
+///          paragraphs (`ExcerptQuote`: indented, italic, left accent border) plus an
+///          `ExcerptSource` source-citation paragraph. The two styles join `stylesXML`
+///          unconditionally — the same dormant-style precedent as the Phase 4 cover
+///          styles; an excerpt-free document.xml is unchanged
+///   1.9 — Authoring Phase 5 (overrides + related documents): the highlight and
+///          research-note gates honor the document's resolved per-entry override
+///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
+///          non-empty `relatedDocumentCitations` emits a "See also:" paragraph after
+///          the source note (existing `DocURL` style — no new dormant style needed).
+///          Footnote rendering remains ungated (the pre-existing gap, unchanged)
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -213,6 +245,45 @@ final class DocxCollectionExporter: CollectionExporter {
             </w:pPr>
             <w:rPr><w:b/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr>
           </w:style>
+          <w:style w:type="paragraph" w:styleId="SectionHeading2">
+            <w:name w:val="Section Heading 2"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:spacing w:before="360" w:after="120"/>
+              <w:outlineLvl w:val="1"/>
+            </w:pPr>
+            <w:rPr><w:b/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="SectionHeading3">
+            <w:name w:val="Section Heading 3"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:spacing w:before="240" w:after="80"/>
+              <w:outlineLvl w:val="2"/>
+            </w:pPr>
+            <w:rPr><w:b/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="CollectionSubtitle">
+            <w:name w:val="Collection Subtitle"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="80"/></w:pPr>
+            <w:rPr><w:sz w:val="32"/><w:szCs w:val="32"/><w:color w:val="333333"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="CollectionAuthor">
+            <w:name w:val="Collection Author"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="160"/></w:pPr>
+            <w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/><w:color w:val="555555"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="Colophon">
+            <w:name w:val="Colophon"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:pBdr><w:top w:val="single" w:sz="4" w:space="8" w:color="DDDDDD"/></w:pBdr>
+              <w:spacing w:before="480"/>
+            </w:pPr>
+            <w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:color w:val="777777"/></w:rPr>
+          </w:style>
           <w:style w:type="paragraph" w:styleId="Dateline">
             <w:name w:val="Dateline"/>
             <w:basedOn w:val="Normal"/>
@@ -235,6 +306,25 @@ final class DocxCollectionExporter: CollectionExporter {
             <w:basedOn w:val="Normal"/>
             <w:pPr><w:spacing w:after="80"/></w:pPr>
             <w:rPr><w:color w:val="1A4C8F"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="ExcerptQuote">
+            <w:name w:val="Excerpt Quote"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:pBdr><w:left w:val="single" w:sz="12" w:space="8" w:color="8A8A86"/></w:pBdr>
+              <w:ind w:left="360" w:right="360"/>
+              <w:spacing w:before="160" w:after="80"/>
+            </w:pPr>
+            <w:rPr><w:i/><w:color w:val="333333"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="ExcerptSource">
+            <w:name w:val="Excerpt Source"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:ind w:left="360" w:right="360"/>
+              <w:spacing w:after="160"/>
+            </w:pPr>
+            <w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="555555"/></w:rPr>
           </w:style>
           <w:style w:type="paragraph" w:styleId="ResearchNote">
             <w:name w:val="Research Note"/>
@@ -277,6 +367,15 @@ final class DocxCollectionExporter: CollectionExporter {
         // Cover: collection title
         body += styledPara(escaped(collection.name), styleId: "Heading1")
 
+        // Cover: title-page subtitle and author paragraphs (Authoring Phase 4) — emitted
+        // only when set, so an unset collection's cover is unchanged.
+        if let subtitle = collection.subtitle, !subtitle.isEmpty {
+            body += markdownItalicRuns(subtitle, styleId: "CollectionSubtitle")
+        }
+        if let author = collection.authorLine, !author.isEmpty {
+            body += styledPara(escaped(author), styleId: "CollectionAuthor")
+        }
+
         // Cover: optional note — markdownItalicRuns converts _text_ to italic Word runs.
         if let note = collection.note, !note.isEmpty {
             body += markdownItalicRuns(note, styleId: "CollectionNote")
@@ -290,11 +389,19 @@ final class DocxCollectionExporter: CollectionExporter {
             + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: Date()))"
         body += styledPara(info, styleId: "Normal")
 
-        // Contents heading + Word TOC field code (updates on first open in Word). The TOC
-        // collects Heading1–Heading2 and SectionHeading (outline level 0), so authored
-        // sections appear in the generated contents alongside document headings.
+        // Contents heading + Word TOC field code (updates on first open in Word). The
+        // field's `\o` level range is content-driven: `"1-2"` (the exact pre-Phase-4
+        // field) unless an authored level-3 section exists, so a collection using no
+        // deep nesting keeps today's ToC — in particular, in-document TEI headings and
+        // "Summary" labels (built-in Heading3, outline level 2) stay out of Word's
+        // regenerated contents.
+        let maxHeadingLevel = items.reduce(into: 1) { acc, item in
+            if case .heading(_, let level) = item {
+                acc = max(acc, min(max(level, 1), CollectionOutline.maxLevel))
+            }
+        }
         body += styledPara("Contents", styleId: "Heading2")
-        body += tocFieldXML()
+        body += tocFieldXML(maxHeadingLevel: maxHeadingLevel)
 
         // Page break before the composed body
         body += "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
@@ -302,14 +409,26 @@ final class DocxCollectionExporter: CollectionExporter {
         // Composed items — documents, section headings, and prose blocks in authored order.
         for item in items {
             switch item {
-            case .heading(let text):
-                // markdownItalicRuns handles _text_ spans; SectionHeading style is bold.
-                body += markdownItalicRuns(text, styleId: "SectionHeading", bold: true)
+            case .heading(let text, let level):
+                // markdownItalicRuns handles _text_ spans; the SectionHeading styles are
+                // bold. Levels map to SectionHeading/SectionHeading2/SectionHeading3
+                // (outlineLvl 0/1/2 — see the v1.6 note for why not built-in Heading2/3),
+                // so Word's regenerated ToC picks up the authored hierarchy.
+                let styles = ["SectionHeading", "SectionHeading2", "SectionHeading3"]
+                let l = min(max(level, 1), CollectionOutline.maxLevel)
+                body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true)
             case .prose(let rtf):
                 body += proseDocxXML(rtf)
+            case .excerpt(let excerpt):
+                body += excerptDocxXML(excerpt)
             case .document(let doc):
                 body += documentSectionXML(doc: doc, ctx: ctx, options: options)
             }
+        }
+
+        // Trailing colophon paragraph (Authoring Phase 4) — opt-in only.
+        if collection.includeColophon {
+            body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")
         }
 
         body += "    <w:sectPr/>\n"
@@ -334,6 +453,13 @@ final class DocxCollectionExporter: CollectionExporter {
             body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
         }
 
+        // Headnote (Authoring Phase 5) — a labeled italic abstract above the body; a
+        // requested headnote with no stored summary renders the placeholder note
+        // (headnote resolution never generates on demand).
+        if doc.includeHeadnote {
+            body += headnoteXML(doc.headnoteText)
+        }
+
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
         switch doc.bodyDepth {
         case .full:
@@ -342,8 +468,11 @@ final class DocxCollectionExporter: CollectionExporter {
                 // model's body nodes (see `ExportHighlight`); the plain
                 // `bodyText` paragraph-splitting fallback below uses a
                 // different extraction path, so painting only applies here.
+                // Phase 5: the per-entry/section override when resolved, else the
+                // collection-level option.
+                let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
                 let tracker: HighlightPaintTracker? =
-                    (options.applyHighlights && !doc.highlights.isEmpty)
+                    (applyHighlights && !doc.highlights.isEmpty)
                         ? HighlightPaintTracker(doc.highlights)
                         : nil
                 body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker)
@@ -374,13 +503,22 @@ final class DocxCollectionExporter: CollectionExporter {
             break
         }
 
-        // Source note (footnoteStyle == .sourceNoteOnly)
+        // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
             body += styledPara("Source: \(escaped(sourceNote))", styleId: "DocURL")
         }
 
-        // Research notes — respects options.includeNotes.
-        guard options.includeNotes else { return body }
+        // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
+        // "See also:" citations; empty (every untouched entry) emits nothing. Reuses
+        // the DocURL apparatus style, so styles.xml is unchanged.
+        if !doc.relatedDocumentCitations.isEmpty {
+            let label = String(localized: "collection.related.label", defaultValue: "See also:")
+            let joined = doc.relatedDocumentCitations.joined(separator: "; ")
+            body += markdownItalicRuns("\(label) \(joined)", styleId: "DocURL")
+        }
+
+        // Research notes — the per-entry override when resolved, else options.includeNotes.
+        guard doc.includeNotesOverride ?? options.includeNotes else { return body }
         for note in doc.noteTexts where !note.isEmpty {
             body += researchNoteHeadingPara()
             let noteParagraphs = note
@@ -434,6 +572,36 @@ final class DocxCollectionExporter: CollectionExporter {
             }
         }
         return runs
+    }
+
+    /// Renders an excerpt item (Authoring Phase 5): the frozen passage as `ExcerptQuote`
+    /// paragraphs (blank lines split paragraphs, single newlines become `<w:br/>` —
+    /// verbatim primary-source text, so no markdown transforms), followed by an
+    /// `ExcerptSource` paragraph carrying "— citation" (the citation runs through
+    /// `markdownItalicRuns` so `_…_` spans render as italics). An empty citation omits
+    /// the source paragraph.
+    private func excerptDocxXML(_ excerpt: CollectionExportExcerpt) -> String {
+        var xml = ""
+        let paragraphs = excerpt.text
+            .components(separatedBy: "\n\n")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        for para in paragraphs {
+            let parts = para.trimmingCharacters(in: .whitespacesAndNewlines)
+                .components(separatedBy: "\n")
+            var runs = ""
+            for (index, part) in parts.enumerated() {
+                if index > 0 { runs += "<w:r><w:br/></w:r>" }
+                if !part.isEmpty {
+                    runs += "<w:r><w:t xml:space=\"preserve\">\(xmlEscaped(part))</w:t></w:r>"
+                }
+            }
+            guard !runs.isEmpty else { continue }
+            xml += wPara(runs: runs, styleId: "ExcerptQuote")
+        }
+        if !excerpt.citation.isEmpty {
+            xml += markdownItalicRuns("\u{2014} \(excerpt.citation)", styleId: "ExcerptSource")
+        }
+        return xml
     }
 
     // MARK: - Rich Rendering (Session 83)
@@ -751,13 +919,23 @@ final class DocxCollectionExporter: CollectionExporter {
         return "<w:footnotes xmlns:w=\"\(w)\">\n\(separators)\n\(body)</w:footnotes>"
     }
 
-    /// Word field-code TOC: `\o "1-2"` collects Heading1–Heading2.
+    /// Word field-code TOC. The `\o` level range bounds what the ToC collects (it caps
+    /// the `\u` outline-level sweep the way Word's Show-levels control does): `"1-2"` —
+    /// the exact pre-Phase-4 field — unless an authored level-3 section exists, in which
+    /// case it widens to `"1-3"` so the three-deep outline is representable. Level-2
+    /// sections need no widening: `SectionHeading2` carries `outlineLvl` 1, inside
+    /// `"1-2"`. The `\u` switch collects the custom
+    /// `SectionHeading`/`SectionHeading2`/`SectionHeading3` styles by their `outlineLvl`.
     /// `w:dirty="true"` causes Word to rebuild on first open.
-    private func tocFieldXML() -> String {
-        "    <w:p>\n"
+    ///
+    /// - Parameter maxHeadingLevel: The deepest clamped authored heading level in the
+    ///   export (1 when the collection has no headings).
+    private func tocFieldXML(maxHeadingLevel: Int) -> String {
+        let range = maxHeadingLevel >= 3 ? "1-3" : "1-2"
+        return "    <w:p>\n"
         + "      <w:pPr><w:pStyle w:val=\"Normal\"/></w:pPr>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"begin\" w:dirty=\"true\"/></w:r>\n"
-        + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"1-2\" \\h \\z \\u </w:instrText></w:r>\n"
+        + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"\(range)\" \\h \\z \\u </w:instrText></w:r>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>\n"
         + "      <w:r><w:t>Right-click to update the table of contents.</w:t></w:r>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"end\"/></w:r>\n"
@@ -826,6 +1004,36 @@ final class DocxCollectionExporter: CollectionExporter {
         + "      <w:pPr><w:pStyle w:val=\"\(styleId)\"/></w:pPr>\n"
         + "      \(runs)\n"
         + "    </w:p>\n"
+    }
+
+    /// Emits the headnote block (Authoring Phase 5): a small bold "Headnote" label
+    /// paragraph followed by the abstract in italic runs — or, when `text` is nil/empty
+    /// (a requested headnote with no stored summary), the italic placeholder note.
+    /// Paragraph breaks in the abstract split into separate paragraphs.
+    private func headnoteXML(_ text: String?) -> String {
+        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+        var xml = wPara(
+            runs: "<w:r><w:rPr><w:b/></w:rPr><w:t xml:space=\"preserve\">\(escaped(label))</w:t></w:r>",
+            styleId: "Normal")
+        let content: String
+        if let text, !text.isEmpty {
+            content = text
+        } else {
+            content = String(localized: "collection.headnote.missing",
+                             defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+        }
+        let paragraphs = content
+            .components(separatedBy: "\n\n")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        for para in paragraphs {
+            let flattened = para
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "\n", with: " ")
+            xml += wPara(
+                runs: "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">\(escaped(flattened))</w:t></w:r>",
+                styleId: "Normal")
+        }
+        return xml
     }
 
     private func researchNoteHeadingPara() -> String {

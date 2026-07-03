@@ -85,6 +85,28 @@ import UIKit
 ///          the entry list in selection order; `appendEntries` allows duplicates (A4)
 ///          via the shared `CollectionDocumentDiscovery.appendEntries`, with repeated
 ///          documents badged "Also in collection" on their rows
+///   2.3 — Authoring Phase 4 (editor step): the documents list renders the derived
+///          outline (rows indent by `CollectionOutline` depth, headings step typography
+///          and gain collapse chevrons — view state only) with the section context menu
+///          (rename / indent / outdent / delete-heading vs delete-section); dragging a
+///          heading moves its whole section as one block via the shared
+///          `CollectionOutline.applyingMove` engine; front-matter editing (subtitle,
+///          author line, introduction rich text, colophon toggle) joins the iPhone
+///          Details disclosure / iPad inspector / macOS sheet form, all live-autosaved,
+///          with the active Project name as the author-line placeholder (never persisted)
+///   2.4 — Authoring Phase 4 review fix: front-matter footer copy corrected — the
+///          introduction opens the body AFTER the table of contents (it is the
+///          resolver's leading `.prose` item), not before it
+///   2.5 — Authoring Phase 5 (excerpts): the add menu gains "Add Highlighted Passages…"
+///          (`CollectionAddHighlightsSheet` — see its doc for why it lives here rather
+///          than in Add Documents); `.excerpt` entries render as `CollectionExcerptRow`
+///          (movable/deletable like prose, no body-depth controls); document rows'
+///          inspector gains a per-highlight "Insert as Excerpt" callback that appends
+///          via the shared `CollectionExcerpts` factory
+///   2.6 — Authoring Phase 5 review fixes: the timeline sheets map only `.document`
+///          entries — excerpt entries carry their source document's provenance ids, so
+///          mapping them too double-counted that document's year and duplicated the
+///          timeline `Item` id
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -99,6 +121,7 @@ struct CollectionEditorView: View {
     @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
+    @Query(sort: \Project.name) private var allProjects: [Project]
 
     // MARK: - State
 
@@ -109,8 +132,20 @@ struct CollectionEditorView: View {
     @State private var collectionNote: String
     @State private var sortedEntries: [CollectionEntry]
     @State private var linkedSavedSearchId: UUID?
+    /// Front matter (Authoring Phase 4): title-page subtitle, live-autosaved like name/note.
+    @State private var collectionSubtitle: String
+    /// Front matter: title-page author line. The active Project name is offered as the
+    /// field's *placeholder* only — a suggestion, never persisted automatically.
+    @State private var collectionAuthorLine: String
+    /// Front matter: whether exports end with the colophon page/footer (default off).
+    @State private var includeColophon: Bool
+    /// Headings whose sections are currently collapsed in the outline — VIEW STATE only
+    /// (Phase 4): never persisted, never synced; keyed by entry id so it survives moves.
+    @State private var collapsedHeadingIds: Set<UUID> = []
 
     @State private var showAddDocuments   = false
+    /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
+    @State private var showAddHighlights  = false
     @State private var showExport         = false
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
@@ -169,6 +204,9 @@ struct CollectionEditorView: View {
             _sortedEntries = State(initialValue:
                 (c.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
             _linkedSavedSearchId = State(initialValue: c.savedSearchId)
+            _collectionSubtitle = State(initialValue: c.subtitle ?? "")
+            _collectionAuthorLine = State(initialValue: c.authorLine ?? "")
+            _includeColophon = State(initialValue: c.includeColophon)
             isNewCollection = false
             _detailsExpanded = State(initialValue: false)
         } else {
@@ -178,6 +216,9 @@ struct CollectionEditorView: View {
             _collectionNote = State(initialValue: "")
             _sortedEntries = State(initialValue: [])
             _linkedSavedSearchId = State(initialValue: nil)
+            _collectionSubtitle = State(initialValue: "")
+            _collectionAuthorLine = State(initialValue: "")
+            _includeColophon = State(initialValue: false)
             isNewCollection = true
             _detailsExpanded = State(initialValue: true)
         }
@@ -204,6 +245,9 @@ struct CollectionEditorView: View {
         .onChange(of: collectionName) { _, _ in saveLive() }
         .onChange(of: collectionNote) { _, _ in saveLive() }
         .onChange(of: linkedSavedSearchId) { _, _ in saveLive() }
+        .onChange(of: collectionSubtitle) { _, _ in saveLive() }
+        .onChange(of: collectionAuthorLine) { _, _ in saveLive() }
+        .onChange(of: includeColophon) { _, _ in saveLive() }
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
         // it doesn't render as a blank list row.
@@ -211,6 +255,8 @@ struct CollectionEditorView: View {
             guard isNewCollection else { return }
             let untouched = collection.name.isEmpty && collection.note == nil
                 && sortedEntries.isEmpty && collection.savedSearchId == nil
+                && collection.subtitle == nil && collection.authorLine == nil
+                && collection.introductionText == nil && !collection.includeColophon
             if untouched {
                 modelContext.delete(collection)
             } else if collection.name.isEmpty {
@@ -223,7 +269,11 @@ struct CollectionEditorView: View {
             // macOS: plain content + bottom button bar (no NavigationStack chrome)
             VStack(spacing: 0) {
                 DocumentTimelineView(
-                    items: sortedEntries.map {
+                    // Document entries only — matching how orderedDocumentKeys and the
+                    // export document counts scope. Excerpts carry their source
+                    // document's provenance ids, so mapping them too would double-count
+                    // that document's year and duplicate the Item id ("volume/doc").
+                    items: sortedEntries.filter { $0.entryKind == .document }.map {
                         DocumentTimelineView.Item(
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
@@ -246,7 +296,9 @@ struct CollectionEditorView: View {
             #else
             NavigationStack {
                 DocumentTimelineView(
-                    items: sortedEntries.map {
+                    // Document entries only — see the macOS branch above for why
+                    // excerpt entries must not contribute timeline items.
+                    items: sortedEntries.filter { $0.entryKind == .document }.map {
                         DocumentTimelineView.Item(
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
@@ -297,6 +349,7 @@ struct CollectionEditorView: View {
             Form {
                 nameSection
                 noteSection
+                frontMatterSection
                 compositionSection
                 smartCollectionSection
                 documentsSection
@@ -330,6 +383,14 @@ struct CollectionEditorView: View {
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
+            }
+        }
+        .sheet(isPresented: $showAddHighlights) {
+            CollectionAddHighlightsSheet(
+                documentKeys: orderedDocumentKeys,
+                documentLabels: documentHeaders
+            ) { captures in
+                appendExcerpts(captures)
             }
         }
         .sheet(isPresented: $showExport) {
@@ -422,6 +483,14 @@ struct CollectionEditorView: View {
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
             }
         }
+        .sheet(isPresented: $showAddHighlights) {
+            CollectionAddHighlightsSheet(
+                documentKeys: orderedDocumentKeys,
+                documentLabels: documentHeaders
+            ) { captures in
+                appendExcerpts(captures)
+            }
+        }
         .sheet(isPresented: $showExport) {
             ExportSheetView(
                 collection: collection,
@@ -495,12 +564,13 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// Collapsible name / note / smart-collection group (iPhone).
+    /// Collapsible name / note / front-matter / smart-collection group (iPhone).
     private var detailsSection: some View {
         Section {
             DisclosureGroup(isExpanded: $detailsExpanded) {
                 nameField
                 noteField
+                frontMatterRows
                 smartCollectionRows
             } label: {
                 Label {
@@ -557,6 +627,7 @@ struct CollectionEditorView: View {
             Form {
                 nameSection
                 noteSection
+                frontMatterSection
                 compositionSection
                 smartCollectionSection
             }
@@ -793,6 +864,84 @@ struct CollectionEditorView: View {
         }
     }
 
+    // MARK: - Front Matter (Authoring Phase 4)
+
+    /// The active project's name, offered as the author-line *placeholder* — a
+    /// suggestion only, never written to the model unless the user types it.
+    private var authorPlaceholder: String {
+        if let pid = appState.activeProjectId,
+           let project = allProjects.first(where: { $0.id == pid }),
+           !project.name.isEmpty {
+            return project.name
+        }
+        return String(localized: "collection.frontmatter.author.placeholder",
+                      defaultValue: "Author")
+    }
+
+    /// Title-page and introduction fields (Authoring Phase 4), usable inside any
+    /// container (iPhone Details disclosure, iPad inspector, macOS sheet form). All
+    /// live-autosave; an empty field stores `nil`, keeping exports byte-identical to
+    /// pre-Phase-4 output until something is actually set.
+    @ViewBuilder
+    private var frontMatterRows: some View {
+        TextField(
+            String(localized: "collection.frontmatter.subtitle.placeholder",
+                   defaultValue: "Subtitle (title page)"),
+            text: $collectionSubtitle
+        )
+        .accessibilityLabel(String(localized: "collection.frontmatter.subtitle.accessibility",
+                                   defaultValue: "Collection subtitle"))
+        TextField(authorPlaceholder, text: $collectionAuthorLine)
+            .accessibilityLabel(String(localized: "collection.frontmatter.author.accessibility",
+                                       defaultValue: "Author line"))
+        VStack(alignment: .leading, spacing: 4) {
+            Text(String(localized: "collection.frontmatter.introduction.label",
+                        defaultValue: "Introduction"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            RichTextEditor(initialRTF: collection.introductionRichText,
+                           plainFallback: collection.introductionText ?? "") { rtf, plain in
+                saveIntroduction(rtf: rtf, plain: plain)
+            }
+            .frame(minHeight: 80, maxHeight: 200)
+        }
+        Toggle(isOn: $includeColophon) {
+            Text(String(localized: "collection.frontmatter.colophon.toggle",
+                        defaultValue: "Include colophon"))
+        }
+        #if os(macOS)
+        .toggleStyle(.checkbox)
+        #endif
+    }
+
+    /// The front-matter rows as a titled form section (iPad inspector, macOS sheet form).
+    private var frontMatterSection: some View {
+        Section {
+            frontMatterRows
+        } header: {
+            Text(String(localized: "collection.frontmatter.header",
+                        defaultValue: "Title Page & Introduction"))
+        } footer: {
+            Text(String(localized: "collection.frontmatter.footer",
+                        defaultValue: "Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout."))
+        }
+    }
+
+    /// Writes the introduction onto the model, live (the rich-text editor reports every
+    /// edit). An effectively empty introduction stores `nil` in both fields, so exports
+    /// omit the block entirely.
+    private func saveIntroduction(rtf: Data?, plain: String) {
+        let trimmed = plain.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            collection.introductionText = nil
+            collection.introductionRichText = nil
+        } else {
+            collection.introductionText = plain
+            collection.introductionRichText = rtf
+        }
+        try? modelContext.save()
+    }
+
     // MARK: - Composition Section
 
     /// The persisted export-content settings (body depth, footnotes, notes, highlights, etc.).
@@ -827,34 +976,18 @@ struct CollectionEditorView: View {
                 }
             } else {
                 let duplicateKeys = duplicateDocumentKeys
-                ForEach($sortedEntries, id: \.id) { $entry in
-                    switch entry.entryKind {
-                    case .document:
-                        let key = "\(entry.volumeId)/\(entry.documentId)"
-                        EntryRow(entry: $entry,
-                                 availableNotes: notes(for: entry),
-                                 documentHeader: documentHeaders[key],
-                                 volumeTitle: volumeTitle(for: entry),
-                                 documentDate: documentDates[key],
-                                 isDuplicate: duplicateKeys.contains(key))
-                    case .heading:
-                        CollectionHeadingRow(entry: $entry)
-                    case .prose:
-                        CollectionProseRow(entry: $entry)
-                    case .unrecognized:
-                        UnrecognizedEntryRow()
-                    }
+                let outline = CollectionOutline.linearize(sortedEntries)
+                let rows = CollectionOutline.visibleRows(
+                    in: outline, collapsedHeadingIds: collapsedHeadingIds)
+                ForEach(rows) { row in
+                    outlineRow(row, outline: outline, duplicateKeys: duplicateKeys)
+                        .padding(.leading, outlineIndent(for: row))
                 }
                 .onMove { indices, newOffset in
-                    sortedEntries.move(fromOffsets: indices, toOffset: newOffset)
-                    reindexEntries()
+                    moveVisibleRows(indices, to: newOffset, visible: rows.map(\.index))
                 }
                 .onDelete { indexSet in
-                    for i in indexSet {
-                        modelContext.delete(sortedEntries[i])
-                    }
-                    sortedEntries.remove(atOffsets: indexSet)
-                    reindexEntries()
+                    deleteVisibleRows(indexSet, visible: rows.map(\.index))
                 }
             }
         } header: {
@@ -882,11 +1015,19 @@ struct CollectionEditorView: View {
                         Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
                               systemImage: "text.alignleft")
                     }
+                    Button {
+                        showAddHighlights = true
+                    } label: {
+                        Label(String(localized: "collection.add.highlights",
+                                     defaultValue: "Add Highlighted Passages…"),
+                              systemImage: "text.quote")
+                    }
+                    .disabled(orderedDocumentKeys.isEmpty)
                 } label: {
                     Image(systemName: "plus").font(.caption)
                 }
                 .accessibilityLabel(String(localized: "collection.add.menu",
-                                           defaultValue: "Add documents, a section heading, or a note block"))
+                                           defaultValue: "Add documents, a section heading, a note block, or highlighted passages"))
                 if !sortedEntries.isEmpty {
                     Button {
                         showTimeline = true
@@ -911,6 +1052,166 @@ struct CollectionEditorView: View {
                 #endif
             }
         }
+    }
+
+    // MARK: - Outline rows (Authoring Phase 4)
+
+    /// Builds the view for one visible outline row. Document/prose rows are unchanged
+    /// from Phase 3; heading rows gain the outline controls (depth typography, collapse
+    /// chevron, section context menu). Bindings index into `sortedEntries`, which is
+    /// kept in `sortOrder` order (reindexed 0..n after every mutation), so positions
+    /// align with the linearized outline.
+    @ViewBuilder
+    private func outlineRow(_ row: CollectionOutline.VisibleRow,
+                            outline: [CollectionOutline.OutlineItem],
+                            duplicateKeys: Set<String>) -> some View {
+        let entry = sortedEntries[row.index]
+        switch entry.entryKind {
+        case .document:
+            let key = "\(entry.volumeId)/\(entry.documentId)"
+            EntryRow(entry: $sortedEntries[row.index],
+                     availableNotes: notes(for: entry),
+                     documentHeader: documentHeaders[key],
+                     volumeTitle: volumeTitle(for: entry),
+                     documentDate: documentDates[key],
+                     isDuplicate: duplicateKeys.contains(key),
+                     onInsertExcerpt: { capture in appendExcerpts([capture]) })
+        case .heading:
+            let range = CollectionOutline.sectionRange(of: row.index, in: outline)
+            CollectionHeadingRow(
+                entry: $sortedEntries[row.index],
+                onDelete: { deleteHeadingOnly(at: row.index) },
+                showsInlineDelete: isMacOS,
+                depth: row.depth,
+                isCollapsed: collapsedHeadingIds.contains(row.id),
+                sectionEntryCount: range.count - 1,
+                onToggleCollapse: { toggleCollapse(row.id) },
+                canIndent: CollectionOutline.canIndent(row.index, in: outline),
+                canOutdent: CollectionOutline.canOutdent(row.index, in: outline),
+                onIndent: { indentSection(at: row.index) },
+                onOutdent: { outdentSection(at: row.index) },
+                onDeleteSection: { deleteSection(at: row.index) }
+            )
+        case .prose:
+            CollectionProseRow(entry: $sortedEntries[row.index])
+        case .excerpt:
+            // Movable/deletable like prose; iOS deletion stays on swipe (no inline trash).
+            CollectionExcerptRow(entry: entry,
+                                 volumeTitle: volumeTitle(for: entry),
+                                 onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil)
+        case .unrecognized:
+            UnrecognizedEntryRow()
+        }
+    }
+
+    /// Deletes the single entry at a full-outline index (the excerpt row's inline trash
+    /// on the macOS sheet editor; iOS deletion stays on swipe via `deleteVisibleRows`).
+    private func deleteVisibleRow(_ index: Int) {
+        guard sortedEntries.indices.contains(index) else { return }
+        collapsedHeadingIds.remove(sortedEntries[index].id)
+        modelContext.delete(sortedEntries[index])
+        sortedEntries.remove(at: index)
+        finishOutlineMutation()
+    }
+
+    /// Whether this build renders the macOS sheet editor (its List has no swipe-to-delete,
+    /// so heading rows show the inline trash).
+    private var isMacOS: Bool {
+        #if os(macOS)
+        true
+        #else
+        false
+        #endif
+    }
+
+    /// Leading indentation for a row: headings indent by their depth above level 1;
+    /// body rows indent one step inside their owning section (depth 0 — before any
+    /// heading — keeps the flush pre-Phase-4 position).
+    private func outlineIndent(for row: CollectionOutline.VisibleRow) -> CGFloat {
+        let steps = sortedEntries[row.index].entryKind == .heading
+            ? max(0, row.depth - 1)
+            : row.depth
+        return CGFloat(steps) * 16
+    }
+
+    /// Toggles a section's collapse chevron (view state only).
+    private func toggleCollapse(_ headingId: UUID) {
+        if collapsedHeadingIds.contains(headingId) {
+            collapsedHeadingIds.remove(headingId)
+        } else {
+            collapsedHeadingIds.insert(headingId)
+        }
+    }
+
+    /// Moves the dragged visible row (mapped back to full-outline coordinates) through
+    /// the shared engine: a heading takes its whole section with it, a document moves
+    /// alone; a section dropped into its own range is refused. Reindexes and normalizes
+    /// after — global `sortOrder` semantics are untouched.
+    private func moveVisibleRows(_ indices: IndexSet, to newOffset: Int, visible: [Int]) {
+        guard let firstVisible = indices.min(), visible.indices.contains(firstVisible) else { return }
+        let from = visible[firstVisible]
+        let to = newOffset >= visible.count ? sortedEntries.count : visible[newOffset]
+        guard let reordered = CollectionOutline.applyingMove(
+            sortedEntries, fromIndex: from, toOffset: to) else { return }
+        sortedEntries = reordered
+        finishOutlineMutation()
+    }
+
+    /// Deletes the swiped visible rows (mapped to full-outline coordinates). Deleting a
+    /// heading this way removes the heading only — its entries stay and any sub-headings
+    /// bubble up via normalize.
+    private func deleteVisibleRows(_ indices: IndexSet, visible: [Int]) {
+        let full = indices.compactMap { visible.indices.contains($0) ? visible[$0] : nil }
+        for i in full.sorted(by: >) {
+            collapsedHeadingIds.remove(sortedEntries[i].id)
+            modelContext.delete(sortedEntries[i])
+            sortedEntries.remove(at: i)
+        }
+        finishOutlineMutation()
+    }
+
+    /// Indents the section at `index` one level via the shared outline mutation.
+    private func indentSection(at index: Int) {
+        CollectionOutline.indentSection(at: index, in: sortedEntries)
+        try? modelContext.save()
+    }
+
+    /// Outdents the section at `index` one level via the shared outline mutation.
+    private func outdentSection(at index: Int) {
+        CollectionOutline.outdentSection(at: index, in: sortedEntries)
+        try? modelContext.save()
+    }
+
+    /// Deletes the heading at `index` ONLY — its contents stay and sub-headings bubble
+    /// up one level (normalize's orphan clamp).
+    private func deleteHeadingOnly(at index: Int) {
+        guard sortedEntries.indices.contains(index) else { return }
+        collapsedHeadingIds.remove(sortedEntries[index].id)
+        modelContext.delete(sortedEntries[index])
+        sortedEntries.remove(at: index)
+        finishOutlineMutation()
+    }
+
+    /// Deletes the heading at `index` and every entry in its section range (the user
+    /// confirmed in the row's dialog).
+    private func deleteSection(at index: Int) {
+        let items = CollectionOutline.linearize(sortedEntries)
+        let range = CollectionOutline.sectionRange(of: index, in: items)
+        guard range.upperBound <= sortedEntries.count else { return }
+        for i in range.reversed() {
+            collapsedHeadingIds.remove(sortedEntries[i].id)
+            modelContext.delete(sortedEntries[i])
+            sortedEntries.remove(at: i)
+        }
+        finishOutlineMutation()
+    }
+
+    /// The shared tail of every outline mutation: reindex `sortOrder` 0..n, normalize
+    /// heading levels (no orphan jumps persist), and save.
+    private func finishOutlineMutation() {
+        reindexEntries()
+        CollectionOutline.normalize(sortedEntries)
+        try? modelContext.save()
     }
 
     // MARK: - Add Documents Section
@@ -981,6 +1282,25 @@ struct CollectionEditorView: View {
                                                            documentId: $0.documentId) })
     }
 
+    /// Ordered (deduplicated) keys of the collection's document entries — scopes the
+    /// Add Highlighted Passages sheet to this collection's documents, in reading order.
+    private var orderedDocumentKeys: [String] {
+        var seen: Set<String> = []
+        return sortedEntries.filter { $0.entryKind == .document }
+            .map { CollectionDocumentDiscovery.documentKey(volumeId: $0.volumeId,
+                                                           documentId: $0.documentId) }
+            .filter { seen.insert($0).inserted }
+    }
+
+    /// Appends excerpt entries (Authoring Phase 5) at the end of the entry list via the
+    /// shared `CollectionExcerpts` factory, then saves — the excerpt sibling of
+    /// `appendEntries`.
+    private func appendExcerpts(_ captures: [CollectionExcerptCapture]) {
+        CollectionExcerpts.append(captures, to: collection,
+                                  sortedEntries: &sortedEntries, modelContext: modelContext)
+        try? modelContext.save()
+    }
+
     /// Appends a structural entry (a section heading or a prose block) to the collection.
     /// Mirrors the document-entry creation path; heading/prose entries carry empty document
     /// identifiers and use `text` (Phase 3a).
@@ -1047,6 +1367,13 @@ struct CollectionEditorView: View {
         let trimmedNote = collectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
         collection.note = trimmedNote.isEmpty ? nil : trimmedNote
         collection.savedSearchId = linkedSavedSearchId
+        // Front matter (Phase 4): empty fields store nil so untouched collections keep
+        // exporting byte-identically to pre-Phase-4 output.
+        let trimmedSubtitle = collectionSubtitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        collection.subtitle = trimmedSubtitle.isEmpty ? nil : trimmedSubtitle
+        let trimmedAuthor = collectionAuthorLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
+        collection.includeColophon = includeColophon
         if let projectId = appState.activeProjectId, !collection.projectIds.contains(projectId) {
             collection.projectIds.append(projectId)
         }

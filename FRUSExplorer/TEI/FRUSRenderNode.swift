@@ -274,3 +274,146 @@ private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout Strin
         }
     }
 }
+
+// MARK: - Block-aware flat-text extraction (Authoring Phase 5)
+
+/// Partitions the flat text into block-level segments whose concatenation is exactly
+/// `buildFlatText(from:)` — the same DFS, so flat-text offsets index into the joined
+/// blocks unchanged. Block boundaries follow the HTML serializer's block elements
+/// (`paragraph`, `heading`, `dateline`, opener/closer, salutation, editorial notes,
+/// title pages, attachments, footnote bodies, plus each table cell and list item);
+/// inline containers (`bold`/`italic`/links/`unknown` spans, …) never split a block.
+///
+/// The flat text itself has **no separator between blocks** (adjacent paragraphs are
+/// fused), which is fine for offset arithmetic but corrupts any string extracted
+/// across a block boundary. `flatTextExcerpt(from:start:end:)` uses this partition to
+/// re-introduce paragraph breaks when freezing a selection into display text.
+///
+/// Version history:
+///   1.0 — Authoring Phase 5 review fixes: initial implementation
+public func buildFlatTextBlocks(from model: FRUSDocumentRenderModel) -> [String] {
+    var blocks: [String] = []
+    var current = ""
+    appendFlatTextBlocks(from: model.bodyNodes, into: &blocks, current: &current)
+    flushFlatTextBlock(&blocks, &current)
+    return blocks
+}
+
+/// Extracts the flat-text range `start..<end` (UTF-16 offsets, the coordinate space of
+/// `DocumentHighlight.startOffset`/`endOffset` and the WebKit selection range) as
+/// display text: per-block slices joined with `"\n\n"`, so a selection spanning block
+/// boundaries keeps its paragraph breaks instead of fusing "…first paragraph.Start of
+/// second…". A single-block range returns exactly the raw flat-text slice.
+///
+/// The offsets remain pure flat-space anchors: they delimit the *flat-text span*, not
+/// the returned string (which inserts separators the flat text does not contain).
+/// Whitespace-only per-block slices are dropped.
+///
+/// - Parameters:
+///   - model: The document render model to extract from.
+///   - start: UTF-16 start offset into `buildFlatText(from: model)`.
+///   - end: UTF-16 end offset (exclusive).
+/// - Returns: The block-separated passage, or `nil` when the range is empty, out of
+///   bounds, splits a surrogate pair, or covers only whitespace — callers fall back
+///   to their pre-existing behavior (raw selection text or empty string).
+///
+/// Version history:
+///   1.0 — Authoring Phase 5 review fixes: initial implementation
+public func flatTextExcerpt(from model: FRUSDocumentRenderModel, start: Int, end: Int) -> String? {
+    guard start >= 0, end > start else { return nil }
+    var pieces: [String] = []
+    var position = 0
+    for block in buildFlatTextBlocks(from: model) {
+        let blockStart = position
+        let blockLength = block.utf16.count
+        position += blockLength
+        let sliceStart = max(start, blockStart)
+        let sliceEnd = min(end, blockStart + blockLength)
+        guard sliceStart < sliceEnd else {
+            if blockStart >= end { break }
+            continue
+        }
+        guard let range = Range(
+            NSRange(location: sliceStart - blockStart, length: sliceEnd - sliceStart),
+            in: block
+        ) else { return nil }
+        let piece = String(block[range])
+        if !piece.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            pieces.append(piece)
+        }
+    }
+    guard !pieces.isEmpty else { return nil }
+    return pieces.joined(separator: "\n\n")
+}
+
+/// Ends the current block: appends it to `blocks` when non-empty and resets the
+/// accumulator. Empty flushes are no-ops, so the concatenation invariant holds.
+private func flushFlatTextBlock(_ blocks: inout [String], _ current: inout String) {
+    guard !current.isEmpty else { return }
+    blocks.append(current)
+    current = ""
+}
+
+/// The block-partitioning twin of `appendFlatText`: identical DFS and identical
+/// character contribution, but block-level containers flush the accumulator on entry
+/// and exit so each visual block lands in its own segment.
+private func appendFlatTextBlocks(
+    from nodes: [FRUSRenderNode],
+    into blocks: inout [String],
+    current: inout String
+) {
+    for node in nodes {
+        switch node {
+        case .plainText(let s), .formulaText(let s):
+            current += s
+        case .lineBreak:
+            current += "\n"
+        case .tableBlock(let rows):
+            flushFlatTextBlock(&blocks, &current)
+            for row in rows {
+                for cell in row {
+                    appendFlatTextBlocks(from: cell.children, into: &blocks, current: &current)
+                    flushFlatTextBlock(&blocks, &current)
+                }
+            }
+        case .listBlock(_, let items):
+            flushFlatTextBlock(&blocks, &current)
+            for item in items {
+                appendFlatTextBlocks(from: item, into: &blocks, current: &current)
+                flushFlatTextBlock(&blocks, &current)
+            }
+        case .heading(let cs), .dateline(let cs), .letterOpener(let cs),
+             .letterCloser(let cs), .salutation(let cs), .paragraph(let cs),
+             .editorialNoteBlock(let cs), .titlePageBlock(let cs),
+             .attachmentHeading(let cs):
+            flushFlatTextBlock(&blocks, &current)
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+            flushFlatTextBlock(&blocks, &current)
+        case .boldText(let cs), .italicText(let cs), .smallCapsText(let cs),
+             .underlineText(let cs), .termText(let cs), .suppliedText(let cs),
+             .sicText(let cs), .corrText(let cs):
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+        case .persNameLink(_, let cs, _):
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+        case .glossLink(_, let cs, _):
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+        case .crossRefLink(_, _, let cs):
+            // Inline in the HTML serializer (<a>), so it never splits a block.
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+        case .unknown(_, let cs):
+            // Serialized as an inline <span class="unknown">, so inline here too.
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+        case .attachmentBlock(_, let cs):
+            flushFlatTextBlock(&blocks, &current)
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+            flushFlatTextBlock(&blocks, &current)
+        case .footnoteBody(_, _, _, _, _, let cs):
+            flushFlatTextBlock(&blocks, &current)
+            appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
+            flushFlatTextBlock(&blocks, &current)
+        default:
+            // .pageBreak, .footnoteMarker, .figureBlock — contribute no characters
+            break
+        }
+    }
+}

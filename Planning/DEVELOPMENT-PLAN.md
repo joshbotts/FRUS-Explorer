@@ -1053,3 +1053,46 @@ corpus-baseline normalization for existing term charts, person trajectory/compar
 charts (also resolves the `topTermsByYear` stub), series production & timeliness
 dashboard, geographic attention explorer, cross-reference statistics, co-mention
 networks, and a deferred `place_mentions` schema addition. No code changes.
+### Session 2026-07-02 (later) — Collections Authoring Phase 4 (publication frame)
+Four commits: (1) **model+format** — `CollectionEntry.level` (level-encoded nesting; global
+sortOrder untouched), `CollectionOutline` single linearizer (clamp 1–3, orphan-jump repair,
+sectionRange/canIndent/canOutdent, ancestor body-depth cascade — D5 falls out), Collection
+front matter (subtitle/authorLine/introduction RTF+plain/includeColophon), `.fruscollection`
+v2 (write-minimum: no-v2-features files emit byte-identical v1; minimumReaderVersion floor,
+defaulted 1; tolerant reader). (2) **exporters** — `.heading(String, level:)`; title page +
+introduction (leading prose item via the shared RTF path) + nested ToC + opt-in colophon in
+HTML/PDF/DOCX + preview; title page/colophon metadata-driven (items stream unchanged);
+byte-compat proven by frozen-literal tests; DOCX levels map to custom SectionHeading2/3
+styles (NOT built-in Heading2/3 — those are used by citations/TEI headings). (3) **editor** —
+depth-indented rows, collapse/expand (view state, "N hidden" badge), heading context menu
+(rename/indent/outdent/delete-heading-vs-section), **move-section-as-a-unit** via a shared
+pure move engine (unit-tested), front-matter UI on all three surfaces, docs rider.
+(4) **review fixes** — 5/5 valid: HIGH = DOCX ToC field widened unconditionally (now emits
+pre-Phase-4 `\o "1-2"` unless an authored level-3 exists); macOS normalize-before-reindex
+no-op; three docs corrections. A6 resolved cap-3-UI-only; A7 resolved RichTextEditor as-is.
+Full suite 1001/1001.
+
+### Session 2026-07-03 — Collections Authoring Phase 5 (annotated document)
+Four commits on claude/authoring-phase5-annotation: (1) **footnotes+headnotes** —
+`includeFootnotes`/`includeSourceNote` Bool pair (nil = derive from legacy `footnoteStyle`;
+dual-write preserved for old devices; "all footnotes AND source note" now expressible;
+PDF/DOCX never consumed the tri-state — left ungated for byte-compat, flagged as follow-up);
+headnotes (`includeHeadnote` + `headnoteSummaryId`): chosen AI summary as an abstract above
+the full body ×3 formats + preview; prompt-aware inspector summary display. (2) **excerpts** —
+`CollectionEntryKind.excerpt` (rides the Phase 1 kind guard): frozen verbatim quotation +
+auto-citation source line (HTML figure/blockquote, PDF accent-bar flow, DOCX quote styles);
+anchors (`excerptStart/End` unicode-scalar + `excerptRenderingVersion` + `excerptColorTag`)
+stored at creation per A9 — precision slicing stays a rendering-only flip; three creation
+paths (bulk "Add Highlighted Passages" sheet, document-view selection on both platforms via
+`FRUSDocumentWebView.onSelectionChanged` offsets, per-highlight in the inspector); all
+funnel through `CollectionExcerpts`; never serializes highlight UUIDs. (3) **inspector** —
+read-write per-entry control surface: per-highlight selection (A8, empty = all),
+notes/source-note/footnotes/highlights overrides, summary-prompt override, related-documents
+toggle (A10: in-collection targets only, "See also:" line ×3 formats); heading entries carry
+the same fields as section defaults via the generic `CollectionOutline.sectionOverrideValues`
+cascade — resolved ONLY in the resolver; `selectedHighlightIds` deliberately omitted from
+.fruscollection files (referenced highlights don't travel). A12 = notes stay trailing blocks.
+(4) **review fixes** — 5/5 valid: multi-paragraph excerpt block-boundary fix (flat-text
+block partitioning in FRUSRenderNode), macOS capture re-extraction (anchors always delimit
+the frozen passage), iPhone overflow-menu anchor preservation, capped-preview A10 membership
+from full model, timeline excerpt double-count. Full suite 1020/1020.

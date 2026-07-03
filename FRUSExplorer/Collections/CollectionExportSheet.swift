@@ -306,7 +306,10 @@ struct ExportSheetView: View {
         do {
             let items = try await makeResolver().resolve(
                 collection: collection, entries: entries, allNotes: allNotes, purpose: .export)
-            let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
+            let metadata = CollectionExportMetadata(
+                name: collection.name, note: collection.note,
+                subtitle: collection.subtitle, authorLine: collection.authorLine,
+                includeColophon: collection.includeColophon)
             guard let exporter = selectedFormat.makeExporter() else { return }
             let url = try await exporter.export(
                 metadata: metadata, items: items, options: buildExportOptions())
@@ -335,11 +338,12 @@ struct ExportSheetView: View {
     /// (edited in the manager's Composition section) plus the format-dependent word-cloud gate.
     private func buildExportOptions() -> CollectionExportOptions {
         CollectionExportOptions(
-            tocStyle:        CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            footnoteStyle:   CollectionFootnoteStyle(rawValue: collection.footnoteStyle) ?? .all,
-            applyHighlights: collection.applyHighlights,
-            includeNotes:    collection.includeNotes,
-            summaryPromptId: collection.summaryPromptId,
+            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
+            includeFootnotes:  collection.effectiveIncludeFootnotes,
+            includeSourceNote: collection.effectiveIncludeSourceNote,
+            applyHighlights:   collection.applyHighlights,
+            includeNotes:      collection.includeNotes,
+            summaryPromptId:   collection.summaryPromptId,
             includeWordCloud: collection.includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html)
         )
     }

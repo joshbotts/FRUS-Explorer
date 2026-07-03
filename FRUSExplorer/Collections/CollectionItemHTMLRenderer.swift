@@ -45,6 +45,31 @@ import SwiftUI
 ///          card CSS (citation card + summary placeholder) moved out of the shared
 ///          stylesheet into `previewCSS`, emitted only when a preview affordance is
 ///          configured — exported HTML is byte-identical to the pre-Phase-2b output
+///   1.3 — Authoring Phase 4 (publication frame): leveled section headings
+///          (level 1 → the exact pre-Phase-4 `<h2>`, 2/3 → stepped `<h3>`/`<h4>`);
+///          nested ToC lists driven by heading levels (all-level-1 output unchanged);
+///          title-page subtitle/author lines and the opt-in colophon footer, all
+///          metadata-driven; the frame stylesheet (`frameCSS`) is emitted ONLY when a
+///          frame feature is actually used, so a collection using none exports
+///          byte-identically to the pre-Phase-4 output
+///   1.4 — Authoring Phase 5: footnote inclusion keys off `options.includeFootnotes`
+///          (previously `footnoteStyle == .all`; the caller-side nil-pair derivation
+///          keeps every legacy tri-state value byte-identical); opt-in headnote block —
+///          an italic abstract above the body, or a placeholder note when the entry
+///          requested one and no summary is stored — with its stylesheet (`headnoteCSS`)
+///          emitted ONLY when some document carries a headnote request
+///   1.5 — Authoring Phase 5 (excerpts): `.excerpt` items render as a styled
+///          `<figure class="excerpt-block">` — blockquote passage + source-citation
+///          line, with a per-colour accent class when the source highlight's colour is
+///          known — omitted from the ToC like prose; the stylesheet (`excerptCSS`) is
+///          emitted ONLY when the item list contains an excerpt, so excerpt-free
+///          collections keep exporting byte-identically
+///   1.6 — Authoring Phase 5 (overrides + related documents): footnote, highlight, and
+///          research-note gates honor the document's resolved per-entry override when
+///          present (`doc.x ?? options.x` — nil payloads keep the collection-level
+///          behavior bit-for-bit); a non-empty `relatedDocumentCitations` renders the
+///          "See also:" line after the source note, with its stylesheet (`relatedCSS`)
+///          emitted ONLY when some document carries the line
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -84,9 +109,14 @@ struct CollectionItemHTMLRenderer {
 
     /// Renders one collection item to its HTML fragment — THE shared per-item function.
     ///
-    /// - `.heading` → an `<h2 class="section-heading">` element.
+    /// - `.heading` → a level-stepped heading element with class `section-heading`:
+    ///   level 1 → `<h2>` (byte-identical to the pre-Phase-4 output), level 2 → `<h3>`,
+    ///   level 3 → `<h4>`. Out-of-range levels clamp defensively.
     /// - `.prose` → a `<div class="prose-block">` of formatted paragraphs (or empty when
     ///   the payload decodes to nothing).
+    /// - `.excerpt` → a `<figure class="excerpt-block">`: blockquote passage + a
+    ///   source-citation line, with a colour-accent class when the source highlight's
+    ///   colour is known (Authoring Phase 5).
     /// - `.document` → a full `<section id="doc-…">` with citation heading, external link,
     ///   body (per the document's `bodyDepth`), highlights, source note, and research notes.
     ///
@@ -94,13 +124,52 @@ struct CollectionItemHTMLRenderer {
     /// - Returns: An HTML fragment string (may be empty for an empty prose payload).
     func itemHTML(_ item: CollectionExportItem) -> String {
         switch item {
-        case .heading(let heading):
-            return "<h2 class=\"section-heading\">\(markdownItalics(escaped(heading)))</h2>\n\n"
+        case .heading(let heading, let level):
+            let tag = "h\(Self.clampedLevel(level) + 1)"   // level 1 → h2 (pre-Phase-4), 2 → h3, 3 → h4
+            return "<\(tag) class=\"section-heading\">\(markdownItalics(escaped(heading)))</\(tag)>\n\n"
         case .prose(let prose):
             return proseHTML(prose)
+        case .excerpt(let excerpt):
+            return excerptHTML(excerpt)
         case .document(let doc):
             return documentSectionHTML(doc)
         }
+    }
+
+    /// Renders an excerpt item (Authoring Phase 5): the frozen passage as a blockquote
+    /// (paragraphs split on blank lines, verbatim — no markdown transforms, the text is
+    /// primary-source material) followed by the auto-citation source line. When the
+    /// excerpt carries a known highlight colour, the figure gains an
+    /// `excerpt-{color}` accent class; an empty citation omits the source line.
+    ///
+    /// - Parameter excerpt: The resolved excerpt payload.
+    /// - Returns: The `<figure class="excerpt-block">…</figure>` HTML fragment.
+    private func excerptHTML(_ excerpt: CollectionExportExcerpt) -> String {
+        var classes = "excerpt-block"
+        if let color = excerpt.color { classes += " excerpt-\(color.rawValue)" }
+        var body = ""
+        body += "<figure class=\"\(classes)\">\n"
+        body += "  <blockquote>\n"
+        let paragraphs = excerpt.text
+            .components(separatedBy: "\n\n")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        for para in paragraphs {
+            body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+        }
+        body += "  </blockquote>\n"
+        if !excerpt.citation.isEmpty {
+            body += "  <figcaption class=\"excerpt-source\">"
+            body += markdownItalics(escaped(excerpt.citation))
+            body += "</figcaption>\n"
+        }
+        body += "</figure>\n\n"
+        return body
+    }
+
+    /// Defensively clamps a heading level to `1...CollectionOutline.maxLevel` — producers
+    /// already emit outline-resolved levels, so this only guards direct callers.
+    private static func clampedLevel(_ level: Int) -> Int {
+        min(max(level, 1), CollectionOutline.maxLevel)
     }
 
     /// Renders a resolved document as a `<section>` fragment: citation heading (linked to
@@ -132,18 +201,28 @@ struct CollectionItemHTMLRenderer {
         // Preview: a document whose volume is not downloaded has no resolvable body —
         // render a visibly distinct citation card in its place (never taken by exports).
         // Research notes still render below: they live in SwiftData, not the volume.
+        // Headnote (Authoring Phase 5) — an italic abstract above the body, rendered in
+        // every body mode (including the citation-only preview card); a requested
+        // headnote with nothing stored renders the placeholder note instead.
+        if doc.includeHeadnote {
+            body += headnoteHTML(doc.headnoteText)
+        }
+
         if citationOnlyVolumeIds.contains(doc.volumeId) {
             body += citationOnlyCardHTML(doc)
         } else {
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
         switch doc.bodyDepth {
         case .full:
-            let includeFootnotes = (options.footnoteStyle == .all)
+            // Phase 5 overrides: the per-entry/section value when resolved, else the
+            // collection-level option — untouched documents behave exactly as before.
+            let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
+            let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
             if let model = doc.renderModel {
                 body += FRUSRenderNodeHTMLSerializer().serialize(
                     model,
                     includeFootnotes: includeFootnotes,
-                    highlights: options.applyHighlights ? doc.highlights : []
+                    highlights: applyHighlights ? doc.highlights : []
                 )
             } else if !doc.bodyText.isEmpty {
                 let paragraphs = doc.bodyText
@@ -175,13 +254,23 @@ struct CollectionItemHTMLRenderer {
         }
         }  // end citation-only else (body kept at original indentation for diff clarity)
 
-        // Source note (footnoteStyle == .sourceNoteOnly)
+        // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
             body += "  <p class=\"source-note\"><strong>Source:</strong> \(escaped(sourceNote))</p>\n"
         }
 
-        // Research notes — respects options.includeNotes.
-        if options.includeNotes {
+        // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
+        // "See also:" citations; empty (every untouched entry) renders nothing.
+        if !doc.relatedDocumentCitations.isEmpty {
+            let label = String(localized: "collection.related.label", defaultValue: "See also:")
+            let joined = doc.relatedDocumentCitations
+                .map { markdownItalics(escaped($0)) }
+                .joined(separator: "; ")
+            body += "  <p class=\"see-also\"><strong>\(escaped(label))</strong> \(joined)</p>\n"
+        }
+
+        // Research notes — the per-entry override when resolved, else options.includeNotes.
+        if doc.includeNotesOverride ?? options.includeNotes {
             for note in doc.noteTexts where !note.isEmpty {
                 body += "  <aside class=\"research-note\">\n"
                 body += "    <strong>Research Note</strong>\n"
@@ -218,6 +307,35 @@ struct CollectionItemHTMLRenderer {
         return body
     }
 
+    /// The headnote block (Authoring Phase 5): a labeled, italic abstract rendered above
+    /// the document body. When `text` is nil/empty — the entry requested a headnote but
+    /// no summary is stored (headnote resolution never generates) — a placeholder note
+    /// renders instead, in exports and preview alike, so the author sees exactly what
+    /// the artifact will carry.
+    ///
+    /// - Parameter text: The resolved headnote (stored `GeneratedSummary` text), if any.
+    /// - Returns: The `<div class="headnote">…</div>` HTML fragment.
+    private func headnoteHTML(_ text: String?) -> String {
+        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+        var body = ""
+        body += "  <div class=\"headnote\">\n"
+        body += "    <p class=\"headnote-label\">\(escaped(label))</p>\n"
+        if let text, !text.isEmpty {
+            let paragraphs = text
+                .components(separatedBy: "\n\n")
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            for para in paragraphs {
+                body += "    <p><em>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</em></p>\n"
+            }
+        } else {
+            let missing = String(localized: "collection.headnote.missing",
+                                 defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+            body += "    <p class=\"headnote-missing\">\(escaped(missing))</p>\n"
+        }
+        body += "  </div>\n"
+        return body
+    }
+
     /// The placeholder card emitted (preview only) for a `.summaryOnly` document with no
     /// stored summary: `.preview` resolution never generates summaries, so the preview
     /// shows a card (styled like the citation card) noting that the summary will be
@@ -237,14 +355,22 @@ struct CollectionItemHTMLRenderer {
 
     // MARK: - Assembly
 
-    /// Renders the collection header block: title `<h1>` plus the optional collection note.
+    /// Renders the collection header block: title `<h1>`, the optional Phase 4 title-page
+    /// lines (subtitle, author) — emitted ONLY when set, so an unset collection's header
+    /// is byte-identical to the pre-Phase-4 output — plus the optional collection note.
     ///
-    /// - Parameter metadata: The collection's display snapshot (name, optional note).
+    /// - Parameter metadata: The collection's display snapshot.
     /// - Returns: The `<header>…</header>` HTML fragment.
     func headerHTML(metadata: CollectionExportMetadata) -> String {
         var body = ""
         body += "<header>\n"
         body += "  <h1>\(escaped(metadata.name))</h1>\n"
+        if let subtitle = metadata.subtitle, !subtitle.isEmpty {
+            body += "  <p class=\"collection-subtitle\">\(markdownItalics(escaped(subtitle)))</p>\n"
+        }
+        if let author = metadata.authorLine, !author.isEmpty {
+            body += "  <p class=\"collection-author\">\(escaped(author))</p>\n"
+        }
         if let note = metadata.note, !note.isEmpty {
             body += "  <p class=\"collection-note\">\(markdownItalics(escaped(note)))</p>\n"
         }
@@ -256,22 +382,46 @@ struct CollectionItemHTMLRenderer {
     /// Documents become anchor links; headings appear as (non-link) section labels; prose
     /// blocks are omitted.
     ///
+    /// Heading levels drive **nested lists** (Authoring Phase 4): a deeper heading opens a
+    /// `<li class="toc-sub"><ol>` wrapper (valid nesting — the sub-list lives inside an
+    /// `<li>`), and documents nest inside the list of their owning section. A ToC whose
+    /// headings are all level 1 never opens a nested list, so its output is byte-identical
+    /// to the pre-Phase-4 flat markup.
+    ///
     /// - Parameter items: The ordered items whose documents and headings populate the ToC.
     /// - Returns: The `<nav>…</nav>` HTML fragment.
     func tableOfContentsHTML(for items: [CollectionExportItem]) -> String {
+        /// Line indentation for list items at a nesting level (level 1 = the pre-Phase-4
+        /// four spaces; each deeper level adds two).
+        func indent(_ level: Int) -> String { String(repeating: "  ", count: level + 1) }
+
         var body = ""
         body += "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
+        var level = 1
         for item in items {
             switch item {
             case .document(let doc):
                 let anchor = Self.anchorId(doc: doc)
                 let label = doc.tocLabel(style: options.tocStyle)
-                body += "    <li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
-            case .heading(let heading):
-                body += "    <li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
-            case .prose:
-                break
+                body += "\(indent(level))<li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
+            case .heading(let heading, let rawLevel):
+                let target = Self.clampedLevel(rawLevel)
+                while level > target {
+                    level -= 1
+                    body += "\(indent(level))</ol></li>\n"
+                }
+                while level < target {
+                    body += "\(indent(level))<li class=\"toc-sub\"><ol>\n"
+                    level += 1
+                }
+                body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
+            case .prose, .excerpt:
+                break   // interstitial content — never a ToC row
             }
+        }
+        while level > 1 {
+            level -= 1
+            body += "\(indent(level))</ol></li>\n"
         }
         body += "  </ol>\n</nav>\n\n"
         return body
@@ -317,6 +467,28 @@ struct CollectionItemHTMLRenderer {
             body += itemHTML(item)
         }
 
+        // Colophon footer (Authoring Phase 4) — opt-in only, so collections that never
+        // enable it keep their pre-Phase-4 bytes.
+        if metadata.includeColophon {
+            body += "<footer class=\"colophon\">\n"
+            body += "  <p>\(escaped(CollectionColophon.text(for: items)))</p>\n"
+            body += "</footer>\n\n"
+        }
+
+        // Frame styles (Authoring Phase 4) are appended ONLY when a frame feature is
+        // actually used; a no-frame collection interpolates an empty string, keeping the
+        // exported file byte-identical to the pre-Phase-4 output.
+        let frameStyles = Self.usesFrameFeatures(metadata: metadata, items: items)
+            ? "\n" + Self.frameCSS : ""
+        // Headnote styles (Authoring Phase 5) are appended ONLY when some document
+        // carries a headnote request — same byte-compat discipline as the frame layer.
+        let headnoteStyles = Self.usesHeadnotes(items: items) ? "\n" + Self.headnoteCSS : ""
+        // Excerpt styles (Authoring Phase 5) are appended ONLY when the item list
+        // contains an excerpt — same byte-compat discipline again.
+        let excerptStyles = Self.usesExcerpts(items: items) ? "\n" + Self.excerptCSS : ""
+        // Related-documents styles (Authoring Phase 5) are appended ONLY when some
+        // document carries a "See also:" line — same byte-compat discipline again.
+        let relatedStyles = Self.usesRelatedDocuments(items: items) ? "\n" + Self.relatedCSS : ""
         // Preview-only card styles are appended ONLY when a preview affordance is
         // configured; the export path interpolates an empty string here, keeping the
         // exported file byte-identical to the pre-preview output (v1.2).
@@ -329,7 +501,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)\(previewStyles)
+            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(relatedStyles)\(previewStyles)
           </style>
         </head>
         <body>
@@ -337,6 +509,48 @@ struct CollectionItemHTMLRenderer {
         </body>
         </html>
         """
+    }
+
+    /// `true` when the page uses any Phase 4 publication-frame feature — a set subtitle or
+    /// author line, the colophon opt-in, or a heading nested deeper than level 1. Gates
+    /// `frameCSS` so a collection using no new feature emits the exact pre-Phase-4 bytes.
+    static func usesFrameFeatures(metadata: CollectionExportMetadata,
+                                  items: [CollectionExportItem]) -> Bool {
+        if let subtitle = metadata.subtitle, !subtitle.isEmpty { return true }
+        if let author = metadata.authorLine, !author.isEmpty { return true }
+        if metadata.includeColophon { return true }
+        return items.contains {
+            if case .heading(_, let level) = $0 { return level > 1 }
+            return false
+        }
+    }
+
+    /// `true` when any document item carries a headnote request (Authoring Phase 5).
+    /// Gates `headnoteCSS` so a collection with no headnotes emits the exact
+    /// pre-Phase-5 stylesheet bytes.
+    static func usesHeadnotes(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            if case .document(let doc) = $0 { return doc.includeHeadnote }
+            return false
+        }
+    }
+
+    /// `true` when the item list contains an excerpt (Authoring Phase 5). Gates
+    /// `excerptCSS` so an excerpt-free collection emits the exact prior stylesheet bytes.
+    static func usesExcerpts(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            if case .excerpt = $0 { return true }
+            return false
+        }
+    }
+
+    /// `true` when some document carries a related-documents line (Authoring Phase 5).
+    /// Gates `relatedCSS` so a collection with none emits the exact prior stylesheet bytes.
+    static func usesRelatedDocuments(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            if case .document(let doc) = $0 { return !doc.relatedDocumentCitations.isEmpty }
+            return false
+        }
     }
 
     // MARK: - Anchors
@@ -483,6 +697,117 @@ struct CollectionItemHTMLRenderer {
       color: #555;
       border-top: 1px solid #ddd;
       padding-top: 0.6rem;
+    }
+    """
+
+    /// Publication-frame styles (v1.3) — title-page subtitle/author lines, nested-ToC
+    /// sub-lists, stepped sub-section headings, and the colophon footer. Emitted by
+    /// `pageHTML` **only when a frame feature is used** (`usesFrameFeatures`), so a
+    /// collection using none exports byte-identically to the pre-Phase-4 output.
+    private static let frameCSS = """
+    /* ── Publication frame (Authoring Phase 4) ─────────────────────────────── */
+    .collection-subtitle {
+      margin-top: 0.6rem;
+      font-size: 1.2rem;
+      color: #333;
+    }
+    .collection-author {
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+      color: #555;
+    }
+    nav li.toc-sub { list-style: none; }
+    nav .toc-sub > ol { padding-left: 1.25rem; margin-top: 0.3rem; }
+    h3.section-heading { font-size: 1.35rem; margin-left: 0.75rem; }
+    h4.section-heading { font-size: 1.15rem; margin-left: 1.5rem; }
+    footer.colophon {
+      margin-top: 3rem;
+      border-top: 1px solid #ddd;
+      padding-top: 1rem;
+      font-size: 0.8rem;
+      color: #777;
+    }
+    """
+
+    /// Headnote styles (v1.4, Authoring Phase 5) — the labeled italic abstract above a
+    /// document body and its missing-summary placeholder. Emitted by `pageHTML` **only
+    /// when a document carries a headnote request** (`usesHeadnotes`), so a collection
+    /// with no headnotes exports byte-identically to the pre-Phase-5 output. Kept
+    /// visually consistent with the design's block furniture (`summary-block` accents).
+    private static let headnoteCSS = """
+    /* ── Headnote (Authoring Phase 5) ──────────────────────────────────────── */
+    .headnote {
+      border-left: 3px solid #8a8a86;
+      background: #f7f7f5;
+      padding: 0.9rem 1.25rem;
+      margin: 1rem 0 1.5rem;
+      border-radius: 2px;
+    }
+    .headnote-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .headnote em { color: #333; }
+    .headnote-missing {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: #8a6d1f;
+    }
+    """
+
+    /// Excerpt styles (v1.5, Authoring Phase 5) — the quoted-passage figure and its
+    /// source-citation caption, with per-colour accent borders matching the app's
+    /// highlight palette (`FRUSRenderNodeHTMLSerializer.highlightCSS` hues). Emitted by
+    /// `pageHTML` **only when the item list contains an excerpt** (`usesExcerpts`), so a
+    /// collection with none exports byte-identically to the prior output.
+    private static let excerptCSS = """
+    /* ── Excerpt quotation (Authoring Phase 5) ─────────────────────────────── */
+    figure.excerpt-block {
+      margin: 1.5rem 0 1.5rem 1.25rem;
+      padding: 0.9rem 1.25rem;
+      border-left: 3px solid #8a8a86;
+      background: #fafaf8;
+      border-radius: 2px;
+    }
+    .excerpt-block blockquote { margin: 0; }
+    .excerpt-block blockquote p {
+      font-style: italic;
+      color: #333;
+      margin: 0 0 0.5rem;
+    }
+    .excerpt-block blockquote p:last-child { margin-bottom: 0; }
+    figcaption.excerpt-source {
+      margin-top: 0.6rem;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    figcaption.excerpt-source::before { content: "— "; }
+    figure.excerpt-yellow { border-left-color: #e6cc33; }
+    figure.excerpt-green  { border-left-color: #4fc74f; }
+    figure.excerpt-blue   { border-left-color: #4f96f0; }
+    figure.excerpt-pink   { border-left-color: #f04fa1; }
+    """
+
+    /// Related-documents styles (v1.6, Authoring Phase 5) — the "See also:" citation
+    /// line, visually paired with the source-note apparatus line above it. Emitted by
+    /// `pageHTML` **only when a document carries the line** (`usesRelatedDocuments`), so
+    /// a collection with none exports byte-identically to the prior output.
+    private static let relatedCSS = """
+    /* ── Related documents (Authoring Phase 5) ─────────────────────────────── */
+    .see-also {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .see-also strong {
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      color: #777;
     }
     """
 

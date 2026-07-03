@@ -59,6 +59,27 @@ import CoreText
 ///          prose block whose payload predates the RTF storage format — the shared
 ///          `CollectionProse.paragraphs(fromRTF:)` now decodes legacy Phase 3b JSON
 ///          `AttributedString` blobs (bold/italic preserved) instead of returning `[]`
+///   1.9 — Authoring Phase 4 (publication frame): cover gains subtitle/author lines when
+///          set (unset → byte-identical cover); heading flow renders level-stepped
+///          typography (level 1 = the exact prior 17-pt ruled heading; 2/3 = smaller,
+///          indented, un-ruled); the cover ToC indents heading rows by level; opt-in
+///          trailing colophon page (`CollectionColophon`). The introduction needs no code
+///          here — it arrives as the resolver's leading `.prose` item
+///   1.10 — Authoring Phase 5: opt-in headnote — a labeled italic abstract prepended to
+///          the body flow (`headnoteAttributedString`); a requested headnote with no
+///          stored summary renders a placeholder note. Footnote rendering here remains
+///          ungated (pre-existing behavior — this exporter never consumed the legacy
+///          `footnoteStyle`), so untouched collections export byte-identically
+///   1.11 — Authoring Phase 5 (excerpts): `.excerpt` items render into the structural
+///          flow as a quote-styled block — indented italic passage with a colour accent
+///          bar when the source highlight's colour is known, followed by the
+///          source-citation line — and are omitted from the cover ToC like prose
+///   1.12 — Authoring Phase 5 (overrides + related documents): the highlight and
+///          research-note gates honor the document's resolved per-entry override
+///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
+///          non-empty `relatedDocumentCitations` appends a small "See also:" line to
+///          the body flow (paginating with it). Footnote rendering remains ungated
+///          (the pre-existing gap, unchanged)
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -179,18 +200,28 @@ final class PDFCollectionExporter: CollectionExporter {
             flowY = H - M
         }
 
-        // Draws an authored section heading (bold, with an underline rule) into the flow.
-        func drawHeadingFlow(_ text: String) {
+        // Draws an authored section heading into the flow with level-stepped typography:
+        // level 1 keeps the exact pre-Phase-4 rendering (17 pt bold + underline rule);
+        // levels 2/3 render smaller, indented, and un-ruled sub-section headings.
+        func drawHeadingFlow(_ text: String, level: Int) {
+            let l = min(max(level, 1), CollectionOutline.maxLevel)
+            let sizes: [CGFloat] = [17, 14, 12.5]
+            let indentX = CGFloat(l - 1) * 18
             if !flowOpen { beginFlow() }
-            let attr = noteAttributedString(text, fontSize: 17, gray: 0.0, bold: true)
-            let h = measureHeight(attr, width: cw)
+            let attr = noteAttributedString(text, fontSize: sizes[l - 1], gray: 0.0, bold: true)
+            let h = measureHeight(attr, width: cw - indentX)
             // Need room for the heading, its rule, and a little following space.
             if flowY - h - 22 < M + 40 { flowNewPage() }
             if flowY < H - M - 1 { flowY -= 12 }   // top gap unless at the very top
-            draw(attr, in: ctx, rect: CGRect(x: M, y: flowY - h, width: cw, height: h))
+            draw(attr, in: ctx,
+                 rect: CGRect(x: M + indentX, y: flowY - h, width: cw - indentX, height: h))
             flowY -= h + 6
-            drawHRule(ctx: ctx, y: flowY, gray: 0.5, thickness: 0.5)
-            flowY -= 16
+            if l == 1 {
+                drawHRule(ctx: ctx, y: flowY, gray: 0.5, thickness: 0.5)
+                flowY -= 16
+            } else {
+                flowY -= 8
+            }
         }
 
         // Flows a rich-text prose block into the structural flow, paginating if needed.
@@ -233,18 +264,74 @@ final class PDFCollectionExporter: CollectionExporter {
             }
         }
 
+        // Flows an excerpt quotation into the structural flow (Authoring Phase 5):
+        // an indented italic passage behind a colour accent bar (the source highlight's
+        // colour when known), followed by the source-citation line. Paginates like prose.
+        func drawExcerptFlow(_ excerpt: CollectionExportExcerpt) {
+            let attr = excerptAttributedString(excerpt)
+            guard attr.length > 0 else { return }
+            let indentX: CGFloat = 18
+            let width = cw - indentX
+            let barColor = excerpt.color?.cgColor ?? CGColor(gray: 0.55, alpha: 1)
+            if !flowOpen { beginFlow() }
+            if flowY < H - M - 1 { flowY -= 10 }   // gap above the quote unless at page top
+
+            let framesetter = CTFramesetterCreateWithAttributedString(attr)
+            var charOffset = 0
+            let total = attr.length
+            while charOffset < total {
+                let availH = flowY - (M + 20)
+                if availH < 28 { flowNewPage(); continue }
+                // Measure the chunk that fits this page so the accent bar can span
+                // exactly the drawn height.
+                let used = CTFramesetterSuggestFrameSizeWithConstraints(
+                    framesetter, CFRangeMake(charOffset, 0), nil,
+                    CGSize(width: width, height: availH), nil)
+                let chunkH = min(ceil(used.height) + 4, availH)
+                let rect = CGRect(x: M + indentX, y: flowY - chunkH, width: width, height: chunkH)
+                ctx.setFillColor(barColor)
+                ctx.fill(CGRect(x: M + indentX - 10, y: rect.minY, width: 3, height: rect.height))
+                let path = CGPath(rect: rect, transform: nil)
+                let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(charOffset, 0), path, nil)
+                CTFrameDraw(frame, ctx)
+                let visible = CTFrameGetVisibleStringRange(frame)
+                if visible.length == 0 { break }
+                charOffset += visible.length
+                if charOffset < total {
+                    flowNewPage()
+                } else {
+                    flowY = rect.minY - 12
+                }
+            }
+        }
+
         for item in items {
             switch item {
             case .document(let doc):
                 endFlow()   // documents always start on a fresh page
                 drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
-            case .heading(let text):
-                drawHeadingFlow(text)
+            case .heading(let text, let level):
+                drawHeadingFlow(text, level: level)
             case .prose(let rtf):
                 drawProseFlow(rtf)
+            case .excerpt(let excerpt):
+                drawExcerptFlow(excerpt)
             }
         }
         endFlow()
+
+        // Colophon page (Authoring Phase 4) — opt-in only, so collections that never
+        // enable it produce exactly the prior page sequence.
+        if collection.includeColophon {
+            ctx.beginPDFPage(nil)
+            let attr = noteAttributedString(CollectionColophon.text(for: items),
+                                            fontSize: 9, gray: 0.45)
+            let h = measureHeight(attr, width: cw)
+            draw(attr, in: ctx, rect: CGRect(x: M, y: H - M - h, width: cw, height: h))
+            drawPageNumber(ctx: ctx, number: pageNumber)
+            ctx.endPDFPage()
+            pageNumber += 1
+        }
 
         ctx.closePDF()
         return mutableData as Data
@@ -294,6 +381,21 @@ final class PDFCollectionExporter: CollectionExporter {
              fontSize: 22, bold: true)
         y -= titleHeight + 16
 
+        // Title-page subtitle and author lines (Authoring Phase 4) — drawn only when set,
+        // so an unset collection's cover is unchanged.
+        if let subtitle = collection.subtitle, !subtitle.isEmpty {
+            let subAttr = noteAttributedString(subtitle, fontSize: 14, gray: 0.2)
+            let subH = measureHeight(subAttr, width: cw)
+            draw(subAttr, in: ctx, rect: CGRect(x: M, y: y - subH, width: cw, height: subH))
+            y -= subH + 10
+        }
+        if let author = collection.authorLine, !author.isEmpty {
+            let authorAttr = noteAttributedString(author, fontSize: 11, gray: 0.3)
+            let authorH = measureHeight(authorAttr, width: cw)
+            draw(authorAttr, in: ctx, rect: CGRect(x: M, y: y - authorH, width: cw, height: authorH))
+            y -= authorH + 12
+        }
+
         // Collection note — _text_ spans rendered as italic
         if let note = collection.note, !note.isEmpty {
             let noteAttr = noteAttributedString(note, fontSize: 12, gray: 0.3)
@@ -331,16 +433,19 @@ final class PDFCollectionExporter: CollectionExporter {
                 draw(labelAttr, in: ctx,
                      rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH))
                 y -= rowH + 6
-            case .heading(let text):
+            case .heading(let text, let level):
+                // Nested sections indent by resolved level (level 1 = the pre-Phase-4 row).
+                let l = min(max(level, 1), CollectionOutline.maxLevel)
+                let indentX = CGFloat(l - 1) * 16
                 let labelAttr = noteAttributedString(text, fontSize: 11, gray: 0.0, bold: true)
-                let lineH = measureHeight(labelAttr, width: cw)
+                let lineH = measureHeight(labelAttr, width: cw - indentX)
                 let rowH = min(lineH, 44)
                 y -= 6   // a little breathing room above a section label
                 draw(labelAttr, in: ctx,
-                     rect: CGRect(x: M, y: y - rowH, width: cw, height: rowH))
+                     rect: CGRect(x: M + indentX, y: y - rowH, width: cw - indentX, height: rowH))
                 y -= rowH + 6
-            case .prose:
-                break
+            case .prose, .excerpt:
+                break   // interstitial content — never a ToC row
             }
         }
     }
@@ -387,7 +492,10 @@ final class PDFCollectionExporter: CollectionExporter {
                 // body nodes (see `ExportHighlight`); the plain `bodyText` fallback
                 // below uses a different extraction path, so painting is only valid
                 // when a render model is present.
-                highlightPaint = (options.applyHighlights && !doc.highlights.isEmpty)
+                // Phase 5: the per-entry/section override when resolved, else the
+                // collection-level option.
+                let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
+                highlightPaint = (applyHighlights && !doc.highlights.isEmpty)
                     ? HighlightPaintTracker(doc.highlights)
                     : nil
                 bodyAttrStr = renderModelToAttributedString(model)
@@ -409,7 +517,7 @@ final class PDFCollectionExporter: CollectionExporter {
             bodyAttrStr = NSAttributedString()
         }
 
-        // Source note (footnoteStyle == .sourceNoteOnly)
+        // Source note (options.includeSourceNote)
         if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
             drawHRule(ctx: ctx, y: y, gray: 0.75, thickness: 0.25)
             y -= 10
@@ -422,10 +530,37 @@ final class PDFCollectionExporter: CollectionExporter {
             y -= snH + 6
         }
 
-        if bodyAttrStr.length > 0 {
-            let framesetter = CTFramesetterCreateWithAttributedString(bodyAttrStr)
+        // Headnote (Authoring Phase 5) — a labeled italic abstract prepended to the body
+        // flow, so a long headnote paginates with the body. A requested headnote with
+        // no stored summary renders the placeholder note (never generated on demand).
+        // Prepending shifts the painted highlight attribute ranges with their text, so
+        // highlight shading stays aligned.
+        let headnotedBody = doc.includeHeadnote
+            ? headnoteAttributedString(doc.headnoteText, thenBody: bodyAttrStr)
+            : bodyAttrStr
+
+        // Related documents (A10, Authoring Phase 5): a small trailing "See also:" line
+        // appended to the body flow so it paginates with it; empty (every untouched
+        // entry) leaves the flow byte-identical. Appending (after the body) leaves the
+        // painted highlight attribute ranges unshifted.
+        let composedBody: NSAttributedString
+        if doc.relatedDocumentCitations.isEmpty {
+            composedBody = headnotedBody
+        } else {
+            let label = String(localized: "collection.related.label", defaultValue: "See also:")
+            let joined = doc.relatedDocumentCitations.joined(separator: "; ")
+            let combined = NSMutableAttributedString(attributedString: headnotedBody)
+            combined.append(NSAttributedString(string: "\n\n",
+                                               attributes: makeAttrs(fontSize: 4, bold: false)))
+            // noteAttributedString renders _text_ citation spans as italics.
+            combined.append(noteAttributedString("\(label) \(joined)", fontSize: 9, gray: 0.45))
+            composedBody = combined
+        }
+
+        if composedBody.length > 0 {
+            let framesetter = CTFramesetterCreateWithAttributedString(composedBody)
                 var charOffset = 0
-                let totalChars = bodyAttrStr.length
+                let totalChars = composedBody.length
 
                 while charOffset < totalChars {
                     let availH = y - (M + 20)
@@ -443,7 +578,7 @@ final class PDFCollectionExporter: CollectionExporter {
                     let path = CGPath(rect: rect, transform: nil)
                     let cfRange = CFRangeMake(charOffset, 0)
                     let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
-                    drawFrameWithHighlights(frame, attrStr: bodyAttrStr, in: ctx)
+                    drawFrameWithHighlights(frame, attrStr: composedBody, in: ctx)
 
                     let visible = CTFrameGetVisibleStringRange(frame)
                     if visible.length == 0 { break }
@@ -466,8 +601,9 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.endPDFPage()
         pageNumber += 1
 
-        // ── Research note pages (one per note, respects options.includeNotes) ─
-        guard options.includeNotes else { return }
+        // ── Research note pages (one per note; the per-entry override when resolved,
+        //    else options.includeNotes — Phase 5) ─
+        guard doc.includeNotesOverride ?? options.includeNotes else { return }
         for note in doc.noteTexts where !note.isEmpty {
             ctx.beginPDFPage(nil)
             var ny = H - M
@@ -503,6 +639,67 @@ final class PDFCollectionExporter: CollectionExporter {
             ctx.endPDFPage()
             pageNumber += 1
         }
+    }
+
+    // MARK: - Headnote (Authoring Phase 5)
+
+    /// Builds the document flow for an entry with a headnote request: a small bold
+    /// "Headnote" label, the italic abstract (or the missing-summary placeholder when no
+    /// summary is stored — headnote resolution never generates), a small gap, then the
+    /// body. Prepending keeps a long headnote paginating naturally with the body text.
+    ///
+    /// - Parameters:
+    ///   - text: The resolved headnote text, if any.
+    ///   - body: The already-built body attributed string to follow the headnote.
+    /// - Returns: The combined attributed string.
+    private func headnoteAttributedString(_ text: String?,
+                                          thenBody body: NSAttributedString) -> NSAttributedString {
+        let combined = NSMutableAttributedString()
+        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+        combined.append(NSAttributedString(
+            string: label + "\n",
+            attributes: makeAttrs(fontSize: 8, bold: true, gray: 0.35)))
+        if let text, !text.isEmpty {
+            combined.append(NSAttributedString(
+                string: text + "\n",
+                attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
+        } else {
+            let missing = String(localized: "collection.headnote.missing",
+                                 defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+            combined.append(NSAttributedString(
+                string: missing + "\n",
+                attributes: makeStyledAttrs(fontSize: 9, bold: false, italic: true, gray: 0.45)))
+        }
+        combined.append(NSAttributedString(string: "\n",
+                                           attributes: makeAttrs(fontSize: 4, bold: false)))
+        combined.append(body)
+        return combined
+    }
+
+    // MARK: - Excerpt (Authoring Phase 5)
+
+    /// Builds the attributed string for an excerpt quotation: the frozen passage in
+    /// italics (verbatim — no markdown transforms, it is primary-source text), then a
+    /// small gap and the "— citation" source line (the citation runs through
+    /// `noteAttributedString` so `_…_` spans render as italics, matching document
+    /// citations). An empty citation omits the source line.
+    ///
+    /// - Parameter excerpt: The resolved excerpt payload.
+    /// - Returns: The combined attributed string for the flow block.
+    private func excerptAttributedString(_ excerpt: CollectionExportExcerpt) -> NSAttributedString {
+        let combined = NSMutableAttributedString()
+        combined.append(NSAttributedString(
+            string: excerpt.text,
+            attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
+        if !excerpt.citation.isEmpty {
+            combined.append(NSAttributedString(string: "\n",
+                                               attributes: makeAttrs(fontSize: 5, bold: false)))
+            combined.append(NSAttributedString(
+                string: "\u{2014} ",
+                attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+            combined.append(noteAttributedString(excerpt.citation, fontSize: 8, gray: 0.45))
+        }
+        return combined
     }
 
     // MARK: - Rich Rendering (Session 81)
