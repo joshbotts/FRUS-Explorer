@@ -29,9 +29,17 @@ import SourceNoteKit
 /// - `CITATIONS_CSV` — corpus path (default `~/Development/citations.csv`)
 /// - `OUTPUT` — report path (default `eval-report.txt` in the working directory;
 ///   the committed baseline is a copy of this file)
+/// - `DUMP` — optional per-note dump path: one tab-separated line per source-note
+///   row in corpus order (`outcome<TAB>era<TAB>parser input`). Two dumps from
+///   different parser versions diff positionally (same corpus ⇒ same row order),
+///   which is how the Phase 2 regression discipline verifies that no
+///   previously-recognized note regresses and that every classification change
+///   belongs to a deliberate reclassification class.
 ///
 /// Version history:
 ///   1.0 — Source Explorer Phase 2 (Session 2026-07-03): initial implementation
+///   1.1 — Source Explorer Phase 2 step 2 (Session 2026-07-03): optional per-note
+///          `DUMP` output for positional before/after regression diffing
 public struct SourceNoteEvalRunner {
 
     /// Default corpus location (the owner's local harvest; read-only).
@@ -60,17 +68,22 @@ public struct SourceNoteEvalRunner {
     /// - Parameters:
     ///   - csvPath: Corpus csv path.
     ///   - outputPath: Where to write the report.
+    ///   - dumpPath: Optional per-note dump path (`outcome<TAB>era<TAB>input`, one
+    ///     line per source-note row in corpus order, for positional regression
+    ///     diffing between parser versions). `nil` skips the dump.
     /// - Returns: The rendered report text (also written to `outputPath`).
     @discardableResult
     public static func run(
         csvPath: String = defaultCSVPath,
-        outputPath: String = defaultOutputPath
+        outputPath: String = defaultOutputPath,
+        dumpPath: String? = nil
     ) throws -> String {
         print("[SourceNoteEvalGenerator] Corpus: \(csvPath)")
         let parser = SourceNoteParser()
         var report = EvalReport()
         var rowIndex = 0
         var noteRows = 0
+        var dumpLines: [String] = []
 
         try CSVReader.forEachRecord(in: URL(fileURLWithPath: csvPath)) { row in
             defer { rowIndex += 1 }
@@ -87,10 +100,23 @@ public struct SourceNoteEvalRunner {
             report.record(volumeId: row[Column.volumeId],
                           outcome: outcome,
                           parserInput: input)
+            if dumpPath != nil {
+                let era = EraBucket(volumeId: row[Column.volumeId])?.label ?? "-"
+                // Input is whitespace-normalized (single line); tabs are the field
+                // separators, so scrub any residual tab defensively.
+                let flat = input.replacingOccurrences(of: "\t", with: " ")
+                dumpLines.append("\(outcome.label)\t\(era)\t\(flat)")
+            }
             if noteRows % 50_000 == 0 {
                 print("[SourceNoteEvalGenerator]   …\(noteRows) notes evaluated")
             }
             return true
+        }
+
+        if let dumpPath {
+            try (dumpLines.joined(separator: "\n") + "\n")
+                .write(toFile: dumpPath, atomically: true, encoding: .utf8)
+            print("[SourceNoteEvalGenerator] ✓ per-note dump → \(dumpPath)")
         }
 
         let corpusName = (csvPath as NSString).lastPathComponent

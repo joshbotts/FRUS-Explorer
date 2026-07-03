@@ -13,6 +13,8 @@ import SourceNoteKit
 ///
 /// Version history:
 ///   1.0 — Source Explorer Phase 2 (Session 2026-07-03): initial implementation
+///   1.1 — Source Explorer Phase 2 step 2 (Session 2026-07-03): added
+///          `.namedFileSeries` (parser grammar v2 new case)
 public enum EvalOutcome: Int, CaseIterable, Sendable {
     /// `.centralFiles` — decimal/File-No. central-file citation.
     case centralFiles
@@ -26,6 +28,8 @@ public enum EvalOutcome: Int, CaseIterable, Sendable {
     case naraCollection
     /// `.ciaCollection` — CIA job-number citation.
     case ciaCollection
+    /// `.namedFileSeries` — named office-file series / manuscript collection.
+    case namedFileSeries
     /// `.foreignGovernmentArchive` — non-US archive.
     case foreignGovernmentArchive
     /// `.previouslyPublished` — books/journals/other FRUS volumes.
@@ -44,6 +48,7 @@ public enum EvalOutcome: Int, CaseIterable, Sendable {
         case .presidentialLibrary:      self = .presidentialLibrary
         case .naraCollection:           self = .naraCollection
         case .ciaCollection:            self = .ciaCollection
+        case .namedFileSeries:          self = .namedFileSeries
         case .foreignGovernmentArchive: self = .foreignGovernmentArchive
         case .previouslyPublished:      self = .previouslyPublished
         case .unrecognized:             self = .unrecognized
@@ -59,6 +64,7 @@ public enum EvalOutcome: Int, CaseIterable, Sendable {
         case .presidentialLibrary:      return "presidentialLibrary"
         case .naraCollection:           return "naraCollection"
         case .ciaCollection:            return "ciaCollection"
+        case .namedFileSeries:          return "namedFileSeries"
         case .foreignGovernmentArchive: return "foreignGovernmentArchive"
         case .previouslyPublished:      return "previouslyPublished"
         case .unrecognized:             return "unrecognized"

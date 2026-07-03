@@ -93,7 +93,7 @@ struct SourceExplorerTests {
             switch result {
             case .centralFiles, .lotFile, .presidentialLibrary, .foreignGovernmentArchive,
                     .previouslyPublished, .unrecognized, .naraCollection, .ciaCollection,
-                    .cfpfFile:
+                    .cfpfFile, .namedFileSeries:
                 break // any structured result is acceptable
             }
             _ = era // suppress unused warning

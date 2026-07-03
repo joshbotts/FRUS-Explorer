@@ -24,11 +24,14 @@ import SourceNoteEvalGeneratorCore
 /// Optional environment variables:
 ///   CITATIONS_CSV — corpus path (default ~/Development/citations.csv)
 ///   OUTPUT        — report path (default ./eval-report.txt)
+///   DUMP          — per-note dump path (outcome/era/input per row, corpus order)
+///                   for positional before/after regression diffing
 let env = ProcessInfo.processInfo.environment
 do {
     try SourceNoteEvalRunner.run(
         csvPath: env["CITATIONS_CSV"] ?? SourceNoteEvalRunner.defaultCSVPath,
-        outputPath: env["OUTPUT"] ?? SourceNoteEvalRunner.defaultOutputPath
+        outputPath: env["OUTPUT"] ?? SourceNoteEvalRunner.defaultOutputPath,
+        dumpPath: env["DUMP"]
     )
 } catch {
     print("[SourceNoteEvalGenerator] ✗ \(error)")

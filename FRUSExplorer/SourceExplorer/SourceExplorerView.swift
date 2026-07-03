@@ -210,6 +210,9 @@ struct SourceExplorerView: View {
         case .presidentialLibrary(let library, let collection, let fileId):
             presidentialLibraryPanel(library: library, collection: collection, fileIdentifier: fileId)
 
+        case .namedFileSeries(let series, let fileId):
+            namedFileSeriesPanel(seriesName: series, fileIdentifier: fileId)
+
         case .foreignGovernmentArchive(let desc):
             foreignArchivePanel(description: desc)
 
@@ -218,6 +221,32 @@ struct SourceExplorerView: View {
 
         case .unrecognized(let raw):
             unrecognizedPanel(rawText: raw)
+        }
+    }
+
+    // MARK: - Named File Series Panel
+
+    /// Provenance panel for a named office-file series or manuscript collection cited
+    /// without a lot number or repository (`.namedFileSeries`). The series name is the
+    /// key the Phase 3/4 collection-authority work will resolve; no NARA query exists
+    /// yet for this case.
+    @ViewBuilder
+    private func namedFileSeriesPanel(seriesName: String, fileIdentifier: String?) -> some View {
+        Section(String(localized: "source.explorer.provenance.header", defaultValue: "Provenance")) {
+            LabeledContent(
+                String(localized: "source.explorer.namedSeries.series", defaultValue: "File Series"),
+                value: seriesName
+            )
+            if let fileIdentifier {
+                LabeledContent(
+                    String(localized: "source.explorer.namedSeries.file", defaultValue: "File"),
+                    value: fileIdentifier
+                )
+            }
+            Text(String(localized: "source.explorer.namedSeries.explainer",
+                        defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

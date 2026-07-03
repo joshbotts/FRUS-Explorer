@@ -205,7 +205,16 @@ let package = Package(
         .target(
             name: "SourceNoteKit",
             path: "SourceNoteKit",
-            exclude: ["eval-baseline.txt"],
+            exclude: ["eval-baseline.txt", "eval-report.txt"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for the shared source-note parser grammar (era-realistic
+        /// fixtures for every Phase 2 grammar upgrade).
+        .testTarget(
+            name: "SourceNoteKitTests",
+            dependencies: [.target(name: "SourceNoteKit")],
+            path: "SourceNoteKitTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

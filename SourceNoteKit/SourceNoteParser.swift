@@ -45,6 +45,13 @@ import Foundation
 ///   1.4 — Source Explorer Phase 2 (Session 2026-07-03): relocated unchanged to the
 ///          `SourceNoteKit` shared target so the SPM eval harness
 ///          (`SourceNoteEvalGenerator`) and both app targets compile the same parser
+///   1.5 — Source Explorer Phase 2 step 2 (Session 2026-07-03): added
+///          `.namedFileSeries` for named office-file series and manuscript
+///          collections cited without a lot number or repository
+///          (`IO Files: US(P)/A/351`, `Conference files, CF 292`,
+///          `Roosevelt Papers: Telegram`, `J. C. S. Files`) — the audit §2.2
+///          "named file series" class. Stored as `citation_era='named_series'`;
+///          no archival-neighbor key yet (the Phase 3 matcher work wires it)
 public enum ParsedSourceNote: Sendable, Equatable {
 
     /// State Department central files identified by a decimal file number
@@ -77,6 +84,15 @@ public enum ParsedSourceNote: Sendable, Equatable {
     /// CIA accession-based citation using "Job" numbers (e.g. `Job 80-01795R`).
     /// CIA records are not in the public NARA catalog.
     case ciaCollection(jobNumber: String?, box: String?, description: String)
+
+    /// A named file series or manuscript collection cited without a lot number and
+    /// without an extractable repository: State Department office files
+    /// (`IO Files: US(P)/A/351`, `Conference files, CF 292`, `CFM Files`),
+    /// agency series (`JCS Records, CCS 092 Asia`), and personal-paper collections
+    /// (`Roosevelt Papers: Telegram`, `Collins Papers, Vietnam File`). The series
+    /// name is the match key the Phase 3/4 collection-authority work resolves to a
+    /// repository; no repository is asserted at parse time.
+    case namedFileSeries(seriesName: String, fileIdentifier: String?)
 
     /// A foreign government archive. Raw description is preserved for display.
     case foreignGovernmentArchive(description: String)
@@ -216,6 +232,24 @@ public struct ArchiveCitation: Sendable {
 ///          `SourceNoteEvalGenerator`). Grammar untouched; the per-call `#if DEBUG`
 ///          parse print was removed — it emitted one line per note and would flood the
 ///          eval harness's 267k-note corpus runs
+///   1.7 — Source Explorer Phase 2 step 2 (Session 2026-07-03): era-aware grammar v2,
+///          driven by the citations.csv eval harness (audit §2.2 classes):
+///          decimal refs with word/office infixes (`893.51 Manchuria/49`,
+///          `740.00112 European War 1939/6363`, `396.1 GE/7–854`, `123M431/163`),
+///          space-after-dot classes (`501. BC Indonesia/12–248`) and ½-suffix tails;
+///          Paris Peace Conference decimal prefixes (`Paris Peace Conf. 185.001/28`
+///          → RG 256); `File No.` punctuation/typo variants (`File. No.`, `File No,`,
+///          `FileNo.`, `File Not`, `File Nos.`); loose lot styles (lowercase
+///          `…files, lot 60 D 665`, lot-leading `Lot 71–D 440, Box 19232`, en/em-dash
+///          and run-together designators); presidential-library lead notes without the
+///          `Source:` prefix (`Eisenhower Library, Dulles papers, …`); lead-gated
+///          manuscript repositories (`Library of Congress`, `Center of Military
+///          History`, universities, historical societies); named file series →
+///          `.namedFileSeries`; abstract notes with trailing citations
+///          (`… Top Secret. 2 pp. Kennedy Library, NSF, …` — the 1961–1963
+///          supplement encoding); `Public Papers`/`The Presidential Campaign`
+///          previously-published prefixes; `lotFileNorm(_:)` canonical compact
+///          lot key (`64D199`) written to `document_sources.lot_file_norm`
 public struct SourceNoteParser {
 
     public init() {}
@@ -233,11 +267,23 @@ public struct SourceNoteParser {
         // Era 3b — "XYZ Files: Lot XX D XXX, Box Y" (inline lot file)
         if let result = tryInlineLotFile(trimmed) { return result }
 
+        // Paris Peace Conference decimal file (RG 256, 1919–1931 volumes)
+        if let result = tryParisPeaceConference(trimmed) { return result }
+
         // Era 2 — decimal file number (e.g. "862S.01/10-1646")
         if let result = tryDecimalFile(trimmed) { return result }
 
+        // Era 2 variant — decimal class with word/office infix ("893.51 Manchuria/49")
+        if let result = tryDecimalInfixFile(trimmed) { return result }
+
         // Era 1 variant — bare "File N/N" or bare decimal without letters
         if let result = tryBareFileNumber(trimmed) { return result }
+
+        // Personnel decimal file without an item number ("123 Ward, Angus I.: Telegram")
+        if let result = tryPersonnelFile(trimmed) { return result }
+
+        // Decimal class without an item slash ("102.8951: Telegram")
+        if let result = tryDecimalNoItem(trimmed) { return result }
 
         // AAD Electronic Telegrams reference (does not start with "Source:")
         if let result = tryAADTelegrams(trimmed) { return result }
@@ -247,7 +293,49 @@ public struct SourceNoteParser {
             return parseNarrative(trimmed)
         }
 
+        // Presidential-library / manuscript-repository lead without "Source:" prefix
+        // ("Eisenhower Library, Dulles papers, …" — 1952–1954 encoding)
+        if let result = tryLibraryLeadNote(trimmed) { return result }
+
+        // Loose lot styles: lowercase/comma ("PPS files, lot 64 D 563, …") and
+        // lot-leading ("Lot 71–D 440, Box 19232") notes
+        if let result = tryLooseLotFile(trimmed) { return result }
+
+        // Named file series / named collection ("IO Files: US(P)/A/351",
+        // "Conference files, CF 292", "Roosevelt Papers: Telegram", "J. C. S. Files")
+        if let result = tryNamedFileSeries(trimmed) { return result }
+
+        // Paris Peace Conference council-document series ("HD–46", "BC–29", "WCP–1133")
+        if let result = tryCouncilDocumentSeries(trimmed) { return result }
+
+        // Treaty Series print citation ("Treaty Series No. 762")
+        if trimmed.hasPrefix("Treaty Series") {
+            return .previouslyPublished(citation: trimmed)
+        }
+
+        // Abstract notes with a trailing citation after a page count
+        // ("… Top Secret. 2 pp. Kennedy Library, NSF, …" — 1961–1963 supplements)
+        if let result = tryAbstractCitationTail(trimmed) { return result }
+
         return .unrecognized(rawText: trimmed)
+    }
+
+    // MARK: - Lot file normalization
+
+    /// Canonical compact form of a lot-file number for exact-match keying:
+    /// uppercase, with all whitespace and hyphen/en-dash/em-dash separators removed
+    /// (`"64 D 199"`, `"64-D-199"`, `"71–D 440"` → `"64D199"`, `"71D440"`).
+    ///
+    /// Written to `document_sources.lot_file_norm` at index time alongside the raw
+    /// `lot_file`; Phase 3 writes the same normal form from `volume_sources` so the
+    /// archival-neighbor matcher becomes a single indexed equality instead of a
+    /// formatting-variant fan-out.
+    ///
+    /// - Parameter raw: A lot number in any observed formatting (spacing, ASCII
+    ///   hyphen, en/em-dash, lowercase designator).
+    /// - Returns: The compact uppercase key.
+    public static func lotFileNorm(_ raw: String) -> String {
+        raw.uppercased().filter { !$0.isWhitespace && $0 != "-" && $0 != "–" && $0 != "—" }
     }
 
     // MARK: - Classification markings (frus-sources sentence model)
@@ -402,12 +490,16 @@ public struct SourceNoteParser {
     // MARK: - Era 1: Bare File Number Variants
 
     /// Handles: "File No. 3767/5.", "File No 1271", "Filed No. 774/245B",
-    /// "File Not 7523" (typo), "File 4478/2–3."
+    /// "File Not 7523" (typo), "File 4478/2–3", plus the punctuation/spacing
+    /// variants observed in the eval corpus: "File. No. 9254/5–7.", "File No, 352/8.",
+    /// "FileNo.812.415A/125.", "File Nos. 817.00/1593, …".
     private func tryFileNo(_ text: String) -> ParsedSourceNote? {
-        // Ordered from most-specific to least-specific
+        // Ordered from most-specific to least-specific. The first capture must start
+        // with a digit so "File Nothing…" prose can never match.
         let patterns: [(String, NSRegularExpression.Options)] = [
-            (#"^File[d]?\s+No\.?\s*([\d\/–\-]+)"#, .caseInsensitive),   // File No. / Filed No. / File Not
-            (#"^File\s+([\d\/–\-]+)"#, .caseInsensitive),                // File 774/42
+            // File No. / Filed No. / File. No. / File No, / FileNo. / File Not / File Nos.
+            (#"^File[d]?\s*[.,]?\s*Nos?[.,t]?\s*[.,]?\s*(\d[0-9A-Za-z./½–—\-]*)"#, .caseInsensitive),
+            (#"^File\s+(\d[\d/½–—\-]*)"#, .caseInsensitive),             // File 774/42
         ]
         for (pat, opts) in patterns {
             guard let regex = try? NSRegularExpression(pattern: pat, options: opts) else { continue }
@@ -450,6 +542,65 @@ public struct SourceNoteParser {
         return .centralFiles(recordGroup: "RG-59", fileIdentifier: identifier)
     }
 
+    // MARK: - Era 2 variant: Decimal File with Word/Office Infix
+
+    /// Decimal-class citation with a word, office-symbol, or personal-name infix
+    /// between the class number and the `/item` tail — the audit §2.2 bulk class.
+    ///
+    /// Three anchored alternatives (the class-number shape is the anchor; the tail
+    /// after `/` must be digit-led — or a single filing letter — which validates the
+    /// location):
+    /// 1. Dotted class + optional infix: `893.51 Manchuria/49`,
+    ///    `740.00112 European War 1939/6363`, `500.A15A4 Naval Armaments/153`,
+    ///    `396.1 GE/7–854`, `033.4111MacDonald, Ramsay/141`, `300.115 (39)/452`,
+    ///    `501. BC Indonesia/12–248` (space after the dot), `841.857 L 97/137½`.
+    /// 2. Personnel/letter class without a dot: `123M431/163`, `123 F 84/16`.
+    /// 3. Bare numeric file (Numerical File era, with trailing matter the strict
+    ///    `bareNumberRegex` rejects): `195/597: Telegram`, `710/35a: Telegram`.
+    ///
+    /// The infix may not contain `/`, clause punctuation (`:`, `;`), or quotes, and is
+    /// capped at 50 characters, so prose can not be swallowed into a location key. The
+    /// bare-numeric alternative rejects four-digit years (`1918/19 annual report…` is
+    /// prose, not a Numerical File citation).
+    private static let decimalInfixRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:\d{2,3}[A-Za-z]{0,2}(?:\.\s?[0-9A-Za-z()]+)+[^/:;"“”]{0,50}?|\d{3}\s?[A-Za-z][^/:;"“”]{0,50}?|(?!(?:1[6-9]\d\d|20\d\d)\s?/)\d{3,6})\s?/\s?(?:\d[0-9A-Za-z½–—\-]*|[A-Za-z]\b)"#,
+        options: []
+    )
+
+    private func tryDecimalInfixFile(_ text: String) -> ParsedSourceNote? {
+        guard let regex = Self.decimalInfixRegex else { return nil }
+        let nsRange = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: nsRange),
+              let matchRange = Range(match.range, in: text) else { return nil }
+        let identifier = String(text[matchRange])
+            .trimmingCharacters(in: CharacterSet(charactersIn: ". "))
+        return .centralFiles(recordGroup: "RG-59", fileIdentifier: identifier)
+    }
+
+    // MARK: - Paris Peace Conference Files (RG 256)
+
+    /// Decimal citation prefixed with the Paris Peace Conference file designation
+    /// (`Paris Peace Conf. 185.001/28`, `Paris Peace Conference 861 L.00/40`).
+    /// These are RG 256 (American Commission to Negotiate Peace), not RG 59.
+    /// The prefix is canonicalized to `Paris Peace Conf.` so location keys group
+    /// across the spelling variants.
+    private static let parisPeaceRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^Paris\s+Peace\s+Conf(?:erence|\.)?\s+"#,
+        options: .caseInsensitive
+    )
+
+    private func tryParisPeaceConference(_ text: String) -> ParsedSourceNote? {
+        guard let prefixRegex = Self.parisPeaceRegex else { return nil }
+        let nsRange = NSRange(text.startIndex..., in: text)
+        guard let prefixMatch = prefixRegex.firstMatch(in: text, range: nsRange),
+              let prefixRange = Range(prefixMatch.range, in: text) else { return nil }
+        let remainder = String(text[prefixRange.upperBound...])
+        // The remainder must itself be a decimal citation (strict, then infix form).
+        let decimal: ParsedSourceNote? = tryDecimalFile(remainder) ?? tryDecimalInfixFile(remainder)
+        guard case .centralFiles(_, let fileId?) = decimal else { return nil }
+        return .centralFiles(recordGroup: "RG-256", fileIdentifier: "Paris Peace Conf. \(fileId)")
+    }
+
     // MARK: - Era 1 Variant: Bare Decimal/File Numbers
 
     /// Handles bare decimal-like numbers: "5727/248.", "No. 8130/11."
@@ -464,6 +615,63 @@ public struct SourceNoteParser {
         guard let match = regex.firstMatch(in: text, range: nsRange),
               let r = Range(match.range(at: 1), in: text) else { return nil }
         return .centralFiles(recordGroup: "RG-59", fileIdentifier: String(text[r]))
+    }
+
+    // MARK: - Personnel Decimal File without Item Number
+
+    /// Personnel-class decimal citation without an item slash — the whole note is
+    /// `class surname, given names` with an optional `: Telegram` suffix
+    /// (`123 Ward, Angus I.: Telegram`, `130 Howe, Audrey Marie`). Anchored to the
+    /// full note so prose can never match.
+    private static let personnelFileRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(\d{3}\s+[A-Z][^,/:;]{1,30},[^/:;]{1,40}?)[.\s]*(?::\s*Telegram)?[.\s]*$"#,
+        options: []
+    )
+
+    private func tryPersonnelFile(_ text: String) -> ParsedSourceNote? {
+        guard let regex = Self.personnelFileRegex else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: ns),
+              let r = Range(match.range(at: 1), in: text) else { return nil }
+        let identifier = String(text[r]).trimmingCharacters(in: .whitespaces)
+        return .centralFiles(recordGroup: "RG-59", fileIdentifier: identifier)
+    }
+
+    // MARK: - Decimal Class without Item Slash
+
+    /// A dotted decimal class cited without an `/item` tail — the whole note is the
+    /// class with an optional `: Telegram` suffix (`102.8951: Telegram`,
+    /// `103.9151: Telegram`). Anchored to the full note.
+    private static let decimalNoItemRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(\d{2,3}[A-Za-z]{0,2}\.\d[\dA-Za-z.]*?)\.?\s*(?::\s*Telegram)?\.?\s*$"#,
+        options: []
+    )
+
+    private func tryDecimalNoItem(_ text: String) -> ParsedSourceNote? {
+        guard let regex = Self.decimalNoItemRegex else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: ns),
+              let r = Range(match.range(at: 1), in: text) else { return nil }
+        return .centralFiles(recordGroup: "RG-59", fileIdentifier: String(text[r]))
+    }
+
+    // MARK: - Paris Peace Conference Council Series
+
+    /// Council-document designations used by the 1919 Paris Peace Conference
+    /// volumes: a 2–4 letter series code, a dash, and a document number
+    /// (`HD–46`, `BC–29`, `CF–42`, `WCP–1133`, `IC–175D`). The whole note is the
+    /// designation, so prose can never match.
+    private static let councilSeriesRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^([A-Z]{2,4})[–—\-]\d+[A-Z]?$"#,
+        options: []
+    )
+
+    private func tryCouncilDocumentSeries(_ text: String) -> ParsedSourceNote? {
+        guard let regex = Self.councilSeriesRegex else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: ns),
+              let r = Range(match.range(at: 1), in: text) else { return nil }
+        return .namedFileSeries(seriesName: String(text[r]), fileIdentifier: text)
     }
 
     // MARK: - AAD Electronic Telegrams (CFPF)
@@ -499,8 +707,10 @@ public struct SourceNoteParser {
         options: .caseInsensitive
     )
 
+    /// CIA Job numbers use en-dashes as often as hyphens (`Job 80–R01386R`), so the
+    /// capture includes the dash variants.
     private static let jobRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bJob\s+([\w\-\/]+)"#,
+        pattern: #"\bJob\s+([\w–—\-\/]+)"#,
         options: .caseInsensitive
     )
 
@@ -551,8 +761,10 @@ public struct SourceNoteParser {
     /// - F-designator → RG 84 (State Dept. diplomatic post records)
     /// - Other → RG 59 (conservative default)
     private func lotFileRecordGroup(_ lotNumber: String) -> String {
-        // Look for a pattern like: digits + optional space + F + optional space + digits
-        let fPattern = #"\d\s*[Ff]\s*\d"#
+        // Digits (or the string start, for letter-first designators) + optional
+        // dash/space separators + F + optional separators + digits. En/em-dash
+        // separators ("57–F103") are as common as spaces in the stored corpus.
+        let fPattern = #"(?:\d|^)\s*[–—\-]?\s*[Ff]\s*[–—\-]?\s*\d"#
         if lotNumber.range(of: fPattern, options: .regularExpression) != nil {
             return "RG-84"
         }
@@ -562,7 +774,15 @@ public struct SourceNoteParser {
     private func parseNarrative(_ text: String) -> ParsedSourceNote {
         let body = String(text.dropFirst("Source:".count))
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        return parseNarrativeBody(body) ?? .unrecognized(rawText: text)
+    }
 
+    /// The narrative grammar, shared by `Source:`-prefixed notes and the trailing
+    /// citation of abstract notes (`tryAbstractCitationTail`). Returns `nil` when no
+    /// narrative pattern matches (callers decide the fallback).
+    ///
+    /// - Parameter body: The citation text with any `Source:` prefix removed.
+    private func parseNarrativeBody(_ body: String) -> ParsedSourceNote? {
         // Previously published
         if matchesPreviouslyPublished(body) {
             return .previouslyPublished(citation: body)
@@ -585,6 +805,15 @@ public struct SourceNoteParser {
         // Presidential library → .presidentialLibrary
         if let libResult = tryPresidentialLibrary(body) { return libResult }
 
+        // Lead-gated manuscript repository ("Library of Congress, Manuscript
+        // Division, Harriman Papers, …") → .presidentialLibrary (repository role)
+        if let repoResult = tryManuscriptRepositoryLead(body) { return repoResult }
+
+        // Loose lot styles (lowercase "…files, lot 60 D 665"; en/em-dash lots) —
+        // checked BEFORE matchesCentralFiles so a State Dept. lot note yields a lot
+        // key instead of a junk decimal identifier
+        if let lotResult = tryLooseLotFile(body) { return lotResult }
+
         // State Dept. central files → .centralFiles
         if matchesCentralFiles(body) {
             let identifier = extractFirstIdentifier(body)
@@ -596,23 +825,56 @@ public struct SourceNoteParser {
             return .foreignGovernmentArchive(description: body)
         }
 
-        return .unrecognized(rawText: text)
+        // Named collection lead ("Collins Papers, Vietnam File, …",
+        // "JCS Records, CCS 092 Asia (6–25–48)") → .namedFileSeries
+        if let seriesResult = tryNarrativeNamedSeries(body) { return seriesResult }
+
+        return nil
     }
 
     // MARK: - National Archives / WNRC
+
+    /// Derives the record group from a modern FRC accession number when the note
+    /// lacks an explicit `RG N`: the RG leads the accession in
+    /// `FRC 330–78–0011`, `FRC 330 70 A 1266`, and `FRC 56 79 15`. The old
+    /// year-first style (`FRC 62 A 1698`) carries no RG and yields `nil`.
+    private static let frcRecordGroupRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\bFRC:?\s+(\d{2,3})\s*(?:[–—\-]\s*\d{2}\s*[–—\-]|\s\d{2}\s+(?:A\s+)?\d)"#,
+        options: []
+    )
+
+    /// Extracts the FRC-accession-derived record group, or `nil` for the year-first
+    /// accession style.
+    private func extractFRCRecordGroup(from body: String) -> String? {
+        guard let regex = Self.frcRecordGroupRegex else { return nil }
+        let ns = NSRange(body.startIndex..., in: body)
+        guard let match = regex.firstMatch(in: body, range: ns),
+              let r = Range(match.range(at: 1), in: body) else { return nil }
+        return String(body[r])
+    }
 
     private func tryNARACollection(_ body: String) -> ParsedSourceNote? {
         let naraKeywords = [
             "National Archives and Records Administration",
             "National Archives",
             "Washington National Records Center",
+            "Washington National Record Center",
+            "Washington Federal Records Center",
             "WNRC",
         ]
         guard naraKeywords.contains(where: { body.range(of: $0, options: .caseInsensitive) != nil }) else {
             return nil
         }
-        // Extract record group — required to distinguish from other uses of "National Archives"
-        guard let rg = extractRG(from: body) else {
+        // Extract record group — required to distinguish from other uses of
+        // "National Archives". Modern WNRC citations often omit "RG N" but lead the
+        // FRC accession number with it ("OSD Files: FRC 330–78–0011"); that
+        // derivation is only trusted when the repository *leads* the citation, so a
+        // secondary "copy in WNRC…" mention can never reclassify a library-led note.
+        let repositoryLeads = naraKeywords.contains {
+            body.range(of: $0, options: [.caseInsensitive, .anchored]) != nil
+        }
+        guard let rg = extractRG(from: body)
+                ?? (repositoryLeads ? extractFRCRecordGroup(from: body) : nil) else {
             // No RG number — fall through to let lot file or central files handle it
             return nil
         }
@@ -700,25 +962,29 @@ public struct SourceNoteParser {
 
     // MARK: - Presidential Library
 
+    /// Presidential-library (and analogous manuscript-repository) keywords matched
+    /// anywhere in a narrative body, shared with the lead-note gate
+    /// (`tryLibraryLeadNote`).
+    private static let libraryKeywords = [
+        "Kennedy Library",
+        "Johnson Library",
+        "Nixon Presidential Library", "Nixon Library",
+        "Ford Library",
+        "Carter Library",
+        "Reagan Library",
+        "George H.W. Bush Library", "Bush Library",
+        "Clinton Library",
+        "Obama Library",
+        "Eisenhower Library",
+        "Truman Library",
+        "Roosevelt Library",
+        "Hoover Institution",
+        "Presidential Library",
+        "National Defense University",
+    ]
+
     private func tryPresidentialLibrary(_ body: String) -> ParsedSourceNote? {
-        let libraryKeywords = [
-            "Kennedy Library",
-            "Johnson Library",
-            "Nixon Presidential Library", "Nixon Library",
-            "Ford Library",
-            "Carter Library",
-            "Reagan Library",
-            "George H.W. Bush Library", "Bush Library",
-            "Clinton Library",
-            "Obama Library",
-            "Eisenhower Library",
-            "Truman Library",
-            "Roosevelt Library",
-            "Hoover Institution",
-            "Presidential Library",
-            "National Defense University",
-        ]
-        for keyword in libraryKeywords {
+        for keyword in Self.libraryKeywords {
             guard let keyRange = body.range(of: keyword, options: .caseInsensitive) else { continue }
             // Library name = text from start to end of keyword, first segment
             let libraryRaw = String(body[body.startIndex..<keyRange.upperBound])
@@ -737,6 +1003,201 @@ public struct SourceNoteParser {
         return nil
     }
 
+    /// Presidential-library note without the `Source:` prefix
+    /// (`Eisenhower Library, Dulles papers, "Telephone Conversations"` — the
+    /// 1952–1954 encoding). The gate is a library-name *lead*: the text before the
+    /// keyword must be short (≤ 40 characters) and comma-free, so a library merely
+    /// mentioned inside a comma list or later prose never triggers.
+    private func tryLibraryLeadNote(_ text: String) -> ParsedSourceNote? {
+        for keyword in Self.libraryKeywords {
+            guard let range = text.range(of: keyword, options: .caseInsensitive) else { continue }
+            let prefix = text[..<range.lowerBound]
+            guard prefix.count <= 40, !prefix.contains(",") else { continue }
+            return tryPresidentialLibrary(text) ?? tryManuscriptRepositoryLead(text)
+        }
+        return tryManuscriptRepositoryLead(text)
+    }
+
+    // MARK: - Manuscript repositories (lead-gated)
+
+    /// Non-presidential manuscript repositories that FRUS cites in the
+    /// `Repository, Collection, …` narrative shape. Matched only when the
+    /// repository *leads* the citation (unlike `libraryKeywords`, which match
+    /// anywhere), so a passing mention can never reclassify a note.
+    private static let manuscriptRepositoryKeywords = [
+        "Library of Congress",
+        "Center of Military History",
+        "Naval Historical Center",
+        "National War College",
+    ]
+
+    /// University / college / historical-society repository lead
+    /// (`University of Montana, Mansfield Papers, …`,
+    /// `Minnesota Historical Society, Hubert H. Humphrey Papers, …`).
+    private static let institutionLeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^((?:[A-Z][A-Za-z.’'\-]*\s+){0,3}(?:University|College)(?:\s+of\s+[A-Z][A-Za-z\-]+)?(?:\s+Librar(?:y|ies))?|[A-Z][A-Za-z.’'\- ]{2,40}Historical Society|(?:U\.?\s?S\.?\s*)?(?:Army\s+)?Military\s+Histor(?:y|ical)\s+Institute|USAMHI)\s*,"#,
+        options: []
+    )
+
+    /// Classifies a citation that *begins* with a known manuscript repository as a
+    /// `.presidentialLibrary` (the repository/collection case): library = the
+    /// repository, collection = the next comma segment.
+    private func tryManuscriptRepositoryLead(_ body: String) -> ParsedSourceNote? {
+        var repoRange: Range<String.Index>? = nil
+        for keyword in Self.manuscriptRepositoryKeywords {
+            if let r = body.range(of: keyword, options: [.caseInsensitive, .anchored]) {
+                repoRange = r
+                break
+            }
+        }
+        if repoRange == nil, let regex = Self.institutionLeadRegex {
+            let ns = NSRange(body.startIndex..., in: body)
+            if let match = regex.firstMatch(in: body, range: ns) {
+                repoRange = Range(match.range(at: 1), in: body)
+            }
+        }
+        guard let repoRange else { return nil }
+        let repository = String(body[repoRange]).trimmingCharacters(in: .whitespaces)
+        let remainder = String(body[repoRange.upperBound...])
+            .trimmingCharacters(in: CharacterSet(charactersIn: ",").union(.whitespaces))
+        let collection = remainder.components(separatedBy: ",").first?
+            .trimmingCharacters(in: .whitespaces) ?? ""
+        guard !collection.isEmpty else { return nil }
+        let fileId = extractBoxOrFileString(from: remainder)
+        return .presidentialLibrary(library: repository, collection: collection, fileIdentifier: fileId)
+    }
+
+    // MARK: - Loose Lot Styles
+
+    /// Lot number in any observed style: lowercase `lot`, comma-separated
+    /// (`…files, lot 60 D 665, "…"`), lot-leading (`Lot 71–D 440, Box 19232`),
+    /// en/em-dash separators, and run-together designators (`Lot 54–D270`). The
+    /// digits-designator-digits shape is the validator, so the English word "lot"
+    /// can never match.
+    /// The leading digits are optional so letter-first designators
+    /// (`lot M 88`, `Lot W 130`) also match; a single letter followed by digits
+    /// still cannot occur in English prose after the word "lot".
+    private static let looseLotRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\bLot\s+((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+)"#,
+        options: .caseInsensitive
+    )
+
+    private func tryLooseLotFile(_ text: String) -> ParsedSourceNote? {
+        guard let regex = Self.looseLotRegex else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: ns),
+              let lotRange = Range(match.range(at: 1), in: text),
+              let fullRange = Range(match.range, in: text) else { return nil }
+        let lotNumber = String(text[lotRange]).trimmingCharacters(in: .whitespaces)
+        let remainder = String(text[fullRange.upperBound...])
+        let box = extractBoxOrFileString(from: remainder)
+        return .lotFile(recordGroup: lotFileRecordGroup(lotNumber),
+                        lotNumber: lotNumber, fileIdentifier: box)
+    }
+
+    // MARK: - Named File Series
+
+    /// Series-name shape shared by the named-file-series forms: a capitalized name
+    /// ending in a collection keyword (`Files`, `files`, `Papers`, `Records`,
+    /// `Collection`, `file`).
+    private static let seriesNamePattern =
+        #"[A-Z][A-Za-z0-9 .,'’&/()\-–—]{0,50}?(?:[Ff]iles?|[Pp]apers|Records|Collection)"#
+
+    /// Colon form: `IO Files: US(P)/A/351`, `War Trade Board Files: Panama Canal, …`.
+    private static let namedSeriesColonRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: "^(\(seriesNamePattern))\\s*:\\s*(\\S.*)$", options: []
+    )
+
+    /// Comma form: `Conference files, CF 292` — the key segment must contain a digit
+    /// (a file designation, not prose).
+    private static let namedSeriesCommaRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: "^(\(seriesNamePattern))\\s*,\\s*([^,.;]{1,40}\\d[^,.;]{0,39})\\s*(?:[,.;]|$)",
+        options: []
+    )
+
+    /// Whole-note form: the entire note is a collection name, optionally suffixed
+    /// `: Telegram` (`J. C. S. Files`, `Roosevelt Papers: Telegram`,
+    /// `Bohlen Collection`, `Food Administrator’s File`).
+    private static let namedSeriesWholeRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: "^(\(seriesNamePattern))\\s*(?::\\s*Telegram)?\\.?$", options: []
+    )
+
+    /// Recognizes named State Department office-file series, agency series, and
+    /// personal-paper collections cited without a lot number (audit §2.2 class 5).
+    private func tryNamedFileSeries(_ text: String) -> ParsedSourceNote? {
+        let ns = NSRange(text.startIndex..., in: text)
+        // Whole-note form first: it is the most-anchored (full-string) match.
+        if let regex = Self.namedSeriesWholeRegex,
+           let match = regex.firstMatch(in: text, range: ns),
+           let nameRange = Range(match.range(at: 1), in: text) {
+            return .namedFileSeries(seriesName: String(text[nameRange]), fileIdentifier: nil)
+        }
+        if let regex = Self.namedSeriesColonRegex,
+           let match = regex.firstMatch(in: text, range: ns),
+           let nameRange = Range(match.range(at: 1), in: text),
+           let keyRange = Range(match.range(at: 2), in: text) {
+            let key = String(text[keyRange]).components(separatedBy: ";").first?
+                .trimmingCharacters(in: CharacterSet(charactersIn: ". ")) ?? ""
+            return .namedFileSeries(seriesName: String(text[nameRange]),
+                                    fileIdentifier: key.isEmpty ? nil : String(key.prefix(80)))
+        }
+        if let regex = Self.namedSeriesCommaRegex,
+           let match = regex.firstMatch(in: text, range: ns),
+           let nameRange = Range(match.range(at: 1), in: text),
+           let keyRange = Range(match.range(at: 2), in: text) {
+            return .namedFileSeries(seriesName: String(text[nameRange]),
+                                    fileIdentifier: String(text[keyRange])
+                                        .trimmingCharacters(in: .whitespaces))
+        }
+        return nil
+    }
+
+    /// Narrative fallback for `Source:` bodies (and abstract tails) whose *first
+    /// segment* is a named collection: `Collins Papers, Vietnam File, Series VII, Z;
+    /// attached…`, `JCS Records, CCS 092 Asia (6–25–48). Top Secret.`,
+    /// `JCS Files. Top secret.` Runs last in the narrative grammar, so it only ever
+    /// converts previously-unrecognized notes.
+    private static let narrativeNamedSeriesRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^([A-Z][A-Za-z0-9 .'’&/()\-–—]{0,50}?(?:[Ff]iles?|[Pp]apers|Records|Collection))\s*(?:([,:])\s*([^.;]{1,80}?)\s*)?(?:[.;]|$)"#,
+        options: []
+    )
+
+    private func tryNarrativeNamedSeries(_ body: String) -> ParsedSourceNote? {
+        guard let regex = Self.narrativeNamedSeriesRegex else { return nil }
+        let ns = NSRange(body.startIndex..., in: body)
+        guard let match = regex.firstMatch(in: body, range: ns),
+              let nameRange = Range(match.range(at: 1), in: body) else { return nil }
+        let fileId = Range(match.range(at: 3), in: body).map {
+            String(body[$0]).trimmingCharacters(in: .whitespaces)
+        }
+        return .namedFileSeries(seriesName: String(body[nameRange]),
+                                fileIdentifier: (fileId?.isEmpty ?? true) ? nil : fileId)
+    }
+
+    // MARK: - Abstract Notes with Trailing Citations (1961–1963 supplements)
+
+    /// Page-count marker that separates an abstract's summary from its trailing
+    /// citation (`… Top Secret. 2 pp. Kennedy Library, NSF, …`).
+    private static let abstractPagesRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\b\d{1,3}\s+pp?\.\s+"#, options: []
+    )
+
+    /// Microfiche-supplement abstracts (1961–1963 volumes) end with
+    /// `<n> pp. <citation>.` — the text after the *last* page count is parsed with
+    /// the narrative grammar plus the loose-lot and named-series rules. Runs last
+    /// in the top-level chain, so it only ever converts unrecognized notes.
+    private func tryAbstractCitationTail(_ text: String) -> ParsedSourceNote? {
+        guard let regex = Self.abstractPagesRegex else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        let matches = regex.matches(in: text, range: ns)
+        guard let last = matches.last, let range = Range(last.range, in: text) else { return nil }
+        let tail = String(text[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+        guard tail.count >= 8 else { return nil }
+        return parseNarrativeBody(tail)
+            ?? tryLooseLotFile(tail)
+            ?? tryNamedFileSeries(tail)
+    }
+
     // MARK: - Central Files Keywords
 
     private func matchesCentralFiles(_ body: String) -> Bool {
@@ -744,7 +1205,13 @@ public struct SourceNoteParser {
             "Department of State", "Central Foreign Policy File",
             "Central Files", "Record Group 59", "RG 59", "RG-59",
         ]
-        return keywords.contains { body.range(of: $0, options: .caseInsensitive) != nil }
+        if keywords.contains(where: { body.range(of: $0, options: .caseInsensitive) != nil }) {
+            return true
+        }
+        // The 1961–1963 abstract citations abbreviate the Department as "DOS"
+        // ("DOS, CF, POL 32–1 MEX–US"). Lead-anchored and case-sensitive: an
+        // acronym, not prose.
+        return body.range(of: #"^DOS\b"#, options: .regularExpression) != nil
     }
 
     private func matchesForeignArchive(_ body: String) -> Bool {
@@ -760,7 +1227,14 @@ public struct SourceNoteParser {
         let keywords = [
             "Foreign Relations of the United States",
             "Department of State Bulletin",
-            "Public Papers of the Presidents",
+            // Also covers the "Public Papers of the Presidents" long form and the
+            // "Public Papers: Carter, 1978, Book I" short form used by 1977+ volumes.
+            "Public Papers",
+            // GPO campaign-document compilation cited by the Carter volumes.
+            "The Presidential Campaign",
+            // The GPO Pentagon Papers print ("United States–Vietnam Relations,
+            // 1945–1967, Book 10, pp. 937–940").
+            "United States–Vietnam Relations",
             "Ibid", "ibid",
         ]
         return keywords.contains { body.hasPrefix($0) }
