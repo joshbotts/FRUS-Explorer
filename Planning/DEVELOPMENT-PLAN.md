@@ -1041,6 +1041,18 @@ boot-time snapshot to live updates on indexing completion (fixes download-then-r
 for CitationLookupView too). 9 new unit tests; docs rider (manuals, TestFlight files,
 IndexingEducationView). Full suite 984/984. Phases 1–3 (the zero-schema-risk arc) complete.
 
+### Session 2026-07-02 (later) — Corpus analytics research review (planning only)
+Reviewed three open-source publications applying quantitative methods to the FRUS corpus
+(FRUS series history Appendix A timeliness/production charts; Hensler, "It's Late," DttP
+54:1 2026 on volume organization/geographic emphasis; KG-FRUS knowledge-graph dataset,
+arXiv:2311.01606) against the app's current analytics surface and indexed-but-unsurfaced
+data (person_mentions/person_rollup, cross_references-as-statistics, manifest
+publication/coverage dates, tag taxonomy). Produced
+`Planning/BigPicture-CorpusAnalytics-Roadmap.md`: 12 prioritized feature recommendations —
+corpus-baseline normalization for existing term charts, person trajectory/comparison
+charts (also resolves the `topTermsByYear` stub), series production & timeliness
+dashboard, geographic attention explorer, cross-reference statistics, co-mention
+networks, and a deferred `place_mentions` schema addition. No code changes.
 ### Session 2026-07-02 (later) — Collections Authoring Phase 4 (publication frame)
 Four commits: (1) **model+format** — `CollectionEntry.level` (level-encoded nesting; global
 sortOrder untouched), `CollectionOutline` single linearizer (clamp 1–3, orphan-jump repair,
