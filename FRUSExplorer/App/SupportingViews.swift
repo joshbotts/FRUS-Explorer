@@ -3669,6 +3669,11 @@ private struct CorpusSectionDocumentView: View {
 
     @State private var documents: [DocumentBrowserEntry] = []
     @State private var isLoading = true
+    /// Hoisted presentation targets for the section-emitting front-matter subviews —
+    /// the sheets anchor on this view's Lists, exactly once (see the body comments).
+    @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
+    @State private var crossVolumeTarget: CrossVolumeTarget? = nil
+    @State private var selectedPerson: PersonIndexEntry? = nil
 
     // MARK: - Section Routing
 
@@ -3692,12 +3697,38 @@ private struct CorpusSectionDocumentView: View {
                 proseSectionView
             } else if isPersonsSection {
                 // FrontMatterPersonsView emits Section content and must live inside a List.
-                List { FrontMatterPersonsView(volumeId: volumeId) }
+                // Its detail sheet anchors HERE on the List — presentation modifiers inside
+                // section-emitting list content apply per row (the Archival Neighbors
+                // open/close-loop class), so the subview only sets the binding.
+                List { FrontMatterPersonsView(volumeId: volumeId, selectedPerson: $selectedPerson) }
                     .listStyle(.inset)
+                    .sheet(item: $selectedPerson) { entry in
+                        PersonIndexDetailSheet(indexEntry: entry)
+                    }
             } else if isSourcesSection {
                 // VolumeSourcesView emits Section content and must live inside a List.
-                List { VolumeSourcesView(volumeId: volumeId) }
-                    .listStyle(.inset)
+                // Both sheets anchor HERE on the List (see above).
+                List {
+                    VolumeSourcesView(volumeId: volumeId,
+                                      sourceNeighborsTarget: $sourceNeighborsTarget,
+                                      crossVolumeTarget: $crossVolumeTarget)
+                }
+                .listStyle(.inset)
+                .sheet(item: $sourceNeighborsTarget) { target in
+                    ArchivalNeighborsSheet(appState: appState) {
+                        guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
+                        return (try? await pipeline.archivalNeighbors(
+                            forLotFile:  target.lotFile,
+                            recordGroup: target.recordGroup,
+                            series:      target.series
+                        )) ?? ([], 0, nil)
+                    }
+                    .environment(appState)
+                }
+                .sheet(item: $crossVolumeTarget) { target in
+                    VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
+                        .environment(appState)
+                }
             } else {
                 structuralList
             }

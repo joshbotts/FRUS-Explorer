@@ -61,6 +61,12 @@ struct CompilationView: View {
 
     /// When set, presents the Archival Neighbors sheet for a document row.
     @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
+    /// Hoisted presentation targets for the section-emitting front-matter subviews
+    /// (`VolumeSourcesView` / `FrontMatterPersonsView`) — see the List-level sheets in
+    /// `body` for why these cannot live inside those views.
+    @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
+    @State private var crossVolumeTarget: CrossVolumeTarget? = nil
+    @State private var selectedPerson: PersonIndexEntry? = nil
 
     private var cacheKey: String {
         vm.compilationKey(volumeId: volumeId, sectionId: section.sectionId)
@@ -118,6 +124,30 @@ struct CompilationView: View {
         .sheet(item: $archivalNeighborsTarget) { key in
             ArchivalNeighborsSheet(appState: appState, docKey: key)
                 .environment(appState)
+        }
+        // Presentation for the section-emitting front-matter subviews (sources/persons),
+        // anchored HERE on the List — exactly once. Attaching these inside those views
+        // (on their Group/Section content) creates one presenter per row and the
+        // presenters ping-pong present/dismiss after close (the reported Archival
+        // Neighbors open/close loop). Same pattern as `archivalNeighborsTarget` above,
+        // which never exhibited the loop.
+        .sheet(item: $sourceNeighborsTarget) { target in
+            ArchivalNeighborsSheet(appState: appState) {
+                guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
+                return (try? await pipeline.archivalNeighbors(
+                    forLotFile:  target.lotFile,
+                    recordGroup: target.recordGroup,
+                    series:      target.series
+                )) ?? ([], 0, nil)
+            }
+            .environment(appState)
+        }
+        .sheet(item: $crossVolumeTarget) { target in
+            VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
+                .environment(appState)
+        }
+        .sheet(item: $selectedPerson) { entry in
+            PersonIndexDetailSheet(indexEntry: entry)
         }
     }
 
@@ -187,10 +217,12 @@ struct CompilationView: View {
             readSectionDirectlySection
         } else if section.isPersonsList {
             // Persons list — rendered by FrontMatterPersonsView without requiring indexing.
-            FrontMatterPersonsView(volumeId: volumeId)
+            FrontMatterPersonsView(volumeId: volumeId, selectedPerson: $selectedPerson)
         } else if section.isSourcesList {
             // Archival sources list — rendered by VolumeSourcesView from the indexed table.
-            VolumeSourcesView(volumeId: volumeId)
+            VolumeSourcesView(volumeId: volumeId,
+                              sourceNeighborsTarget: $sourceNeighborsTarget,
+                              crossVolumeTarget: $crossVolumeTarget)
         } else if vm.isIndexing {
             // Indexing in progress — show live progress (takes priority over index check).
             indexingProgressSection
