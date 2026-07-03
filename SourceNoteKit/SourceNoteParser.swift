@@ -266,6 +266,14 @@ public struct ArchiveCitation: Sendable {
 ///          RG 330 to the NSC H-Files); en/em-dash box numbers (`Box H–115`)
 ///          extracted; (4) `tryFileNo` bare-`File` pattern keeps dotted
 ///          decimals intact (`File 093.11141/21.` → `093.11141/21`, not `093`)
+///   1.9 — Source Explorer Phase 3 step 1 (Session 2026-07-03): the loose-lot
+///          grammar extracted into the public `firstLotReference(in:)` helper so the
+///          front-matter side (`SourcesParserDelegate`) recognizes exactly the same
+///          lot grammar as the document side — one designator-agnostic shape for
+///          both. The shared pattern additionally skips a `File`/`Files` infix
+///          (`Lot File 57 D 577`, `Lot Files 74 D 131` — the audit §2.3 greedy-prefix
+///          pollution, which previously keyed `lot="Files 74 D 131"` on the
+///          front-matter side and missed entirely on the document side)
 public struct SourceNoteParser {
 
     public init() {}
@@ -1168,26 +1176,54 @@ public struct SourceNoteParser {
 
     // MARK: - Loose Lot Styles
 
-    /// Lot number in any observed style: lowercase `lot`, comma-separated
-    /// (`…files, lot 60 D 665, "…"`), lot-leading (`Lot 71–D 440, Box 19232`),
-    /// en/em-dash separators, and run-together designators (`Lot 54–D270`). The
-    /// digits-designator-digits shape is the validator, so the English word "lot"
-    /// can never match.
-    /// The leading digits are optional so letter-first designators
-    /// (`lot M 88`, `Lot W 130`) also match; a single letter followed by digits
-    /// still cannot occur in English prose after the word "lot".
+    /// The corpus-wide lot-reference grammar, shared by the document side
+    /// (`tryLooseLotFile`) and the front-matter side (`SourcesParserDelegate`), so both
+    /// write keys the same way. Matches a lot number in any observed style:
+    /// - lowercase `lot`, comma-separated (`…files, lot 60 D 665, "…"`);
+    /// - lot-leading (`Lot 71–D 440, Box 19232`);
+    /// - all designator letters (`D` RG 59, `F` RG 84 post records, `W`, `M`, …) —
+    ///   the digits-designator-digits shape is the validator, so the English word
+    ///   "lot" can never match on its own;
+    /// - letter-first designators (`lot M 88`, `Lot W 130`) via the optional leading
+    ///   digits — a single letter followed by digits cannot occur in prose after "lot";
+    /// - en/em-dash separators and run-together designators (`Lot 54–D270`);
+    /// - run-together trailing text (`Lot 90 D 313Records…` — the digits terminate
+    ///   the match, no trailing word boundary is required);
+    /// - a `File`/`Files` infix (`Lot File 57 D 577`, `Lot Files 74 D 131`), skipped
+    ///   before the capture so the key is the bare number, never `"Files 74 D 131"`.
     private static let looseLotRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bLot\s+((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+)"#,
+        pattern: #"\bLot\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+)"#,
         options: .caseInsensitive
     )
 
-    private func tryLooseLotFile(_ text: String) -> ParsedSourceNote? {
-        guard let regex = Self.looseLotRegex else { return nil }
+    /// Finds the first lot-file reference in `text` using the shared corpus-wide lot
+    /// grammar (see `looseLotRegex`).
+    ///
+    /// This is the single lot-recognition entry point for **both** citation sides:
+    /// `SourceNoteParser` uses it for loose-style document source notes, and
+    /// `SourcesParserDelegate` (front-matter Sources outline) uses it at parse time —
+    /// so a lot keyed from a volume's front matter and the same lot keyed from a
+    /// document's source note always reduce to the identical `lotFileNorm(_:)` key.
+    ///
+    /// - Parameter text: Any citation or front-matter item text.
+    /// - Returns: The raw lot number (whitespace-trimmed, formatting preserved) and
+    ///   the range of the full `Lot …` match in `text`, or `nil` when no lot shape
+    ///   follows the word "Lot".
+    public static func firstLotReference(
+        in text: String
+    ) -> (lotNumber: String, matchRange: Range<String.Index>)? {
+        guard let regex = looseLotRegex else { return nil }
         let ns = NSRange(text.startIndex..., in: text)
         guard let match = regex.firstMatch(in: text, range: ns),
               let lotRange = Range(match.range(at: 1), in: text),
               let fullRange = Range(match.range, in: text) else { return nil }
         let lotNumber = String(text[lotRange]).trimmingCharacters(in: .whitespaces)
+        guard !lotNumber.isEmpty else { return nil }
+        return (lotNumber, fullRange)
+    }
+
+    private func tryLooseLotFile(_ text: String) -> ParsedSourceNote? {
+        guard let (lotNumber, fullRange) = Self.firstLotReference(in: text) else { return nil }
         let remainder = String(text[fullRange.upperBound...])
         let box = extractBoxOrFileString(from: remainder)
         return .lotFile(recordGroup: lotFileRecordGroup(lotNumber),

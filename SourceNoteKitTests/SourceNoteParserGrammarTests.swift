@@ -490,4 +490,39 @@ struct SourceNoteParserGrammarTests {
             return
         }
     }
+
+    // MARK: - Shared lot grammar (Phase 3: firstLotReference)
+
+    @Test("firstLotReference recognizes every designator and formatting variant",
+          arguments: [
+            ("Lot 64 D 199, Records of the Policy Planning Staff", "64 D 199"),
+            ("RG 84 post records, Lot 62 F 83", "62 F 83"),
+            ("Lot W 130, Records of the Department", "W 130"),
+            ("C.F.M. Files: Lot M–88: Box 2063", "M–88"),
+            ("Marshall Mission Files, Lot 54–D270", "54–D270"),
+            ("Lot 90 D 313Records of the Executive Secretariat", "90 D 313"),
+            ("Lot File 57 D 577, Box 3", "57 D 577"),
+            ("Lot Files 74 D 131", "74 D 131"),
+          ])
+    func firstLotReferenceVariants(_ text: String, _ expected: String) {
+        let found = SourceNoteParser.firstLotReference(in: text)
+        #expect(found?.lotNumber == expected)
+    }
+
+    @Test("firstLotReference never matches the English word lot without a number shape",
+          arguments: ["a lot of documentation exists", "the vacant lot beside the chancery",
+                      "Lot Files"])
+    func firstLotReferenceRejectsProse(_ text: String) {
+        #expect(SourceNoteParser.firstLotReference(in: text) == nil)
+    }
+
+    @Test("Lot File infix notes now parse as lotFile on the document side")
+    func lotFileInfixParsesAsLot() {
+        guard case .lotFile(_, let lot, _) = parser.parse("Lot File 57 D 577, Box 3") else {
+            Issue.record("expected .lotFile")
+            return
+        }
+        #expect(lot == "57 D 577")
+        #expect(SourceNoteParser.lotFileNorm(lot) == "57D577")
+    }
 }

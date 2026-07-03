@@ -74,6 +74,15 @@ import Foundation
 ///          (colon-delimited) persons-list names collapse interior whitespace at parse
 ///          time, matching Format A, so hard-wrapped real names are never rejected by
 ///          the new newline rule
+///   2.2 — Source Explorer Phase 3 step 1 (Session 2026-07-03): `SourcesParserDelegate`
+///          front-matter keying rework — lot extraction delegates to the shared
+///          `SourceNoteParser.firstLotReference(in:)` grammar (designator-agnostic
+///          F/W/M lots, `Lot File(s)` infix, run-together boundaries) so both citation
+///          sides key identically; children inherit record group / repository from
+///          ancestor outline headings; `VolumeSourceEntry` gains `lotFileNorm` and
+///          `decimalClass` normalized match keys; the series-name heuristic sits
+///          behind a validity gate (junk tails store nil); `listofworks` bibliography
+///          rows get the new `.bibliography` kind and carry no keys
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -597,13 +606,19 @@ public struct VolumeFullParseResult: Sendable {
     public let structureSections: [VolumeSection]
 }
 
-/// Whether a `VolumeSourceEntry` is a narrative "Note on Sources" paragraph or a node in
-/// the archival-collection outline.
+/// Whether a `VolumeSourceEntry` is a narrative "Note on Sources" paragraph, a node in
+/// the archival-collection outline, or a published-works bibliography entry.
 public enum VolumeSourceKind: String, Sendable {
     /// A narrative paragraph from the section's prose introduction.
     case prose
     /// An archival-collection outline node (a repository, record group, series, or lot file).
     case item
+    /// An entry from a `<div type="listofworks">` bibliography section — a *published*
+    /// work, not an archival collection. Stored for completeness but excluded from the
+    /// collection outline and from every archival-match affordance: the audit found
+    /// 2,634 bibliography rows masquerading as resolvable collections. Bibliography
+    /// rows carry no extracted keys (a book citation's numbers are never archival keys).
+    case bibliography
 }
 
 /// One row of a FRUS volume's front-matter Sources section.
@@ -620,23 +635,52 @@ public struct VolumeSourceEntry: Sendable {
     public let kind: VolumeSourceKind
     public let depth: Int
     public let isHeading: Bool
+    /// The holding repository (keyword form, e.g. "National Archives", "Johnson Library").
+    ///
+    /// **Inherited from ancestor headings** when the entry's own text names none: in the
+    /// front-matter outline, repository and record group live on parent headings while the
+    /// children name only their series. Inherited and own values are deliberately
+    /// indistinguishable — these columns are archival *match keys*, and a child of a
+    /// "Record Group 59" heading identifies exactly the same records as a row that states
+    /// RG 59 itself; display always renders `rawText`, so no UI distinction exists either.
     public let repository: String?
+    /// The record group number (e.g. "59"). Inherited from ancestor headings when the
+    /// entry's own text names none — see `repository` for why no own-vs-inherited flag exists.
     public let recordGroup: String?
+    /// The raw lot-file number (formatting preserved, e.g. "64 D 199", "71–D 440"),
+    /// recognized by the corpus-wide lot grammar shared with the document side
+    /// (`SourceNoteParser.firstLotReference(in:)`).
     public let lotFile: String?
+    /// Canonical compact form of `lotFile` (`SourceNoteParser.lotFileNorm`, e.g. "64D199").
+    /// The same normal form is written to `document_sources.lot_file_norm`, so the
+    /// archival-neighbor matcher is a single indexed equality.
+    public let lotFileNorm: String?
+    /// The series name within the record group, when a confident capture exists (junk
+    /// heuristic tails — prose fragments, bare year ranges — store `nil` instead).
     public let seriesName: String?
+    /// The decimal / subject-numeric class key for a class-leaf entry ("POL 27 ARAB–ISR",
+    /// "DEF 6 MLF", "711.11"), in the document side's location normal form: verbatim text
+    /// (case and en-dash preserved, whitespace collapsed) exactly as
+    /// `DecimalFileSegment.location(from:)` yields it from a document citation of the same
+    /// file — `document_sources.series_name` stores decimal/CFPF locations verbatim, so
+    /// matching is a plain equality/prefix comparison.
+    public let decimalClass: String?
     /// The entry's own text (whitespace-collapsed), excluding any nested child items.
     public let rawText: String
 
     public init(kind: VolumeSourceKind, depth: Int = 0, isHeading: Bool = false,
                 repository: String? = nil, recordGroup: String? = nil, lotFile: String? = nil,
-                seriesName: String? = nil, rawText: String) {
+                lotFileNorm: String? = nil, seriesName: String? = nil,
+                decimalClass: String? = nil, rawText: String) {
         self.kind = kind
         self.depth = depth
         self.isHeading = isHeading
         self.repository = repository
         self.recordGroup = recordGroup
         self.lotFile = lotFile
+        self.lotFileNorm = lotFileNorm
         self.seriesName = seriesName
+        self.decimalClass = decimalClass
         self.rawText = rawText
     }
 }
@@ -1718,8 +1762,18 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
 /// </div>
 /// ```
 ///
-/// Each `<item>` becomes a `VolumeSourceEntry`. Repository context is carried forward
-/// from the current indentation level.
+/// Each `<item>` becomes a `VolumeSourceEntry`. Repository, record-group, and
+/// presidential-library identity live on parent headings in this outline, so children
+/// **inherit** them at parse time via a walk up the open-item stack (the parent's own
+/// text always precedes its child `<list>` in document order, so it is fully
+/// accumulated by the time any child closes). Inherited values are stored in the same
+/// row columns as own values — they are archival match keys, and a child of a
+/// "Record Group 59" heading identifies exactly the same records as a row stating
+/// RG 59 itself (display renders `rawText` only, so no distinction is ever needed).
+///
+/// Entries from a `<div type="listofworks">` bibliography section are marked
+/// `kind == .bibliography` (published works, not archival collections) and carry no
+/// extracted keys.
 private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// Flat, document-order (pre-order) rows: the narrative `.prose` paragraphs first, then
@@ -1729,6 +1783,11 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private var inSourcesSection = false
     private var elementDepth = 0
     private var sectionDepth = -1
+
+    /// Whether the current section is a `listofworks` bibliography: its rows are
+    /// published works, marked `kind == .bibliography` so display and matching can
+    /// exclude them without losing the data.
+    private var sectionIsBibliography = false
 
     /// Monotonic open-order counter. Assigned when a paragraph or item *opens*, so the
     /// final list can be sorted into document (pre-order) order — necessary because
@@ -1756,8 +1815,21 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
-    private static let lotPat = try? NSRegularExpression(
-        pattern: #"\bLot\s+([\w\s\-]+?D\s*\d+)\b"#, options: .caseInsensitive)
+
+    /// Subject-numeric class-leaf shape (`POL 27 ARAB–ISR`, `DEF 6 MLF`, `E 2–2 US`):
+    /// an uppercase class prefix, a class number with optional dashed subdivisions,
+    /// then optional country/subject tokens. Anchored to the whole candidate so prose
+    /// can never match; `RG`/`FRC` prefixes are excluded (record-group and
+    /// records-center accession numbers share the letters-then-digits shape).
+    private static let subjectNumericClassPat = try? NSRegularExpression(
+        pattern: #"^(?!RG\b|FRC\b)[A-Z]{1,5}\s?\d{1,3}(?:[–—\-]\d{1,3})*(?:\s[A-Z0-9]{1,6}(?:[–—\-][A-Z0-9]{1,6})*)*$"#,
+        options: [])
+
+    /// Dotted decimal class-leaf shape (`711.11`, `611.61`, `500.A15A4`): the central
+    /// decimal file classification, anchored to the whole candidate.
+    private static let dottedDecimalClassPat = try? NSRegularExpression(
+        pattern: #"^\d{2,3}[A-Za-z]{0,2}(?:\.[0-9A-Za-z]+)+$"#,
+        options: [])
 
     // Deliberately excludes "listofabbreviations": that glossary is a `terms` section owned
     // by `TermsParserDelegate`; matching it here double-consumed it as bogus source items.
@@ -1778,12 +1850,15 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             let type    = attributeDict["type"]?.lowercased() ?? ""
             let subtype = attributeDict["subtype"]?.lowercased() ?? ""
             let xmlId   = attributeDict["xml:id"]?.lowercased() ?? ""
-            if (elementName == "div" && (Self.sourceSectionTypes.contains(type)
-                                         || Self.sourceSectionTypes.contains(subtype)
-                                         || Self.sourceSectionTypes.contains(xmlId)))
-               || elementName == "listBibl" {
+            let matchedKind: String? = elementName == "div"
+                ? [type, subtype, xmlId].first { Self.sourceSectionTypes.contains($0) }
+                : nil
+            if matchedKind != nil || elementName == "listBibl" {
                 inSourcesSection = true
                 sectionDepth     = elementDepth
+                // A listofworks section is a published-works bibliography, not an
+                // archival-collection outline — its rows get the .bibliography kind.
+                sectionIsBibliography = (matchedKind == "listofworks")
             }
         }
         guard inSourcesSection else { return }
@@ -1839,9 +1914,22 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             if let frame = itemStack.popLast() {
                 let text = Self.collapseWhitespace(frame.text)
                 if !text.isEmpty {
-                    collected.append((frame.order,
-                                      Self.makeItemEntry(text: text, depth: frame.depth,
-                                                         isHeading: frame.isHeading)))
+                    let entry: VolumeSourceEntry
+                    if sectionIsBibliography {
+                        // Published work, not an archival collection: no keys, so no
+                        // match affordance can ever attach to it.
+                        entry = VolumeSourceEntry(kind: .bibliography, depth: frame.depth,
+                                                  isHeading: frame.isHeading, rawText: text)
+                    } else {
+                        // Ancestor texts for outline inheritance. A parent's own text
+                        // precedes its child <list> in document order, so each open
+                        // ancestor frame's text is complete here (outermost first).
+                        let ancestors = itemStack.map { Self.collapseWhitespace($0.text) }
+                        entry = Self.makeItemEntry(text: text, depth: frame.depth,
+                                                   isHeading: frame.isHeading,
+                                                   ancestorTexts: ancestors)
+                    }
+                    collected.append((frame.order, entry))
                 }
             }
         case "p":
@@ -1866,6 +1954,7 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             collected.removeAll()
             inSourcesSection = false
             sectionDepth = -1
+            sectionIsBibliography = false
             inProse = false
             proseBuffer = ""
             itemStack.removeAll()
@@ -1879,61 +1968,124 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         s.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
-    /// Builds an `.item` entry, extracting record group / lot file / repository / series from
-    /// the node's own text (heuristics unchanged from the previous flat parser).
-    private static func makeItemEntry(text: String, depth: Int, isHeading: Bool) -> VolumeSourceEntry {
-        var rg: String?
-        if let regex = rgPat {
-            let ns = NSRange(text.startIndex..., in: text)
-            if let m = regex.firstMatch(in: text, range: ns) {
-                if m.range(at: 1).location != NSNotFound, let r = Range(m.range(at: 1), in: text) {
-                    rg = String(text[r])
-                } else if m.range(at: 2).location != NSNotFound, let r = Range(m.range(at: 2), in: text) {
-                    rg = String(text[r])
-                }
+    /// Builds an `.item` entry: record group / lot file / repository / class key from the
+    /// node's own text, with record group and repository **inherited** from ancestor
+    /// headings when the own text names none (innermost ancestor wins). Inherited values
+    /// are stored in the same columns as own values — they are archival match keys, and
+    /// no consumer needs the distinction (see the delegate's doc comment).
+    private static func makeItemEntry(text: String, depth: Int, isHeading: Bool,
+                                      ancestorTexts: [String]) -> VolumeSourceEntry {
+        var rg = extractRecordGroup(from: text)
+        var repo = extractRepository(from: text)
+        // The corpus-wide lot grammar shared with the document side, so both sides key
+        // the same lot strings (designator-agnostic, boundary-safe, prefix-clean).
+        let lot = SourceNoteParser.firstLotReference(in: text)?.lotNumber
+
+        // Outline inheritance: walk ancestors innermost-first for whatever is missing.
+        if rg == nil || repo == nil {
+            for ancestor in ancestorTexts.reversed() {
+                if rg == nil { rg = extractRecordGroup(from: ancestor) }
+                if repo == nil { repo = extractRepository(from: ancestor) }
+                if rg != nil && repo != nil { break }
             }
         }
 
-        var lot: String?
-        if let regex = lotPat {
-            let ns = NSRange(text.startIndex..., in: text)
-            if let m = regex.firstMatch(in: text, range: ns),
-               let r = Range(m.range(at: 1), in: text) {
-                lot = String(text[r]).trimmingCharacters(in: .whitespaces)
-            }
-        }
-
-        let repoKeywords = [
-            "National Archives", "Library of Congress", "Washington National Records Center",
-            "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
-            "Reagan Library", "Bush Library", "Clinton Library", "Eisenhower Library",
-            "Truman Library", "Roosevelt Library", "Hoover Institution",
-            "Central Intelligence Agency", "Department of State",
-            "Department of Defense", "Naval Historical", "Center of Military History",
-        ]
-        var repo: String?
-        for keyword in repoKeywords {
-            if text.range(of: keyword, options: .caseInsensitive) != nil {
-                repo = keyword
-                break
-            }
-        }
-
-        let seriesName: String?
+        // Series heuristic (last comma segment of the own text, "RG n" removed) behind a
+        // conservative validity gate — a bad capture stores nil, never junk.
+        var seriesName: String? = nil
         if rg != nil || lot != nil {
             var s = text
             if let r = rg { s = s.replacingOccurrences(of: "RG \(r)", with: "", options: .caseInsensitive) }
             s = s.components(separatedBy: ",").last?.trimmingCharacters(in: .whitespaces) ?? s
-            seriesName = s.count > 3 ? s : nil
-        } else {
-            seriesName = nil
+            seriesName = validatedSeriesName(s)
         }
+
+        // Decimal / subject-numeric class-leaf key; a lot-keyed row is never a class leaf.
+        let decimalClass = (lot == nil) ? classLeafKey(from: text) : nil
 
         return VolumeSourceEntry(
             kind: .item, depth: depth, isHeading: isHeading,
             repository: repo, recordGroup: rg, lotFile: lot,
-            seriesName: seriesName, rawText: text
+            lotFileNorm: lot.map { SourceNoteParser.lotFileNorm($0) },
+            seriesName: seriesName, decimalClass: decimalClass, rawText: text
         )
+    }
+
+    /// Extracts a record-group number (`RG 59`, `Record Group 84`) from `text`, or `nil`.
+    private static func extractRecordGroup(from text: String) -> String? {
+        guard let regex = rgPat else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let m = regex.firstMatch(in: text, range: ns) else { return nil }
+        if m.range(at: 1).location != NSNotFound, let r = Range(m.range(at: 1), in: text) {
+            return String(text[r])
+        }
+        if m.range(at: 2).location != NSNotFound, let r = Range(m.range(at: 2), in: text) {
+            return String(text[r])
+        }
+        return nil
+    }
+
+    /// Repository keywords, in match-priority order. Includes the presidential libraries,
+    /// so a child inheriting its repository from a library heading carries the library
+    /// identity the presidential-library match path needs.
+    private static let repoKeywords = [
+        "National Archives", "Library of Congress", "Washington National Records Center",
+        "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
+        "Reagan Library", "Bush Library", "Clinton Library", "Eisenhower Library",
+        "Truman Library", "Roosevelt Library", "Hoover Institution",
+        "Central Intelligence Agency", "Department of State",
+        "Department of Defense", "Naval Historical", "Center of Military History",
+    ]
+
+    /// Extracts the first repository keyword found in `text`, or `nil`.
+    private static func extractRepository(from text: String) -> String? {
+        for keyword in repoKeywords where text.range(of: keyword, options: .caseInsensitive) != nil {
+            return keyword
+        }
+        return nil
+    }
+
+    /// Conservative validity gate for the series-name heuristic. The last-comma-segment
+    /// capture is junk-prone (audit §2.3: `"see National Archives and Records
+    /// Administration below."`, `"1977–1980"`, `"as maintained by the Executive
+    /// Secretariat."`); a series name must lead with an uppercase letter (rejects prose
+    /// tails, which begin lowercase, and bare year ranges, which begin with a digit),
+    /// contain a letter, not be a cross-reference, and be plausibly sized.
+    private static func validatedSeriesName(_ candidate: String) -> String? {
+        let s = candidate.trimmingCharacters(in: .whitespaces)
+        guard s.count > 3, s.count <= 120 else { return nil }
+        guard s.contains(where: \.isLetter) else { return nil }
+        guard let first = s.first, first.isUppercase else { return nil }
+        guard s.range(of: #"^see\b"#, options: [.regularExpression, .caseInsensitive]) == nil
+        else { return nil }
+        return s
+    }
+
+    /// The decimal / subject-numeric class key for a class-leaf entry, or `nil` when the
+    /// text is not a class leaf. The class may carry a series prefix
+    /// (`Central Files 1967–69: POL 27 ARAB–ISR`) — the candidate is the segment after
+    /// the final colon, trailing periods stripped.
+    ///
+    /// **Normal form** (must match how the document side stores decimal/CFPF locations):
+    /// `document_sources.series_name` stores the citation's location verbatim — case and
+    /// en-dashes preserved, whitespace single-spaced — and `relatedByDecimal` compares
+    /// `DecimalFileSegment.location(from:)` (the text before `/`, trimmed) against it
+    /// with plain equality/prefix. Front-matter class leaves have no `/item` tail, so
+    /// the collapsed, trimmed candidate already *is* that normal form; no case or dash
+    /// mapping is applied, because the document side applies none.
+    private static func classLeafKey(from text: String) -> String? {
+        var candidate = (text.components(separatedBy: ":").last ?? text)
+            .trimmingCharacters(in: .whitespaces)
+        while candidate.hasSuffix(".") { candidate = String(candidate.dropLast()) }
+        candidate = candidate.trimmingCharacters(in: .whitespaces)
+        guard !candidate.isEmpty, candidate.count <= 60 else { return nil }
+        let ns = NSRange(candidate.startIndex..., in: candidate)
+        let isSubjectNumeric = subjectNumericClassPat?
+            .firstMatch(in: candidate, range: ns) != nil
+        let isDottedDecimal = dottedDecimalClassPat?
+            .firstMatch(in: candidate, range: ns) != nil
+        guard isSubjectNumeric || isDottedDecimal else { return nil }
+        return candidate
     }
 }
 

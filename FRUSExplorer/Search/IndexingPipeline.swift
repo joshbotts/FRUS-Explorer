@@ -190,6 +190,14 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          alternative). `extractHeader` excludes `.footnote` *descendants* of `<head>`
 ///          via `plainTextExcludingFootnotes` (68 titles nested the note inside
 ///          `<hi>`/`<persName>`/`<p>` markup). `currentDateIndexVersion` → 15.
+///   4.5 — Source Explorer Phase 3 step 1 (Session 2026-07-03): `volume_sources` gains
+///          normalized match-key columns `lot_file_norm` (canonical compact lot key,
+///          matching `document_sources.lot_file_norm`) and `decimal_class`
+///          (subject-numeric / decimal class-leaf location), populated from the
+///          reworked `SourcesParserDelegate` (shared lot grammar, outline inheritance,
+///          series validity gate, `kind='bibliography'` for listofworks rows).
+///          Drop-and-recreate migration keyed on the missing `lot_file_norm` column;
+///          `currentDateIndexVersion` → 18.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -404,7 +412,25 @@ public actor IndexingPipeline {
     ///   their own presidential-library identity instead of `citation_era='foreign'`
     ///   junk (~7k rows); bare `File <number>` citations keep dotted decimals intact.
     ///   A reindex rebuilds `document_sources` with the corrected keys.
-    public static let currentDateIndexVersion: Int = 17
+    /// - Version 18: front-matter keying, inheritance, and normalized keys (Source
+    ///   Explorer Phase 3 step 1, Session 2026-07-03). 85.6% of front-matter source
+    ///   items carried no usable match key. `SourcesParserDelegate` now (1) extracts
+    ///   lots with the corpus-wide grammar shared with the document side
+    ///   (`SourceNoteParser.firstLotReference` — F/W/M designators, en/em-dash and
+    ///   run-together forms, `Lot File(s)` infix; the old D-only regex missed 507
+    ///   items containing "Lot" and keyed junk like `"Files 74 D 131"`); (2) inherits
+    ///   record group / repository from ancestor outline headings down the tree;
+    ///   (3) writes normalized keys — `volume_sources.lot_file_norm` (same compact
+    ///   form as `document_sources.lot_file_norm`) and `volume_sources.decimal_class`
+    ///   (subject-numeric / decimal class-leaf location, doc-side verbatim form);
+    ///   (4) gates the junk-prone series-name heuristic (bad captures store nil);
+    ///   (5) marks `listofworks` bibliography rows `kind='bibliography'` so 2,634
+    ///   published works stop masquerading as archival collections. The table is
+    ///   dropped and recreated when the new columns are missing; a reindex repopulates
+    ///   `volume_sources` corpus-wide with the new keys. The shared lot grammar also
+    ///   lets loose document notes match `Lot File 57 D 577` styles, refining some
+    ///   `document_sources` classifications on re-parse.
+    public static let currentDateIndexVersion: Int = 18
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -1686,7 +1712,8 @@ public actor IndexingPipeline {
     /// Used by `VolumeSourcesView` to display the front-matter sources section.
     public func volumeSources(forVolumeId volumeId: String) throws -> [VolumeSourceEntry] {
         let sql = """
-            SELECT repository, record_group, lot_file, series_name, entry_text, kind, depth, is_heading
+            SELECT repository, record_group, lot_file, series_name, entry_text, kind, depth, is_heading,
+                   lot_file_norm, decimal_class
             FROM volume_sources
             WHERE volume_id = ?
             ORDER BY sort_order
@@ -1697,14 +1724,16 @@ public actor IndexingPipeline {
         var entries: [VolumeSourceEntry] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             entries.append(VolumeSourceEntry(
-                kind:        VolumeSourceKind(rawValue: auxColumnString(stmt, 5) ?? "item") ?? .item,
-                depth:       auxColumnIntOptional(stmt, 6) ?? 0,
-                isHeading:   (auxColumnIntOptional(stmt, 7) ?? 0) != 0,
-                repository:  auxColumnString(stmt, 0),
-                recordGroup: auxColumnString(stmt, 1),
-                lotFile:     auxColumnString(stmt, 2),
-                seriesName:  auxColumnString(stmt, 3),
-                rawText:     auxColumnString(stmt, 4) ?? ""
+                kind:         VolumeSourceKind(rawValue: auxColumnString(stmt, 5) ?? "item") ?? .item,
+                depth:        auxColumnIntOptional(stmt, 6) ?? 0,
+                isHeading:    (auxColumnIntOptional(stmt, 7) ?? 0) != 0,
+                repository:   auxColumnString(stmt, 0),
+                recordGroup:  auxColumnString(stmt, 1),
+                lotFile:      auxColumnString(stmt, 2),
+                lotFileNorm:  auxColumnString(stmt, 8),
+                seriesName:   auxColumnString(stmt, 3),
+                decimalClass: auxColumnString(stmt, 9),
+                rawText:      auxColumnString(stmt, 4) ?? ""
             ))
         }
         return entries
@@ -2497,7 +2526,9 @@ public actor IndexingPipeline {
                     repository: entry.repository,
                     recordGroup: entry.recordGroup,
                     lotFile: entry.lotFile,
+                    lotFileNorm: entry.lotFileNorm,
                     seriesName: entry.seriesName,
+                    decimalClass: entry.decimalClass,
                     entryText: entry.rawText,
                     kind: entry.kind.rawValue,
                     depth: entry.depth,
@@ -3692,25 +3723,39 @@ public actor IndexingPipeline {
         // no longer silently de-duplicate. SQLite can't ALTER a primary key, so a pre-170
         // table (detected by the absent `kind` column) is dropped and recreated below. The
         // table is derived from the TEI, so it repopulates on the next (re)index.
-        if tableExists("volume_sources") && !columnExists("kind", inTable: "volume_sources") {
+        //
+        // Source Explorer Phase 3 (2026-07-03): normalized match keys written at parse
+        // time — `lot_file_norm` (canonical compact lot key, `SourceNoteParser.lotFileNorm`,
+        // e.g. "64D199", the same normal form `document_sources.lot_file_norm` stores) and
+        // `decimal_class` (decimal / subject-numeric class-leaf location, e.g.
+        // "POL 27 ARAB–ISR", verbatim like the doc side's decimal locations). Same
+        // drop-and-recreate migration pattern, keyed on the absent newest column; the
+        // version-18 reindex repopulates.
+        if tableExists("volume_sources") && (!columnExists("kind", inTable: "volume_sources")
+                                             || !columnExists("lot_file_norm", inTable: "volume_sources")) {
             try? exec("DROP TABLE volume_sources")
         }
         try exec("""
             CREATE TABLE IF NOT EXISTS volume_sources (
-                volume_id    TEXT NOT NULL,
-                repository   TEXT,
-                record_group TEXT,
-                lot_file     TEXT,
-                series_name  TEXT,
-                entry_text   TEXT NOT NULL,
-                kind         TEXT NOT NULL DEFAULT 'item',
-                depth        INTEGER NOT NULL DEFAULT 0,
-                is_heading   INTEGER NOT NULL DEFAULT 0,
-                sort_order   INTEGER NOT NULL DEFAULT 0,
+                volume_id     TEXT NOT NULL,
+                repository    TEXT,
+                record_group  TEXT,
+                lot_file      TEXT,
+                lot_file_norm TEXT,
+                series_name   TEXT,
+                decimal_class TEXT,
+                entry_text    TEXT NOT NULL,
+                kind          TEXT NOT NULL DEFAULT 'item',
+                depth         INTEGER NOT NULL DEFAULT 0,
+                is_heading    INTEGER NOT NULL DEFAULT 0,
+                sort_order    INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (volume_id, sort_order)
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_rg ON volume_sources(volume_id, record_group)")
+        // Source Explorer Phase 3: normalized-lot lookups from the cross-volume /
+        // collection-authority side (which volumes cite lot X?).
+        try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_lot_norm ON volume_sources(lot_file_norm)")
 
         // Session 2026-06-09: Browser structure cache. One JSON-encoded
         // `VolumeStructure` per indexed volume so browsing never re-parses XML.
@@ -4026,9 +4071,9 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO volume_sources
-            (volume_id, repository, record_group, lot_file, series_name, entry_text,
-             kind, depth, is_heading, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (volume_id, repository, record_group, lot_file, lot_file_norm, series_name,
+             decimal_class, entry_text, kind, depth, is_heading, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -4038,12 +4083,14 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 2, row.repository)
                 auxBindOptional(stmt, 3, row.recordGroup)
                 auxBindOptional(stmt, 4, row.lotFile)
-                auxBindOptional(stmt, 5, row.seriesName)
-                sqlite3_bind_text(stmt, 6, row.entryText, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_text(stmt, 7, row.kind, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_int64(stmt, 8, Int64(row.depth))
-                sqlite3_bind_int64(stmt, 9, row.isHeading ? 1 : 0)
-                sqlite3_bind_int64(stmt, 10, Int64(row.sortOrder))
+                auxBindOptional(stmt, 5, row.lotFileNorm)
+                auxBindOptional(stmt, 6, row.seriesName)
+                auxBindOptional(stmt, 7, row.decimalClass)
+                sqlite3_bind_text(stmt, 8, row.entryText, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 9, row.kind, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 10, Int64(row.depth))
+                sqlite3_bind_int64(stmt, 11, row.isHeading ? 1 : 0)
+                sqlite3_bind_int64(stmt, 12, Int64(row.sortOrder))
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -5138,7 +5185,12 @@ private struct VolumeSourceRow: Sendable {
     let repository: String?
     let recordGroup: String?
     let lotFile: String?
+    /// Canonical compact lot key (`SourceNoteParser.lotFileNorm`), matching
+    /// `document_sources.lot_file_norm`.
+    let lotFileNorm: String?
     let seriesName: String?
+    /// Decimal / subject-numeric class-leaf location key (doc-side verbatim normal form).
+    let decimalClass: String?
     let entryText: String
     let kind: String
     let depth: Int
