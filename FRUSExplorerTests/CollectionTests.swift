@@ -3212,7 +3212,7 @@ struct CollectionTests {
         #expect(CollectionGeneratedBlockType(rawValue: "starCharts") == nil)
     }
 
-    @Test("Resolver generated blocks: placeable anywhere, identical in preview and export, placeholder rows resolve, unknown block types are skipped")
+    @Test("Resolver generated blocks: placeable anywhere, identical in preview and export, real rows resolve (degrading to fallbacks without an index), unknown block types are skipped")
     @MainActor
     func resolverGeneratedBlockResolution() async throws {
         let container = try ModelContainer.makeTestContainer()
@@ -3261,9 +3261,14 @@ struct CollectionTests {
         }
         #expect(first.type == .chronology)
         #expect(first.title == CollectionGeneratedBlockType.chronology.displayName)
-        #expect(!first.rows.isEmpty)                       // placeholder row resolves today
-        #expect(!(first.rows.first?.text.isEmpty ?? true))
+        // No indexing pipeline in this AppState: the document has no date, so the
+        // chronology degrades to the trailing "Undated" group — never an empty section.
+        #expect(!first.rows.isEmpty)
+        #expect(first.rows.first?.text == "Undated")
+        #expect(first.rows.last?.indentLevel == 1)
         #expect(last.type == .bibliography)
+        // Unknown volume: the bibliography cites via the "volumeId/documentId" fallback.
+        #expect(last.rows.map(\.text) == ["appvol/d3"])
 
         // Block resolution is read-only and purpose-independent: an export resolve
         // renders the identical blocks (no downloads, no generation involved).
@@ -3274,6 +3279,184 @@ struct CollectionTests {
             #expect(exportFirst.rows.map(\.text) == first.rows.map(\.text))
         } else {
             Issue.record("export items[0] should be a generated block")
+        }
+    }
+
+    @Test("Bibliography block: dedupes by document key, sorts by volume then document number (series order), cites through the data source")
+    @MainActor
+    func generatedBibliographyBlock() async {
+        var fixture = FixtureBlockDataSource()
+        fixture.citations = [
+            "v1/d2":   "Doc 2 of Volume One",
+            "v1/d10":  "Doc 10 of Volume One",
+            "v1/app1": "Appendix of Volume One",
+            "v2/d2":   "Doc 2 of Volume Two",
+        ]
+        // Duplicated membership + shuffled order: dedupe by key, then series order —
+        // volume id first, numeric document number within it (d10 after d2, never
+        // lexicographic), non-numeric ids after the numbered documents.
+        let documents: [(volumeId: String, documentId: String)] = [
+            ("v2", "d2"), ("v1", "d10"), ("v1", "app1"), ("v1", "d2"), ("v1", "d10"),
+        ]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .bibliography, documents: documents, dataSource: fixture)
+        #expect(block.title == CollectionGeneratedBlockType.bibliography.displayName)
+        #expect(block.rows.map(\.text) == [
+            "Doc 2 of Volume One", "Doc 10 of Volume One",
+            "Appendix of Volume One", "Doc 2 of Volume Two",
+        ])
+        #expect(block.rows.allSatisfy { $0.indentLevel == 0 && $0.url == nil })
+    }
+
+    @Test("Chronology block: date order with precision-honest labels and ranges, citations as secondary text, undated documents in a trailing indented group")
+    @MainActor
+    func generatedChronologyBlock() async {
+        var fixture = FixtureBlockDataSource()
+        fixture.citations = ["v1/d1": "Cite 1", "v1/d2": "Cite 2",
+                             "v1/d3": "Cite 3", "v1/d4": "Cite 4", "v1/d5": "Cite 5"]
+        fixture.dates = [
+            "v1/d1": DocumentDateMetadata(dateISO: "1969-02-15", dateISOMax: nil,
+                                          precision: .day, certainty: nil),
+            "v1/d2": DocumentDateMetadata(dateISO: "1969-01-01", dateISOMax: nil,
+                                          precision: .year, certainty: nil),
+            "v1/d4": DocumentDateMetadata(dateISO: "1968-12-01", dateISOMax: nil,
+                                          precision: .day, certainty: nil),
+            "v1/d5": DocumentDateMetadata(dateISO: "1969-03-01", dateISOMax: "1969-04-30",
+                                          precision: .month, certainty: nil),
+        ]
+        // d3 has no date row → the Undated group.
+        let documents: [(volumeId: String, documentId: String)] =
+            [("v1", "d1"), ("v1", "d2"), ("v1", "d3"), ("v1", "d4"), ("v1", "d5")]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .chronology, documents: documents, dataSource: fixture)
+
+        // 4 dated rows in date order, then the Undated heading + 1 indented document.
+        #expect(block.rows.count == 6)
+        #expect(block.rows[0].secondaryText == "Cite 4")   // 1968-12-01
+        #expect(block.rows[0].text.contains("1968"))
+        #expect(block.rows[1].text == "1969")              // year precision — never "January 1"
+        #expect(block.rows[1].secondaryText == "Cite 2")
+        #expect(block.rows[2].secondaryText == "Cite 1")   // 1969-02-15
+        #expect(block.rows[3].text.contains("–"))          // month-precision range
+        #expect(block.rows[3].secondaryText == "Cite 5")
+        #expect(block.rows[4].text == "Undated")
+        #expect(block.rows[5].text == "Cite 3")
+        #expect(block.rows[5].indentLevel == 1)
+    }
+
+    @Test("Sources & Archives block: groups document_sources by archival collection, enriches with the bundled NARA resolution, lists referencing documents at indent 1")
+    @MainActor
+    func generatedArchivalSourcesBlock() async {
+        typealias Record = CollectionGeneratedBlocks.SourceRecord
+        var fixture = FixtureBlockDataSource()
+        fixture.sources = [
+            Record(volumeId: "v1", documentId: "d1", repository: nil, recordGroup: "59",
+                   lotFile: "64 D 199", seriesName: "Conference Files", rawText: "raw a"),
+            Record(volumeId: "v1", documentId: "d2", repository: nil, recordGroup: "59",
+                   lotFile: "64 D 199", seriesName: "Conference Files", rawText: "raw b"),
+            Record(volumeId: "v2", documentId: "d3", repository: "Truman Library",
+                   recordGroup: nil, lotFile: nil, seriesName: nil, rawText: "raw c"),
+        ]
+        fixture.links = ["59|64 D 199": CollectionGeneratedBlocks.ArchivalLink(
+            title: "Conference Files, 1949–1963",
+            urlString: "https://catalog.archives.gov/id/123")]
+        let documents: [(volumeId: String, documentId: String)] =
+            [("v1", "d1"), ("v1", "d2"), ("v2", "d3"), ("v2", "d4")]  // d4 has no source row
+
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .archivalSources, documents: documents, dataSource: fixture)
+        // Two groups sorted by label; members follow at indent 1 in collection order,
+        // volume-qualified because the membership spans two volumes.
+        #expect(block.rows.map(\.text) == [
+            "Conference Files, Lot 64 D 199, RG 59",
+            "Document 1 (v1)", "Document 2 (v1)",
+            "Truman Library",
+            "Document 3 (v2)",
+        ])
+        #expect(block.rows[0].secondaryText == "Conference Files, 1949–1963")
+        #expect(block.rows[0].url == "https://catalog.archives.gov/id/123")
+        #expect(block.rows.map(\.indentLevel) == [0, 1, 1, 0, 1])
+        #expect(block.rows[3].secondaryText == nil)   // repository-only: no NARA match
+        #expect(block.rows[3].url == nil)
+    }
+
+    @Test("Persons Index block: reuses the rollup identities, applies the >=2-of->=4 threshold (>=1 for small collections), alphabetical with document-number reference lists")
+    @MainActor
+    func generatedPersonsIndexThreshold() async {
+        typealias Mention = CollectionGeneratedBlocks.PersonMention
+        var fixture = FixtureBlockDataSource()
+        fixture.mentions = [
+            Mention(identityKey: "r1", name: "Alice", description: "Secretary of State",
+                    role: nil, volumeId: "v1", documentId: "d1"),
+            Mention(identityKey: "r1", name: "Alice", description: "Secretary of State",
+                    role: nil, volumeId: "v1", documentId: "d2"),
+            Mention(identityKey: "r1", name: "Alice", description: "Secretary of State",
+                    role: nil, volumeId: "v1", documentId: "d3"),
+            Mention(identityKey: "r2", name: "Bob", description: nil,
+                    role: "diplomat", volumeId: "v1", documentId: "d2"),
+            Mention(identityKey: "r2", name: "Bob", description: nil,
+                    role: "diplomat", volumeId: "v1", documentId: "d4"),
+            Mention(identityKey: "r3", name: "Carol", description: nil,
+                    role: nil, volumeId: "v1", documentId: "d3"),
+        ]
+        let four: [(volumeId: String, documentId: String)] =
+            [("v1", "d1"), ("v1", "d2"), ("v1", "d3"), ("v1", "d4")]
+
+        // ≥ 4 documents → threshold 2: Carol (one mention) is filtered out.
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .personsIndex, documents: four, dataSource: fixture)
+        #expect(block.rows.map(\.text) == ["Alice", "Bob"])
+        #expect(block.rows[0].secondaryText == "Secretary of State — Documents 1, 2, 3")
+        #expect(block.rows[1].secondaryText == "diplomat — Documents 2, 4")
+
+        // 3 documents → threshold 1: every mentioned identity appears; Bob's list is
+        // restricted to the membership and a single reference reads "Document N".
+        let three = Array(four.prefix(3))
+        let small = await CollectionGeneratedBlocks.resolve(
+            type: .personsIndex, documents: three, dataSource: fixture)
+        #expect(small.rows.map(\.text) == ["Alice", "Bob", "Carol"])
+        #expect(small.rows[1].secondaryText == "diplomat — Document 2")
+    }
+
+    @Test("Thematic Index block: notes+assignments tag union intersected with the membership, alphabetical, tags reaching no collection document are skipped")
+    @MainActor
+    func generatedThematicIndexBlock() async {
+        typealias Tag = CollectionGeneratedBlocks.TagRecord
+        var fixture = FixtureBlockDataSource()
+        fixture.tags = [
+            Tag(name: "Zebra", documents: [("v1", "d1")]),
+            Tag(name: "Trade", documents: [("v1", "d2"), ("v1", "d1"), ("v9", "d9")]),
+            Tag(name: "Unused", documents: [("v9", "d9")]),   // no overlap → skipped
+        ]
+        let documents: [(volumeId: String, documentId: String)] = [("v1", "d1"), ("v1", "d2")]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .thematicIndex, documents: documents, dataSource: fixture)
+        // Alphabetical tags; members at indent 1 in collection order (d1 before d2 even
+        // though the tag's own reach lists d2 first); single volume → bare numbers.
+        #expect(block.rows.map(\.text) ==
+                ["Trade", "Document 1", "Document 2", "Zebra", "Document 1"])
+        #expect(block.rows.map(\.indentLevel) == [0, 1, 1, 0, 1])
+    }
+
+    @Test("Empty blocks: every type degrades to the single localized nothing-to-list row — never an empty section")
+    @MainActor
+    func generatedBlockEmptyStates() async {
+        let fixture = FixtureBlockDataSource()
+        // Empty membership: all five types.
+        for type in CollectionGeneratedBlockType.allCases {
+            let block = await CollectionGeneratedBlocks.resolve(
+                type: type, documents: [], dataSource: fixture)
+            #expect(block.rows.count == 1)
+            #expect(block.rows[0].text == CollectionGeneratedBlocks.emptyRowText)
+            #expect(block.rows[0].indentLevel == 0 && block.rows[0].url == nil)
+        }
+        // Non-empty membership but no backing data: the data-driven blocks (sources,
+        // persons, tags) still fall back to the same row.
+        let documents: [(volumeId: String, documentId: String)] = [("v1", "d1")]
+        for type in [CollectionGeneratedBlockType.archivalSources, .personsIndex, .thematicIndex] {
+            let block = await CollectionGeneratedBlocks.resolve(
+                type: type, documents: documents, dataSource: fixture)
+            #expect(block.rows.map(\.text) == [CollectionGeneratedBlocks.emptyRowText])
         }
     }
 
@@ -3570,4 +3753,58 @@ private actor TransferCallCounter {
 
     /// Records one invocation.
     func increment() { count += 1 }
+}
+
+// MARK: - Generated-block fixture data source (Phase 6)
+
+/// Hermetic `CollectionGeneratedBlockDataSource`: canned answers keyed by
+/// `"volumeId/documentId"`, no SQLite, no SwiftData, no bundle resources — so the
+/// per-block resolution logic (dedupe, ordering, grouping, thresholds, enrichment)
+/// is tested in isolation from the live stores.
+@MainActor
+private struct FixtureBlockDataSource: CollectionGeneratedBlockDataSource {
+    /// Citation per document key; unlisted keys fall back to the key itself.
+    var citations: [String: String] = [:]
+    /// Date metadata per document key; unlisted keys are "undated".
+    var dates: [String: DocumentDateMetadata] = [:]
+    /// The corpus of `document_sources` rows (filtered to the requested documents).
+    var sources: [CollectionGeneratedBlocks.SourceRecord] = []
+    /// NARA resolutions keyed `"recordGroup|lotFile"` (empty string for nil).
+    var links: [String: CollectionGeneratedBlocks.ArchivalLink] = [:]
+    /// The corpus of rollup mentions (filtered to the requested documents).
+    var mentions: [CollectionGeneratedBlocks.PersonMention] = []
+    /// Every user tag with its full document reach.
+    var tags: [CollectionGeneratedBlocks.TagRecord] = []
+
+    func citation(volumeId: String, documentId: String) -> String {
+        citations["\(volumeId)/\(documentId)"] ?? "\(volumeId)/\(documentId)"
+    }
+
+    func dateMetadata(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [String: DocumentDateMetadata] {
+        let keys = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return dates.filter { keys.contains($0.key) }
+    }
+
+    func documentSources(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [CollectionGeneratedBlocks.SourceRecord] {
+        let keys = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return sources.filter { keys.contains("\($0.volumeId)/\($0.documentId)") }
+    }
+
+    func archivalResolution(recordGroup: String?, lotFile: String?)
+        -> CollectionGeneratedBlocks.ArchivalLink? {
+        links["\(recordGroup ?? "")|\(lotFile ?? "")"]
+    }
+
+    func personMentions(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [CollectionGeneratedBlocks.PersonMention] {
+        let keys = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return mentions.filter { keys.contains("\($0.volumeId)/\($0.documentId)") }
+    }
+
+    func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] { tags }
 }

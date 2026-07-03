@@ -2147,6 +2147,52 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// Returns structured `document_sources` rows keyed by `"volumeId/documentId"` for
+    /// the given document pairs (Authoring Phase 6 — the collections Sources & Archives
+    /// block). Documents whose source note was never indexed, or that have no source
+    /// note, are absent from the result. One row per document (the table's primary key).
+    ///
+    /// Queries are issued in chunks of 499 to stay within SQLite's 999-variable limit,
+    /// mirroring `datesByDocumentKey`.
+    ///
+    /// - Parameter docs: `(volumeId, documentId)` pairs to query.
+    /// - Returns: Dictionary mapping composite key → the parsed source-note fields.
+    public func documentSourcesByKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: DocumentArchivalSource] {
+        guard !docs.isEmpty else { return [:] }
+        let chunkSize = 499
+        let allKeys = docs.map { "\($0.volumeId)/\($0.documentId)" }
+        var result: [String: DocumentArchivalSource] = [:]
+        for chunk in stride(from: 0, to: allKeys.count, by: chunkSize)
+                .map({ Array(allKeys[$0..<min($0 + chunkSize, allKeys.count)]) }) {
+            let placeholders = chunk.map { _ in "?" }.joined(separator: ", ")
+            let sql = """
+                SELECT volume_id || '/' || document_id, volume_id, document_id,
+                       repository, record_group, lot_file, series_name, raw_text
+                FROM document_sources
+                WHERE volume_id || '/' || document_id IN (\(placeholders))
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, key) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), key, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let k = auxColumnString(stmt, 0) else { continue }
+                result[k] = DocumentArchivalSource(
+                    volumeId: auxColumnString(stmt, 1) ?? "",
+                    documentId: auxColumnString(stmt, 2) ?? "",
+                    repository: auxColumnString(stmt, 3),
+                    recordGroup: auxColumnString(stmt, 4),
+                    lotFile: auxColumnString(stmt, 5),
+                    seriesName: auxColumnString(stmt, 6),
+                    rawText: auxColumnString(stmt, 7) ?? "")
+            }
+        }
+        return result
+    }
+
     /// Returns every indexed document date as a single dictionary.
     ///
     /// Performs one full sequential scan of `document_dates` and returns a
@@ -4845,6 +4891,41 @@ struct PageRangeRow: Sendable {
     let pageNumberType: String
     let pageNumberInt: Int?
     let pageNumberRaw: String
+}
+
+/// One structured `document_sources` row: the archival-provenance fields the indexer
+/// parsed from a document's source note (Session 130 tables), returned by
+/// `IndexingPipeline.documentSourcesByKey` for the collections Sources & Archives block.
+///
+/// Version history:
+///   1.0 — Authoring Phase 6 (blocks): initial implementation
+public struct DocumentArchivalSource: Sendable {
+    /// The document's volume.
+    public let volumeId: String
+    /// The document's id within the volume.
+    public let documentId: String
+    /// The holding repository, when parsed.
+    public let repository: String?
+    /// The NARA record-group number, when parsed.
+    public let recordGroup: String?
+    /// The lot-file citation, when parsed.
+    public let lotFile: String?
+    /// The series/collection name, when parsed.
+    public let seriesName: String?
+    /// The raw source-note text.
+    public let rawText: String
+
+    /// Creates a structured source row.
+    public init(volumeId: String, documentId: String, repository: String?,
+                recordGroup: String?, lotFile: String?, seriesName: String?, rawText: String) {
+        self.volumeId = volumeId
+        self.documentId = documentId
+        self.repository = repository
+        self.recordGroup = recordGroup
+        self.lotFile = lotFile
+        self.seriesName = seriesName
+        self.rawText = rawText
+    }
 }
 
 /// Full date metadata for a single document, returned by

@@ -146,6 +146,12 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          `.preview` and `.export` render identical blocks. An entry whose
 ///          `generatedBlockType` this build doesn't know resolves to `nil` (skipped —
 ///          degraded, never corrupted), mirroring the `.unrecognized` kind guard
+///   1.9 — Authoring Phase 6 (blocks): `LiveGeneratedBlockDataSource` feeds the real
+///          block resolvers — citations via the document items' own manifest/formatter
+///          path, `document_dates` metadata, `document_sources` + the bundled NARA
+///          resolution index, the People-browser rollup, and the notes/assignments tag
+///          union. All read-only; every accessor degrades to empty (→ the blocks'
+///          "nothing to list" row) when its backing service is unavailable
 @MainActor
 class CollectionContentResolver {
 
@@ -871,14 +877,16 @@ class CollectionContentResolver {
             return excerptItem(for: ref, batch: batch)
         case .generated:
             // Generated apparatus (Phase 6): resolve the block from the collection's
-            // resolved document membership via the single block-resolution seam.
+            // resolved document membership via the single block-resolution seam,
+            // fed by the live data source (index, rollup, NARA index, SwiftData).
             // Read-only in both purposes — preview and export render identical blocks.
             // An unknown block type (a newer build's vocabulary) is skipped, mirroring
             // the `.unrecognized` kind guard: degraded, never corrupted.
             guard let raw = ref.generatedBlockType,
                   let blockType = CollectionGeneratedBlockType(rawValue: raw) else { return nil }
-            return .generated(CollectionGeneratedBlocks.resolve(
-                type: blockType, documents: batch.collectionDocuments))
+            return await .generated(CollectionGeneratedBlocks.resolve(
+                type: blockType, documents: batch.collectionDocuments,
+                dataSource: LiveGeneratedBlockDataSource(resolver: self, batch: batch)))
         case .unrecognized:
             // Written by a newer app version — this build cannot render it.
             // Skip rather than emit a junk document item (Authoring Phase 1 guard).
@@ -1129,6 +1137,106 @@ class CollectionContentResolver {
         return batch.manifestMap[volumeId]
             .map { batch.formatter.format(document: docMeta, volume: FRUSVolumeMetadata($0)) }
             ?? "\(volumeId)/\(documentId)"
+    }
+
+    /// A full history.state.gov-style citation for a document reference: the header-
+    /// bearing citation document items build when the render model is loaded (full
+    /// resolves load every membership document), else the header-less `shortCitation`.
+    /// Used by the generated-blocks data source, so bibliography/chronology citations
+    /// match the document items' own citations.
+    private func fullCitation(volumeId: String, documentId: String,
+                              batch: BatchContext) -> String {
+        let key = "\(volumeId)/\(documentId)"
+        guard let renderModel = batch.renderModels[key] else {
+            return shortCitation(volumeId: volumeId, documentId: documentId, batch: batch)
+        }
+        let (header, dateline) = renderModelHeadAndDateline(renderModel)
+        let docNum: String? = documentId.hasPrefix("d")
+            ? Int(documentId.dropFirst()).map { String($0) }
+            : nil
+        let docMeta = FRUSDocumentMetadata(
+            documentId: documentId, documentNumber: docNum,
+            header: header, dateline: dateline)
+        return batch.manifestMap[volumeId]
+            .map { batch.formatter.format(document: docMeta, volume: FRUSVolumeMetadata($0)) }
+            ?? "\(volumeId)/\(documentId)"
+    }
+
+    // MARK: - Live generated-block data source (Phase 6)
+
+    /// The production `CollectionGeneratedBlockDataSource`: wires the block resolvers to
+    /// the FTS5 index (`document_dates`, `document_sources`), the materialised People-
+    /// browser rollup (`PersonMentionStore`), the bundled NARA resolution index
+    /// (`VolumeSourcesIndexStore`), and SwiftData tags — all read-only, so blocks answer
+    /// identically for `.preview` and `.export`. Every accessor degrades to empty when
+    /// its backing service is unavailable (e.g. tests without a pipeline), which the
+    /// blocks render as their localized "nothing to list" row.
+    private struct LiveGeneratedBlockDataSource: CollectionGeneratedBlockDataSource {
+        /// The owning resolver — supplies the citation path and the shared services.
+        let resolver: CollectionContentResolver
+        /// The batch whose manifest map / formatter / render models serve citations.
+        let batch: BatchContext
+
+        func citation(volumeId: String, documentId: String) -> String {
+            resolver.fullCitation(volumeId: volumeId, documentId: documentId, batch: batch)
+        }
+
+        func dateMetadata(
+            for documents: [(volumeId: String, documentId: String)]
+        ) async -> [String: DocumentDateMetadata] {
+            guard let pipeline = resolver.appState.indexingPipeline else { return [:] }
+            return (try? await pipeline.dateMetadataByDocumentKey(documents)) ?? [:]
+        }
+
+        func documentSources(
+            for documents: [(volumeId: String, documentId: String)]
+        ) async -> [CollectionGeneratedBlocks.SourceRecord] {
+            guard let pipeline = resolver.appState.indexingPipeline else { return [] }
+            let rows = (try? await pipeline.documentSourcesByKey(documents)) ?? [:]
+            return rows.values.map {
+                CollectionGeneratedBlocks.SourceRecord(
+                    volumeId: $0.volumeId, documentId: $0.documentId,
+                    repository: $0.repository, recordGroup: $0.recordGroup,
+                    lotFile: $0.lotFile, seriesName: $0.seriesName, rawText: $0.rawText)
+            }
+        }
+
+        func archivalResolution(recordGroup: String?, lotFile: String?)
+            -> CollectionGeneratedBlocks.ArchivalLink? {
+            VolumeSourcesIndexStore.shared?
+                .resolution(recordGroup: recordGroup, lotFile: lotFile)
+                .map { CollectionGeneratedBlocks.ArchivalLink(title: $0.title,
+                                                              urlString: $0.catalogURL) }
+        }
+
+        func personMentions(
+            for documents: [(volumeId: String, documentId: String)]
+        ) async -> [CollectionGeneratedBlocks.PersonMention] {
+            guard let store = resolver.appState.personMentionStore else { return [] }
+            let mentions = (try? await store.rollupMentions(forDocuments: documents)) ?? []
+            return mentions.map {
+                CollectionGeneratedBlocks.PersonMention(
+                    identityKey: "r\($0.rollupId)", name: $0.canonicalName,
+                    description: $0.description, role: $0.role,
+                    volumeId: $0.volumeId, documentId: $0.documentId)
+            }
+        }
+
+        func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] {
+            let tags = (try? resolver.modelContext.fetch(FetchDescriptor<UserTag>())) ?? []
+            guard !tags.isEmpty else { return [] }
+            let assignments = (try? resolver.modelContext.fetch(
+                FetchDescriptor<DocumentTagAssignment>())) ?? []
+            // The batch already carries every research note — the same pool entry
+            // note-links resolve against — so no second fetch is needed.
+            return tags.map { tag in
+                let refs = CollectionDocumentDiscovery.tagDocumentRefs(
+                    tagId: tag.id, notes: batch.allNotes, assignments: assignments)
+                return CollectionGeneratedBlocks.TagRecord(
+                    name: tag.name,
+                    documents: refs.map { (volumeId: $0.volumeId, documentId: $0.documentId) })
+            }
+        }
     }
 
     /// Resolves the stored `GeneratedSummary` text for a headnote: the explicitly chosen

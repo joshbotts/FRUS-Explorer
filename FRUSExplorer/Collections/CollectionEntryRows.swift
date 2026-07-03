@@ -357,9 +357,17 @@ struct CollectionExcerptRow: View {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 6 (core): initial implementation
+///   1.1 — Authoring Phase 6 (blocks): `documentCount` live subtitle for the
+///          document-driven blocks (bibliography/chronology)
 struct CollectionGeneratedEntryRow: View {
     /// The `.generated` entry being displayed (read-only; blocks have no editable content).
     let entry: CollectionEntry
+    /// The collection's current document-entry count, shown as a live "Lists N documents"
+    /// subtitle for the document-driven blocks (bibliography/chronology) — the one count
+    /// the editors already have for free. The other blocks' row counts (persons, tags,
+    /// archival groups) require the resolution queries themselves, so their rows show
+    /// only the type caption (documented choice — no speculative count caching).
+    var documentCount: Int? = nil
     /// Deletes the entry — macOS supplies it for the inline trash (its List has no
     /// swipe-to-delete); iOS omits it (swipe handles deletion).
     var onDelete: (() -> Void)? = nil
@@ -376,13 +384,23 @@ struct CollectionGeneratedEntryRow: View {
                       defaultValue: "Unsupported block")
     }
 
-    /// The row caption: the honest resolution note, or the update hint for an unknown type.
+    /// The row caption: the honest resolution note — prefixed with the live document
+    /// count for the document-driven blocks — or the update hint for an unknown type.
     private var caption: String {
-        blockType != nil
-            ? String(localized: "collection.entry.generated.caption",
-                     defaultValue: "Generated from this collection's documents at export and in the preview.")
-            : String(localized: "collection.entry.generated.unsupported.detail",
-                     defaultValue: "Update FRUS Explorer to resolve this block.")
+        guard let type = blockType else {
+            return String(localized: "collection.entry.generated.unsupported.detail",
+                          defaultValue: "Update FRUS Explorer to resolve this block.")
+        }
+        let base = String(localized: "collection.entry.generated.caption",
+                          defaultValue: "Generated from this collection's documents at export and in the preview.")
+        // Bibliography/chronology rows are one-per-document, so the entry count IS the
+        // block's row count; the other blocks would need real resolution to count.
+        if let count = documentCount, type == .bibliography || type == .chronology {
+            let counted = String(localized: "collection.entry.generated.documentCount",
+                                 defaultValue: "Lists \(count) document\(count == 1 ? "" : "s").")
+            return "\(counted) \(base)"
+        }
+        return base
     }
 
     var body: some View {

@@ -783,6 +783,7 @@ private struct CollectionDetailPane: View {
                                  onDelete: { deleteEntry(at: row.index) })
         case .generated:
             CollectionGeneratedEntryRow(entry: entry,
+                                        documentCount: sortedEntries.count { $0.entryKind == .document },
                                         onDelete: { deleteEntry(at: row.index) })
         case .unrecognized:
             UnrecognizedEntryRow()

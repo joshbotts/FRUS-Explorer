@@ -1124,6 +1124,7 @@ struct CollectionEditorView: View {
             // Movable/deletable like prose; no body-depth or inspector controls —
             // the block resolves at export and in the live preview (Phase 6).
             CollectionGeneratedEntryRow(entry: entry,
+                                        documentCount: sortedEntries.count { $0.entryKind == .document },
                                         onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil)
         case .unrecognized:
             UnrecognizedEntryRow()
