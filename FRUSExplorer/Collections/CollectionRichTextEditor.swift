@@ -174,6 +174,12 @@ enum ProseRichText {
 ///   1.1 — Session 2026-07-03: visible formatting toolbar on both platforms (bold, italic,
 ///          underline, colour, link) — formatting no longer reachable only through the
 ///          system context menus; `.link` attributes ride the existing RTF persistence
+///   1.2 — Session 2026-07-03 review fix (macOS): the shared `NSColorPanel` follows
+///          keyboard focus across coexisting editors (the manager shows several prose
+///          rows plus the introduction editor at once) instead of staying targeted at
+///          whichever editor's palette button was clicked last — a pick after switching
+///          editors used to silently recolor (and persist) the previous editor's entry;
+///          the panel's target is also cleared on editor teardown
 struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
@@ -272,6 +278,12 @@ final class RichTextEditorController: NSObject, ObservableObject {
         refreshSelectionState()
     }
 
+    /// The controller the shared colour panel currently targets. `NSColorPanel` exposes
+    /// no getter for its target, so ownership is tracked here to let a newly focused
+    /// editor adopt the panel and a torn-down editor release it (v1.2) — without this,
+    /// a pick after switching editors silently recolored the previous editor's entry.
+    private static weak var colorPanelOwner: RichTextEditorController?
+
     /// Opens the shared system colour panel targeted at this editor; picked colours apply
     /// to the current selection (or the typing attributes at the caret).
     func showColorPanel() {
@@ -279,7 +291,33 @@ final class RichTextEditorController: NSObject, ObservableObject {
         panel.showsAlpha = false
         panel.setTarget(self)
         panel.setAction(#selector(colorPanelDidPick(_:)))
+        Self.colorPanelOwner = self
         panel.makeKeyAndOrderFront(nil)
+    }
+
+    /// Retargets the visible shared colour panel at this editor when its text view has
+    /// keyboard focus — the standard follow-focus behaviour of the system colour panel,
+    /// which the explicit target/action in ``showColorPanel()`` otherwise defeats.
+    /// Called on every selection change / editing start; a no-op when the panel is
+    /// closed, this editor already owns it, or the text view is not first responder.
+    func adoptColorPanelIfActive() {
+        guard Self.colorPanelOwner !== self else { return }
+        let panel = NSColorPanel.shared
+        guard panel.isVisible,
+              let tv = textView, tv.window?.firstResponder === tv else { return }
+        panel.setTarget(self)
+        panel.setAction(#selector(colorPanelDidPick(_:)))
+        Self.colorPanelOwner = self
+    }
+
+    /// Clears the shared colour panel's target/action when this editor still owns it —
+    /// called on editor teardown so the panel never keeps a dangling target after the
+    /// collection editor (or one of its rows) goes away.
+    func releaseColorPanel() {
+        guard Self.colorPanelOwner === self else { return }
+        NSColorPanel.shared.setTarget(nil)
+        NSColorPanel.shared.setAction(nil)
+        Self.colorPanelOwner = nil
     }
 
     /// Applies (or, for an empty string, removes) a `.link` attribute over the selection.
@@ -499,7 +537,15 @@ extension RichTextPlatformEditor: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(report: report, controller: controller) }
 
-    /// Forwards `NSTextView` edits back to the entry and selection changes to the toolbar.
+    static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
+        // Drop the shared colour panel's target if it still points at this editor's
+        // controller (v1.2) — otherwise the panel outlives the collection editor with
+        // a dangling target.
+        coordinator.controller.releaseColorPanel()
+    }
+
+    /// Forwards `NSTextView` edits back to the entry and selection changes to the toolbar,
+    /// and hands the shared colour panel to this editor whenever it gains focus (v1.2).
     final class Coordinator: NSObject, NSTextViewDelegate {
         fileprivate var report: (NSAttributedString) -> Void
         /// The toolbar bridge whose published state follows this text view.
@@ -516,6 +562,10 @@ extension RichTextPlatformEditor: NSViewRepresentable {
         }
         func textViewDidChangeSelection(_ notification: Notification) {
             controller.refreshSelectionState()
+            controller.adoptColorPanelIfActive()
+        }
+        func textDidBeginEditing(_ notification: Notification) {
+            controller.adoptColorPanelIfActive()
         }
     }
 }

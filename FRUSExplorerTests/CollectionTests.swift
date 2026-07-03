@@ -389,6 +389,42 @@ struct CollectionTests {
         #expect(pdfText.contains("history.state.gov/frus"))
     }
 
+    @Test("ProseLink: a link with mixed inline formatting prints the PDF URL parenthetical once, after the run — not once per span")
+    func proseLinkMixedFormattingPrintsURLOnceInPDF() async throws {
+        // One user-applied link over "the archive", with "archive" additionally bolded —
+        // the attribute change splits the linked range into two consecutive runs that
+        // BOTH carry the linkURL (the PDF v1.18 regression shape: v1.16 printed the
+        // visible-URL parenthetical after every span, injecting it mid-phrase).
+        let m = NSMutableAttributedString(string: "See the archive for details.")
+        m.addAttribute(.link, value: URL(string: "https://history.state.gov/frus")!,
+                       range: NSRange(location: 4, length: 11))   // "the archive"
+        #if canImport(AppKit)
+        m.addAttribute(.font, value: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize),
+                       range: NSRange(location: 8, length: 7))    // "archive"
+        #else
+        m.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: UIFont.labelFontSize),
+                       range: NSRange(location: 8, length: 7))    // "archive"
+        #endif
+        let rtf = try m.data(from: NSRange(location: 0, length: m.length),
+                             documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+
+        // Precondition: the decoder really does emit multiple spans sharing one linkURL.
+        let spans = try #require(CollectionProse.paragraphs(fromRTF: rtf).first)
+        #expect(spans.filter { $0.linkURL == "https://history.state.gov/frus" }.count == 2)
+
+        let metadata = CollectionExportMetadata(name: "Link Once", note: nil)
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: [.prose(rtf)])
+        let pdfDocument = try #require(PDFDocument(data: try Data(contentsOf: pdfURL)))
+        let pdfText = (0..<pdfDocument.pageCount)
+            .compactMap { pdfDocument.page(at: $0)?.string }
+            .joined(separator: "\n")
+        // The URL appears exactly once — after the whole linked phrase, never mid-phrase.
+        let occurrences = pdfText.components(separatedBy: "history.state.gov/frus").count - 1
+        #expect(occurrences == 1)
+        let normalized = pdfText.replacingOccurrences(of: "\n", with: " ")
+        #expect(!normalized.contains("(https://history.state.gov/frus)archive"))
+    }
+
     // MARK: - DocumentNoteAssociationTest
 
     @Test("DocumentNoteAssociationTest: CollectionEntry stores and retrieves researchNoteId")

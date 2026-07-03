@@ -112,6 +112,11 @@ import CoreText
 ///          `.summaryOnly` body or a filled headnote — is followed by the shared
 ///          `CollectionAIAttribution` caption in small gray type; collections rendering
 ///          no generated summary export byte-identically to 1.16
+///   1.18 — Session 2026-07-03 review fix: the visible-URL parenthetical is emitted once
+///          per *run of consecutive spans sharing a link*, not once per decoded span —
+///          a link with mixed inline formatting (e.g. one bolded word) decodes as
+///          several spans all carrying the same `linkURL`, and 1.16 printed the URL
+///          after every one of them, injecting it repeatedly mid-phrase
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -1239,7 +1244,12 @@ final class PDFCollectionExporter: CollectionExporter {
     /// underline, and foreground-colour attributes; paragraphs are separated by a blank line.
     /// A linked span renders underlined with the URL appended as small gray text in
     /// parentheses — the v1.14 no-annotation tradeoff (bare CoreText frame drawing has no
-    /// link boxes; HTML/DOCX carry the real hyperlink), applied inline for prose.
+    /// link boxes; HTML/DOCX carry the real hyperlink), applied inline for prose. The
+    /// decoder splits one user-applied link into multiple consecutive spans wherever any
+    /// other inline attribute changes inside the linked range (a bolded word, a colour),
+    /// so the parenthetical is emitted once per *run* of consecutive spans sharing the
+    /// same `linkURL` — after the run's last span — never once per span (v1.18); the
+    /// self-describing-link suppression compares the URL against the whole run's text.
     private func proseAttributedString(_ rtf: Data, fontSize: CGFloat = 11) -> NSAttributedString {
         let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
         let result = NSMutableAttributedString()
@@ -1248,7 +1258,10 @@ final class PDFCollectionExporter: CollectionExporter {
                 result.append(NSAttributedString(string: "\n\n",
                                                  attributes: makeAttrs(fontSize: fontSize, bold: false)))
             }
-            for span in paragraph {
+            /// Text accumulated across the current run of consecutive spans sharing one
+            /// `linkURL` — the unit the visible-URL parenthetical is emitted for.
+            var linkRunText = ""
+            for (spanIndex, span) in paragraph.enumerated() {
                 var attrs = makeStyledAttrs(fontSize: fontSize, bold: span.bold,
                                             italic: span.italic, gray: 0)
                 if span.underline || span.linkURL != nil {
@@ -1259,11 +1272,22 @@ final class PDFCollectionExporter: CollectionExporter {
                     attrs[NSAttributedString.Key(kCTForegroundColorAttributeName as String)] = color
                 }
                 result.append(NSAttributedString(string: span.text, attributes: attrs))
-                if let url = span.linkURL, !url.isEmpty,
-                   url != span.text.trimmingCharacters(in: .whitespacesAndNewlines) {
-                    result.append(NSAttributedString(
-                        string: " (\(url))",
-                        attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+                if let url = span.linkURL, !url.isEmpty {
+                    linkRunText += span.text
+                    let nextURL = spanIndex + 1 < paragraph.count
+                        ? paragraph[spanIndex + 1].linkURL : nil
+                    if nextURL != url {
+                        // Last span of this link run — emit the parenthetical once,
+                        // unless the linked text IS the URL (self-describing link).
+                        if url != linkRunText.trimmingCharacters(in: .whitespacesAndNewlines) {
+                            result.append(NSAttributedString(
+                                string: " (\(url))",
+                                attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+                        }
+                        linkRunText = ""
+                    }
+                } else {
+                    linkRunText = ""
                 }
             }
         }
