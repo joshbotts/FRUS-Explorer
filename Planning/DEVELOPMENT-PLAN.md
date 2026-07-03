@@ -1154,3 +1154,21 @@ Branch claude/build-prep-fixes, 8 commits:
 **Next sequences for owner review:** Source Explorer program (draft scope in the audit),
 macOS sheet→window conversions + accessibility mitigations (UI audit), consolidated docs
 pass + build bump (TestFlight notes: authoring suite + one-time reindex).
+
+### Session 2026-07-03 (later) — Source Explorer program: scope + Phase 1 (extraction fix)
+Scope formalized: Planning/Source-Explorer-Provenance-Scope.md (PR #156) — 5 phases,
+decision points S1–S6, verification = the audit's reproducible queries. **Phase 1 shipped**
+(claude/sourceexplorer-phase1-extraction, 3 commits): frus-sources locator chain ported
+into extractSourceNote (head/note/p/seg → head/note w/ Source: prefix → top-level inline,
+with the review-hardened dual-encoding priority: head remarks defer to top-level citations —
+full-corpus replay over all 694 volumes showed exactly 25 docs change, all improvements);
+[Source: …] wrapper normalization keeps the Source: prefix so parseNarrative fires;
+S1 classification split → document_sources.classification (conservative marking-vocabulary
+gate); extractHeader now excludes footnote descendants of <head> — source-note text had
+been leaking into EVERY 1955+ document's displayed title (bonus corpus-wide title cleanup);
+display-side extractor unified with the pipeline's. currentDateIndexVersion 13→15 (impl+fix).
+**Measured on real TEI (era table in PR #157):** 1955+ coverage <1% → 87–98% raw (100% of
+eligible; residue = editorial notes, genuinely sourceless); structured rows 0 → 378 across
+7 sample volumes; the audit's known lots now resolve (66 D 204 → 74 neighbors, 77 D 163 → 31).
+Lasting RealTEICoverageTests gated on FRUS_TEI_MIRROR. 1075/1075. Next: Phase 2 (parser v2 +
+citations.csv eval harness) on owner go.
