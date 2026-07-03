@@ -212,6 +212,101 @@ struct SourceExplorerTests {
         #expect(variants[1] == "123 D 4567")
     }
 
+    // MARK: - Phase2ReviewFixTest (Source Explorer Phase 2 adversarial-review fixes)
+
+    @Test("ReviewFix: colon-styled inline lot cuts the lot number at the first colon")
+    func colonStyledInlineLotCutsAtColon() {
+        // 1946–54 CFM/SFM volumes chain segments with ':' — the colon tail must not
+        // be baked into the lot key (finding 1).
+        let note = "C.F.M. Files: Lot M–88: Box 2063: US Delegation Minutes"
+        if case .lotFile(_, let lot, _) = parser.parse(note) {
+            #expect(lot == "M–88")
+            #expect(SourceNoteParser.lotFileNorm(lot) == "M88")
+        } else {
+            Issue.record("Expected .lotFile for colon-styled inline lot, got \(parser.parse(note))")
+        }
+    }
+
+    @Test("ReviewFix: lotFileNorm defensively cuts colon tails and drops parens")
+    func lotFileNormCutsColonTail() {
+        #expect(SourceNoteParser.lotFileNorm("M–88: Box 2063: US Delegation Minutes") == "M88")
+        #expect(SourceNoteParser.lotFileNorm("60 D 665)") == "60D665")
+        #expect(SourceNoteParser.lotFileNorm("71–D 440") == "71D440")
+    }
+
+    @Test("ReviewFix: abstract with CIA Job citation tail routes to .ciaCollection, not a junk named series")
+    func abstractCIAJobTailBeatsNamedSeries() {
+        // The summary+classification fits the named-series shape; the concrete
+        // queryable citation is in the tail (finding 2).
+        let note = "Military production facilities. Secret. 2 pp. CIA Files, Job 80B01285A, Box 6."
+        if case .ciaCollection(let job, _, _) = parser.parse(note) {
+            #expect(job == "80B01285A")
+        } else {
+            Issue.record("Expected .ciaCollection for abstract CIA tail, got \(parser.parse(note))")
+        }
+    }
+
+    @Test("ReviewFix: abstract WNRC RG tail routes to .naraCollection with the tail's record group")
+    func abstractWNRCTailBeatsNamedSeries() {
+        let note = "Top Secret. 11 pp. WNRC, RG 330, OASD/ISA Files, FRC 69 A 0926, Vietnam 1968."
+        if case .naraCollection(let rg, _, _, _) = parser.parse(note) {
+            #expect(rg == "330")
+        } else {
+            Issue.record("Expected .naraCollection for abstract WNRC tail, got \(parser.parse(note))")
+        }
+    }
+
+    @Test("ReviewFix: lead-anchored NARA acronym in an abstract tail gates .naraCollection")
+    func abstractNARAAcronymTail() {
+        let note = "Assassination planning summary. Secret. 3 pp. NARA, RG 233, JFK Collection."
+        if case .naraCollection(let rg, _, _, _) = parser.parse(note) {
+            #expect(rg == "233")
+        } else {
+            Issue.record("Expected .naraCollection for NARA acronym tail, got \(parser.parse(note))")
+        }
+    }
+
+    @Test("ReviewFix: Nixon Presidential Materials with a parenthetical FRC remark keeps its own identity")
+    func nixonMaterialsNotMisattributedToFRCRecordGroup() {
+        // The FRC accession describes the secondary OASD copy in the parenthetical,
+        // not the cited H-Files original (finding 3).
+        let note = "Source: National Archives, Nixon Presidential Materials, NSC Files, NSC Institutional Files (H-Files), Box H–115, WSAG Minutes, Originals, 1971. Top Secret. (Washington National Records Center, OSD Files, FRC 330 76 0197, Box 74, Vietnam 1971.)"
+        if case .presidentialLibrary(let library, let collection, _) = parser.parse(note) {
+            #expect(library == "Nixon Presidential Materials")
+            #expect(collection == "NSC Files")
+        } else {
+            Issue.record("Expected .presidentialLibrary for Nixon Presidential Materials, got \(parser.parse(note))")
+        }
+    }
+
+    @Test("ReviewFix: WNRC-led FRC accession outside parentheses still derives the record group")
+    func wnrcLedFRCDerivationStillWorks() {
+        let note = "Source: Washington National Records Center, OSD Files: FRC 330–78–0011, Box 63, Vietnam 1974. Secret."
+        if case .naraCollection(let rg, _, _, _) = parser.parse(note) {
+            #expect(rg == "330")
+        } else {
+            Issue.record("Expected .naraCollection for WNRC-led FRC note, got \(parser.parse(note))")
+        }
+    }
+
+    @Test("ReviewFix: bare 'File' citation keeps the full dotted decimal identifier")
+    func bareFileKeepsDottedDecimal() {
+        // Corpus fixture (finding 5): pattern 2 previously truncated to '093'.
+        let note = "File 093.11141/21."
+        if case .centralFiles(_, let fileId) = parser.parse(note) {
+            #expect(fileId == "093.11141/21")
+        } else {
+            Issue.record("Expected .centralFiles for bare File citation, got \(parser.parse(note))")
+        }
+        // Office-infix variant: the decimal grammar keeps the full location.
+        let infixNote = "File 312.112 B61/50."
+        if case .centralFiles(_, let fileId) = parser.parse(infixNote) {
+            #expect(fileId == "312.112 B61/50")
+        } else {
+            Issue.record("Expected .centralFiles for infix File citation, got \(parser.parse(infixNote))")
+        }
+    }
+
     // MARK: - CFPFTest
 
     @Test("CFPF: 'Central Foreign Policy File' narrative parses as .cfpfFile")

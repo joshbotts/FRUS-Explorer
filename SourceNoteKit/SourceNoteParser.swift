@@ -250,6 +250,22 @@ public struct ArchiveCitation: Sendable {
 ///          supplement encoding); `Public Papers`/`The Presidential Campaign`
 ///          previously-published prefixes; `lotFileNorm(_:)` canonical compact
 ///          lot key (`64D199`) written to `document_sources.lot_file_norm`
+///   1.8 — Source Explorer Phase 2 adversarial-review fixes (Session 2026-07-03):
+///          (1) colon-styled inline lots cut at the first `:` and trailing `)`
+///          stripped in `splitLotAndBox` — `lotFileNorm` hardened the same way —
+///          so `C.F.M. Files: Lot M–88: Box 2063` keys as `M88`, not
+///          `M88:BOX2063:…` (1,024 corpus rows); (2) `tryAbstractCitationTail`
+///          moved BEFORE `tryNamedFileSeries` and leading classification
+///          sentences stripped from tails, so abstracts whose summary fits the
+///          named-series shape route to the concrete CIA/NARA citation in the
+///          tail; lead-anchored `NARA` acronym accepted as a NARA gate;
+///          (3) FRC record-group derivation reads outside parentheses only, and
+///          "Nixon Presidential Materials" short-circuits to its own
+///          `.presidentialLibrary` identity before the FRC fallback (a
+///          parenthetical secondary-copy accession can no longer misattribute
+///          RG 330 to the NSC H-Files); en/em-dash box numbers (`Box H–115`)
+///          extracted; (4) `tryFileNo` bare-`File` pattern keeps dotted
+///          decimals intact (`File 093.11141/21.` → `093.11141/21`, not `093`)
 public struct SourceNoteParser {
 
     public init() {}
@@ -301,6 +317,14 @@ public struct SourceNoteParser {
         // lot-leading ("Lot 71–D 440, Box 19232") notes
         if let result = tryLooseLotFile(trimmed) { return result }
 
+        // Abstract notes with a trailing citation after a page count
+        // ("… Top Secret. 2 pp. Kennedy Library, NSF, …" — 1961–1963 supplements).
+        // Checked BEFORE tryNamedFileSeries: an abstract's summary+classification can
+        // accidentally fit the named-series shape ("Military production facilities.
+        // Secret. 2 pp. CIA Files, Job 80B01285A"), which would swallow the concrete
+        // queryable citation in the tail behind a junk series name.
+        if let result = tryAbstractCitationTail(trimmed) { return result }
+
         // Named file series / named collection ("IO Files: US(P)/A/351",
         // "Conference files, CF 292", "Roosevelt Papers: Telegram", "J. C. S. Files")
         if let result = tryNamedFileSeries(trimmed) { return result }
@@ -312,10 +336,6 @@ public struct SourceNoteParser {
         if trimmed.hasPrefix("Treaty Series") {
             return .previouslyPublished(citation: trimmed)
         }
-
-        // Abstract notes with a trailing citation after a page count
-        // ("… Top Secret. 2 pp. Kennedy Library, NSF, …" — 1961–1963 supplements)
-        if let result = tryAbstractCitationTail(trimmed) { return result }
 
         return .unrecognized(rawText: trimmed)
     }
@@ -331,11 +351,20 @@ public struct SourceNoteParser {
     /// archival-neighbor matcher becomes a single indexed equality instead of a
     /// formatting-variant fan-out.
     ///
+    /// Defensive against colon-chained tails and parenthesis residue that older
+    /// parses (or the Phase 3 front-matter side) may carry in a raw lot value:
+    /// the value is cut at the first `:`, `(`, or `)` before compaction
+    /// (`"M–88: Box 2063"` → `"M88"`, `"68 F 8) Received at 9"` → `"68F8"`), so
+    /// the key always reduces to the audit's compact form.
+    ///
     /// - Parameter raw: A lot number in any observed formatting (spacing, ASCII
     ///   hyphen, en/em-dash, lowercase designator).
     /// - Returns: The compact uppercase key.
     public static func lotFileNorm(_ raw: String) -> String {
-        raw.uppercased().filter { !$0.isWhitespace && $0 != "-" && $0 != "–" && $0 != "—" }
+        let head = raw.components(separatedBy: CharacterSet(charactersIn: ":()")).first ?? raw
+        return head.uppercased().filter {
+            !$0.isWhitespace && $0 != "-" && $0 != "–" && $0 != "—"
+        }
     }
 
     // MARK: - Classification markings (frus-sources sentence model)
@@ -499,13 +528,27 @@ public struct SourceNoteParser {
         let patterns: [(String, NSRegularExpression.Options)] = [
             // File No. / Filed No. / File. No. / File No, / FileNo. / File Not / File Nos.
             (#"^File[d]?\s*[.,]?\s*Nos?[.,t]?\s*[.,]?\s*(\d[0-9A-Za-z./½–—\-]*)"#, .caseInsensitive),
-            (#"^File\s+(\d[\d/½–—\-]*)"#, .caseInsensitive),             // File 774/42
+            // Bare "File <number>" — same capture class as the "File No." form, so
+            // dotted decimals keep their class and item ("File 093.11141/21." must
+            // store "093.11141/21", not the truncated "093").
+            (#"^File\s+(\d[0-9A-Za-z./½–—\-]*)"#, .caseInsensitive),      // File 774/42
         ]
         for (pat, opts) in patterns {
             guard let regex = try? NSRegularExpression(pattern: pat, options: opts) else { continue }
             let ns = NSRange(text.startIndex..., in: text)
             if let match = regex.firstMatch(in: text, range: ns),
                let r = Range(match.range(at: 1), in: text) {
+                // Prefer the decimal grammars on the text from the identifier start:
+                // they keep dotted classes, office infixes, and the /item tail intact
+                // ("File 312.112 B61/50." → "312.112 B61/50"), where the bare capture
+                // class would stop at the first space. The infix grammar runs first —
+                // its item tail keeps filing-letter suffixes ("793.94/521b") that the
+                // strict digits-only tail would drop.
+                let rest = String(text[r.lowerBound...])
+                if let decimal = tryDecimalInfixFile(rest) ?? tryDecimalFile(rest),
+                   case .centralFiles(_, let fid?) = decimal {
+                    return .centralFiles(recordGroup: "RG-59", fileIdentifier: fid)
+                }
                 let raw = String(text[r]).trimmingCharacters(in: CharacterSet(charactersIn: ".,"))
                 return .centralFiles(recordGroup: "RG-59", fileIdentifier: raw.isEmpty ? nil : raw)
             }
@@ -736,7 +779,9 @@ public struct SourceNoteParser {
     }
 
     private func extractBoxNumber(from text: String) -> String? {
-        let pat = #"\bBox\s+([\w\-\.]+\d+)"#
+        // En/em-dash box designations ("Box H–115", the Nixon H-Files) are as
+        // common as hyphens in modern volumes, so the capture includes them.
+        let pat = #"\bBox\s+([\w\-–—\.]+\d+)"#
         guard let regex = try? NSRegularExpression(pattern: pat, options: .caseInsensitive) else { return nil }
         let ns = NSRange(text.startIndex..., in: text)
         guard let match = regex.firstMatch(in: text, range: ns),
@@ -853,6 +898,16 @@ public struct SourceNoteParser {
         return String(body[r])
     }
 
+    /// Removes parenthesized spans from a citation body. FRC accessions (and box
+    /// numbers) inside parentheses describe a *secondary copy* of the document
+    /// ("… WSAG Minutes … (Washington National Records Center, OSD Files,
+    /// FRC 330 76 0197, Box 74, …)"), not the cited original, so identity
+    /// derivations must never read them.
+    private static func strippingParentheticals(_ body: String) -> String {
+        body.replacingOccurrences(of: #"\([^)]*\)"#, with: "",
+                                  options: .regularExpression)
+    }
+
     private func tryNARACollection(_ body: String) -> ParsedSourceNote? {
         let naraKeywords = [
             "National Archives and Records Administration",
@@ -862,19 +917,44 @@ public struct SourceNoteParser {
             "Washington Federal Records Center",
             "WNRC",
         ]
-        guard naraKeywords.contains(where: { body.range(of: $0, options: .caseInsensitive) != nil }) else {
+        // The bare acronym "NARA" is only trusted as a *lead* (the 1961–1963
+        // abstract-tail style "NARA, RG 233, JFK Collection") — case-sensitive and
+        // anchored, so prose (or the Japanese city) can never gate.
+        let naraAcronymLeads = body.range(of: #"^NARA\b"#, options: .regularExpression) != nil
+        guard naraAcronymLeads
+                || naraKeywords.contains(where: { body.range(of: $0, options: .caseInsensitive) != nil })
+        else {
             return nil
         }
         // Extract record group — required to distinguish from other uses of
         // "National Archives". Modern WNRC citations often omit "RG N" but lead the
         // FRC accession number with it ("OSD Files: FRC 330–78–0011"); that
         // derivation is only trusted when the repository *leads* the citation, so a
-        // secondary "copy in WNRC…" mention can never reclassify a library-led note.
-        let repositoryLeads = naraKeywords.contains {
+        // secondary "copy in WNRC…" mention can never reclassify a library-led note,
+        // and only outside parentheses, so a parenthesized secondary-copy remark
+        // can never lend its accession to the cited original.
+        let repositoryLeads = naraAcronymLeads || naraKeywords.contains {
             body.range(of: $0, options: [.caseInsensitive, .anchored]) != nil
         }
-        guard let rg = extractRG(from: body)
-                ?? (repositoryLeads ? extractFRCRecordGroup(from: body) : nil) else {
+        var rg = extractRG(from: body)
+        if rg == nil {
+            // Nixon Presidential Materials without an explicit RG is its own
+            // collection identity (the NARA-held White House materials, cited as
+            // "National Archives, Nixon Presidential Materials, NSC Files, …") —
+            // short-circuited BEFORE the FRC fallback so a trailing FRC remark can
+            // never misattribute a record group to these notes. Gated on the
+            // repository lead and searched outside parentheticals, so a
+            // "(copy in …, Nixon Presidential Materials, …)" remark on a
+            // differently-led note can never hijack the classification.
+            if repositoryLeads,
+               let npm = tryNixonPresidentialMaterials(Self.strippingParentheticals(body)) {
+                return npm
+            }
+            if repositoryLeads {
+                rg = extractFRCRecordGroup(from: Self.strippingParentheticals(body))
+            }
+        }
+        guard let rg else {
             // No RG number — fall through to let lot file or central files handle it
             return nil
         }
@@ -883,6 +963,25 @@ public struct SourceNoteParser {
         let box    = extractBoxNumber(from: body)
         let series = extractSeriesName(from: body, afterRG: rg)
         return .naraCollection(recordGroup: rg, series: series, lotFile: lot, box: box)
+    }
+
+    /// Classifies a citation of the Nixon Presidential Materials (the NARA-held
+    /// White House materials, since moved to the Nixon Library) as a
+    /// `.presidentialLibrary` identity: library = "Nixon Presidential Materials",
+    /// collection = the first comma segment after the phrase ("NSC Files"). Called
+    /// only when the body carries no explicit `RG N`, so an explicitly
+    /// record-grouped citation still classifies as `.naraCollection`.
+    private func tryNixonPresidentialMaterials(_ body: String) -> ParsedSourceNote? {
+        guard let range = body.range(of: #"Nixon Presidential Materials(?:\s+Project)?"#,
+                                     options: [.regularExpression, .caseInsensitive])
+        else { return nil }
+        let remainder = String(body[range.upperBound...])
+            .trimmingCharacters(in: CharacterSet(charactersIn: ",.").union(.whitespaces))
+        let collection = remainder.components(separatedBy: ",").first?
+            .trimmingCharacters(in: .whitespaces) ?? ""
+        let fileId = extractBoxOrFileString(from: remainder)
+        return .presidentialLibrary(library: "Nixon Presidential Materials",
+                                    collection: collection, fileIdentifier: fileId)
     }
 
     /// Extracts a series name from the body after the RG number.
@@ -1182,16 +1281,35 @@ public struct SourceNoteParser {
         pattern: #"\b\d{1,3}\s+pp?\.\s+"#, options: []
     )
 
+    /// Leading classification sentence(s) at the start of an abstract's trailing
+    /// citation (`Secret. CIA, DCI Files, …`, `Top Secret; Sensitive. WNRC, …`) —
+    /// stripped before the tail is parsed, so the lead-anchored narrative gates
+    /// (`^CIA`, repository leads) see the citation itself and library names are
+    /// not polluted with the marking.
+    private static let leadingClassificationRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Top Secret|Secret|Confidential|Unclassified|Limited Official Use|Official Use Only|Restricted|No classification marking)(?:;[^.;]{0,40})*\.\s+"#,
+        options: []
+    )
+
     /// Microfiche-supplement abstracts (1961–1963 volumes) end with
-    /// `<n> pp. <citation>.` — the text after the *last* page count is parsed with
-    /// the narrative grammar plus the loose-lot and named-series rules. Runs last
-    /// in the top-level chain, so it only ever converts unrecognized notes.
+    /// `<n> pp. <citation>.` — the text after the *last* page count (with any
+    /// leading classification sentence stripped) is parsed with the narrative
+    /// grammar plus the loose-lot and named-series rules. Runs after the anchored
+    /// location grammars but BEFORE `tryNamedFileSeries`, so an abstract whose
+    /// summary happens to fit the named-series shape still routes to the concrete
+    /// citation in its tail.
     private func tryAbstractCitationTail(_ text: String) -> ParsedSourceNote? {
         guard let regex = Self.abstractPagesRegex else { return nil }
         let ns = NSRange(text.startIndex..., in: text)
         let matches = regex.matches(in: text, range: ns)
         guard let last = matches.last, let range = Range(last.range, in: text) else { return nil }
-        let tail = String(text[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+        var tail = String(text[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+        if let strip = Self.leadingClassificationRegex {
+            while let m = strip.firstMatch(in: tail, range: NSRange(tail.startIndex..., in: tail)),
+                  let r = Range(m.range, in: tail) {
+                tail = String(tail[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+            }
+        }
         guard tail.count >= 8 else { return nil }
         return parseNarrativeBody(tail)
             ?? tryLooseLotFile(tail)
@@ -1242,8 +1360,15 @@ public struct SourceNoteParser {
 
     // MARK: - Utility
 
+    /// Splits the text after a `Lot ` keyword into the lot number and an optional
+    /// box/folder/file fragment. The lot number ends at the first `,`, `.`, `:`,
+    /// `(`, or `)` — colon-styled inline lots (`C.F.M. Files: Lot M–88: Box 2063:
+    /// US Delegation Minutes`, the 1946–54 CFM/SFM volumes) chain further segments
+    /// with `:`, and a parenthesized citation (`(… Lot 68 F 8) Received at 9:32
+    /// a.m.`) closes with `)` straight into remark prose — neither may be baked
+    /// into the lot key.
     private func splitLotAndBox(_ text: String) -> (lot: String, box: String?) {
-        let parts = text.components(separatedBy: CharacterSet(charactersIn: ",."))
+        let parts = text.components(separatedBy: CharacterSet(charactersIn: ",.:()"))
         let lot   = parts.first?.trimmingCharacters(in: .whitespaces) ?? ""
         let remainder = parts.dropFirst().joined(separator: ",")
         return (lot: lot, box: extractBoxOrFileString(from: remainder))

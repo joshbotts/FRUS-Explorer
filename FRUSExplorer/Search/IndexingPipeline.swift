@@ -394,7 +394,17 @@ public actor IndexingPipeline {
     ///   a `lot_file_norm` column (canonical compact lot key, e.g. "64D199") written at
     ///   parse time. A reindex rebuilds `document_sources` with the v2 classifications
     ///   and normalized lot keys.
-    public static let currentDateIndexVersion: Int = 16
+    /// - Version 17: SourceNoteParser v2 adversarial-review fixes (Source Explorer
+    ///   Phase 2, Session 2026-07-03). Colon-styled inline lots cut at the first `:`
+    ///   (and trailing `)` stripped) so `lot_file`/`lot_file_norm` store the compact
+    ///   key (`M88`) instead of the colon chain (1,024 corpus rows); abstract notes
+    ///   whose summary fits the named-series shape now route to the concrete CIA/NARA
+    ///   citation in their tail; FRC-derived record groups no longer read parenthetical
+    ///   secondary-copy remarks, and "Nixon Presidential Materials" notes classify as
+    ///   their own presidential-library identity instead of `citation_era='foreign'`
+    ///   junk (~7k rows); bare `File <number>` citations keep dotted decimals intact.
+    ///   A reindex rebuilds `document_sources` with the corrected keys.
+    public static let currentDateIndexVersion: Int = 17
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
