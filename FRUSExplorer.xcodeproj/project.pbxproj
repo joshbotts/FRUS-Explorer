@@ -385,6 +385,7 @@
 		BDBDB09BF4E2D5BE9036F398 /* HTMLCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1252D064E6BC3892ADE9BFBB /* HTMLCollectionExporter.swift */; };
 		BF125EEF64604F54E275DE3F /* ResearchNoteEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8EF6A6AA20275212262AF9 /* ResearchNoteEditorViewModel.swift */; };
 		BF3CD663B7A4DE5D6531BA22 /* SettingsSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32440919C109648E8B09B0A4 /* SettingsSyncTests.swift */; };
+		BF845A5AB8B5B01F0B1E22C6 /* CollectionGeneratedBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438263B526B40AE3067F4304 /* CollectionGeneratedBlocks.swift */; };
 		BFA05408FD6A0448130AD9EF /* MacCollectionManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C470F300DF7A598FFEE107C5 /* MacCollectionManagerView.swift */; };
 		BFBCF04D82504696D98CC433 /* IndexingBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6C65B7B3B43E854DD4AFE9 /* IndexingBannerView.swift */; };
 		C18061CD97F79FE201E22E73 /* GeneratedSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */; };
@@ -435,6 +436,7 @@
 		D9A7D0ABECF044F462E0E055 /* WordCloudSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79CFD3B1F85F9CF39FD5D72 /* WordCloudSettingsView.swift */; };
 		D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
 		DA08A8C0BF8FE6E727A1DF46 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */; };
+		DA6B539FB1A58D8F6DF50C04 /* CollectionGeneratedBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438263B526B40AE3067F4304 /* CollectionGeneratedBlocks.swift */; };
 		DAC8121E5DC139C648C6EEA3 /* CentralFilesClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C3C5368784539EAAB2C4D5 /* CentralFilesClassifierTests.swift */; };
 		DB15E9AC88A5BDAF6318E446 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9548E0A9BF3D900143E1777D /* AboutView.swift */; };
 		DB3F6DB563B54CE1B894E958 /* ProjectAdminService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B341C7D359DE26CC1435689 /* ProjectAdminService.swift */; };
@@ -633,6 +635,7 @@
 		4098809B135A742E73742AF2 /* SummarizationBackgroundProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationBackgroundProbe.swift; sourceTree = "<group>"; };
 		423271170536DE4B8160B34A /* CollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionExporter.swift; sourceTree = "<group>"; };
 		43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonClusterOverride.swift; sourceTree = "<group>"; };
+		438263B526B40AE3067F4304 /* CollectionGeneratedBlocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionGeneratedBlocks.swift; sourceTree = "<group>"; };
 		449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASTToRenderNodeConverter.swift; sourceTree = "<group>"; };
 		4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCollectionFormat.swift; sourceTree = "<group>"; };
 		471EA3C4C3411D61C4EB3994 /* PersonAuthorityIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonAuthorityIndex.swift; sourceTree = "<group>"; };
@@ -1428,6 +1431,7 @@
 				4FA4D049C98F1AD30D8A1C01 /* CollectionExcerpts.swift */,
 				423271170536DE4B8160B34A /* CollectionExporter.swift */,
 				DE13446F4368DB7721139BAE /* CollectionExportSheet.swift */,
+				438263B526B40AE3067F4304 /* CollectionGeneratedBlocks.swift */,
 				8DB62E70AEA3D9A8CFBD2C8E /* CollectionItemHTMLRenderer.swift */,
 				F7F5EEC9CE97A2ED05070E05 /* CollectionListView.swift */,
 				C309EFB1DF31D916990A2240 /* CollectionOutline.swift */,
@@ -1701,6 +1705,7 @@
 				B98FC305D6D8115550513284 /* CollectionExcerpts.swift in Sources */,
 				44C38CF030971E130CB5C460 /* CollectionExportSheet.swift in Sources */,
 				A8ED34A01450FC39D53C533D /* CollectionExporter.swift in Sources */,
+				DA6B539FB1A58D8F6DF50C04 /* CollectionGeneratedBlocks.swift in Sources */,
 				5AAC8948C386860029BDBC83 /* CollectionItemHTMLRenderer.swift in Sources */,
 				AF4B2F83526DB53160032D16 /* CollectionListView.swift in Sources */,
 				33402414D148206F7280EBD7 /* CollectionOutline.swift in Sources */,
@@ -1916,6 +1921,7 @@
 				26C871262EEC974E3E206F20 /* CollectionExcerpts.swift in Sources */,
 				140E185A8A99E9A0776F9214 /* CollectionExportSheet.swift in Sources */,
 				5C9BB2062A2F2C2C2A96AF6B /* CollectionExporter.swift in Sources */,
+				BF845A5AB8B5B01F0B1E22C6 /* CollectionGeneratedBlocks.swift in Sources */,
 				C92EFE7149DB4D5DC80CF4EA /* CollectionItemHTMLRenderer.swift in Sources */,
 				375BE17C379040FE41606010 /* CollectionListView.swift in Sources */,
 				8446A4FED7BF954D11518231 /* CollectionOutline.swift in Sources */,

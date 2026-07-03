@@ -81,6 +81,9 @@ import WebKit
 ///          `summaryPromptIdOverride`/`selectedHighlightIds`/`includeRelatedDocuments`),
 ///          so toggling any inspector override live-refreshes the page; the rendering
 ///          itself arrives via the shared renderer and resolver cascade
+///   1.4 — Authoring Phase 6 (generated apparatus): the fingerprint covers
+///          `generatedBlockType`, so inserting/moving/deleting an apparatus block
+///          live-refreshes; block rendering arrives free via the shared renderer
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -209,6 +212,8 @@ struct CollectionPreviewView: View {
             hasher.combine(entry.summaryPromptIdOverride)
             hasher.combine(entry.selectedHighlightIds)
             hasher.combine(entry.includeRelatedDocuments)
+            // Phase 6 generated blocks — adding/retyping an apparatus block refreshes.
+            hasher.combine(entry.generatedBlockType)
         }
         hasher.combine(renderAll)
         hasher.combine(refreshToken)

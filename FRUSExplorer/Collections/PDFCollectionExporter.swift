@@ -91,6 +91,14 @@ import CoreText
 ///          collections keep rendering footnotes op-identically; legacy
 ///          `footnoteStyle` values of `none`/`sourceNoteOnly` now suppress the
 ///          footnotes section BY DESIGN (they previously rendered it regardless)
+///   1.14 — Authoring Phase 6 (generated apparatus): `.generated` items render as a
+///          titled flow block — 14-pt ruled title, then one line per row (text +
+///          gray secondary, stepped by indent level), paginating like prose — and the
+///          cover ToC lists the block by its title like a section label. A row's URL
+///          renders as visible small gray text: bare CoreText frame drawing has no
+///          link annotations, so a clickable link would require per-run geometry +
+///          `CGPDFContext` link boxes — the documented tradeoff (HTML/DOCX carry the
+///          real hyperlink)
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -316,6 +324,46 @@ final class PDFCollectionExporter: CollectionExporter {
             }
         }
 
+        // Flows a generated apparatus block into the structural flow (Authoring
+        // Phase 6): a ruled 14-pt title, then the rows as plain lines — text with
+        // optional gray secondary text and visible URL, stepped by indent level.
+        // Paginates like prose; designed per-block layouts are a later upgrade.
+        func drawGeneratedFlow(_ block: CollectionGeneratedBlock) {
+            if !flowOpen { beginFlow() }
+            if flowY < H - M - 1 { flowY -= 12 }   // top gap unless at the very top
+            let titleAttr = noteAttributedString(block.title, fontSize: 14, gray: 0.0, bold: true)
+            let titleH = measureHeight(titleAttr, width: cw)
+            if flowY - titleH - 22 < M + 40 { flowNewPage() }
+            draw(titleAttr, in: ctx, rect: CGRect(x: M, y: flowY - titleH, width: cw, height: titleH))
+            flowY -= titleH + 6
+            drawHRule(ctx: ctx, y: flowY, gray: 0.5, thickness: 0.5)
+            flowY -= 12
+            for row in block.rows {
+                let indentX = CGFloat(min(max(row.indentLevel, 0), 4)) * 16
+                let width = cw - indentX
+                let attr = NSMutableAttributedString(
+                    attributedString: noteAttributedString(row.text, fontSize: 10, gray: 0.1))
+                if let secondary = row.secondaryText, !secondary.isEmpty {
+                    attr.append(NSAttributedString(string: "  ",
+                                                   attributes: makeAttrs(fontSize: 10, bold: false)))
+                    attr.append(noteAttributedString(secondary, fontSize: 9, gray: 0.45))
+                }
+                if let url = row.url, !url.isEmpty {
+                    // Visible URL text — see the v1.14 note for the no-annotation tradeoff.
+                    attr.append(NSAttributedString(string: "\n",
+                                                   attributes: makeAttrs(fontSize: 3, bold: false)))
+                    attr.append(NSAttributedString(string: url,
+                                                   attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+                }
+                let h = measureHeight(attr, width: width)
+                if flowY - h < M + 20 { flowNewPage() }
+                draw(attr, in: ctx,
+                     rect: CGRect(x: M + indentX, y: flowY - h, width: width, height: h))
+                flowY -= h + 4
+            }
+            flowY -= 8
+        }
+
         for item in items {
             switch item {
             case .document(let doc):
@@ -327,6 +375,8 @@ final class PDFCollectionExporter: CollectionExporter {
                 drawProseFlow(rtf)
             case .excerpt(let excerpt):
                 drawExcerptFlow(excerpt)
+            case .generated(let block):
+                drawGeneratedFlow(block)
             }
         }
         endFlow()
@@ -454,6 +504,15 @@ final class PDFCollectionExporter: CollectionExporter {
                 y -= 6   // a little breathing room above a section label
                 draw(labelAttr, in: ctx,
                      rect: CGRect(x: M + indentX, y: y - rowH, width: cw - indentX, height: rowH))
+                y -= rowH + 6
+            case .generated(let block):
+                // A generated block is listed by its title, like a section label (Phase 6).
+                let labelAttr = noteAttributedString(block.title, fontSize: 11, gray: 0.0, bold: true)
+                let lineH = measureHeight(labelAttr, width: cw)
+                let rowH = min(lineH, 44)
+                y -= 6
+                draw(labelAttr, in: ctx,
+                     rect: CGRect(x: M, y: y - rowH, width: cw, height: rowH))
                 y -= rowH + 6
             case .prose, .excerpt:
                 break   // interstitial content — never a ToC row

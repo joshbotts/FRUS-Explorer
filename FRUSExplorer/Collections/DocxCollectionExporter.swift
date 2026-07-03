@@ -110,6 +110,17 @@ import Foundation
 ///          `(true, false)`, so untouched collections keep exporting byte-identically;
 ///          legacy `footnoteStyle` values of `none`/`sourceNoteOnly` now suppress
 ///          footnotes BY DESIGN (they previously rendered them regardless)
+///   1.11 — Authoring Phase 6 (generated apparatus): `.generated` items render as a
+///          `SectionHeading` title (so Word's field-code ToC lists the block like a
+///          section) plus one `GeneratedRow` paragraph per row (gray small-run secondary
+///          text; per-row `<w:ind>` for indent levels). Rows with a URL emit a real
+///          `<w:hyperlink r:id>` — `DocxRenderContext` allocates hyperlink relationship
+///          ids (rId3+) and `documentRelsXML` emits the `TargetMode="External"`
+///          relationships; the `xmlns:r` declaration and the extra relationships appear
+///          ONLY when a hyperlink exists, so hyperlink-free exports are byte-identical.
+///          The `GeneratedRow` + `Hyperlink` styles join `stylesXML` unconditionally —
+///          the established dormant-style precedent (v1.8): document.xml is unchanged
+///          for collections without blocks
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -144,7 +155,13 @@ final class DocxCollectionExporter: CollectionExporter {
         let bodyXML = documentBodyXML(collection: collection, items: items,
                                        ctx: ctx, options: options)
         let wNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        let docXML = "<w:document xmlns:w=\"\(wNS)\">\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
+        // The relationships namespace is declared ONLY when a hyperlink run exists
+        // (Phase 6 generated-block rows), so hyperlink-free document.xml bytes are
+        // unchanged from prior builds.
+        let rNSAttr = ctx.hyperlinkURLs.isEmpty
+            ? ""
+            : " xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\""
+        let docXML = "<w:document xmlns:w=\"\(wNS)\"\(rNSAttr)>\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
 
         let entries: [ZipEntry] = [
             ZipEntry(path: "[Content_Types].xml",
@@ -152,7 +169,7 @@ final class DocxCollectionExporter: CollectionExporter {
             ZipEntry(path: "_rels/.rels",
                      data: Data((decl + rootRelsXML()).utf8)),
             ZipEntry(path: "word/_rels/document.xml.rels",
-                     data: Data((decl + documentRelsXML()).utf8)),
+                     data: Data((decl + documentRelsXML(hyperlinkURLs: ctx.hyperlinkURLs)).utf8)),
             ZipEntry(path: "word/styles.xml",
                      data: Data((decl + stylesXML()).utf8)),
             ZipEntry(path: "word/document.xml",
@@ -192,15 +209,25 @@ final class DocxCollectionExporter: CollectionExporter {
         """
     }
 
-    private func documentRelsXML() -> String {
+    /// Builds `word/_rels/document.xml.rels`. Beyond the fixed styles/footnotes parts,
+    /// one external-hyperlink relationship is emitted per URL collected by the render
+    /// context (Phase 6 generated-block rows), ids `rId3`+ in first-use order — matching
+    /// the ids `DocxRenderContext.hyperlinkRelId(for:)` handed out during body rendering.
+    /// With no hyperlinks the output is byte-identical to the pre-Phase-6 part.
+    private func documentRelsXML(hyperlinkURLs: [String] = []) -> String {
         let pfx  = "http://schemas.openxmlformats.org/package/2006/relationships"
         let oxml = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-        return """
+        var rels = """
         <Relationships xmlns="\(pfx)">
           <Relationship Id="rId1" Type="\(oxml)/styles"    Target="styles.xml"/>
           <Relationship Id="rId2" Type="\(oxml)/footnotes" Target="footnotes.xml"/>
-        </Relationships>
         """
+        for (index, url) in hyperlinkURLs.enumerated() {
+            rels += "\n  <Relationship Id=\"rId\(3 + index)\" Type=\"\(oxml)/hyperlink\" "
+                + "Target=\"\(xmlEscaped(url))\" TargetMode=\"External\"/>"
+        }
+        rels += "\n</Relationships>"
+        return rels
     }
 
     private func stylesXML() -> String {
@@ -338,6 +365,11 @@ final class DocxCollectionExporter: CollectionExporter {
             </w:pPr>
             <w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="555555"/></w:rPr>
           </w:style>
+          <w:style w:type="paragraph" w:styleId="GeneratedRow">
+            <w:name w:val="Generated Row"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="60"/></w:pPr>
+          </w:style>
           <w:style w:type="paragraph" w:styleId="ResearchNote">
             <w:name w:val="Research Note"/>
             <w:basedOn w:val="Normal"/>
@@ -360,6 +392,11 @@ final class DocxCollectionExporter: CollectionExporter {
             <w:name w:val="footnote reference"/>
             <w:basedOn w:val="DefaultParagraphFont"/>
             <w:rPr><w:vertAlign w:val="superscript"/></w:rPr>
+          </w:style>
+          <w:style w:type="character" w:styleId="Hyperlink">
+            <w:name w:val="Hyperlink"/>
+            <w:basedOn w:val="DefaultParagraphFont"/>
+            <w:rPr><w:color w:val="1A4C8F"/><w:u w:val="single"/></w:rPr>
           </w:style>
         </w:styles>
         """
@@ -433,6 +470,8 @@ final class DocxCollectionExporter: CollectionExporter {
                 body += proseDocxXML(rtf)
             case .excerpt(let excerpt):
                 body += excerptDocxXML(excerpt)
+            case .generated(let block):
+                body += generatedDocxXML(block, ctx: ctx)
             case .document(let doc):
                 body += documentSectionXML(doc: doc, ctx: ctx, options: options)
             }
@@ -620,13 +659,52 @@ final class DocxCollectionExporter: CollectionExporter {
         return xml
     }
 
+    /// Renders a generated apparatus block (Authoring Phase 6): the block title as a
+    /// `SectionHeading` paragraph (outline level 0, so Word's field-code ToC lists it
+    /// like an authored section), then one `GeneratedRow` paragraph per row — the row
+    /// text (wrapped in a real `<w:hyperlink>` when the row carries a URL), an optional
+    /// gray small-run secondary text, and a per-row `<w:ind>` for indent levels.
+    private func generatedDocxXML(_ block: CollectionGeneratedBlock,
+                                  ctx: DocxRenderContext) -> String {
+        var xml = markdownItalicRuns(block.title, styleId: "SectionHeading", bold: true)
+        for row in block.rows {
+            var runs = ""
+            let textRun = "<w:r><w:t xml:space=\"preserve\">\(xmlEscaped(row.text))</w:t></w:r>"
+            if let url = row.url, !url.isEmpty {
+                let relId = ctx.hyperlinkRelId(for: url)
+                runs += "<w:hyperlink r:id=\"\(relId)\">"
+                    + "<w:r><w:rPr><w:rStyle w:val=\"Hyperlink\"/></w:rPr>"
+                    + "<w:t xml:space=\"preserve\">\(xmlEscaped(row.text))</w:t></w:r>"
+                    + "</w:hyperlink>"
+            } else {
+                runs += textRun
+            }
+            if let secondary = row.secondaryText, !secondary.isEmpty {
+                runs += "<w:r><w:rPr><w:color w:val=\"555555\"/><w:sz w:val=\"18\"/>"
+                    + "<w:szCs w:val=\"18\"/></w:rPr>"
+                    + "<w:t xml:space=\"preserve\">  \(xmlEscaped(secondary))</w:t></w:r>"
+            }
+            let indent = min(max(row.indentLevel, 0), 4)
+            let ind = indent > 0 ? "<w:ind w:left=\"\(indent * 360)\"/>" : ""
+            xml += "    <w:p>\n"
+                + "      <w:pPr><w:pStyle w:val=\"GeneratedRow\"/>\(ind)</w:pPr>\n"
+                + "      \(runs)\n"
+                + "    </w:p>\n"
+        }
+        return xml
+    }
+
     // MARK: - Rich Rendering (Session 83)
 
-    // Context object that tracks footnote IDs and collects footnote XML
-    // across all documents in one export run. Created fresh per buildDocx call.
+    // Context object that tracks footnote IDs, collects footnote XML, and allocates
+    // external-hyperlink relationship ids across all documents in one export run.
+    // Created fresh per buildDocx call.
     private final class DocxRenderContext {
         private(set) var nextId = 1
         private(set) var footnoteXMLs: [String] = []
+        /// External hyperlink targets in first-use order; index `i` is relationship
+        /// `rId(3 + i)` (rId1/rId2 are the fixed styles/footnotes parts).
+        private(set) var hyperlinkURLs: [String] = []
 
         func allocate() -> Int {
             defer { nextId += 1 }
@@ -635,6 +713,18 @@ final class DocxCollectionExporter: CollectionExporter {
 
         func addFootnote(_ xml: String) {
             footnoteXMLs.append(xml)
+        }
+
+        /// Returns the relationship id for an external hyperlink target, allocating a
+        /// new one (`rId3`+) on first use and reusing it for repeated URLs. The matching
+        /// `<Relationship TargetMode="External">` entries are emitted by
+        /// `documentRelsXML(hyperlinkURLs:)` after body rendering completes.
+        func hyperlinkRelId(for url: String) -> String {
+            if let index = hyperlinkURLs.firstIndex(of: url) {
+                return "rId\(3 + index)"
+            }
+            hyperlinkURLs.append(url)
+            return "rId\(3 + hyperlinkURLs.count - 1)"
         }
     }
 

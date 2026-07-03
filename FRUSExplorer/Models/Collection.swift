@@ -301,6 +301,12 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     /// pre-Phase-5 builds this raw value rides the `.unrecognized` sync guard: the entry
     /// is inert and skipped, never misread as a junk document.
     case excerpt
+    /// A placeable generated apparatus block (Authoring Phase 6, decision A11): the
+    /// entry stores only `generatedBlockType` — the block's rows are computed from the
+    /// collection's resolved document set at every resolve, never persisted. Uses no
+    /// other content fields. On pre-Phase-6 builds this raw value rides the
+    /// `.unrecognized` sync guard: the entry is inert and skipped.
+    case generated
     /// A `kind` raw value written by a newer app version that this build does not
     /// understand (synced via CloudKit). Never persisted by this build; surfaced as an
     /// inert row and skipped by resolve/export so future entry kinds degrade gracefully
@@ -309,7 +315,7 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 
     /// Excludes `.unrecognized`: it is a decode fallback, not an authorable kind, so any
     /// menu or picker iterating the cases never offers it.
-    static var allCases: [CollectionEntryKind] { [.document, .heading, .prose, .excerpt] }
+    static var allCases: [CollectionEntryKind] { [.document, .heading, .prose, .excerpt, .generated] }
 }
 
 // MARK: - CollectionEntry
@@ -356,6 +362,13 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          defaults** for the documents it owns. Resolution happens in exactly one
 ///          place — `CollectionContentResolver`, via the `CollectionOutline` ancestor
 ///          cascade (entry override → nearest ancestor heading → collection default)
+///   1.11 — Authoring Phase 6 (generated apparatus): added the `.generated` kind +
+///          `generatedBlockType` (a `CollectionGeneratedBlockType` raw value) — a
+///          placeable apparatus block (bibliography / chronology / sources & archives /
+///          persons index / thematic index, decision A11). Additive and optional (`nil`
+///          on every existing entry); generated entries use no other content fields, and
+///          block rows are re-resolved from the collection's documents at every resolve,
+///          never stored. Old builds see the kind as `.unrecognized` (inert)
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -556,10 +569,26 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     /// What this entry contributes to the composed collection — a `CollectionEntryKind` raw
     /// value. Defaults to `"document"` so every existing entry stays a document. A `"heading"`
     /// starts a section; a `"prose"` is an editorial note block; an `"excerpt"` is a frozen
-    /// quotation (Phase 5). Heading/prose entries use `text` and ignore
-    /// `documentId`/`volumeId`; excerpt entries use `text` (the passage) AND
-    /// `documentId`/`volumeId` (provenance). Stored raw for CloudKit compatibility.
+    /// quotation (Phase 5); a `"generated"` is a placeable apparatus block (Phase 6).
+    /// Heading/prose entries use `text` and ignore `documentId`/`volumeId`; excerpt
+    /// entries use `text` (the passage) AND `documentId`/`volumeId` (provenance);
+    /// generated entries use only `generatedBlockType`. Stored raw for CloudKit
+    /// compatibility.
     var kind: String = "document" {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Generated Block (Authoring Phase 6)
+
+    /// Which apparatus block a `.generated` entry produces — a
+    /// `CollectionGeneratedBlockType` raw value (`"bibliography"` / `"chronology"` /
+    /// `"archivalSources"` / `"personsIndex"` / `"thematicIndex"`). `nil` on every other
+    /// kind (and on every pre-Phase-6 entry). Only the TYPE is ever stored: the block's
+    /// rows are computed from the collection's resolved document set at resolve time, so
+    /// they always reflect the current documents and the current device's data. A raw
+    /// value this build doesn't know (written by a newer version) leaves the entry inert
+    /// — shown as an unsupported block and skipped by resolve/export, never misread.
+    var generatedBlockType: String? {
         didSet { lastModified = .now }
     }
 

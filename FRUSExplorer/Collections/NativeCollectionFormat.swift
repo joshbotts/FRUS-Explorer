@@ -71,6 +71,14 @@ extension UTType {
 ///          device-local `DocumentHighlight` UUIDs, and the referenced highlights don't
 ///          travel in the file — a recipient's export falls back to
 ///          all-their-highlights semantics (the field's documented empty-set meaning)
+///   2.4 — Authoring Phase 6 (generated apparatus; still formatVersion 2, floor stays
+///          1): the `"generated"` entry kind + its `generatedBlockType` key. **Only the
+///          block TYPE serializes — never resolved rows**: blocks re-resolve against
+///          the recipient's own data on import. Any generated entry forces the file to
+///          v2 (`usesV2Features`), so v1-only readers never see the kind; a v2-aware
+///          reader that doesn't know a future `generatedBlockType` STRING imports the
+///          entry as an inert generated block (placement preserved, skipped at
+///          resolve/render, re-exported intact) — degraded, never corrupted
 struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
@@ -140,10 +148,11 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// `documentId`/`volumeId` (+ optional `bodyDepthOverride` and inline `notes`);
     /// `heading` uses `text` (+ optional `bodyDepthOverride` as the section depth);
     /// `prose` uses `text` and optional `richText` (RTF); `excerpt` uses `text` (the
-    /// frozen passage) + `documentId`/`volumeId` (provenance) + the `excerpt*` anchors.
+    /// frozen passage) + `documentId`/`volumeId` (provenance) + the `excerpt*` anchors;
+    /// `generated` uses only `generatedBlockType`.
     struct Entry: Codable, Sendable, Equatable {
         /// `CollectionEntryKind` raw value (`"document"` / `"heading"` / `"prose"` /
-        /// `"excerpt"`).
+        /// `"excerpt"` / `"generated"`).
         var kind: String
         /// FRUS document id (document entries only).
         var documentId: String?
@@ -199,6 +208,11 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// (ultimately off). NOTE: `selectedHighlightIds` has **no** key here by design
         /// — device-local highlight UUIDs never serialize (see the 2.3 version note).
         var includeRelatedDocuments: Bool?
+        /// The apparatus block type raw value (generated entries only; v2 optional key,
+        /// Phase 6). The block's rows are **never** serialized — they re-resolve from
+        /// the recipient's data. An unknown raw value imports as an inert generated
+        /// entry (see the 2.4 version note).
+        var generatedBlockType: String?
         /// Inline research-note texts for this document (opt-in — populated only when the
         /// exporter's "include my research notes" toggle is on). `nil`/absent otherwise.
         var notes: [String]?
@@ -263,6 +277,14 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          them. `selectedHighlightIds` is intentionally omitted from files — the
 ///          device-local highlights it references don't travel, so a recipient's
 ///          export uses all-their-highlights semantics
+///   1.6 — Authoring Phase 6 (generated apparatus): `.generated` entries serialize as
+///          kind `"generated"` with `generatedBlockType` only — resolved rows never
+///          serialize (they re-resolve on the recipient's data). Any generated entry
+///          forces v2 (`usesV2Features`); `apply` reconstructs the entry, importing an
+///          unknown block-type STRING as an inert generated entry (placement preserved,
+///          skipped at resolve — the CloudKit path delivers the same string to old
+///          builds anyway, so inert-entry is the one coherent decision; only an unknown
+///          entry KIND is skipped on import, per the Phase 1 rule)
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -423,6 +445,19 @@ enum NativeCollectionSerializer {
                         excerptColorTag: entry.excerptColorTag,
                         notes: nil
                     )
+                case .generated:
+                    // Only the block TYPE travels (Phase 6): rows are resolve-time
+                    // output, recomputed from the recipient's own data.
+                    return FRUSCollectionFile.Entry(
+                        kind: CollectionEntryKind.generated.rawValue,
+                        documentId: nil,
+                        volumeId: nil,
+                        bodyDepthOverride: nil,
+                        text: nil,
+                        richText: nil,
+                        generatedBlockType: entry.generatedBlockType,
+                        notes: nil
+                    )
                 case .unrecognized:
                     // A kind written by a newer app version: this build cannot represent
                     // it faithfully, so it is omitted from the file rather than exported
@@ -441,9 +476,9 @@ enum NativeCollectionSerializer {
 
         // Write-minimum: computed from content, never hardcoded. Any front-matter field
         // set, a colophon opt-in, any heading deeper than level 1, any member of the
-        // Phase 5 footnote Bool pair, any headnote request/pick, any excerpt entry
-        // (so a v1-only reader can never see an excerpt kind), or any per-entry
-        // override requires v2.
+        // Phase 5 footnote Bool pair, any headnote request/pick, any excerpt or
+        // generated entry (so a v1-only reader can never see either kind), or any
+        // per-entry override requires v2.
         let usesV2Features = subtitle != nil
             || authorLine != nil
             || introductionText != nil
@@ -454,6 +489,7 @@ enum NativeCollectionSerializer {
             || composition.includeSourceNote != nil
             || entries.contains { $0.includeHeadnote == true || $0.headnoteSummaryId != nil }
             || entries.contains { $0.kind == CollectionEntryKind.excerpt.rawValue }
+            || entries.contains { $0.kind == CollectionEntryKind.generated.rawValue }
             || entries.contains {
                 $0.applyHighlightsOverride != nil
                     || $0.includeNotesOverride != nil
@@ -570,6 +606,14 @@ enum NativeCollectionSerializer {
                 entry.excerptEnd = dto.excerptEnd
                 entry.excerptRenderingVersion = dto.excerptRenderingVersion
                 entry.excerptColorTag = dto.excerptColorTag
+            }
+            if kind == .generated {
+                // Phase 6: the block TYPE reconstructs verbatim — including a raw
+                // value this build doesn't know (a newer writer's vocabulary), which
+                // stays an inert generated entry: placement preserved, skipped at
+                // resolve/render, re-exported intact. Rows never travel; they
+                // re-resolve from the recipient's own data.
+                entry.generatedBlockType = dto.generatedBlockType
             }
             if kind == .heading {
                 // Defensive clamp on import: a level outside 1...maxLevel (a hand-edited

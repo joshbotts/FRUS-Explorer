@@ -138,6 +138,14 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          from the owning collection's full entry list (`collectionDocumentRefs`),
 ///          not the passed entries — the capped preview passes a prefix, which silently
 ///          dropped "See also:" targets past the cap that the export showed
+///   1.8 — Authoring Phase 6 (generated apparatus): `.generated` entries resolve to
+///          `CollectionExportItem.generated` via the `CollectionGeneratedBlocks` seam,
+///          computed from the batch's `collectionDocuments` (the same resolved
+///          membership the A10 line uses — the full static collection, or the smart
+///          result set). Block resolution is read-only and purpose-independent, so
+///          `.preview` and `.export` render identical blocks. An entry whose
+///          `generatedBlockType` this build doesn't know resolves to `nil` (skipped —
+///          degraded, never corrupted), mirroring the `.unrecognized` kind guard
 @MainActor
 class CollectionContentResolver {
 
@@ -569,6 +577,8 @@ class CollectionContentResolver {
         let headnoteSummaryId: UUID?
         /// The source highlight's colour raw value (`.excerpt` entries only, Phase 5).
         let excerptColorTag: String?
+        /// The apparatus block type raw value (`.generated` entries only, Phase 6).
+        let generatedBlockType: String?
         /// Per-entry highlight override (Phase 5; `nil` = inherit; section default on
         /// headings). See `CollectionEntry.applyHighlightsOverride`.
         let applyHighlightsOverride: Bool?
@@ -601,6 +611,7 @@ class CollectionContentResolver {
             includeHeadnote = entry.includeHeadnote
             headnoteSummaryId = entry.headnoteSummaryId
             excerptColorTag = entry.entryKind == .excerpt ? entry.excerptColorTag : nil
+            generatedBlockType = entry.entryKind == .generated ? entry.generatedBlockType : nil
             applyHighlightsOverride = entry.applyHighlightsOverride
             includeNotesOverride = entry.includeNotesOverride
             includeSourceNoteOverride = entry.includeSourceNoteOverride
@@ -627,6 +638,7 @@ class CollectionContentResolver {
             includeHeadnote = false
             headnoteSummaryId = nil
             excerptColorTag = nil
+            generatedBlockType = nil
             applyHighlightsOverride = nil
             includeNotesOverride = nil
             includeSourceNoteOverride = nil
@@ -841,8 +853,9 @@ class CollectionContentResolver {
     ///   - headingLevel: The outline-resolved level emitted on `.heading` items
     ///     (already clamped/orphan-corrected by the caller via `CollectionOutline`).
     /// - Returns: `nil` for `.unrecognized` kinds (written by a newer app version — this
-    ///   build cannot render them) and for document entries with empty ids (malformed
-    ///   sync payloads), both of which are skipped rather than emitted as junk items.
+    ///   build cannot render them), for `.generated` entries whose block type this build
+    ///   doesn't know (same newer-version guard), and for document entries with empty
+    ///   ids (malformed sync payloads) — all skipped rather than emitted as junk items.
     private func resolveEntry(
         _ ref: EntryRef,
         section: SectionOverrides,
@@ -856,6 +869,16 @@ class CollectionContentResolver {
             return .prose(ref.proseRTF ?? Data())
         case .excerpt:
             return excerptItem(for: ref, batch: batch)
+        case .generated:
+            // Generated apparatus (Phase 6): resolve the block from the collection's
+            // resolved document membership via the single block-resolution seam.
+            // Read-only in both purposes — preview and export render identical blocks.
+            // An unknown block type (a newer build's vocabulary) is skipped, mirroring
+            // the `.unrecognized` kind guard: degraded, never corrupted.
+            guard let raw = ref.generatedBlockType,
+                  let blockType = CollectionGeneratedBlockType(rawValue: raw) else { return nil }
+            return .generated(CollectionGeneratedBlocks.resolve(
+                type: blockType, documents: batch.collectionDocuments))
         case .unrecognized:
             // Written by a newer app version — this build cannot render it.
             // Skip rather than emit a junk document item (Authoring Phase 1 guard).

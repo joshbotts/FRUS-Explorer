@@ -68,6 +68,12 @@ import UniformTypeIdentifiers
 ///          Passages…" (`CollectionAddHighlightsSheet`); `.excerpt` entries render as
 ///          `CollectionExcerptRow` (inline trash; movable like prose); `MacEntryRow`'s
 ///          inspector gains the per-highlight "Insert as Excerpt" callback
+///   1.12 — Authoring Phase 6 (generated apparatus): the structural add menu gains an
+///          "Apparatus" submenu listing the five `CollectionGeneratedBlockType`s;
+///          insertion honors the type's default position hint (front matter → before
+///          the first entry, back matter → the end — fully movable afterwards);
+///          `.generated` entries render as `CollectionGeneratedEntryRow` (inline trash;
+///          movable like prose; no body-depth or inspector controls)
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -625,6 +631,21 @@ private struct CollectionDetailPane: View {
                               systemImage: "text.quote")
                     }
                     .disabled(orderedDocumentKeys.isEmpty)
+                    // Apparatus (Authoring Phase 6): placeable generated blocks —
+                    // inserted at the type's default position, movable afterwards.
+                    Menu {
+                        ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                            Button {
+                                addGeneratedEntry(type: blockType)
+                            } label: {
+                                Label(blockType.displayName, systemImage: blockType.systemImage)
+                            }
+                        }
+                    } label: {
+                        Label(String(localized: "collection.add.apparatus",
+                                     defaultValue: "Apparatus"),
+                              systemImage: "list.bullet.rectangle")
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .font(.caption)
@@ -632,7 +653,7 @@ private struct CollectionDetailPane: View {
                 }
                 .buttonStyle(.plain)
                 .help(String(localized: "collection.add.structural",
-                             defaultValue: "Add a section heading, a note block, or highlighted passages"))
+                             defaultValue: "Add a section heading, a note block, highlighted passages, or an apparatus block"))
             }
 
             List {
@@ -760,6 +781,9 @@ private struct CollectionDetailPane: View {
             CollectionExcerptRow(entry: entry,
                                  volumeTitle: volumeTitle(for: entry),
                                  onDelete: { deleteEntry(at: row.index) })
+        case .generated:
+            CollectionGeneratedEntryRow(entry: entry,
+                                        onDelete: { deleteEntry(at: row.index) })
         case .unrecognized:
             UnrecognizedEntryRow()
         }
@@ -934,6 +958,28 @@ private struct CollectionDetailPane: View {
         entry.collection = collection
         modelContext.insert(entry)
         sortedEntries.append(entry)
+        reindexEntries()
+    }
+
+    /// Inserts a generated apparatus entry (Authoring Phase 6) at the block type's
+    /// default position — front-matter types before the first entry, back-matter types
+    /// at the end. The entry stores only the block TYPE; it stays fully movable and
+    /// deletable like a prose block afterwards.
+    private func addGeneratedEntry(type: CollectionGeneratedBlockType) {
+        let entry = CollectionEntry(
+            collectionId: collection.id,
+            documentId: "",
+            volumeId: "",
+            sortOrder: 0
+        )
+        entry.entryKind = .generated
+        entry.generatedBlockType = type.rawValue
+        entry.collection = collection
+        modelContext.insert(entry)
+        switch type.defaultPosition {
+        case .frontMatter: sortedEntries.insert(entry, at: 0)
+        case .backMatter:  sortedEntries.append(entry)
+        }
         reindexEntries()
     }
 
