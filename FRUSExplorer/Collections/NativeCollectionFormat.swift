@@ -54,6 +54,13 @@ extension UTType {
 ///          `Composition.includeSourceNote` (the Bool pair; the legacy `footnoteStyle`
 ///          keeps being written) and `Entry.includeHeadnote` + `Entry.headnoteSummaryId`
 ///          — all optional keys, absent from write-minimum files
+///   2.2 — Authoring Phase 5 (excerpts; still formatVersion 2, floor stays 1): the
+///          `"excerpt"` entry kind — `text` (the frozen passage) + `documentId`/`volumeId`
+///          (provenance) + optional `excerptStart`/`excerptEnd`/`excerptRenderingVersion`/
+///          `excerptColorTag` anchors. **Content + colour + provenance + anchors only —
+///          never device-local highlight UUIDs.** A pre-excerpt reader skips the unknown
+///          kind (degraded, not corrupted); any excerpt forces the file to v2, so v1
+///          readers never see one
 struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
@@ -122,9 +129,11 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// One structural entry. `kind` selects which fields apply: `document` uses
     /// `documentId`/`volumeId` (+ optional `bodyDepthOverride` and inline `notes`);
     /// `heading` uses `text` (+ optional `bodyDepthOverride` as the section depth);
-    /// `prose` uses `text` and optional `richText` (RTF).
+    /// `prose` uses `text` and optional `richText` (RTF); `excerpt` uses `text` (the
+    /// frozen passage) + `documentId`/`volumeId` (provenance) + the `excerpt*` anchors.
     struct Entry: Codable, Sendable, Equatable {
-        /// `CollectionEntryKind` raw value (`"document"` / `"heading"` / `"prose"`).
+        /// `CollectionEntryKind` raw value (`"document"` / `"heading"` / `"prose"` /
+        /// `"excerpt"`).
         var kind: String
         /// FRUS document id (document entries only).
         var documentId: String?
@@ -149,6 +158,19 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// on another user's device the id simply won't resolve and the resolver falls
         /// back to any stored summary (or the placeholder).
         var headnoteSummaryId: UUID?
+        /// Excerpt anchor: unicode-scalar start offset in the source document's flat
+        /// text (excerpt entries only; v2 optional key). Anchors travel so precision
+        /// rendering (A9) stays possible on the recipient's device; the frozen `text`
+        /// remains the rendering source of truth. **Never a highlight UUID.**
+        var excerptStart: Int?
+        /// Excerpt anchor: unicode-scalar end offset (exclusive) — see `excerptStart`.
+        var excerptEnd: Int?
+        /// Excerpt anchor: the source document's `renderingVersion` at excerpt creation
+        /// (excerpt entries only; v2 optional key).
+        var excerptRenderingVersion: String?
+        /// The source highlight's colour raw value (`"yellow"`/`"green"`/`"blue"`/
+        /// `"pink"`; excerpt entries only; v2 optional key) — the quote's accent colour.
+        var excerptColorTag: String?
         /// Inline research-note texts for this document (opt-in — populated only when the
         /// exporter's "include my research notes" toggle is on). `nil`/absent otherwise.
         var notes: [String]?
@@ -201,6 +223,11 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          optional keys (no bump; `minimumReaderVersion` stays 1 — a reader ignoring
 ///          them degrades to the legacy footnoteStyle / no headnote, never corrupts);
 ///          `usesV2Features` extended so untouched collections keep emitting v1 files
+///   1.4 — Authoring Phase 5 (excerpts): `.excerpt` entries serialize as kind
+///          `"excerpt"` with passage + provenance + anchors (never highlight UUIDs);
+///          any excerpt forces v2 (`usesV2Features`), and a reader that doesn't know
+///          the kind skips it under the Phase 1 skip-with-warning rule; `apply`
+///          reconstructs excerpt entries with their anchors
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -329,6 +356,22 @@ enum NativeCollectionSerializer {
                         richText: entry.richText,
                         notes: nil
                     )
+                case .excerpt:
+                    // Passage + provenance + anchors — content only, NEVER the
+                    // device-local highlight UUID the excerpt may have come from.
+                    return FRUSCollectionFile.Entry(
+                        kind: CollectionEntryKind.excerpt.rawValue,
+                        documentId: entry.documentId.isEmpty ? nil : entry.documentId,
+                        volumeId: entry.volumeId.isEmpty ? nil : entry.volumeId,
+                        bodyDepthOverride: nil,
+                        text: entry.text,
+                        richText: nil,
+                        excerptStart: entry.excerptStart,
+                        excerptEnd: entry.excerptEnd,
+                        excerptRenderingVersion: entry.excerptRenderingVersion,
+                        excerptColorTag: entry.excerptColorTag,
+                        notes: nil
+                    )
                 case .unrecognized:
                     // A kind written by a newer app version: this build cannot represent
                     // it faithfully, so it is omitted from the file rather than exported
@@ -347,7 +390,8 @@ enum NativeCollectionSerializer {
 
         // Write-minimum: computed from content, never hardcoded. Any front-matter field
         // set, a colophon opt-in, any heading deeper than level 1, any member of the
-        // Phase 5 footnote Bool pair, or any headnote request/pick requires v2.
+        // Phase 5 footnote Bool pair, any headnote request/pick, or any excerpt entry
+        // requires v2 (so a v1-only reader can never see an excerpt kind).
         let usesV2Features = subtitle != nil
             || authorLine != nil
             || introductionText != nil
@@ -357,6 +401,7 @@ enum NativeCollectionSerializer {
             || composition.includeFootnotes != nil
             || composition.includeSourceNote != nil
             || entries.contains { $0.includeHeadnote == true || $0.headnoteSummaryId != nil }
+            || entries.contains { $0.kind == CollectionEntryKind.excerpt.rawValue }
 
         guard usesV2Features else {
             // No v2 feature: a pure v1 file, byte-identical to a pre-Phase-4 export
@@ -445,6 +490,14 @@ enum NativeCollectionSerializer {
                 // Phase 5 headnote keys (absent in older files → the model defaults).
                 entry.includeHeadnote = dto.includeHeadnote ?? false
                 entry.headnoteSummaryId = dto.headnoteSummaryId
+            }
+            if kind == .excerpt {
+                // Phase 5 excerpt anchors (content + provenance travel on the shared
+                // fields above; anchors keep precision rendering possible per A9).
+                entry.excerptStart = dto.excerptStart
+                entry.excerptEnd = dto.excerptEnd
+                entry.excerptRenderingVersion = dto.excerptRenderingVersion
+                entry.excerptColorTag = dto.excerptColorTag
             }
             if kind == .heading {
                 // Defensive clamp on import: a level outside 1...maxLevel (a hand-edited

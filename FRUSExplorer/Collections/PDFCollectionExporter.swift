@@ -70,6 +70,10 @@ import CoreText
 ///          stored summary renders a placeholder note. Footnote rendering here remains
 ///          ungated (pre-existing behavior — this exporter never consumed the legacy
 ///          `footnoteStyle`), so untouched collections export byte-identically
+///   1.11 — Authoring Phase 5 (excerpts): `.excerpt` items render into the structural
+///          flow as a quote-styled block — indented italic passage with a colour accent
+///          bar when the source highlight's colour is known, followed by the
+///          source-citation line — and are omitted from the cover ToC like prose
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -254,6 +258,47 @@ final class PDFCollectionExporter: CollectionExporter {
             }
         }
 
+        // Flows an excerpt quotation into the structural flow (Authoring Phase 5):
+        // an indented italic passage behind a colour accent bar (the source highlight's
+        // colour when known), followed by the source-citation line. Paginates like prose.
+        func drawExcerptFlow(_ excerpt: CollectionExportExcerpt) {
+            let attr = excerptAttributedString(excerpt)
+            guard attr.length > 0 else { return }
+            let indentX: CGFloat = 18
+            let width = cw - indentX
+            let barColor = excerpt.color?.cgColor ?? CGColor(gray: 0.55, alpha: 1)
+            if !flowOpen { beginFlow() }
+            if flowY < H - M - 1 { flowY -= 10 }   // gap above the quote unless at page top
+
+            let framesetter = CTFramesetterCreateWithAttributedString(attr)
+            var charOffset = 0
+            let total = attr.length
+            while charOffset < total {
+                let availH = flowY - (M + 20)
+                if availH < 28 { flowNewPage(); continue }
+                // Measure the chunk that fits this page so the accent bar can span
+                // exactly the drawn height.
+                let used = CTFramesetterSuggestFrameSizeWithConstraints(
+                    framesetter, CFRangeMake(charOffset, 0), nil,
+                    CGSize(width: width, height: availH), nil)
+                let chunkH = min(ceil(used.height) + 4, availH)
+                let rect = CGRect(x: M + indentX, y: flowY - chunkH, width: width, height: chunkH)
+                ctx.setFillColor(barColor)
+                ctx.fill(CGRect(x: M + indentX - 10, y: rect.minY, width: 3, height: rect.height))
+                let path = CGPath(rect: rect, transform: nil)
+                let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(charOffset, 0), path, nil)
+                CTFrameDraw(frame, ctx)
+                let visible = CTFrameGetVisibleStringRange(frame)
+                if visible.length == 0 { break }
+                charOffset += visible.length
+                if charOffset < total {
+                    flowNewPage()
+                } else {
+                    flowY = rect.minY - 12
+                }
+            }
+        }
+
         for item in items {
             switch item {
             case .document(let doc):
@@ -263,6 +308,8 @@ final class PDFCollectionExporter: CollectionExporter {
                 drawHeadingFlow(text, level: level)
             case .prose(let rtf):
                 drawProseFlow(rtf)
+            case .excerpt(let excerpt):
+                drawExcerptFlow(excerpt)
             }
         }
         endFlow()
@@ -391,8 +438,8 @@ final class PDFCollectionExporter: CollectionExporter {
                 draw(labelAttr, in: ctx,
                      rect: CGRect(x: M + indentX, y: y - rowH, width: cw - indentX, height: rowH))
                 y -= rowH + 6
-            case .prose:
-                break
+            case .prose, .excerpt:
+                break   // interstitial content — never a ToC row
             }
         }
     }
@@ -598,6 +645,32 @@ final class PDFCollectionExporter: CollectionExporter {
         combined.append(NSAttributedString(string: "\n",
                                            attributes: makeAttrs(fontSize: 4, bold: false)))
         combined.append(body)
+        return combined
+    }
+
+    // MARK: - Excerpt (Authoring Phase 5)
+
+    /// Builds the attributed string for an excerpt quotation: the frozen passage in
+    /// italics (verbatim — no markdown transforms, it is primary-source text), then a
+    /// small gap and the "— citation" source line (the citation runs through
+    /// `noteAttributedString` so `_…_` spans render as italics, matching document
+    /// citations). An empty citation omits the source line.
+    ///
+    /// - Parameter excerpt: The resolved excerpt payload.
+    /// - Returns: The combined attributed string for the flow block.
+    private func excerptAttributedString(_ excerpt: CollectionExportExcerpt) -> NSAttributedString {
+        let combined = NSMutableAttributedString()
+        combined.append(NSAttributedString(
+            string: excerpt.text,
+            attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
+        if !excerpt.citation.isEmpty {
+            combined.append(NSAttributedString(string: "\n",
+                                               attributes: makeAttrs(fontSize: 5, bold: false)))
+            combined.append(NSAttributedString(
+                string: "\u{2014} ",
+                attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+            combined.append(noteAttributedString(excerpt.citation, fontSize: 8, gray: 0.45))
+        }
         return combined
     }
 

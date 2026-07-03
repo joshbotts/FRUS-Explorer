@@ -557,11 +557,44 @@ enum CollectionColophon {
     }
 }
 
+// MARK: - CollectionExportExcerpt
+
+/// A resolved excerpt payload (Authoring Phase 5): the frozen verbatim passage plus the
+/// provenance metadata renderers need for the auto-citation source line and the optional
+/// colour accent. Deliberately minimal — the entry's stored offsets/renderingVersion are
+/// anchoring metadata for a later precision-rendering flip (A9), not rendering inputs, so
+/// they never travel on the item.
+///
+/// Version history:
+///   1.0 — Authoring Phase 5 (excerpts): initial implementation
+struct CollectionExportExcerpt: Sendable {
+    /// The frozen verbatim passage (the excerpt entry's `text`).
+    let text: String
+    /// The source FRUS document identifier (provenance).
+    let documentId: String
+    /// The source volume identifier (provenance).
+    let volumeId: String
+    /// The formatted history.state.gov-style citation for the source line — the same
+    /// citation formatting document items use; empty when no provenance could be
+    /// resolved (renderers then omit the source line).
+    let citation: String
+    /// The source highlight's colour raw value (`DocumentHighlight.Color`), when the
+    /// excerpt was created from a highlight — drives the quote block's accent. `nil`
+    /// for excerpts captured from a plain selection.
+    let colorTag: String?
+
+    /// The typed colour accent, when `colorTag` carries a known value.
+    var color: DocumentHighlight.Color? {
+        colorTag.flatMap { DocumentHighlight.Color(rawValue: $0) }
+    }
+}
+
 // MARK: - CollectionExportItem
 
-/// One item in a composed collection export: a resolved document, a section heading, or an
-/// editorial prose block. Exporters render an ordered `[CollectionExportItem]`, so a
-/// collection can be an authored, sectioned reader rather than a flat document list (Phase 3a).
+/// One item in a composed collection export: a resolved document, a section heading, an
+/// editorial prose block, or an excerpt quotation. Exporters render an ordered
+/// `[CollectionExportItem]`, so a collection can be an authored, sectioned reader rather
+/// than a flat document list (Phase 3a).
 ///
 /// Version history (contract changes are compile-caught across all exporters and covered
 /// by the exporter contract tests):
@@ -569,6 +602,9 @@ enum CollectionColophon {
 ///   Authoring Phase 4 — `heading` gains `level: Int` (1...`CollectionOutline.maxLevel`);
 ///     producers emit `CollectionOutline`-resolved depths, renderers clamp defensively.
 ///     Level 1 renders exactly the pre-Phase-4 heading in every format.
+///   Authoring Phase 5 — `excerpt(CollectionExportExcerpt)`: a frozen quotation rendered
+///     as a styled block quote + auto-citation source line in HTML/PDF/DOCX; the
+///     reference formats (Zotero RIS, BibTeX) skip it by design, like heading/prose.
 enum CollectionExportItem: Sendable {
     /// A FRUS document, fully resolved.
     case document(CollectionExportDocument)
@@ -579,6 +615,10 @@ enum CollectionExportItem: Sendable {
     /// `NSAttributedString` to render bold/italic/underline/colour, or read its `.string` for
     /// the plain-text projection. `Data` (unlike `NSAttributedString`) is `Sendable`.
     case prose(Data)
+    /// A frozen verbatim quotation with provenance (Authoring Phase 5) — rendered as a
+    /// quote block plus a source-citation line in the rich formats; dropped by the
+    /// flat reference formats.
+    case excerpt(CollectionExportExcerpt)
 }
 
 extension Array where Element == CollectionExportItem {

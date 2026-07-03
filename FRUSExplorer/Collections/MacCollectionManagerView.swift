@@ -64,6 +64,10 @@ import UniformTypeIdentifiers
 ///          BEFORE `CollectionOutline.normalize` (matching iOS) — normalize linearizes
 ///          by `sortOrder`, so the previous order made the post-move normalization pass
 ///          a silent no-op and let orphan heading levels persist
+///   1.11 — Authoring Phase 5 (excerpts): the structural add menu gains "Add Highlighted
+///          Passages…" (`CollectionAddHighlightsSheet`); `.excerpt` entries render as
+///          `CollectionExcerptRow` (inline trash; movable like prose); `MacEntryRow`'s
+///          inspector gains the per-highlight "Insert as Excerpt" callback
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -368,6 +372,8 @@ private struct CollectionDetailPane: View {
     /// never persisted, never synced; keyed by entry id so it survives moves.
     @State private var collapsedHeadingIds: Set<UUID> = []
     @State private var showAddDocuments = false
+    /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
+    @State private var showAddHighlights = false
     @State private var showExport = false
     /// Expansion state of the inline Composition disclosure at the top of the entries list.
     @State private var showComposition = false
@@ -445,6 +451,14 @@ private struct CollectionDetailPane: View {
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
             }
             .environment(appState)
+        }
+        .sheet(isPresented: $showAddHighlights) {
+            CollectionAddHighlightsSheet(
+                documentKeys: orderedDocumentKeys,
+                documentLabels: documentHeaders
+            ) { captures in
+                appendExcerpts(captures)
+            }
         }
         .sheet(isPresented: $showExport) {
             ExportSheetView(
@@ -603,6 +617,14 @@ private struct CollectionDetailPane: View {
                         Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
                               systemImage: "text.alignleft")
                     }
+                    Button {
+                        showAddHighlights = true
+                    } label: {
+                        Label(String(localized: "collection.add.highlights",
+                                     defaultValue: "Add Highlighted Passages…"),
+                              systemImage: "text.quote")
+                    }
+                    .disabled(orderedDocumentKeys.isEmpty)
                 } label: {
                     Image(systemName: "plus")
                         .font(.caption)
@@ -610,7 +632,7 @@ private struct CollectionDetailPane: View {
                 }
                 .buttonStyle(.plain)
                 .help(String(localized: "collection.add.structural",
-                             defaultValue: "Add a section heading or note block"))
+                             defaultValue: "Add a section heading, a note block, or highlighted passages"))
             }
 
             List {
@@ -706,6 +728,7 @@ private struct CollectionDetailPane: View {
                 volumeTitle: volumeTitle(for: entry),
                 documentHeader: documentHeaders[nodeKey],
                 isDuplicate: duplicateKeys.contains(nodeKey),
+                onInsertExcerpt: { capture in appendExcerpts([capture]) },
                 onNewNote: {
                     noteCreateContext = NoteCreateContext(
                         documentId: entry.documentId,
@@ -733,6 +756,10 @@ private struct CollectionDetailPane: View {
         case .prose:
             CollectionProseRow(entry: $sortedEntries[row.index],
                                onDelete: { deleteEntry(at: row.index) })
+        case .excerpt:
+            CollectionExcerptRow(entry: entry,
+                                 volumeTitle: volumeTitle(for: entry),
+                                 onDelete: { deleteEntry(at: row.index) })
         case .unrecognized:
             UnrecognizedEntryRow()
         }
@@ -933,6 +960,25 @@ private struct CollectionDetailPane: View {
                                                            documentId: $0.documentId) })
     }
 
+    /// Ordered (deduplicated) keys of the collection's document entries — scopes the
+    /// Add Highlighted Passages sheet to this collection's documents, in reading order.
+    private var orderedDocumentKeys: [String] {
+        var seen: Set<String> = []
+        return sortedEntries.filter { $0.entryKind == .document }
+            .map { CollectionDocumentDiscovery.documentKey(volumeId: $0.volumeId,
+                                                           documentId: $0.documentId) }
+            .filter { seen.insert($0).inserted }
+    }
+
+    /// Appends excerpt entries (Authoring Phase 5) at the end of the entry list via the
+    /// shared `CollectionExcerpts` factory, then saves — the excerpt sibling of
+    /// `appendEntries`.
+    private func appendExcerpts(_ captures: [CollectionExcerptCapture]) {
+        CollectionExcerpts.append(captures, to: collection,
+                                  sortedEntries: &sortedEntries, modelContext: modelContext)
+        try? modelContext.save()
+    }
+
     /// Sorts `sortedEntries` in ascending chronological order, then persists the new
     /// `sortOrder` values to SwiftData.
     ///
@@ -985,6 +1031,9 @@ private struct MacEntryRow: View {
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false
+    /// Appends an excerpt entry to the owning collection (Authoring Phase 5) — threads
+    /// the pane's append action into the inspector's "Insert as Excerpt" rows.
+    var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
     let onNewNote: () -> Void
     let onDelete: () -> Void
 
@@ -1123,7 +1172,7 @@ private struct MacEntryRow: View {
         }
         .padding(.vertical, 4)
         .sheet(isPresented: $showInspector) {
-            CollectionEntryInspector(entry: entry)
+            CollectionEntryInspector(entry: entry, onInsertExcerpt: onInsertExcerpt)
                 .environment(appState)
         }
     }

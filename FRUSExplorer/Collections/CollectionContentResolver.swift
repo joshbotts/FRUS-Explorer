@@ -117,6 +117,12 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          **never generates** — in either purpose — so a missing stored summary renders
 ///          a placeholder note (generation-on-demand stays exclusive to `.summaryOnly`
 ///          bodies, exactly as today; headnote generation-on-demand is out of scope)
+///   1.5 — Authoring Phase 5 (excerpts): `.excerpt` entries resolve to
+///          `CollectionExportItem.excerpt` — the frozen passage plus a citation built
+///          through the same manifest + `HistoryAtStateCitationFormatter` path document
+///          items use (no volume XML needed, so excerpts render fully even when the
+///          source volume isn't downloaded). Per A9 the stored offsets/renderingVersion
+///          are NOT read here — the frozen `text` is the rendering source of truth
 @MainActor
 class CollectionContentResolver {
 
@@ -365,7 +371,10 @@ class CollectionContentResolver {
         // Preview must never trigger downloads — un-downloaded volumes resolve to
         // citation-only items instead.
         if purpose == .export {
-            await prepareVolumesForExport(Set(entries.map(\.volumeId)))
+            // Document entries only: excerpts carry a real volumeId as provenance but
+            // render from their frozen text (A9), so they never require the volume.
+            await prepareVolumesForExport(Set(
+                entries.filter { $0.entryKind == .document }.map(\.volumeId)))
         }
 
         let refs = entries.map(EntryRef.init)
@@ -501,6 +510,8 @@ class CollectionContentResolver {
         let includeHeadnote: Bool
         /// The chosen `GeneratedSummary.id` for the headnote; `nil` = fallback pick.
         let headnoteSummaryId: UUID?
+        /// The source highlight's colour raw value (`.excerpt` entries only, Phase 5).
+        let excerptColorTag: String?
         /// How research-note texts are resolved for this entry.
         let noteResolution: NoteResolution
 
@@ -517,6 +528,7 @@ class CollectionContentResolver {
             bodyDepthOverride = entry.bodyDepthOverride
             includeHeadnote = entry.includeHeadnote
             headnoteSummaryId = entry.headnoteSummaryId
+            excerptColorTag = entry.entryKind == .excerpt ? entry.excerptColorTag : nil
             noteResolution = .entrySelection(selectedNoteIds: entry.selectedNoteIds,
                                              legacyNoteId: entry.researchNoteId)
         }
@@ -534,6 +546,7 @@ class CollectionContentResolver {
             bodyDepthOverride = nil
             includeHeadnote = false
             headnoteSummaryId = nil
+            excerptColorTag = nil
             noteResolution = .allDocumentNotes
         }
     }
@@ -691,6 +704,8 @@ class CollectionContentResolver {
             return .heading(ref.text ?? "", level: headingLevel)
         case .prose:
             return .prose(ref.proseRTF ?? Data())
+        case .excerpt:
+            return excerptItem(for: ref, batch: batch)
         case .unrecognized:
             // Written by a newer app version — this build cannot render it.
             // Skip rather than emit a junk document item (Authoring Phase 1 guard).
@@ -828,6 +843,41 @@ class CollectionContentResolver {
             headnoteText: resolvedHeadnote,
             zoteroItem: zoteroItem
         ))
+    }
+
+    /// Resolves an `.excerpt` entry into its export item (Authoring Phase 5): the frozen
+    /// verbatim passage plus a source citation built through the exact citation path
+    /// document items use (`manifestMap` + `HistoryAtStateCitationFormatter`). No volume
+    /// XML is touched — the passage was frozen at creation — so an excerpt renders fully
+    /// even when its source volume isn't downloaded (in exports and the preview alike).
+    ///
+    /// - Returns: The `.excerpt` item, or `nil` when the entry carries no passage text
+    ///   (a malformed sync payload — nothing to quote, so it is skipped defensively,
+    ///   matching the empty-ids document guard).
+    private func excerptItem(for ref: EntryRef, batch: BatchContext) -> CollectionExportItem? {
+        guard let passage = ref.text, !passage.isEmpty else { return nil }
+        let citation: String
+        if !ref.volumeId.isEmpty, !ref.documentId.isEmpty {
+            let docNum: String? = ref.documentId.hasPrefix("d")
+                ? Int(ref.documentId.dropFirst()).map { String($0) }
+                : nil
+            let docMeta = FRUSDocumentMetadata(
+                documentId: ref.documentId, documentNumber: docNum,
+                header: "", dateline: nil)
+            citation = batch.manifestMap[ref.volumeId]
+                .map { batch.formatter.format(document: docMeta, volume: FRUSVolumeMetadata($0)) }
+                ?? "\(ref.volumeId)/\(ref.documentId)"
+        } else {
+            // No provenance (defensive): renderers omit the source line for an
+            // empty citation rather than printing a junk reference.
+            citation = ""
+        }
+        return .excerpt(CollectionExportExcerpt(
+            text: passage,
+            documentId: ref.documentId,
+            volumeId: ref.volumeId,
+            citation: citation,
+            colorTag: ref.excerptColorTag))
     }
 
     /// Resolves the stored `GeneratedSummary` text for a headnote: the explicitly chosen

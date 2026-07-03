@@ -42,6 +42,12 @@ final class HighlightCoordinator {
     /// `window.getSelection().toString()`. Pre-populates the NARA Catalog lookup field.
     var webKitSelectedText: String? = nil
 
+    /// The displayed document's current rendering version
+    /// (`ASTToRenderNodeConverter.renderingVersion(for:)`), set by `MacDocumentView`
+    /// after each load. Captured onto excerpt entries created from a selection
+    /// (Authoring Phase 5) so their offsets stay verifiable per decision A9.
+    var currentRenderingVersion: String? = nil
+
     /// Called by `MacDocumentView` to create a `DocumentHighlight` from the
     /// WebKit selection range and colour chosen in `highlightColorPicker`.
     var createWebKitHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
@@ -53,6 +59,7 @@ final class HighlightCoordinator {
     func reset() {
         webKitSelectionRange = nil
         webKitSelectedText   = nil
+        currentRenderingVersion = nil
         pendingHighlightLink = nil
         createWebKitHighlightAction = nil
     }
@@ -73,6 +80,9 @@ final class HighlightCoordinator {
 ///   1.3 — Session 129: `CollectionPickerSheet` and `MacTagPickerSheet` split into
 ///          macOS/iOS bodies; macOS variants use VStack + button-bar to prevent
 ///          NavigationStack sidebar from hiding list content in sheet presentations
+///   1.4 — Authoring Phase 5 (excerpts): Excerpt button while text is selected —
+///          freezes the selection (offsets + rendering version when in-document) into
+///          a `.excerpt` entry via the collection picker's excerpt mode
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
@@ -104,6 +114,11 @@ struct ResearchStripView: View {
     @State private var showTagPicker: Bool = false
     @State private var showHighlightColorPicker: Bool = false
     @State private var showHighlightNoteEditor: Bool = false
+    /// The selection capture pending collection choice — non-nil presents the picker
+    /// in excerpt mode (Authoring Phase 5, creation path b).
+    @State private var pendingExcerptCapture: CollectionExcerptCapture? = nil
+    /// Presents the collection picker in excerpt mode for `pendingExcerptCapture`.
+    @State private var showAddExcerpt: Bool = false
 
     /// Persisted preference shared with MacDocumentView via AppStorage.
     @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
@@ -267,6 +282,38 @@ struct ResearchStripView: View {
                 ))
             }
 
+            // Excerpt — enabled while text is selected: freezes the selection into a
+            // `.excerpt` collection entry via the collection picker (Authoring Phase 5).
+            // Offsets + rendering version travel when the selection is in-document
+            // (webKitSelectionRange non-nil); a footnote selection freezes text only.
+            if highlightCoordinator.webKitSelectedText != nil {
+                ResearchStripButton(
+                    title: String(localized: "researchStrip.excerpt",
+                                  defaultValue: "Excerpt"),
+                    systemImage: "text.quote",
+                    isDisabled: isDisabled
+                ) {
+                    guard let entry,
+                          let text = highlightCoordinator.webKitSelectedText,
+                          !text.isEmpty else { return }
+                    let range = highlightCoordinator.webKitSelectionRange
+                    pendingExcerptCapture = CollectionExcerptCapture(
+                        text: text,
+                        volumeId: entry.volumeId,
+                        documentId: entry.documentId,
+                        start: range?.0,
+                        end: range?.1,
+                        renderingVersion: range != nil
+                            ? highlightCoordinator.currentRenderingVersion : nil,
+                        colorTag: nil)
+                    showAddExcerpt = true
+                }
+                .help(String(
+                    localized: "researchStrip.excerpt.help",
+                    defaultValue: "Add the selected passage to a collection as a quoted excerpt with its citation"
+                ))
+            }
+
             // NARA Catalog Lookup — enabled when text is selected anywhere in the
             // document, including footnotes (webKitSelectedText != nil). Also shows
             // after the selection is released if the More-menu blur cleared the range
@@ -400,6 +447,11 @@ struct ResearchStripView: View {
                 CollectionPickerSheet(entry: entry)
             }
         }
+        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
+            if let entry, let capture = pendingExcerptCapture {
+                CollectionPickerSheet(entry: entry, excerpt: capture)
+            }
+        }
         .sheet(isPresented: $showAddNote) {
             if let entry {
                 ResearchNoteEditorView(
@@ -495,9 +547,16 @@ struct ResearchStripView: View {
 ///   1.0 — Session 35+: initial implementation
 ///   1.1 — Session 129: split macOS / iOS bodies to prevent NavigationStack sidebar
 ///          from hiding list content; macOS replaces `.searchable` with inline TextField
+///   1.2 — Authoring Phase 5 (excerpts): optional `excerpt` capture — when set, picking
+///          a collection inserts a frozen `.excerpt` entry (via `CollectionExcerpts`)
+///          instead of a document entry; no duplicate guard in excerpt mode
 private struct CollectionPickerSheet: View {
 
     let entry: DocumentBrowserEntry
+
+    /// When non-nil, the picker runs in excerpt mode (Authoring Phase 5): the chosen
+    /// collection receives this capture as a `.excerpt` entry rather than the document.
+    var excerpt: CollectionExcerptCapture? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -510,6 +569,15 @@ private struct CollectionPickerSheet: View {
     private var filtered: [Collection] {
         guard !searchText.isEmpty else { return collections }
         return collections.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    /// The sheet title — names the excerpt mode when active.
+    private var pickerTitle: String {
+        excerpt == nil
+            ? String(localized: "collection.picker.nav.title",
+                     defaultValue: "Add to Collection")
+            : String(localized: "collection.picker.title.excerpt",
+                     defaultValue: "Add Excerpt to Collection")
     }
 
     var body: some View {
@@ -554,8 +622,7 @@ private struct CollectionPickerSheet: View {
         VStack(spacing: 0) {
             // Title bar
             HStack {
-                Text(String(localized: "collection.picker.nav.title",
-                            defaultValue: "Add to Collection"))
+                Text(pickerTitle)
                     .font(.headline)
                 Spacer()
                 Button {
@@ -662,8 +729,7 @@ private struct CollectionPickerSheet: View {
                                                defaultValue: "Search collections…"))
                 }
             }
-            .navigationTitle(String(localized: "collection.picker.nav.title",
-                                    defaultValue: "Add to Collection"))
+            .navigationTitle(pickerTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "collection.picker.cancel",
@@ -688,6 +754,16 @@ private struct CollectionPickerSheet: View {
     // MARK: - Add action
 
     private func addDocument(to collection: Collection) {
+        // Excerpt mode (Authoring Phase 5): freeze the capture into a `.excerpt` entry.
+        // No duplicate guard — several excerpts from one document are expected.
+        if let excerpt {
+            CollectionExcerpts.appendToCollection(excerpt, collection: collection,
+                                                  modelContext: modelContext)
+            addedCollectionId = collection.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
+            return
+        }
+
         // Guard against duplicates
         let existing = collection.documentEntries ?? []
         guard !existing.contains(where: {

@@ -26,6 +26,8 @@ import TipKit
 ///   1.0 — Session 59: initial implementation (F-024)
 ///   1.1 — Session 121: `addToCollection` case added (Bug 3 — iOS had no document-level
 ///          collection membership control; only tag-based membership was available)
+///   1.2 — Authoring Phase 5 (excerpts): `addSelectionAsExcerpt` — the collection picker
+///          reused with a frozen selection capture (creation path b)
 enum DocumentSheet: Identifiable {
     case personDetail(PersonEntry)
     case glossDetail(GlossEntry)
@@ -41,6 +43,9 @@ enum DocumentSheet: Identifiable {
     /// Collection picker — lets the user add this document to an existing collection
     /// or create a new one directly from the document view.
     case addToCollection
+    /// Collection picker in excerpt mode (Authoring Phase 5): inserts the captured
+    /// text selection into the chosen collection as a frozen `.excerpt` entry.
+    case addSelectionAsExcerpt(CollectionExcerptCapture)
     /// Person link was tapped but the lookup returned nil — volume not indexed or
     /// persons list not yet available for this volume.
     case personNotFound
@@ -62,6 +67,7 @@ enum DocumentSheet: Identifiable {
         case .editNote(let note):              return "editNote-\(note.id)"
         case .tagPicker:                       return "tagPicker"
         case .addToCollection:                 return "addToCollection"
+        case .addSelectionAsExcerpt:           return "addSelectionAsExcerpt"
         case .personNotFound:                  return "personNotFound"
         case .glossNotFound:                   return "glossNotFound"
         case .naraLookup:                      return "naraLookup"
@@ -520,6 +526,8 @@ struct DocumentView: View {
                 )
             case .addToCollection:
                 CollectionPickerSheetView(entry: entry)
+            case .addSelectionAsExcerpt(let capture):
+                CollectionPickerSheetView(entry: entry, excerpt: capture)
             case .personNotFound:
                 personNotFoundSheet
             case .glossNotFound:
@@ -1010,6 +1018,31 @@ struct DocumentView: View {
                                defaultValue: "Add this document to a new or existing collection"),
                 systemImage: "folder.badge.plus"
             )
+
+            // 7b. Add Selection as Excerpt (Authoring Phase 5) — transient, appears
+            // while text is selected (mirrors the Add Note to Highlight pattern):
+            // freezes the selection into a `.excerpt` collection entry via the same
+            // collection picker as Add to Collection.
+            if webKitSelectedText != nil {
+                Button {
+                    if let capture = selectionExcerptCapture(vm: vm) {
+                        activeSheet = .addSelectionAsExcerpt(capture)
+                    }
+                } label: {
+                    Label(
+                        String(localized: "document.toolbar.addSelectionAsExcerpt",
+                               defaultValue: "Add Selection as Excerpt"),
+                        systemImage: "text.quote"
+                    )
+                }
+                .controlHelp(
+                    String(localized: "document.toolbar.addSelectionAsExcerpt.a11y",
+                           defaultValue: "Add selection to a collection as an excerpt"),
+                    detail: String(localized: "document.toolbar.addSelectionAsExcerpt.help",
+                                   defaultValue: "Freeze the selected passage into a collection as a quoted excerpt with its citation"),
+                    systemImage: "text.quote"
+                )
+            }
 
             // 8. Cross-references — opens alongside the document as a Stage Manager
             // window when multi-window is available, otherwise an in-place sheet.
@@ -1676,6 +1709,47 @@ struct DocumentView: View {
         modelContext.insert(highlight)
         webKitSelectionRange = nil
         pendingHighlightLink = highlight.id
+    }
+
+    // MARK: - Excerpt Capture (Authoring Phase 5)
+
+    /// Freezes the current text selection into an excerpt capture (creation path b).
+    ///
+    /// What the selection APIs expose (see `FRUSDocumentWebView.onSelectionChanged`):
+    /// an in-document selection reports unicode-scalar flat-text offsets
+    /// (`webKitSelectionRange`) plus the raw text; a footnote/out-of-document selection
+    /// reports text only. When offsets exist, the passage is re-extracted from the flat
+    /// text (the same canonicalization `createHighlight` performs) and the document's
+    /// current `renderingVersion` is recorded; otherwise the raw selection text is
+    /// frozen with `nil` anchors — a fully valid excerpt under A9, just not precision-
+    /// renderable later.
+    ///
+    /// - Parameter vm: The document view model (render model source).
+    /// - Returns: The capture, or `nil` when no selection text is available.
+    @MainActor
+    private func selectionExcerptCapture(vm: DocumentViewModel) -> CollectionExcerptCapture? {
+        var text = webKitSelectedText ?? ""
+        var start: Int? = nil
+        var end: Int? = nil
+        var renderingVersion: String? = nil
+        if let range = webKitSelectionRange, let model = vm.renderModel {
+            let flat = buildFlatText(from: model)
+            if let r = Range(NSRange(location: range.0, length: range.1 - range.0), in: flat) {
+                text = String(flat[r])
+            }
+            start = range.0
+            end = range.1
+            renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
+        }
+        guard !text.isEmpty else { return nil }
+        return CollectionExcerptCapture(
+            text: text,
+            volumeId: entry.volumeId,
+            documentId: entry.documentId,
+            start: start,
+            end: end,
+            renderingVersion: renderingVersion,
+            colorTag: nil)
     }
 
     private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
@@ -2648,9 +2722,17 @@ private struct TagPickerSheetView: View {
 /// Version history:
 ///   1.0 — Session 121: initial implementation (Bug 3 — iOS had no document-level
 ///          collection membership control)
+///   1.1 — Authoring Phase 5 (excerpts): optional `excerpt` capture — when set, picking
+///          a collection inserts a frozen `.excerpt` entry (via `CollectionExcerpts`)
+///          instead of a document entry, and the duplicate guard is skipped (multiple
+///          excerpts from one document are expected)
 private struct CollectionPickerSheetView: View {
 
     let entry: DocumentBrowserEntry
+
+    /// When non-nil, the picker runs in excerpt mode (Authoring Phase 5): the chosen
+    /// collection receives this capture as a `.excerpt` entry rather than the document.
+    var excerpt: CollectionExcerptCapture? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -2721,8 +2803,11 @@ private struct CollectionPickerSheetView: View {
                 }
             }
             .navigationTitle(
-                String(localized: "collection.picker.title",
-                       defaultValue: "Add to Collection")
+                excerpt == nil
+                    ? String(localized: "collection.picker.title",
+                             defaultValue: "Add to Collection")
+                    : String(localized: "collection.picker.title.excerpt",
+                             defaultValue: "Add Excerpt to Collection")
             )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -2754,6 +2839,16 @@ private struct CollectionPickerSheetView: View {
     }
 
     private func addDocument(to collection: Collection) {
+        // Excerpt mode (Authoring Phase 5): freeze the capture into a `.excerpt` entry.
+        // No duplicate guard — several excerpts from one document are expected.
+        if let excerpt {
+            CollectionExcerpts.appendToCollection(excerpt, collection: collection,
+                                                  modelContext: modelContext)
+            addedCollectionId = collection.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
+            return
+        }
+
         let existing = collection.documentEntries ?? []
         // Guard against duplicates — show checkmark and dismiss if already a member.
         guard !existing.contains(where: {

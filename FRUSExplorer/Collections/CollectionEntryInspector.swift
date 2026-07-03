@@ -30,6 +30,11 @@ import SwiftData
 ///          (prefers the collection's `summaryPromptId`, labels the producing prompt);
 ///          new Headnote section — toggle `includeHeadnote` and pick the
 ///          `GeneratedSummary` (`headnoteSummaryId`) rendered above the body in exports
+///   1.3 — Authoring Phase 5 (excerpts): the highlight count became a highlight *list*
+///          (colour chip + passage preview) with a per-highlight "Insert as Excerpt"
+///          action (creation path c) — the capture is handed to the presenting editor
+///          via `onInsertExcerpt`, which appends through the shared `CollectionExcerpts`
+///          factory; highlights without stored text stay listed but not insertable
 struct CollectionEntryInspector: View {
 
     /// One stored summary choice for the headnote picker: identity, producing-prompt
@@ -43,8 +48,24 @@ struct CollectionEntryInspector: View {
         let text: String
     }
 
+    /// One highlight row offered for excerpt insertion (Authoring Phase 5).
+    private struct HighlightChoice: Identifiable {
+        /// The source highlight's id — row identity only, never serialized.
+        let id: UUID
+        /// The ready-to-insert capture; `nil` when the highlight has no stored text
+        /// (pre-Session-131), which leaves the row visible but not insertable.
+        let capture: CollectionExcerptCapture?
+        /// The highlight's colour, for the row chip.
+        let color: DocumentHighlight.Color
+    }
+
     /// The entry whose document is being inspected.
     let entry: CollectionEntry
+
+    /// Appends an excerpt entry to the owning collection (Authoring Phase 5, creation
+    /// path c) — supplied by the presenting editor so its entry list stays in sync.
+    /// `nil` (e.g. a future read-only presentation) hides the insert buttons.
+    var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -59,6 +80,10 @@ struct CollectionEntryInspector: View {
     @State private var noteTexts: [String] = []
     @State private var tags: [String] = []
     @State private var highlightCount = 0
+    /// The document's highlights as insertable rows (Authoring Phase 5).
+    @State private var highlightChoices: [HighlightChoice] = []
+    /// Ids of highlights inserted as excerpts during this presentation — feedback only.
+    @State private var insertedHighlightIds: Set<UUID> = []
     @State private var crossRefCount = 0
     @State private var isLoading = true
 
@@ -131,6 +156,48 @@ struct CollectionEntryInspector: View {
                     .font(.callout)
                     .foregroundStyle(highlightCount == 0 ? .secondary : .primary)
             } icon: { Image(systemName: "highlighter") }
+
+            // Per-highlight rows (Authoring Phase 5): passage preview + colour chip,
+            // each insertable as a frozen excerpt entry when the editor supplied the
+            // append action and the highlight has stored text.
+            ForEach(highlightChoices) { choice in
+                HStack(alignment: .top, spacing: 8) {
+                    Circle()
+                        .fill(choice.color.swiftUIColor)
+                        .frame(width: 10, height: 10)
+                        .padding(.top, 5)
+                        .accessibilityLabel(choice.color.displayName)
+                    if let capture = choice.capture {
+                        Text(capture.text)
+                            .font(.caption)
+                            .lineLimit(3)
+                        Spacer(minLength: 8)
+                        if onInsertExcerpt != nil {
+                            if insertedHighlightIds.contains(choice.id) {
+                                Label(String(localized: "collection.inspector.excerpt.inserted",
+                                             defaultValue: "Inserted"),
+                                      systemImage: "checkmark.circle.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.green)
+                                    .labelStyle(.titleAndIcon)
+                            } else {
+                                Button(String(localized: "collection.inspector.excerpt.insert",
+                                              defaultValue: "Insert as Excerpt")) {
+                                    onInsertExcerpt?(capture)
+                                    insertedHighlightIds.insert(choice.id)
+                                }
+                                .font(.caption)
+                                .buttonStyle(.borderless)
+                            }
+                        }
+                    } else {
+                        Text(String(localized: "collection.inspector.excerpt.noText",
+                                    defaultValue: "No stored passage text — open the document and re-create this highlight to excerpt it."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
 
             if !tags.isEmpty {
                 Label { Text(tags.joined(separator: ", ")).font(.callout) }
@@ -228,6 +295,11 @@ struct CollectionEntryInspector: View {
         let highlights = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>(
             predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? []
         highlightCount = highlights.count
+        highlightChoices = highlights
+            .sorted { ($0.createdAt ?? .distantPast) < ($1.createdAt ?? .distantPast) }
+            .map { HighlightChoice(id: $0.id,
+                                   capture: CollectionExcerpts.capture(from: $0),
+                                   color: $0.color) }
 
         let summaries = ((try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
             predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? [])

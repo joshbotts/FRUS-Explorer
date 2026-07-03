@@ -31,6 +31,7 @@ import SwiftUI
 ///          collapse chevron, and the section context menu (rename / indent / outdent /
 ///          delete-heading-only vs delete-section-with-confirmation); the inline trash
 ///          became `showsInlineDelete` (macOS) with `onDelete` reused by the menu
+///   (file) Authoring Phase 5 (excerpts): `CollectionExcerptRow` added below
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
     /// Deletes the heading entry ONLY — its contents stay and any sub-headings bubble up
@@ -244,6 +245,68 @@ struct CollectionProseRow: View {
     }
 }
 
+// MARK: - CollectionExcerptRow
+
+/// A frozen-quotation entry in the collection (Authoring Phase 5). Shared by the iOS
+/// editor and the macOS manager: a quote-styled row showing the passage preview, a
+/// provenance caption (document id · volume title), and the source highlight's colour
+/// chip when known. Movable and deletable like a prose block; deliberately offers no
+/// body-depth or note controls — the excerpt's content is its frozen `text`, edited
+/// nowhere (decision A9: the verbatim passage is the rendering source of truth).
+///
+/// Version history:
+///   1.0 — Authoring Phase 5 (excerpts): initial implementation
+struct CollectionExcerptRow: View {
+    /// The `.excerpt` entry being displayed (read-only; excerpts are never edited in place).
+    let entry: CollectionEntry
+    /// The containing volume's display title from the manifest. `nil` falls back to the
+    /// volume id.
+    var volumeTitle: String? = nil
+    /// Deletes the entry — macOS supplies it for the inline trash (its List has no
+    /// swipe-to-delete); iOS omits it (swipe handles deletion).
+    var onDelete: (() -> Void)? = nil
+
+    /// The source highlight's colour, when the excerpt was created from one.
+    private var accentColor: DocumentHighlight.Color? {
+        entry.excerptColorTag.flatMap { DocumentHighlight.Color(rawValue: $0) }
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "text.quote")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.text ?? "")
+                    .font(.callout.italic())
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    if let color = accentColor {
+                        Circle()
+                            .fill(color.swiftUIColor)
+                            .frame(width: 8, height: 8)
+                            .accessibilityLabel(color.displayName)
+                    }
+                    Text([entry.documentId.isEmpty ? nil : entry.documentId,
+                          volumeTitle ?? (entry.volumeId.isEmpty ? nil : entry.volumeId)]
+                        .compactMap(\.self)
+                        .joined(separator: " · "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer(minLength: 8)
+            structuralDeleteButton(onDelete)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(localized: "collection.entry.excerpt.accessibility",
+                                   defaultValue: "Excerpt from \(entry.documentId): \(entry.text ?? "")"))
+    }
+}
+
 // MARK: - EntryRow
 
 /// A single row in the documents list that lets the user configure per-entry export options.
@@ -257,6 +320,8 @@ struct CollectionProseRow: View {
 ///          Authoring Phase 1)
 ///   1.1 — Authoring Phase 3: `isDuplicate` flag renders the subtle "Also in collection"
 ///          badge when the same document appears on more than one entry (A4)
+///   1.2 — Authoring Phase 5 (excerpts): `onInsertExcerpt` threads the editors' append
+///          action into the inspector's per-highlight "Insert as Excerpt" rows
 struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
@@ -271,6 +336,10 @@ struct EntryRow: View {
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false
+    /// Appends an excerpt entry to the owning collection (Authoring Phase 5) — supplied
+    /// by the editor so the inspector's "Insert as Excerpt" keeps the pane's entry list
+    /// in sync. `nil` hides the inspector's insert affordance.
+    var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
 
     @Environment(AppState.self) private var appState
     @State private var showInspector = false
@@ -393,7 +462,7 @@ struct EntryRow: View {
         }
         .padding(.vertical, 4)
         .sheet(isPresented: $showInspector) {
-            CollectionEntryInspector(entry: entry)
+            CollectionEntryInspector(entry: entry, onInsertExcerpt: onInsertExcerpt)
                 .environment(appState)
         }
     }

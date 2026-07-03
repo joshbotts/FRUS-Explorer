@@ -286,7 +286,8 @@ import SwiftData
 ///
 /// A collection is an ordered sequence of these: `document` entries are the FRUS documents;
 /// `heading` entries start a section; `prose` entries are the researcher's own editorial note
-/// blocks. This turns a flat document list into an authored, sectioned reader.
+/// blocks; `excerpt` entries are frozen verbatim quotations from a document (Authoring
+/// Phase 5). This turns a flat document list into an authored, sectioned reader.
 enum CollectionEntryKind: String, CaseIterable, Sendable {
     /// A FRUS document (uses `documentId`/`volumeId`).
     case document
@@ -294,6 +295,12 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     case heading
     /// An editorial prose block (uses `text` as the body).
     case prose
+    /// A frozen verbatim quotation from a document (Authoring Phase 5): `text` is the
+    /// passage, `documentId`/`volumeId` its provenance for the auto-citation source line,
+    /// and the `excerpt*` fields carry the anchoring metadata copied at creation. On
+    /// pre-Phase-5 builds this raw value rides the `.unrecognized` sync guard: the entry
+    /// is inert and skipped, never misread as a junk document.
+    case excerpt
     /// A `kind` raw value written by a newer app version that this build does not
     /// understand (synced via CloudKit). Never persisted by this build; surfaced as an
     /// inert row and skipped by resolve/export so future entry kinds degrade gracefully
@@ -302,7 +309,7 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 
     /// Excludes `.unrecognized`: it is a decode fallback, not an authorable kind, so any
     /// menu or picker iterating the cases never offers it.
-    static var allCases: [CollectionEntryKind] { [.document, .heading, .prose] }
+    static var allCases: [CollectionEntryKind] { [.document, .heading, .prose, .excerpt] }
 }
 
 // MARK: - CollectionEntry
@@ -334,6 +341,12 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///   1.8 — Authoring Phase 5: added `includeHeadnote` (default `false`) + `headnoteSummaryId`
 ///          — an opt-in italic abstract (a chosen `GeneratedSummary`) rendered above the
 ///          document body in exports/preview; defaults reproduce pre-Phase-5 output exactly
+///   1.9 — Authoring Phase 5 (excerpts): added the `.excerpt` kind and its anchoring
+///          fields `excerptStart`/`excerptEnd`/`excerptRenderingVersion`/`excerptColorTag`
+///          — all additive and optional (nil on every existing entry), copied from the
+///          source highlight/selection at creation. Per decision A9 the frozen `text`
+///          is the rendering source of truth today; the anchors make precision slicing
+///          a later rendering-only flip
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -431,17 +444,57 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
         didSet { lastModified = .now }
     }
 
+    // MARK: - Excerpt Anchors (Authoring Phase 5)
+
+    /// Unicode-scalar start offset of the excerpted passage within the source document's
+    /// flat text (the `DocumentHighlight.startOffset` coordinate space), copied from the
+    /// source highlight/selection when the excerpt was created. `nil` when the creation
+    /// path had no offsets (e.g. a footnote selection reported text only).
+    ///
+    /// **Decision A9.** The frozen `text` is the excerpt's rendering source of truth
+    /// today; these anchors are stored at creation — they are free to capture — so a
+    /// precision styled slice of the render model stays a later rendering-only decision.
+    var excerptStart: Int? {
+        didSet { lastModified = .now }
+    }
+
+    /// Unicode-scalar end offset (exclusive) of the excerpted passage — see
+    /// `excerptStart` for the coordinate space and the A9 rationale. `nil` when the
+    /// creation path had no offsets.
+    var excerptEnd: Int? {
+        didSet { lastModified = .now }
+    }
+
+    /// The source document's `renderingVersion` at excerpt creation (the
+    /// `DocumentHighlight.renderingVersion` scheme: a 16-char SHA-256 prefix over the
+    /// raw XML + converter version). A future precision-rendering flip (A9) compares it
+    /// against the current document version to decide whether the offsets still align;
+    /// today it is stored, never read at render time. `nil` when unavailable at creation.
+    var excerptRenderingVersion: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// The source highlight's `colorTag` (`"yellow"`/`"green"`/`"blue"`/`"pink"`), when
+    /// the excerpt was created from a `DocumentHighlight` — renderers use it as the
+    /// quote block's accent. `nil` for excerpts created from a plain text selection.
+    var excerptColorTag: String? {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Entry Kind (Phase 3a)
 
     /// What this entry contributes to the composed collection — a `CollectionEntryKind` raw
     /// value. Defaults to `"document"` so every existing entry stays a document. A `"heading"`
-    /// starts a section; a `"prose"` is an editorial note block. Heading/prose entries use
-    /// `text` and ignore `documentId`/`volumeId`. Stored raw for CloudKit compatibility.
+    /// starts a section; a `"prose"` is an editorial note block; an `"excerpt"` is a frozen
+    /// quotation (Phase 5). Heading/prose entries use `text` and ignore
+    /// `documentId`/`volumeId`; excerpt entries use `text` (the passage) AND
+    /// `documentId`/`volumeId` (provenance). Stored raw for CloudKit compatibility.
     var kind: String = "document" {
         didSet { lastModified = .now }
     }
 
-    /// The section title (for a `heading` entry) or the editorial body (for a `prose` entry).
+    /// The section title (for a `heading` entry), the editorial body (for a `prose` entry),
+    /// or the frozen verbatim passage (for an `excerpt` entry, Phase 5).
     /// `nil` for document entries. Always the plain-text form — a fallback for plain contexts
     /// and the source for a `prose` entry with no rich formatting.
     var text: String? {

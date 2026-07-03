@@ -71,6 +71,10 @@ import WebKit
 ///          not only after the preview's own Download button; missing volumes absent
 ///          from the manifest surface a "not available" note and never produce a
 ///          phantom downloading state
+///   1.2 — Authoring Phase 5 (excerpts): the content fingerprint covers the excerpt
+///          anchor fields (`excerptStart`/`excerptEnd`/`excerptRenderingVersion`/
+///          `excerptColorTag`); excerpt rendering itself arrives free via the shared
+///          `CollectionItemHTMLRenderer`
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -185,6 +189,12 @@ struct CollectionPreviewView: View {
             // Phase 5 headnote fields — toggling them live-refreshes the preview.
             hasher.combine(entry.includeHeadnote)
             hasher.combine(entry.headnoteSummaryId)
+            // Phase 5 excerpt anchors — a re-anchored or re-coloured excerpt refreshes
+            // (the passage itself is `text`, already hashed above).
+            hasher.combine(entry.excerptStart)
+            hasher.combine(entry.excerptEnd)
+            hasher.combine(entry.excerptRenderingVersion)
+            hasher.combine(entry.excerptColorTag)
         }
         hasher.combine(renderAll)
         hasher.combine(refreshToken)

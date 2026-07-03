@@ -87,6 +87,11 @@ import Foundation
 ///          summary renders a placeholder note. Footnote rendering here remains ungated
 ///          (pre-existing behavior — this exporter never consumed the legacy
 ///          `footnoteStyle`), so untouched collections export byte-identically
+///   1.8 — Authoring Phase 5 (excerpts): `.excerpt` items render as quote-styled
+///          paragraphs (`ExcerptQuote`: indented, italic, left accent border) plus an
+///          `ExcerptSource` source-citation paragraph. The two styles join `stylesXML`
+///          unconditionally — the same dormant-style precedent as the Phase 4 cover
+///          styles; an excerpt-free document.xml is unchanged
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -296,6 +301,25 @@ final class DocxCollectionExporter: CollectionExporter {
             <w:pPr><w:spacing w:after="80"/></w:pPr>
             <w:rPr><w:color w:val="1A4C8F"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>
           </w:style>
+          <w:style w:type="paragraph" w:styleId="ExcerptQuote">
+            <w:name w:val="Excerpt Quote"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:pBdr><w:left w:val="single" w:sz="12" w:space="8" w:color="8A8A86"/></w:pBdr>
+              <w:ind w:left="360" w:right="360"/>
+              <w:spacing w:before="160" w:after="80"/>
+            </w:pPr>
+            <w:rPr><w:i/><w:color w:val="333333"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="ExcerptSource">
+            <w:name w:val="Excerpt Source"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr>
+              <w:ind w:left="360" w:right="360"/>
+              <w:spacing w:after="160"/>
+            </w:pPr>
+            <w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="555555"/></w:rPr>
+          </w:style>
           <w:style w:type="paragraph" w:styleId="ResearchNote">
             <w:name w:val="Research Note"/>
             <w:basedOn w:val="Normal"/>
@@ -389,6 +413,8 @@ final class DocxCollectionExporter: CollectionExporter {
                 body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true)
             case .prose(let rtf):
                 body += proseDocxXML(rtf)
+            case .excerpt(let excerpt):
+                body += excerptDocxXML(excerpt)
             case .document(let doc):
                 body += documentSectionXML(doc: doc, ctx: ctx, options: options)
             }
@@ -528,6 +554,36 @@ final class DocxCollectionExporter: CollectionExporter {
             }
         }
         return runs
+    }
+
+    /// Renders an excerpt item (Authoring Phase 5): the frozen passage as `ExcerptQuote`
+    /// paragraphs (blank lines split paragraphs, single newlines become `<w:br/>` —
+    /// verbatim primary-source text, so no markdown transforms), followed by an
+    /// `ExcerptSource` paragraph carrying "— citation" (the citation runs through
+    /// `markdownItalicRuns` so `_…_` spans render as italics). An empty citation omits
+    /// the source paragraph.
+    private func excerptDocxXML(_ excerpt: CollectionExportExcerpt) -> String {
+        var xml = ""
+        let paragraphs = excerpt.text
+            .components(separatedBy: "\n\n")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        for para in paragraphs {
+            let parts = para.trimmingCharacters(in: .whitespacesAndNewlines)
+                .components(separatedBy: "\n")
+            var runs = ""
+            for (index, part) in parts.enumerated() {
+                if index > 0 { runs += "<w:r><w:br/></w:r>" }
+                if !part.isEmpty {
+                    runs += "<w:r><w:t xml:space=\"preserve\">\(xmlEscaped(part))</w:t></w:r>"
+                }
+            }
+            guard !runs.isEmpty else { continue }
+            xml += wPara(runs: runs, styleId: "ExcerptQuote")
+        }
+        if !excerpt.citation.isEmpty {
+            xml += markdownItalicRuns("\u{2014} \(excerpt.citation)", styleId: "ExcerptSource")
+        }
+        return xml
     }
 
     // MARK: - Rich Rendering (Session 83)

@@ -48,6 +48,9 @@ import SwiftData
 ///          HighlightCoordinator passed from MainWindowView
 ///   1.7 — Session 154: applies the default document mode preference
 ///          (Read/Research/remember-last) to `panelVisible` once per document open
+///   1.8 — Authoring Phase 5 (excerpts): publishes the loaded document's rendering
+///          version to `HighlightCoordinator.currentRenderingVersion` so selection
+///          excerpt captures carry it (decision A9 anchors)
 @MainActor
 struct MacDocumentView: View {
 
@@ -188,6 +191,10 @@ struct MacDocumentView: View {
             }
             await loadDocument()
             highlightCoordinator.createWebKitHighlightAction = createWebKitHighlight(color:)
+            // Excerpt captures (Authoring Phase 5) record the document's rendering
+            // version alongside selection offsets — see HighlightCoordinator.
+            highlightCoordinator.currentRenderingVersion = vm.renderModel
+                .map { ASTToRenderNodeConverter.renderingVersion(for: $0) }
             appState.logEvent(.documentOpen(
                 volumeId: entry.volumeId,
                 documentId: entry.documentId,

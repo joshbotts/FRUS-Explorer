@@ -58,6 +58,12 @@ import SwiftUI
 ///          an italic abstract above the body, or a placeholder note when the entry
 ///          requested one and no summary is stored — with its stylesheet (`headnoteCSS`)
 ///          emitted ONLY when some document carries a headnote request
+///   1.5 — Authoring Phase 5 (excerpts): `.excerpt` items render as a styled
+///          `<figure class="excerpt-block">` — blockquote passage + source-citation
+///          line, with a per-colour accent class when the source highlight's colour is
+///          known — omitted from the ToC like prose; the stylesheet (`excerptCSS`) is
+///          emitted ONLY when the item list contains an excerpt, so excerpt-free
+///          collections keep exporting byte-identically
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -102,6 +108,9 @@ struct CollectionItemHTMLRenderer {
     ///   level 3 → `<h4>`. Out-of-range levels clamp defensively.
     /// - `.prose` → a `<div class="prose-block">` of formatted paragraphs (or empty when
     ///   the payload decodes to nothing).
+    /// - `.excerpt` → a `<figure class="excerpt-block">`: blockquote passage + a
+    ///   source-citation line, with a colour-accent class when the source highlight's
+    ///   colour is known (Authoring Phase 5).
     /// - `.document` → a full `<section id="doc-…">` with citation heading, external link,
     ///   body (per the document's `bodyDepth`), highlights, source note, and research notes.
     ///
@@ -114,9 +123,41 @@ struct CollectionItemHTMLRenderer {
             return "<\(tag) class=\"section-heading\">\(markdownItalics(escaped(heading)))</\(tag)>\n\n"
         case .prose(let prose):
             return proseHTML(prose)
+        case .excerpt(let excerpt):
+            return excerptHTML(excerpt)
         case .document(let doc):
             return documentSectionHTML(doc)
         }
+    }
+
+    /// Renders an excerpt item (Authoring Phase 5): the frozen passage as a blockquote
+    /// (paragraphs split on blank lines, verbatim — no markdown transforms, the text is
+    /// primary-source material) followed by the auto-citation source line. When the
+    /// excerpt carries a known highlight colour, the figure gains an
+    /// `excerpt-{color}` accent class; an empty citation omits the source line.
+    ///
+    /// - Parameter excerpt: The resolved excerpt payload.
+    /// - Returns: The `<figure class="excerpt-block">…</figure>` HTML fragment.
+    private func excerptHTML(_ excerpt: CollectionExportExcerpt) -> String {
+        var classes = "excerpt-block"
+        if let color = excerpt.color { classes += " excerpt-\(color.rawValue)" }
+        var body = ""
+        body += "<figure class=\"\(classes)\">\n"
+        body += "  <blockquote>\n"
+        let paragraphs = excerpt.text
+            .components(separatedBy: "\n\n")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        for para in paragraphs {
+            body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+        }
+        body += "  </blockquote>\n"
+        if !excerpt.citation.isEmpty {
+            body += "  <figcaption class=\"excerpt-source\">"
+            body += markdownItalics(escaped(excerpt.citation))
+            body += "</figcaption>\n"
+        }
+        body += "</figure>\n\n"
+        return body
     }
 
     /// Defensively clamps a heading level to `1...CollectionOutline.maxLevel` — producers
@@ -355,8 +396,8 @@ struct CollectionItemHTMLRenderer {
                     level += 1
                 }
                 body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
-            case .prose:
-                break
+            case .prose, .excerpt:
+                break   // interstitial content — never a ToC row
             }
         }
         while level > 1 {
@@ -423,6 +464,9 @@ struct CollectionItemHTMLRenderer {
         // Headnote styles (Authoring Phase 5) are appended ONLY when some document
         // carries a headnote request — same byte-compat discipline as the frame layer.
         let headnoteStyles = Self.usesHeadnotes(items: items) ? "\n" + Self.headnoteCSS : ""
+        // Excerpt styles (Authoring Phase 5) are appended ONLY when the item list
+        // contains an excerpt — same byte-compat discipline again.
+        let excerptStyles = Self.usesExcerpts(items: items) ? "\n" + Self.excerptCSS : ""
         // Preview-only card styles are appended ONLY when a preview affordance is
         // configured; the export path interpolates an empty string here, keeping the
         // exported file byte-identical to the pre-preview output (v1.2).
@@ -435,7 +479,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(previewStyles)
+            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(previewStyles)
           </style>
         </head>
         <body>
@@ -465,6 +509,15 @@ struct CollectionItemHTMLRenderer {
     static func usesHeadnotes(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .document(let doc) = $0 { return doc.includeHeadnote }
+            return false
+        }
+    }
+
+    /// `true` when the item list contains an excerpt (Authoring Phase 5). Gates
+    /// `excerptCSS` so an excerpt-free collection emits the exact prior stylesheet bytes.
+    static func usesExcerpts(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            if case .excerpt = $0 { return true }
             return false
         }
     }
@@ -673,6 +726,39 @@ struct CollectionItemHTMLRenderer {
       font-style: italic;
       color: #8a6d1f;
     }
+    """
+
+    /// Excerpt styles (v1.5, Authoring Phase 5) — the quoted-passage figure and its
+    /// source-citation caption, with per-colour accent borders matching the app's
+    /// highlight palette (`FRUSRenderNodeHTMLSerializer.highlightCSS` hues). Emitted by
+    /// `pageHTML` **only when the item list contains an excerpt** (`usesExcerpts`), so a
+    /// collection with none exports byte-identically to the prior output.
+    private static let excerptCSS = """
+    /* ── Excerpt quotation (Authoring Phase 5) ─────────────────────────────── */
+    figure.excerpt-block {
+      margin: 1.5rem 0 1.5rem 1.25rem;
+      padding: 0.9rem 1.25rem;
+      border-left: 3px solid #8a8a86;
+      background: #fafaf8;
+      border-radius: 2px;
+    }
+    .excerpt-block blockquote { margin: 0; }
+    .excerpt-block blockquote p {
+      font-style: italic;
+      color: #333;
+      margin: 0 0 0.5rem;
+    }
+    .excerpt-block blockquote p:last-child { margin-bottom: 0; }
+    figcaption.excerpt-source {
+      margin-top: 0.6rem;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    figcaption.excerpt-source::before { content: "— "; }
+    figure.excerpt-yellow { border-left-color: #e6cc33; }
+    figure.excerpt-green  { border-left-color: #4fc74f; }
+    figure.excerpt-blue   { border-left-color: #4f96f0; }
+    figure.excerpt-pink   { border-left-color: #f04fa1; }
     """
 
     /// Preview-only card styles (v1.2) — the citation-only card (volume not downloaded)
