@@ -1172,3 +1172,24 @@ eligible; residue = editorial notes, genuinely sourceless); structured rows 0 �
 7 sample volumes; the audit's known lots now resolve (66 D 204 → 74 neighbors, 77 D 163 → 31).
 Lasting RealTEICoverageTests gated on FRUS_TEI_MIRROR. 1075/1075. Next: Phase 2 (parser v2 +
 citations.csv eval harness) on owner go.
+
+### Session 2026-07-03 (later) — Source Explorer Phase 2 (parser v2 + eval harness)
+Four commits on claude/sourceexplorer-phase2-parser: (1) **SourceNoteKit + harness** —
+SourceNoteParser relocated to a shared SPM target compiled directly into both app targets
+(FTS5Store pattern; one source of truth); SourceNoteEvalGenerator runs the parser over all
+267,663 real source notes in citations.csv (dependency-free RFC-4180 streaming reader;
+deterministic diffable report; DUMP env for positional regression diffs); baseline committed
+(24.3% unrecognized overall). (2) **grammar v2** — decimal word-infix refs, lowercase/comma +
+lot-leading + en-dash lot styles, prefix-less library notes, named file series (new
+ParsedSourceNote.namedFileSeries + citation_era='named_series', all consumers audited),
+`document_sources.lot_file_norm` canonical key (uppercase, dash/space-free — Phase 3 reads it,
+volume_sources will write the same form); currentDateIndexVersion 15→16. **Results: overall
+unrecognized 24.3% → 2.8%; 1906–39: 19.3→1.1%, 1940–51: 39.3→1.5%, 1952–54: 42.6→7.4%,
+1961–63: 15.2→3.1% — every target beaten; ZERO recognized→unrecognized regressions
+(positional diff over the full corpus); 226 deliberate reclassifications in 3 audited classes.**
+(3+4) review found 5 (1 med: colon-tail junk in 1,024 lot_file_norm keys → 0 after fix;
+namedFileSeries ordering; FRC RG misattribution on Nixon materials; OpenAPI enum; dotted-
+decimal file ids) — all fixed with corpus probes. eval-baseline.txt + eval-report.txt
+committed in SourceNoteKit/ as the permanent regression corpus reports. 1083/1083 app +
+272/272 SPM. Next: Phase 3 (volume_sources keying + inheritance + normalized matcher —
+cashing the 86% ceiling).
