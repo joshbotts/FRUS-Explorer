@@ -234,6 +234,128 @@ struct PersonClustererTests {
         #expect(out.clusters.contains { $0.count == 1 })
         #expect(out.clusters.contains { $0.count == 3 })
     }
+
+    // MARK: Cannot-link guardrail (rollup v8, people-eval finding A)
+
+    /// Given the input indices of a cluster output, returns the set of authority ids it contains.
+    private func authorityIds(in cluster: [Int], of inputs: [PersonClusterInput]) -> Set<Int> {
+        Set(cluster.compactMap { inputs[$0].authorityId })
+    }
+
+    @Test("an uncovered member cannot transitively bridge two different authority ids (Castro)")
+    func uncoveredBridgeBetweenAuthorityIdsBlocked() {
+        // The live-DB r10139 mechanism: Raúl Castro and Raul Hector Castro (AZ governor) are both
+        // covered, contemporaries, and share a block; an uncovered "Castro, Raul" record decides
+        // `.merge` against BOTH. Pre-v8 that union-found all three into one rollup.
+        let people = [
+            input("v1", "p1", "Castro, Raul", listStart: 1959, listEnd: 1975, authorityId: 201),
+            input("v2", "p2", "Castro, Raul Hector", listStart: 1959, listEnd: 1977, authorityId: 202),
+            input("v3", "p3", "Castro, Raul", listStart: 1960, listEnd: 1970)   // uncovered
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(out.clusters.count == 2, "the uncovered record joins one identity; it must not fuse both")
+        for cluster in out.clusters {
+            #expect(authorityIds(in: cluster, of: people).count <= 1,
+                    "no cluster may carry two different authority ids")
+        }
+        #expect(out.candidates.contains { $0.reason.contains("reconciled") },
+                "the blocked bridge is surfaced as a candidate (under-merge bias)")
+    }
+
+    @Test("authority pre-merge components spanning blocks cannot be bridged either (Fidel↔Raúl)")
+    func crossBlockAuthorityComponentBridgeBlocked() {
+        // Fidel's covered records span two blocking keys (castro|f and castro|r); an uncovered
+        // "Castro, Raul" merges into Fidel's component via the castro|r record, and must then be
+        // refused against covered Raúl — pre-v8 this chained Fidel into Raúl's rollup.
+        let people = [
+            input("v1", "p_f1", "Castro, Fidel", listStart: 1959, listEnd: 1975, authorityId: 300),
+            input("v2", "p_f2", "Castro, R.", listStart: 1960, listEnd: 1970, authorityId: 300),
+            input("v3", "p_r", "Castro, Raul", listStart: 1959, listEnd: 1975, authorityId: 301),
+            input("v4", "p_u", "Castro, Raul", listStart: 1962, listEnd: 1968)   // uncovered
+        ]
+        let out = PersonClusterer.cluster(people)
+        for cluster in out.clusters {
+            #expect(authorityIds(in: cluster, of: people).count <= 1,
+                    "Fidel's component (auth 300) and Raúl (auth 301) must stay separate")
+        }
+        // Fidel's two covered records stay one identity.
+        #expect(out.clusters.contains { cluster in
+            authorityIds(in: cluster, of: people) == [300] && cluster.count >= 2
+        })
+    }
+
+    // MARK: "Mrs." is a distinguishing token (rollup v8, people-eval finding B)
+
+    @Test("Mrs. <husband's name> no longer merges into the husband (Churchill/Clementine)")
+    func mrsDoesNotFoldIntoHusband() {
+        let people = [
+            input("v1", "p_w", "Churchill, Winston S.", listStart: 1940, listEnd: 1965, authorityId: 400),
+            input("v2", "p_c", "Churchill, Mrs. Winston S", listStart: 1943, listEnd: 1943, authorityId: 401),
+            input("v3", "p_u", "Churchill, Winston", listStart: 1941, listEnd: 1955)   // uncovered
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(out.clusters.count == 2)
+        let clementine = out.clusters.first { authorityIds(in: $0, of: people).contains(401) }
+        #expect(clementine?.count == 1, "Clementine stays her own identity")
+        let winston = out.clusters.first { authorityIds(in: $0, of: people).contains(400) }
+        #expect(winston?.count == 2, "the uncovered Winston record joins Winston, not Clementine")
+    }
+
+    @Test("normalize keeps mrs as a given token instead of dropping it")
+    func normalizeKeepsMrs() {
+        let n = PersonClusterer.normalize("Churchill, Mrs. Winston S")
+        #expect(n.given.first == "mrs")
+        #expect(PersonClusterer.nameRelation(
+            n.given, PersonClusterer.normalize("Churchill, Winston S.").given) == .incompatible)
+    }
+
+    // MARK: Generational suffixes distinguish identities (rollup v8, people-eval finding B)
+
+    @Test("differing generational suffixes never merge (Jimmy Carter Jr. vs. Chip Carter III)")
+    func differingSuffixesNeverMerge() {
+        let people = [
+            input("v1", "p_j", "Carter, James Earl, Jr.", listStart: 1977, listEnd: 1981),
+            input("v2", "p_c", "Carter, James Earl III", listStart: 1977, listEnd: 1981),
+            input("v3", "p_h", "Carter, Hodding III", listStart: 1977, listEnd: 1981)
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(out.clusters.count == 3, "contemporary Jr/III relatives are three distinct people")
+    }
+
+    @Test("suffixed vs. unsuffixed with a covered record is demoted to a candidate (Herter Sr/Jr)")
+    func mixedSuffixCoveredPairCandidate() {
+        let people = [
+            input("v1", "p_sr", "Herter, Christian A.", listStart: 1957, listEnd: 1961, authorityId: 500),
+            input("v2", "p_jr", "Herter, Christian A., Jr.", listStart: 1957, listEnd: 1975)
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(out.clusters.count == 2, "the covered identity must not absorb its suffixed relative")
+        #expect(out.candidates.count == 1)
+        #expect(out.candidates.first?.reason.contains("suffix") == true)
+    }
+
+    @Test("suffixed vs. unsuffixed with unknown era is a candidate, not a merge (FDR/FDR Jr.)")
+    func mixedSuffixUnknownEraCandidate() {
+        let people = [
+            input("v1", "p1", "Roosevelt, Franklin D."),
+            input("v2", "p2", "Roosevelt, Franklin D., Jr.")
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(out.clusters.count == 2, "pre-v8 the suffix folded away and the exact names merged")
+        #expect(out.candidates.count == 1)
+    }
+
+    @Test("normalize captures a trailing suffix but keeps a lone roman-numeral initial")
+    func normalizeSuffixCapture() {
+        #expect(PersonClusterer.normalize("Herter, Christian A., Jr.").suffix == "jr")
+        #expect(PersonClusterer.normalize("Smith, Walter Bedell II").suffix == "ii")
+        #expect(PersonClusterer.normalize("Carter, Hodding 3d").suffix == "iii", "2d/3d canonicalise to ii/iii")
+        let molotov = PersonClusterer.normalize("Molotov, V.")
+        #expect(molotov.suffix == nil, "a lone 'V.' is an initial, not 'the 5th'")
+        #expect(molotov.given.isEmpty, "'v' stays fold-only (pre-v8 behaviour), never a distinguishing suffix")
+        #expect(PersonClusterer.normalize("Franklin D. Roosevelt Jr").surname == "roosevelt",
+                "a trailing suffix is never mistaken for the surname in no-comma names")
+    }
 }
 
 // MARK: - PersonClusterOverrideStoreTests

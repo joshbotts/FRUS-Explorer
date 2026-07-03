@@ -56,6 +56,9 @@ import SwiftData
 ///          block-aware with `flatTextExcerpt` so the frozen text matches its anchors;
 ///          highlight `selectedText` gains paragraph breaks the same way;
 ///          `currentRenderingVersion` superseded and removed
+///   2.0 — Session 2026-07-03 (people-eval finding G): PersonDetailSheet's "Find all
+///          mentions" searches the resolved rollup identity (matching the displayed
+///          cross-corpus count) instead of the cross-volume-colliding raw `personRef`
 @MainActor
 struct MacDocumentView: View {
 
@@ -240,7 +243,17 @@ struct MacDocumentView: View {
                 person: person,
                 mentionCount: vm.selectedPersonMentionCount,
                 onFindAllMentions: {
-                    appState.pendingSearch = SearchParameters(personRef: person.ref)
+                    // Search the resolved cross-corpus rollup identity — the same identity whose
+                    // count the sheet displays; the raw per-volume `ref` collides across volumes
+                    // and is only the fallback when the rollup isn't built (people-eval finding
+                    // G). MainWindowView opens the Search window on any pendingSearch.
+                    if let rollupId = vm.selectedPersonRollupId {
+                        appState.pendingSearch = SearchParameters(personRollupId: rollupId,
+                                                                  personLabel: person.name)
+                    } else {
+                        appState.pendingSearch = SearchParameters(personRef: person.ref,
+                                                                  personLabel: person.name)
+                    }
                 }
             )
         }

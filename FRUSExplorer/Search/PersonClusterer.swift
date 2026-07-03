@@ -39,10 +39,15 @@ public struct PersonClusterInput: Sendable {
     /// covered. Records sharing an id are force-merged; records with *different* ids are never
     /// merged (the authority both heals fragmentation and prevents same-name conflation).
     public let authorityId: Int?
+    /// Number of documents mentioning this `(volume, ref)` record. Not a clustering signal —
+    /// used by the rollup consolidation (v8) to pick a cluster's canonical authority id by
+    /// majority-of-mentions instead of input order.
+    public let mentionCount: Int
 
     public init(volumeId: String, ref: String, name: String, description: String? = nil,
                 role: String? = nil, listStartYear: Int? = nil, listEndYear: Int? = nil,
-                mentionStartYear: Int? = nil, mentionEndYear: Int? = nil, authorityId: Int? = nil) {
+                mentionStartYear: Int? = nil, mentionEndYear: Int? = nil, authorityId: Int? = nil,
+                mentionCount: Int = 0) {
         self.volumeId = volumeId
         self.ref = ref
         self.name = name
@@ -53,6 +58,7 @@ public struct PersonClusterInput: Sendable {
         self.listEndYear = listEndYear
         self.mentionStartYear = mentionStartYear
         self.mentionEndYear = mentionEndYear
+        self.mentionCount = mentionCount
     }
 
     /// Effective start year for the era guardrail: list year when present, else mention year.
@@ -105,6 +111,22 @@ public struct PersonClusterOutput: Sendable {
 /// (name relation × era relation × role relation) → union-find → connected components are clusters;
 /// recorded-but-unmerged pairs become candidates. Pure and deterministic; the SQLite materialisation
 /// lives in `IndexingPipeline.consolidatePersonRollup`.
+///
+/// Version history:
+///   Phase 2 — initial blocked/guardrailed clusterer (replaces exact-name grouping)
+///   Phase 3 — user must-link/detach constraints
+///   Phase 5 — authority-crosswalk pairs are decisive (same id merges, different ids never merge)
+///   Rollup v8 (people-eval audit) — three conflation fixes:
+///   • differing authority ids are a **cannot-link union-find constraint**, not just a pairwise
+///     non-link: an uncovered member can no longer transitively bridge two clusters carrying
+///     different canonical ids (Fidel↔Raúl Castro, Jimmy/Chip/Hodding Carter); blocked bridges
+///     surface as candidates (under-merge bias)
+///   • `normalize()` no longer folds "Mrs." away, so "Churchill, Mrs. Winston S" (Clementine)
+///     stops merging into "Churchill, Winston S."
+///   • generational suffixes (`jr/sr/ii/iii/…`) are captured as a distinguishing field instead
+///     of being dropped: differing suffixes never merge (FDR vs. FDR Jr.); a suffixed/unsuffixed
+///     pair only folds when neither record is authority-covered and eras are informative,
+///     otherwise it is demoted to a candidate (Herter Sr./Jr.)
 public enum PersonClusterer {
 
     /// Years apart (between two records' effective active ranges) beyond which they are treated as
@@ -144,16 +166,54 @@ public enum PersonClusterer {
         }
 
         var uf = UnionFind(count: n)
+
+        // Authority crosswalk groups (Phase 5): unite every member sharing a canonical id, across
+        // blocks, BEFORE the pairwise pass — so each covered identity is one union-find component
+        // and the cannot-link guardrail below can veto any bridge between two different ids.
+        var byAuthority: [Int: [Int]] = [:]
+        for i in 0..<n where inputs[i].authorityId != nil {
+            byAuthority[inputs[i].authorityId!, default: []].append(i)
+        }
+        for members in byAuthority.values where members.count > 1 {
+            for m in members.dropFirst() { uf.union(members[0], m) }
+        }
+
+        // Component-level authority id (rollup v8 guardrail): each union-find root maps to the
+        // single canonical id its component carries, or is absent when the component is fully
+        // uncovered. Maintained across every union below.
+        var authorityOfRoot: [Int: Int] = [:]
+        for i in 0..<n {
+            if let id = inputs[i].authorityId { authorityOfRoot[uf.find(i)] = id }
+        }
+
         // Raw candidate pairs by input index; resolved to cluster indices after union-find.
         var rawCandidates: [(Int, Int, String)] = []
 
-        for indices in blocks.values where indices.count > 1 {
+        // Blocks are visited in sorted-key order: with the component-level guardrail a merge in
+        // one block can influence decisions in another (components span blocks through authority
+        // pre-merges), and Dictionary iteration order would make the outcome nondeterministic.
+        for blockKey in blocks.keys.sorted() {
+            let indices = blocks[blockKey]!
+            guard indices.count > 1 else { continue }
             for a in 0..<indices.count {
                 for b in (a + 1)..<indices.count {
                     let i = indices[a], j = indices[b]
                     switch decide(inputs[i], normalized[i], inputs[j], normalized[j]) {
                     case .merge:
+                        let ri = uf.find(i), rj = uf.find(j)
+                        guard ri != rj else { break }
+                        // Cannot-link (rollup v8): never union two components carrying different
+                        // authority ids — an uncovered member must not transitively bridge two
+                        // reconciled identities. Under-merge: surface the pair as a candidate.
+                        if let ai = authorityOfRoot[ri], let aj = authorityOfRoot[rj], ai != aj {
+                            rawCandidates.append((i, j, "possible match; would bridge two reconciled identities"))
+                            break
+                        }
+                        let carried = authorityOfRoot[ri] ?? authorityOfRoot[rj]
+                        authorityOfRoot.removeValue(forKey: ri)
+                        authorityOfRoot.removeValue(forKey: rj)
                         uf.union(i, j)
+                        if let carried { authorityOfRoot[uf.find(i)] = carried }
                     case .candidate(let reason):
                         rawCandidates.append((i, j, reason))
                     case .none:
@@ -180,20 +240,9 @@ public enum PersonClusterer {
             }
         }
 
-        // Authority crosswalk groups (Phase 5): unite every member sharing a canonical id, across
-        // blocks (the pairwise pass only compares within a block).
-        var byAuthority: [Int: [Int]] = [:]
-        for i in 0..<n where inputs[i].authorityId != nil {
-            byAuthority[inputs[i].authorityId!, default: []].append(i)
-        }
-        var authorityLink: [(Int, Int)] = []
-        for members in byAuthority.values where members.count > 1 {
-            let first = members[0]
-            for m in members.dropFirst() { authorityLink.append((first, m)) }
-        }
-
-        // Apply authority groups, then user corrections (Phase 3) on top.
-        applyConstraints(authorityLink: authorityLink, mustLink: mustLink, detach: detach,
+        // Apply user corrections (Phase 3) on top. A user must-link may merge across authority
+        // ids — the user's explicit correction has the final say over the v8 cannot-link.
+        applyConstraints(mustLink: mustLink, detach: detach,
                          indexByKey: indexByKey, clusters: &clusters, clusterOf: &clusterOf)
 
         // Drop empty clusters left by must-link merges and reindex, keeping a member→cluster map.
@@ -225,12 +274,12 @@ public enum PersonClusterer {
 
     // MARK: - User corrections (Phase 3)
 
-    /// Applies authority groups (Phase 5) then user corrections (Phase 3), mutating `clusters`/
-    /// `clusterOf`. Order matters: authority crosswalk groups first, then a user detach (which can
-    /// pull a member out of an authority or heuristic cluster), then a user must-link — so a user
-    /// correction always has the final say. Must-links leave an emptied slot the caller compacts away.
-    private static func applyConstraints(authorityLink: [(Int, Int)],
-                                         mustLink: [(MemberKey, MemberKey)],
+    /// Applies user corrections (Phase 3), mutating `clusters`/`clusterOf`. Order matters: a user
+    /// detach (which can pull a member out of an authority or heuristic cluster) runs before a user
+    /// must-link — so a member can be detached and then re-merged elsewhere, and a user correction
+    /// always has the final say (authority groups are already folded into the union-find by the
+    /// caller). Must-links leave an emptied slot the caller compacts away.
+    private static func applyConstraints(mustLink: [(MemberKey, MemberKey)],
                                          detach: [MemberKey],
                                          indexByKey: [MemberKey: Int],
                                          clusters: inout [[Int]],
@@ -242,7 +291,6 @@ public enum PersonClusterer {
             clusters[ci].append(contentsOf: clusters[cj])
             clusters[cj] = []
         }
-        for (i, j) in authorityLink { merge(i, j) }
         for key in detach {
             guard let m = indexByKey[key] else { continue }
             let ci = clusterOf[m]
@@ -274,7 +322,26 @@ public enum PersonClusterer {
         if let idA = a.authorityId, let idB = b.authorityId {
             return idA == idB ? .merge : .none
         }
-        switch nameRelation(na.given, nb.given) {
+        // Generational suffixes (rollup v8): two records carrying *different* suffixes are
+        // different people ("Carter, James Earl, Jr." vs. "Carter, James Earl III"), regardless
+        // of era — Sr./Jr. pairs are contemporaries, so the era guardrail never separates them.
+        if let sa = na.suffix, let sb = nb.suffix, sa != sb { return .none }
+        let relation = nameRelation(na.given, nb.given)
+        if relation == .incompatible { return .none }
+        // One record carries a generational suffix the other lacks ("Herter, Christian A., Jr."
+        // vs. "Herter, Christian A."). Fold the suffix away only when the crosswalk covers
+        // neither record AND the eras are informative (the guardrails below can still act);
+        // otherwise demote to a candidate (under-merge bias) — a covered record's identity must
+        // not absorb its suffixed relative, and an unknown era gives the fold no corroboration.
+        if (na.suffix == nil) != (nb.suffix == nil) {
+            if a.authorityId != nil || b.authorityId != nil {
+                return .candidate("generational suffix differs; possibly the same person")
+            }
+            if eraRelation(a, b) == .unknown {
+                return .candidate("generational suffix differs; era unknown")
+            }
+        }
+        switch relation {
         case .incompatible:
             return .none
         case .exact:
@@ -363,19 +430,34 @@ public enum PersonClusterer {
     struct NormalizedName {
         let surname: String
         let given: [String]
+        /// Canonicalised generational suffix ("jr", "sr", "ii", "iii", "iv"), or `nil` when the
+        /// name carries none (rollup v8: suffixes distinguish identities instead of folding away).
+        let suffix: String?
         /// Surname plus the first given initial — the coarse bucket used for blocking.
         var blockingKey: String { surname + "|" + (given.first.map { String($0.prefix(1)) } ?? "") }
     }
 
-    /// Generational suffixes dropped from name tokens before comparison.
+    /// Generational suffixes dropped from any remaining name-token position before comparison.
+    /// A *trailing* suffix is captured as `NormalizedName.suffix` first (see `normalize`); this
+    /// set only cleans stragglers, and "v" — indistinguishable from the initial "V." — is
+    /// fold-only by design and never treated as a distinguishing suffix.
     private static let suffixes: Set<String> = ["jr", "sr", "ii", "iii", "iv", "v", "2d", "3d"]
+    /// Canonical spelling for each generational-suffix token captured as a distinguishing field
+    /// (rollup v8). "2d"/"3d" are period-typography variants of II/III. "v" is intentionally
+    /// absent (see `suffixes`).
+    private static let generationalSuffixes: [String: String] = [
+        "jr": "jr", "sr": "sr", "ii": "ii", "2d": "ii", "iii": "iii", "3d": "iii", "iv": "iv"
+    ]
     /// Honorifics/ranks dropped from given-name tokens (they appear inconsistently across volumes).
+    /// "mrs" is intentionally NOT in this set (rollup v8): the "Mrs. <husband's name>" convention
+    /// names a *different person* (the wife), so the token must distinguish, not fold away.
     private static let titles: Set<String> = [
-        "dr", "mr", "mrs", "ms", "sir", "gen", "general", "col", "colonel", "capt", "captain",
+        "dr", "mr", "ms", "sir", "gen", "general", "col", "colonel", "capt", "captain",
         "lt", "lieutenant", "maj", "major", "adm", "admiral", "sgt", "rev", "hon", "prof"
     ]
 
-    /// Splits "Surname, Given M." (or a space-separated name) into folded surname + given tokens.
+    /// Splits "Surname, Given M." (or a space-separated name) into folded surname + given tokens,
+    /// capturing a trailing generational suffix as a distinguishing field (rollup v8).
     static func normalize(_ name: String) -> NormalizedName {
         let folded = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
         let surnameRaw: String
@@ -384,22 +466,38 @@ public enum PersonClusterer {
             surnameRaw = String(folded[folded.startIndex..<comma])
             givenRaw = String(folded[folded.index(after: comma)...])
         } else {
-            // No comma — assume "Given … Surname"; the last whitespace token is the surname.
-            let toks = folded.split(whereSeparator: { $0 == " " }).map(String.init)
+            // No comma — assume "Given … Surname"; the last whitespace token is the surname,
+            // except a trailing generational suffix ("Franklin D. Roosevelt Jr"), which is
+            // re-appended to the given tokens so the common suffix capture below sees it.
+            var toks = folded.split(whereSeparator: { $0 == " " }).map(String.init)
+            var trailing: [String] = []
+            while toks.count >= 2, generationalSuffixes[cleanToken(toks.last!)] != nil {
+                trailing.append(toks.removeLast())
+            }
             if toks.count >= 2 {
                 surnameRaw = toks.last!
-                givenRaw = toks.dropLast().joined(separator: " ")
+                givenRaw = (toks.dropLast() + trailing.reversed()).joined(separator: " ")
             } else {
-                surnameRaw = folded
-                givenRaw = ""
+                surnameRaw = toks.first ?? folded
+                givenRaw = trailing.reversed().joined(separator: " ")
             }
         }
         let surname = cleanToken(surnameRaw)
-        let given = givenRaw
+        var given = givenRaw
             .split(whereSeparator: { $0 == " " || $0 == "." })
             .map { cleanToken(String($0)) }
-            .filter { !$0.isEmpty && !suffixes.contains($0) && !titles.contains($0) }
-        return NormalizedName(surname: surname, given: given)
+            .filter { !$0.isEmpty && !titles.contains($0) }
+        // Capture a trailing generational suffix as a distinguishing field (rollup v8). The
+        // `count > 1` guard keeps a *lone* roman-numeral/ordinal token as a given name — e.g.
+        // "Molotov, V." is an initial, not "Molotov the 5th".
+        var suffix: String? = nil
+        if given.count > 1, let canonical = generationalSuffixes[given[given.count - 1]] {
+            suffix = canonical
+            given.removeLast()
+        }
+        // Fold away any remaining (non-trailing) suffix tokens, exactly as pre-v8.
+        given.removeAll { suffixes.contains($0) }
+        return NormalizedName(surname: surname, given: given, suffix: suffix)
     }
 
     /// Lowercases and strips everything but letters/digits from a single token.

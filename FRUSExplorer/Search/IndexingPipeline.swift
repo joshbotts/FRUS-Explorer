@@ -162,6 +162,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `rebuildSpotlightIndex()` clears and re-submits the Spotlight index from
 ///          `document_cache` without re-parsing XML; `submitSpotlightItems(for:)` and
 ///          the new method now share a `makeSearchableItem` helper.
+///   4.2 — Session 2026-07-03 (people-eval audit): person-mention `ref` normalisation
+///          strips a `volumeId#` prefix (split-set volumes point part 2's body at part 1's
+///          persons list — `currentDateIndexVersion` → 13); person rollup v8: junk-name
+///          purge hardening, clusterer cannot-link/suffix/Mrs guardrails, and the cluster
+///          authority id picked by majority-of-mentions (`majorityAuthorityId`) instead of
+///          input order (`currentPersonRollupVersion` → 8).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -314,7 +320,20 @@ public actor IndexingPipeline {
     ///   now collapses interior whitespace in section titles at parse time (hard-wrapped
     ///   TEI `<head>` text previously carried embedded newlines into `structureJSON` and
     ///   the corpus browser's chapter/compilation rows), which only takes effect on re-parse.
-    public static let currentDateIndexVersion: Int = 12
+    /// - Version 13: split-set person-ref normalisation (Session 2026-07-03, people-eval
+    ///   finding E). `extractPersonRefs`/`collectDocumentRefs` previously stripped only a
+    ///   *leading* `#` from `persName/@ref`, so split-set volumes whose body points at the
+    ///   sibling part's persons list (`ref="frus1918Supp01v01#p_LR1"` inside
+    ///   frus1918Supp01v02) stored the whole prefixed string in
+    ///   `person_mentions.person_ref` — 6,486 mention rows across 9 volumes joined neither
+    ///   `persons` nor `person_rollup_member` and were invisible to every rollup count and
+    ///   "Find all mentions" result. Refs are now normalised to the bare fragment at parse
+    ///   time (each part carries its own copy of the set's persons list, so the fragment
+    ///   joins the mentioning volume's row). Same pass: Format B (colon-delimited) persons
+    ///   list names collapse interior whitespace at parse time, matching Format A, so the
+    ///   hardened `PersonListHeuristics` newline rejection can never discard a real person
+    ///   whose name was hard-wrapped in the TEI source.
+    public static let currentDateIndexVersion: Int = 13
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -348,7 +367,20 @@ public actor IndexingPipeline {
     /// the List-of-Persons prose, e.g. "(together with … advisers).") are purged from `persons`
     /// before consolidation, so already-indexed databases drop them from the rollup without a
     /// full reindex. New indexes never store them (`PersonListHeuristics` filters at parse time).
-    public static let currentPersonRollupVersion: Int = 7
+    /// v8 (people-eval audit, findings A–D — rollup rebuild only, no reindex):
+    /// (A) differing authority ids are a cannot-link union-find constraint in `PersonClusterer`,
+    ///     so an uncovered member can no longer transitively bridge two reconciled identities
+    ///     (67 conflated rollups incl. Winston-Churchill-as-Clementine, Fidel-as-Raúl Castro);
+    /// (B) `PersonClusterer.normalize` stops folding "Mrs." (wife ≠ husband) and captures
+    ///     generational suffixes (jr/sr/ii/iii) as distinguishing fields (FDR ≠ FDR Jr.,
+    ///     Herter Sr. ≠ Herter Jr.);
+    /// (C) the cluster's canonical authority id/name is picked by majority-of-mentions with a
+    ///     deterministic tiebreak (`majorityAuthorityId`) instead of `.first` input order;
+    /// (D) the purge heuristic (`PersonListHeuristics.isLikelyPersonName`) also rejects
+    ///     back-of-book index artifacts — names with standalone page-number runs
+    ///     ("Churchill, 532", "Eden, 815–817"), embedded newlines, or >80 characters — the
+    ///     671 digit-name frus1941-43 rows (746 rows, all 0 mentions) mis-parsed as persons.
+    public static let currentPersonRollupVersion: Int = 8
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key tracking the override count the rollup was last built with, so a launch after
@@ -428,9 +460,16 @@ public actor IndexingPipeline {
                 let agg = Self.aggregateRollup(members)
 
                 // Authority override (Phase 5): a covered cluster shares one canonical id (the
-                // clusterer never merges across ids). Prefer the authoritative preferred name and
-                // birth/death years, and carry the VIAF id, over the heuristic aggregate.
-                let authorityId = members.compactMap(\.authorityId).first
+                // clusterer's v8 cannot-link makes a mixed cluster impossible except via a user
+                // must-link override). Prefer the authoritative preferred name and birth/death
+                // years, and carry the VIAF id, over the heuristic aggregate. v8 (C): the id is
+                // picked by majority-of-mentions with a deterministic tiebreak — never `.first`,
+                // which let input order decide whose name/VIAF a mixed cluster wore.
+                let distinctIds = Set(members.compactMap(\.authorityId))
+                if distinctIds.count > 1 {
+                    logger.warning("Person rollup \(rollupId, privacy: .public) mixes \(distinctIds.count, privacy: .public) authority ids (user must-link?); picking majority-by-mentions.")
+                }
+                let authorityId = Self.majorityAuthorityId(for: members)
                 let auth = authorityId.flatMap { authIndex?.entry(for: $0) }
                 let canonicalName = (auth?.n).flatMap { $0.isEmpty ? nil : $0 } ?? agg.canonicalName
 
@@ -567,6 +606,19 @@ public actor IndexingPipeline {
             }
         }
 
+        // Per-(volume_id, ref) document-mention counts, used by the v8 majority-of-mentions
+        // authority pick (not a clustering signal). Separate from the era query above because
+        // that one excludes undated mentions via its document_dates join.
+        var mentionCounts: [String: Int] = [:]
+        let cntStmt = try auxPrepare(
+            "SELECT volume_id, person_ref, COUNT(*) FROM person_mentions GROUP BY volume_id, person_ref")
+        defer { sqlite3_finalize(cntStmt) }
+        while try auxStep(cntStmt) {
+            let vol = auxColumnString(cntStmt, 0) ?? ""
+            let ref = auxColumnString(cntStmt, 1) ?? ""
+            mentionCounts["\(vol)||\(ref)"] = Int(sqlite3_column_int64(cntStmt, 2))
+        }
+
         let authIndex = authorityIndex()
         var inputs: [PersonClusterInput] = []
         let pStmt = try auxPrepare("SELECT volume_id, ref, name, description, role, start_year, end_year FROM persons")
@@ -585,10 +637,29 @@ public actor IndexingPipeline {
                 listEndYear: auxColumnIntOptional(pStmt, 6),
                 mentionStartYear: era?.0,
                 mentionEndYear: era?.1,
-                authorityId: authIndex?.canonicalId(volumeId: vol, ref: ref)
+                authorityId: authIndex?.canonicalId(volumeId: vol, ref: ref),
+                mentionCount: mentionCounts["\(vol)||\(ref)"] ?? 0
             ))
         }
         return inputs
+    }
+
+    /// The canonical authority id a cluster should wear: the id whose covered members carry the
+    /// most document mentions (majority-by-mentions), ties broken by the smaller id for
+    /// determinism (rollup v8, people-eval finding C). Returns `nil` for a fully uncovered
+    /// cluster. Mixed clusters are illegal after the v8 cannot-link constraint, but remain
+    /// reachable through a user must-link override — this pick is the defensive path so input
+    /// order can never decide whose name/VIAF the whole cluster displays.
+    static func majorityAuthorityId(for members: [PersonClusterInput]) -> Int? {
+        var mentionWeight: [Int: Int] = [:]
+        for m in members {
+            guard let id = m.authorityId else { continue }
+            mentionWeight[id, default: 0] += m.mentionCount
+        }
+        return mentionWeight.min { a, b in
+            if a.value != b.value { return a.value > b.value }
+            return a.key < b.key
+        }?.key
     }
 
     /// Aggregated rollup metadata for a cluster's members: the most complete name, the first
@@ -2619,8 +2690,7 @@ public actor IndexingPipeline {
 
             // ── Person-name links ──────────────────────────────────────────────
             case .persName(let ref, let children):
-                if let ref, !ref.isEmpty {
-                    let normalised = ref.hasPrefix("#") ? String(ref.dropFirst()) : ref
+                if let ref, let normalised = normalizePersonRef(ref) {
                     personRefs.insert(normalised)
                 }
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
@@ -2773,22 +2843,39 @@ public actor IndexingPipeline {
         return String(prefix) + "…"
     }
 
+    /// Normalises a TEI `persName/@ref` to the bare per-volume person id used as the
+    /// `persons`/`person_mentions` join key (people-eval finding E, date-index v13).
+    ///
+    /// Handles all three ref shapes found in the corpus:
+    /// - `"p_AH1"` — already bare (returned as-is);
+    /// - `"#p_AH1"` — same-volume fragment with the usual leading `#`;
+    /// - `"frus1918Supp01v01#p_LR1"` — a split-set volume pointing its body at the sibling
+    ///   part's persons list. Each part of a split set carries its own copy of the set's
+    ///   persons list, so recording the mention under the bare fragment joins the mentioning
+    ///   volume's own `persons` row (and its rollup membership) — storing the prefixed string
+    ///   joined nothing and lost 6,486 mentions across 9 volumes.
+    ///
+    /// Returns `nil` for an empty ref or an empty fragment (`"vol#"`), which must produce no
+    /// `person_mentions` row.
+    nonisolated static func normalizePersonRef(_ ref: String) -> String? {
+        guard let hash = ref.lastIndex(of: "#") else { return ref.isEmpty ? nil : ref }
+        let fragment = String(ref[ref.index(after: hash)...])
+        return fragment.isEmpty ? nil : fragment
+    }
+
     /// Recursively collects all `ref` attribute values from `.persName` nodes.
     ///
     /// Returns a `Set<String>` so each `person_ref` appears at most once per document,
     /// regardless of how many times the name is mentioned. This matches the
     /// `person_mentions` table design: one row per unique person per document.
     ///
-    /// Only `.persName` nodes whose `ref` is non-nil and non-empty are included.
+    /// Refs are normalised by `normalizePersonRef` (leading `#` and split-set `volumeId#`
+    /// prefixes are stripped); `.persName` nodes with a nil/empty ref are excluded.
     nonisolated static func extractPersonRefs(from nodes: [FRUSASTNode]) -> Set<String> {
         var result = Set<String>()
         for node in nodes {
             if case .persName(let ref, let children) = node {
-                if let ref, !ref.isEmpty {
-                    // FRUS TEI uses ref="#AlexanderHaig" with a leading '#'.
-                    // Strip it so person_mentions.person_ref matches persons.ref (which
-                    // comes from the xml:id attribute and never carries a '#' prefix).
-                    let normalised = ref.hasPrefix("#") ? String(ref.dropFirst()) : ref
+                if let ref, let normalised = normalizePersonRef(ref) {
                     result.insert(normalised)
                 }
                 result.formUnion(extractPersonRefs(from: children))
