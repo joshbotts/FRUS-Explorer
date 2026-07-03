@@ -1509,6 +1509,7 @@ struct CollectionTests {
         #expect(!page.contains("see-also"))   // Phase 5 related-documents layer too
         #expect(!page.contains("See also"))
         #expect(!page.contains("generated-block"))   // Phase 6 apparatus layer stays dormant too
+        #expect(!page.contains("ai-attribution"))    // AI-attribution layer stays dormant too
         #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
     }
 
@@ -2504,6 +2505,76 @@ struct CollectionTests {
         let pdfOffText = (0..<pdfOffDoc.pageCount)
             .compactMap { pdfOffDoc.page(at: $0)?.string }.joined(separator: "\n")
         #expect(!pdfOffText.contains("Headnote"))
+    }
+
+    @Test("AI attribution: exported generated summaries carry the Apple Intelligence caption in HTML, DOCX, and PDF; placeholders and summary-free collections carry none")
+    func aiAttributionAcrossFormats() async throws {
+        let label = CollectionAIAttribution.label()
+        #expect(label.contains("AI-generated"))
+        #expect(label.contains("Apple Intelligence"))
+        // The future model-name seam takes precedence when a name is ever stored.
+        #expect(CollectionAIAttribution.label(modelName: "TestModel 1").contains("TestModel 1"))
+
+        let summaryDoc = CollectionExportDocument(
+            documentId: "d1", volumeId: "aivol", sortOrder: 1,
+            bodyDepth: .summaryOnly, title: "Summarized Memo",
+            bodyText: "Full body never rendered.",
+            citation: "Summarized Citation", summaryText: "A generated precis.")
+        let headnoteDoc = CollectionExportDocument(
+            documentId: "d2", volumeId: "aivol", sortOrder: 2,
+            title: "Headnoted Memo", bodyText: "Headnoted body paragraph.",
+            citation: "Headnoted Citation",
+            includeHeadnote: true, headnoteText: "A generated abstract.")
+        let placeholderDoc = CollectionExportDocument(
+            documentId: "d3", volumeId: "aivol", sortOrder: 3,
+            title: "Pending Memo", bodyText: "Pending body paragraph.",
+            citation: "Pending Citation",
+            includeHeadnote: true, headnoteText: nil)
+        let plainDoc = CollectionExportDocument(
+            documentId: "d4", volumeId: "aivol", sortOrder: 4,
+            title: "Plain Memo", bodyText: "Plain body paragraph.",
+            citation: "Plain Citation")
+        let items: [CollectionExportItem] = [
+            .document(summaryDoc), .document(headnoteDoc),
+            .document(placeholderDoc), .document(plainDoc)]
+        // A placeholder headnote renders no AI text, so it must NOT flip the
+        // attribution layer on — only the plain and placeholder docs travel here.
+        let offItems: [CollectionExportItem] = [.document(placeholderDoc), .document(plainDoc)]
+        let metadata = CollectionExportMetadata(name: "Attribution Fixture", note: nil)
+
+        // HTML — one caption per rendered summary (summary body + filled headnote),
+        // none for the placeholder; the stylesheet is emitted only when a caption is.
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.components(separatedBy: "class=\"ai-attribution\"").count - 1 == 2)
+        #expect(html.contains(label))
+        let htmlOffURL = try await HTMLCollectionExporter().export(metadata: metadata, items: offItems)
+        let htmlOff = try String(contentsOf: htmlOffURL, encoding: .utf8)
+        #expect(!htmlOff.contains("ai-attribution"))
+        #expect(!htmlOff.contains("AI-generated"))
+
+        // DOCX — the caption paragraph follows the summary and the filled headnote.
+        let docx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items))
+        #expect(docx.range(of: Data(label.utf8)) != nil)
+        let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: offItems))
+        #expect(docxOff.range(of: Data("AI-generated".utf8)) == nil)
+
+        // PDF — extract page text with PDFKit.
+        let pdf = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items))
+        let pdfDoc = try #require(PDFDocument(data: pdf))
+        let pdfText = (0..<pdfDoc.pageCount)
+            .compactMap { pdfDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(pdfText.contains("AI-generated summary"))
+        #expect(pdfText.contains("Apple Intelligence"))
+        let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: offItems))
+        let pdfOffDoc2 = try #require(PDFDocument(data: pdfOff))
+        let pdfOffText2 = (0..<pdfOffDoc2.pageCount)
+            .compactMap { pdfOffDoc2.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(!pdfOffText2.contains("AI-generated"))
     }
 
     @Test("HTML footnote gate: options.includeFootnotes drives footnote emission for a rendered model — the legacy .all/.none behaviors, now independently combinable with the source note")

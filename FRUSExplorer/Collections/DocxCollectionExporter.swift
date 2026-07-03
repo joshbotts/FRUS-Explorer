@@ -133,6 +133,11 @@ import Foundation
 ///          `<w:hyperlink r:id>` + `Hyperlink` rStyle through the same
 ///          `DocxRenderContext` relationship plumbing as v1.11 rows; link-free prose
 ///          output is byte-identical to 1.12
+///   1.14 — Session 2026-07-03 (AI attribution): every rendered generated summary — a
+///          `.summaryOnly` body or a filled headnote — is followed by the shared
+///          `CollectionAIAttribution` caption paragraph (existing `DocURL` apparatus
+///          style, so styles.xml is unchanged); collections rendering no generated
+///          summary export byte-identically to 1.13
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -565,6 +570,11 @@ final class DocxCollectionExporter: CollectionExporter {
                         escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
                         styleId: "Normal")
                 }
+                // AI attribution (v1.14): generated text is always labeled in exports —
+                // a caption paragraph in the existing DocURL apparatus style, so
+                // styles.xml is unchanged.
+                body += styledPara(escaped(CollectionAIAttribution.label()),
+                                   styleId: "DocURL")
             }
         case .index:
             break
@@ -1195,6 +1205,12 @@ final class DocxCollectionExporter: CollectionExporter {
             xml += wPara(
                 runs: "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">\(escaped(flattened))</w:t></w:r>",
                 styleId: "Normal")
+        }
+        // AI attribution (v1.14) — a filled headnote is a stored GeneratedSummary, so
+        // it carries the same caption as a summary body (DocURL apparatus style; no
+        // styles.xml change). The placeholder renders no AI text and no attribution.
+        if let text, !text.isEmpty {
+            xml += styledPara(escaped(CollectionAIAttribution.label()), styleId: "DocURL")
         }
         return xml
     }

@@ -607,6 +607,41 @@ enum CollectionColophon {
     }
 }
 
+// MARK: - CollectionAIAttribution
+
+/// Shared AI-attribution caption builder (Session 2026-07-03) — the single source for
+/// the "this text was written by a model, not a person" label that every exported
+/// generated summary (a `.summaryOnly` body or a Phase 5 headnote) carries, so HTML,
+/// PDF, DOCX, and the live preview cannot drift. Mirrors the in-app labeling
+/// (`SummaryBlockView`'s "AI summary" badge and the Apple Intelligence wording used
+/// throughout Summarization).
+///
+/// Version history:
+///   1.0 — Session 2026-07-03: initial implementation
+enum CollectionAIAttribution {
+    /// The attribution caption for an exported generated summary.
+    ///
+    /// `GeneratedSummary` does not currently store a producing-model identifier — the
+    /// app's sole `SummarizationProvider` is Apple Intelligence's on-device system
+    /// language model (FoundationModels) — so callers today always take the generic
+    /// wording. The `modelName` parameter is the seam a stored per-summary model name
+    /// would flow through if one is ever recorded.
+    ///
+    /// - Parameter modelName: The producing model's display name, when the stored
+    ///   summary carries one; `nil` (today, always) selects the generic wording.
+    /// - Returns: A single localized attribution line.
+    static func label(modelName: String? = nil) -> String {
+        if let modelName, !modelName.isEmpty {
+            return String(
+                localized: "export.aiAttribution.model",
+                defaultValue: "AI-generated summary · \(modelName)")
+        }
+        return String(
+            localized: "export.aiAttribution.generic",
+            defaultValue: "AI-generated summary · Apple Intelligence (on-device)")
+    }
+}
+
 // MARK: - CollectionExportExcerpt
 
 /// A resolved excerpt payload (Authoring Phase 5): the frozen verbatim passage plus the

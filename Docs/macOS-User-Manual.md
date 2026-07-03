@@ -572,6 +572,8 @@ Expand the **Composition** group at the top of the collection's document list. T
 | **Include word cloud** | Prepend a frequency overview (PDF and HTML) |
 | **Summary prompt** | Which prompt to use when the body depth is *Summary only* |
 
+Every generated summary in an exported collection — a summary-only body or a headnote — is labelled as AI-generated content attributed to Apple Intelligence (in HTML, PDF, DOCX, and the live preview alike), so readers of the artifact always know which passages a model wrote.
+
 **Per-entry and per-section overrides.** The body depth above is a *default*. Any single document can override it, and any **section heading** can set a depth for the documents beneath it. The effective depth is the most specific that applies — the document's own override, else its section's, else the collection default — so one collection can mix full documents, summaries, and citation-only entries. Highlights, research notes, source notes, footnotes, and the summary prompt override the same way — from the document inspector and the heading's **Section Defaults** (see 10.2).
 
 ### 10.4 Smart Collections

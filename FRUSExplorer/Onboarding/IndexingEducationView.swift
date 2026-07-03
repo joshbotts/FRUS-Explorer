@@ -58,6 +58,9 @@ import SwiftUI
 ///          quotations, headnotes, and the inspector's per-document export overrides
 ///   1.7 — Authoring Phase 6: Collections & Export walkthrough copy mentions the five
 ///          generated apparatus blocks
+///   1.8 — Session 2026-07-03 (AI attribution): AI Summaries copy notes that summaries
+///          in exported collections are labeled as AI-generated content attributed to
+///          Apple Intelligence
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -902,7 +905,7 @@ private extension EducationPage {
                 heading: "AI Summaries",
                 systemImage: "sparkles",
                 paragraphs: [
-                    "Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be exported alongside documents in collections. Treat them as orientation only: always read the primary document yourself for your actual research.",
+                    "Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be exported alongside documents in collections; every summary in an exported collection is labeled as AI-generated content attributed to Apple Intelligence. Treat them as orientation only: always read the primary document yourself for your actual research.",
                     "To summarize a large body of material at once, the background summarizer works through an entire subseries, volume, tag, saved search, or date range unattended, reporting progress as it goes — so a stack of summaries is ready when you return."
                 ]
             ),

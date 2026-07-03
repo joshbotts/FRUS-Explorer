@@ -108,6 +108,10 @@ import CoreText
 ///          (the rich-text editor's Link control) renders underlined with the URL
 ///          appended as small gray parenthetical text — the v1.14 visible-URL tradeoff
 ///          applied inline; link-free prose renders byte-identically to 1.15
+///   1.17 — Session 2026-07-03 (AI attribution): every rendered generated summary — a
+///          `.summaryOnly` body or a filled headnote — is followed by the shared
+///          `CollectionAIAttribution` caption in small gray type; collections rendering
+///          no generated summary export byte-identically to 1.16
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -624,8 +628,18 @@ final class PDFCollectionExporter: CollectionExporter {
             }
         case .summaryOnly:
             if let summary = doc.summaryText, !summary.isEmpty {
-                bodyAttrStr = NSAttributedString(string: summary,
-                                                 attributes: makeAttrs(fontSize: 10, bold: false))
+                // AI attribution (v1.17): generated text is always labeled in exports —
+                // a small gray caption line after the summary, mirroring the in-app
+                // "AI summary" badge.
+                let labeled = NSMutableAttributedString(
+                    string: summary,
+                    attributes: makeAttrs(fontSize: 10, bold: false))
+                labeled.append(NSAttributedString(string: "\n\n",
+                                                  attributes: makeAttrs(fontSize: 4, bold: false)))
+                labeled.append(NSAttributedString(
+                    string: CollectionAIAttribution.label(),
+                    attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
+                bodyAttrStr = labeled
             } else {
                 bodyAttrStr = NSAttributedString()
             }
@@ -779,6 +793,12 @@ final class PDFCollectionExporter: CollectionExporter {
             combined.append(NSAttributedString(
                 string: text + "\n",
                 attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
+            // AI attribution (v1.17) — a filled headnote is a stored GeneratedSummary,
+            // so it carries the same caption as a summary body; the placeholder branch
+            // below renders no AI text and therefore no attribution.
+            combined.append(NSAttributedString(
+                string: CollectionAIAttribution.label() + "\n",
+                attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
         } else {
             let missing = String(localized: "collection.headnote.missing",
                                  defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
