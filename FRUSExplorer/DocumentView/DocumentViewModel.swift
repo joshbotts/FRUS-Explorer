@@ -46,6 +46,10 @@ import SwiftData
 ///          a meaningful navigation title once the document has been parsed
 ///   1.5 — Session 155: `bibtexCitation`, `risCitation`, `zoteroItem(tags:notes:)` added for
 ///          the citation Export menu's "Send to Zotero" actions
+///   1.6 — Session 2026-07-03 (people-eval finding G): `selectedPersonRollupId` keeps the
+///          rollup resolved by `loadPersonMentionCount`, so "Find all mentions" can search
+///          the cross-corpus rollup identity (the same count the sheet displays) instead of
+///          the raw per-volume `ref` string, which collides across volumes
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -102,6 +106,13 @@ public final class DocumentViewModel {
     /// Count of indexed documents that mention the currently-selected person.
     /// Set to 0 when no person is selected or when `personMentionStore` is nil.
     public var selectedPersonMentionCount: Int = 0
+
+    /// The cross-corpus rollup id resolved for the currently-selected person by
+    /// `loadPersonMentionCount`, or `nil` when the rollup hasn't been built or has no row for
+    /// this `(volume, ref)`. "Find all mentions" passes this to the search so results match
+    /// the displayed cross-corpus count — the raw per-volume `ref` string is shared by
+    /// unrelated people across volumes (people-eval finding G).
+    public var selectedPersonRollupId: Int? = nil
 
     // MARK: - Research Note Indicator
 
@@ -644,11 +655,13 @@ public final class DocumentViewModel {
 
     // MARK: - Person Mention Count
 
-    /// Fetches and stores the number of indexed documents that mention `person`.
-    /// Resets to 0 if `personMentionStore` is nil (e.g. during testing).
+    /// Fetches and stores the number of indexed documents that mention `person`, along with
+    /// the person's resolved rollup id (`selectedPersonRollupId`) for rollup-scoped search.
+    /// Resets to 0 / `nil` if `personMentionStore` is nil (e.g. during testing).
     public func loadPersonMentionCount(for person: PersonEntry) async {
         guard let store = personMentionStore else {
             selectedPersonMentionCount = 0
+            selectedPersonRollupId = nil
             return
         }
         // Cross-corpus count via the person's rollup (resolved from this document's volume + ref).
@@ -656,8 +669,10 @@ public final class DocumentViewModel {
         // unrelated people; fall back to the correct same-volume count if the rollup isn't built yet.
         if let rollup = try? await store.rollupEntry(forVolumeId: entry.volumeId, ref: person.ref) {
             selectedPersonMentionCount = rollup.mentionCount
+            selectedPersonRollupId = rollup.rollupId
         } else {
             selectedPersonMentionCount = (try? await store.documentCount(volumeId: entry.volumeId, ref: person.ref)) ?? 0
+            selectedPersonRollupId = nil
         }
     }
 }

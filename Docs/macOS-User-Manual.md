@@ -521,7 +521,7 @@ With a collection selected, add documents in two ways:
 A collection isn't limited to a flat document list. From the **add** menu you can insert three kinds of editorial entry and place them anywhere in the order:
 
 - **Section headings** — titles that group the documents beneath them (e.g. "Opening Moves"). They appear as headings in the export and its table of contents; in DOCX they become Word headings that show up in Word's own table of contents.
-- **Prose blocks** — your own connecting commentary, written in a **rich-text editor** with **bold**, *italic*, underline, and colour. Your formatting is preserved through PDF, HTML, and DOCX export.
+- **Prose blocks** — your own connecting commentary, written in a **rich-text editor** with **bold**, *italic*, underline, and colour, applied from the **visible formatting bar above each editor** (with a **Link** button for attaching a URL to selected text — links become real hyperlinks in HTML and Word exports, and print as visible URLs in PDF). Your formatting is preserved through PDF, HTML, and DOCX export.
 - **Excerpts** — frozen verbatim quotations from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's colour as an accent bar). An excerpt keeps the exact passage you captured, so it renders even when the source volume isn't downloaded.
 
 **Three ways to create an excerpt.** (1) Choose **Add Highlighted Passages…** from the add menu to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and click **Excerpt** in the research strip, then choose the collection. (3) Open a document entry's **inspector** (below) and click **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
@@ -571,6 +571,8 @@ Expand the **Composition** group at the top of the collection's document list. T
 | **Include research notes** | Show attached notes below each document |
 | **Include word cloud** | Prepend a frequency overview (PDF and HTML) |
 | **Summary prompt** | Which prompt to use when the body depth is *Summary only* |
+
+Every generated summary in an exported collection — a summary-only body or a headnote — is labelled as AI-generated content attributed to Apple Intelligence (in HTML, PDF, DOCX, and the live preview alike), so readers of the artifact always know which passages a model wrote.
 
 **Per-entry and per-section overrides.** The body depth above is a *default*. Any single document can override it, and any **section heading** can set a depth for the documents beneath it. The effective depth is the most specific that applies — the document's own override, else its section's, else the collection default — so one collection can mix full documents, summaries, and citation-only entries. Highlights, research notes, source notes, footnotes, and the summary prompt override the same way — from the document inspector and the heading's **Section Defaults** (see 10.2).
 

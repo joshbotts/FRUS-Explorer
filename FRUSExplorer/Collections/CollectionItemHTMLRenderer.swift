@@ -76,6 +76,15 @@ import SwiftUI
 ///          indent level); ToCs list the block by title like a section. The stylesheet
 ///          (`generatedCSS`) is emitted ONLY when the item list contains a generated
 ///          block, so block-free collections keep exporting byte-identically
+///   1.8 — Session 2026-07-03 (prose links): a prose span carrying a `.link` attribute
+///          (the rich-text editor's Link control, round-tripped through RTF) renders as
+///          an outermost `<a href>` around its formatted text; link-free prose is
+///          byte-identical to the 1.7 output
+///   1.9 — Session 2026-07-03 (AI attribution): every rendered generated summary — a
+///          `.summaryOnly` body block or a filled headnote — carries the shared
+///          `CollectionAIAttribution` caption line, with its stylesheet
+///          (`attributionCSS`) emitted ONLY when some item actually renders one
+///          (`usesAIAttribution`), so a summary-free collection exports byte-identically
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -284,6 +293,9 @@ struct CollectionItemHTMLRenderer {
                 for para in summaryParas {
                     body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
                 }
+                // AI attribution (v1.9) — generated text is always labeled in exports,
+                // mirroring the in-app "AI summary" badge.
+                body += "    <p class=\"ai-attribution\">\(escaped(CollectionAIAttribution.label()))</p>\n"
                 body += "  </div>\n"
             } else if showsSummaryPlaceholders {
                 // Preview only: no stored summary, and .preview resolution never
@@ -369,6 +381,10 @@ struct CollectionItemHTMLRenderer {
             for para in paragraphs {
                 body += "    <p><em>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</em></p>\n"
             }
+            // AI attribution (v1.9) — a filled headnote is a stored GeneratedSummary,
+            // so it carries the same label as a summary body. The placeholder branch
+            // below renders no AI text and therefore no attribution.
+            body += "    <p class=\"ai-attribution\">\(escaped(CollectionAIAttribution.label()))</p>\n"
         } else {
             let missing = String(localized: "collection.headnote.missing",
                                  defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
@@ -538,6 +554,9 @@ struct CollectionItemHTMLRenderer {
         // Generated-block styles (Authoring Phase 6) are appended ONLY when the item
         // list contains a generated apparatus block — same byte-compat discipline again.
         let generatedStyles = Self.usesGeneratedBlocks(items: items) ? "\n" + Self.generatedCSS : ""
+        // AI-attribution styles (v1.9) are appended ONLY when some item actually
+        // renders a generated summary's attribution caption — same discipline again.
+        let attributionStyles = Self.usesAIAttribution(items: items) ? "\n" + Self.attributionCSS : ""
         // Preview-only card styles are appended ONLY when a preview affordance is
         // configured; the export path interpolates an empty string here, keeping the
         // exported file byte-identical to the pre-preview output (v1.2).
@@ -550,7 +569,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(relatedStyles)\(generatedStyles)\(previewStyles)
+            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(relatedStyles)\(generatedStyles)\(attributionStyles)\(previewStyles)
           </style>
         </head>
         <body>
@@ -608,6 +627,21 @@ struct CollectionItemHTMLRenderer {
     static func usesGeneratedBlocks(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .generated = $0 { return true }
+            return false
+        }
+    }
+
+    /// `true` when some document actually renders an AI-attribution caption (v1.9) — a
+    /// non-empty `.summaryOnly` summary body or a filled (non-placeholder) headnote.
+    /// Gates `attributionCSS` so a collection rendering no generated summary emits the
+    /// exact prior stylesheet bytes.
+    static func usesAIAttribution(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            guard case .document(let doc) = $0 else { return false }
+            if doc.bodyDepth == .summaryOnly,
+               let summary = doc.summaryText, !summary.isEmpty { return true }
+            if doc.includeHeadnote,
+               let headnote = doc.headnoteText, !headnote.isEmpty { return true }
             return false
         }
     }
@@ -870,6 +904,22 @@ struct CollectionItemHTMLRenderer {
     }
     """
 
+    /// AI-attribution styles (v1.9) — the small uppercase caption under a generated
+    /// summary block or a filled headnote. Emitted by `pageHTML` **only when some item
+    /// renders an attribution caption** (`usesAIAttribution`), so a collection with no
+    /// rendered generated summary exports byte-identically to the prior output.
+    private static let attributionCSS = """
+    /* ── AI attribution (Session 2026-07-03) ───────────────────────────────── */
+    .ai-attribution {
+      margin-top: 0.6rem;
+      margin-bottom: 0;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+    }
+    """
+
     /// Generated-block styles (v1.7, Authoring Phase 6) — the titled apparatus section
     /// and its plain row list (deliberately spartan: designed per-block layouts are a
     /// later exporter-local upgrade). Emitted by `pageHTML` **only when the item list
@@ -960,9 +1010,10 @@ struct CollectionItemHTMLRenderer {
     /// Renders a rich-text prose block — supplied as **RTF** (or a legacy Phase 3b JSON blob,
     /// which the shared decoder recovers rather than dropping) — to an HTML fragment:
     /// bold/italic/underline/colour runs map to `<strong>`/`<em>`/`<u>`/`<span style=color>`,
-    /// blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is decoded once
-    /// by the shared `CollectionProse.paragraphs(fromRTF:)`, which resolves paragraph breaks
-    /// *before* spans are emitted so open/close tags never straddle a `<p>`.
+    /// a `.link` run to an outermost `<a href>` (Session 2026-07-03: the editor's Link
+    /// control), blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is
+    /// decoded once by the shared `CollectionProse.paragraphs(fromRTF:)`, which resolves
+    /// paragraph breaks *before* spans are emitted so open/close tags never straddle a `<p>`.
     private func proseHTML(_ rtf: Data) -> String {
         let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
         guard !paragraphs.isEmpty else { return "" }
@@ -975,6 +1026,10 @@ struct CollectionItemHTMLRenderer {
                 if span.italic    { open += "<em>";     close = "</em>" + close }
                 if span.underline { open += "<u>";      close = "</u>" + close }
                 if let hex = span.colorHex { open += "<span style=\"color:#\(hex)\">"; close = "</span>" + close }
+                if let url = span.linkURL, !url.isEmpty {
+                    open = "<a href=\"\(escaped(url))\">" + open
+                    close += "</a>"
+                }
                 return open + escaped(span.text).replacingOccurrences(of: "\n", with: "<br>\n") + close
             }.joined()
             if !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

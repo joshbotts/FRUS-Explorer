@@ -1119,3 +1119,38 @@ full-table scan per preview refresh); PDF overtall-row pagination; deterministic
 ordering. Full suite 1036/1036. **THE SIX-PHASE AUTHORING PROGRAM IS IMPLEMENTATION-COMPLETE.**
 Remaining wrap-up: the scope's closing consolidated docs pass + build bump (TestFlight notes
 must mention the one-time reindex from the version-12 bump if build 28 hasn't shipped).
+
+### Session 2026-07-03 (later) — Build-prep batch: loop fix (verified), 3 features, 3 audits, quick wins
+Branch claude/build-prep-fixes, 8 commits:
+- **Archival Neighbors loop, third time final**: real cause = presentation modifiers on
+  Group/Section content INSIDE List apply per row (first fix just moved the duplication);
+  presentation hoisted to the parents' List containers (CompilationView + macOS corpus
+  section view); FrontMatterPersonsView hoisted identically. **Runtime-verified** in a
+  dedicated simulator: neighbors ×4, cross-volume, person detail — all present once and
+  stay dismissed; disclosure state survives.
+- **Rich text**: visible formatting toolbar (B/I/U/color/Link) on every editor — macOS
+  button bar w/ selection state + NSColorPanel follow-focus, iOS inputAccessoryView;
+  LINKS shipped end-to-end (.link → RTF HYPERLINK → HTML <a>/DOCX w:hyperlink/PDF visible
+  URL); LISTS declined with documented reason (NSTextList markers are layout-generated —
+  plain projection + span model would silently lose list semantics).
+- **Long titles**: all corpus-browser surfaces wrap complete titles (618-char frus1865p4
+  calibration); nav bars keep system truncation but every long title now appears in full
+  in content (VolumeView metadata header, CompilationView title section, macOS detail headers).
+- **AI attribution**: "AI-generated summary · Apple Intelligence (on-device)" caption on
+  every exported summary/headnote ×3 formats + preview via shared CollectionAIAttribution
+  (GeneratedSummary stores no model id — documented seam if one is ever recorded).
+- **Three audits committed** (Planning/Source-Explorer-Audit / People-Browser-Eval /
+  UI-Audit -2026-07-03.md): Source Explorer = extractSourceNote misses nested source notes
+  → <1% coverage 1955-91 (~77k docs), fix ceiling 24%→86% lot resolution, 5-phase draft
+  scope enclosed; People = 67 conflated rollups + one-line iOS Find-All-Mentions bug +
+  671 junk rollups + 6,486 orphaned split-set mentions; UI = 8 macOS sheet types → windows
+  (14 sites), TextFormattingCommands missing, Dynamic Type unsupported (344 fixed fonts).
+- **Audit quick wins shipped**: Find All Mentions fixed + rollup-scoped (iOS tab switch;
+  rollupId passed on both platforms); personRollupVersion→8 (authority cannot-link at
+  union time, Mrs./Jr.-Sr. normalize fixes, majority-by-mentions authority pick, index-
+  artifact purge); currentDateIndexVersion→13 (split-set `volumeId#fragment` person refs
+  normalized — rides the unshipped build's existing first-launch reindex);
+  TextFormattingCommands(); .contentShape tap targets on browser rows.
+**Next sequences for owner review:** Source Explorer program (draft scope in the audit),
+macOS sheet→window conversions + accessibility mitigations (UI audit), consolidated docs
+pass + build bump (TestFlight notes: authoring suite + one-time reindex).

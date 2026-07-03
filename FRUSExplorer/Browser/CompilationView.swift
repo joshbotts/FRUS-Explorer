@@ -51,6 +51,9 @@ import SwiftUI
 ///   1.6 — Session 2026-06-10: routing predicates replaced with the shared
 ///          `VolumeSection` kind helpers (`canReadDirectly`, `isPersonsList`,
 ///          `isSourcesList`), which understand the real corpus encoding
+///   1.7 — Session 2026-07-03: complete long titles — the full section title heads the
+///          list (nav-bar title switched to inline; it truncates long chapter titles),
+///          and `DocumentRowLabel` wraps document headers instead of clipping at two lines
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -61,6 +64,12 @@ struct CompilationView: View {
 
     /// When set, presents the Archival Neighbors sheet for a document row.
     @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
+    /// Hoisted presentation targets for the section-emitting front-matter subviews
+    /// (`VolumeSourcesView` / `FrontMatterPersonsView`) — see the List-level sheets in
+    /// `body` for why these cannot live inside those views.
+    @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
+    @State private var crossVolumeTarget: CrossVolumeTarget? = nil
+    @State private var selectedPerson: PersonIndexEntry? = nil
 
     private var cacheKey: String {
         vm.compilationKey(volumeId: volumeId, sectionId: section.sectionId)
@@ -74,6 +83,16 @@ struct CompilationView: View {
 
     var body: some View {
         List {
+            // Full section title, wrapping to as many lines as it needs. The navigation
+            // bar title truncates long chapter/compilation titles (older volumes carry
+            // appended clauses), so the complete value must be readable in content.
+            Section {
+                Text(section.title)
+                    .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+
             // Subsection navigation if this section has subsections
             if !section.subsections.isEmpty {
                 subsectionsList
@@ -89,7 +108,9 @@ struct CompilationView: View {
         #endif
         .navigationTitle(section.title)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        // Inline (not large) title: the full title now heads the content list, so the
+        // large title would only restate a truncated copy of it.
+        .navigationBarTitleDisplayMode(.inline)
         #endif
         .task {
             guard volume != nil else { return }
@@ -118,6 +139,30 @@ struct CompilationView: View {
         .sheet(item: $archivalNeighborsTarget) { key in
             ArchivalNeighborsSheet(appState: appState, docKey: key)
                 .environment(appState)
+        }
+        // Presentation for the section-emitting front-matter subviews (sources/persons),
+        // anchored HERE on the List — exactly once. Attaching these inside those views
+        // (on their Group/Section content) creates one presenter per row and the
+        // presenters ping-pong present/dismiss after close (the reported Archival
+        // Neighbors open/close loop). Same pattern as `archivalNeighborsTarget` above,
+        // which never exhibited the loop.
+        .sheet(item: $sourceNeighborsTarget) { target in
+            ArchivalNeighborsSheet(appState: appState) {
+                guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
+                return (try? await pipeline.archivalNeighbors(
+                    forLotFile:  target.lotFile,
+                    recordGroup: target.recordGroup,
+                    series:      target.series
+                )) ?? ([], 0, nil)
+            }
+            .environment(appState)
+        }
+        .sheet(item: $crossVolumeTarget) { target in
+            VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
+                .environment(appState)
+        }
+        .sheet(item: $selectedPerson) { entry in
+            PersonIndexDetailSheet(indexEntry: entry)
         }
     }
 
@@ -187,10 +232,12 @@ struct CompilationView: View {
             readSectionDirectlySection
         } else if section.isPersonsList {
             // Persons list — rendered by FrontMatterPersonsView without requiring indexing.
-            FrontMatterPersonsView(volumeId: volumeId)
+            FrontMatterPersonsView(volumeId: volumeId, selectedPerson: $selectedPerson)
         } else if section.isSourcesList {
             // Archival sources list — rendered by VolumeSourcesView from the indexed table.
-            VolumeSourcesView(volumeId: volumeId)
+            VolumeSourcesView(volumeId: volumeId,
+                              sourceNeighborsTarget: $sourceNeighborsTarget,
+                              crossVolumeTarget: $crossVolumeTarget)
         } else if vm.isIndexing {
             // Indexing in progress — show live progress (takes priority over index check).
             indexingProgressSection
@@ -402,6 +449,10 @@ struct CompilationView: View {
 /// produced repeated numbers (e.g. "1  1. Memorandum…"). The header is the
 /// canonical display text; the `documentNumber` field is retained on the model for
 /// search and sort purposes only.
+///
+/// The label expands to the full row width and declares a rectangular content shape so
+/// the entire row is tappable inside its `.buttonStyle(.plain)` Button — plain buttons
+/// otherwise hit-test only their opaque text (Session 2026-07-03 tap-target fix).
 struct DocumentRowLabel: View {
     let doc: DocumentBrowserEntry
 
@@ -410,7 +461,7 @@ struct DocumentRowLabel: View {
             Text(doc.header)
                 .font(.body)
                 .italic(doc.isEditorialNote)
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             if let dateline = doc.dateline {
                 Text(dateline)
                     .font(.caption)
@@ -432,5 +483,7 @@ struct DocumentRowLabel: View {
             }
         }
         .padding(.vertical, 3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }

@@ -104,6 +104,19 @@ import CoreText
 ///          the next page via the same framesetter continuation `drawProseFlow` uses,
 ///          instead of being drawn once into a rect extending below the media box
 ///          (which viewers clip — the tail silently vanished from the PDF)
+///   1.16 — Session 2026-07-03 (prose links): a prose span carrying a `.link` attribute
+///          (the rich-text editor's Link control) renders underlined with the URL
+///          appended as small gray parenthetical text — the v1.14 visible-URL tradeoff
+///          applied inline; link-free prose renders byte-identically to 1.15
+///   1.17 — Session 2026-07-03 (AI attribution): every rendered generated summary — a
+///          `.summaryOnly` body or a filled headnote — is followed by the shared
+///          `CollectionAIAttribution` caption in small gray type; collections rendering
+///          no generated summary export byte-identically to 1.16
+///   1.18 — Session 2026-07-03 review fix: the visible-URL parenthetical is emitted once
+///          per *run of consecutive spans sharing a link*, not once per decoded span —
+///          a link with mixed inline formatting (e.g. one bolded word) decodes as
+///          several spans all carrying the same `linkURL`, and 1.16 printed the URL
+///          after every one of them, injecting it repeatedly mid-phrase
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -620,8 +633,18 @@ final class PDFCollectionExporter: CollectionExporter {
             }
         case .summaryOnly:
             if let summary = doc.summaryText, !summary.isEmpty {
-                bodyAttrStr = NSAttributedString(string: summary,
-                                                 attributes: makeAttrs(fontSize: 10, bold: false))
+                // AI attribution (v1.17): generated text is always labeled in exports —
+                // a small gray caption line after the summary, mirroring the in-app
+                // "AI summary" badge.
+                let labeled = NSMutableAttributedString(
+                    string: summary,
+                    attributes: makeAttrs(fontSize: 10, bold: false))
+                labeled.append(NSAttributedString(string: "\n\n",
+                                                  attributes: makeAttrs(fontSize: 4, bold: false)))
+                labeled.append(NSAttributedString(
+                    string: CollectionAIAttribution.label(),
+                    attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
+                bodyAttrStr = labeled
             } else {
                 bodyAttrStr = NSAttributedString()
             }
@@ -775,6 +798,12 @@ final class PDFCollectionExporter: CollectionExporter {
             combined.append(NSAttributedString(
                 string: text + "\n",
                 attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
+            // AI attribution (v1.17) — a filled headnote is a stored GeneratedSummary,
+            // so it carries the same caption as a summary body; the placeholder branch
+            // below renders no AI text and therefore no attribution.
+            combined.append(NSAttributedString(
+                string: CollectionAIAttribution.label() + "\n",
+                attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
         } else {
             let missing = String(localized: "collection.headnote.missing",
                                  defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
@@ -1213,6 +1242,14 @@ final class PDFCollectionExporter: CollectionExporter {
     /// JSON blob the shared decoder recovers rather than dropping). Bold/italic/
     /// underline/colour spans (decoded once by the shared `CollectionProse`) map to font-face,
     /// underline, and foreground-colour attributes; paragraphs are separated by a blank line.
+    /// A linked span renders underlined with the URL appended as small gray text in
+    /// parentheses — the v1.14 no-annotation tradeoff (bare CoreText frame drawing has no
+    /// link boxes; HTML/DOCX carry the real hyperlink), applied inline for prose. The
+    /// decoder splits one user-applied link into multiple consecutive spans wherever any
+    /// other inline attribute changes inside the linked range (a bolded word, a colour),
+    /// so the parenthetical is emitted once per *run* of consecutive spans sharing the
+    /// same `linkURL` — after the run's last span — never once per span (v1.18); the
+    /// self-describing-link suppression compares the URL against the whole run's text.
     private func proseAttributedString(_ rtf: Data, fontSize: CGFloat = 11) -> NSAttributedString {
         let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
         let result = NSMutableAttributedString()
@@ -1221,10 +1258,13 @@ final class PDFCollectionExporter: CollectionExporter {
                 result.append(NSAttributedString(string: "\n\n",
                                                  attributes: makeAttrs(fontSize: fontSize, bold: false)))
             }
-            for span in paragraph {
+            /// Text accumulated across the current run of consecutive spans sharing one
+            /// `linkURL` — the unit the visible-URL parenthetical is emitted for.
+            var linkRunText = ""
+            for (spanIndex, span) in paragraph.enumerated() {
                 var attrs = makeStyledAttrs(fontSize: fontSize, bold: span.bold,
                                             italic: span.italic, gray: 0)
-                if span.underline {
+                if span.underline || span.linkURL != nil {
                     attrs[NSAttributedString.Key(kCTUnderlineStyleAttributeName as String)] =
                         CTUnderlineStyle.single.rawValue as CFNumber
                 }
@@ -1232,6 +1272,23 @@ final class PDFCollectionExporter: CollectionExporter {
                     attrs[NSAttributedString.Key(kCTForegroundColorAttributeName as String)] = color
                 }
                 result.append(NSAttributedString(string: span.text, attributes: attrs))
+                if let url = span.linkURL, !url.isEmpty {
+                    linkRunText += span.text
+                    let nextURL = spanIndex + 1 < paragraph.count
+                        ? paragraph[spanIndex + 1].linkURL : nil
+                    if nextURL != url {
+                        // Last span of this link run — emit the parenthetical once,
+                        // unless the linked text IS the URL (self-describing link).
+                        if url != linkRunText.trimmingCharacters(in: .whitespacesAndNewlines) {
+                            result.append(NSAttributedString(
+                                string: " (\(url))",
+                                attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+                        }
+                        linkRunText = ""
+                    }
+                } else {
+                    linkRunText = ""
+                }
             }
         }
         return result

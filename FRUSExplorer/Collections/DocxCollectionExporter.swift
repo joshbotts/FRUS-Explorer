@@ -128,6 +128,16 @@ import Foundation
 ///          series title, which HTML/PDF already render as italics; DOCX printed the
 ///          literal underscores. Applies inside `<w:hyperlink>` too (each run keeps
 ///          the `Hyperlink` rStyle)
+///   1.13 — Session 2026-07-03 (prose links): a prose span carrying a `.link` attribute
+///          (the rich-text editor's Link control, RTF `HYPERLINK` field) emits a real
+///          `<w:hyperlink r:id>` + `Hyperlink` rStyle through the same
+///          `DocxRenderContext` relationship plumbing as v1.11 rows; link-free prose
+///          output is byte-identical to 1.12
+///   1.14 — Session 2026-07-03 (AI attribution): every rendered generated summary — a
+///          `.summaryOnly` body or a filled headnote — is followed by the shared
+///          `CollectionAIAttribution` caption paragraph (existing `DocURL` apparatus
+///          style, so styles.xml is unchanged); collections rendering no generated
+///          summary export byte-identically to 1.13
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -474,7 +484,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 let l = min(max(level, 1), CollectionOutline.maxLevel)
                 body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true)
             case .prose(let rtf):
-                body += proseDocxXML(rtf)
+                body += proseDocxXML(rtf, ctx: ctx)
             case .excerpt(let excerpt):
                 body += excerptDocxXML(excerpt)
             case .generated(let block):
@@ -560,6 +570,11 @@ final class DocxCollectionExporter: CollectionExporter {
                         escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
                         styleId: "Normal")
                 }
+                // AI attribution (v1.14): generated text is always labeled in exports —
+                // a caption paragraph in the existing DocURL apparatus style, so
+                // styles.xml is unchanged.
+                body += styledPara(escaped(CollectionAIAttribution.label()),
+                                   styleId: "DocURL")
             }
         case .index:
             break
@@ -599,26 +614,42 @@ final class DocxCollectionExporter: CollectionExporter {
     /// Renders a rich-text prose block (RTF, or a legacy Phase 3b JSON blob the shared
     /// decoder recovers rather than dropping) to Word paragraph XML. Bold/italic/
     /// underline/colour spans (decoded once by `CollectionProse`) map to `<w:r>` run
-    /// properties; blank lines split paragraphs; single newlines within a paragraph become
-    /// `<w:br/>`. Empty (whitespace-only) paragraphs are dropped.
-    private func proseDocxXML(_ rtf: Data) -> String {
+    /// properties; a span carrying a link URL is wrapped in a real `<w:hyperlink r:id>`
+    /// whose external relationship is allocated by `ctx` (Session 2026-07-03 — the same
+    /// Phase 6 plumbing generated-block rows use); blank lines split paragraphs; single
+    /// newlines within a paragraph become `<w:br/>`. Empty (whitespace-only) paragraphs
+    /// are dropped.
+    private func proseDocxXML(_ rtf: Data, ctx: DocxRenderContext) -> String {
         let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
         guard !paragraphs.isEmpty else { return "" }
         var xml = ""
         for paragraph in paragraphs {
-            let runs = paragraph.map { proseRunXML($0) }.joined()
+            var runs = ""
+            for span in paragraph {
+                let runXML = proseRunXML(span)
+                guard !runXML.isEmpty else { continue }
+                if let url = span.linkURL, !url.isEmpty {
+                    runs += "<w:hyperlink r:id=\"\(ctx.hyperlinkRelId(for: url))\">"
+                        + runXML + "</w:hyperlink>"
+                } else {
+                    runs += runXML
+                }
+            }
             guard !runs.isEmpty else { continue }
             xml += wPara(runs: runs, styleId: "Normal")
         }
         return xml
     }
 
-    /// Builds the `<w:r>` run(s) for one prose span, applying bold/italic/underline/colour and
-    /// splitting on single newlines so each intra-paragraph break becomes a `<w:br/>`.
+    /// Builds the `<w:r>` run(s) for one prose span, applying bold/italic/underline/colour
+    /// (plus the `Hyperlink` character style for linked spans) and splitting on single
+    /// newlines so each intra-paragraph break becomes a `<w:br/>`.
     private func proseRunXML(_ span: ProseFormattedSpan) -> String {
-        // Emit run properties in CT_RPr schema order (color precedes underline) so the
-        // output validates strictly, not just in lenient consumers like Word/Pages.
+        // Emit run properties in CT_RPr schema order (rStyle first; color precedes
+        // underline) so the output validates strictly, not just in lenient consumers
+        // like Word/Pages.
         var props = ""
+        if let url = span.linkURL, !url.isEmpty { props += "<w:rStyle w:val=\"Hyperlink\"/>" }
         if span.bold      { props += "<w:b/>" }
         if span.italic    { props += "<w:i/>" }
         if let hex = span.colorHex { props += "<w:color w:val=\"\(hex)\"/>" }
@@ -1174,6 +1205,12 @@ final class DocxCollectionExporter: CollectionExporter {
             xml += wPara(
                 runs: "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">\(escaped(flattened))</w:t></w:r>",
                 styleId: "Normal")
+        }
+        // AI attribution (v1.14) — a filled headnote is a stored GeneratedSummary, so
+        // it carries the same caption as a summary body (DocURL apparatus style; no
+        // styles.xml change). The placeholder renders no AI text and no attribution.
+        if let text, !text.isEmpty {
+            xml += styledPara(escaped(CollectionAIAttribution.label()), styleId: "DocURL")
         }
         return xml
     }

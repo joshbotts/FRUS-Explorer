@@ -187,6 +187,11 @@ enum DocumentSheet: Identifiable {
 ///          seams); `lastValidSelectionRange` preserves the in-document selection
 ///          offsets across the system overflow menu's false `selectioncleared` blur so
 ///          the iPhone "Add Selection as Excerpt" path keeps its A9 anchors.
+///   3.7 — Session 2026-07-03 (people-eval findings F+G): PersonDetailSheet's "Find all
+///          mentions" now switches to the Search tab (it set `pendingSearch` but never
+///          `activeTab`, so on iOS nothing visibly happened) and searches the resolved
+///          rollup identity (`vm.selectedPersonRollupId`, matching the displayed count)
+///          instead of the cross-volume-colliding raw `personRef`.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -469,7 +474,22 @@ struct DocumentView: View {
                     mentionCount: vm.selectedPersonMentionCount,
                     onFindAllMentions: {
                         activeSheet = nil
-                        appState.pendingSearch = SearchParameters(personRef: person.ref)
+                        // Search the resolved cross-corpus rollup identity — the same identity
+                        // whose count the sheet displays. The raw per-volume `ref` is shared by
+                        // unrelated people across volumes, so it is only the fallback when the
+                        // rollup isn't built yet (people-eval finding G).
+                        if let rollupId = vm.selectedPersonRollupId {
+                            appState.pendingSearch = SearchParameters(personRollupId: rollupId,
+                                                                      personLabel: person.name)
+                        } else {
+                            appState.pendingSearch = SearchParameters(personRef: person.ref,
+                                                                      personLabel: person.name)
+                        }
+                        #if os(iOS)
+                        // Switch to the Search tab so the handoff is visible — without this the
+                        // sheet dismissed and nothing happened (people-eval finding F).
+                        appState.activeTab = .search
+                        #endif
                     }
                 )
             case .glossDetail(let gloss):

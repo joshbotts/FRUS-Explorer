@@ -27,6 +27,14 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-08: initial implementation
+///   1.1 — Session 2026-07-03: sheet presentation HOISTED to the embedding parents
+///          (CompilationView / the macOS corpus-browser section view). Modifiers on
+///          `Group`/`Section` inside `List` content apply per child/row, so any
+///          `.sheet(item:)` attached in this section-emitting view creates multiple
+///          presenters over one binding — the reported Archival Neighbors open/close
+///          loop (the first fix moved the anchor from the Group to a Section, which
+///          did not help for the same reason). Targets are now `@Binding`s; the target
+///          types and `VolumeSourcesCrossVolumeSheet` became internal for the parents
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
@@ -42,11 +50,17 @@ struct VolumeSourcesView: View {
     /// one. Without the guard each re-run rebuilt `collectionTree` with fresh node UUIDs,
     /// collapsing the outline's disclosure state.
     @State private var didLoad = false
-    /// When set, presents the Archival Neighbors sheet for a volume source entry.
-    @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
-    /// When set, presents the cross-volume provenance sheet for a major collection —
-    /// the other volumes whose Sources sections cite the same archival collection.
-    @State private var crossVolumeTarget: CrossVolumeTarget? = nil
+    /// When set by a row's button, the PARENT presents the Archival Neighbors sheet.
+    ///
+    /// Presentation state is deliberately hoisted to the embedding view: this view emits
+    /// list sections, and modifiers attached to `Group`/`Section` inside `List` content
+    /// are applied per child/row — several presenters sharing one item binding ping-pong
+    /// present/dismiss after close (the twice-reported Archival Neighbors open/close
+    /// loop). The `.sheet(item:)` must anchor exactly once, on the parent's `List`.
+    @Binding var sourceNeighborsTarget: VolumeSourceNeighborsTarget?
+    /// When set by a row's button, the PARENT presents the cross-volume provenance sheet
+    /// (see `sourceNeighborsTarget` for why presentation is hoisted).
+    @Binding var crossVolumeTarget: CrossVolumeTarget?
 
     /// The narrative "Note on Sources" paragraphs, shown as flowing prose.
     private var proseEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .prose } }
@@ -98,33 +112,15 @@ struct VolumeSourcesView: View {
                     }
                 }
                 if !collectionTree.isEmpty {
-                    // Both sheets are anchored HERE — on the single section whose rows
-                    // present them — and not on the enclosing `Group`. `Group` applies
-                    // modifiers to each of its children, so attaching `.sheet(item:)`
-                    // there duplicated the presenter onto both the prose and collections
-                    // sections: two presenters sharing one item binding ping-pong
-                    // present/dismiss after the user closes the sheet (an endless
-                    // open/close loop of the Archival Neighbors screen).
+                    // NO presentation modifiers here: a `.sheet` attached to this Section
+                    // (or the enclosing Group) is applied per row inside the parent List,
+                    // creating multiple presenters over one binding — the open/close loop.
+                    // The sheets anchor once, on the parent's List (see the bindings above).
                     Section(header: Text(String(localized: "browser.sources.collections.header",
                                                 defaultValue: "Archival Collections"))) {
                         OutlineGroup(collectionTree, children: \.children) { node in
                             sourceNodeRow(node.entry)
                         }
-                    }
-                    .sheet(item: $sourceNeighborsTarget) { target in
-                        ArchivalNeighborsSheet(appState: appState) {
-                            guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
-                            return (try? await pipeline.archivalNeighbors(
-                                forLotFile:  target.lotFile,
-                                recordGroup: target.recordGroup,
-                                series:      target.series
-                            )) ?? ([], 0, nil)
-                        }
-                        .environment(appState)
-                    }
-                    .sheet(item: $crossVolumeTarget) { target in
-                        VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
-                            .environment(appState)
                     }
                 }
             }
@@ -262,7 +258,7 @@ struct VolumeSourcesView: View {
 
 /// Identifiable `.sheet(item:)` target carrying a volume source entry's archival match
 /// keys (lot file, or record group + series) for the Archival Neighbors sheet.
-private struct VolumeSourceNeighborsTarget: Identifiable {
+struct VolumeSourceNeighborsTarget: Identifiable {
     let lotFile: String?
     let recordGroup: String?
     let series: String?
@@ -284,7 +280,7 @@ struct SourceTreeNode: Identifiable {
 
 /// Identifiable `.sheet(item:)` target carrying a major collection's cross-volume authority:
 /// the collection's display text and the volumes whose Sources sections cite it.
-private struct CrossVolumeTarget: Identifiable {
+struct CrossVolumeTarget: Identifiable {
     let title: String
     let volumeIds: [String]
     let id = UUID()
@@ -296,7 +292,7 @@ private struct CrossVolumeTarget: Identifiable {
 /// the cross-volume provenance folded by the `VolumeSourcesIndexGenerator`. Read-only: it
 /// answers "which other FRUS volumes drew on this same collection?" for a researcher tracing
 /// a body of records across the series.
-private struct VolumeSourcesCrossVolumeSheet: View {
+struct VolumeSourcesCrossVolumeSheet: View {
 
     /// The collection's display text, shown as context.
     let collectionTitle: String

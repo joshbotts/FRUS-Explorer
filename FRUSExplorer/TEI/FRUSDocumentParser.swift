@@ -67,6 +67,13 @@ import Foundation
 ///          its children flow inline; `<frus:attachment>` handled in `buildNode` as
 ///          `.attachment(n:children:)` AST node
 ///   2.0 — Session 79: `<ab>` mapped to `.paragraph` in `buildNode`
+///   2.1 — Session 2026-07-03 (people-eval audit, rollup v8 / date-index v13):
+///          `PersonListHeuristics.isLikelyPersonName` also rejects back-of-book index
+///          artifacts (standalone page-number runs, embedded newlines, >80 chars) —
+///          the frus1941-43 index was mis-parsed as a persons list; Format B
+///          (colon-delimited) persons-list names collapse interior whitespace at parse
+///          time, matching Format A, so hard-wrapped real names are never rejected by
+///          the new newline rule
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -1250,21 +1257,39 @@ private struct ParseFrame {
 /// advisers).` — that a parser-only filter could not retroactively remove from already-indexed
 /// `persons` rows; consolidation now reuses this same predicate to purge them without a full reindex.
 enum PersonListHeuristics {
+    /// Matches a standalone page-number run — a pure-digit token or digit range ("532",
+    /// "815–817", "62,") not adjacent to a letter or another digit. Real person names never
+    /// contain standalone Arabic numerals (regnal numbers are roman), but back-of-book index
+    /// entries mis-parsed as persons lists always do ("Churchill, 532"; "Identity 1, 2, etc.").
+    /// Digit+letter ordinals like "2d"/"3d" are NOT matched (the trailing letter fails the
+    /// lookahead).
+    private static let pageNumberRunPattern = "(?<![\\p{L}0-9])[0-9]+([–—-][0-9]+)?(?![\\p{L}0-9])"
+
     /// Whether `name` looks like a biographical record rather than list-prose noise.
     ///
     /// Rejects, conservatively (it must never discard a real person):
     /// - empty or letterless strings;
     /// - back-of-book `See …` / `See also …` cross-reference redirects;
     /// - entries whose first meaningful character is an opening bracket (`(`, `[`, `{`) — a
-    ///   parenthetical fragment lifted out of the prose.
+    ///   parenthetical fragment lifted out of the prose;
+    /// - (rollup v8, people-eval finding D) back-of-book *index* entries mis-parsed as a
+    ///   persons list (the frus1941-43 artifact: 746 zero-mention rows): names containing a
+    ///   standalone page-number run ("Churchill, 532", "Eden, 815–817", "Acheson, Dean G.,
+    ///   Assistant Secretary of State, 62", subject headings ending in "…, 823–828"), names
+    ///   with embedded newlines (multi-line index entries; the parser collapses whitespace in
+    ///   real names at parse time), and names longer than 80 characters.
     ///
     /// A name that merely *contains* a parenthetical mid-string ("McKeown (MacEoin), Major General
     /// Sean") starts with a letter and is kept; transliterated names that legitimately open with an
-    /// apostrophe or ʿayn are not bracket-led and are likewise kept.
+    /// apostrophe or ʿayn are not bracket-led and are likewise kept; generational ordinals
+    /// ("2d", "3d") and roman numerals are not page-number runs and are kept.
     static func isLikelyPersonName(_ name: String) -> Bool {
         let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard n.contains(where: { $0.isLetter }) else { return false }
         if let first = n.first, first == "(" || first == "[" || first == "{" { return false }
+        if n.count > 80 { return false }
+        if n.rangeOfCharacter(from: .newlines) != nil { return false }
+        if n.range(of: pageNumberRunPattern, options: .regularExpression) != nil { return false }
         let lower = n.lowercased()
         return !(lower.hasPrefix("see ") || lower.hasPrefix("see also "))
     }
@@ -1397,7 +1422,14 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
                     descRaw = Self.cleanTrailingText(raw)
                 } else {
                     let parts = raw.components(separatedBy: ":")
-                    name = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? raw
+                    // Collapse interior whitespace, matching the persName (Format A) handling
+                    // above: hard-wrapped TEI item text otherwise leaves embedded newlines in
+                    // the stored name, which `PersonListHeuristics` (rollup v8) would reject
+                    // as a back-of-book index artifact.
+                    name = (parts.first ?? raw)
+                        .components(separatedBy: .whitespacesAndNewlines)
+                        .filter { !$0.isEmpty }
+                        .joined(separator: " ")
                     descRaw = parts.count > 1
                         ? Self.cleanTrailingText(parts[1...].joined(separator: ":"))
                         : nil

@@ -26,6 +26,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-08: initial implementation
+///   1.1 — Session 2026-07-03: `selectedPerson` hoisted to a `@Binding`; the detail
+///          sheet anchors on the parent's List (presentation modifiers in section-
+///          emitting list content apply per row — the Archival Neighbors loop class)
 struct FrontMatterPersonsView: View {
 
     /// The volume whose persons list is being shown.
@@ -40,7 +43,11 @@ struct FrontMatterPersonsView: View {
     /// loading branch swaps to the loaded section, issuing a second identical query.
     @State private var didLoad = false
     @State private var searchText: String = ""
-    @State private var selectedPerson: PersonIndexEntry?
+    /// When set by a row tap, the PARENT presents `PersonIndexDetailSheet`. Hoisted for
+    /// the same reason as `VolumeSourcesView`'s targets: this view emits list sections,
+    /// and presentation modifiers attached to `Group`/`Section` in `List` content apply
+    /// per child/row — multiple presenters over one binding ping-pong after dismissal.
+    @Binding var selectedPerson: PersonIndexEntry?
 
     /// Persons filtered by `searchText` (case-insensitive name or description match).
     private var displayPersons: [PersonEntry] {
@@ -103,9 +110,8 @@ struct FrontMatterPersonsView: View {
             }
         }
         .task { await loadPersons() }
-        .sheet(item: $selectedPerson) { entry in
-            PersonIndexDetailSheet(indexEntry: entry)
-        }
+        // NO .sheet here — presentation anchors once on the parent's List (see the
+        // `selectedPerson` binding doc).
     }
 
     // MARK: - Data Loading

@@ -1354,6 +1354,46 @@ struct PersonMentionIndexingTests {
         }
     }
 
+    @Test("splitSetRefNormalisation — 'volumeId#ref' persName refs store the bare fragment (date-index v13)")
+    func splitSetRefNormalisation() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // Split-set form: part 2's body points at part 1's persons list. The mention must be
+            // recorded under the bare fragment so it joins this volume's own persons row (each
+            // part of a split set carries its own copy of the list).
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("vol1.xml"),
+                volumeId: "vol1",
+                documents: [
+                    ("d1", """
+                    <head>1. Report</head>
+                    <p><persName ref="frus1918Supp01v01#p_LR1">Lansing</persName> wrote to
+                    <persName ref="#p_W1">Wilson</persName> and <persName ref="p_B1">Baker</persName>.</p>
+                    """),
+                ]
+            )
+            try await pipeline.indexVolume("vol1")
+
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let store = try PersonMentionStore(databaseURL: dbURL)
+            let refs = try await store.personRefs(forDocumentId: "d1", volumeId: "vol1")
+            #expect(refs.sorted() == ["p_B1", "p_LR1", "p_W1"],
+                    "all three ref shapes (bare, #fragment, volumeId#fragment) normalise to the bare id")
+        }
+    }
+
+    @Test("normalizePersonRef — bare, leading-#, split-set, and degenerate ref shapes")
+    func normalizePersonRefShapes() {
+        #expect(IndexingPipeline.normalizePersonRef("p_AH1") == "p_AH1")
+        #expect(IndexingPipeline.normalizePersonRef("#p_AH1") == "p_AH1")
+        #expect(IndexingPipeline.normalizePersonRef("frus1918Supp01v01#p_LR1") == "p_LR1")
+        #expect(IndexingPipeline.normalizePersonRef("") == nil)
+        #expect(IndexingPipeline.normalizePersonRef("frus1918Supp01v01#") == nil,
+                "an empty fragment must produce no person_mentions row")
+    }
+
     @Test("removeVolumeDeletesPersonMentions — person_mentions rows removed after removeVolume")
     func removeVolumeDeletesPersonMentions() async throws {
         try await withTempDir { dir in
@@ -2716,6 +2756,100 @@ struct PersonRollupConsolidationTests {
             #expect(names == ["Kissinger, Henry A."], "the parenthetical artifact must be purged from the rollup")
             #expect(!names.contains { $0.hasPrefix("(") })
         }
+    }
+
+    @Test("consolidatePersonRollup purges back-of-book index artifacts (rollup v8, finding D)")
+    func consolidationPurgesIndexArtifacts() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1943",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.: National Security Advisor.")]
+            )
+            try await pipeline.indexVolume("volA")
+
+            // Simulate the frus1941-43 artifact: a back-of-book *index* mis-parsed as a persons
+            // list before the v8 heuristic hardening — page-number entries, subject headings
+            // with page ranges, and multi-line entries, all with zero mentions.
+            let junk = [
+                ("x_1", "Churchill, 532"),
+                ("x_2", "Eden, 815–817"),
+                ("x_3", "Acheson, Dean G., Assistant Secretary of State, 62"),
+                ("x_4", "Identity 1, 2, etc."),
+                ("x_5", "Aid to French North Africa, agreement with Roosevelt for, 823–828"),
+                ("x_6", "Anglo-American conversations,\nWashington"),
+                ("x_7", String(repeating: "Subject heading far too long to be a person name ", count: 3))
+            ]
+            var db: OpaquePointer?
+            #expect(sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK)
+            let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+            for (ref, name) in junk {
+                var ins: OpaquePointer?
+                sqlite3_prepare_v2(db, "INSERT INTO persons (volume_id, ref, name) VALUES (?, ?, ?)", -1, &ins, nil)
+                sqlite3_bind_text(ins, 1, "volA", -1, TRANSIENT)
+                sqlite3_bind_text(ins, 2, ref, -1, TRANSIENT)
+                sqlite3_bind_text(ins, 3, name, -1, TRANSIENT)
+                #expect(sqlite3_step(ins) == SQLITE_DONE)
+                sqlite3_finalize(ins)
+            }
+            sqlite3_close_v2(db)
+
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dbURL)
+            let names = try await store.allPersonsSortedByName().map(\.entry.name)
+            #expect(names == ["Kissinger, Henry A."],
+                    "every index artifact must be purged; the real person survives")
+        }
+    }
+
+    @Test("isLikelyPersonName rejects index artifacts but never real-person name shapes (v8)")
+    func personListHeuristicHardening() {
+        // Rejected: the frus1941-43 back-of-book index shapes.
+        #expect(!PersonListHeuristics.isLikelyPersonName("Churchill, 532"))
+        #expect(!PersonListHeuristics.isLikelyPersonName("Eden, 815–817"))
+        #expect(!PersonListHeuristics.isLikelyPersonName("Acheson, Dean G., Assistant Secretary of State, 62"))
+        #expect(!PersonListHeuristics.isLikelyPersonName("Identity 1, 2, etc."))
+        #expect(!PersonListHeuristics.isLikelyPersonName("Aid to French North Africa, agreement with Roosevelt for, 823–828"))
+        #expect(!PersonListHeuristics.isLikelyPersonName("Anglo-American conversations,\nWashington"))
+        #expect(!PersonListHeuristics.isLikelyPersonName(String(repeating: "long ", count: 20)))
+        // Kept: real persons-list shapes, including the tricky ones the doc comment names.
+        #expect(PersonListHeuristics.isLikelyPersonName("Haig, Alexander M."))
+        #expect(PersonListHeuristics.isLikelyPersonName("McKeown (MacEoin), Major General Sean"))
+        #expect(PersonListHeuristics.isLikelyPersonName("'Abd al-Rahman"))
+        #expect(PersonListHeuristics.isLikelyPersonName("Bao Dai"))
+        #expect(PersonListHeuristics.isLikelyPersonName("Roosevelt, Franklin D., Jr."))
+        #expect(PersonListHeuristics.isLikelyPersonName("Carter, Hodding 3d"),
+                "digit+letter generational ordinals are not page-number runs")
+    }
+
+    @Test("majorityAuthorityId picks the id with the most mentions, smaller id on ties, nil when uncovered")
+    func majorityAuthorityIdPick() {
+        func member(_ ref: String, authorityId: Int?, mentions: Int) -> PersonClusterInput {
+            PersonClusterInput(volumeId: "v", ref: ref, name: "X",
+                               authorityId: authorityId, mentionCount: mentions)
+        }
+        // Majority by mentions, not by member count or input order: two low-mention members of
+        // id 1 lose to one high-mention member of id 2 even though id 1 appears first.
+        #expect(IndexingPipeline.majorityAuthorityId(for: [
+            member("a", authorityId: 1, mentions: 3),
+            member("b", authorityId: 1, mentions: 4),
+            member("c", authorityId: 2, mentions: 48),
+            member("d", authorityId: nil, mentions: 100)   // uncovered members carry no vote
+        ]) == 2)
+        // Deterministic tiebreak: the smaller id wins.
+        #expect(IndexingPipeline.majorityAuthorityId(for: [
+            member("a", authorityId: 7, mentions: 5),
+            member("b", authorityId: 3, mentions: 5)
+        ]) == 3)
+        // Fully uncovered cluster → no authority id.
+        #expect(IndexingPipeline.majorityAuthorityId(for: [
+            member("a", authorityId: nil, mentions: 10)
+        ]) == nil)
     }
 
     @Test("consolidatePersonRollup carries role and active-year span onto the rollup (Phase 1)")

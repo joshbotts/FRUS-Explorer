@@ -451,7 +451,7 @@ Drag to reorder entries; the order you choose is the order they appear in every 
 A collection isn't limited to a flat list of documents. From the manager's **add** menu you can insert three kinds of editorial entry and place them anywhere in the order:
 
 - **Section headings** — titles that group the documents beneath them into sections (e.g. "Opening Moves", "The Crisis Deepens"). They appear as headings in the export and in its table of contents.
-- **Prose blocks** — your own connecting commentary, written in a **rich-text editor**: **bold**, *italic*, underline, and colour are all supported. Your formatting is preserved through export.
+- **Prose blocks** — your own connecting commentary, written in a **rich-text editor**: **bold**, *italic*, underline, and colour are all supported, applied from the **formatting toolbar that appears above the keyboard** (with a **Link** button for attaching a URL to selected text — links become real hyperlinks in HTML and Word exports). Your formatting is preserved through export.
 - **Excerpts** — frozen verbatim quotations from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's colour as an accent bar). An excerpt keeps the exact passage you captured, so it renders even when the source volume isn't downloaded.
 
 **Three ways to create an excerpt.** (1) Choose **Add Highlighted Passages…** from the add menu to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and tap **Add Selection as Excerpt** in the toolbar, then choose the collection. (3) Open a document entry's **inspector** (10.3) and tap **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
@@ -553,7 +553,7 @@ FRUS Explorer ships with a standard summarization prompt, and you can create you
 
 ### 11.3 Summaries in Exports
 
-When building a collection export, choosing **Summary only** as the body depth (Section 10.4) generates summaries on demand for any included document that doesn't already have one for the selected prompt — producing a compact briefing-style export instead of a full-text one.
+When building a collection export, choosing **Summary only** as the body depth (Section 10.4) generates summaries on demand for any included document that doesn't already have one for the selected prompt — producing a compact briefing-style export instead of a full-text one. Every generated summary in an exported collection — a summary-only body or a headnote — is labelled as AI-generated content attributed to Apple Intelligence (in HTML, PDF, DOCX, and the live preview alike), so readers of the artifact always know which passages a model wrote.
 
 ### 11.4 Summarizing Many Documents in the Background
 

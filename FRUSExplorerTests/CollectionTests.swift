@@ -318,6 +318,113 @@ struct CollectionTests {
         #expect(paragraphs[1].contains { $0.italic && $0.text == "emphasized" })
     }
 
+    // MARK: - ProseLinkTest (Session 2026-07-03: editor Link control)
+
+    /// RTF carrying a `.link` attribute over part of the text, exactly as the editor's
+    /// Link control stores it (an `NSURL`-valued attribute, written as an RTF
+    /// `HYPERLINK` field).
+    private func makeLinkedProseRTF() throws -> Data {
+        let m = NSMutableAttributedString(string: "See the archive for details.")
+        m.addAttribute(.link, value: URL(string: "https://history.state.gov/frus")!,
+                       range: NSRange(location: 4, length: 11))   // "the archive"
+        return try m.data(from: NSRange(location: 0, length: m.length),
+                          documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+    }
+
+    @Test("ProseLink: a .link attribute survives RTF storage and decodes into span linkURL")
+    func proseLinkRTFRoundTripsToSpans() throws {
+        let rtf = try makeLinkedProseRTF()
+
+        // The stored blob is valid RTF (the editor's persistence path is unchanged)…
+        let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        entry.entryKind = .prose
+        entry.richText = rtf
+        entry.text = "See the archive for details."
+        let exported = ProseRichText.exportRTF(from: entry)
+
+        // …and the shared decoder exposes the link on exactly the linked span.
+        let paragraphs = CollectionProse.paragraphs(fromRTF: exported)
+        try #require(paragraphs.count == 1)
+        let spans = paragraphs[0]
+        #expect(spans.map(\.text).joined() == "See the archive for details.")
+        let linked = spans.filter { $0.linkURL != nil }
+        try #require(linked.count == 1)
+        #expect(linked[0].text == "the archive")
+        #expect(linked[0].linkURL == "https://history.state.gov/frus")
+        // Unlinked spans stay unlinked.
+        #expect(spans.filter { $0.linkURL == nil }.allSatisfy { $0.text != "the archive" })
+    }
+
+    @Test("ProseLink: a linked prose span renders as <a href> in HTML, <w:hyperlink> in DOCX, and visible URL text in PDF")
+    func proseLinkExportsAcrossFormats() async throws {
+        let rtf = try makeLinkedProseRTF()
+        let metadata = CollectionExportMetadata(name: "Link Contract", note: nil)
+        let items: [CollectionExportItem] = [.prose(rtf)]
+
+        // HTML (export + live preview share this renderer): a real anchor around the
+        // linked text only.
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.contains("<a href=\"https://history.state.gov/frus\">the archive</a>"))
+        #expect(html.contains("See "))
+
+        // DOCX: a real external hyperlink — <w:hyperlink r:id> + Hyperlink rStyle +
+        // TargetMode="External" relationship (the Phase 6 relationship plumbing).
+        let docxURL = try await DocxCollectionExporter().export(metadata: metadata, items: items)
+        let docx = try Data(contentsOf: docxURL)
+        func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
+        #expect(docxContains("<w:hyperlink r:id=\"rId3\">"))
+        #expect(docxContains("<w:rStyle w:val=\"Hyperlink\"/>"))
+        #expect(docxContains("Target=\"https://history.state.gov/frus\" TargetMode=\"External\""))
+        #expect(docxContains("the archive"))
+
+        // PDF: the linked text plus the URL as visible parenthetical text (bare CoreText
+        // frame drawing has no link annotations — the documented v1.14 tradeoff).
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: items)
+        let pdfDocument = try #require(PDFDocument(data: try Data(contentsOf: pdfURL)))
+        let pdfText = (0..<pdfDocument.pageCount)
+            .compactMap { pdfDocument.page(at: $0)?.string }
+            .joined(separator: "\n")
+        #expect(pdfText.contains("the archive"))
+        #expect(pdfText.contains("history.state.gov/frus"))
+    }
+
+    @Test("ProseLink: a link with mixed inline formatting prints the PDF URL parenthetical once, after the run — not once per span")
+    func proseLinkMixedFormattingPrintsURLOnceInPDF() async throws {
+        // One user-applied link over "the archive", with "archive" additionally bolded —
+        // the attribute change splits the linked range into two consecutive runs that
+        // BOTH carry the linkURL (the PDF v1.18 regression shape: v1.16 printed the
+        // visible-URL parenthetical after every span, injecting it mid-phrase).
+        let m = NSMutableAttributedString(string: "See the archive for details.")
+        m.addAttribute(.link, value: URL(string: "https://history.state.gov/frus")!,
+                       range: NSRange(location: 4, length: 11))   // "the archive"
+        #if canImport(AppKit)
+        m.addAttribute(.font, value: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize),
+                       range: NSRange(location: 8, length: 7))    // "archive"
+        #else
+        m.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: UIFont.labelFontSize),
+                       range: NSRange(location: 8, length: 7))    // "archive"
+        #endif
+        let rtf = try m.data(from: NSRange(location: 0, length: m.length),
+                             documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+
+        // Precondition: the decoder really does emit multiple spans sharing one linkURL.
+        let spans = try #require(CollectionProse.paragraphs(fromRTF: rtf).first)
+        #expect(spans.filter { $0.linkURL == "https://history.state.gov/frus" }.count == 2)
+
+        let metadata = CollectionExportMetadata(name: "Link Once", note: nil)
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: [.prose(rtf)])
+        let pdfDocument = try #require(PDFDocument(data: try Data(contentsOf: pdfURL)))
+        let pdfText = (0..<pdfDocument.pageCount)
+            .compactMap { pdfDocument.page(at: $0)?.string }
+            .joined(separator: "\n")
+        // The URL appears exactly once — after the whole linked phrase, never mid-phrase.
+        let occurrences = pdfText.components(separatedBy: "history.state.gov/frus").count - 1
+        #expect(occurrences == 1)
+        let normalized = pdfText.replacingOccurrences(of: "\n", with: " ")
+        #expect(!normalized.contains("(https://history.state.gov/frus)archive"))
+    }
+
     // MARK: - DocumentNoteAssociationTest
 
     @Test("DocumentNoteAssociationTest: CollectionEntry stores and retrieves researchNoteId")
@@ -1438,6 +1545,7 @@ struct CollectionTests {
         #expect(!page.contains("see-also"))   // Phase 5 related-documents layer too
         #expect(!page.contains("See also"))
         #expect(!page.contains("generated-block"))   // Phase 6 apparatus layer stays dormant too
+        #expect(!page.contains("ai-attribution"))    // AI-attribution layer stays dormant too
         #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
     }
 
@@ -2433,6 +2541,76 @@ struct CollectionTests {
         let pdfOffText = (0..<pdfOffDoc.pageCount)
             .compactMap { pdfOffDoc.page(at: $0)?.string }.joined(separator: "\n")
         #expect(!pdfOffText.contains("Headnote"))
+    }
+
+    @Test("AI attribution: exported generated summaries carry the Apple Intelligence caption in HTML, DOCX, and PDF; placeholders and summary-free collections carry none")
+    func aiAttributionAcrossFormats() async throws {
+        let label = CollectionAIAttribution.label()
+        #expect(label.contains("AI-generated"))
+        #expect(label.contains("Apple Intelligence"))
+        // The future model-name seam takes precedence when a name is ever stored.
+        #expect(CollectionAIAttribution.label(modelName: "TestModel 1").contains("TestModel 1"))
+
+        let summaryDoc = CollectionExportDocument(
+            documentId: "d1", volumeId: "aivol", sortOrder: 1,
+            bodyDepth: .summaryOnly, title: "Summarized Memo",
+            bodyText: "Full body never rendered.",
+            citation: "Summarized Citation", summaryText: "A generated precis.")
+        let headnoteDoc = CollectionExportDocument(
+            documentId: "d2", volumeId: "aivol", sortOrder: 2,
+            title: "Headnoted Memo", bodyText: "Headnoted body paragraph.",
+            citation: "Headnoted Citation",
+            includeHeadnote: true, headnoteText: "A generated abstract.")
+        let placeholderDoc = CollectionExportDocument(
+            documentId: "d3", volumeId: "aivol", sortOrder: 3,
+            title: "Pending Memo", bodyText: "Pending body paragraph.",
+            citation: "Pending Citation",
+            includeHeadnote: true, headnoteText: nil)
+        let plainDoc = CollectionExportDocument(
+            documentId: "d4", volumeId: "aivol", sortOrder: 4,
+            title: "Plain Memo", bodyText: "Plain body paragraph.",
+            citation: "Plain Citation")
+        let items: [CollectionExportItem] = [
+            .document(summaryDoc), .document(headnoteDoc),
+            .document(placeholderDoc), .document(plainDoc)]
+        // A placeholder headnote renders no AI text, so it must NOT flip the
+        // attribution layer on — only the plain and placeholder docs travel here.
+        let offItems: [CollectionExportItem] = [.document(placeholderDoc), .document(plainDoc)]
+        let metadata = CollectionExportMetadata(name: "Attribution Fixture", note: nil)
+
+        // HTML — one caption per rendered summary (summary body + filled headnote),
+        // none for the placeholder; the stylesheet is emitted only when a caption is.
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.components(separatedBy: "class=\"ai-attribution\"").count - 1 == 2)
+        #expect(html.contains(label))
+        let htmlOffURL = try await HTMLCollectionExporter().export(metadata: metadata, items: offItems)
+        let htmlOff = try String(contentsOf: htmlOffURL, encoding: .utf8)
+        #expect(!htmlOff.contains("ai-attribution"))
+        #expect(!htmlOff.contains("AI-generated"))
+
+        // DOCX — the caption paragraph follows the summary and the filled headnote.
+        let docx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items))
+        #expect(docx.range(of: Data(label.utf8)) != nil)
+        let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: offItems))
+        #expect(docxOff.range(of: Data("AI-generated".utf8)) == nil)
+
+        // PDF — extract page text with PDFKit.
+        let pdf = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items))
+        let pdfDoc = try #require(PDFDocument(data: pdf))
+        let pdfText = (0..<pdfDoc.pageCount)
+            .compactMap { pdfDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(pdfText.contains("AI-generated summary"))
+        #expect(pdfText.contains("Apple Intelligence"))
+        let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: offItems))
+        let pdfOffDoc2 = try #require(PDFDocument(data: pdfOff))
+        let pdfOffText2 = (0..<pdfOffDoc2.pageCount)
+            .compactMap { pdfOffDoc2.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(!pdfOffText2.contains("AI-generated"))
     }
 
     @Test("HTML footnote gate: options.includeFootnotes drives footnote emission for a rendered model — the legacy .all/.none behaviors, now independently combinable with the source note")

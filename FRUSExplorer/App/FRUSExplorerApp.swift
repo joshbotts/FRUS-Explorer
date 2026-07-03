@@ -99,6 +99,9 @@ import os
 ///          (pendingCollectionSelection hand-off), failures alert on both platforms
 ///          (previously a DEBUG print), and re-opening a byte-identical file
 ///          re-surfaces the prior import instead of minting a CloudKit-synced duplicate
+///   4.0 — Session 2026-07-03 (ui-audit #2): TextFormattingCommands() added to .commands —
+///          the macOS rich-text prose editors (NSTextView-backed) rely on the Format menu
+///          for their ⌘B/⌘I/⌘U key equivalents, which were inoperative without it
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -702,6 +705,13 @@ struct FRUSExplorerApp: App {
                     openWindow(id: "frus.researchGuide")
                 }
             }
+
+            // Format menu with the system text-formatting items (Bold/Italic/Underline,
+            // fonts, alignment). The collection rich-text prose editors are NSTextView-
+            // backed, and AppKit routes their ⌘B/⌘I/⌘U key equivalents through these menu
+            // items — without the menu the shortcuts are dead and formatting is reachable
+            // only via the right-click Font submenu (ui-audit #2).
+            TextFormattingCommands()
 
             // Citation Lookup keyboard shortcut (⌘⇧F).
             // Search (⌘F) is handled by the "frus.search" Window scene shortcut.

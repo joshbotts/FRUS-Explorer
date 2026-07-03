@@ -287,6 +287,10 @@ private struct TagPickerSheet: View {
 ///   1.1 — Session 51: iOS IndexingCapsule wired via AppState.currentIndexingProgress
 ///   1.2 — Session 113: metadata parameter forwarded to IndexingCapsule
 ///   1.3 — Session 115: amber interrupted badge; "Re-index" contextual menu item
+///   1.4 — Session 2026-07-03: volume titles wrap to their full value (two-line clip removed)
+///   1.5 — Session 2026-07-03: .contentShape(Rectangle()) — the enclosing Browse-list
+///          Buttons are .buttonStyle(.plain), which only hit-tests opaque content, so
+///          taps between/around the text labels were dead
 struct VolumeRowLabel: View {
     let volume: VolumeManifestEntry
     let isDownloaded: Bool
@@ -300,7 +304,7 @@ struct VolumeRowLabel: View {
             HStack {
                 Text(volume.title)
                     .font(.body)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer()
                 #if os(iOS)
                 if appState.interruptedVolumeIds.contains(volume.volumeId),
@@ -350,6 +354,9 @@ struct VolumeRowLabel: View {
             #endif
         }
         .padding(.vertical, 3)
+        // The enclosing row Buttons use .buttonStyle(.plain), which hit-tests only opaque
+        // content — make the whole row rectangle (including gaps around the text) tappable.
+        .contentShape(Rectangle())
     }
 }
 
