@@ -45,6 +45,13 @@ import SwiftUI
 ///          card CSS (citation card + summary placeholder) moved out of the shared
 ///          stylesheet into `previewCSS`, emitted only when a preview affordance is
 ///          configured — exported HTML is byte-identical to the pre-Phase-2b output
+///   1.3 — Authoring Phase 4 (publication frame): leveled section headings
+///          (level 1 → the exact pre-Phase-4 `<h2>`, 2/3 → stepped `<h3>`/`<h4>`);
+///          nested ToC lists driven by heading levels (all-level-1 output unchanged);
+///          title-page subtitle/author lines and the opt-in colophon footer, all
+///          metadata-driven; the frame stylesheet (`frameCSS`) is emitted ONLY when a
+///          frame feature is actually used, so a collection using none exports
+///          byte-identically to the pre-Phase-4 output
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -84,7 +91,9 @@ struct CollectionItemHTMLRenderer {
 
     /// Renders one collection item to its HTML fragment — THE shared per-item function.
     ///
-    /// - `.heading` → an `<h2 class="section-heading">` element.
+    /// - `.heading` → a level-stepped heading element with class `section-heading`:
+    ///   level 1 → `<h2>` (byte-identical to the pre-Phase-4 output), level 2 → `<h3>`,
+    ///   level 3 → `<h4>`. Out-of-range levels clamp defensively.
     /// - `.prose` → a `<div class="prose-block">` of formatted paragraphs (or empty when
     ///   the payload decodes to nothing).
     /// - `.document` → a full `<section id="doc-…">` with citation heading, external link,
@@ -94,13 +103,20 @@ struct CollectionItemHTMLRenderer {
     /// - Returns: An HTML fragment string (may be empty for an empty prose payload).
     func itemHTML(_ item: CollectionExportItem) -> String {
         switch item {
-        case .heading(let heading):
-            return "<h2 class=\"section-heading\">\(markdownItalics(escaped(heading)))</h2>\n\n"
+        case .heading(let heading, let level):
+            let tag = "h\(Self.clampedLevel(level) + 1)"   // level 1 → h2 (pre-Phase-4), 2 → h3, 3 → h4
+            return "<\(tag) class=\"section-heading\">\(markdownItalics(escaped(heading)))</\(tag)>\n\n"
         case .prose(let prose):
             return proseHTML(prose)
         case .document(let doc):
             return documentSectionHTML(doc)
         }
+    }
+
+    /// Defensively clamps a heading level to `1...CollectionOutline.maxLevel` — producers
+    /// already emit outline-resolved levels, so this only guards direct callers.
+    private static func clampedLevel(_ level: Int) -> Int {
+        min(max(level, 1), CollectionOutline.maxLevel)
     }
 
     /// Renders a resolved document as a `<section>` fragment: citation heading (linked to
@@ -237,14 +253,22 @@ struct CollectionItemHTMLRenderer {
 
     // MARK: - Assembly
 
-    /// Renders the collection header block: title `<h1>` plus the optional collection note.
+    /// Renders the collection header block: title `<h1>`, the optional Phase 4 title-page
+    /// lines (subtitle, author) — emitted ONLY when set, so an unset collection's header
+    /// is byte-identical to the pre-Phase-4 output — plus the optional collection note.
     ///
-    /// - Parameter metadata: The collection's display snapshot (name, optional note).
+    /// - Parameter metadata: The collection's display snapshot.
     /// - Returns: The `<header>…</header>` HTML fragment.
     func headerHTML(metadata: CollectionExportMetadata) -> String {
         var body = ""
         body += "<header>\n"
         body += "  <h1>\(escaped(metadata.name))</h1>\n"
+        if let subtitle = metadata.subtitle, !subtitle.isEmpty {
+            body += "  <p class=\"collection-subtitle\">\(markdownItalics(escaped(subtitle)))</p>\n"
+        }
+        if let author = metadata.authorLine, !author.isEmpty {
+            body += "  <p class=\"collection-author\">\(escaped(author))</p>\n"
+        }
         if let note = metadata.note, !note.isEmpty {
             body += "  <p class=\"collection-note\">\(markdownItalics(escaped(note)))</p>\n"
         }
@@ -256,22 +280,46 @@ struct CollectionItemHTMLRenderer {
     /// Documents become anchor links; headings appear as (non-link) section labels; prose
     /// blocks are omitted.
     ///
+    /// Heading levels drive **nested lists** (Authoring Phase 4): a deeper heading opens a
+    /// `<li class="toc-sub"><ol>` wrapper (valid nesting — the sub-list lives inside an
+    /// `<li>`), and documents nest inside the list of their owning section. A ToC whose
+    /// headings are all level 1 never opens a nested list, so its output is byte-identical
+    /// to the pre-Phase-4 flat markup.
+    ///
     /// - Parameter items: The ordered items whose documents and headings populate the ToC.
     /// - Returns: The `<nav>…</nav>` HTML fragment.
     func tableOfContentsHTML(for items: [CollectionExportItem]) -> String {
+        /// Line indentation for list items at a nesting level (level 1 = the pre-Phase-4
+        /// four spaces; each deeper level adds two).
+        func indent(_ level: Int) -> String { String(repeating: "  ", count: level + 1) }
+
         var body = ""
         body += "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
+        var level = 1
         for item in items {
             switch item {
             case .document(let doc):
                 let anchor = Self.anchorId(doc: doc)
                 let label = doc.tocLabel(style: options.tocStyle)
-                body += "    <li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
-            case .heading(let heading):
-                body += "    <li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
+                body += "\(indent(level))<li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
+            case .heading(let heading, let rawLevel):
+                let target = Self.clampedLevel(rawLevel)
+                while level > target {
+                    level -= 1
+                    body += "\(indent(level))</ol></li>\n"
+                }
+                while level < target {
+                    body += "\(indent(level))<li class=\"toc-sub\"><ol>\n"
+                    level += 1
+                }
+                body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
             case .prose:
                 break
             }
+        }
+        while level > 1 {
+            level -= 1
+            body += "\(indent(level))</ol></li>\n"
         }
         body += "  </ol>\n</nav>\n\n"
         return body
@@ -317,6 +365,19 @@ struct CollectionItemHTMLRenderer {
             body += itemHTML(item)
         }
 
+        // Colophon footer (Authoring Phase 4) — opt-in only, so collections that never
+        // enable it keep their pre-Phase-4 bytes.
+        if metadata.includeColophon {
+            body += "<footer class=\"colophon\">\n"
+            body += "  <p>\(escaped(CollectionColophon.text(for: items)))</p>\n"
+            body += "</footer>\n\n"
+        }
+
+        // Frame styles (Authoring Phase 4) are appended ONLY when a frame feature is
+        // actually used; a no-frame collection interpolates an empty string, keeping the
+        // exported file byte-identical to the pre-Phase-4 output.
+        let frameStyles = Self.usesFrameFeatures(metadata: metadata, items: items)
+            ? "\n" + Self.frameCSS : ""
         // Preview-only card styles are appended ONLY when a preview affordance is
         // configured; the export path interpolates an empty string here, keeping the
         // exported file byte-identical to the pre-preview output (v1.2).
@@ -329,7 +390,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)\(previewStyles)
+            \(Self.embeddedCSS)\(frameStyles)\(previewStyles)
           </style>
         </head>
         <body>
@@ -337,6 +398,20 @@ struct CollectionItemHTMLRenderer {
         </body>
         </html>
         """
+    }
+
+    /// `true` when the page uses any Phase 4 publication-frame feature — a set subtitle or
+    /// author line, the colophon opt-in, or a heading nested deeper than level 1. Gates
+    /// `frameCSS` so a collection using no new feature emits the exact pre-Phase-4 bytes.
+    static func usesFrameFeatures(metadata: CollectionExportMetadata,
+                                  items: [CollectionExportItem]) -> Bool {
+        if let subtitle = metadata.subtitle, !subtitle.isEmpty { return true }
+        if let author = metadata.authorLine, !author.isEmpty { return true }
+        if metadata.includeColophon { return true }
+        return items.contains {
+            if case .heading(_, let level) = $0 { return level > 1 }
+            return false
+        }
     }
 
     // MARK: - Anchors
@@ -483,6 +558,35 @@ struct CollectionItemHTMLRenderer {
       color: #555;
       border-top: 1px solid #ddd;
       padding-top: 0.6rem;
+    }
+    """
+
+    /// Publication-frame styles (v1.3) — title-page subtitle/author lines, nested-ToC
+    /// sub-lists, stepped sub-section headings, and the colophon footer. Emitted by
+    /// `pageHTML` **only when a frame feature is used** (`usesFrameFeatures`), so a
+    /// collection using none exports byte-identically to the pre-Phase-4 output.
+    private static let frameCSS = """
+    /* ── Publication frame (Authoring Phase 4) ─────────────────────────────── */
+    .collection-subtitle {
+      margin-top: 0.6rem;
+      font-size: 1.2rem;
+      color: #333;
+    }
+    .collection-author {
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+      color: #555;
+    }
+    nav li.toc-sub { list-style: none; }
+    nav .toc-sub > ol { padding-left: 1.25rem; margin-top: 0.3rem; }
+    h3.section-heading { font-size: 1.35rem; margin-left: 0.75rem; }
+    h4.section-heading { font-size: 1.15rem; margin-left: 1.5rem; }
+    footer.colophon {
+      margin-top: 3rem;
+      border-top: 1px solid #ddd;
+      padding-top: 1rem;
+      font-size: 0.8rem;
+      color: #777;
     }
     """
 

@@ -59,6 +59,12 @@ import CoreText
 ///          prose block whose payload predates the RTF storage format — the shared
 ///          `CollectionProse.paragraphs(fromRTF:)` now decodes legacy Phase 3b JSON
 ///          `AttributedString` blobs (bold/italic preserved) instead of returning `[]`
+///   1.9 — Authoring Phase 4 (publication frame): cover gains subtitle/author lines when
+///          set (unset → byte-identical cover); heading flow renders level-stepped
+///          typography (level 1 = the exact prior 17-pt ruled heading; 2/3 = smaller,
+///          indented, un-ruled); the cover ToC indents heading rows by level; opt-in
+///          trailing colophon page (`CollectionColophon`). The introduction needs no code
+///          here — it arrives as the resolver's leading `.prose` item
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -179,18 +185,28 @@ final class PDFCollectionExporter: CollectionExporter {
             flowY = H - M
         }
 
-        // Draws an authored section heading (bold, with an underline rule) into the flow.
-        func drawHeadingFlow(_ text: String) {
+        // Draws an authored section heading into the flow with level-stepped typography:
+        // level 1 keeps the exact pre-Phase-4 rendering (17 pt bold + underline rule);
+        // levels 2/3 render smaller, indented, and un-ruled sub-section headings.
+        func drawHeadingFlow(_ text: String, level: Int) {
+            let l = min(max(level, 1), CollectionOutline.maxLevel)
+            let sizes: [CGFloat] = [17, 14, 12.5]
+            let indentX = CGFloat(l - 1) * 18
             if !flowOpen { beginFlow() }
-            let attr = noteAttributedString(text, fontSize: 17, gray: 0.0, bold: true)
-            let h = measureHeight(attr, width: cw)
+            let attr = noteAttributedString(text, fontSize: sizes[l - 1], gray: 0.0, bold: true)
+            let h = measureHeight(attr, width: cw - indentX)
             // Need room for the heading, its rule, and a little following space.
             if flowY - h - 22 < M + 40 { flowNewPage() }
             if flowY < H - M - 1 { flowY -= 12 }   // top gap unless at the very top
-            draw(attr, in: ctx, rect: CGRect(x: M, y: flowY - h, width: cw, height: h))
+            draw(attr, in: ctx,
+                 rect: CGRect(x: M + indentX, y: flowY - h, width: cw - indentX, height: h))
             flowY -= h + 6
-            drawHRule(ctx: ctx, y: flowY, gray: 0.5, thickness: 0.5)
-            flowY -= 16
+            if l == 1 {
+                drawHRule(ctx: ctx, y: flowY, gray: 0.5, thickness: 0.5)
+                flowY -= 16
+            } else {
+                flowY -= 8
+            }
         }
 
         // Flows a rich-text prose block into the structural flow, paginating if needed.
@@ -238,13 +254,26 @@ final class PDFCollectionExporter: CollectionExporter {
             case .document(let doc):
                 endFlow()   // documents always start on a fresh page
                 drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
-            case .heading(let text):
-                drawHeadingFlow(text)
+            case .heading(let text, let level):
+                drawHeadingFlow(text, level: level)
             case .prose(let rtf):
                 drawProseFlow(rtf)
             }
         }
         endFlow()
+
+        // Colophon page (Authoring Phase 4) — opt-in only, so collections that never
+        // enable it produce exactly the prior page sequence.
+        if collection.includeColophon {
+            ctx.beginPDFPage(nil)
+            let attr = noteAttributedString(CollectionColophon.text(for: items),
+                                            fontSize: 9, gray: 0.45)
+            let h = measureHeight(attr, width: cw)
+            draw(attr, in: ctx, rect: CGRect(x: M, y: H - M - h, width: cw, height: h))
+            drawPageNumber(ctx: ctx, number: pageNumber)
+            ctx.endPDFPage()
+            pageNumber += 1
+        }
 
         ctx.closePDF()
         return mutableData as Data
@@ -294,6 +323,21 @@ final class PDFCollectionExporter: CollectionExporter {
              fontSize: 22, bold: true)
         y -= titleHeight + 16
 
+        // Title-page subtitle and author lines (Authoring Phase 4) — drawn only when set,
+        // so an unset collection's cover is unchanged.
+        if let subtitle = collection.subtitle, !subtitle.isEmpty {
+            let subAttr = noteAttributedString(subtitle, fontSize: 14, gray: 0.2)
+            let subH = measureHeight(subAttr, width: cw)
+            draw(subAttr, in: ctx, rect: CGRect(x: M, y: y - subH, width: cw, height: subH))
+            y -= subH + 10
+        }
+        if let author = collection.authorLine, !author.isEmpty {
+            let authorAttr = noteAttributedString(author, fontSize: 11, gray: 0.3)
+            let authorH = measureHeight(authorAttr, width: cw)
+            draw(authorAttr, in: ctx, rect: CGRect(x: M, y: y - authorH, width: cw, height: authorH))
+            y -= authorH + 12
+        }
+
         // Collection note — _text_ spans rendered as italic
         if let note = collection.note, !note.isEmpty {
             let noteAttr = noteAttributedString(note, fontSize: 12, gray: 0.3)
@@ -331,13 +375,16 @@ final class PDFCollectionExporter: CollectionExporter {
                 draw(labelAttr, in: ctx,
                      rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH))
                 y -= rowH + 6
-            case .heading(let text):
+            case .heading(let text, let level):
+                // Nested sections indent by resolved level (level 1 = the pre-Phase-4 row).
+                let l = min(max(level, 1), CollectionOutline.maxLevel)
+                let indentX = CGFloat(l - 1) * 16
                 let labelAttr = noteAttributedString(text, fontSize: 11, gray: 0.0, bold: true)
-                let lineH = measureHeight(labelAttr, width: cw)
+                let lineH = measureHeight(labelAttr, width: cw - indentX)
                 let rowH = min(lineH, 44)
                 y -= 6   // a little breathing room above a section label
                 draw(labelAttr, in: ctx,
-                     rect: CGRect(x: M, y: y - rowH, width: cw, height: rowH))
+                     rect: CGRect(x: M + indentX, y: y - rowH, width: cw - indentX, height: rowH))
                 y -= rowH + 6
             case .prose:
                 break

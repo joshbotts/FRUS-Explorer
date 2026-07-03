@@ -38,7 +38,24 @@ import UIKit
 ///          projection, so prose can never silently vanish from exports; added
 ///          `migrateLegacyJSONIfNeeded(_:)`, `decodedRTF(_:)`, `rtfData(from:)`, and the
 ///          legacy-decoding helpers shared with `CollectionProse` and the editor
+///   1.2 — Authoring Phase 4: `exportRTF(richText:plainText:)` — the field-level variant
+///          for standalone rich-text fields following the plain-projection pattern
+///          (`Collection.introductionRichText`/`introductionText`)
 enum ProseRichText {
+
+    /// The RTF payload for a standalone rich-text field that follows the plain-projection
+    /// pattern (rich `Data` + plain `String`), e.g. the collection introduction (Authoring
+    /// Phase 4). Returns the stored data when it decodes as non-empty RTF, else the plain
+    /// text encoded as RTF, else `nil` when the field is effectively empty — callers emit
+    /// nothing rather than an empty block, preserving pre-Phase-4 output exactly.
+    static func exportRTF(richText: Data?, plainText: String?) -> Data? {
+        if let stored = richText, let decoded = decodedRTF(stored), decoded.length > 0 {
+            return stored
+        }
+        guard let plain = plainText,
+              !plain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return rtfData(from: NSAttributedString(string: plain))
+    }
 
     /// The RTF payload to render at export time — always *valid* RTF: the stored `richText`
     /// when it decodes as RTF, a legacy Phase 3b JSON blob converted to RTF (bold/italic

@@ -306,7 +306,10 @@ struct ExportSheetView: View {
         do {
             let items = try await makeResolver().resolve(
                 collection: collection, entries: entries, allNotes: allNotes, purpose: .export)
-            let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
+            let metadata = CollectionExportMetadata(
+                name: collection.name, note: collection.note,
+                subtitle: collection.subtitle, authorLine: collection.authorLine,
+                includeColophon: collection.includeColophon)
             guard let exporter = selectedFormat.makeExporter() else { return }
             let url = try await exporter.export(
                 metadata: metadata, items: items, options: buildExportOptions())

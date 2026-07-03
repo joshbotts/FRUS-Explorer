@@ -1040,3 +1040,22 @@ the sheet mid-flow, and `CitationMatchingEngine.downloadedVolumeIds` upgraded fr
 boot-time snapshot to live updates on indexing completion (fixes download-then-re-resolve
 for CitationLookupView too). 9 new unit tests; docs rider (manuals, TestFlight files,
 IndexingEducationView). Full suite 984/984. Phases 1–3 (the zero-schema-risk arc) complete.
+
+### Session 2026-07-02 (later) — Collections Authoring Phase 4 (publication frame)
+Four commits: (1) **model+format** — `CollectionEntry.level` (level-encoded nesting; global
+sortOrder untouched), `CollectionOutline` single linearizer (clamp 1–3, orphan-jump repair,
+sectionRange/canIndent/canOutdent, ancestor body-depth cascade — D5 falls out), Collection
+front matter (subtitle/authorLine/introduction RTF+plain/includeColophon), `.fruscollection`
+v2 (write-minimum: no-v2-features files emit byte-identical v1; minimumReaderVersion floor,
+defaulted 1; tolerant reader). (2) **exporters** — `.heading(String, level:)`; title page +
+introduction (leading prose item via the shared RTF path) + nested ToC + opt-in colophon in
+HTML/PDF/DOCX + preview; title page/colophon metadata-driven (items stream unchanged);
+byte-compat proven by frozen-literal tests; DOCX levels map to custom SectionHeading2/3
+styles (NOT built-in Heading2/3 — those are used by citations/TEI headings). (3) **editor** —
+depth-indented rows, collapse/expand (view state, "N hidden" badge), heading context menu
+(rename/indent/outdent/delete-heading-vs-section), **move-section-as-a-unit** via a shared
+pure move engine (unit-tested), front-matter UI on all three surfaces, docs rider.
+(4) **review fixes** — 5/5 valid: HIGH = DOCX ToC field widened unconditionally (now emits
+pre-Phase-4 `\o "1-2"` unless an authored level-3 exists); macOS normalize-before-reindex
+no-op; three docs corrections. A6 resolved cap-3-UI-only; A7 resolved RichTextEditor as-is.
+Full suite 1001/1001.

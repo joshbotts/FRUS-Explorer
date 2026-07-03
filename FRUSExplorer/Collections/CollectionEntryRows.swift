@@ -18,11 +18,54 @@ import SwiftUI
 /// this heading use it unless they have their own per-entry override. Stored in the heading
 /// entry's `bodyDepthOverride`.
 ///
+/// **Outline editing (Phase 4).** The row is the heading's control surface for the derived
+/// section tree: level-stepped typography via `depth`, a collapse/expand chevron (view
+/// state only — the owning editor hides the section's rows), and a context menu with
+/// Rename, Indent/Outdent (gated by `CollectionOutline.canIndent`/`canOutdent`, passed in
+/// as flags), "Delete Heading Only" (children bubble up via normalize) and "Delete
+/// Section" (heading + contents, confirmed first).
+///
 /// Version history:
 ///   1.0 — extracted from CollectionEditorView.swift (Session 2026-07-02, Collections Authoring Phase 1)
+///   1.1 — Authoring Phase 4 (editor step): outline controls — depth-stepped title font,
+///          collapse chevron, and the section context menu (rename / indent / outdent /
+///          delete-heading-only vs delete-section-with-confirmation); the inline trash
+///          became `showsInlineDelete` (macOS) with `onDelete` reused by the menu
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
+    /// Deletes the heading entry ONLY — its contents stay and any sub-headings bubble up
+    /// one level (the editor normalizes). Drives the context menu on both platforms and,
+    /// when `showsInlineDelete` is set, the trailing trash button.
     var onDelete: (() -> Void)? = nil
+    /// Whether to render the inline trailing trash for `onDelete` — macOS passes `true`
+    /// (its List has no swipe-to-delete); iOS keeps deletion on swipe + context menu.
+    var showsInlineDelete: Bool = false
+    /// The heading's resolved outline depth (`1...CollectionOutline.maxLevel`), stepping
+    /// the title typography. Defaults to 1 (the pre-Phase-4 appearance).
+    var depth: Int = 1
+    /// Whether the section's rows are currently hidden (view state owned by the editor).
+    var isCollapsed: Bool = false
+    /// How many entries the section owns below the heading — shown while collapsed and
+    /// in the Delete Section confirmation.
+    var sectionEntryCount: Int = 0
+    /// Toggles the collapse state; `nil` hides the chevron.
+    var onToggleCollapse: (() -> Void)? = nil
+    /// Whether Indent is a valid outline mutation here (`CollectionOutline.canIndent`).
+    var canIndent: Bool = false
+    /// Whether Outdent is a valid outline mutation here (`CollectionOutline.canOutdent`).
+    var canOutdent: Bool = false
+    /// Indents the section one level (heading + descendants); `nil` hides the menu item.
+    var onIndent: (() -> Void)? = nil
+    /// Outdents the section one level; `nil` hides the menu item.
+    var onOutdent: (() -> Void)? = nil
+    /// Deletes the heading AND every entry in its section range. Invoked only after the
+    /// user confirms; `nil` hides the menu item.
+    var onDeleteSection: (() -> Void)? = nil
+
+    /// Focus for the title field, so the context menu's Rename can summon the keyboard.
+    @FocusState private var titleFocused: Bool
+    /// Presents the Delete Section confirmation dialog.
+    @State private var confirmDeleteSection = false
 
     /// The section's body-depth override (`nil` = documents follow the collection default).
     private var sectionDepth: Binding<String?> {
@@ -40,16 +83,46 @@ struct CollectionHeadingRow: View {
         return available
     }
 
+    /// Level-stepped title typography: level 1 keeps the pre-Phase-4 headline; deeper
+    /// levels step down so the outline reads at a glance.
+    private var titleFont: Font {
+        switch depth {
+        case ...1: return .headline
+        case 2:    return .subheadline.weight(.semibold)
+        default:   return .footnote.weight(.semibold)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
+                if let onToggleCollapse {
+                    Button(action: onToggleCollapse) {
+                        Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isCollapsed
+                        ? String(localized: "collection.section.expand", defaultValue: "Expand section")
+                        : String(localized: "collection.section.collapse", defaultValue: "Collapse section"))
+                }
                 Image(systemName: "number")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextField(String(localized: "collection.heading.placeholder", defaultValue: "Section heading"),
                           text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }))
-                    .font(.headline)
-                structuralDeleteButton(onDelete)
+                    .font(titleFont)
+                    .focused($titleFocused)
+                if isCollapsed && sectionEntryCount > 0 {
+                    Text(String(format: String(localized: "collection.section.collapsedCount %lld",
+                                               defaultValue: "%lld hidden"),
+                                Int64(sectionEntryCount)))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                structuralDeleteButton(showsInlineDelete ? onDelete : nil)
             }
             // Section body depth — applied to documents under this heading (Phase 3c).
             Picker(selection: sectionDepth) {
@@ -63,6 +136,65 @@ struct CollectionHeadingRow: View {
             .font(.caption)
         }
         .padding(.vertical, 4)
+        .contextMenu { sectionContextMenu }
+        .confirmationDialog(
+            String(localized: "collection.section.delete.confirm.title",
+                   defaultValue: "Delete Section?"),
+            isPresented: $confirmDeleteSection,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "collection.section.delete.confirm.action",
+                          defaultValue: "Delete Section"),
+                   role: .destructive) {
+                onDeleteSection?()
+            }
+        } message: {
+            Text(String(format: String(localized: "collection.section.delete.confirm.message %lld",
+                                       defaultValue: "Deletes this heading and the %lld entries it contains."),
+                        Int64(sectionEntryCount)))
+        }
+    }
+
+    /// The section context menu: rename, indent/outdent, and the two delete flavors.
+    @ViewBuilder
+    private var sectionContextMenu: some View {
+        Button {
+            titleFocused = true
+        } label: {
+            Label(String(localized: "collection.section.rename", defaultValue: "Rename"),
+                  systemImage: "pencil")
+        }
+        if let onIndent {
+            Button(action: onIndent) {
+                Label(String(localized: "collection.section.indent", defaultValue: "Indent"),
+                      systemImage: "increase.indent")
+            }
+            .disabled(!canIndent)
+        }
+        if let onOutdent {
+            Button(action: onOutdent) {
+                Label(String(localized: "collection.section.outdent", defaultValue: "Outdent"),
+                      systemImage: "decrease.indent")
+            }
+            .disabled(!canOutdent)
+        }
+        Divider()
+        if let onDelete {
+            Button(role: .destructive, action: onDelete) {
+                Label(String(localized: "collection.section.deleteHeadingOnly",
+                             defaultValue: "Delete Heading Only"),
+                      systemImage: "trash")
+            }
+        }
+        if onDeleteSection != nil {
+            Button(role: .destructive) {
+                confirmDeleteSection = true
+            } label: {
+                Label(String(localized: "collection.section.deleteSection",
+                             defaultValue: "Delete Section"),
+                      systemImage: "trash.fill")
+            }
+        }
     }
 }
 

@@ -161,6 +161,12 @@ struct CollectionPreviewView: View {
         hasher.combine(collection.applyHighlights)
         hasher.combine(collection.includeNotes)
         hasher.combine(collection.summaryPromptId)
+        // Phase 4 publication frame: title page, introduction, colophon, heading levels.
+        hasher.combine(collection.subtitle)
+        hasher.combine(collection.authorLine)
+        hasher.combine(collection.introductionText)
+        hasher.combine(collection.introductionRichText)
+        hasher.combine(collection.includeColophon)
         for entry in entries {
             hasher.combine(entry.id)
             hasher.combine(entry.kind)
@@ -169,6 +175,7 @@ struct CollectionPreviewView: View {
             hasher.combine(entry.sortOrder)
             hasher.combine(entry.text)
             hasher.combine(entry.richText)
+            hasher.combine(entry.level)
             hasher.combine(entry.bodyDepthOverride)
             hasher.combine(entry.selectedNoteIds)
             hasher.combine(entry.researchNoteId)
@@ -399,7 +406,10 @@ struct CollectionPreviewView: View {
                     ? String(localized: "collection.editor.untitled",
                              defaultValue: "Untitled Collection")
                     : collection.name,
-                note: collection.note)
+                note: collection.note,
+                subtitle: collection.subtitle,
+                authorLine: collection.authorLine,
+                includeColophon: collection.includeColophon)
             let page = renderer.pageHTML(metadata: metadata, items: items)
             if Task.isCancelled { return }
             missingVolumeIds = missing
