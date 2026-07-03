@@ -4,7 +4,7 @@ FRUS Explorer helps you research the *Foreign Relations of the United States* se
 
 ## Step 1 — Download some volumes (do this first)
 
-The app starts empty. Open the Browse tab, pick a subseries (a date range, e.g. "1964–1968"), and download two or three volumes; each is then indexed for search. You can start a download from anywhere an undownloaded volume appears — tap **Download Volume** on the volume's page, use the Download action in the browser list, or follow a cross-reference into an undownloaded volume and accept the offer to download it. Let indexing finish before judging things — Settings → **Index Health** shows status. Results and definitions fill in as it completes (a few minutes the first time).
+The app starts empty. Open the Browse tab, pick a subseries (a date range, e.g. "1964–1968"), and download two or three volumes; each is then indexed for search. You can start a download from anywhere an undownloaded volume appears — tap **Download Volume** on the volume's page, use the Download action in the browser list, or follow a cross-reference into an undownloaded volume and accept the offer to download it. Let indexing finish before judging things — Settings → **Index Health** shows status. Results and definitions fill in as it completes (a few minutes the first time). New this build: browser rows and page headers show **complete volume and chapter titles** — browse an older subseries (e.g. the 1860s–1900s annual volumes, whose titles run to whole paragraphs) on iPhone and confirm titles wrap in full everywhere instead of being cut off.
 
 ## Step 2 — Read a document; tap its links and its source
 

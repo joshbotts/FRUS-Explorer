@@ -39,6 +39,9 @@ import SwiftUI
 ///          `AppState.downloadQueue`, and the volume structure loads automatically
 ///          when the transfer finishes (previously "Download started." never
 ///          progressed because nothing observable changed on completion)
+///   2.4 — Session 2026-07-03: complete long titles — the full volume title heads the
+///          metadata section (the inline nav-bar title truncates), and
+///          `SectionRowLabel` wraps section titles instead of clipping at two lines
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -334,6 +337,14 @@ private struct VolumeMetadataView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
+            // Full volume title, wrapping to as many lines as it needs. The navigation
+            // bar title (inline) truncates long titles — older volumes carry appended
+            // clauses hundreds of characters long — so the complete value must be
+            // readable in the content area.
+            Text(volume.title)
+                .font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
             if volume.documentCount > 0 {
                 Text("\(volume.documentCount) documents")
                     .font(.subheadline)
@@ -420,7 +431,7 @@ struct SectionRowLabel: View {
         VStack(alignment: .leading, spacing: 3) {
             Text(section.title)
                 .font(.body)
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 Text(sectionTypeLabel)
                     .foregroundStyle(.secondary)

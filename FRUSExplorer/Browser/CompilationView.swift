@@ -51,6 +51,9 @@ import SwiftUI
 ///   1.6 — Session 2026-06-10: routing predicates replaced with the shared
 ///          `VolumeSection` kind helpers (`canReadDirectly`, `isPersonsList`,
 ///          `isSourcesList`), which understand the real corpus encoding
+///   1.7 — Session 2026-07-03: complete long titles — the full section title heads the
+///          list (nav-bar title switched to inline; it truncates long chapter titles),
+///          and `DocumentRowLabel` wraps document headers instead of clipping at two lines
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -80,6 +83,16 @@ struct CompilationView: View {
 
     var body: some View {
         List {
+            // Full section title, wrapping to as many lines as it needs. The navigation
+            // bar title truncates long chapter/compilation titles (older volumes carry
+            // appended clauses), so the complete value must be readable in content.
+            Section {
+                Text(section.title)
+                    .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+
             // Subsection navigation if this section has subsections
             if !section.subsections.isEmpty {
                 subsectionsList
@@ -95,7 +108,9 @@ struct CompilationView: View {
         #endif
         .navigationTitle(section.title)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        // Inline (not large) title: the full title now heads the content list, so the
+        // large title would only restate a truncated copy of it.
+        .navigationBarTitleDisplayMode(.inline)
         #endif
         .task {
             guard volume != nil else { return }
@@ -442,7 +457,7 @@ struct DocumentRowLabel: View {
             Text(doc.header)
                 .font(.body)
                 .italic(doc.isEditorialNote)
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             if let dateline = doc.dateline {
                 Text(dateline)
                     .font(.caption)

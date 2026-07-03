@@ -2975,6 +2975,7 @@ struct CorpusBrowserWindowView: View {
 ///   1.1 — Session 75: added subseries-scoped `VolumeConnectionGraphView` toolbar toggle
 ///   1.2 — Session 75: subseries filter removed; per-volume graph button replaces toolbar
 ///          toggle; volume detail and graph sheets unified under a single `SheetContent` enum
+///   1.3 — Session 2026-07-03: volume titles wrap to their full value (three-line clip removed)
 private struct SubseriesVolumeListView: View {
     let subseries: String
     let filteredVolumes: [VolumeManifestEntry]
@@ -3028,7 +3029,6 @@ private struct SubseriesVolumeListView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(vol.title)
                     .font(.system(size: 12))
-                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     Text(vol.volumeId)
@@ -3121,6 +3121,8 @@ private struct SubseriesVolumeListView: View {
 ///   1.2 — Session 115: `.interrupted` phase added; amber warning view with Re-index Now button
 ///   1.3 — Session 2026-06-09: `frontMatterTypes` + `extractFrontMatter` added; `structureView`
 ///          now splits sections into "Front Matter" and "Contents" headers, matching `VolumeView`
+///   1.4 — Session 2026-07-03: full-title header above the phase content — the window
+///          title truncates the long appended clauses older volume titles carry
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -3141,7 +3143,20 @@ private struct CorpusVolumeDetailView: View {
     var body: some View {
         // Pushed into the browser window's resizable detail column (not a sheet), so the
         // structure list, and any section drilled into, inherit the window's size.
-        phaseContent
+        // The full volume title heads the content — the window/navigation title truncates
+        // the long appended clauses older volumes carry, so the complete value must be
+        // readable (and selectable) in the content area.
+        VStack(alignment: .leading, spacing: 0) {
+            Text(volume.title)
+                .font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            Divider()
+            phaseContent
+        }
             .navigationTitle(volume.title)
             .task { await determinePhase() }
         // Download completion: queue no longer contains volumeId AND file now exists → auto-index begins
@@ -3658,6 +3673,8 @@ private struct DiscoveredMetadataRow: View {
 ///   1.0 — Session 11: initial implementation (document list only)
 ///   1.1 — Session 2026-06-09: front-matter routing — persons, sources, prose sections
 ///   1.2 — Session 170: pushed into the detail column instead of presented as a sheet
+///   1.3 — Session 2026-07-03: full-title header above the routed content — the window
+///          title truncates long chapter/compilation titles
 private struct CorpusSectionDocumentView: View {
     let volumeId: String
     let section: VolumeSection
@@ -3692,6 +3709,34 @@ private struct CorpusSectionDocumentView: View {
     var body: some View {
         // Pushed into the browser window's resizable detail column (not a sheet), so the
         // title comes from `.navigationTitle` and the system back button handles dismissal.
+        // The full section title heads the content — the window/navigation title truncates
+        // long chapter/compilation titles, so the complete value must be readable here.
+        VStack(alignment: .leading, spacing: 0) {
+            Text(section.title)
+                .font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            Divider()
+            sectionContent
+        }
+        .navigationTitle(section.title)
+        .task {
+            // Skip the document-list fetch for sections handled by dedicated views.
+            if canReadSectionDirectly || isPersonsSection || isSourcesSection {
+                isLoading = false
+            } else {
+                await loadDocuments()
+            }
+        }
+    }
+
+    /// The routed per-kind content (prose Read button, persons list, sources list, or the
+    /// structural subsection/document list) shown below the full-title header.
+    @ViewBuilder
+    private var sectionContent: some View {
         Group {
             if canReadSectionDirectly {
                 proseSectionView
@@ -3731,15 +3776,6 @@ private struct CorpusSectionDocumentView: View {
                 }
             } else {
                 structuralList
-            }
-        }
-        .navigationTitle(section.title)
-        .task {
-            // Skip the document-list fetch for sections handled by dedicated views.
-            if canReadSectionDirectly || isPersonsSection || isSourcesSection {
-                isLoading = false
-            } else {
-                await loadDocuments()
             }
         }
     }
