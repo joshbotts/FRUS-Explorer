@@ -572,13 +572,23 @@ struct SourceNoteExtractionTests {
         let result = extractSourceNote(from: nodes)
         #expect(result?.contains("Johnson Library") == true)
         #expect(result?.contains("Not declassified") == true)
+        // Phase 1 wrapper normalisation: the "[Source: …]" brackets collapse so both
+        // encodings store one shape and the "Source:" narrative parser branch fires.
+        #expect(result?.hasPrefix("Source:") == true)
+        #expect(result?.hasSuffix("]") == false)
     }
 
     // MARK: - Priority and edge cases
 
-    @Test("Priority: top-level source note found before head-nested one")
-    func topLevelTakesPriorityOverHeadNested() {
-        // If both patterns are present, the top-level note (pass 1) is returned first.
+    @Test("Priority: 'Source:'-prefixed head-nested note found before top-level one (import.xq chain)")
+    func headNestedTakesPriorityOverTopLevel() {
+        // When both patterns are present and the head-nested note carries the
+        // `Source:` prefix, the head-nested note wins — the frus-sources locator
+        // chain (import.xq) checks head/note[@type='source'] before the top-level
+        // inline note. 29 corpus documents carry both encodings; in the ones where
+        // the head note is the real citation (e.g. frus1952-54v07p1 d57/d64,
+        // frus1952-54v14p1 d75, whose top-level note is just "[Translation]" /
+        // "[Extract]"), it is `Source:`-prefixed.
         let nodes: [FRUSASTNode] = [
             .head(children: [
                 .text("Document"),
@@ -588,7 +598,44 @@ struct SourceNoteExtractionTests {
             .footnote(id: "div-fn", type: .source, printedNumber: "1",
                       children: [.text("Source: Top-level note.")])
         ]
-        #expect(extractSourceNote(from: nodes) == "Source: Top-level note.")
+        #expect(extractSourceNote(from: nodes) == "Source: Head-nested note.")
+    }
+
+    @Test("Priority: dual-encoding — top-level citation wins over a non-prefixed head remark")
+    func topLevelCitationWinsOverHeadRemark() {
+        // 25 pre-1955 documents (frus1949v01, frus1952-54v01p2/v03/v05p1) nest an
+        // editorial remark — no `Source:` prefix — in <head> while the real
+        // decimal/lot citation is the top-level inline note. The head remark must
+        // defer to the top-level citation, or the document loses its citation_era
+        // and archival-neighbor keys (adversarial-review finding 1; modeled on
+        // frus1952-54v03 d453).
+        let nodes: [FRUSASTNode] = [
+            .head(children: [
+                .text("Memorandum by the Deputy Assistant Secretary of State"),
+                .footnote(id: "head-fn", type: .source, printedNumber: "1",
+                          children: [.text("Source text indicates this memorandum was dictated Nov. 13.")])
+            ]),
+            .footnote(id: "div-fn", type: .source, printedNumber: nil,
+                      children: [.text("310.2/8–2753")])
+        ]
+        #expect(extractSourceNote(from: nodes) == "310.2/8–2753")
+    }
+
+    @Test("Priority: non-prefixed head remark is still used when no top-level note exists")
+    func headRemarkFallbackWhenNoTopLevelNote() {
+        // ~1,991 corpus documents (frus1961-63 microfiche supplements, 1931–48
+        // volumes) have a non-`Source:`-prefixed head-nested note and NO top-level
+        // alternative — the deferred whole-note fallback must still serve them.
+        let nodes: [FRUSASTNode] = [
+            .head(children: [
+                .text("Telegram"),
+                .footnote(id: "head-fn", type: .source, printedNumber: "1",
+                          children: [.text("Department of State, Central Files, 611.61/4–1861.")])
+            ]),
+            .paragraph(children: [.text("Body text.")])
+        ]
+        #expect(extractSourceNote(from: nodes)
+                == "Department of State, Central Files, 611.61/4–1861.")
     }
 
     @Test("Edge: source note with whitespace-only children returns nil")
@@ -598,6 +645,94 @@ struct SourceNoteExtractionTests {
                       children: [.text("   \n  ")])
         ]
         #expect(extractSourceNote(from: nodes) == nil)
+    }
+}
+
+// MARK: - ClassificationMarkingTests
+
+/// Verifies `SourceNoteParser.classificationMarking(fromSourceNote:)` — the S1
+/// sentence-2 split (frus-sources sentence model): sentence 1 = archival citation,
+/// sentence 2 = classification markings, remainder = remarks. The extractor must be
+/// conservative: nil rather than junk when sentence 2 is not markings.
+@Suite("ClassificationMarkingTests")
+struct ClassificationMarkingTests {
+
+    @Test("real markings: simple level plus caveat")
+    func levelPlusCaveat() {
+        let note = "Source: Department of State, Central Files, 396.1 GE/7–854. Secret; Nodis."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == "Secret; Nodis")
+    }
+
+    @Test("real markings: Top Secret with multi-word caveats, remarks excluded")
+    func topSecretMultiCaveat() {
+        let note = "Source: Library of Congress, Manuscript Division, Kissinger Papers, Box CL 101, Geopolitical File, Algeria, April–May 1974. Secret; Sensitive; Exclusively Eyes Only. Kissinger met with Boumediene in Algiers en route to the Middle East."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note)
+                == "Secret; Sensitive; Exclusively Eyes Only")
+    }
+
+    @Test("real markings: 'No classification marking' statement is accepted")
+    func noClassificationMarking() {
+        let note = "Source: Johnson Library, National Security File, Country File, Vietnam, Memos and Miscellaneous. No classification marking."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note)
+                == "No classification marking")
+    }
+
+    @Test("non-marking second sentence returns nil (prose remark)")
+    func proseRemarkReturnsNil() {
+        let note = "Source: Library of Congress, Manuscript Division, Kissinger Papers, Box CL 168, Geopolitical File. Sent for information."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == nil)
+    }
+
+    @Test("non-marking second sentence returns nil (long sentence, no vocabulary)")
+    func longSentenceReturnsNil() {
+        let note = "Source: National Archives, RG 59, Central Files 1967–69, POL 27 ARAB–ISR. A copy was sent to the White House for the President's evening reading and to the Embassy in Tel Aviv."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == nil)
+    }
+
+    @Test("second sentence containing digits returns nil (received-time remark)")
+    func digitsReturnNil() {
+        let note = "Source: Department of State, Central Files, 611.3722/10–2062. Received at 7:31 p.m. on October 20."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == nil)
+    }
+
+    @Test("single-sentence note returns nil (no sentence 2)")
+    func singleSentenceReturnsNil() {
+        #expect(SourceNoteParser.classificationMarking(
+            fromSourceNote: "Source: Department of State, Central Files, 761.00/1-2069.") == nil)
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: "711.00/11–552") == nil)
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: "") == nil)
+    }
+
+    @Test("lowercase or run-on fragments after a valid level return nil")
+    func lowercaseFragmentReturnsNil() {
+        let note = "Source: Department of State, Central Files, 601.0093/5–1553. Secret; drafted by the Executive Secretariat after the meeting adjourned."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == nil)
+    }
+
+    @Test("abbreviation split ('U.S. Government') truncating the marking sentence returns nil")
+    func abbreviationSplitReturnsNil() {
+        // The sentence-boundary regex has no abbreviation model, so it splits inside
+        // "U.S. Government" and the candidate ends "…Dissemination to U.S" — the
+        // interior '.' in the last fragment must reject the whole candidate rather
+        // than store the truncated junk (adversarial-review finding 3).
+        let note = "Source: Department of State, INR Files. Top Secret; SUEDE; Dissemination to U.S. Government agencies only."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == nil)
+    }
+
+    @Test("missing space after the marking period (run-on remark) returns nil")
+    func missingSpaceRunOnReturnsNil() {
+        // TEI missing the space after "Priority." defeats the boundary regex, so the
+        // remark rides along inside the fragment — the interior '.' gate rejects it.
+        let note = "Source: Department of State, Central Files, 601.0093/5–1553. Confidential; Priority.Drafted by Dulles."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == nil)
+    }
+
+    @Test("capitalized remark-verb fragment ('Drafted by …') returns nil")
+    func remarkVerbFragmentReturnsNil() {
+        // A short capitalized remark like "Drafted by Seward (FE/CA/RA)" passes the
+        // 4-word shape gate; the remark-verb gate must reject it.
+        let note = "Source: Department of State, Central Files, 601.0093/5–1553. Confidential; Priority; Drafted by Seward (FE/CA/RA)."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: note) == nil)
     }
 }
 

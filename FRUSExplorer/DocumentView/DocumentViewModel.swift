@@ -50,6 +50,13 @@ import SwiftData
 ///          rollup resolved by `loadPersonMentionCount`, so "Find all mentions" can search
 ///          the cross-corpus rollup identity (the same count the sheet displays) instead of
 ///          the raw per-volume `ref` string, which collides across volumes
+///   1.7 — Source Explorer Phase 1 (Session 2026-07-03): the file's `extractSourceNote`
+///          free function now delegates to `IndexingPipeline.extractSourceNote(from:)`,
+///          the canonical frus-sources locator chain, so the document Source sheet shows
+///          the same note the index stores. Display changes with it: head-nested notes
+///          found first (with the dual-encoding gate deferring non-`Source:`-prefixed
+///          head remarks to top-level citations), `[Source: …]` wrapper stripped,
+///          interior whitespace collapsed, e-volume summary segs excluded
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -679,80 +686,16 @@ public final class DocumentViewModel {
 
 // MARK: - Source Note Extraction
 
-/// Searches `nodes` for a FRUS provenance note, handling three placement patterns
-/// found across the series:
+/// Searches `nodes` for a FRUS provenance note.
 ///
-/// 1. **Standard** — `<note type="source">` as a direct child of `<div type="document">`.
-///    Present in all eras. Parsed as `.footnote(type: .source)` at the top level of
-///    `ast.nodes`.
-///
-/// 2. **Nixon-Ford era electronic volumes** — a generic `<note n="1">` (no `type`
-///    attribute) containing `<seg type="source">` and `<seg type="summary">` paragraph
-///    children. Parsed as `.footnote(type: .unclassified)` whose children include
-///    `.unknown("seg", ["type": "source"], …)` nodes. `extractSegSourceText` locates
-///    the source segment.
-///
-/// 3. **Source note inside `<head>`** — some volumes embed the source note directly
-///    within the document heading element. Parsed as a `.footnote(type: .source)` child
-///    of a `.head` node. Handled by a second pass that recurses into `.head` children.
-///
-/// Returns the plain-text content of the first match, or `nil` if no source note is
-/// found. Whitespace is trimmed; an all-whitespace match is treated as absent.
+/// Delegates to `IndexingPipeline.extractSourceNote(from:)` — the canonical
+/// implementation of the frus-sources locator chain (Source Explorer Phase 1) — so
+/// the note displayed in the document Source sheet is byte-identical to the note the
+/// indexing pipeline stores in `document_cache.source_note` and parses into
+/// `document_sources`. See that method's documentation for the priority order and
+/// the `[Source: …]` wrapper normalisation.
 func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
-    // Pass 1: top-level .footnote nodes — covers standards (1) and Nixon-Ford (2).
-    for node in nodes {
-        switch node {
-        case .footnote(_, .source, _, let children):
-            let text = children
-                .map(\.plainText)
-                .joined(separator: " ")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty { return text }
-
-        case .footnote(_, .unclassified, _, let children):
-            if let text = extractSegSourceText(from: children) { return text }
-
-        default:
-            break
-        }
-    }
-
-    // Pass 2: recurse into <head> — covers volumes that place the source note
-    // inside the document heading element rather than as a div-level sibling.
-    for node in nodes {
-        if case .head(let headChildren) = node {
-            if let text = extractSourceNote(from: headChildren) { return text }
-        }
-    }
-
-    return nil
-}
-
-/// Searches `nodes` for a `<seg type="source">` element and returns its plain-text
-/// content.
-///
-/// `<seg>` is not a first-class AST node; the parser maps it to
-/// `.unknown("seg", attributes, children)`. The source segment is typically wrapped
-/// in a `<p>` element, so this function recurses into `.paragraph` children as well.
-///
-/// Used exclusively by `extractSourceNote` to handle the Nixon-Ford era pattern.
-private func extractSegSourceText(from nodes: [FRUSASTNode]) -> String? {
-    for node in nodes {
-        switch node {
-        case .unknown(let name, let attrs, let children)
-                where name == "seg" && attrs["type"] == "source":
-            let text = children
-                .map(\.plainText)
-                .joined(separator: " ")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty { return text }
-        case .paragraph(let children):
-            if let text = extractSegSourceText(from: children) { return text }
-        default:
-            break
-        }
-    }
-    return nil
+    IndexingPipeline.extractSourceNote(from: nodes)
 }
 
 // MARK: - DocumentLoadError
