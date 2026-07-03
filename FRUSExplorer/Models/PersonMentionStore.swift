@@ -68,6 +68,38 @@ public struct PersonRollupMember: Sendable, Identifiable {
     }
 }
 
+// MARK: - PersonRollupMention
+
+/// One (rollup identity × mentioning document) pair, returned by
+/// `PersonMentionStore.rollupMentions(forDocuments:)` for the collections Persons Index
+/// block (Authoring Phase 6). Carries the rollup's display fields so callers never need
+/// a second lookup per identity.
+public struct PersonRollupMention: Sendable {
+    /// The rollup id — pairs with the same id are the same person.
+    public let rollupId: Int
+    /// The rollup's canonical display name.
+    public let canonicalName: String
+    /// The rollup's description (front-matter role text), when available.
+    public let description: String?
+    /// The rollup's role classification, when available.
+    public let role: String?
+    /// The mentioning document's volume.
+    public let volumeId: String
+    /// The mentioning document's id.
+    public let documentId: String
+
+    /// Creates a rollup-mention pair.
+    public init(rollupId: Int, canonicalName: String, description: String?, role: String?,
+                volumeId: String, documentId: String) {
+        self.rollupId = rollupId
+        self.canonicalName = canonicalName
+        self.description = description
+        self.role = role
+        self.volumeId = volumeId
+        self.documentId = documentId
+    }
+}
+
 // MARK: - PersonMentionStore
 
 /// Queries the `person_mentions` table to support person-filtered search
@@ -82,6 +114,14 @@ public struct PersonRollupMember: Sendable, Identifiable {
 ///   1.0 — Session 39: initial implementation
 ///   1.1 — Session 41: persons/terms table queries; name autocomplete support
 ///   1.2 — Session 87: allPersonsSortedByName() with cross-volume mention counts
+///   1.3 — Authoring Phase 6 (blocks): rollupMentions(forDocuments:) — mentions in a
+///          document set resolved through the materialised rollup, for the collections
+///          Persons Index block (reuses the People-browser identity path; clustering is
+///          never reimplemented by callers)
+///   1.4 — Authoring Phase 6 review fix: rollupMentions uses an index-usable row-value
+///          IN predicate instead of the concatenated-key form, which forced a full
+///          person_mentions scan per Persons-block resolve (on every debounced preview
+///          refresh)
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -232,6 +272,61 @@ public actor PersonMentionStore {
         var results: [(volumeId: String, documentId: String)] = []
         while step(stmt) {
             results.append((volumeId: columnString(stmt, 0) ?? "", documentId: columnString(stmt, 1) ?? ""))
+        }
+        return results
+    }
+
+    /// Person mentions within a document set, resolved through the materialised
+    /// People-browser rollup (Authoring Phase 6 — the collections Persons Index block).
+    ///
+    /// Joins `person_mentions` in the given documents to `person_rollup_member` /
+    /// `person_rollup`, so identities are exactly the People browser's — the clusterer's
+    /// output is reused, never reimplemented. Returns one element per distinct
+    /// (rollup × mentioning document) pair. Empty when the rollup hasn't been built
+    /// (consolidation not yet run), matching the People browser's behavior.
+    ///
+    /// Queries are issued in chunks of 499 documents (998 bound variables — two per
+    /// pair) to stay within SQLite's 999-variable cap. The predicate uses row-value
+    /// syntax — `(pm.volume_id, pm.document_id) IN (VALUES (?, ?), …)` — which SQLite
+    /// can satisfy from `idx_person_mentions_doc`; the concatenated-key form
+    /// (`volume_id || '/' || document_id IN (…)`) defeats every index and full-scans
+    /// `person_mentions`, the app's largest per-mention table, on every resolve.
+    ///
+    /// - Parameter docs: `(volumeId, documentId)` pairs restricting the mention scope.
+    /// - Returns: Distinct rollup × document pairs, unordered (callers group and sort).
+    public func rollupMentions(
+        forDocuments docs: [(volumeId: String, documentId: String)]
+    ) throws -> [PersonRollupMention] {
+        guard !docs.isEmpty else { return [] }
+        let chunkSize = 499
+        var results: [PersonRollupMention] = []
+        for start in stride(from: 0, to: docs.count, by: chunkSize) {
+            let chunk = Array(docs[start..<min(start + chunkSize, docs.count)])
+            let placeholders = chunk.map { _ in "(?, ?)" }.joined(separator: ", ")
+            let sql = """
+                SELECT DISTINCT r.rollup_id, r.canonical_name, r.description, r.role,
+                                pm.volume_id, pm.document_id
+                FROM person_mentions pm
+                JOIN person_rollup_member m
+                  ON m.volume_id = pm.volume_id AND m.ref = pm.person_ref
+                JOIN person_rollup r ON r.rollup_id = m.rollup_id
+                WHERE (pm.volume_id, pm.document_id) IN (VALUES \(placeholders))
+                """
+            let stmt = try prepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, doc) in chunk.enumerated() {
+                bind(stmt, Int32(i * 2 + 1), doc.volumeId)
+                bind(stmt, Int32(i * 2 + 2), doc.documentId)
+            }
+            while step(stmt) {
+                results.append(PersonRollupMention(
+                    rollupId: Int(sqlite3_column_int64(stmt, 0)),
+                    canonicalName: columnString(stmt, 1) ?? "",
+                    description: columnString(stmt, 2),
+                    role: columnString(stmt, 3),
+                    volumeId: columnString(stmt, 4) ?? "",
+                    documentId: columnString(stmt, 5) ?? ""))
+            }
         }
         return results
     }

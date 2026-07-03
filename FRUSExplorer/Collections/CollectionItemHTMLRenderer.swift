@@ -70,6 +70,12 @@ import SwiftUI
 ///          behavior bit-for-bit); a non-empty `relatedDocumentCitations` renders the
 ///          "See also:" line after the source note, with its stylesheet (`relatedCSS`)
 ///          emitted ONLY when some document carries the line
+///   1.7 — Authoring Phase 6 (generated apparatus): `.generated` items render as a
+///          titled `<section class="generated-block">` with a plain row list (text +
+///          optional secondary text, linked when the row carries a URL, stepped by
+///          indent level); ToCs list the block by title like a section. The stylesheet
+///          (`generatedCSS`) is emitted ONLY when the item list contains a generated
+///          block, so block-free collections keep exporting byte-identically
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -117,6 +123,8 @@ struct CollectionItemHTMLRenderer {
     /// - `.excerpt` → a `<figure class="excerpt-block">`: blockquote passage + a
     ///   source-citation line, with a colour-accent class when the source highlight's
     ///   colour is known (Authoring Phase 5).
+    /// - `.generated` → a titled `<section class="generated-block">` with a plain row
+    ///   list (Authoring Phase 6).
     /// - `.document` → a full `<section id="doc-…">` with citation heading, external link,
     ///   body (per the document's `bodyDepth`), highlights, source note, and research notes.
     ///
@@ -131,9 +139,43 @@ struct CollectionItemHTMLRenderer {
             return proseHTML(prose)
         case .excerpt(let excerpt):
             return excerptHTML(excerpt)
+        case .generated(let block):
+            return generatedBlockHTML(block)
         case .document(let doc):
             return documentSectionHTML(doc)
         }
+    }
+
+    /// Renders a generated apparatus block (Authoring Phase 6): a titled section with a
+    /// plain row list — per-block designed layouts are a later exporter-local upgrade.
+    /// Rows render their text (linked when the row carries a URL), optional secondary
+    /// text, and an `indent-{n}` class when nested.
+    ///
+    /// - Parameter block: The pre-resolved block payload.
+    /// - Returns: The `<section class="generated-block …">…</section>` HTML fragment.
+    private func generatedBlockHTML(_ block: CollectionGeneratedBlock) -> String {
+        var body = ""
+        body += "<section class=\"generated-block generated-\(block.type.rawValue)\">\n"
+        body += "  <h2 class=\"generated-title\">\(markdownItalics(escaped(block.title)))</h2>\n"
+        body += "  <ul class=\"generated-rows\">\n"
+        for row in block.rows {
+            let indentClass = row.indentLevel > 0 ? " indent-\(min(row.indentLevel, 4))" : ""
+            body += "    <li class=\"generated-row\(indentClass)\">"
+            if let url = row.url, !url.isEmpty {
+                body += "<a href=\"\(escaped(url))\" target=\"_blank\" rel=\"noopener noreferrer\">"
+                body += markdownItalics(escaped(row.text))
+                body += "</a>"
+            } else {
+                body += markdownItalics(escaped(row.text))
+            }
+            if let secondary = row.secondaryText, !secondary.isEmpty {
+                body += " <span class=\"generated-secondary\">\(markdownItalics(escaped(secondary)))</span>"
+            }
+            body += "</li>\n"
+        }
+        body += "  </ul>\n"
+        body += "</section>\n\n"
+        return body
     }
 
     /// Renders an excerpt item (Authoring Phase 5): the frozen passage as a blockquote
@@ -415,6 +457,10 @@ struct CollectionItemHTMLRenderer {
                     level += 1
                 }
                 body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
+            case .generated(let block):
+                // A generated block is listed by title, like a section label (Phase 6);
+                // it inherits the current nesting level without changing it.
+                body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(block.title)))</li>\n"
             case .prose, .excerpt:
                 break   // interstitial content — never a ToC row
             }
@@ -489,6 +535,9 @@ struct CollectionItemHTMLRenderer {
         // Related-documents styles (Authoring Phase 5) are appended ONLY when some
         // document carries a "See also:" line — same byte-compat discipline again.
         let relatedStyles = Self.usesRelatedDocuments(items: items) ? "\n" + Self.relatedCSS : ""
+        // Generated-block styles (Authoring Phase 6) are appended ONLY when the item
+        // list contains a generated apparatus block — same byte-compat discipline again.
+        let generatedStyles = Self.usesGeneratedBlocks(items: items) ? "\n" + Self.generatedCSS : ""
         // Preview-only card styles are appended ONLY when a preview affordance is
         // configured; the export path interpolates an empty string here, keeping the
         // exported file byte-identical to the pre-preview output (v1.2).
@@ -501,7 +550,7 @@ struct CollectionItemHTMLRenderer {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>\(title)</title>
           <style>
-            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(relatedStyles)\(previewStyles)
+            \(Self.embeddedCSS)\(frameStyles)\(headnoteStyles)\(excerptStyles)\(relatedStyles)\(generatedStyles)\(previewStyles)
           </style>
         </head>
         <body>
@@ -549,6 +598,16 @@ struct CollectionItemHTMLRenderer {
     static func usesRelatedDocuments(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .document(let doc) = $0 { return !doc.relatedDocumentCitations.isEmpty }
+            return false
+        }
+    }
+
+    /// `true` when the item list contains a generated apparatus block (Authoring
+    /// Phase 6). Gates `generatedCSS` so a block-free collection emits the exact prior
+    /// stylesheet bytes.
+    static func usesGeneratedBlocks(items: [CollectionExportItem]) -> Bool {
+        items.contains {
+            if case .generated = $0 { return true }
             return false
         }
     }
@@ -809,6 +868,30 @@ struct CollectionItemHTMLRenderer {
       letter-spacing: 0.06em;
       color: #777;
     }
+    """
+
+    /// Generated-block styles (v1.7, Authoring Phase 6) — the titled apparatus section
+    /// and its plain row list (deliberately spartan: designed per-block layouts are a
+    /// later exporter-local upgrade). Emitted by `pageHTML` **only when the item list
+    /// contains a generated block** (`usesGeneratedBlocks`), so a block-free collection
+    /// exports byte-identically to the prior output.
+    private static let generatedCSS = """
+    /* ── Generated apparatus block (Authoring Phase 6) ─────────────────────── */
+    section.generated-block { border-top: 1px solid #ddd; padding-top: 2rem; }
+    .generated-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      margin-bottom: 0.75rem;
+    }
+    ul.generated-rows { list-style: none; padding-left: 0; }
+    ul.generated-rows li { margin: 0.35rem 0; }
+    ul.generated-rows a { color: #1a4c8f; text-decoration: none; }
+    ul.generated-rows a:hover { text-decoration: underline; }
+    .generated-secondary { color: #555; font-size: 0.9em; }
+    .generated-row.indent-1 { padding-left: 1.25rem; }
+    .generated-row.indent-2 { padding-left: 2.5rem; }
+    .generated-row.indent-3 { padding-left: 3.75rem; }
+    .generated-row.indent-4 { padding-left: 5rem; }
     """
 
     /// Preview-only card styles (v1.2) — the citation-only card (volume not downloaded)

@@ -1096,3 +1096,26 @@ cascade — resolved ONLY in the resolver; `selectedHighlightIds` deliberately o
 block partitioning in FRUSRenderNode), macOS capture re-extraction (anchors always delimit
 the frozen passage), iPhone overflow-menu anchor preservation, capped-preview A10 membership
 from full model, timeline excerpt double-count. Full suite 1020/1020.
+
+### Session 2026-07-03 — Collections Authoring Phase 6 (generated apparatus) + PDF/DOCX footnote gating
+Four commits on claude/authoring-phase6-apparatus: (1) **footnote gating** (owner decision
+2026-07-03): PDF/DOCX now honor `includeFootnotes` (footnote bodies/section suppressed,
+inline markers kept — HTML's exact semantics; per-entry override cascade respected;
+untouched collections byte-identical, DOCX proven byte-for-byte). (2) **apparatus core** —
+`CollectionEntryKind.generated` + `generatedBlockType` (typed vocabulary: bibliography/
+chronology/archivalSources/personsIndex/thematicIndex w/ default front/back positions);
+`CollectionExportItem.generated(CollectionGeneratedBlock)` pre-resolved rows → ONE switch
+arm per exporter; real DOCX hyperlinks (external relationships, xmlns:r only when used);
+Apparatus submenu in both editors; unknown block types = inert entry (re-exported intact);
+rows never serialized — blocks re-resolve on recipient data. (3) **five blocks** via
+`CollectionGeneratedBlockDataSource` seam (hermetic tests): bibliography (dedupe, series
+order), chronology (precision-honest labels, Undated group), sources & archives
+(document_sources aggregate + bundled NAID links), persons index (People-browser rollup
+path reused; ≥2-doc threshold when ≥4 docs), thematic index (note-tags ∪ assignments).
+(4) **review fixes** — 7/7 valid: smart collections now include apparatus blocks
+(front/back per defaultPosition; capped previews feed full membership); DOCX markdown-
+italic run fix; fullCitation dedup; person_mentions row-value IN (index-usable, was a
+full-table scan per preview refresh); PDF overtall-row pagination; deterministic persons
+ordering. Full suite 1036/1036. **THE SIX-PHASE AUTHORING PROGRAM IS IMPLEMENTATION-COMPLETE.**
+Remaining wrap-up: the scope's closing consolidated docs pass + build bump (TestFlight notes
+must mention the one-time reindex from the version-12 bump if build 28 hasn't shipped).

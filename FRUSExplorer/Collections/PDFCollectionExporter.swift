@@ -67,9 +67,10 @@ import CoreText
 ///          here — it arrives as the resolver's leading `.prose` item
 ///   1.10 — Authoring Phase 5: opt-in headnote — a labeled italic abstract prepended to
 ///          the body flow (`headnoteAttributedString`); a requested headnote with no
-///          stored summary renders a placeholder note. Footnote rendering here remains
+///          stored summary renders a placeholder note. Footnote rendering here remained
 ///          ungated (pre-existing behavior — this exporter never consumed the legacy
 ///          `footnoteStyle`), so untouched collections export byte-identically
+///          (gap since closed — see 1.13)
 ///   1.11 — Authoring Phase 5 (excerpts): `.excerpt` items render into the structural
 ///          flow as a quote-styled block — indented italic passage with a colour accent
 ///          bar when the source highlight's colour is known, followed by the
@@ -78,8 +79,31 @@ import CoreText
 ///          research-note gates honor the document's resolved per-entry override
 ///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
 ///          non-empty `relatedDocumentCitations` appends a small "See also:" line to
-///          the body flow (paginating with it). Footnote rendering remains ungated
-///          (the pre-existing gap, unchanged)
+///          the body flow (paginating with it). Footnote rendering remained ungated
+///          (the pre-existing gap, unchanged — resolved: owner decision 2026-07-03,
+///          see 1.13)
+///   1.13 — Footnote gate (owner decision 2026-07-03): the body honours
+///          `doc.includeFootnotesOverride ?? options.includeFootnotes`, mirroring the
+///          shared HTML renderer's semantics exactly — when the flag is `false` the
+///          trailing footnotes section is omitted while inline superscript markers
+///          still render (HTML likewise keeps its `.fn-marker` buttons). The default
+///          pair for an untouched collection is `(true, false)`, so untouched
+///          collections keep rendering footnotes op-identically; legacy
+///          `footnoteStyle` values of `none`/`sourceNoteOnly` now suppress the
+///          footnotes section BY DESIGN (they previously rendered it regardless)
+///   1.14 — Authoring Phase 6 (generated apparatus): `.generated` items render as a
+///          titled flow block — 14-pt ruled title, then one line per row (text +
+///          gray secondary, stepped by indent level), paginating like prose — and the
+///          cover ToC lists the block by its title like a section label. A row's URL
+///          renders as visible small gray text: bare CoreText frame drawing has no
+///          link annotations, so a clickable link would require per-run geometry +
+///          `CGPDFContext` link boxes — the documented tradeoff (HTML/DOCX carry the
+///          real hyperlink)
+///   1.15 — Authoring Phase 6 review fix: a generated row taller than a full page (a
+///          persons-index reference list spanning hundreds of documents) continues on
+///          the next page via the same framesetter continuation `drawProseFlow` uses,
+///          instead of being drawn once into a rect extending below the media box
+///          (which viewers clip — the tail silently vanished from the PDF)
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -305,6 +329,79 @@ final class PDFCollectionExporter: CollectionExporter {
             }
         }
 
+        // Flows a generated apparatus block into the structural flow (Authoring
+        // Phase 6): a ruled 14-pt title, then the rows as plain lines — text with
+        // optional gray secondary text and visible URL, stepped by indent level.
+        // Paginates like prose; designed per-block layouts are a later upgrade.
+        func drawGeneratedFlow(_ block: CollectionGeneratedBlock) {
+            if !flowOpen { beginFlow() }
+            if flowY < H - M - 1 { flowY -= 12 }   // top gap unless at the very top
+            let titleAttr = noteAttributedString(block.title, fontSize: 14, gray: 0.0, bold: true)
+            let titleH = measureHeight(titleAttr, width: cw)
+            if flowY - titleH - 22 < M + 40 { flowNewPage() }
+            draw(titleAttr, in: ctx, rect: CGRect(x: M, y: flowY - titleH, width: cw, height: titleH))
+            flowY -= titleH + 6
+            drawHRule(ctx: ctx, y: flowY, gray: 0.5, thickness: 0.5)
+            flowY -= 12
+            for row in block.rows {
+                let indentX = CGFloat(min(max(row.indentLevel, 0), 4)) * 16
+                let width = cw - indentX
+                let attr = NSMutableAttributedString(
+                    attributedString: noteAttributedString(row.text, fontSize: 10, gray: 0.1))
+                if let secondary = row.secondaryText, !secondary.isEmpty {
+                    attr.append(NSAttributedString(string: "  ",
+                                                   attributes: makeAttrs(fontSize: 10, bold: false)))
+                    attr.append(noteAttributedString(secondary, fontSize: 9, gray: 0.45))
+                }
+                if let url = row.url, !url.isEmpty {
+                    // Visible URL text — see the v1.14 note for the no-annotation tradeoff.
+                    attr.append(NSAttributedString(string: "\n",
+                                                   attributes: makeAttrs(fontSize: 3, bold: false)))
+                    attr.append(NSAttributedString(string: url,
+                                                   attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+                }
+                let h = measureHeight(attr, width: width)
+                if flowY - h < M + 20 { flowNewPage() }
+                if h <= flowY - (M + 20) {
+                    draw(attr, in: ctx,
+                         rect: CGRect(x: M + indentX, y: flowY - h, width: width, height: h))
+                    flowY -= h + 4
+                } else {
+                    // A single row taller than a fresh page (e.g. a persons-index
+                    // reference list spanning hundreds of documents): the same
+                    // framesetter continuation drawProseFlow uses, so the overflow
+                    // continues on the next page instead of being clipped below the
+                    // media box (Phase 6 review fix).
+                    let framesetter = CTFramesetterCreateWithAttributedString(attr)
+                    var charOffset = 0
+                    let total = attr.length
+                    while charOffset < total {
+                        let availH = flowY - (M + 20)
+                        if availH < 28 { flowNewPage(); continue }
+                        let rect = CGRect(x: M + indentX, y: M + 20, width: width, height: availH)
+                        let path = CGPath(rect: rect, transform: nil)
+                        let frame = CTFramesetterCreateFrame(
+                            framesetter, CFRangeMake(charOffset, 0), path, nil)
+                        CTFrameDraw(frame, ctx)
+                        let visible = CTFrameGetVisibleStringRange(frame)
+                        if visible.length == 0 { break }
+                        charOffset += visible.length
+                        if charOffset < total {
+                            flowNewPage()
+                        } else {
+                            // Advance by the height the final chunk actually consumed.
+                            let used = CTFramesetterSuggestFrameSizeWithConstraints(
+                                framesetter,
+                                CFRangeMake(charOffset - visible.length, visible.length),
+                                nil, CGSize(width: width, height: availH), nil)
+                            flowY -= ceil(used.height) + 4
+                        }
+                    }
+                }
+            }
+            flowY -= 8
+        }
+
         for item in items {
             switch item {
             case .document(let doc):
@@ -316,6 +413,8 @@ final class PDFCollectionExporter: CollectionExporter {
                 drawProseFlow(rtf)
             case .excerpt(let excerpt):
                 drawExcerptFlow(excerpt)
+            case .generated(let block):
+                drawGeneratedFlow(block)
             }
         }
         endFlow()
@@ -444,6 +543,15 @@ final class PDFCollectionExporter: CollectionExporter {
                 draw(labelAttr, in: ctx,
                      rect: CGRect(x: M + indentX, y: y - rowH, width: cw - indentX, height: rowH))
                 y -= rowH + 6
+            case .generated(let block):
+                // A generated block is listed by its title, like a section label (Phase 6).
+                let labelAttr = noteAttributedString(block.title, fontSize: 11, gray: 0.0, bold: true)
+                let lineH = measureHeight(labelAttr, width: cw)
+                let rowH = min(lineH, 44)
+                y -= 6
+                draw(labelAttr, in: ctx,
+                     rect: CGRect(x: M, y: y - rowH, width: cw, height: rowH))
+                y -= rowH + 6
             case .prose, .excerpt:
                 break   // interstitial content — never a ToC row
             }
@@ -495,10 +603,14 @@ final class PDFCollectionExporter: CollectionExporter {
                 // Phase 5: the per-entry/section override when resolved, else the
                 // collection-level option.
                 let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
+                // Footnote gate (owner decision 2026-07-03): mirrors the shared HTML
+                // renderer — `false` omits the footnotes section, markers stay.
+                let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
                 highlightPaint = (applyHighlights && !doc.highlights.isEmpty)
                     ? HighlightPaintTracker(doc.highlights)
                     : nil
-                bodyAttrStr = renderModelToAttributedString(model)
+                bodyAttrStr = renderModelToAttributedString(model,
+                                                            includeFootnotes: includeFootnotes)
                 highlightPaint = nil
             } else if !doc.bodyText.isEmpty {
                 bodyAttrStr = NSAttributedString(string: doc.bodyText,
@@ -707,7 +819,13 @@ final class PDFCollectionExporter: CollectionExporter {
     /// Converts a `FRUSDocumentRenderModel` into a single `NSAttributedString` for CoreText
     /// framesetting. Block nodes are concatenated with paragraph breaks; footnote bodies
     /// are appended after the main content with a rule separator and reduced font size.
-    private func renderModelToAttributedString(_ model: FRUSDocumentRenderModel) -> NSAttributedString {
+    ///
+    /// - Parameter includeFootnotes: When `false` (owner decision 2026-07-03), the
+    ///   trailing footnotes section is omitted — matching the shared HTML renderer,
+    ///   which drops footnote bodies while keeping inline markers (rendered here as
+    ///   superscript labels regardless).
+    private func renderModelToAttributedString(_ model: FRUSDocumentRenderModel,
+                                               includeFootnotes: Bool) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for node in model.bodyNodes {
             let block = blockNodeToAttributedString(node)
@@ -725,8 +843,9 @@ final class PDFCollectionExporter: CollectionExporter {
         // point into them — stop tracking/painting before appending this section.
         highlightPaint = nil
 
-        // Footnotes section
-        if !model.footnotes.isEmpty {
+        // Footnotes section — gated on the resolved include-footnotes flag (owner
+        // decision 2026-07-03), matching the shared HTML renderer's footnote gate.
+        if includeFootnotes, !model.footnotes.isEmpty {
             let ruleAttrs: [NSAttributedString.Key: Any] = makeAttrs(fontSize: 4, bold: false,
                                                                       gray: 0.7)
             result.append(NSAttributedString(string: "\n\u{00A0}\n", attributes: ruleAttrs))

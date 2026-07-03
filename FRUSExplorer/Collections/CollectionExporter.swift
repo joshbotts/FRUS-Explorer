@@ -424,9 +424,9 @@ struct CollectionExportDocument: Sendable {
     /// `includeNotesOverride ?? options.includeNotes`.
     let includeNotesOverride: Bool?
     /// The entry/section footnote override resolved by the cascade (Phase 5). `nil` =
-    /// inherit — gated where footnote rendering is gated (the shared HTML renderer /
-    /// preview) via `includeFootnotesOverride ?? options.includeFootnotes`; the
-    /// pre-existing PDF/DOCX footnote gap is deliberately unchanged.
+    /// inherit — every renderer (the shared HTML renderer / preview, PDF, and DOCX —
+    /// the latter two gated since the 2026-07-03 owner decision) gates footnote bodies
+    /// on `includeFootnotesOverride ?? options.includeFootnotes`.
     let includeFootnotesOverride: Bool?
     /// The entry/section summary-prompt override resolved by the cascade (Phase 5).
     /// `nil` = inherit the collection's `summaryPromptId`. Drives which prompt's stored
@@ -639,12 +639,68 @@ struct CollectionExportExcerpt: Sendable {
     }
 }
 
+// MARK: - CollectionGeneratedRow
+
+/// One row of a resolved generated apparatus block (Authoring Phase 6): text plus
+/// optional secondary text, an optional external link, and an optional indent level —
+/// generic enough that every block type (bibliography entry, chronology line, archival
+/// collection, person, tag) renders through one row shape, so each exporter styles rows
+/// in exactly ONE switch arm total (per-block designed layouts are a later,
+/// exporter-local upgrade).
+///
+/// Version history:
+///   1.0 — Authoring Phase 6 (core): initial implementation
+struct CollectionGeneratedRow: Sendable {
+    /// The row's primary text (e.g. a citation, a person's name, a tag).
+    let text: String
+    /// Optional secondary text rendered after/below the primary (e.g. a description or
+    /// a "Documents 3, 7, 12" reference list). `nil` renders nothing.
+    let secondaryText: String?
+    /// Optional external link for the row (e.g. a NARA catalog URL). HTML links the
+    /// row text; DOCX emits a real hyperlink relationship; PDF renders the URL as
+    /// visible small text (CoreText frame drawing has no link annotations — documented
+    /// tradeoff in `PDFCollectionExporter`).
+    let url: String?
+    /// Nesting indent (0 = flush; each level steps the row inward). Used by outline-
+    /// shaped blocks such as the archival-sources tree.
+    let indentLevel: Int
+
+    /// Creates a row; secondary text, URL, and indent default to "none".
+    init(text: String, secondaryText: String? = nil, url: String? = nil, indentLevel: Int = 0) {
+        self.text = text
+        self.secondaryText = secondaryText
+        self.url = url
+        self.indentLevel = indentLevel
+    }
+}
+
+// MARK: - CollectionGeneratedBlock
+
+/// A fully **pre-resolved** generated apparatus block (Authoring Phase 6): the block
+/// type, its localized title, and the resolved rows. Exporters are pure consumers — all
+/// computation happens in `CollectionGeneratedBlocks.resolve` inside the single resolve
+/// pipeline, so preview and every export format render identical block content.
+///
+/// Rows are never serialized anywhere; only the block *type* persists (on the entry and
+/// in `.fruscollection` files) and rows re-resolve against the current data every time.
+///
+/// Version history:
+///   1.0 — Authoring Phase 6 (core): initial implementation
+struct CollectionGeneratedBlock: Sendable {
+    /// Which apparatus block this is.
+    let type: CollectionGeneratedBlockType
+    /// The localized block title — the rendered section title and the ToC label.
+    let title: String
+    /// The resolved rows, in display order.
+    let rows: [CollectionGeneratedRow]
+}
+
 // MARK: - CollectionExportItem
 
 /// One item in a composed collection export: a resolved document, a section heading, an
-/// editorial prose block, or an excerpt quotation. Exporters render an ordered
-/// `[CollectionExportItem]`, so a collection can be an authored, sectioned reader rather
-/// than a flat document list (Phase 3a).
+/// editorial prose block, an excerpt quotation, or a generated apparatus block.
+/// Exporters render an ordered `[CollectionExportItem]`, so a collection can be an
+/// authored, sectioned reader rather than a flat document list (Phase 3a).
 ///
 /// Version history (contract changes are compile-caught across all exporters and covered
 /// by the exporter contract tests):
@@ -655,6 +711,9 @@ struct CollectionExportExcerpt: Sendable {
 ///   Authoring Phase 5 — `excerpt(CollectionExportExcerpt)`: a frozen quotation rendered
 ///     as a styled block quote + auto-citation source line in HTML/PDF/DOCX; the
 ///     reference formats (Zotero RIS, BibTeX) skip it by design, like heading/prose.
+///   Authoring Phase 6 — `generated(CollectionGeneratedBlock)`: a pre-resolved apparatus
+///     block rendered as a titled plain table/list in HTML/PDF/DOCX and listed in ToCs
+///     by title (like sections); the reference formats skip it by design.
 enum CollectionExportItem: Sendable {
     /// A FRUS document, fully resolved.
     case document(CollectionExportDocument)
@@ -669,6 +728,9 @@ enum CollectionExportItem: Sendable {
     /// quote block plus a source-citation line in the rich formats; dropped by the
     /// flat reference formats.
     case excerpt(CollectionExportExcerpt)
+    /// A pre-resolved generated apparatus block (Authoring Phase 6) — rendered as a
+    /// titled row list in the rich formats; dropped by the flat reference formats.
+    case generated(CollectionGeneratedBlock)
 }
 
 extension Array where Element == CollectionExportItem {

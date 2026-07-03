@@ -138,6 +138,29 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          from the owning collection's full entry list (`collectionDocumentRefs`),
 ///          not the passed entries — the capped preview passes a prefix, which silently
 ///          dropped "See also:" targets past the cap that the export showed
+///   1.8 — Authoring Phase 6 (generated apparatus): `.generated` entries resolve to
+///          `CollectionExportItem.generated` via the `CollectionGeneratedBlocks` seam,
+///          computed from the batch's `collectionDocuments` (the same resolved
+///          membership the A10 line uses — the full static collection, or the smart
+///          result set). Block resolution is read-only and purpose-independent, so
+///          `.preview` and `.export` render identical blocks. An entry whose
+///          `generatedBlockType` this build doesn't know resolves to `nil` (skipped —
+///          degraded, never corrupted), mirroring the `.unrecognized` kind guard
+///   1.9 — Authoring Phase 6 (blocks): `LiveGeneratedBlockDataSource` feeds the real
+///          block resolvers — citations via the document items' own manifest/formatter
+///          path, `document_dates` metadata, `document_sources` + the bundled NARA
+///          resolution index, the People-browser rollup, and the notes/assignments tag
+///          union. All read-only; every accessor degrades to empty (→ the blocks'
+///          "nothing to list" row) when its backing service is unavailable
+///   1.10 — Authoring Phase 6 review fixes: the smart path now resolves the collection's
+///          `.generated` entries too — front-matter blocks before the smart items,
+///          back-matter blocks after (per `defaultPosition`; smart documents come from
+///          the search, so authored positions between them don't exist), fed the smart
+///          result set as membership. `resolve(smartRefs:…)` gains `fullRefs` so the
+///          capped preview computes blocks (and the A10 membership) from the FULL
+///          result set, matching what the export shows. `fullCitation` deleted: the
+///          history.state.gov formatter never reads header/dateline, so it was provably
+///          byte-identical to `shortCitation` while paying a render-model walk per row
 @MainActor
 class CollectionContentResolver {
 
@@ -263,16 +286,23 @@ class CollectionContentResolver {
     ///   - collection: The owning collection (composition + default body depth).
     ///   - allNotes: All research notes, for per-document note attachment.
     ///   - purpose: Gates the summary phase (see `ResolvePurpose`).
-    /// - Returns: Ordered export items for exactly the given refs.
+    ///   - fullRefs: The *uncapped* result set, when `refs` is a capped prefix of it
+    ///     (v1.10). Membership-wide computations — generated apparatus blocks and the
+    ///     A10 related-documents universe — use this list, so a capped preview's blocks
+    ///     match the export's. `nil` (default) means `refs` IS the full result set.
+    /// - Returns: Ordered export items for exactly the given refs (plus the collection's
+    ///   generated apparatus blocks — see `resolveSmartItems`).
     /// - Throws: `CancellationError` when the surrounding task was cancelled mid-resolve;
     ///   summary-phase errors for `.export` (see `applySummaryPhase`).
     func resolve(
         smartRefs refs: [SmartDocumentRef],
         collection: Collection,
         allNotes: [ResearchNote],
-        purpose: ResolvePurpose
+        purpose: ResolvePurpose,
+        fullRefs: [SmartDocumentRef]? = nil
     ) async throws -> [CollectionExportItem] {
-        let items = await resolveSmartItems(refs, collection: collection, allNotes: allNotes)
+        let items = await resolveSmartItems(refs, collection: collection, allNotes: allNotes,
+                                            fullRefs: fullRefs)
         try Task.checkCancellation()
         let framed = introductionItems(for: collection) + items
         return try await applySummaryPhase(to: framed, collection: collection, purpose: purpose)
@@ -456,18 +486,63 @@ class CollectionContentResolver {
     /// applies and note attachment falls back to *every* research note on the document
     /// (matching what the smart Zotero items already carried).
     ///
+    /// Generated apparatus blocks (v1.10): the collection's static `.generated` entries
+    /// resolve here too, fed the smart result set as their membership — front-matter
+    /// blocks (per `CollectionGeneratedBlockType.defaultPosition`) before the smart
+    /// items, back-matter blocks after, each group in `sortOrder` order. Smart documents
+    /// come from the saved search, so a hand-authored position *between* them cannot
+    /// exist; the default position is the only meaningful placement.
+    ///
     /// Internal (not private) so tests can exercise the unified pipeline without standing
     /// up a live FTS5 search service.
+    ///
+    /// - Parameter fullRefs: The uncapped result set when `refs` is a capped prefix
+    ///   (see `resolve(smartRefs:…)`); `nil` means `refs` is the full set.
     func resolveSmartItems(
         _ refs: [SmartDocumentRef],
         collection: Collection,
-        allNotes: [ResearchNote]
+        allNotes: [ResearchNote],
+        fullRefs: [SmartDocumentRef]? = nil
     ) async -> [CollectionExportItem] {
         let entryRefs = refs.map(EntryRef.init)
+        // Membership-wide computations (generated blocks, A10 universe) see the FULL
+        // result set even when per-document resolution was capped by the preview.
+        let membership = Self.documentRefs(in: (fullRefs ?? refs).map(EntryRef.init))
         let batch = await loadBatchContext(
             for: entryRefs, collection: collection, allNotes: allNotes,
-            collectionDocuments: Self.documentRefs(in: entryRefs))
-        return await resolveItems(from: entryRefs, batch: batch)
+            collectionDocuments: membership)
+        let items = await resolveItems(from: entryRefs, batch: batch)
+        let (front, back) = await generatedItems(for: collection, batch: batch)
+        return front + items + back
+    }
+
+    /// Resolves the collection's `.generated` entries for the smart path (v1.10),
+    /// partitioned by their type's `defaultPosition` — `(front matter, back matter)`,
+    /// each in `sortOrder` order. Unknown block types are skipped (the same
+    /// newer-version guard as `resolveEntry`); a cancelled task returns the blocks
+    /// resolved so far (partial-safe, matching the per-entry loops).
+    private func generatedItems(
+        for collection: Collection,
+        batch: BatchContext
+    ) async -> (front: [CollectionExportItem], back: [CollectionExportItem]) {
+        var front: [CollectionExportItem] = []
+        var back: [CollectionExportItem] = []
+        let generatedEntries = (collection.documentEntries ?? [])
+            .filter { $0.entryKind == .generated }
+            .sorted { $0.sortOrder < $1.sortOrder }
+        for entry in generatedEntries {
+            if Task.isCancelled { break }
+            guard let raw = entry.generatedBlockType,
+                  let blockType = CollectionGeneratedBlockType(rawValue: raw) else { continue }
+            let block = await CollectionGeneratedBlocks.resolve(
+                type: blockType, documents: batch.collectionDocuments,
+                dataSource: LiveGeneratedBlockDataSource(resolver: self, batch: batch))
+            switch blockType.defaultPosition {
+            case .frontMatter: front.append(.generated(block))
+            case .backMatter:  back.append(.generated(block))
+            }
+        }
+        return (front, back)
     }
 
     /// Runs the ordered per-entry loop: sorts by `sortOrder`, resolves each position's
@@ -569,6 +644,8 @@ class CollectionContentResolver {
         let headnoteSummaryId: UUID?
         /// The source highlight's colour raw value (`.excerpt` entries only, Phase 5).
         let excerptColorTag: String?
+        /// The apparatus block type raw value (`.generated` entries only, Phase 6).
+        let generatedBlockType: String?
         /// Per-entry highlight override (Phase 5; `nil` = inherit; section default on
         /// headings). See `CollectionEntry.applyHighlightsOverride`.
         let applyHighlightsOverride: Bool?
@@ -601,6 +678,7 @@ class CollectionContentResolver {
             includeHeadnote = entry.includeHeadnote
             headnoteSummaryId = entry.headnoteSummaryId
             excerptColorTag = entry.entryKind == .excerpt ? entry.excerptColorTag : nil
+            generatedBlockType = entry.entryKind == .generated ? entry.generatedBlockType : nil
             applyHighlightsOverride = entry.applyHighlightsOverride
             includeNotesOverride = entry.includeNotesOverride
             includeSourceNoteOverride = entry.includeSourceNoteOverride
@@ -627,6 +705,7 @@ class CollectionContentResolver {
             includeHeadnote = false
             headnoteSummaryId = nil
             excerptColorTag = nil
+            generatedBlockType = nil
             applyHighlightsOverride = nil
             includeNotesOverride = nil
             includeSourceNoteOverride = nil
@@ -841,8 +920,9 @@ class CollectionContentResolver {
     ///   - headingLevel: The outline-resolved level emitted on `.heading` items
     ///     (already clamped/orphan-corrected by the caller via `CollectionOutline`).
     /// - Returns: `nil` for `.unrecognized` kinds (written by a newer app version — this
-    ///   build cannot render them) and for document entries with empty ids (malformed
-    ///   sync payloads), both of which are skipped rather than emitted as junk items.
+    ///   build cannot render them), for `.generated` entries whose block type this build
+    ///   doesn't know (same newer-version guard), and for document entries with empty
+    ///   ids (malformed sync payloads) — all skipped rather than emitted as junk items.
     private func resolveEntry(
         _ ref: EntryRef,
         section: SectionOverrides,
@@ -856,6 +936,18 @@ class CollectionContentResolver {
             return .prose(ref.proseRTF ?? Data())
         case .excerpt:
             return excerptItem(for: ref, batch: batch)
+        case .generated:
+            // Generated apparatus (Phase 6): resolve the block from the collection's
+            // resolved document membership via the single block-resolution seam,
+            // fed by the live data source (index, rollup, NARA index, SwiftData).
+            // Read-only in both purposes — preview and export render identical blocks.
+            // An unknown block type (a newer build's vocabulary) is skipped, mirroring
+            // the `.unrecognized` kind guard: degraded, never corrupted.
+            guard let raw = ref.generatedBlockType,
+                  let blockType = CollectionGeneratedBlockType(rawValue: raw) else { return nil }
+            return await .generated(CollectionGeneratedBlocks.resolve(
+                type: blockType, documents: batch.collectionDocuments,
+                dataSource: LiveGeneratedBlockDataSource(resolver: self, batch: batch)))
         case .unrecognized:
             // Written by a newer app version — this build cannot render it.
             // Skip rather than emit a junk document item (Authoring Phase 1 guard).
@@ -1091,10 +1183,13 @@ class CollectionContentResolver {
             colorTag: ref.excerptColorTag))
     }
 
-    /// A header-less history.state.gov-style citation for a document reference — the
-    /// same manifest + formatter path document items use, without needing the volume XML.
-    /// Shared by the excerpt source line and the related-documents "See also:" line;
-    /// falls back to `"volumeId/documentId"` when the manifest doesn't know the volume.
+    /// The history.state.gov-style citation for a document reference — the same
+    /// manifest + formatter path document items use, without needing the volume XML
+    /// (`HistoryAtStateCitationFormatter` reads only volume metadata and the document
+    /// number, never the document header/dateline, so this IS the full citation).
+    /// Shared by the excerpt source line, the related-documents "See also:" line, and
+    /// the generated-blocks data source; falls back to `"volumeId/documentId"` when
+    /// the manifest doesn't know the volume.
     private func shortCitation(volumeId: String, documentId: String,
                                batch: BatchContext) -> String {
         let docNum: String? = documentId.hasPrefix("d")
@@ -1106,6 +1201,86 @@ class CollectionContentResolver {
         return batch.manifestMap[volumeId]
             .map { batch.formatter.format(document: docMeta, volume: FRUSVolumeMetadata($0)) }
             ?? "\(volumeId)/\(documentId)"
+    }
+
+    // MARK: - Live generated-block data source (Phase 6)
+
+    /// The production `CollectionGeneratedBlockDataSource`: wires the block resolvers to
+    /// the FTS5 index (`document_dates`, `document_sources`), the materialised People-
+    /// browser rollup (`PersonMentionStore`), the bundled NARA resolution index
+    /// (`VolumeSourcesIndexStore`), and SwiftData tags — all read-only, so blocks answer
+    /// identically for `.preview` and `.export`. Every accessor degrades to empty when
+    /// its backing service is unavailable (e.g. tests without a pipeline), which the
+    /// blocks render as their localized "nothing to list" row.
+    private struct LiveGeneratedBlockDataSource: CollectionGeneratedBlockDataSource {
+        /// The owning resolver — supplies the citation path and the shared services.
+        let resolver: CollectionContentResolver
+        /// The batch whose manifest map / formatter / render models serve citations.
+        let batch: BatchContext
+
+        func citation(volumeId: String, documentId: String) -> String {
+            // The single citation path: header-independent (the formatter never reads
+            // header/dateline), so block rows match the document items' citations and
+            // capped previews match exports by construction (v1.10).
+            resolver.shortCitation(volumeId: volumeId, documentId: documentId, batch: batch)
+        }
+
+        func dateMetadata(
+            for documents: [(volumeId: String, documentId: String)]
+        ) async -> [String: DocumentDateMetadata] {
+            guard let pipeline = resolver.appState.indexingPipeline else { return [:] }
+            return (try? await pipeline.dateMetadataByDocumentKey(documents)) ?? [:]
+        }
+
+        func documentSources(
+            for documents: [(volumeId: String, documentId: String)]
+        ) async -> [CollectionGeneratedBlocks.SourceRecord] {
+            guard let pipeline = resolver.appState.indexingPipeline else { return [] }
+            let rows = (try? await pipeline.documentSourcesByKey(documents)) ?? [:]
+            return rows.values.map {
+                CollectionGeneratedBlocks.SourceRecord(
+                    volumeId: $0.volumeId, documentId: $0.documentId,
+                    repository: $0.repository, recordGroup: $0.recordGroup,
+                    lotFile: $0.lotFile, seriesName: $0.seriesName, rawText: $0.rawText)
+            }
+        }
+
+        func archivalResolution(recordGroup: String?, lotFile: String?)
+            -> CollectionGeneratedBlocks.ArchivalLink? {
+            VolumeSourcesIndexStore.shared?
+                .resolution(recordGroup: recordGroup, lotFile: lotFile)
+                .map { CollectionGeneratedBlocks.ArchivalLink(title: $0.title,
+                                                              urlString: $0.catalogURL) }
+        }
+
+        func personMentions(
+            for documents: [(volumeId: String, documentId: String)]
+        ) async -> [CollectionGeneratedBlocks.PersonMention] {
+            guard let store = resolver.appState.personMentionStore else { return [] }
+            let mentions = (try? await store.rollupMentions(forDocuments: documents)) ?? []
+            return mentions.map {
+                CollectionGeneratedBlocks.PersonMention(
+                    identityKey: "r\($0.rollupId)", name: $0.canonicalName,
+                    description: $0.description, role: $0.role,
+                    volumeId: $0.volumeId, documentId: $0.documentId)
+            }
+        }
+
+        func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] {
+            let tags = (try? resolver.modelContext.fetch(FetchDescriptor<UserTag>())) ?? []
+            guard !tags.isEmpty else { return [] }
+            let assignments = (try? resolver.modelContext.fetch(
+                FetchDescriptor<DocumentTagAssignment>())) ?? []
+            // The batch already carries every research note — the same pool entry
+            // note-links resolve against — so no second fetch is needed.
+            return tags.map { tag in
+                let refs = CollectionDocumentDiscovery.tagDocumentRefs(
+                    tagId: tag.id, notes: batch.allNotes, assignments: assignments)
+                return CollectionGeneratedBlocks.TagRecord(
+                    name: tag.name,
+                    documents: refs.map { (volumeId: $0.volumeId, documentId: $0.documentId) })
+            }
+        }
     }
 
     /// Resolves the stored `GeneratedSummary` text for a headnote: the explicitly chosen

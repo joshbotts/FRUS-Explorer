@@ -84,9 +84,10 @@ import Foundation
 ///          it arrives as the resolver's leading `.prose` item
 ///   1.7 — Authoring Phase 5: opt-in headnote — a labeled paragraph plus italic-run
 ///          abstract above the body (`headnoteXML`); a requested headnote with no stored
-///          summary renders a placeholder note. Footnote rendering here remains ungated
+///          summary renders a placeholder note. Footnote rendering here remained ungated
 ///          (pre-existing behavior — this exporter never consumed the legacy
 ///          `footnoteStyle`), so untouched collections export byte-identically
+///          (gap since closed — see 1.10)
 ///   1.8 — Authoring Phase 5 (excerpts): `.excerpt` items render as quote-styled
 ///          paragraphs (`ExcerptQuote`: indented, italic, left accent border) plus an
 ///          `ExcerptSource` source-citation paragraph. The two styles join `stylesXML`
@@ -97,7 +98,36 @@ import Foundation
 ///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
 ///          non-empty `relatedDocumentCitations` emits a "See also:" paragraph after
 ///          the source note (existing `DocURL` style — no new dormant style needed).
-///          Footnote rendering remains ungated (the pre-existing gap, unchanged)
+///          Footnote rendering remained ungated (the pre-existing gap, unchanged —
+///          resolved: owner decision 2026-07-03, see 1.10)
+///   1.10 — Footnote gate (owner decision 2026-07-03): the body honours
+///          `doc.includeFootnotesOverride ?? options.includeFootnotes`, mirroring the
+///          shared HTML renderer's semantics exactly — when the flag is `false` no
+///          footnote body is registered in `word/footnotes.xml` and no
+///          `<w:footnoteReference>` is emitted; inline markers fall back to plain
+///          superscript label runs (HTML likewise keeps its `.fn-marker` buttons while
+///          dropping the bodies). The default pair for an untouched collection is
+///          `(true, false)`, so untouched collections keep exporting byte-identically;
+///          legacy `footnoteStyle` values of `none`/`sourceNoteOnly` now suppress
+///          footnotes BY DESIGN (they previously rendered them regardless)
+///   1.11 — Authoring Phase 6 (generated apparatus): `.generated` items render as a
+///          `SectionHeading` title (so Word's field-code ToC lists the block like a
+///          section) plus one `GeneratedRow` paragraph per row (gray small-run secondary
+///          text; per-row `<w:ind>` for indent levels). Rows with a URL emit a real
+///          `<w:hyperlink r:id>` — `DocxRenderContext` allocates hyperlink relationship
+///          ids (rId3+) and `documentRelsXML` emits the `TargetMode="External"`
+///          relationships; the `xmlns:r` declaration and the extra relationships appear
+///          ONLY when a hyperlink exists, so hyperlink-free exports are byte-identical.
+///          The `GeneratedRow` + `Hyperlink` styles join `stylesXML` unconditionally —
+///          the established dormant-style precedent (v1.8): document.xml is unchanged
+///          for collections without blocks
+///   1.12 — Authoring Phase 6 review fix: generated-block row text and secondary text
+///          run through the `_…_`-to-italic conversion (`markdownItalicRunXML`, the
+///          run-level core factored out of `markdownItalicRuns`) — bibliography and
+///          chronology rows carry the citation formatter's `_Foreign Relations…_`
+///          series title, which HTML/PDF already render as italics; DOCX printed the
+///          literal underscores. Applies inside `<w:hyperlink>` too (each run keeps
+///          the `Hyperlink` rStyle)
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -132,7 +162,13 @@ final class DocxCollectionExporter: CollectionExporter {
         let bodyXML = documentBodyXML(collection: collection, items: items,
                                        ctx: ctx, options: options)
         let wNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        let docXML = "<w:document xmlns:w=\"\(wNS)\">\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
+        // The relationships namespace is declared ONLY when a hyperlink run exists
+        // (Phase 6 generated-block rows), so hyperlink-free document.xml bytes are
+        // unchanged from prior builds.
+        let rNSAttr = ctx.hyperlinkURLs.isEmpty
+            ? ""
+            : " xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\""
+        let docXML = "<w:document xmlns:w=\"\(wNS)\"\(rNSAttr)>\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
 
         let entries: [ZipEntry] = [
             ZipEntry(path: "[Content_Types].xml",
@@ -140,7 +176,7 @@ final class DocxCollectionExporter: CollectionExporter {
             ZipEntry(path: "_rels/.rels",
                      data: Data((decl + rootRelsXML()).utf8)),
             ZipEntry(path: "word/_rels/document.xml.rels",
-                     data: Data((decl + documentRelsXML()).utf8)),
+                     data: Data((decl + documentRelsXML(hyperlinkURLs: ctx.hyperlinkURLs)).utf8)),
             ZipEntry(path: "word/styles.xml",
                      data: Data((decl + stylesXML()).utf8)),
             ZipEntry(path: "word/document.xml",
@@ -180,15 +216,25 @@ final class DocxCollectionExporter: CollectionExporter {
         """
     }
 
-    private func documentRelsXML() -> String {
+    /// Builds `word/_rels/document.xml.rels`. Beyond the fixed styles/footnotes parts,
+    /// one external-hyperlink relationship is emitted per URL collected by the render
+    /// context (Phase 6 generated-block rows), ids `rId3`+ in first-use order — matching
+    /// the ids `DocxRenderContext.hyperlinkRelId(for:)` handed out during body rendering.
+    /// With no hyperlinks the output is byte-identical to the pre-Phase-6 part.
+    private func documentRelsXML(hyperlinkURLs: [String] = []) -> String {
         let pfx  = "http://schemas.openxmlformats.org/package/2006/relationships"
         let oxml = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-        return """
+        var rels = """
         <Relationships xmlns="\(pfx)">
           <Relationship Id="rId1" Type="\(oxml)/styles"    Target="styles.xml"/>
           <Relationship Id="rId2" Type="\(oxml)/footnotes" Target="footnotes.xml"/>
-        </Relationships>
         """
+        for (index, url) in hyperlinkURLs.enumerated() {
+            rels += "\n  <Relationship Id=\"rId\(3 + index)\" Type=\"\(oxml)/hyperlink\" "
+                + "Target=\"\(xmlEscaped(url))\" TargetMode=\"External\"/>"
+        }
+        rels += "\n</Relationships>"
+        return rels
     }
 
     private func stylesXML() -> String {
@@ -326,6 +372,11 @@ final class DocxCollectionExporter: CollectionExporter {
             </w:pPr>
             <w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="555555"/></w:rPr>
           </w:style>
+          <w:style w:type="paragraph" w:styleId="GeneratedRow">
+            <w:name w:val="Generated Row"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="60"/></w:pPr>
+          </w:style>
           <w:style w:type="paragraph" w:styleId="ResearchNote">
             <w:name w:val="Research Note"/>
             <w:basedOn w:val="Normal"/>
@@ -348,6 +399,11 @@ final class DocxCollectionExporter: CollectionExporter {
             <w:name w:val="footnote reference"/>
             <w:basedOn w:val="DefaultParagraphFont"/>
             <w:rPr><w:vertAlign w:val="superscript"/></w:rPr>
+          </w:style>
+          <w:style w:type="character" w:styleId="Hyperlink">
+            <w:name w:val="Hyperlink"/>
+            <w:basedOn w:val="DefaultParagraphFont"/>
+            <w:rPr><w:color w:val="1A4C8F"/><w:u w:val="single"/></w:rPr>
           </w:style>
         </w:styles>
         """
@@ -421,6 +477,8 @@ final class DocxCollectionExporter: CollectionExporter {
                 body += proseDocxXML(rtf)
             case .excerpt(let excerpt):
                 body += excerptDocxXML(excerpt)
+            case .generated(let block):
+                body += generatedDocxXML(block, ctx: ctx)
             case .document(let doc):
                 body += documentSectionXML(doc: doc, ctx: ctx, options: options)
             }
@@ -471,11 +529,15 @@ final class DocxCollectionExporter: CollectionExporter {
                 // Phase 5: the per-entry/section override when resolved, else the
                 // collection-level option.
                 let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
+                // Footnote gate (owner decision 2026-07-03): mirrors the shared HTML
+                // renderer — `false` drops footnote bodies, markers stay as labels.
+                let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
                 let tracker: HighlightPaintTracker? =
                     (applyHighlights && !doc.highlights.isEmpty)
                         ? HighlightPaintTracker(doc.highlights)
                         : nil
-                body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker)
+                body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker,
+                                                    includeFootnotes: includeFootnotes)
             } else {
                 let paras = doc.bodyText
                     .components(separatedBy: "\n\n")
@@ -604,13 +666,54 @@ final class DocxCollectionExporter: CollectionExporter {
         return xml
     }
 
+    /// Renders a generated apparatus block (Authoring Phase 6): the block title as a
+    /// `SectionHeading` paragraph (outline level 0, so Word's field-code ToC lists it
+    /// like an authored section), then one `GeneratedRow` paragraph per row — the row
+    /// text (wrapped in a real `<w:hyperlink>` when the row carries a URL), an optional
+    /// gray small-run secondary text, and a per-row `<w:ind>` for indent levels.
+    private func generatedDocxXML(_ block: CollectionGeneratedBlock,
+                                  ctx: DocxRenderContext) -> String {
+        var xml = markdownItalicRuns(block.title, styleId: "SectionHeading", bold: true)
+        for row in block.rows {
+            // Row text and secondary text run through the run-level `_…_` conversion:
+            // bibliography/chronology rows carry the citation formatter's italicized
+            // series title, which every other format renders as italics — DOCX must
+            // not print the literal underscores (Phase 6 review fix).
+            var runs = ""
+            if let url = row.url, !url.isEmpty {
+                let relId = ctx.hyperlinkRelId(for: url)
+                runs += "<w:hyperlink r:id=\"\(relId)\">"
+                    + markdownItalicRunXML(row.text, baseRPr: "<w:rStyle w:val=\"Hyperlink\"/>")
+                    + "</w:hyperlink>"
+            } else {
+                runs += markdownItalicRunXML(row.text)
+            }
+            if let secondary = row.secondaryText, !secondary.isEmpty {
+                runs += markdownItalicRunXML(
+                    "  \(secondary)",
+                    baseRPr: "<w:color w:val=\"555555\"/><w:sz w:val=\"18\"/><w:szCs w:val=\"18\"/>")
+            }
+            let indent = min(max(row.indentLevel, 0), 4)
+            let ind = indent > 0 ? "<w:ind w:left=\"\(indent * 360)\"/>" : ""
+            xml += "    <w:p>\n"
+                + "      <w:pPr><w:pStyle w:val=\"GeneratedRow\"/>\(ind)</w:pPr>\n"
+                + "      \(runs)\n"
+                + "    </w:p>\n"
+        }
+        return xml
+    }
+
     // MARK: - Rich Rendering (Session 83)
 
-    // Context object that tracks footnote IDs and collects footnote XML
-    // across all documents in one export run. Created fresh per buildDocx call.
+    // Context object that tracks footnote IDs, collects footnote XML, and allocates
+    // external-hyperlink relationship ids across all documents in one export run.
+    // Created fresh per buildDocx call.
     private final class DocxRenderContext {
         private(set) var nextId = 1
         private(set) var footnoteXMLs: [String] = []
+        /// External hyperlink targets in first-use order; index `i` is relationship
+        /// `rId(3 + i)` (rId1/rId2 are the fixed styles/footnotes parts).
+        private(set) var hyperlinkURLs: [String] = []
 
         func allocate() -> Int {
             defer { nextId += 1 }
@@ -619,6 +722,18 @@ final class DocxCollectionExporter: CollectionExporter {
 
         func addFootnote(_ xml: String) {
             footnoteXMLs.append(xml)
+        }
+
+        /// Returns the relationship id for an external hyperlink target, allocating a
+        /// new one (`rId3`+) on first use and reusing it for repeated URLs. The matching
+        /// `<Relationship TargetMode="External">` entries are emitted by
+        /// `documentRelsXML(hyperlinkURLs:)` after body rendering completes.
+        func hyperlinkRelId(for url: String) -> String {
+            if let index = hyperlinkURLs.firstIndex(of: url) {
+                return "rId\(3 + index)"
+            }
+            hyperlinkURLs.append(url)
+            return "rId\(3 + hyperlinkURLs.count - 1)"
         }
     }
 
@@ -659,21 +774,32 @@ final class DocxCollectionExporter: CollectionExporter {
     /// Pre-scans footnote labels to assign integer IDs, renders body nodes,
     /// then adds footnote bodies to `ctx`.
     ///
-    /// - Parameter tracker: When non-`nil`, highlight ranges are painted onto
-    ///   body text via `<w:highlight>` runs as flat-text leaf content is emitted.
-    ///   Always passed as `nil` into footnote rendering — footnote bodies fall
-    ///   outside the flat-text coordinate space (`appendFlatText` only walks
-    ///   `model.bodyNodes`), so highlight offsets never point into them.
+    /// - Parameters:
+    ///   - tracker: When non-`nil`, highlight ranges are painted onto
+    ///     body text via `<w:highlight>` runs as flat-text leaf content is emitted.
+    ///     Always passed as `nil` into footnote rendering — footnote bodies fall
+    ///     outside the flat-text coordinate space (`appendFlatText` only walks
+    ///     `model.bodyNodes`), so highlight offsets never point into them.
+    ///   - includeFootnotes: When `false` (owner decision 2026-07-03), no footnote
+    ///     body is registered with `ctx` and the label map stays empty, so inline
+    ///     markers fall back to plain superscript label runs instead of
+    ///     `<w:footnoteReference>` — matching the shared HTML renderer, which keeps
+    ///     markers while dropping the footnote bodies.
     private func renderModelToDocxParagraphs(
         _ model: FRUSDocumentRenderModel,
         ctx: DocxRenderContext,
-        tracker: HighlightPaintTracker? = nil
+        tracker: HighlightPaintTracker? = nil,
+        includeFootnotes: Bool = true
     ) -> String {
-        // Pre-assign Word integer IDs to every footnote in this document
+        // Pre-assign Word integer IDs to every footnote in this document. Skipped when
+        // footnotes are gated off — an empty map routes every marker to the
+        // superscript-label fallback and nothing references word/footnotes.xml.
         var labelMap: [String: Int] = [:]
-        for note in model.footnotes {
-            if case .footnoteBody(_, _, _, _, let label, _) = note {
-                labelMap[label] = ctx.allocate()
+        if includeFootnotes {
+            for note in model.footnotes {
+                if case .footnoteBody(_, _, _, _, let label, _) = note {
+                    labelMap[label] = ctx.allocate()
+                }
             }
         }
 
@@ -683,6 +809,7 @@ final class DocxCollectionExporter: CollectionExporter {
             .joined()
 
         // Render footnote bodies and register with context — tracker: nil (see above).
+        // With footnotes gated off the map is empty, so nothing registers.
         for note in model.footnotes {
             if case .footnoteBody(_, _, _, _, let label, let children) = note,
                let wordId = labelMap[label] {
@@ -955,39 +1082,54 @@ final class DocxCollectionExporter: CollectionExporter {
     ///   - styleId: The Word paragraph style to apply.
     ///   - bold: When `true`, the base run properties include `<w:b/>`.
     private func markdownItalicRuns(_ text: String, styleId: String, bold: Bool = false) -> String {
+        let runs = markdownItalicRunXML(text, baseRPr: bold ? "<w:b/>" : "")
+        return runs.isEmpty
+            ? styledPara("", styleId: styleId)
+            : wPara(runs: runs, styleId: styleId)
+    }
+
+    /// The run-level core of `markdownItalicRuns` (Authoring Phase 6 review fix): emits
+    /// alternating normal / italic `<w:r>` runs for `_span_` markers, with **no**
+    /// enclosing `<w:p>` — for renderers that assemble their own paragraphs from
+    /// multiple run groups (the generated-block rows, whose citations carry the
+    /// formatter's `_Foreign Relations…_` series-title markers).
+    ///
+    /// - Parameters:
+    ///   - text: Raw (un-escaped) source text with optional `_span_` markers.
+    ///   - baseRPr: Run-property XML applied to every run (e.g. `<w:b/>`, a
+    ///     `<w:rStyle w:val="Hyperlink"/>`, or the secondary-text colour/size pair);
+    ///     italic spans append `<w:i/>` after it.
+    /// - Returns: The run XML; empty when `text` is empty.
+    private func markdownItalicRunXML(_ text: String, baseRPr: String = "") -> String {
         guard let regex = try? NSRegularExpression(pattern: "_([^_\\n]+)_") else {
-            return styledPara(escaped(text), styleId: styleId)
+            return "<w:r><w:rPr>\(baseRPr)</w:rPr><w:t xml:space=\"preserve\">\(xmlEscaped(text))</w:t></w:r>"
         }
         let ns = text as NSString
         let length = ns.length
         var runs = ""
         var lastEnd = 0
-        var boldTag: String { bold ? "<w:b/>" : "" }
 
         for match in regex.matches(in: text, range: NSRange(location: 0, length: length)) {
             // Normal run before the italic span
             let beforeRange = NSRange(location: lastEnd, length: match.range.location - lastEnd)
             if beforeRange.length > 0 {
                 let chunk = xmlEscaped(ns.substring(with: beforeRange))
-                runs += "<w:r><w:rPr>\(boldTag)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+                runs += "<w:r><w:rPr>\(baseRPr)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
             }
             // Italic run for the matched span content
             let g1 = match.range(at: 1)
             if g1.location != NSNotFound, g1.length > 0 {
                 let chunk = xmlEscaped(ns.substring(with: g1))
-                runs += "<w:r><w:rPr>\(boldTag)<w:i/></w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+                runs += "<w:r><w:rPr>\(baseRPr)<w:i/></w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
             }
             lastEnd = match.range.upperBound
         }
         // Trailing normal run
         if lastEnd < length {
             let chunk = xmlEscaped(ns.substring(from: lastEnd))
-            runs += "<w:r><w:rPr>\(boldTag)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
+            runs += "<w:r><w:rPr>\(baseRPr)</w:rPr><w:t xml:space=\"preserve\">\(chunk)</w:t></w:r>"
         }
-
-        return runs.isEmpty
-            ? styledPara("", styleId: styleId)
-            : wPara(runs: runs, styleId: styleId)
+        return runs
     }
 
     /// Emits a styled paragraph with a single plain-text run.

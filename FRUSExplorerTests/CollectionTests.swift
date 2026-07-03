@@ -921,10 +921,11 @@ struct CollectionTests {
     /// Short label for an export item's kind, for order assertions.
     private func kindLabel(_ item: CollectionExportItem) -> String {
         switch item {
-        case .heading:  return "heading"
-        case .prose:    return "prose"
-        case .excerpt:  return "excerpt"
-        case .document: return "document"
+        case .heading:   return "heading"
+        case .prose:     return "prose"
+        case .excerpt:   return "excerpt"
+        case .generated: return "generated"
+        case .document:  return "document"
         }
     }
 
@@ -1227,12 +1228,26 @@ struct CollectionTests {
             citation: "Contract Excerpt Citation",
             colorTag: "green")
 
+        // Phase 6: a pre-resolved generated apparatus block, exercising every row
+        // feature (secondary text, external URL, indent level).
+        let generated = CollectionGeneratedBlock(
+            type: .archivalSources,
+            title: "Contract Apparatus Block",
+            rows: [
+                CollectionGeneratedRow(text: "Record Group 59"),
+                CollectionGeneratedRow(text: "Contract Central Files",
+                                       secondaryText: "Documents 1, 2",
+                                       url: "https://catalog.archives.gov/id/302021",
+                                       indentLevel: 1),
+            ])
+
         let items: [CollectionExportItem] = [
             .heading("Contract Part I", level: 1),
             .prose(rtf),
             .document(doc),
             .excerpt(excerpt),                           // Phase 5: frozen quotation
             .heading("Contract Nested Sub", level: 2),   // Phase 4: leveled headings
+            .generated(generated),                       // Phase 6: apparatus block
         ]
         return (CollectionExportMetadata(name: "Exporter Contract", note: nil), items)
     }
@@ -1261,6 +1276,14 @@ struct CollectionTests {
         #expect(html.contains("See also:"))
         #expect(html.contains("Related Contract Citation"))
         #expect(html.contains(".see-also {"))                        // relatedCSS emitted when used
+        #expect(html.contains("generated-block generated-archivalSources"))  // .generated section
+        #expect(html.contains("class=\"generated-title\">Contract Apparatus Block"))
+        #expect(html.contains("Record Group 59"))                    // plain row
+        #expect(html.contains("<li class=\"generated-row indent-1\">"))      // indented row
+        #expect(html.contains("<a href=\"https://catalog.archives.gov/id/302021\""))  // row link
+        #expect(html.contains("class=\"generated-secondary\">Documents 1, 2"))
+        #expect(html.contains("section.generated-block"))            // generatedCSS emitted when used
+        #expect(html.contains("<li class=\"toc-section\">Contract Apparatus Block</li>"))  // ToC by title
 
         // DOCX — the stored-mode ZIP keeps document.xml uncompressed, so the emitted XML
         // text appears verbatim in the archive bytes.
@@ -1278,6 +1301,17 @@ struct CollectionTests {
         #expect(docxContains("ExcerptSource"))
         #expect(docxContains("See also:"))                           // related-documents line
         #expect(docxContains("Related Contract Citation"))
+        // .generated block (Phase 6): SectionHeading title (enters Word's ToC field),
+        // GeneratedRow rows, a real external hyperlink relationship, and the xmlns:r
+        // declaration that appears only when a hyperlink exists.
+        #expect(docxContains("Contract Apparatus Block"))
+        #expect(docxContains("GeneratedRow"))
+        #expect(docxContains("Record Group 59"))
+        #expect(docxContains("Documents 1, 2"))
+        #expect(docxContains("<w:hyperlink r:id=\"rId3\">"))
+        #expect(docxContains("Target=\"https://catalog.archives.gov/id/302021\" TargetMode=\"External\""))
+        #expect(docxContains("xmlns:r="))
+        #expect(docxContains("<w:ind w:left=\"360\"/>"))             // indent-1 row
         // The ToC field's `\o` level range is content-driven (Phase 4 review fix): this
         // fixture's deepest authored heading is level 2, so the field must stay the exact
         // pre-Phase-4 `\o "1-2"` — because `\o` bounds the `\u` outline-level sweep, a
@@ -1309,6 +1343,10 @@ struct CollectionTests {
         #expect(pdfText.contains("Contract Excerpt Citation"))      // …source line
         #expect(pdfText.contains("See also:"))                      // related-documents line
         #expect(pdfText.contains("Related Contract Citation"))
+        #expect(pdfText.contains("Contract Apparatus Block"))       // .generated title (body + cover ToC)
+        #expect(pdfText.contains("Record Group 59"))                // …row
+        #expect(pdfText.contains("Documents 1, 2"))                 // …secondary text
+        #expect(pdfText.contains("catalog.archives.gov/id/302021")) // …URL as visible text (v1.14 tradeoff)
     }
 
     @Test("ExporterContract: Zotero RIS and BibTeX export the document and skip structural items")
@@ -1325,6 +1363,8 @@ struct CollectionTests {
         #expect(!ris.contains("Editorial contract prose."))
         #expect(!ris.contains("Contract excerpt passage."))   // excerpts skipped by design
         #expect(!ris.contains("Related Contract Citation"))   // related docs skipped too
+        #expect(!ris.contains("Contract Apparatus Block"))    // generated blocks skipped too
+        #expect(!ris.contains("Record Group 59"))
 
         // BibTeX — same discipline; records are keyed volumeId_documentId.
         let bibURL = try await BibTeXCollectionExporter().export(metadata: metadata, items: items)
@@ -1335,6 +1375,8 @@ struct CollectionTests {
         #expect(!bib.contains("Editorial contract prose."))
         #expect(!bib.contains("Contract excerpt passage."))   // excerpts skipped by design
         #expect(!bib.contains("Related Contract Citation"))   // related docs skipped too
+        #expect(!bib.contains("Contract Apparatus Block"))    // generated blocks skipped too
+        #expect(!bib.contains("Record Group 59"))
     }
 
     @Test("SharedRenderer: the HTML export file is byte-identical to CollectionItemHTMLRenderer.pageHTML")
@@ -1395,6 +1437,7 @@ struct CollectionTests {
         #expect(!page.contains("excerpt"))    // Phase 5 excerpt layer stays dormant too
         #expect(!page.contains("see-also"))   // Phase 5 related-documents layer too
         #expect(!page.contains("See also"))
+        #expect(!page.contains("generated-block"))   // Phase 6 apparatus layer stays dormant too
         #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
     }
 
@@ -2081,6 +2124,8 @@ struct CollectionTests {
                       "applyHighlightsOverride", "includeNotesOverride",
                       "includeSourceNoteOverride", "includeFootnotesOverride",
                       "summaryPromptIdOverride", "includeRelatedDocuments",
+                      // Phase 6 generated-block key — likewise absent.
+                      "generatedBlockType",
                       // …and selectedHighlightIds NEVER serializes, in any file.
                       "selectedHighlightIds"] {
             #expect(!json.contains("\"\(v2Key)\""), "write-minimum file must not carry '\(v2Key)'")
@@ -2421,6 +2466,95 @@ struct CollectionTests {
         let off = CollectionItemHTMLRenderer(options: options).pageHTML(metadata: metadata, items: items)
         #expect(!off.contains("The footnote text."))
         #expect(off.contains("RG 59, Central Files."))   // source note is independent now
+    }
+
+    @Test("PDF/DOCX footnote gate (owner decision 2026-07-03): includeFootnotes now drives footnote emission in both formats — false drops the footnote bodies (markers stay, matching HTML); an untouched collection's derived (true,false) pair keeps footnotes, byte-identically for DOCX")
+    func pdfDocxFootnoteGate() async throws {
+        // Same fixture as htmlFootnoteGate: one paragraph with a marker + one footnote.
+        let model = FRUSDocumentRenderModel(
+            documentId: "d1",
+            bodyNodes: [.paragraph([.plainText("Gated body."),
+                                    .footnoteMarker(id: "fn1", displayLabel: "1")])],
+            footnotes: [.footnoteBody(id: "fn1", type: .editorial, printedNumber: "1",
+                                      sequentialNumber: 1, displayLabel: "1",
+                                      children: [.plainText("The footnote text.")])])
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "fnvol", sortOrder: 1,
+            title: "Footnoted", bodyText: "Gated body.",
+            citation: "Footnoted Citation", renderModel: model,
+            sourceNoteText: "RG 59, Central Files.")
+        let items: [CollectionExportItem] = [.document(doc)]
+        let metadata = CollectionExportMetadata(name: "Gate", note: nil)
+
+        var onOptions = CollectionExportOptions()
+        onOptions.includeFootnotes = true
+        onOptions.includeSourceNote = true
+        var offOptions = onOptions
+        offOptions.includeFootnotes = false
+
+        // DOCX — the stored-mode ZIP keeps document.xml/footnotes.xml uncompressed, so
+        // XML substrings are directly searchable in the package bytes.
+        let docxOn = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items, options: onOptions))
+        func onContains(_ s: String) -> Bool { docxOn.range(of: Data(s.utf8)) != nil }
+        #expect(onContains("The footnote text."))
+        #expect(onContains("<w:footnoteReference w:id="))
+        #expect(onContains("RG 59, Central Files."))
+        let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items, options: offOptions))
+        func offContains(_ s: String) -> Bool { docxOff.range(of: Data(s.utf8)) != nil }
+        #expect(!offContains("The footnote text."))
+        #expect(!offContains("<w:footnoteReference w:id="))
+        #expect(offContains("Gated body."))
+        // Markers survive as plain superscript label runs — HTML likewise keeps its
+        // .fn-marker buttons when footnote bodies are dropped.
+        #expect(offContains("<w:vertAlign w:val=\"superscript\"/>"))
+        #expect(offContains("RG 59, Central Files."))   // source note is independent
+
+        // PDF — extract page text with PDFKit.
+        let pdfOn = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items, options: onOptions))
+        let pdfOnDoc = try #require(PDFDocument(data: pdfOn))
+        let pdfOnText = (0..<pdfOnDoc.pageCount)
+            .compactMap { pdfOnDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(pdfOnText.contains("The footnote text."))
+        #expect(pdfOnText.contains("RG 59, Central Files."))
+        let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items, options: offOptions))
+        let pdfOffDoc = try #require(PDFDocument(data: pdfOff))
+        let pdfOffText = (0..<pdfOffDoc.pageCount)
+            .compactMap { pdfOffDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(!pdfOffText.contains("The footnote text."))
+        #expect(pdfOffText.contains("Gated body."))
+        #expect(pdfOffText.contains("RG 59, Central Files."))
+
+        // Untouched-collection identity: a legacy footnoteStyle "all" collection with a
+        // nil pair derives (true, false) — building options from it produces DOCX bytes
+        // identical to the default-options path (the ZIP writer zeroes timestamps and
+        // the cover date is day-granular), and the footnote text still renders. This is
+        // exactly today's ungated output for an untouched collection; only legacy
+        // none/sourceNoteOnly collections change, BY DESIGN (owner decision 2026-07-03).
+        let untouched = Collection(name: "Untouched")
+        #expect(untouched.includeFootnotes == nil)
+        var derived = CollectionExportOptions()
+        derived.includeFootnotes = untouched.effectiveIncludeFootnotes
+        derived.includeSourceNote = untouched.effectiveIncludeSourceNote
+        let derivedDocx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items, options: derived))
+        let defaultDocx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items))
+        #expect(derivedDocx == defaultDocx)
+        #expect(derivedDocx.range(of: Data("The footnote text.".utf8)) != nil)
+        // (No source-note assertion here: that gate lives in the resolver — it only
+        // populates `sourceNoteText` when includeSourceNote is on — and this fixture
+        // sets the field directly, bypassing the resolver.)
+        // PDF, same derivation: footnotes render for the untouched default.
+        let derivedPDF = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items, options: derived))
+        let derivedPDFDoc = try #require(PDFDocument(data: derivedPDF))
+        let derivedPDFText = (0..<derivedPDFDoc.pageCount)
+            .compactMap { derivedPDFDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(derivedPDFText.contains("The footnote text."))
     }
 
     @Test("NativeFormat v2 Phase 5 keys: footnote pair and headnote fields round-trip; absent keys leave the model defaults (nil pair, no headnote)")
@@ -3058,6 +3192,547 @@ struct CollectionTests {
         #expect(rowMove?.map(\.sortOrder) == [0, 1, 2, 3, 4])
     }
 
+    // MARK: - Generated apparatus blocks (Authoring Phase 6)
+
+    @Test("Generated block vocabulary: raw values are the frozen serialization strings; position hints and kind membership hold")
+    func generatedBlockTypeVocabulary() {
+        // The raw values are persisted (entry field + .fruscollection key) — renaming
+        // any of them is a data-format break, so they are pinned here.
+        #expect(CollectionGeneratedBlockType.allCases.map(\.rawValue) ==
+                ["bibliography", "chronology", "archivalSources", "personsIndex", "thematicIndex"])
+        // Chronology opens the reader (front matter); everything else is back matter.
+        #expect(CollectionGeneratedBlockType.chronology.defaultPosition == .frontMatter)
+        for type in CollectionGeneratedBlockType.allCases where type != .chronology {
+            #expect(type.defaultPosition == .backMatter)
+        }
+        // `.generated` is an authorable kind (unlike `.unrecognized`, which stays out).
+        #expect(CollectionEntryKind.allCases.contains(.generated))
+        #expect(!CollectionEntryKind.allCases.contains(.unrecognized))
+        // An unknown raw value degrades to nil, never to some other block type.
+        #expect(CollectionGeneratedBlockType(rawValue: "starCharts") == nil)
+    }
+
+    @Test("Resolver generated blocks: placeable anywhere, identical in preview and export, real rows resolve (degrading to fallbacks without an index), unknown block types are skipped")
+    @MainActor
+    func resolverGeneratedBlockResolution() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()   // no downloadManager/pipeline — resolution is read-only
+
+        let coll = Collection(name: "Apparatus")
+        context.insert(coll)
+
+        // Front-placed chronology, a heading, a document, then a back-placed
+        // bibliography — proving placement is positional, not fixed.
+        let chron = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        chron.entryKind = .generated
+        chron.generatedBlockType = CollectionGeneratedBlockType.chronology.rawValue
+        let h = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 1)
+        h.entryKind = .heading
+        h.text = "Part I"
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d3", volumeId: "appvol", sortOrder: 2)
+        let bib = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 3)
+        bib.entryKind = .generated
+        bib.generatedBlockType = CollectionGeneratedBlockType.bibliography.rawValue
+        // A block type from a newer build: skipped at resolve, never junk output.
+        let future = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 4)
+        future.entryKind = .generated
+        future.generatedBlockType = "starCharts"
+        // A malformed generated entry with no type at all: likewise skipped.
+        let typeless = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 5)
+        typeless.entryKind = .generated
+
+        let entries = [chron, h, d, bib, future, typeless]
+        for entry in entries {
+            entry.collection = coll
+            context.insert(entry)
+        }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let preview = try await resolver.resolve(
+            collection: coll, entries: entries, allNotes: [], purpose: .preview)
+        #expect(preview.map(kindLabel) == ["generated", "heading", "document", "generated"])
+
+        guard case .generated(let first) = preview[0],
+              case .generated(let last) = preview[3] else {
+            Issue.record("expected generated items at positions 0 and 3")
+            return
+        }
+        #expect(first.type == .chronology)
+        #expect(first.title == CollectionGeneratedBlockType.chronology.displayName)
+        // No indexing pipeline in this AppState: the document has no date, so the
+        // chronology degrades to the trailing "Undated" group — never an empty section.
+        #expect(!first.rows.isEmpty)
+        #expect(first.rows.first?.text == "Undated")
+        #expect(first.rows.last?.indentLevel == 1)
+        #expect(last.type == .bibliography)
+        // Unknown volume: the bibliography cites via the "volumeId/documentId" fallback.
+        #expect(last.rows.map(\.text) == ["appvol/d3"])
+
+        // Block resolution is read-only and purpose-independent: an export resolve
+        // renders the identical blocks (no downloads, no generation involved).
+        let export = try await resolver.resolve(
+            collection: coll, entries: entries, allNotes: [], purpose: .export)
+        #expect(export.map(kindLabel) == preview.map(kindLabel))
+        if case .generated(let exportFirst) = export[0] {
+            #expect(exportFirst.rows.map(\.text) == first.rows.map(\.text))
+        } else {
+            Issue.record("export items[0] should be a generated block")
+        }
+    }
+
+    @Test("Bibliography block: dedupes by document key, sorts by volume then document number (series order), cites through the data source")
+    @MainActor
+    func generatedBibliographyBlock() async {
+        var fixture = FixtureBlockDataSource()
+        fixture.citations = [
+            "v1/d2":   "Doc 2 of Volume One",
+            "v1/d10":  "Doc 10 of Volume One",
+            "v1/app1": "Appendix of Volume One",
+            "v2/d2":   "Doc 2 of Volume Two",
+        ]
+        // Duplicated membership + shuffled order: dedupe by key, then series order —
+        // volume id first, numeric document number within it (d10 after d2, never
+        // lexicographic), non-numeric ids after the numbered documents.
+        let documents: [(volumeId: String, documentId: String)] = [
+            ("v2", "d2"), ("v1", "d10"), ("v1", "app1"), ("v1", "d2"), ("v1", "d10"),
+        ]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .bibliography, documents: documents, dataSource: fixture)
+        #expect(block.title == CollectionGeneratedBlockType.bibliography.displayName)
+        #expect(block.rows.map(\.text) == [
+            "Doc 2 of Volume One", "Doc 10 of Volume One",
+            "Appendix of Volume One", "Doc 2 of Volume Two",
+        ])
+        #expect(block.rows.allSatisfy { $0.indentLevel == 0 && $0.url == nil })
+    }
+
+    @Test("Chronology block: date order with precision-honest labels and ranges, citations as secondary text, undated documents in a trailing indented group")
+    @MainActor
+    func generatedChronologyBlock() async {
+        var fixture = FixtureBlockDataSource()
+        fixture.citations = ["v1/d1": "Cite 1", "v1/d2": "Cite 2",
+                             "v1/d3": "Cite 3", "v1/d4": "Cite 4", "v1/d5": "Cite 5"]
+        fixture.dates = [
+            "v1/d1": DocumentDateMetadata(dateISO: "1969-02-15", dateISOMax: nil,
+                                          precision: .day, certainty: nil),
+            "v1/d2": DocumentDateMetadata(dateISO: "1969-01-01", dateISOMax: nil,
+                                          precision: .year, certainty: nil),
+            "v1/d4": DocumentDateMetadata(dateISO: "1968-12-01", dateISOMax: nil,
+                                          precision: .day, certainty: nil),
+            "v1/d5": DocumentDateMetadata(dateISO: "1969-03-01", dateISOMax: "1969-04-30",
+                                          precision: .month, certainty: nil),
+        ]
+        // d3 has no date row → the Undated group.
+        let documents: [(volumeId: String, documentId: String)] =
+            [("v1", "d1"), ("v1", "d2"), ("v1", "d3"), ("v1", "d4"), ("v1", "d5")]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .chronology, documents: documents, dataSource: fixture)
+
+        // 4 dated rows in date order, then the Undated heading + 1 indented document.
+        #expect(block.rows.count == 6)
+        #expect(block.rows[0].secondaryText == "Cite 4")   // 1968-12-01
+        #expect(block.rows[0].text.contains("1968"))
+        #expect(block.rows[1].text == "1969")              // year precision — never "January 1"
+        #expect(block.rows[1].secondaryText == "Cite 2")
+        #expect(block.rows[2].secondaryText == "Cite 1")   // 1969-02-15
+        #expect(block.rows[3].text.contains("–"))          // month-precision range
+        #expect(block.rows[3].secondaryText == "Cite 5")
+        #expect(block.rows[4].text == "Undated")
+        #expect(block.rows[5].text == "Cite 3")
+        #expect(block.rows[5].indentLevel == 1)
+    }
+
+    @Test("Sources & Archives block: groups document_sources by archival collection, enriches with the bundled NARA resolution, lists referencing documents at indent 1")
+    @MainActor
+    func generatedArchivalSourcesBlock() async {
+        typealias Record = CollectionGeneratedBlocks.SourceRecord
+        var fixture = FixtureBlockDataSource()
+        fixture.sources = [
+            Record(volumeId: "v1", documentId: "d1", repository: nil, recordGroup: "59",
+                   lotFile: "64 D 199", seriesName: "Conference Files", rawText: "raw a"),
+            Record(volumeId: "v1", documentId: "d2", repository: nil, recordGroup: "59",
+                   lotFile: "64 D 199", seriesName: "Conference Files", rawText: "raw b"),
+            Record(volumeId: "v2", documentId: "d3", repository: "Truman Library",
+                   recordGroup: nil, lotFile: nil, seriesName: nil, rawText: "raw c"),
+        ]
+        fixture.links = ["59|64 D 199": CollectionGeneratedBlocks.ArchivalLink(
+            title: "Conference Files, 1949–1963",
+            urlString: "https://catalog.archives.gov/id/123")]
+        let documents: [(volumeId: String, documentId: String)] =
+            [("v1", "d1"), ("v1", "d2"), ("v2", "d3"), ("v2", "d4")]  // d4 has no source row
+
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .archivalSources, documents: documents, dataSource: fixture)
+        // Two groups sorted by label; members follow at indent 1 in collection order,
+        // volume-qualified because the membership spans two volumes.
+        #expect(block.rows.map(\.text) == [
+            "Conference Files, Lot 64 D 199, RG 59",
+            "Document 1 (v1)", "Document 2 (v1)",
+            "Truman Library",
+            "Document 3 (v2)",
+        ])
+        #expect(block.rows[0].secondaryText == "Conference Files, 1949–1963")
+        #expect(block.rows[0].url == "https://catalog.archives.gov/id/123")
+        #expect(block.rows.map(\.indentLevel) == [0, 1, 1, 0, 1])
+        #expect(block.rows[3].secondaryText == nil)   // repository-only: no NARA match
+        #expect(block.rows[3].url == nil)
+    }
+
+    @Test("Persons Index block: reuses the rollup identities, applies the >=2-of->=4 threshold (>=1 for small collections), alphabetical with document-number reference lists")
+    @MainActor
+    func generatedPersonsIndexThreshold() async {
+        typealias Mention = CollectionGeneratedBlocks.PersonMention
+        var fixture = FixtureBlockDataSource()
+        fixture.mentions = [
+            Mention(identityKey: "r1", name: "Alice", description: "Secretary of State",
+                    role: nil, volumeId: "v1", documentId: "d1"),
+            Mention(identityKey: "r1", name: "Alice", description: "Secretary of State",
+                    role: nil, volumeId: "v1", documentId: "d2"),
+            Mention(identityKey: "r1", name: "Alice", description: "Secretary of State",
+                    role: nil, volumeId: "v1", documentId: "d3"),
+            Mention(identityKey: "r2", name: "Bob", description: nil,
+                    role: "diplomat", volumeId: "v1", documentId: "d2"),
+            Mention(identityKey: "r2", name: "Bob", description: nil,
+                    role: "diplomat", volumeId: "v1", documentId: "d4"),
+            Mention(identityKey: "r3", name: "Carol", description: nil,
+                    role: nil, volumeId: "v1", documentId: "d3"),
+        ]
+        let four: [(volumeId: String, documentId: String)] =
+            [("v1", "d1"), ("v1", "d2"), ("v1", "d3"), ("v1", "d4")]
+
+        // ≥ 4 documents → threshold 2: Carol (one mention) is filtered out.
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .personsIndex, documents: four, dataSource: fixture)
+        #expect(block.rows.map(\.text) == ["Alice", "Bob"])
+        #expect(block.rows[0].secondaryText == "Secretary of State — Documents 1, 2, 3")
+        #expect(block.rows[1].secondaryText == "diplomat — Documents 2, 4")
+
+        // 3 documents → threshold 1: every mentioned identity appears; Bob's list is
+        // restricted to the membership and a single reference reads "Document N".
+        let three = Array(four.prefix(3))
+        let small = await CollectionGeneratedBlocks.resolve(
+            type: .personsIndex, documents: three, dataSource: fixture)
+        #expect(small.rows.map(\.text) == ["Alice", "Bob", "Carol"])
+        #expect(small.rows[1].secondaryText == "diplomat — Document 2")
+    }
+
+    @Test("Thematic Index block: notes+assignments tag union intersected with the membership, alphabetical, tags reaching no collection document are skipped")
+    @MainActor
+    func generatedThematicIndexBlock() async {
+        typealias Tag = CollectionGeneratedBlocks.TagRecord
+        var fixture = FixtureBlockDataSource()
+        fixture.tags = [
+            Tag(name: "Zebra", documents: [("v1", "d1")]),
+            Tag(name: "Trade", documents: [("v1", "d2"), ("v1", "d1"), ("v9", "d9")]),
+            Tag(name: "Unused", documents: [("v9", "d9")]),   // no overlap → skipped
+        ]
+        let documents: [(volumeId: String, documentId: String)] = [("v1", "d1"), ("v1", "d2")]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .thematicIndex, documents: documents, dataSource: fixture)
+        // Alphabetical tags; members at indent 1 in collection order (d1 before d2 even
+        // though the tag's own reach lists d2 first); single volume → bare numbers.
+        #expect(block.rows.map(\.text) ==
+                ["Trade", "Document 1", "Document 2", "Zebra", "Document 1"])
+        #expect(block.rows.map(\.indentLevel) == [0, 1, 1, 0, 1])
+    }
+
+    @Test("Empty blocks: every type degrades to the single localized nothing-to-list row — never an empty section")
+    @MainActor
+    func generatedBlockEmptyStates() async {
+        let fixture = FixtureBlockDataSource()
+        // Empty membership: all five types.
+        for type in CollectionGeneratedBlockType.allCases {
+            let block = await CollectionGeneratedBlocks.resolve(
+                type: type, documents: [], dataSource: fixture)
+            #expect(block.rows.count == 1)
+            #expect(block.rows[0].text == CollectionGeneratedBlocks.emptyRowText)
+            #expect(block.rows[0].indentLevel == 0 && block.rows[0].url == nil)
+        }
+        // Non-empty membership but no backing data: the data-driven blocks (sources,
+        // persons, tags) still fall back to the same row.
+        let documents: [(volumeId: String, documentId: String)] = [("v1", "d1")]
+        for type in [CollectionGeneratedBlockType.archivalSources, .personsIndex, .thematicIndex] {
+            let block = await CollectionGeneratedBlocks.resolve(
+                type: type, documents: documents, dataSource: fixture)
+            #expect(block.rows.map(\.text) == [CollectionGeneratedBlocks.emptyRowText])
+        }
+    }
+
+    @Test("Persons Index determinism: distinct identities sharing a canonical name keep a stable order — identity key breaks the tie, launch after launch")
+    @MainActor
+    func generatedPersonsIndexTieBreak() async {
+        typealias Mention = CollectionGeneratedBlocks.PersonMention
+        var fixture = FixtureBlockDataSource()
+        // Two DISTINCT rollups with the same canonical name — routine at FRUS scale —
+        // plus a differently named identity proving names still sort first.
+        fixture.mentions = [
+            Mention(identityKey: "r9", name: "John Smith", description: "the ambassador",
+                    role: nil, volumeId: "v1", documentId: "d1"),
+            Mention(identityKey: "r2", name: "John Smith", description: "the admiral",
+                    role: nil, volumeId: "v1", documentId: "d2"),
+            Mention(identityKey: "r5", name: "Alice", description: nil,
+                    role: nil, volumeId: "v1", documentId: "d1"),
+        ]
+        let documents: [(volumeId: String, documentId: String)] = [("v1", "d1"), ("v1", "d2")]
+        // Dictionary iteration order is seeded per launch and `sorted(by:)` is not
+        // stable, so equal-named rows would swap between runs without the key
+        // tie-break. Resolve repeatedly — the order must be identical every time:
+        // name first, then identityKey ("r2" < "r9").
+        for _ in 0..<8 {
+            let block = await CollectionGeneratedBlocks.resolve(
+                type: .personsIndex, documents: documents, dataSource: fixture)
+            #expect(block.rows.map(\.text) == ["Alice", "John Smith", "John Smith"])
+            #expect(block.rows[1].secondaryText?.hasPrefix("the admiral") == true)
+            #expect(block.rows[2].secondaryText?.hasPrefix("the ambassador") == true)
+        }
+    }
+
+    @Test("NativeFormat generated blocks: any block forces v2; only the TYPE serializes (never rows); round-trip reconstructs; an unknown block-type string imports inert and re-exports intact")
+    @MainActor
+    func nativeGeneratedBlockRoundTrip() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(container)
+
+        let coll = Collection(name: "Indexed")
+        sourceCtx.insert(coll)
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        entry.entryKind = .generated
+        entry.generatedBlockType = CollectionGeneratedBlockType.personsIndex.rawValue
+        entry.collection = coll
+        sourceCtx.insert(entry)
+        try sourceCtx.save()
+
+        func makeFile() -> FRUSCollectionFile {
+            NativeCollectionSerializer.makeFile(
+                from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        }
+
+        // Write-minimum can't apply once a generated entry exists: the file is v2, so
+        // a v1-only reader never sees the kind; the floor stays 1 (degradable).
+        let file = makeFile()
+        #expect(file.formatVersion == 2)
+        #expect(file.minimumReaderVersion == 1)
+        let fileEntry = try #require(file.entries.first)
+        #expect(fileEntry.kind == "generated")
+        #expect(fileEntry.generatedBlockType == "personsIndex")
+
+        // Only the TYPE serializes — no rows key exists in the schema, and the encoded
+        // JSON carries nothing but kind + generatedBlockType for this entry.
+        let json = String(decoding: try NativeCollectionSerializer.encode(file), as: UTF8.self)
+        #expect(!json.contains("\"rows\""))
+
+        // Round-trip onto a fresh store reconstructs the generated entry.
+        let destContainer = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(destContainer)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(Data(json.utf8)), into: destCtx)
+        try destCtx.save()
+        let importedEntry = try #require((imported.documentEntries ?? []).first)
+        #expect(importedEntry.entryKind == .generated)
+        #expect(importedEntry.generatedBlockType == "personsIndex")
+
+        // Deleting the block restores the v1 write-minimum (nothing else v2 here).
+        sourceCtx.delete(entry)
+        try sourceCtx.save()
+        #expect(makeFile().formatVersion == 1)
+
+        // Tolerant reader: an unknown generatedBlockType STRING (a future writer's
+        // vocabulary) imports as an INERT generated entry — placement preserved,
+        // skipped at resolve (see resolverGeneratedBlockResolution) — never dropped
+        // and never misread; an unknown entry KIND is still skipped (Phase 1 rule).
+        let futureJSON = Data(#"{"format":"fruscollection","formatVersion":2,"minimumReaderVersion":1,"name":"F","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"hologram","text":"x"},{"kind":"generated","generatedBlockType":"starCharts"},{"kind":"generated","generatedBlockType":"bibliography"}]}"#.utf8)
+        let futureImport = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(futureJSON), into: destCtx)
+        try destCtx.save()
+        let futureEntries = (futureImport.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        try #require(futureEntries.count == 2)             // hologram skipped, both blocks kept
+        #expect(futureEntries[0].entryKind == .generated)
+        #expect(futureEntries[0].generatedBlockType == "starCharts")   // raw string preserved
+        #expect(futureEntries[1].generatedBlockType == "bibliography")
+
+        // Re-exporting the imported collection keeps the unknown block intact — the
+        // inert entry round-trips rather than silently vanishing from shared files.
+        let reExport = NativeCollectionSerializer.makeFile(
+            from: futureImport, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(reExport.formatVersion == 2)
+        #expect(reExport.entries.map(\.generatedBlockType) == ["starCharts", "bibliography"])
+    }
+
+    @Test("Move engine: generated entries move as single rows (like prose) and travel inside their section's block")
+    func generatedMovesLikeProse() {
+        // Model-backed: [H A, generated, doc, H B, doc] — dragging H A to the end takes
+        // its generated block and document along as one block.
+        let hA = outlineEntry(kind: .heading, level: 1, order: 0, text: "A")
+        let gen = outlineEntry(kind: .generated, order: 1, text: nil)
+        gen.generatedBlockType = CollectionGeneratedBlockType.thematicIndex.rawValue
+        let d1 = outlineEntry(kind: .document, order: 2)
+        let hB = outlineEntry(kind: .heading, level: 1, order: 3, text: "B")
+        let d2 = outlineEntry(kind: .document, order: 4)
+        let entries = [hA, gen, d1, hB, d2]
+
+        let sectionMove = CollectionOutline.applyingMove(entries, fromIndex: 0, toOffset: 5)
+        #expect(sectionMove?.map(\.generatedBlockType) == [nil, nil, nil, "thematicIndex", nil])
+        #expect(sectionMove?.map(\.text) == [Optional("B"), nil, Optional("A"), nil, nil])
+
+        // The generated entry itself moves as a single row (non-heading), dropped at
+        // the very end, past H B's document.
+        let rowMove = CollectionOutline.applyingMove(entries, fromIndex: 1, toOffset: 5)
+        #expect(rowMove?.map(\.generatedBlockType) == [nil, nil, nil, nil, "thematicIndex"])
+        // Self-drop is a no-op, exactly like prose/document rows.
+        #expect(CollectionOutline.applyingMove(entries, fromIndex: 1, toOffset: 2) == nil)
+
+        // The editors' post-move tail applies unchanged: reindex leaves 0..n.
+        for (i, e) in (rowMove ?? []).enumerated() { e.sortOrder = i }
+        #expect(rowMove?.map(\.sortOrder) == [0, 1, 2, 3, 4])
+    }
+
+    @Test("Smart path resolves generated blocks: front matter before the smart items, back matter after; fullRefs keeps block membership at the FULL result set under a preview cap; unknown types skipped")
+    @MainActor
+    func smartPathResolvesGeneratedBlocks() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Smart Apparatus")
+        coll.savedSearchId = UUID()   // smart; resolveSmartItems itself is search-free
+        context.insert(coll)
+        let chron = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        chron.entryKind = .generated
+        chron.generatedBlockType = CollectionGeneratedBlockType.chronology.rawValue
+        let bib = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 1)
+        bib.entryKind = .generated
+        bib.generatedBlockType = CollectionGeneratedBlockType.bibliography.rawValue
+        // A newer build's block type: skipped on the smart path too, never junk.
+        let future = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 2)
+        future.entryKind = .generated
+        future.generatedBlockType = "starCharts"
+        for entry in [chron, bib, future] {
+            entry.collection = coll
+            context.insert(entry)
+        }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        typealias Ref = CollectionContentResolver.SmartDocumentRef
+        let refs = [Ref(documentId: "d1", volumeId: "smartvol", sortOrder: 0),
+                    Ref(documentId: "d2", volumeId: "smartvol", sortOrder: 1)]
+
+        // Full resolve: chronology (front matter) frames the smart documents with the
+        // bibliography (back matter) — the smart-collection Apparatus wiring the
+        // editors' ungated menu and the manuals promise.
+        let items = await resolver.resolveSmartItems(refs, collection: coll, allNotes: [])
+        #expect(items.map(kindLabel) == ["generated", "document", "document", "generated"])
+        guard case .generated(let front) = items[0],
+              case .generated(let back) = items[3] else {
+            Issue.record("expected generated items framing the smart documents")
+            return
+        }
+        #expect(front.type == .chronology)
+        #expect(back.type == .bibliography)
+        // Block membership is the smart result set (fallback citations — no manifest
+        // volume metadata in tests).
+        #expect(back.rows.map(\.text) == ["smartvol/d1", "smartvol/d2"])
+
+        // Capped preview: per-document resolution sees only the first ref, but blocks
+        // (fed fullRefs) still reflect the FULL result set — matching the export.
+        let capped = await resolver.resolveSmartItems(
+            Array(refs.prefix(1)), collection: coll, allNotes: [], fullRefs: refs)
+        #expect(capped.map(kindLabel) == ["generated", "document", "generated"])
+        if case .generated(let cappedBack) = capped[2] {
+            #expect(cappedBack.rows.map(\.text) == ["smartvol/d1", "smartvol/d2"])
+        } else {
+            Issue.record("expected the back-matter bibliography in the capped resolve")
+        }
+    }
+
+    @Test("Preview cap: generated entries survive the cap wherever they sit — documents and headings past the cap stay excluded")
+    @MainActor
+    func previewCapKeepsGeneratedEntries() {
+        var entries: [CollectionEntry] = []
+        let chron = outlineEntry(kind: .generated, order: 0)
+        chron.generatedBlockType = CollectionGeneratedBlockType.chronology.rawValue
+        entries.append(chron)
+        for i in 1...25 { entries.append(outlineEntry(kind: .document, order: i)) }
+        entries.append(outlineEntry(kind: .heading, level: 1, order: 26, text: "Past the cap"))
+        let bib = outlineEntry(kind: .generated, order: 27)
+        bib.generatedBlockType = CollectionGeneratedBlockType.bibliography.rawValue
+        entries.append(bib)
+
+        let capped = CollectionPreviewView.capEntries(entries, cap: 20)
+        // Front-matter block + first 20 documents + the trailing back-matter block —
+        // where addGeneratedEntry default-inserts it. The 5 documents and the heading
+        // past the cap are excluded, exactly as before.
+        #expect(capped.count == 22)
+        #expect(capped.first?.entryKind == .generated)
+        #expect(capped.filter { $0.entryKind == .document }.count == 20)
+        #expect(!capped.contains { $0.entryKind == .heading })
+        #expect(capped.last?.entryKind == .generated)
+        #expect(capped.last?.generatedBlockType
+                == CollectionGeneratedBlockType.bibliography.rawValue)
+    }
+
+    @Test("DOCX generated rows: the citation formatter's _…_ series-title markers render as italic runs — never literal underscores (hyperlink and secondary runs included)")
+    @MainActor
+    func docxGeneratedRowItalics() async throws {
+        let block = CollectionGeneratedBlock(
+            type: .bibliography,
+            title: "Bibliography",
+            rows: [
+                CollectionGeneratedRow(
+                    text: "_Foreign Relations of the United States_, 1969–1976, Volume I, Document 5"),
+                CollectionGeneratedRow(
+                    text: "Linked Collection",
+                    secondaryText: "See _Foreign Relations_ series",
+                    url: "https://catalog.archives.gov/id/1"),
+            ])
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Italics", note: nil),
+            items: [.generated(block)])
+        let docx = try Data(contentsOf: url)
+        func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
+        // The marked span became a real italic run…
+        #expect(docxContains(
+            "<w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">Foreign Relations of the United States</w:t>"))
+        // …the hyperlink row keeps the Hyperlink rStyle on its runs…
+        #expect(docxContains(
+            "<w:rStyle w:val=\"Hyperlink\"/></w:rPr><w:t xml:space=\"preserve\">Linked Collection</w:t>"))
+        // …the secondary text's marked span is italic alongside its gray/small rPr…
+        #expect(docxContains(
+            "<w:i/></w:rPr><w:t xml:space=\"preserve\">Foreign Relations</w:t>"))
+        // …and no literal underscore-wrapped series title survives anywhere.
+        #expect(!docxContains("_Foreign Relations"))
+    }
+
+    @Test("PDF generated rows: a single row taller than a full page continues onto following pages instead of being clipped below the media box")
+    @MainActor
+    func pdfGeneratedRowContinuation() async throws {
+        // A persons-index-shaped row whose volume-qualified reference list far
+        // exceeds one page at the row's 9-pt secondary size.
+        let refList = (1...2000).map { "\($0) (frus1969-76v\($0 % 10))" }
+            .joined(separator: ", ")
+        let block = CollectionGeneratedBlock(
+            type: .personsIndex,
+            title: "Persons Index",
+            rows: [CollectionGeneratedRow(text: "Smith, John",
+                                          secondaryText: "Documents " + refList + ", ZZZTAIL")])
+        let url = try await PDFCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Overflow", note: nil),
+            items: [.generated(block)])
+        let pdf = try Data(contentsOf: url)
+        let document = try #require(PDFDocument(data: pdf))
+        let text = (0..<document.pageCount)
+            .compactMap { document.page(at: $0)?.string }
+            .joined(separator: "\n")
+        #expect(text.contains("Smith, John"))
+        // The tail of the overtall row made it onto a page (pre-fix it was drawn into
+        // a rect extending below the media box and clipped away by viewers).
+        #expect(text.contains("ZZZTAIL"))
+        // And the continuation actually spanned pages: cover + several flow pages.
+        #expect(document.pageCount >= 3)
+    }
+
     // MARK: - Outline editor engine tests (Authoring Phase 4, editor step)
 
     /// Structural shorthand for the pure move/collapse cores.
@@ -3252,4 +3927,58 @@ private actor TransferCallCounter {
 
     /// Records one invocation.
     func increment() { count += 1 }
+}
+
+// MARK: - Generated-block fixture data source (Phase 6)
+
+/// Hermetic `CollectionGeneratedBlockDataSource`: canned answers keyed by
+/// `"volumeId/documentId"`, no SQLite, no SwiftData, no bundle resources — so the
+/// per-block resolution logic (dedupe, ordering, grouping, thresholds, enrichment)
+/// is tested in isolation from the live stores.
+@MainActor
+private struct FixtureBlockDataSource: CollectionGeneratedBlockDataSource {
+    /// Citation per document key; unlisted keys fall back to the key itself.
+    var citations: [String: String] = [:]
+    /// Date metadata per document key; unlisted keys are "undated".
+    var dates: [String: DocumentDateMetadata] = [:]
+    /// The corpus of `document_sources` rows (filtered to the requested documents).
+    var sources: [CollectionGeneratedBlocks.SourceRecord] = []
+    /// NARA resolutions keyed `"recordGroup|lotFile"` (empty string for nil).
+    var links: [String: CollectionGeneratedBlocks.ArchivalLink] = [:]
+    /// The corpus of rollup mentions (filtered to the requested documents).
+    var mentions: [CollectionGeneratedBlocks.PersonMention] = []
+    /// Every user tag with its full document reach.
+    var tags: [CollectionGeneratedBlocks.TagRecord] = []
+
+    func citation(volumeId: String, documentId: String) -> String {
+        citations["\(volumeId)/\(documentId)"] ?? "\(volumeId)/\(documentId)"
+    }
+
+    func dateMetadata(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [String: DocumentDateMetadata] {
+        let keys = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return dates.filter { keys.contains($0.key) }
+    }
+
+    func documentSources(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [CollectionGeneratedBlocks.SourceRecord] {
+        let keys = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return sources.filter { keys.contains("\($0.volumeId)/\($0.documentId)") }
+    }
+
+    func archivalResolution(recordGroup: String?, lotFile: String?)
+        -> CollectionGeneratedBlocks.ArchivalLink? {
+        links["\(recordGroup ?? "")|\(lotFile ?? "")"]
+    }
+
+    func personMentions(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [CollectionGeneratedBlocks.PersonMention] {
+        let keys = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return mentions.filter { keys.contains("\($0.volumeId)/\($0.documentId)") }
+    }
+
+    func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] { tags }
 }
