@@ -424,9 +424,9 @@ struct CollectionExportDocument: Sendable {
     /// `includeNotesOverride ?? options.includeNotes`.
     let includeNotesOverride: Bool?
     /// The entry/section footnote override resolved by the cascade (Phase 5). `nil` =
-    /// inherit — gated where footnote rendering is gated (the shared HTML renderer /
-    /// preview) via `includeFootnotesOverride ?? options.includeFootnotes`; the
-    /// pre-existing PDF/DOCX footnote gap is deliberately unchanged.
+    /// inherit — every renderer (the shared HTML renderer / preview, PDF, and DOCX —
+    /// the latter two gated since the 2026-07-03 owner decision) gates footnote bodies
+    /// on `includeFootnotesOverride ?? options.includeFootnotes`.
     let includeFootnotesOverride: Bool?
     /// The entry/section summary-prompt override resolved by the cascade (Phase 5).
     /// `nil` = inherit the collection's `summaryPromptId`. Drives which prompt's stored

@@ -67,9 +67,10 @@ import CoreText
 ///          here — it arrives as the resolver's leading `.prose` item
 ///   1.10 — Authoring Phase 5: opt-in headnote — a labeled italic abstract prepended to
 ///          the body flow (`headnoteAttributedString`); a requested headnote with no
-///          stored summary renders a placeholder note. Footnote rendering here remains
+///          stored summary renders a placeholder note. Footnote rendering here remained
 ///          ungated (pre-existing behavior — this exporter never consumed the legacy
 ///          `footnoteStyle`), so untouched collections export byte-identically
+///          (gap since closed — see 1.13)
 ///   1.11 — Authoring Phase 5 (excerpts): `.excerpt` items render into the structural
 ///          flow as a quote-styled block — indented italic passage with a colour accent
 ///          bar when the source highlight's colour is known, followed by the
@@ -78,8 +79,18 @@ import CoreText
 ///          research-note gates honor the document's resolved per-entry override
 ///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
 ///          non-empty `relatedDocumentCitations` appends a small "See also:" line to
-///          the body flow (paginating with it). Footnote rendering remains ungated
-///          (the pre-existing gap, unchanged)
+///          the body flow (paginating with it). Footnote rendering remained ungated
+///          (the pre-existing gap, unchanged — resolved: owner decision 2026-07-03,
+///          see 1.13)
+///   1.13 — Footnote gate (owner decision 2026-07-03): the body honours
+///          `doc.includeFootnotesOverride ?? options.includeFootnotes`, mirroring the
+///          shared HTML renderer's semantics exactly — when the flag is `false` the
+///          trailing footnotes section is omitted while inline superscript markers
+///          still render (HTML likewise keeps its `.fn-marker` buttons). The default
+///          pair for an untouched collection is `(true, false)`, so untouched
+///          collections keep rendering footnotes op-identically; legacy
+///          `footnoteStyle` values of `none`/`sourceNoteOnly` now suppress the
+///          footnotes section BY DESIGN (they previously rendered it regardless)
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -495,10 +506,14 @@ final class PDFCollectionExporter: CollectionExporter {
                 // Phase 5: the per-entry/section override when resolved, else the
                 // collection-level option.
                 let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
+                // Footnote gate (owner decision 2026-07-03): mirrors the shared HTML
+                // renderer — `false` omits the footnotes section, markers stay.
+                let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
                 highlightPaint = (applyHighlights && !doc.highlights.isEmpty)
                     ? HighlightPaintTracker(doc.highlights)
                     : nil
-                bodyAttrStr = renderModelToAttributedString(model)
+                bodyAttrStr = renderModelToAttributedString(model,
+                                                            includeFootnotes: includeFootnotes)
                 highlightPaint = nil
             } else if !doc.bodyText.isEmpty {
                 bodyAttrStr = NSAttributedString(string: doc.bodyText,
@@ -707,7 +722,13 @@ final class PDFCollectionExporter: CollectionExporter {
     /// Converts a `FRUSDocumentRenderModel` into a single `NSAttributedString` for CoreText
     /// framesetting. Block nodes are concatenated with paragraph breaks; footnote bodies
     /// are appended after the main content with a rule separator and reduced font size.
-    private func renderModelToAttributedString(_ model: FRUSDocumentRenderModel) -> NSAttributedString {
+    ///
+    /// - Parameter includeFootnotes: When `false` (owner decision 2026-07-03), the
+    ///   trailing footnotes section is omitted — matching the shared HTML renderer,
+    ///   which drops footnote bodies while keeping inline markers (rendered here as
+    ///   superscript labels regardless).
+    private func renderModelToAttributedString(_ model: FRUSDocumentRenderModel,
+                                               includeFootnotes: Bool) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for node in model.bodyNodes {
             let block = blockNodeToAttributedString(node)
@@ -725,8 +746,9 @@ final class PDFCollectionExporter: CollectionExporter {
         // point into them — stop tracking/painting before appending this section.
         highlightPaint = nil
 
-        // Footnotes section
-        if !model.footnotes.isEmpty {
+        // Footnotes section — gated on the resolved include-footnotes flag (owner
+        // decision 2026-07-03), matching the shared HTML renderer's footnote gate.
+        if includeFootnotes, !model.footnotes.isEmpty {
             let ruleAttrs: [NSAttributedString.Key: Any] = makeAttrs(fontSize: 4, bold: false,
                                                                       gray: 0.7)
             result.append(NSAttributedString(string: "\n\u{00A0}\n", attributes: ruleAttrs))

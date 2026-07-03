@@ -2423,6 +2423,95 @@ struct CollectionTests {
         #expect(off.contains("RG 59, Central Files."))   // source note is independent now
     }
 
+    @Test("PDF/DOCX footnote gate (owner decision 2026-07-03): includeFootnotes now drives footnote emission in both formats — false drops the footnote bodies (markers stay, matching HTML); an untouched collection's derived (true,false) pair keeps footnotes, byte-identically for DOCX")
+    func pdfDocxFootnoteGate() async throws {
+        // Same fixture as htmlFootnoteGate: one paragraph with a marker + one footnote.
+        let model = FRUSDocumentRenderModel(
+            documentId: "d1",
+            bodyNodes: [.paragraph([.plainText("Gated body."),
+                                    .footnoteMarker(id: "fn1", displayLabel: "1")])],
+            footnotes: [.footnoteBody(id: "fn1", type: .editorial, printedNumber: "1",
+                                      sequentialNumber: 1, displayLabel: "1",
+                                      children: [.plainText("The footnote text.")])])
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "fnvol", sortOrder: 1,
+            title: "Footnoted", bodyText: "Gated body.",
+            citation: "Footnoted Citation", renderModel: model,
+            sourceNoteText: "RG 59, Central Files.")
+        let items: [CollectionExportItem] = [.document(doc)]
+        let metadata = CollectionExportMetadata(name: "Gate", note: nil)
+
+        var onOptions = CollectionExportOptions()
+        onOptions.includeFootnotes = true
+        onOptions.includeSourceNote = true
+        var offOptions = onOptions
+        offOptions.includeFootnotes = false
+
+        // DOCX — the stored-mode ZIP keeps document.xml/footnotes.xml uncompressed, so
+        // XML substrings are directly searchable in the package bytes.
+        let docxOn = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items, options: onOptions))
+        func onContains(_ s: String) -> Bool { docxOn.range(of: Data(s.utf8)) != nil }
+        #expect(onContains("The footnote text."))
+        #expect(onContains("<w:footnoteReference w:id="))
+        #expect(onContains("RG 59, Central Files."))
+        let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items, options: offOptions))
+        func offContains(_ s: String) -> Bool { docxOff.range(of: Data(s.utf8)) != nil }
+        #expect(!offContains("The footnote text."))
+        #expect(!offContains("<w:footnoteReference w:id="))
+        #expect(offContains("Gated body."))
+        // Markers survive as plain superscript label runs — HTML likewise keeps its
+        // .fn-marker buttons when footnote bodies are dropped.
+        #expect(offContains("<w:vertAlign w:val=\"superscript\"/>"))
+        #expect(offContains("RG 59, Central Files."))   // source note is independent
+
+        // PDF — extract page text with PDFKit.
+        let pdfOn = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items, options: onOptions))
+        let pdfOnDoc = try #require(PDFDocument(data: pdfOn))
+        let pdfOnText = (0..<pdfOnDoc.pageCount)
+            .compactMap { pdfOnDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(pdfOnText.contains("The footnote text."))
+        #expect(pdfOnText.contains("RG 59, Central Files."))
+        let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items, options: offOptions))
+        let pdfOffDoc = try #require(PDFDocument(data: pdfOff))
+        let pdfOffText = (0..<pdfOffDoc.pageCount)
+            .compactMap { pdfOffDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(!pdfOffText.contains("The footnote text."))
+        #expect(pdfOffText.contains("Gated body."))
+        #expect(pdfOffText.contains("RG 59, Central Files."))
+
+        // Untouched-collection identity: a legacy footnoteStyle "all" collection with a
+        // nil pair derives (true, false) — building options from it produces DOCX bytes
+        // identical to the default-options path (the ZIP writer zeroes timestamps and
+        // the cover date is day-granular), and the footnote text still renders. This is
+        // exactly today's ungated output for an untouched collection; only legacy
+        // none/sourceNoteOnly collections change, BY DESIGN (owner decision 2026-07-03).
+        let untouched = Collection(name: "Untouched")
+        #expect(untouched.includeFootnotes == nil)
+        var derived = CollectionExportOptions()
+        derived.includeFootnotes = untouched.effectiveIncludeFootnotes
+        derived.includeSourceNote = untouched.effectiveIncludeSourceNote
+        let derivedDocx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items, options: derived))
+        let defaultDocx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items))
+        #expect(derivedDocx == defaultDocx)
+        #expect(derivedDocx.range(of: Data("The footnote text.".utf8)) != nil)
+        // (No source-note assertion here: that gate lives in the resolver — it only
+        // populates `sourceNoteText` when includeSourceNote is on — and this fixture
+        // sets the field directly, bypassing the resolver.)
+        // PDF, same derivation: footnotes render for the untouched default.
+        let derivedPDF = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items, options: derived))
+        let derivedPDFDoc = try #require(PDFDocument(data: derivedPDF))
+        let derivedPDFText = (0..<derivedPDFDoc.pageCount)
+            .compactMap { derivedPDFDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(derivedPDFText.contains("The footnote text."))
+    }
+
     @Test("NativeFormat v2 Phase 5 keys: footnote pair and headnote fields round-trip; absent keys leave the model defaults (nil pair, no headnote)")
     func nativePhase5RoundTrip() throws {
         let container = try ModelContainer.makeTestContainer()

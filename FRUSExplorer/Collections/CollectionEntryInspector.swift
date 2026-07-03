@@ -49,6 +49,9 @@ import SwiftData
 ///          variant. Honesty audit: the footnote override carries a caption naming its
 ///          real reach (HTML exports + preview; PDF/DOCX footnotes are ungated — a
 ///          pre-existing gap), and tags keep reading as data, not a control
+///   1.5 — Footnote gate closed in PDF/DOCX (owner decision 2026-07-03): the honesty
+///          caption under the footnote override is gone — the setting now gates all
+///          three export formats and the preview, so there is no gap left to disclose
 struct CollectionEntryInspector: View {
 
     /// One stored summary choice for the headnote picker: identity, producing-prompt
@@ -314,9 +317,9 @@ struct CollectionEntryInspector: View {
 
     /// The shared override controls — the same six fields serve a document entry (its
     /// own overrides) and a heading entry (its section defaults); only the containing
-    /// section's copy differs. Every control here is functional: highlights, notes, and
-    /// source note gate all three export formats and the preview; footnotes carry an
-    /// honest caption naming their real reach.
+    /// section's copy differs. Every control here is functional: highlights, notes,
+    /// source note, and footnotes (PDF/DOCX gated since the 2026-07-03 owner decision)
+    /// gate all three export formats and the preview.
     @ViewBuilder private var overrideControls: some View {
         overridePicker(String(localized: "collection.inspector.override.highlights",
                               defaultValue: "Highlights"),
@@ -334,10 +337,6 @@ struct CollectionEntryInspector: View {
                               defaultValue: "Footnotes"),
                        Binding(get: { entry.includeFootnotesOverride },
                                set: { entry.includeFootnotesOverride = $0 }))
-        Text(String(localized: "collection.inspector.override.footnotes.caption",
-                    defaultValue: "The footnote setting applies to HTML exports and the live preview; PDF and Word exports always include footnotes."))
-            .font(.caption2)
-            .foregroundStyle(.secondary)
 
         Picker(String(localized: "collection.inspector.override.prompt",
                       defaultValue: "Summary prompt"),

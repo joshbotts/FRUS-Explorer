@@ -84,9 +84,10 @@ import Foundation
 ///          it arrives as the resolver's leading `.prose` item
 ///   1.7 — Authoring Phase 5: opt-in headnote — a labeled paragraph plus italic-run
 ///          abstract above the body (`headnoteXML`); a requested headnote with no stored
-///          summary renders a placeholder note. Footnote rendering here remains ungated
+///          summary renders a placeholder note. Footnote rendering here remained ungated
 ///          (pre-existing behavior — this exporter never consumed the legacy
 ///          `footnoteStyle`), so untouched collections export byte-identically
+///          (gap since closed — see 1.10)
 ///   1.8 — Authoring Phase 5 (excerpts): `.excerpt` items render as quote-styled
 ///          paragraphs (`ExcerptQuote`: indented, italic, left accent border) plus an
 ///          `ExcerptSource` source-citation paragraph. The two styles join `stylesXML`
@@ -97,7 +98,18 @@ import Foundation
 ///          (`doc.x ?? options.x` — nil keeps collection behavior bit-for-bit); a
 ///          non-empty `relatedDocumentCitations` emits a "See also:" paragraph after
 ///          the source note (existing `DocURL` style — no new dormant style needed).
-///          Footnote rendering remains ungated (the pre-existing gap, unchanged)
+///          Footnote rendering remained ungated (the pre-existing gap, unchanged —
+///          resolved: owner decision 2026-07-03, see 1.10)
+///   1.10 — Footnote gate (owner decision 2026-07-03): the body honours
+///          `doc.includeFootnotesOverride ?? options.includeFootnotes`, mirroring the
+///          shared HTML renderer's semantics exactly — when the flag is `false` no
+///          footnote body is registered in `word/footnotes.xml` and no
+///          `<w:footnoteReference>` is emitted; inline markers fall back to plain
+///          superscript label runs (HTML likewise keeps its `.fn-marker` buttons while
+///          dropping the bodies). The default pair for an untouched collection is
+///          `(true, false)`, so untouched collections keep exporting byte-identically;
+///          legacy `footnoteStyle` values of `none`/`sourceNoteOnly` now suppress
+///          footnotes BY DESIGN (they previously rendered them regardless)
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -471,11 +483,15 @@ final class DocxCollectionExporter: CollectionExporter {
                 // Phase 5: the per-entry/section override when resolved, else the
                 // collection-level option.
                 let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
+                // Footnote gate (owner decision 2026-07-03): mirrors the shared HTML
+                // renderer — `false` drops footnote bodies, markers stay as labels.
+                let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
                 let tracker: HighlightPaintTracker? =
                     (applyHighlights && !doc.highlights.isEmpty)
                         ? HighlightPaintTracker(doc.highlights)
                         : nil
-                body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker)
+                body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker,
+                                                    includeFootnotes: includeFootnotes)
             } else {
                 let paras = doc.bodyText
                     .components(separatedBy: "\n\n")
@@ -659,21 +675,32 @@ final class DocxCollectionExporter: CollectionExporter {
     /// Pre-scans footnote labels to assign integer IDs, renders body nodes,
     /// then adds footnote bodies to `ctx`.
     ///
-    /// - Parameter tracker: When non-`nil`, highlight ranges are painted onto
-    ///   body text via `<w:highlight>` runs as flat-text leaf content is emitted.
-    ///   Always passed as `nil` into footnote rendering — footnote bodies fall
-    ///   outside the flat-text coordinate space (`appendFlatText` only walks
-    ///   `model.bodyNodes`), so highlight offsets never point into them.
+    /// - Parameters:
+    ///   - tracker: When non-`nil`, highlight ranges are painted onto
+    ///     body text via `<w:highlight>` runs as flat-text leaf content is emitted.
+    ///     Always passed as `nil` into footnote rendering — footnote bodies fall
+    ///     outside the flat-text coordinate space (`appendFlatText` only walks
+    ///     `model.bodyNodes`), so highlight offsets never point into them.
+    ///   - includeFootnotes: When `false` (owner decision 2026-07-03), no footnote
+    ///     body is registered with `ctx` and the label map stays empty, so inline
+    ///     markers fall back to plain superscript label runs instead of
+    ///     `<w:footnoteReference>` — matching the shared HTML renderer, which keeps
+    ///     markers while dropping the footnote bodies.
     private func renderModelToDocxParagraphs(
         _ model: FRUSDocumentRenderModel,
         ctx: DocxRenderContext,
-        tracker: HighlightPaintTracker? = nil
+        tracker: HighlightPaintTracker? = nil,
+        includeFootnotes: Bool = true
     ) -> String {
-        // Pre-assign Word integer IDs to every footnote in this document
+        // Pre-assign Word integer IDs to every footnote in this document. Skipped when
+        // footnotes are gated off — an empty map routes every marker to the
+        // superscript-label fallback and nothing references word/footnotes.xml.
         var labelMap: [String: Int] = [:]
-        for note in model.footnotes {
-            if case .footnoteBody(_, _, _, _, let label, _) = note {
-                labelMap[label] = ctx.allocate()
+        if includeFootnotes {
+            for note in model.footnotes {
+                if case .footnoteBody(_, _, _, _, let label, _) = note {
+                    labelMap[label] = ctx.allocate()
+                }
             }
         }
 
@@ -683,6 +710,7 @@ final class DocxCollectionExporter: CollectionExporter {
             .joined()
 
         // Render footnote bodies and register with context — tracker: nil (see above).
+        // With footnotes gated off the map is empty, so nothing registers.
         for note in model.footnotes {
             if case .footnoteBody(_, _, _, _, let label, let children) = note,
                let wordId = labelMap[label] {
