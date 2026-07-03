@@ -2124,6 +2124,147 @@ struct CollectionTests {
                                     volumeId: "v1", sortOrder: 0)
         #expect(entry.level == 1)
     }
+
+    // MARK: - Outline editor engine tests (Authoring Phase 4, editor step)
+
+    /// Structural shorthand for the pure move/collapse cores.
+    private func ref(heading: Bool, level: Int = 1) -> CollectionOutline.StructuralRef {
+        .init(isHeading: heading, level: level, bodyDepthOverride: nil)
+    }
+
+    @Test("Move engine: a heading drags its whole section; self-drops are refused; documents keep single-row moves; applyingMove + reindex leaves sortOrder 0..n")
+    func outlineMoveEngine() {
+        // 0:H-A  1:doc  2:doc  3:H-B  4:doc  5:H-B2(l2)  6:doc  7:H-C  8:doc
+        let refs: [CollectionOutline.StructuralRef] = [
+            ref(heading: true),  ref(heading: false), ref(heading: false),
+            ref(heading: true),  ref(heading: false), ref(heading: true, level: 2),
+            ref(heading: false), ref(heading: true),  ref(heading: false),
+        ]
+
+        // Section A (0..<3) dropped before H-C: B's whole section slides up.
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 0, toOffset: 7)
+                == [3, 4, 5, 6, 0, 1, 2, 7, 8])
+        // Section B (3..<7, including its level-2 subsection) dropped at the very top.
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 3, toOffset: 0)
+                == [3, 4, 5, 6, 0, 1, 2, 7, 8])
+        // The level-2 subsection (5..<7) moves as its own block, out past H-C.
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 5, toOffset: 8)
+                == [0, 1, 2, 3, 4, 7, 5, 6, 8])
+        // Dropping section B into its own range is forbidden — anywhere from its start
+        // through the slot just past its end (which is also the no-op position).
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 3, toOffset: 3) == nil)
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 3, toOffset: 5) == nil)
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 3, toOffset: 7) == nil)
+        // ...but one slot further actually moves it below H-C's row.
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 3, toOffset: 8)
+                == [0, 1, 2, 7, 3, 4, 5, 6, 8])
+        // A document moves as a single row with SwiftUI onMove semantics.
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 1, toOffset: 5)
+                == [0, 2, 3, 4, 1, 5, 6, 7, 8])
+        // Single-row no-ops: dropping onto itself or the slot just past it.
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 1, toOffset: 1) == nil)
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 1, toOffset: 2) == nil)
+        // Out-of-range inputs are refused, never trap.
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 99, toOffset: 0) == nil)
+        #expect(CollectionOutline.movedOrder(refs, fromIndex: 0, toOffset: 99) == nil)
+
+        // Model-backed wrapper: same move, then the editor's reindex leaves 0..n.
+        let entries = [
+            outlineEntry(kind: .heading,  level: 1, order: 0, text: "A"),
+            outlineEntry(kind: .document, order: 1),
+            outlineEntry(kind: .heading,  level: 1, order: 2, text: "B"),
+            outlineEntry(kind: .document, order: 3),
+        ]
+        let moved = CollectionOutline.applyingMove(entries, fromIndex: 0, toOffset: 4)
+        #expect(moved?.map(\.text) == [Optional("B"), nil, Optional("A"), nil])
+        for (i, e) in (moved ?? []).enumerated() { e.sortOrder = i }
+        #expect(moved?.map(\.sortOrder) == [0, 1, 2, 3])
+        // A heading dropped into its own section leaves the model untouched.
+        #expect(CollectionOutline.applyingMove(entries, fromIndex: 2, toOffset: 3) == nil)
+    }
+
+    @Test("Indent/outdent: the section shifts as a unit (descendant headings included), clamps at the cap, and normalize keeps the invariants")
+    func outlineIndentOutdentSectionShift() {
+        // 0:H-A(1)  1:H-B(1)  2:H-B2(2)  3:doc  4:H-C(1)
+        let hA = outlineEntry(kind: .heading, level: 1, order: 0, text: "A")
+        let hB = outlineEntry(kind: .heading, level: 1, order: 1, text: "B")
+        let hB2 = outlineEntry(kind: .heading, level: 2, order: 2, text: "B2")
+        let doc = outlineEntry(kind: .document, order: 3)
+        let hC = outlineEntry(kind: .heading, level: 1, order: 4, text: "C")
+        let entries = [hA, hB, hB2, doc, hC]
+
+        // Indent B: B and its descendant B2 shift together (1→2, 2→3).
+        CollectionOutline.indentSection(at: 1, in: entries)
+        #expect(hB.level == 2)
+        #expect(hB2.level == 3)
+        #expect(hA.level == 1)
+        #expect(hC.level == 1)
+
+        // Indent B again: forbidden — its predecessor A is level 1, so 2→3 would be an
+        // orphan jump. canIndent gates it; a no-op.
+        CollectionOutline.indentSection(at: 1, in: entries)
+        #expect(hB.level == 2)
+        #expect(hB2.level == 3)
+
+        // Outdent B back down: the section shifts −1 as a unit (B 2→1, B2 3→2).
+        CollectionOutline.outdentSection(at: 1, in: entries)
+        #expect(hB.level == 1)
+        #expect(hB2.level == 2)
+
+        // Outdent at level 1 is a no-op; the first heading can never indent.
+        CollectionOutline.outdentSection(at: 1, in: entries)
+        #expect(hB.level == 1)
+        CollectionOutline.indentSection(at: 0, in: entries)
+        #expect(hA.level == 1)
+
+        // Cap clamp: indenting a section whose deepest heading already sits at the cap
+        // merges that heading up (A6 degradation — flattened, never corrupted).
+        // 0:X(1)  1:Y(1)  2:Z(2)  3:W(3)
+        let hX = outlineEntry(kind: .heading, level: 1, order: 0, text: "X")
+        let hY = outlineEntry(kind: .heading, level: 1, order: 1, text: "Y")
+        let hZ = outlineEntry(kind: .heading, level: 2, order: 2, text: "Z")
+        let hW = outlineEntry(kind: .heading, level: 3, order: 3, text: "W")
+        CollectionOutline.indentSection(at: 1, in: [hX, hY, hZ, hW])
+        #expect(hY.level == 2)
+        #expect(hZ.level == 3)
+        #expect(hW.level == 3)   // clamped at maxLevel, merging up one step
+    }
+
+    @Test("Collapse derivation: a collapsed heading hides its section rows (heading stays); nested and non-heading collapse states are handled")
+    func outlineCollapseDerivation() {
+        // 0:H-A  1:doc  2:H-A2(l2)  3:doc  4:H-B  5:doc
+        let refs: [CollectionOutline.StructuralRef] = [
+            ref(heading: true),  ref(heading: false), ref(heading: true, level: 2),
+            ref(heading: false), ref(heading: true),  ref(heading: false),
+        ]
+        // No collapse: everything visible.
+        #expect(CollectionOutline.visibleIndices(refs, collapsedHeadingIndices: [])
+                == [0, 1, 2, 3, 4, 5])
+        // Collapsing A hides its whole section (the nested subsection included).
+        #expect(CollectionOutline.visibleIndices(refs, collapsedHeadingIndices: [0])
+                == [0, 4, 5])
+        // Collapsing only the subsection hides just its row content.
+        #expect(CollectionOutline.visibleIndices(refs, collapsedHeadingIndices: [2])
+                == [0, 1, 2, 4, 5])
+        // Collapsing both is the union; a non-heading index is ignored.
+        #expect(CollectionOutline.visibleIndices(refs, collapsedHeadingIndices: [0, 2])
+                == [0, 4, 5])
+        #expect(CollectionOutline.visibleIndices(refs, collapsedHeadingIndices: [1, 99])
+                == [0, 1, 2, 3, 4, 5])
+
+        // Model-backed rows: keyed by entry id, carrying index + resolved depth.
+        let hA = outlineEntry(kind: .heading, level: 1, order: 0, text: "A")
+        let d1 = outlineEntry(kind: .document, order: 1)
+        let hB = outlineEntry(kind: .heading, level: 1, order: 2, text: "B")
+        let items = CollectionOutline.linearize([hA, d1, hB])
+        let rows = CollectionOutline.visibleRows(in: items, collapsedHeadingIds: [hA.id])
+        #expect(rows.map(\.index) == [0, 2])
+        #expect(rows.map(\.id) == [hA.id, hB.id])
+        #expect(rows.map(\.depth) == [1, 1])
+        // A document id in the collapse set changes nothing (only headings collapse).
+        let all = CollectionOutline.visibleRows(in: items, collapsedHeadingIds: [d1.id])
+        #expect(all.map(\.index) == [0, 1, 2])
+    }
 }
 
 // MARK: - Resolver test doubles

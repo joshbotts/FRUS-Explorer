@@ -31,6 +31,12 @@ import Foundation
 /// Version history:
 ///   1.0 — Authoring Phase 4: initial implementation (linearize, normalize, section
 ///          ranges, indent/outdent predicates, ancestor body-depth cascade)
+///   1.1 — Authoring Phase 4 (editor step): the shared move engine (`movedOrder` /
+///          `applyingMove` — a heading drags its whole section as one block, self-drops
+///          are forbidden, documents keep single-row moves), `indentSection` /
+///          `outdentSection` (shift the heading *and* its descendant headings, then
+///          normalize), and `visibleIndices` (collapse-state derivation for the editors'
+///          chevrons — view state only, never persisted)
 enum CollectionOutline {
 
     /// The maximum heading nesting depth (locked decision A6: cap at 3, enforced in the
@@ -126,8 +132,10 @@ enum CollectionOutline {
     /// stored level differs from the resolved one are written, so an already-normal
     /// collection is untouched (no spurious `lastModified` bumps / CloudKit uploads).
     ///
-    /// This is the *only* API that mutates levels; every read path clamps transiently
-    /// instead, so a level synced from a future build degrades without being destroyed.
+    /// Levels are only ever mutated here and by `indentSection`/`outdentSection` (which
+    /// write shifted levels and immediately delegate back to this pass); every read path
+    /// clamps transiently instead, so a level synced from a future build degrades
+    /// without being destroyed.
     ///
     /// - Parameter entries: The collection's entries, in any order.
     static func normalize(_ entries: [CollectionEntry]) {
@@ -151,18 +159,201 @@ enum CollectionOutline {
     /// - Returns: The section's range within `items`. When `headingIndex` is not a
     ///   heading, returns the degenerate single-item range `headingIndex..<headingIndex+1`.
     static func sectionRange(of headingIndex: Int, in items: [OutlineItem]) -> Range<Int> {
-        guard items.indices.contains(headingIndex),
-              items[headingIndex].entry.entryKind == .heading else {
+        sectionRangeCore(of: headingIndex,
+                         isHeading: items.map { $0.entry.entryKind == .heading },
+                         depths: items.map(\.depth))
+    }
+
+    /// The `StructuralRef` core of `sectionRange(of:in:)` — the same ownership rule for
+    /// callers holding raw structural facts (the move engine, `visibleIndices`). Depths
+    /// are resolved defensively via `resolvedDepths`.
+    ///
+    /// - Parameters:
+    ///   - headingIndex: Index of a heading ref in `refs`.
+    ///   - refs: Structural facts in collection order.
+    /// - Returns: The section's range (degenerate single-item range for non-headings).
+    static func sectionRange(of headingIndex: Int, refs: [StructuralRef]) -> Range<Int> {
+        sectionRangeCore(of: headingIndex,
+                         isHeading: refs.map(\.isHeading),
+                         depths: resolvedDepths(refs))
+    }
+
+    /// The single section-ownership walk both `sectionRange` overloads delegate to:
+    /// the heading plus everything until (excluding) the next heading at the same or a
+    /// shallower resolved depth.
+    private static func sectionRangeCore(of headingIndex: Int,
+                                         isHeading: [Bool],
+                                         depths: [Int]) -> Range<Int> {
+        guard depths.indices.contains(headingIndex), isHeading[headingIndex] else {
             return headingIndex ..< (headingIndex + 1)
         }
-        let level = items[headingIndex].depth
+        let level = depths[headingIndex]
         var end = headingIndex + 1
-        while end < items.count {
-            let item = items[end]
-            if item.entry.entryKind == .heading && item.depth <= level { break }
+        while end < depths.count {
+            if isHeading[end] && depths[end] <= level { break }
             end += 1
         }
         return headingIndex ..< end
+    }
+
+    // MARK: - Move engine
+
+    /// The shared move engine's pure core (Phase 4 editor step): computes the new
+    /// ordering after dragging the row at `fromIndex` to `toOffset`, in **SwiftUI
+    /// `onMove` semantics** (`toOffset` is an insertion offset in the *pre-removal*
+    /// list, `0...count`).
+    ///
+    /// - A **heading** moves its entire `sectionRange` as one contiguous block.
+    /// - Any other entry moves as a single row.
+    /// - A drop *inside the moved block's own range* (or immediately back onto itself)
+    ///   is forbidden / a no-op — the function returns `nil` and callers change nothing.
+    ///
+    /// - Parameters:
+    ///   - refs: Structural facts in collection order.
+    ///   - fromIndex: Index of the dragged row.
+    ///   - toOffset: Insertion offset (`0...refs.count`) in pre-removal coordinates.
+    /// - Returns: The new ordering as indices into the input, or `nil` when the move is
+    ///   invalid or changes nothing.
+    static func movedOrder(_ refs: [StructuralRef], fromIndex: Int, toOffset: Int) -> [Int]? {
+        guard refs.indices.contains(fromIndex), (0...refs.count).contains(toOffset) else {
+            return nil
+        }
+        let block = refs[fromIndex].isHeading
+            ? sectionRange(of: fromIndex, refs: refs)
+            : fromIndex ..< (fromIndex + 1)
+        // Offsets from the block's start through the slot just past its end either drop
+        // the section into itself (forbidden) or leave the order unchanged (no-op).
+        if toOffset >= block.lowerBound && toOffset <= block.upperBound { return nil }
+        var order = Array(refs.indices)
+        let moved = Array(block)
+        order.removeSubrange(block)
+        let insertAt = toOffset > block.upperBound ? toOffset - moved.count : toOffset
+        order.insert(contentsOf: moved, at: insertAt)
+        return order
+    }
+
+    /// The model-backed move engine both editors call from their `onMove` handlers:
+    /// applies `movedOrder` to the collection's entries and returns the reordered array.
+    /// The caller reindexes `sortOrder` (0..n), runs `normalize`, and saves — this
+    /// function itself never mutates the entries.
+    ///
+    /// - Parameters:
+    ///   - entries: The collection's entries, in any order.
+    ///   - fromIndex: Index of the dragged row, in collection (sorted) order.
+    ///   - toOffset: Insertion offset in pre-removal collection coordinates.
+    /// - Returns: The reordered entries, or `nil` when the move is invalid/a no-op.
+    static func applyingMove(_ entries: [CollectionEntry],
+                             fromIndex: Int, toOffset: Int) -> [CollectionEntry]? {
+        let sorted = entries.sorted { $0.sortOrder < $1.sortOrder }
+        guard let order = movedOrder(sorted.map(StructuralRef.init),
+                                     fromIndex: fromIndex, toOffset: toOffset) else { return nil }
+        return order.map { sorted[$0] }
+    }
+
+    // MARK: - Indent / outdent mutations
+
+    /// Indents the section at `headingIndex` one level: the heading *and* every
+    /// descendant heading in its `sectionRange` shift +1 (clamped to `maxLevel`, so a
+    /// descendant already at the cap merges up — A6 degradation, never corruption),
+    /// then the whole list is normalized. No-op when `canIndent` is false.
+    ///
+    /// - Parameters:
+    ///   - headingIndex: Index of the heading in the collection's sorted order.
+    ///   - entries: The collection's entries, in any order.
+    static func indentSection(at headingIndex: Int, in entries: [CollectionEntry]) {
+        let items = linearize(entries)
+        guard canIndent(headingIndex, in: items) else { return }
+        shiftSection(at: headingIndex, by: +1, items: items)
+        normalize(entries)
+    }
+
+    /// Outdents the section at `headingIndex` one level: the heading and its descendant
+    /// headings shift −1 (clamped to level 1), then the list is normalized (following
+    /// entries re-clamp as needed). No-op when `canOutdent` is false.
+    ///
+    /// - Parameters:
+    ///   - headingIndex: Index of the heading in the collection's sorted order.
+    ///   - entries: The collection's entries, in any order.
+    static func outdentSection(at headingIndex: Int, in entries: [CollectionEntry]) {
+        let items = linearize(entries)
+        guard canOutdent(headingIndex, in: items) else { return }
+        shiftSection(at: headingIndex, by: -1, items: items)
+        normalize(entries)
+    }
+
+    /// Shifts every heading inside the section at `headingIndex` (the heading itself
+    /// included) by `delta`, clamping to `1...maxLevel`. Shifting from *resolved* depths
+    /// keeps the section's internal shape even when stored levels were malformed.
+    private static func shiftSection(at headingIndex: Int, by delta: Int, items: [OutlineItem]) {
+        let range = sectionRange(of: headingIndex, in: items)
+        for i in range where items[i].entry.entryKind == .heading {
+            items[i].entry.level = min(max(items[i].depth + delta, 1), maxLevel)
+        }
+    }
+
+    // MARK: - Collapse derivation
+
+    /// The visible positions of an outline given the set of collapsed heading positions
+    /// — the editors' collapse/expand chevron state is **view state only** (never
+    /// persisted): a collapsed heading hides every row of its `sectionRange` except the
+    /// heading itself. Collapsed positions that are not headings are ignored.
+    ///
+    /// - Parameters:
+    ///   - refs: Structural facts in collection order.
+    ///   - collapsedHeadingIndices: Positions of collapsed headings.
+    /// - Returns: Indices into `refs` of the rows the editor shows, in order.
+    static func visibleIndices(_ refs: [StructuralRef],
+                               collapsedHeadingIndices: Set<Int>) -> [Int] {
+        var hidden = Set<Int>()
+        for index in collapsedHeadingIndices
+        where refs.indices.contains(index) && refs[index].isHeading {
+            let range = sectionRange(of: index, refs: refs)
+            hidden.formUnion((range.lowerBound + 1) ..< range.upperBound)
+        }
+        return refs.indices.filter { !hidden.contains($0) }
+    }
+
+    /// The model-backed convenience over `visibleIndices(_:collapsedHeadingIndices:)`
+    /// for the editors, which key their collapse state by entry id (stable across moves).
+    ///
+    /// - Parameters:
+    ///   - items: A linearized outline (from `linearize`).
+    ///   - collapsedHeadingIds: Ids of the headings the user has collapsed.
+    /// - Returns: Indices into `items` of the rows to show, in order.
+    static func visibleIndices(in items: [OutlineItem],
+                               collapsedHeadingIds: Set<UUID>) -> [Int] {
+        let collapsed = Set(items.indices.filter {
+            items[$0].entry.entryKind == .heading
+                && collapsedHeadingIds.contains(items[$0].entry.id)
+        })
+        return visibleIndices(items.map { StructuralRef($0.entry) },
+                              collapsedHeadingIndices: collapsed)
+    }
+
+    /// One visible editor row: the entry's position in the full outline, its resolved
+    /// depth, and a stable identity for `ForEach` (the entry id, so row identity — and
+    /// the collapse state keyed on it — survives moves and reindexing).
+    struct VisibleRow: Identifiable {
+        /// Index into the full linearized outline (== the sorted entries array).
+        let index: Int
+        /// The row's resolved outline depth (see `OutlineItem.depth`).
+        let depth: Int
+        /// The underlying entry's id.
+        let id: UUID
+    }
+
+    /// The rows both editors list: `visibleIndices` joined with each row's depth and
+    /// identity.
+    ///
+    /// - Parameters:
+    ///   - items: A linearized outline (from `linearize`).
+    ///   - collapsedHeadingIds: Ids of the headings the user has collapsed.
+    /// - Returns: The visible rows, in order.
+    static func visibleRows(in items: [OutlineItem],
+                            collapsedHeadingIds: Set<UUID>) -> [VisibleRow] {
+        visibleIndices(in: items, collapsedHeadingIds: collapsedHeadingIds).map {
+            VisibleRow(index: $0, depth: items[$0].depth, id: items[$0].entry.id)
+        }
     }
 
     // MARK: - Indent / outdent predicates
