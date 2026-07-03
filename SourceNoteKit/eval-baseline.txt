@@ -1,0 +1,345 @@
+SourceNoteParser classification eval
+corpus: citations.csv (citation_type='source-note', 267663 rows)
+normalization: IndexingPipeline post-Phase-1 replica (head-note Source:-paragraph selection, [Source:] wrapper collapse, whitespace normalization) — see NotePreparation.swift for documented gaps
+
+TOTAL NOTES: 267663
+
+=== era pre-1906  (volumes: 45, notes: 2034)
+  centralFiles                      1  (  0.0%)
+  unrecognized                   2033  (100.0%)
+
+=== era 1906-1939  (volumes: 118, notes: 92013)
+  centralFiles                  73690  ( 80.1%)
+  presidentialLibrary             113  (  0.1%)
+  naraCollection                  373  (  0.4%)
+  ciaCollection                     1  (  0.0%)
+  foreignGovernmentArchive         48  (  0.1%)
+  previouslyPublished               3  (  0.0%)
+  unrecognized                  17785  ( 19.3%)
+
+=== era 1940-1951  (volumes: 111, notes: 86149)
+  centralFiles                  49710  ( 57.7%)
+  lotFile                        1295  (  1.5%)
+  presidentialLibrary              96  (  0.1%)
+  naraCollection                  481  (  0.6%)
+  ciaCollection                   677  (  0.8%)
+  foreignGovernmentArchive          6  (  0.0%)
+  previouslyPublished               3  (  0.0%)
+  unrecognized                  33881  ( 39.3%)
+
+=== era 1952-1954  (volumes: 28, notes: 15038)
+  centralFiles                   8349  ( 55.5%)
+  presidentialLibrary               5  (  0.0%)
+  ciaCollection                   270  (  1.8%)
+  previouslyPublished               1  (  0.0%)
+  unrecognized                   6413  ( 42.6%)
+
+=== era 1955-1957  (volumes: 29, notes: 10749)
+  centralFiles                   6934  ( 64.5%)
+  lotFile                        1922  ( 17.9%)
+  presidentialLibrary            1252  ( 11.6%)
+  naraCollection                    6  (  0.1%)
+  ciaCollection                    52  (  0.5%)
+  foreignGovernmentArchive          9  (  0.1%)
+  previouslyPublished               3  (  0.0%)
+  unrecognized                    571  (  5.3%)
+
+=== era 1958-1960  (volumes: 23, notes: 8547)
+  centralFiles                   4978  ( 58.2%)
+  lotFile                        1671  ( 19.6%)
+  presidentialLibrary            1480  ( 17.3%)
+  naraCollection                  147  (  1.7%)
+  ciaCollection                    42  (  0.5%)
+  foreignGovernmentArchive          6  (  0.1%)
+  previouslyPublished               1  (  0.0%)
+  unrecognized                    222  (  2.6%)
+
+=== era 1961-1963  (volumes: 27, notes: 9941)
+  centralFiles                   3791  ( 38.1%)
+  lotFile                        1336  ( 13.4%)
+  presidentialLibrary            2439  ( 24.5%)
+  naraCollection                  576  (  5.8%)
+  ciaCollection                   281  (  2.8%)
+  previouslyPublished               2  (  0.0%)
+  unrecognized                   1516  ( 15.2%)
+
+=== era 1964-1976  (volumes: 100, notes: 30790)
+  centralFiles                   3465  ( 11.3%)
+  cfpfFile                       1580  (  5.1%)
+  lotFile                        1516  (  4.9%)
+  presidentialLibrary            6932  ( 22.5%)
+  naraCollection                 7285  ( 23.7%)
+  ciaCollection                   988  (  3.2%)
+  foreignGovernmentArchive       7151  ( 23.2%)
+  previouslyPublished              50  (  0.2%)
+  unrecognized                   1823  (  5.9%)
+
+=== era 1977+  (volumes: 39, notes: 12402)
+  centralFiles                    111  (  0.9%)
+  cfpfFile                       2435  ( 19.6%)
+  lotFile                        1520  ( 12.3%)
+  presidentialLibrary            6360  ( 51.3%)
+  naraCollection                  724  (  5.8%)
+  ciaCollection                   423  (  3.4%)
+  foreignGovernmentArchive         20  (  0.2%)
+  previouslyPublished              51  (  0.4%)
+  unrecognized                    758  (  6.1%)
+
+=== OVERALL
+  centralFiles                 151029  ( 56.4%)
+  cfpfFile                       4015  (  1.5%)
+  lotFile                        9260  (  3.5%)
+  presidentialLibrary           18677  (  7.0%)
+  naraCollection                 9592  (  3.6%)
+  ciaCollection                  2734  (  1.0%)
+  foreignGovernmentArchive       7240  (  2.7%)
+  previouslyPublished             114  (  0.0%)
+  unrecognized                  65002  ( 24.3%)
+
+=== UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
+  pre-1906                       2033  (100.0%)
+  1906-1939                     17785  ( 19.3%)
+  1940-1951                     33881  ( 39.3%)
+  1952-1954                      6413  ( 42.6%)
+  1955-1957                       571  (  5.3%)
+  1958-1960                       222  (  2.6%)
+  1961-1963                      1516  ( 15.2%)
+  1964-1976                      1823  (  5.9%)
+  1977+                           758  (  6.1%)
+  overall                       65002  ( 24.3%)
+
+=== UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
+--- pre-1906
+  | [Extract.]
+  | [Extracts.]
+  | [Translation.]
+  | [Extract,]
+  | [Extracts]
+  | [Confidential.]
+  | [Circular.]
+  | [Extract]
+  | [Confidential]
+  | [Translation of proposed proclamation.]
+  | [Translation]
+  | (Extract.)
+  | [Translation,]
+  | E.
+  | [l. s.]
+  | True copy:
+  | Seal of the Hebrew Congregation of Tangier.
+  | (Translation.)
+  | CIRCULAR.
+  | [circular.]
+  | A.
+  | B.
+  | C.
+  | D.
+  | F.
+--- 1906-1939
+  | File Not 7523.
+  | Received through the Chinese minister, July 19, 1909.
+  | Left at the department by the Japanese Ambassador on July 17, 1909.
+  | File. No. 9254/5–7.
+  | S. Doc. No. 515, 60th Cong., 1st sess.
+  | File No, 352/8.
+  | Left at the Department of State by the Ecuadorian minister.
+  | FileNo.812.415A/125.
+  | FileNo.812.415A/124.
+  | A telegram from the minister of foreign affairs, Tokyo, received at Washington, July 5, 1910. Left at the Department of State by a Secretary of the Japanese Embassy.
+  | No. 77. General Instruction Consular.
+  | File Nos. 817.00/1593, 1594, 1595, 1596.
+  | 811.751/a
+  | 841.857 L 97/137½
+  | 841.857 L 97/138½
+  | 841.857 L 97/139½
+  | 763.72 Su/1: Telegram
+  | 763.72 Su/32½
+  | 763.72 Su/138½
+  | 763.72 Su/148
+  | 763.72 Su/99
+  | 811.001 W 69/118½
+  | 811.001 W 69/119½
+  | 123 F 84/16: Telegram
+  | 812.01/A
+--- 1940-1951
+  | 740.001121 Navicert/18½
+  | 740.00111A Combat Areas/113
+  | 740.00111A Combat Areas/124
+  | 300.115 (39)/452: Telegram
+  | 740.00112 European War 1939/1641
+  | 740.00111A Combat Areas/140: Telegram
+  | 740.00111A Combat Areas/167
+  | 740.00111A Combat Areas/142: Telegram
+  | 740.00111A Combat Areas/148
+  | 740.00112 European War 1939/1031
+  | 740.00112 Navicert/31
+  | 740.00111A Combat Areas/162
+  | 300.115 (39)/565
+  | 300.115 (39)/665
+  | 740.00111A Combat Areas/195
+  | 740.00112 European War 1939/1092: Telegram
+  | 740.00111A Combat Areas/177: Telegram
+  | 740.00112 European War 1939/1188
+  | 740.00112 European War 1939/1405
+  | 740.00111A Combat Areas/230
+  | 740.00111A Combat Areas/231
+  | 740.00111A Combat Areas/233
+  | 740.00111A Combat Areas/212
+  | 740.00111A Combat Areas/213
+  | 740.00112 European War 1939/1298: Telegram
+--- 1952-1954
+  | Eisenhower Library, Eisenhower papers, Whitman file
+  | Secretary’s Staff Meetings, lot 63 D 75, Notes 61–120
+  | [Extract]
+  | PPS files, lot 64 D 563, “Administrative Transition.”
+  | Truman Library, PSF –General file
+  | [Attachment]
+  | PPS files, lot 64 D 563, “Administrative Transition”
+  | [Attachment 1]
+  | [Attachment 2]
+  | [Attachment 3]
+  | Truman Library, Acheson papers
+  | Truman Library, White House Central files, Confidential file
+  | Secretary’s Letters, lot 56 D 459, “President”
+  | Eisenhower Library, Randall Commission records, 1953–1954
+  | 100.4 FEP/1–2754
+  | GATT files, lot 59 D 563, “Foreign Economic Policy Paper—1954”
+  | PPS files, lot 65 D 101, “Economic Policy”
+  | A/MS files, lot 54 D 291, “Committees”
+  | 100.4 FEP/9–154
+  | Current Economic Developments, lot 70 D 467
+  | International Trade files, lot 57 D 284, “Custom Bill”
+  | S/P – NSC files, lot 61 D 167, NSC 5415 Series
+  | [Enclosure I]
+  | [Enclosure II]
+  | Eisenhower Library, Whitman file
+--- 1955-1957
+  | Source: Collins Papers, Vietnam File, Series VII, Z; attached to a letter from Collins to Young, December 31. Secret; Official–Informal.
+  | Source: Collins Papers, Vietnam File, Series VII, L. Secret.
+  | Source: Collins Papers, Vietnam File, Series VII, K. Secret. No drafting officer is indicated, and the source text is marked “draft”; it is, however, initialed by Collins.
+  | Source: Collins Papers, Vietnam File, Series VIII, Dr. Fishel. Secret.
+  | Source: Collins Papers, Vietnam File, Series VII, L. Secret. Also sent to General O’Daniel.
+  | Source: Collins Papers, Vietnam File, Series VII, T. Secret. Drafted by Sturm on March 26.
+  | Source: Collins Papers, Vietnam File, Series VIII, Memos for Record. Secret. Drafted by Sturm, who initialed it.
+  | Source: Collins Papers, Vietnam File, Series VII, K. Secret. Kelly was on temporary duty at the Embassy, attached to Collins’ personal staff.
+  | Source: University of Montana, Mansfield Papers, Series XXII, Box 107, Vietnam.
+  | [Attachment]
+  | Source: Collins Papers, Vietnam File, Series VII, O. Secret.
+  | Source: United States–Vietnam Relations, 1945–1967, Book 10, pp. 937–940.
+  | Source: Collins Papers, Vietnam File, Series VII, S. Secret. The document bears the marginal notation “File—Sturm”. Sturm accompanied Collins to Washington. Another marginal notation indicates that at
+  | Source: University of Montana, Mansfield Papers, Series XXII, Box 107, Vietnam. Frank Valeo was Senator Mansfield’s Legislative Assistant.
+  | Source: University of Montana Library, Mansfield Papers, Series XXII, Box 107, Vietnam. The source text bears no indication of authorship or occasion.
+  | Source: Collins Papers, Vietnam File, Series VII, K. Secret. Drafted by Kidder.
+  | Source: Collins Papers, Vietnam File, Series VII, S. Secret. Drafted by Sturm on May 5.
+  | Source: Collins Papers, Vietnam File, Series VII, S. Secret. Drafted by Sturm.
+  | Source: Collins Papers, Vietnam File, Series VII, L.
+  | [Enclosure]
+  | [Tab A]
+  | [Tab B]
+  | Annex 1
+  | Source: JCS Records, CCS 092 Asia (6–25–48). Top Secret. This memorandum was filed as an enclosure to a note by the Joint Secretaries to the JCS (J.C.S. 1992/470), August 1. (ibid.)
+  | Source: University of Montana, Mansfield Papers, Series XXII, Box 95, 1955 Indochina S.E. Asia Personal. Drafter not indicated.
+--- 1958-1960
+  | Source: Center of Military History, Williams Papers, Memos to and from Ambassador 1958 (36). Confidential; Official–Informal.
+  | Source: Center of Military History, Williams Papers, Official Correspondence Jan–June 1958 (34).
+  | Source: Washington National Records Center, OSD/ISA Files: FRC 62 A 1698, 092 Vietnam. Secret. Notes on the source text indicate Sprague and Byers saw this memorandum.
+  | Source: Center of Military History, Williams Papers, Civil Guard (97). Secret. Unnumbered but initialed by Williams.
+  | Source: Center of Military History, Williams Papers, Civil Guard (97). Confidential. Addressed also to Nicholas A. Natsios, First Secretary of Embassy, and Chester H. Opal, Public Affairs Officer.
+  | Source: Washington National Records Center, OSD/ISA Files: FRC 62 A 1698, 451.2 Vietnam. Secret.
+  | Source: Washington National Records Center, OSD/ISA Files: FRC 63 A 1672, 452.1 Vietnam. Secret.
+  | Source: Center of Military History, Williams Papers, Memoranda to and from Ambassador 1959. Secret.
+  | Source: Center of Military History, Williams Papers, Official Correspondence January–July 1959 (54). Confidential.
+  | Source: Center of Military History, Williams Papers, Official Correspondence January–July 1959(54). Secret–Personal. Extracts. The omitted material includes discussion of Admiral Felt’s and Admiral Ri
+  | Source: Washington National Records Center, OSD/ISA Files: FRC 63 A 1672, 686 Vietnam. Secret.
+  | Source: Center of Military History, Williams Papers. Secret. The source text is handwritten.
+  | Source: Center of Military History, Williams Papers, Official Correspondence January–July 1959 (54). Secret-Personal.
+  | Source: Center of Military History, Williams Papers, Conversations with Diem 5 Jan 59–25 Nov 59 (162). Extract. Secret. Interpreter and drafting officer not indicated on the source text. The omitted t
+  | Source: Center of Military History, Williams Papers, 119. Drafted November 23. The source text bears no indication of authorship, but the format indicates preparation by a member of the MAAG, who may 
+  | [Enclosure]
+  | Source: Center of Military History, Williams Papers, Lansdale 1960 (136). Top Secret. Attached to the letter cited in footnote 3, Document 113.
+  | Source: Center of Military History, Williams Papers, Memoranda to Ambassador 1960 (77). This letter is enclosure 4 to Document 167.
+  | Source: Center of Military History, Williams Papers, Lansdale. Secret; Operational Immediate; Noforn. This telegram is not numbered.
+  | Source: Center of Military History, Williams Papers, TWXs 1960 (71). Confidential; Priority. Repeated for information to Chief MAAG in Vietnam and to JCS.
+  | Source: Center of Military History, Williams Papers, Lansdale i960 (136). Secret. This document is an attachment to the letter cited in footnote 3, Document 113.
+  | Source: Center of Military History, Williams Papers, Personal Correspondence 1960 (75).
+  | Source: Center of Military History, Williams Papers, Conversations with Diem 30 Nov 59–22 Aug 60 (163). Secret. Neither an interpreter nor a drafting officer is indicated on the source text.
+  | Source: Washington National Records Center, OSD/ISA Files: FRC 64 A 2170, 092 Vietnam. Secret. Covering notes attached to the source text indicate that Lansdale sent a copy of this memorandum to Colon
+  | Source: Center of Military History, Williams Papers, Lansdale 1960 (136). The source text is handwritten.
+--- 1961-1963
+  | Source: Naval Historical Center, Burke Papers. Top Secret; Hold Closely.
+  | [Attachment]
+  | Source: Naval Historical Center, Burke Papers. Top Secret; Hold Closely. Presumably drafted by Burke.
+  | Source: Naval Historical Center, Anderson Papers, Diary. Top Secret.
+  | [Tab B]
+  | [Enclosure]
+  | Source: University of Montana, Mansfield Papers, Series XXII, Box 103, Folder 16. Confidential.
+  | [Attachment 1]
+  | [Attachment 2]
+  | [Appendix G]
+  | [Tab A ]
+  | Source: USAMHI, Kraemer Papers, VN 61-63. Confidential; Noforn/Continued Control.
+  | Source: USAMHI, Kraemer Papers, VN 61 63. Confidential, Noforn/Continued Control.
+  | Source: Harriman Papers, Vietnam 1962. Confidential. The memorandum was sent to Rowan through Harriman. Typed at the top was: “Harriman said burn this.” In Harrimanʼs handwriting in the border was the
+  | Source: Michigan State University, Hannah Papers, H, Viet. fr., 1962. None of the attachments is included with the source text.
+  | Source: Declassified Documents, 1976, 33H. Secret.
+  | Source: Harriman Papers, Vietnam, 1962. Secret. A typed note at the bottom indicates that Harriman dictated but did not read the memorandum.
+  | Source: Library of Congress, Manuscript Division, Harriman Papers, EFGH. Confidential.
+  | Source: JCS Files. Top secret. No drafting information appears on the source text, but declassification markings indicate that it was prepared in the Department of Defense. In addition to the summary 
+  | Source: University of Montana Library, Mansfield Papers, Box 105, Folder 19. Unclassified.
+  | Source: Columbia University, Harriman Papers, Vietnam. Drafted by Sullivan and authorized by Harriman. The meeting was held in Barringtonʼs suite at the Hotel Suisse.
+  | Source: Columbia University, Harriman Papers, Bowles, Chester. Confidential; Personal—No Distribution. Drafted by Harriman.
+  | Source: Library of Congress, Manuscript Division, Harriman Papers, IJKL. Confidential. Attached to a transmittal note from Johnson to Harriman, dated December 10. The visits took place December 1-9; J
+  | Source: Senate Document 93–11. Printed in U.S. Senate 93d Congress, 1st session, Two Reports on Vietnam and Southeast Asia to the President of the United States by Senator Mike Mansfield (Washington, 
+  | [Subenclosure]
+--- 1964-1976
+  | Source: Center of Military History, Westmoreland Papers, COMUSMACV Message Files. Top Secret. Also sent to Admiral Sharp.
+  | Source: Center of Military History, Westmoreland Papers,COMUSMACV Message Files. Top Secret. Also sent to Admiral Sharp.
+  | Source: U.S. Military History Institute, Johnson Papers, Close Hold File No. 3. Top Secret. Drafted by Abrams on September 27.
+  | Source: Library of Congress, Manuscript Divison, Harriman Papers, Secretary Rusk, 1963-1966. No classification marking. Drafted by Harriman.
+  | Source: Center of Military History, Westmoreland Papers, History Backup, #12. Secret. Repeated to General Westmoreland.
+  | Source: Center of Military History, Westmoreland Papers, History Backup, #13. Secret. Prepared by Westmoreland. Copies were sent to Taylor, U. Alexis Johnson, and Manfull.
+  | Source: Minnesota Historical Society, Hubert H. Humphrey Papers, Vietnam, 1965–1968. No classification marking. An earlier version, drafted by Hughes of INR and dated February 15, is printed in Humphr
+  | Source: Center of Military History, Westmoreland Papers,COMUSMACV Message Files. Top Secret. Also sent to Sharp.
+  | Source: Center of Military History, Westmoreland Papers,COMUSMACV, Message Files. Top Secret. Also sent to Sharp.
+  | Source: Center of Military History, Westmoreland Papers, COMUSMACV, Message Files Top Secret. Repeated to COMUSMACV.
+  | Source: University of Montana, Mansfield Library, Mansfield Papers, Series 13, Box 69, Vietnam. No classification marking.
+  | Source: Library of Congress, Harriman Papers, Vietnam 1964. Secret. Drafted by Mendenhall. Copies were sent to Forrestal, Ball, and Harriman. Hilsman was in Australia.
+  | Source: Washington National Records Center, OASD/ISA Files: FRC 69 A 7425, Vietnam 381. Top Secret. A note on the source text indicates that McNamara saw this memorandum on April 2.
+  | Source: Department of Defense, Records of the Joint Chiefs of Staff, 9155.3 (24 Mar 66). Top Secret.
+  | Source: Library of Congress, Manuscript Division, Harriman Papers, Box 486, McNamara, Robert S. Personal & Secret; Absolutely No One Else To See. Prepared by Harriman.
+  | Source: Center of Military History, Westmoreland Papers, COMUSMACV Message Files. Secret. Repeated to Admiral Sharp.
+  | Source: Library of Congress, Manuscript Division, Harriman Papers, Box 486, McNamara, Robert S. Secret; Personal. Prepared by Harriman on May 30.
+  | Source: Center of Military History, Westmoreland Papers, COMUSMACV Message Files. Top Secret; Eyes Only. Repeated to General Wheeler.
+  | Source: Center of Military History, Westmoreland Papers, COMUSMACV Message Files. Top Secret; Eyes Only. Also sent to Admiral Sharp.
+  | Source: Center of Military History, Westmoreland Papers, COMUSMACV Message Files. Top Secret; Personal. Also sent to Admiral Sharp.
+  | Source: Center of Military History, Westmoreland Papers, COMUSMACV Message Files. Top Secret. Repeated to General Westmoreland.
+  | Source: Washington National Records Center, Department of Defense, OSD Files: FRC 330 73 A 1250, VIET 092.2 (September-October 1968). Confidential. A notation on the paper reads: “Dep. Sec. has seen.”
+  | Source: Washington National Records Center, Department of Defense, OSD Files: FRC 330 73 A 1250, VIET 092.2 (September-October) 1968. Secret. A notation on the memorandum reads: “Sec Def has seen—8 Oc
+  | Source: Library of Congress, Manuscript Division, Harriman Papers, Special Files, Public Service, Kennedy-Johnson, Subject File, Rusk, Dean—1968-69. Top Secret; Nodis. Harriman’s summary version of th
+  | Source: Library of Congress, Manuscript Division, Harriman Papers, Special Files, Public Service, Kennedy-Johnson, Confidential File, July-December 1968. Top Secret; Nodis.
+--- 1977+
+  | Source: Library of Congress, Harold Brown Papers, Box 106, Secretary Brown Eyes Only, Jan–June 1980. Confidential; Eyes Only. Carter wrote in the upper right corner of the memorandum: “I have read thi
+  | [Top Secret. 13 pages not declassified]
+  | [Top Secret. 2 pages not declassified]
+  | [Secret. 8 pages not declassified]
+  | Source: The Presidential Campaign 1976, volume I, part I: Jimmy Carter, pp. 66–70. Carter delivered prepared remarks before the American Chamber of Commerce. Carter traveled to Japan to attend the Tri
+  | Source: Minnesota Historical Society, Mondale Papers, Senatorial Papers, Press Relations/Media Activities Records, Speeches, 1975, Senate Floor Statement on American Foreign Policy After Vietnam, June
+  | Source: The Presidential Campaign 1976, volume I, part I: Jimmy Carter, pp. 109–119. Carter spoke before the members of the Chicago Council on Foreign Relations in the Prudential Auditorium. (Sean Too
+  | Source: The Presidential Campaign 1976, volume I, part I: Jimmy Carter, pp. 266–275. Carter spoke before members of the Foreign Policy Association in the ballroom of the Waldorf-Astoria Hotel. (Helen 
+  | Source: The Presidential Campaign 1976, volume I, part II: Jimmy Carter, pp. 709–714. Carter delivered his address before the convention of B’nai B’rith in the ballroom of the Washington Hilton Hotel.
+  | Source: Public Papers: Carter, 1977, Book II, pp. 1309–1315. The President spoke at 3:08 p.m. in the Gaillard Municipal Auditorium before members of the Southern Legislative Conference attending their
+  | Source: Public Papers: Carter, 1978, Book I, pp. 129–144. The report is the President’s annual report to Congress on economic policy.
+  | Source: Public Papers: Carter, 1978, Book, I, pp. 258–263. All brackets are in the original. The President spoke at 9 p.m. from the Library at the White House. His remarks were broadcast live on radio
+  | Source: Public Papers: Carter, 1978, Book I, pp. 529–535. The President spoke at 9 a.m. in Wake Forest University’s Wait Chapel. Following his address, he attended a reception for Representative Steve
+  | Source: Public Papers: Carter, 1978, Book I, pp. 1052–1057. The President spoke at the Naval Academy commencement exercises at 10:42 a.m. in the Navy-Marine Corps Memorial Stadium. His address was bro
+  | Source: Public Papers: Carter, 1978, Book II, pp. 2161–2165. The President spoke at noon in the East Room at the White House at a ceremony commemorating the 30th anniversary of the signing of the Univ
+  | Source: Public Papers: Carter, 1978, Book II, pp. 2264–2266. All brackets are in the original. The President spoke at 9 p.m. from the Oval Office at the White House. His address was broadcast live on 
+  | Source: Public Papers: Carter, 1979, Book I, pp. 103–109. The President delivered the address at 9:04 p.m. in the House Chamber at the Capitol. O’Neill introduced the President. The President’s addres
+  | Source: Public Papers: Carter, 1979, Book I, pp. 300–306. All brackets are in the original. The President spoke at a special convocation, which took place at 12:30 p.m. in Alexander Memorial Coliseum 
+  | Source: Public Papers: Carter, 1979, Book I, pp. 693–699. The President spoke at 12:35 p.m. in the Grand Ballroom at the Waldorf-Astoria Hotel at the annual convention of the American Newspaper Publis
+  | Source: Public Papers: Carter, 1979, Book II, pp. 2120–2125. The President spoke at 2:25 p.m. before the 13th constitutional convention of the American Federation of Labor–Congress of Industrial Organ
+  | Source: Public Papers: Carter, 1980–81, Book I, pp. 25–27. The President spoke at 9 a.m. from the Oval Office at the White House. His remarks were broadcast live on radio and television.
+  | Source: Public Papers: Carter, 1980–81, Book I, pp. 873–880. The President spoke at 1:02 p.m. in the Grand Ballroom of the Fairmont Hotel before the World Affairs Council of Philadelphia.
+  | Source: Public Papers: Carter, 1980–81, Book II, pp. 2337–2341. The President spoke at 12:10 p.m. from the Oval Office at the White House. His address was broadcast live on the Mutual Broadcasting Sys
+  | Source: Public Papers: Carter, 1980–81, Book III, pp. 2687–2688. The President spoke at 9:54 p.m. at the Sheraton Washington Hotel. His remarks were broadcast live on television.
+  | Source: Public Papers: Carter, 1980–81, Book III, pp. 2890–2893. The President spoke at 9 p.m. from the Oval Office at the White House. His remarks were broadcast live on radio and television. In his 

@@ -707,11 +707,13 @@ paths:
 
         | `provenanceType` | Description |
         |------------------|-------------|
-        | `lotFile` | State Dept. lot file (RG 59) — lot number + optional series |
+        | `lotFile` | State Dept. lot file (RG 59/84) — lot number + optional series |
         | `naraCollection` | NARA record group with series info — RG + series + lot |
         | `centralFiles` | State Dept. central files (decimal or subject-numeric) |
+        | `cfpfFile` | Central Foreign Policy Files 1973–1979 (P/D/N reels, AAD telegrams) |
         | `presidentialLibrary` | Presidential library folder |
         | `ciaCollection` | CIA record — job number + box |
+        | `namedFileSeries` | Named office-file series or manuscript collection cited without a lot number or repository (`IO Files`, `Roosevelt Papers`) — series name is the match key |
         | `foreignGovernmentArchive` | Foreign archive |
         | `previouslyPublished` | Citation to a published work |
         | `unrecognized` | Could not be parsed |
@@ -1994,9 +1996,18 @@ components:
 
         Introduced in Session 23; extended in Session 130 with `.naraCollection`
         and `.ciaCollection` cases; Session 150 added date-based routing for
-        decimal-file citations; Source Explorer Phase 1 (2026-07-03) added the
+        decimal-file citations; Session 151 added `.cfpfFile` (Central Foreign
+        Policy Files 1973–1979); Source Explorer Phase 1 (2026-07-03) added the
         `classification` field (sentence 2 of the source note when it is
-        classification markings).
+        classification markings); Source Explorer Phase 2 (2026-07-03) added
+        `.namedFileSeries` (named office-file series and manuscript collections
+        cited without a lot number or repository — the `series` field carries the
+        series name, which is the match key the collection-authority work
+        resolves; no repository is asserted at parse time). The indexed
+        `document_sources` row additionally stores `lot_file_norm`, a canonical
+        compact uppercase lot key (`"64D199"`) derived from `lotNumber` for
+        exact-match archival-neighbor keying; it is a derived normalization of
+        `lotNumber`, not a separate field of this schema.
       required:
         - documentId
         - volumeId
@@ -2018,8 +2029,10 @@ components:
             - lotFile
             - naraCollection
             - centralFiles
+            - cfpfFile
             - presidentialLibrary
             - ciaCollection
+            - namedFileSeries
             - foreignGovernmentArchive
             - previouslyPublished
             - unrecognized
@@ -2038,7 +2051,7 @@ components:
           type:
             - string
             - "null"
-          description: Series name within the record group, if extracted.
+          description: Series name within the record group, if extracted. For `namedFileSeries`, the cited series/collection name itself (e.g. `"IO Files"`, `"Roosevelt Papers"`).
         fileIdentifier:
           type:
             - string

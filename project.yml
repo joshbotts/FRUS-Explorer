@@ -66,6 +66,13 @@ targets:
           - "Info-macOS.plist"
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
+      # SourceNoteKit source files are compiled directly into the app (not via SPM product linkage).
+      # eval-baseline.txt / eval-report.txt are the committed SourceNoteEvalGenerator
+      # BEFORE/AFTER snapshots, not app content.
+      - path: SourceNoteKit
+        excludes:
+          - "eval-baseline.txt"
+          - "eval-report.txt"
     # XcodeGen generates Info.plist at info.path and sets INFOPLIST_FILE accordingly.
     # Using an explicit info section (instead of GENERATE_INFOPLIST_FILE) allows
     # UIBackgroundModes, which is an array and cannot be set via INFOPLIST_KEY_*.
@@ -182,6 +189,13 @@ targets:
           - "Info-macOS.plist"
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
+      # SourceNoteKit source files are compiled directly into the app (not via SPM product linkage).
+      # eval-baseline.txt / eval-report.txt are the committed SourceNoteEvalGenerator
+      # BEFORE/AFTER snapshots, not app content.
+      - path: SourceNoteKit
+        excludes:
+          - "eval-baseline.txt"
+          - "eval-report.txt"
     # Explicit Info.plist (was GENERATE_INFOPLIST_FILE + INFOPLIST_KEY_*). Switched to an
     # explicit plist because CFBundleDocumentTypes / UTExportedTypeDeclarations are arrays of
     # dictionaries that cannot be expressed via INFOPLIST_KEY_* (same reason the iOS target

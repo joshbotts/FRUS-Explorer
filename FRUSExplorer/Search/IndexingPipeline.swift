@@ -381,7 +381,30 @@ public actor IndexingPipeline {
     ///   (frus1914Supp, frus1952-54v13p1, …) no longer embed footnote text. A re-parse
     ///   repopulates `document_cache.source_note`/`header` and `document_sources` for the
     ///   affected documents.
-    public static let currentDateIndexVersion: Int = 15
+    /// - Version 16: era-aware SourceNoteParser v2 + `lot_file_norm` (Source Explorer
+    ///   Phase 2, Session 2026-07-03). The parser grammar now recognizes decimal refs
+    ///   with word/office infixes (`893.51 Manchuria/49`, `740.00112 European War
+    ///   1939/6363`, `396.1 GE/7–854`), Paris Peace Conference decimals (RG 256),
+    ///   `File No.` punctuation variants, loose lot styles (lowercase/comma, en/em-dash,
+    ///   lot-leading), presidential-library and manuscript-repository lead notes
+    ///   without the `Source:` prefix, named file series (new `.namedFileSeries` case →
+    ///   `citation_era='named_series'`), 1961–1963 abstract notes with trailing
+    ///   citations, and Public Papers print citations — corpus-wide unrecognized rate
+    ///   drops 24.3% → 2.8% on the citations.csv eval corpus. `document_sources` gains
+    ///   a `lot_file_norm` column (canonical compact lot key, e.g. "64D199") written at
+    ///   parse time. A reindex rebuilds `document_sources` with the v2 classifications
+    ///   and normalized lot keys.
+    /// - Version 17: SourceNoteParser v2 adversarial-review fixes (Source Explorer
+    ///   Phase 2, Session 2026-07-03). Colon-styled inline lots cut at the first `:`
+    ///   (and trailing `)` stripped) so `lot_file`/`lot_file_norm` store the compact
+    ///   key (`M88`) instead of the colon chain (1,024 corpus rows); abstract notes
+    ///   whose summary fits the named-series shape now route to the concrete CIA/NARA
+    ///   citation in their tail; FRC-derived record groups no longer read parenthetical
+    ///   secondary-copy remarks, and "Nixon Presidential Materials" notes classify as
+    ///   their own presidential-library identity instead of `citation_era='foreign'`
+    ///   junk (~7k rows); bare `File <number>` citations keep dotted decimals intact.
+    ///   A reindex rebuilds `document_sources` with the corrected keys.
+    public static let currentDateIndexVersion: Int = 17
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3630,10 +3653,14 @@ public actor IndexingPipeline {
         // Session 130: archival citation tables.
         // Source Explorer Phase 1 (2026-07-03): `classification` column added (sentence 2
         // of the source note when it is classification markings, e.g. "Secret; Nodis").
-        // The table is fully derived from the TEI, so a pre-Phase-1 table (detected by the
-        // absent `classification` column) is dropped and recreated — the established
-        // volume_sources migration pattern; the version-14 reindex repopulates it.
-        if tableExists("document_sources") && !columnExists("classification", inTable: "document_sources") {
+        // Source Explorer Phase 2 (2026-07-03): `lot_file_norm` column added — the
+        // canonical compact lot key (`SourceNoteParser.lotFileNorm`, e.g. "64D199")
+        // stored alongside the raw `lot_file` so the Phase 3 matcher can use a single
+        // indexed equality instead of a formatting-variant fan-out.
+        // The table is fully derived from the TEI, so an old-shape table (detected by
+        // the absent newest column) is dropped and recreated — the established
+        // volume_sources migration pattern; the version-16 reindex repopulates it.
+        if tableExists("document_sources") && !columnExists("lot_file_norm", inTable: "document_sources") {
             try? exec("DROP TABLE document_sources")
         }
         try exec("""
@@ -3643,6 +3670,7 @@ public actor IndexingPipeline {
                 repository     TEXT,
                 record_group   TEXT,
                 lot_file       TEXT,
+                lot_file_norm  TEXT,
                 series_name    TEXT,
                 citation_era   TEXT NOT NULL DEFAULT 'unrecognized',
                 raw_text       TEXT NOT NULL,
@@ -3655,6 +3683,8 @@ public actor IndexingPipeline {
         // Session 152: indexes for same-collection discovery queries
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot ON document_sources(lot_file)")
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_era_series ON document_sources(citation_era, series_name)")
+        // Source Explorer Phase 2: normalized-lot equality lookups (Phase 3 matcher)
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot_norm ON document_sources(lot_file_norm)")
 
         // Session 170: volume_sources rewritten to a prose + collection-outline model
         // (kind / depth / is_heading), and the primary key changed from
@@ -3968,8 +3998,8 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO document_sources
-            (volume_id, document_id, repository, record_group, lot_file, series_name, citation_era, raw_text, classification)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (volume_id, document_id, repository, record_group, lot_file, lot_file_norm, series_name, citation_era, raw_text, classification)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -3980,10 +4010,11 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 3, row.repository)
                 auxBindOptional(stmt, 4, row.recordGroup)
                 auxBindOptional(stmt, 5, row.lotFile)
-                auxBindOptional(stmt, 6, row.seriesName)
-                sqlite3_bind_text(stmt, 7, row.citationEra, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_text(stmt, 8, row.rawText,     -1, SQLITE_TRANSIENT_IP)
-                auxBindOptional(stmt, 9, row.classification)
+                auxBindOptional(stmt, 6, row.lotFileNorm)
+                auxBindOptional(stmt, 7, row.seriesName)
+                sqlite3_bind_text(stmt, 8, row.citationEra, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 9, row.rawText,     -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 10, row.classification)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -4033,12 +4064,14 @@ public actor IndexingPipeline {
         case .lotFile(let rg, let lot, let fid):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "Department of State", recordGroup: rg,
-                lotFile: lot, seriesName: fid, citationEra: "lot_file", rawText: rawText)
+                lotFile: lot, seriesName: fid, citationEra: "lot_file", rawText: rawText,
+                lotFileNorm: SourceNoteParser.lotFileNorm(lot))
         case .naraCollection(let rg, let series, let lot, let box):
             let sid = [series, box.map { "Box \($0)" }].compactMap { $0 }.joined(separator: ", ")
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "National Archives", recordGroup: rg,
-                lotFile: lot, seriesName: sid.isEmpty ? nil : sid, citationEra: "structured", rawText: rawText)
+                lotFile: lot, seriesName: sid.isEmpty ? nil : sid, citationEra: "structured", rawText: rawText,
+                lotFileNorm: lot.map { SourceNoteParser.lotFileNorm($0) })
         case .presidentialLibrary(let lib, let coll, _):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: lib, recordGroup: nil,
@@ -4059,6 +4092,12 @@ public actor IndexingPipeline {
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "Department of State", recordGroup: "59",
                 lotFile: nil, seriesName: fid.map { "CFPF \($0)" } ?? "CFPF", citationEra: "cfpf", rawText: rawText)
+        case .namedFileSeries(let series, _):
+            // No repository asserted at parse time: the series name is the match key
+            // the Phase 3/4 collection-authority work resolves.
+            return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                repository: nil, recordGroup: nil,
+                lotFile: nil, seriesName: series, citationEra: "named_series", rawText: rawText)
         case .unrecognized:
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
@@ -5088,6 +5127,10 @@ private struct DocumentSourceRow: Sendable {
     /// model), e.g. `"Secret; Nodis"`. `nil` when the second sentence does not look like
     /// markings (Source Explorer Phase 1; store-only, no UI yet).
     var classification: String? = nil
+    /// Canonical compact lot key (`SourceNoteParser.lotFileNorm`, e.g. `"64D199"`),
+    /// set for lot-bearing rows only (Source Explorer Phase 2; the Phase 3 matcher
+    /// reads it for single-equality neighbor lookups).
+    var lotFileNorm: String? = nil
 }
 
 private struct VolumeSourceRow: Sendable {

@@ -372,6 +372,20 @@ struct MacSourceExplorerView: View {
                                       value: fid)
                     }
 
+                case .namedFileSeries(let series, let fileId):
+                    provenanceRow(label: String(localized: "source.explorer.namedSeries.type",
+                                               defaultValue: "Type"),
+                                  value: String(localized: "source.explorer.namedSeries.typeValue",
+                                               defaultValue: "Named File Series"))
+                    provenanceRow(label: String(localized: "source.explorer.namedSeries.series",
+                                               defaultValue: "File Series"),
+                                  value: series)
+                    if let fileId {
+                        provenanceRow(label: String(localized: "source.explorer.namedSeries.file",
+                                                   defaultValue: "File"),
+                                      value: fileId)
+                    }
+
                 case .unrecognized:
                     provenanceRow(label: String(localized: "source.explorer.unrecognized.type",
                                                defaultValue: "Type"),
@@ -468,6 +482,15 @@ struct MacSourceExplorerView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+        case .namedFileSeries:
+            GroupBox(header) {
+                Text(String(localized: "source.explorer.namedSeries.note",
+                            defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
         case .unrecognized:
