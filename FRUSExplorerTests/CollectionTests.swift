@@ -833,8 +833,9 @@ struct CollectionTests {
         ctx.insert(coll)
         let entry = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
         entry.collection = coll
-        // A kind raw value written by a hypothetical newer build (e.g. Phase 5's excerpt).
-        entry.kind = "excerpt"
+        // A kind raw value written by a hypothetical newer build ("excerpt" became real
+        // in Authoring Phase 5, so the stand-in future kind is now "hologram").
+        entry.kind = "hologram"
         ctx.insert(entry)
 
         // Accessor: unknown raw values surface as .unrecognized, not as a junk .document.
@@ -842,7 +843,7 @@ struct CollectionTests {
 
         // Setter: the fallback is never persisted — the newer build's raw value survives.
         entry.entryKind = .unrecognized
-        #expect(entry.kind == "excerpt")
+        #expect(entry.kind == "hologram")
 
         // Native export omits the entry this build can't represent.
         let file = NativeCollectionSerializer.makeFile(
@@ -851,7 +852,7 @@ struct CollectionTests {
 
         // Native import skips a file entry with an unknown kind instead of misdecoding it.
         let futureEntry = FRUSCollectionFile.Entry(
-            kind: "excerpt", documentId: "d1", volumeId: "frus1961-63v14",
+            kind: "hologram", documentId: "d1", volumeId: "frus1961-63v14",
             bodyDepthOverride: nil, text: nil, richText: nil, notes: nil)
         let fileWithFuture = FRUSCollectionFile(
             format: NativeCollectionSerializer.formatIdentifier, formatVersion: 1,
@@ -922,6 +923,7 @@ struct CollectionTests {
         switch item {
         case .heading:  return "heading"
         case .prose:    return "prose"
+        case .excerpt:  return "excerpt"
         case .document: return "document"
         }
     }
@@ -972,7 +974,7 @@ struct CollectionTests {
                                  sortOrder: 5, researchNoteId: legNote.id)
 
         let future = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 6)
-        future.kind = "excerpt"                // unrecognized kind from a newer build — skipped
+        future.kind = "hologram"               // unrecognized kind from a newer build — skipped
 
         let malformed = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 7)
         // kind stays "document" with empty ids — skipped defensively
@@ -1071,6 +1073,13 @@ struct CollectionTests {
         #expect(doc.highlights.first?.color == .green)
         #expect(doc.bodyDepth == .full)                      // collection default (no overrides exist)
         #expect(doc.summaryText == nil)
+        // Phase 5 overrides: synthetic smart entries carry none — smart collections
+        // keep collection-level behavior by construction.
+        #expect(doc.applyHighlightsOverride == nil)
+        #expect(doc.includeNotesOverride == nil)
+        #expect(doc.includeFootnotesOverride == nil)
+        #expect(doc.summaryPromptIdOverride == nil)
+        #expect(doc.relatedDocumentCitations.isEmpty)
 
         // The collection default body depth flows through — including .summaryOnly —
         // without any generation happening in the core pipeline.
@@ -1207,12 +1216,22 @@ struct CollectionTests {
             bodyText: "Contract body paragraph.",
             citation: "Contract Citation Label",
             historyStateGovURL: "https://history.state.gov/historicaldocuments/frusvol/d9",
+            // Phase 5: the related-documents payload rides the document (no new item
+            // case) — every rendering format must emit the "See also:" line.
+            relatedDocumentCitations: ["Related Contract Citation"],
             zoteroItem: zotero)
+
+        let excerpt = CollectionExportExcerpt(
+            text: "Contract excerpt passage.",
+            documentId: "d9", volumeId: "frusvol",
+            citation: "Contract Excerpt Citation",
+            colorTag: "green")
 
         let items: [CollectionExportItem] = [
             .heading("Contract Part I", level: 1),
             .prose(rtf),
             .document(doc),
+            .excerpt(excerpt),                           // Phase 5: frozen quotation
             .heading("Contract Nested Sub", level: 2),   // Phase 4: leveled headings
         ]
         return (CollectionExportMetadata(name: "Exporter Contract", note: nil), items)
@@ -1234,6 +1253,14 @@ struct CollectionTests {
         #expect(html.contains("Contract Citation Label"))            // .document citation heading
         #expect(html.contains("Contract body paragraph."))           // .document body
         #expect(html.contains("id=\"doc-frusvol-d9\""))              // stable document anchor
+        #expect(html.contains("Contract excerpt passage."))          // .excerpt passage
+        #expect(html.contains("excerpt-block excerpt-green"))        // …styled + colour accent
+        #expect(html.contains("class=\"excerpt-source\">Contract Excerpt Citation"))  // source line
+        #expect(html.contains("figure.excerpt-block"))               // excerptCSS emitted when used
+        #expect(html.contains("class=\"see-also\""))                 // related-documents line
+        #expect(html.contains("See also:"))
+        #expect(html.contains("Related Contract Citation"))
+        #expect(html.contains(".see-also {"))                        // relatedCSS emitted when used
 
         // DOCX — the stored-mode ZIP keeps document.xml uncompressed, so the emitted XML
         // text appears verbatim in the archive bytes.
@@ -1245,6 +1272,12 @@ struct CollectionTests {
         #expect(docxContains("SectionHeading2"))                     // …styled distinguishably (outlineLvl 1)
         #expect(docxContains("Editorial contract prose."))           // .prose
         #expect(docxContains("Contract Citation Label"))             // .document
+        #expect(docxContains("Contract excerpt passage."))           // .excerpt passage
+        #expect(docxContains("ExcerptQuote"))                        // …quote-styled paragraphs
+        #expect(docxContains("Contract Excerpt Citation"))           // …source line (ExcerptSource)
+        #expect(docxContains("ExcerptSource"))
+        #expect(docxContains("See also:"))                           // related-documents line
+        #expect(docxContains("Related Contract Citation"))
         // The ToC field's `\o` level range is content-driven (Phase 4 review fix): this
         // fixture's deepest authored heading is level 2, so the field must stay the exact
         // pre-Phase-4 `\o "1-2"` — because `\o` bounds the `\u` outline-level sweep, a
@@ -1272,6 +1305,10 @@ struct CollectionTests {
         #expect(pdfText.contains("Contract Nested Sub"))             // level-2 heading (indent/size stepped)
         #expect(pdfText.contains("Editorial contract prose."))      // .prose
         #expect(pdfText.contains("Contract body paragraph."))       // .document body
+        #expect(pdfText.contains("Contract excerpt passage."))      // .excerpt passage
+        #expect(pdfText.contains("Contract Excerpt Citation"))      // …source line
+        #expect(pdfText.contains("See also:"))                      // related-documents line
+        #expect(pdfText.contains("Related Contract Citation"))
     }
 
     @Test("ExporterContract: Zotero RIS and BibTeX export the document and skip structural items")
@@ -1286,6 +1323,8 @@ struct CollectionTests {
         #expect(ris.contains("Contract Memo"))
         #expect(!ris.contains("Contract Part I"))
         #expect(!ris.contains("Editorial contract prose."))
+        #expect(!ris.contains("Contract excerpt passage."))   // excerpts skipped by design
+        #expect(!ris.contains("Related Contract Citation"))   // related docs skipped too
 
         // BibTeX — same discipline; records are keyed volumeId_documentId.
         let bibURL = try await BibTeXCollectionExporter().export(metadata: metadata, items: items)
@@ -1294,6 +1333,8 @@ struct CollectionTests {
         #expect(bib.contains("Contract Memo"))
         #expect(!bib.contains("Contract Part I"))
         #expect(!bib.contains("Editorial contract prose."))
+        #expect(!bib.contains("Contract excerpt passage."))   // excerpts skipped by design
+        #expect(!bib.contains("Related Contract Citation"))   // related docs skipped too
     }
 
     @Test("SharedRenderer: the HTML export file is byte-identical to CollectionItemHTMLRenderer.pageHTML")
@@ -1350,6 +1391,10 @@ struct CollectionTests {
         #expect(!page.contains("collection-subtitle"))
         #expect(!page.contains("collection-author"))
         #expect(!page.contains("colophon"))
+        #expect(!page.contains("headnote"))   // Phase 5 layer stays dormant too
+        #expect(!page.contains("excerpt"))    // Phase 5 excerpt layer stays dormant too
+        #expect(!page.contains("see-also"))   // Phase 5 related-documents layer too
+        #expect(!page.contains("See also"))
         #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
     }
 
@@ -2025,7 +2070,19 @@ struct CollectionTests {
         let data = try NativeCollectionSerializer.encode(file)
         let json = String(decoding: data, as: UTF8.self)
         for v2Key in ["minimumReaderVersion", "subtitle", "authorLine",
-                      "introductionText", "introductionRichText", "includeColophon", "level"] {
+                      "introductionText", "introductionRichText", "includeColophon", "level",
+                      // Phase 5 optional keys — absent from a write-minimum file.
+                      "includeFootnotes", "includeSourceNote",
+                      "includeHeadnote", "headnoteSummaryId",
+                      // Phase 5 excerpt anchors — likewise absent.
+                      "excerptStart", "excerptEnd",
+                      "excerptRenderingVersion", "excerptColorTag",
+                      // Phase 5 per-entry overrides — likewise absent…
+                      "applyHighlightsOverride", "includeNotesOverride",
+                      "includeSourceNoteOverride", "includeFootnotesOverride",
+                      "summaryPromptIdOverride", "includeRelatedDocuments",
+                      // …and selectedHighlightIds NEVER serializes, in any file.
+                      "selectedHighlightIds"] {
             #expect(!json.contains("\"\(v2Key)\""), "write-minimum file must not carry '\(v2Key)'")
         }
 
@@ -2135,6 +2192,870 @@ struct CollectionTests {
         let entry = CollectionEntry(collectionId: collection.id, documentId: "d1",
                                     volumeId: "v1", sortOrder: 0)
         #expect(entry.level == 1)
+    }
+
+    // MARK: - Footnote pair + headnotes (Authoring Phase 5)
+
+    @Test("Footnote pair derivation: a nil pair derives each legacy tri-state value exactly; unknown raw values fall back like .all")
+    func footnotePairDerivation() {
+        // The mapping contract: all→(true,false), sourceNoteOnly→(false,true),
+        // none→(false,false) — an untouched collection composes exactly as before.
+        let cases: [(style: String, footnotes: Bool, sourceNote: Bool)] = [
+            ("all",            true,  false),
+            ("sourceNoteOnly", false, true),
+            ("none",           false, false),
+            ("garbage",        true,  false),   // unknown raw → the legacy `?? .all` fallback
+        ]
+        for c in cases {
+            let coll = Collection(name: "Derive-\(c.style)")
+            coll.footnoteStyle = c.style
+            #expect(coll.includeFootnotes == nil)      // untouched: pair stays nil
+            #expect(coll.includeSourceNote == nil)
+            #expect(coll.effectiveIncludeFootnotes == c.footnotes,
+                    "style \(c.style) should derive includeFootnotes=\(c.footnotes)")
+            #expect(coll.effectiveIncludeSourceNote == c.sourceNote,
+                    "style \(c.style) should derive includeSourceNote=\(c.sourceNote)")
+        }
+    }
+
+    @Test("Footnote pair end-to-end: the resolver's options carry the derived pair for every legacy style, and an explicit pair overrides")
+    @MainActor
+    func footnotePairResolutionOptions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let resolver = CollectionContentResolver(appState: AppState(), modelContext: context)
+
+        let coll = Collection(name: "Options")
+        for (style, footnotes, sourceNote) in [("all", true, false),
+                                               ("sourceNoteOnly", false, true),
+                                               ("none", false, false)] {
+            coll.footnoteStyle = style
+            coll.includeFootnotes = nil
+            coll.includeSourceNote = nil
+            let options = resolver.resolutionOptions(for: coll)
+            #expect(options.includeFootnotes == footnotes, "style \(style)")
+            #expect(options.includeSourceNote == sourceNote, "style \(style)")
+        }
+
+        // The previously inexpressible combination: footnotes AND the source note.
+        coll.effectiveIncludeFootnotes = true
+        coll.effectiveIncludeSourceNote = true
+        let both = resolver.resolutionOptions(for: coll)
+        #expect(both.includeFootnotes == true)
+        #expect(both.includeSourceNote == true)
+    }
+
+    @Test("Footnote pair setters: writes freeze both Bools and keep a best-fit legacy footnoteStyle for old readers; (true,true) writes 'all'")
+    func footnotePairWriteThrough() {
+        // Toggling one flag must freeze the OTHER's currently-derived value first —
+        // otherwise rewriting footnoteStyle would silently flip the untouched flag.
+        let coll = Collection(name: "Freeze")
+        coll.footnoteStyle = "sourceNoteOnly"          // derived pair: (false, true)
+        coll.effectiveIncludeFootnotes = true          // user turns footnotes ON
+        #expect(coll.includeFootnotes == true)
+        #expect(coll.includeSourceNote == true)        // frozen, not re-derived from "all"
+        #expect(coll.effectiveIncludeSourceNote == true)
+        // (true, true) is inexpressible in the tri-state: best fit writes "all".
+        #expect(coll.footnoteStyle == "all")
+
+        // Each expressible pair round-trips to its exact legacy raw value.
+        coll.effectiveIncludeSourceNote = false        // (true, false)
+        #expect(coll.footnoteStyle == "all")
+        coll.effectiveIncludeFootnotes = false         // (false, false)
+        #expect(coll.footnoteStyle == "none")
+        coll.effectiveIncludeSourceNote = true         // (false, true)
+        #expect(coll.footnoteStyle == "sourceNoteOnly")
+    }
+
+    @Test("Resolver headnote: chosen summary id wins; nil id prefers the collection prompt's summary; nothing stored keeps a nil headnote (never generates)")
+    @MainActor
+    func resolverHeadnoteResolution() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let promptId = UUID()
+        let coll = Collection(name: "Headnotes")
+        coll.summaryPromptId = promptId
+        context.insert(coll)
+
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                    volumeId: "hnvol", sortOrder: 0)
+        entry.includeHeadnote = true
+        context.insert(entry)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+
+        // Nothing stored: the headnote request travels, the text stays nil — headnote
+        // resolution never generates, in either purpose.
+        let missing = try await resolver.resolve(collection: coll, entries: [entry],
+                                                 allNotes: [], purpose: .preview)
+        let missingDoc = try #require(docPayload(missing[0]))
+        #expect(missingDoc.includeHeadnote == true)
+        #expect(missingDoc.headnoteText == nil)
+
+        // Two stored summaries: with a nil pick, the collection's prompt is preferred.
+        let other = GeneratedSummary(documentId: "d1", volumeId: "hnvol",
+                                     promptId: UUID(), responseText: "Other prompt summary.")
+        let preferred = GeneratedSummary(documentId: "d1", volumeId: "hnvol",
+                                         promptId: promptId, responseText: "Preferred prompt summary.")
+        context.insert(other)
+        context.insert(preferred)
+        try context.save()
+        let auto = try await resolver.resolve(collection: coll, entries: [entry],
+                                              allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(auto[0])).headnoteText == "Preferred prompt summary.")
+
+        // An explicit pick wins over the prompt preference.
+        entry.headnoteSummaryId = other.id
+        let chosen = try await resolver.resolve(collection: coll, entries: [entry],
+                                                allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(chosen[0])).headnoteText == "Other prompt summary.")
+
+        // A dangling pick (deleted summary) falls back rather than dropping the headnote.
+        entry.headnoteSummaryId = UUID()
+        let dangling = try await resolver.resolve(collection: coll, entries: [entry],
+                                                  allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(dangling[0])).headnoteText == "Preferred prompt summary.")
+
+        // An entry that never asked for a headnote carries neither flag nor text.
+        entry.includeHeadnote = false
+        let off = try await resolver.resolve(collection: coll, entries: [entry],
+                                             allNotes: [], purpose: .preview)
+        let offDoc = try #require(docPayload(off[0]))
+        #expect(offDoc.includeHeadnote == false)
+        #expect(offDoc.headnoteText == nil)
+    }
+
+    @Test("Headnote rendering: the italic abstract (or its placeholder) appears in HTML, DOCX, and PDF only when the entry requested one")
+    func headnoteAcrossFormats() async throws {
+        let withHeadnote = CollectionExportDocument(
+            documentId: "d1", volumeId: "hnvol", sortOrder: 1,
+            title: "Headnoted Memo", bodyText: "Headnoted body paragraph.",
+            citation: "Headnoted Citation",
+            includeHeadnote: true, headnoteText: "A concise scholarly abstract.")
+        let placeholder = CollectionExportDocument(
+            documentId: "d2", volumeId: "hnvol", sortOrder: 2,
+            title: "Pending Memo", bodyText: "Pending body paragraph.",
+            citation: "Pending Citation",
+            includeHeadnote: true, headnoteText: nil)
+        let plain = CollectionExportDocument(
+            documentId: "d3", volumeId: "hnvol", sortOrder: 3,
+            title: "Plain Memo", bodyText: "Plain body paragraph.",
+            citation: "Plain Citation")
+        let items: [CollectionExportItem] = [
+            .document(withHeadnote), .document(placeholder), .document(plain)]
+        let plainItems: [CollectionExportItem] = [.document(plain)]
+        // Name must not contain "Headnote" — the absence assertions scan whole outputs.
+        let metadata = CollectionExportMetadata(name: "Abstract Fixture", note: nil)
+
+        // HTML — headnote block, the abstract, and the placeholder note; the headnote
+        // stylesheet is emitted only on this page, never for a headnote-free one.
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.contains("class=\"headnote\""))
+        #expect(html.contains("<em>A concise scholarly abstract.</em>"))
+        #expect(html.contains("class=\"headnote-missing\""))
+        #expect(html.contains("No stored summary for this document"))
+        let htmlOffURL = try await HTMLCollectionExporter().export(metadata: metadata, items: plainItems)
+        let htmlOff = try String(contentsOf: htmlOffURL, encoding: .utf8)
+        #expect(!htmlOff.contains("headnote"))
+
+        // DOCX — label + italic abstract + placeholder; absent without a request.
+        let docx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: items))
+        func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
+        #expect(docxContains("Headnote"))
+        #expect(docxContains("A concise scholarly abstract."))
+        #expect(docxContains("No stored summary for this document"))
+        let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: plainItems))
+        #expect(docxOff.range(of: Data("Headnote".utf8)) == nil)
+
+        // PDF — extract page text with PDFKit.
+        let pdf = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: items))
+        let pdfDoc = try #require(PDFDocument(data: pdf))
+        let pdfText = (0..<pdfDoc.pageCount)
+            .compactMap { pdfDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(pdfText.contains("Headnote"))
+        #expect(pdfText.contains("A concise scholarly abstract."))
+        #expect(pdfText.contains("No stored summary for this document"))
+        let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
+            metadata: metadata, items: plainItems))
+        let pdfOffDoc = try #require(PDFDocument(data: pdfOff))
+        let pdfOffText = (0..<pdfOffDoc.pageCount)
+            .compactMap { pdfOffDoc.page(at: $0)?.string }.joined(separator: "\n")
+        #expect(!pdfOffText.contains("Headnote"))
+    }
+
+    @Test("HTML footnote gate: options.includeFootnotes drives footnote emission for a rendered model — the legacy .all/.none behaviors, now independently combinable with the source note")
+    func htmlFootnoteGate() {
+        let model = FRUSDocumentRenderModel(
+            documentId: "d1",
+            bodyNodes: [.paragraph([.plainText("Gated body."),
+                                    .footnoteMarker(id: "fn1", displayLabel: "1")])],
+            footnotes: [.footnoteBody(id: "fn1", type: .editorial, printedNumber: "1",
+                                      sequentialNumber: 1, displayLabel: "1",
+                                      children: [.plainText("The footnote text.")])])
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "fnvol", sortOrder: 1,
+            title: "Footnoted", bodyText: "Gated body.",
+            citation: "Footnoted Citation", renderModel: model,
+            sourceNoteText: "RG 59, Central Files.")
+        let items: [CollectionExportItem] = [.document(doc)]
+        let metadata = CollectionExportMetadata(name: "Gate", note: nil)
+
+        // includeFootnotes=true (legacy .all): footnote text renders; source note renders
+        // too — the combination the tri-state could never express.
+        var options = CollectionExportOptions()
+        options.includeFootnotes = true
+        options.includeSourceNote = true
+        let on = CollectionItemHTMLRenderer(options: options).pageHTML(metadata: metadata, items: items)
+        #expect(on.contains("The footnote text."))
+        #expect(on.contains("RG 59, Central Files."))
+
+        // includeFootnotes=false (legacy .none/.sourceNoteOnly): footnotes are stripped.
+        options.includeFootnotes = false
+        let off = CollectionItemHTMLRenderer(options: options).pageHTML(metadata: metadata, items: items)
+        #expect(!off.contains("The footnote text."))
+        #expect(off.contains("RG 59, Central Files."))   // source note is independent now
+    }
+
+    @Test("NativeFormat v2 Phase 5 keys: footnote pair and headnote fields round-trip; absent keys leave the model defaults (nil pair, no headnote)")
+    func nativePhase5RoundTrip() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(container)
+
+        let coll = Collection(name: "P5")
+        coll.effectiveIncludeFootnotes = true
+        coll.effectiveIncludeSourceNote = true
+        sourceCtx.insert(coll)
+        let pickedSummaryId = UUID()
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        d.includeHeadnote = true
+        d.headnoteSummaryId = pickedSummaryId
+        d.collection = coll
+        sourceCtx.insert(d)
+        try sourceCtx.save()
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        // Phase 5 features ride v2 under the tolerant reader — no new bump, floor stays 1.
+        #expect(file.formatVersion == 2)
+        #expect(file.minimumReaderVersion == 1)
+        #expect(file.composition.includeFootnotes == true)
+        #expect(file.composition.includeSourceNote == true)
+        #expect(file.composition.footnoteStyle == "all")   // legacy raw still written
+        #expect(file.entries.first?.includeHeadnote == true)
+        #expect(file.entries.first?.headnoteSummaryId == pickedSummaryId)
+
+        // encode → decode → apply reconstructs everything.
+        let data = try NativeCollectionSerializer.encode(file)
+        let destContainer = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(destContainer)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(data), into: destCtx)
+        try destCtx.save()
+        #expect(imported.includeFootnotes == true)
+        #expect(imported.includeSourceNote == true)
+        #expect(imported.footnoteStyle == "all")
+        let importedEntry = try #require((imported.documentEntries ?? []).first)
+        #expect(importedEntry.includeHeadnote == true)
+        #expect(importedEntry.headnoteSummaryId == pickedSummaryId)
+
+        // A v1 file (no Phase 5 keys) leaves the defaults: nil pair, headnote off.
+        let v1JSON = Data(#"{"format":"fruscollection","formatVersion":1,"name":"Old","composition":{"defaultBodyDepth":"full","footnoteStyle":"sourceNoteOnly","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"document","documentId":"d1","volumeId":"v1"}]}"#.utf8)
+        let old = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(v1JSON), into: destCtx)
+        #expect(old.includeFootnotes == nil)
+        #expect(old.includeSourceNote == nil)
+        #expect(old.effectiveIncludeSourceNote == true)   // derived from the legacy style
+        let oldEntry = try #require((old.documentEntries ?? []).first)
+        #expect(oldEntry.includeHeadnote == false)
+        #expect(oldEntry.headnoteSummaryId == nil)
+    }
+
+    @Test("NativeFormat write-minimum: any Phase 5 feature — a pair member or a headnote — flips the file to v2; clearing them restores v1")
+    func nativePhase5WriteMinimumFlips() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let coll = Collection(name: "Flip")
+        ctx.insert(coll)
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        d.collection = coll
+        ctx.insert(d)
+        try ctx.save()
+
+        func makeFile() -> FRUSCollectionFile {
+            NativeCollectionSerializer.makeFile(
+                from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        }
+        #expect(makeFile().formatVersion == 1)             // untouched: write-minimum v1
+
+        coll.includeFootnotes = true                       // one pair member set → v2
+        #expect(makeFile().formatVersion == 2)
+        coll.includeFootnotes = nil
+        #expect(makeFile().formatVersion == 1)
+
+        d.includeHeadnote = true                           // a headnote request → v2
+        #expect(makeFile().formatVersion == 2)
+        d.includeHeadnote = false
+        #expect(makeFile().formatVersion == 1)
+
+        d.headnoteSummaryId = UUID()                       // a pick alone → v2
+        #expect(makeFile().formatVersion == 2)
+        d.headnoteSummaryId = nil
+        #expect(makeFile().formatVersion == 1)
+
+        d.applyHighlightsOverride = true                   // any override → v2
+        #expect(makeFile().formatVersion == 2)
+        d.applyHighlightsOverride = nil
+        #expect(makeFile().formatVersion == 1)
+
+        d.includeRelatedDocuments = true                   // the A10 opt-in → v2
+        #expect(makeFile().formatVersion == 2)
+        d.includeRelatedDocuments = nil
+        #expect(makeFile().formatVersion == 1)
+
+        // selectedHighlightIds alone must NOT flip the file: it never serializes
+        // (device-local highlight UUIDs — the highlights don't travel with the file).
+        d.selectedHighlightIds = [UUID()]
+        #expect(makeFile().formatVersion == 1)
+        d.selectedHighlightIds = []
+    }
+
+    // MARK: - Override cascade + related documents (Authoring Phase 5)
+
+    @Test("Outline generic cascade: a deeper heading's value shadows a shallower ancestor's; a valueless sibling resets to the ancestor; typed values, one walk per field")
+    func outlineGenericOverrideCascade() {
+        func heading(_ level: Int) -> CollectionOutline.StructuralRef {
+            .init(isHeading: true, level: level, bodyDepthOverride: nil)
+        }
+        let doc = CollectionOutline.StructuralRef(isHeading: false, level: 1,
+                                                  bodyDepthOverride: nil)
+        // H1(l1,true) H2(l2,false) doc H3(l2,nil) doc H4(l1,nil) doc
+        let refs = [heading(1), heading(2), doc, heading(2), doc, heading(1), doc]
+        let values: [Bool?] = [true, false, nil, nil, nil, nil, nil]
+        let resolved = CollectionOutline.sectionOverrideValues(refs, headingValues: values)
+        #expect(resolved == [true, false, false, true, true, nil, nil])
+
+        // The body-depth cascade is the same core (delegation check).
+        let depthRefs = [
+            CollectionOutline.StructuralRef(isHeading: true, level: 1, bodyDepthOverride: "index"),
+            doc,
+            CollectionOutline.StructuralRef(isHeading: true, level: 1, bodyDepthOverride: nil),
+            doc,
+        ]
+        #expect(CollectionOutline.sectionBodyDepthOverrides(depthRefs) ==
+                ["index", "index", nil, nil])
+    }
+
+    @Test("Override cascade: entry beats section beats collection, per field — resolved through the one resolver pipeline")
+    @MainActor
+    func overrideCascadeResolution() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let promptB = UUID()
+        let promptC = UUID()
+        let coll = Collection(name: "Cascade")
+        coll.defaultBodyDepth = "full"
+        coll.applyHighlights = false          // collection default: highlights off
+        context.insert(coll)
+
+        // One highlight each on d1 and d2, so the highlight gate is observable.
+        for did in ["d1", "d2"] {
+            context.insert(DocumentHighlight(
+                volumeId: "cascvol", documentId: did,
+                startOffset: 0, endOffset: 4,
+                colorTag: "yellow", selectedText: "text",
+                renderingVersion: "cascade000000000"))
+        }
+
+        // d0 precedes every heading: pure collection defaults.
+        let d0 = CollectionEntry(collectionId: coll.id, documentId: "d0",
+                                 volumeId: "cascvol", sortOrder: 0)
+        // The heading sets section defaults for everything below it.
+        let h = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "",
+                                sortOrder: 1)
+        h.entryKind = .heading
+        h.text = "Part I"
+        h.applyHighlightsOverride = true
+        h.includeNotesOverride = false
+        h.includeFootnotesOverride = false
+        h.summaryPromptIdOverride = promptB
+        // d1 has no overrides of its own: the section's apply.
+        let d1 = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                 volumeId: "cascvol", sortOrder: 2)
+        // d2 sets its own: the entry beats the section.
+        let d2 = CollectionEntry(collectionId: coll.id, documentId: "d2",
+                                 volumeId: "cascvol", sortOrder: 3)
+        d2.applyHighlightsOverride = false
+        d2.includeFootnotesOverride = true
+        d2.summaryPromptIdOverride = promptC
+        for entry in [d0, h, d1, d2] { context.insert(entry) }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(collection: coll, entries: [d0, h, d1, d2],
+                                               allNotes: [], purpose: .preview)
+        let docs = items.documents
+        try #require(docs.count == 3)
+
+        // d0: nothing resolved anywhere — payload overrides nil, collection gates apply.
+        #expect(docs[0].applyHighlightsOverride == nil)
+        #expect(docs[0].includeNotesOverride == nil)
+        #expect(docs[0].includeFootnotesOverride == nil)
+        #expect(docs[0].summaryPromptIdOverride == nil)
+        #expect(docs[0].highlights.isEmpty)               // collection applyHighlights false
+
+        // d1: the section defaults apply — including the highlight fetch itself.
+        #expect(docs[1].applyHighlightsOverride == true)
+        #expect(docs[1].includeNotesOverride == false)
+        #expect(docs[1].includeFootnotesOverride == false)
+        #expect(docs[1].summaryPromptIdOverride == promptB)
+        #expect(docs[1].highlights.count == 1)            // section turned highlights on
+
+        // d2: its own overrides beat the section's.
+        #expect(docs[2].applyHighlightsOverride == false)
+        #expect(docs[2].includeFootnotesOverride == true)
+        #expect(docs[2].summaryPromptIdOverride == promptC)
+        #expect(docs[2].highlights.isEmpty)               // entry turned highlights back off
+        #expect(docs[2].includeNotesOverride == false)    // un-overridden field: section's
+    }
+
+    @Test("Per-highlight selection (A8): selectedHighlightIds filter the injected set; empty means all; stale ids just filter")
+    @MainActor
+    func selectedHighlightFiltering() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Selection")
+        coll.defaultBodyDepth = "full"
+        coll.applyHighlights = true
+        context.insert(coll)
+
+        var highlights: [DocumentHighlight] = []
+        for (i, offset) in [0, 10, 20].enumerated() {
+            let hl = DocumentHighlight(
+                volumeId: "selvol", documentId: "d1",
+                startOffset: offset, endOffset: offset + 4,
+                colorTag: i == 1 ? "green" : "yellow",
+                selectedText: "pass", renderingVersion: "selection0000000")
+            context.insert(hl)
+            highlights.append(hl)
+        }
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                    volumeId: "selvol", sortOrder: 0)
+        context.insert(entry)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+
+        // Empty selection = all highlights (the pre-override behavior).
+        let all = try await resolver.resolve(collection: coll, entries: [entry],
+                                             allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(all[0])).highlights.count == 3)
+
+        // A subset selection filters to exactly those highlights.
+        entry.selectedHighlightIds = [highlights[0].id, highlights[2].id]
+        let subset = try await resolver.resolve(collection: coll, entries: [entry],
+                                                allNotes: [], purpose: .preview)
+        let picked = try #require(docPayload(subset[0])).highlights
+        #expect(picked.count == 2)
+        #expect(Set(picked.map(\.startOffset)) == [0, 20])
+
+        // Stale ids (deleted/unsynced highlights) simply filter — never crash, never all.
+        entry.selectedHighlightIds = [UUID()]
+        let stale = try await resolver.resolve(collection: coll, entries: [entry],
+                                               allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(stale[0])).highlights.isEmpty)
+    }
+
+    @Test("Related documents (A10): only in-collection targets survive, in collection order, deduplicated, self excluded")
+    func relatedDocumentsInCollectionOnly() {
+        let membership: [(volumeId: String, documentId: String)] = [
+            ("v1", "d1"), ("v1", "d2"), ("v2", "d5"), ("v1", "d9"),
+        ]
+        // Outbound edges from v1/d1: an in-collection target twice (dedupe), a target
+        // outside the collection (dropped), itself (excluded), and a later member.
+        let targets: [(volumeId: String, documentId: String)] = [
+            ("v1", "d9"), ("v3", "d7"), ("v1", "d1"), ("v1", "d2"), ("v1", "d2"),
+        ]
+        let related = CollectionContentResolver.relatedDocumentTargets(
+            outboundTargets: targets,
+            selfVolumeId: "v1", selfDocumentId: "d1",
+            collectionDocuments: membership)
+        #expect(related.map { "\($0.volumeId)/\($0.documentId)" } == ["v1/d2", "v1/d9"])
+
+        // No outbound edges → empty; a document not in the membership referencing
+        // members still yields collection-ordered results.
+        #expect(CollectionContentResolver.relatedDocumentTargets(
+            outboundTargets: [], selfVolumeId: "v1", selfDocumentId: "d1",
+            collectionDocuments: membership).isEmpty)
+    }
+
+    @Test("Summary prompt override: the effective prompt picks the stored summary per entry; un-overridden entries keep the collection prompt")
+    @MainActor
+    func summaryPromptOverridePick() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let promptA = UUID()
+        let promptB = UUID()
+        let coll = Collection(name: "Prompts")
+        coll.defaultBodyDepth = "summaryOnly"
+        coll.summaryPromptId = promptA
+        context.insert(coll)
+
+        context.insert(GeneratedSummary(documentId: "d1", volumeId: "provol",
+                                        promptId: promptA, responseText: "Prompt A summary."))
+        context.insert(GeneratedSummary(documentId: "d2", volumeId: "provol",
+                                        promptId: promptA, responseText: "Prompt A other."))
+        context.insert(GeneratedSummary(documentId: "d2", volumeId: "provol",
+                                        promptId: promptB, responseText: "Prompt B summary."))
+
+        let e1 = CollectionEntry(collectionId: coll.id, documentId: "d1",
+                                 volumeId: "provol", sortOrder: 0)
+        let e2 = CollectionEntry(collectionId: coll.id, documentId: "d2",
+                                 volumeId: "provol", sortOrder: 1)
+        e2.summaryPromptIdOverride = promptB
+        context.insert(e1)
+        context.insert(e2)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(collection: coll, entries: [e1, e2],
+                                               allNotes: [], purpose: .preview)
+        let docs = items.documents
+        try #require(docs.count == 2)
+        #expect(docs[0].summaryText == "Prompt A summary.")   // collection prompt
+        #expect(docs[1].summaryText == "Prompt B summary.")   // entry override wins
+        #expect(docs[1].summaryPromptIdOverride == promptB)
+    }
+
+    @Test("NativeFormat overrides: the six override keys round-trip on documents and headings; selectedHighlightIds never serializes and imports empty")
+    func nativeOverrideRoundTrip() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+
+        let promptId = UUID()
+        let highlightId = UUID()
+        let coll = Collection(name: "Overrides")
+        ctx.insert(coll)
+        let h = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "",
+                                sortOrder: 0)
+        h.entryKind = .heading
+        h.text = "Part I"
+        h.includeNotesOverride = false
+        h.includeRelatedDocuments = true
+        h.collection = coll
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1",
+                                sortOrder: 1)
+        d.applyHighlightsOverride = true
+        d.includeSourceNoteOverride = true
+        d.includeFootnotesOverride = false
+        d.summaryPromptIdOverride = promptId
+        d.selectedHighlightIds = [highlightId]     // device-local: must NOT travel
+        d.collection = coll
+        ctx.insert(h); ctx.insert(d)
+        try ctx.save()
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(file.formatVersion == 2)            // overrides are a v2 feature
+        #expect(file.minimumReaderVersion == 1)     // …but degradable: floor stays 1
+
+        let data = try NativeCollectionSerializer.encode(file)
+        let json = String(decoding: data, as: UTF8.self)
+        for key in ["applyHighlightsOverride", "includeNotesOverride",
+                    "includeSourceNoteOverride", "includeFootnotesOverride",
+                    "summaryPromptIdOverride", "includeRelatedDocuments"] {
+            #expect(json.contains("\"\(key)\""), "override key '\(key)' should serialize")
+        }
+        // The highlight-UUID-leak guard: no key, no value.
+        #expect(!json.contains("selectedHighlightIds"))
+        #expect(!json.contains(highlightId.uuidString))
+
+        // Import onto a fresh store: overrides reconstruct; the highlight selection
+        // resets to empty = all-of-the-recipient's-highlights semantics.
+        let container2 = try ModelContainer.makeTestContainer()
+        let ctx2 = ModelContext(container2)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(data), into: ctx2)
+        try ctx2.save()
+        let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        try #require(entries.count == 2)
+        #expect(entries[0].entryKind == .heading)
+        #expect(entries[0].includeNotesOverride == false)
+        #expect(entries[0].includeRelatedDocuments == true)
+        #expect(entries[0].applyHighlightsOverride == nil)
+        #expect(entries[1].applyHighlightsOverride == true)
+        #expect(entries[1].includeSourceNoteOverride == true)
+        #expect(entries[1].includeFootnotesOverride == false)
+        #expect(entries[1].summaryPromptIdOverride == promptId)
+        #expect(entries[1].selectedHighlightIds.isEmpty)
+
+        // Export → import → export is byte-identical (round-trip invariant).
+        let file2 = NativeCollectionSerializer.makeFile(
+            from: imported, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(try NativeCollectionSerializer.encode(file2) == data)
+    }
+
+    // MARK: - Excerpt entries (Authoring Phase 5)
+
+    @Test("Excerpt factory: highlight → capture → entry copies passage, provenance, anchors, and colour; textless highlights yield no capture")
+    @MainActor
+    func excerptFactoryFieldCopy() throws {
+        let highlight = DocumentHighlight(
+            volumeId: "frus1969-76v01", documentId: "d42",
+            startOffset: 120, endOffset: 168,
+            colorTag: "blue",
+            selectedText: "The frozen verbatim passage.",
+            renderingVersion: "abcdef0123456789")
+
+        let capture = try #require(CollectionExcerpts.capture(from: highlight))
+        #expect(capture.text == "The frozen verbatim passage.")
+        #expect(capture.volumeId == "frus1969-76v01")
+        #expect(capture.documentId == "d42")
+        #expect(capture.start == 120)
+        #expect(capture.end == 168)
+        #expect(capture.renderingVersion == "abcdef0123456789")
+        #expect(capture.colorTag == "blue")
+
+        let collectionId = UUID()
+        let entry = CollectionExcerpts.makeEntry(from: capture, collectionId: collectionId,
+                                                 sortOrder: 3)
+        #expect(entry.entryKind == .excerpt)
+        #expect(entry.kind == "excerpt")
+        #expect(entry.text == "The frozen verbatim passage.")
+        #expect(entry.documentId == "d42")
+        #expect(entry.volumeId == "frus1969-76v01")
+        #expect(entry.sortOrder == 3)
+        #expect(entry.excerptStart == 120)
+        #expect(entry.excerptEnd == 168)
+        #expect(entry.excerptRenderingVersion == "abcdef0123456789")
+        #expect(entry.excerptColorTag == "blue")
+
+        // A pre-Session-131 highlight (no stored text) has no passage to freeze.
+        let textless = DocumentHighlight(
+            volumeId: "v", documentId: "d1", startOffset: 0, endOffset: 5,
+            selectedText: "", renderingVersion: "ffff000011112222")
+        #expect(CollectionExcerpts.capture(from: textless) == nil)
+
+        // A text-only selection capture (footnote selection: no offsets, no version)
+        // still freezes into a valid entry with nil anchors.
+        let selectionOnly = CollectionExcerptCapture(
+            text: "Footnote passage.", volumeId: "v", documentId: "d2",
+            start: nil, end: nil, renderingVersion: nil, colorTag: nil)
+        let plainEntry = CollectionExcerpts.makeEntry(from: selectionOnly,
+                                                      collectionId: collectionId, sortOrder: 0)
+        #expect(plainEntry.entryKind == .excerpt)
+        #expect(plainEntry.excerptStart == nil)
+        #expect(plainEntry.excerptEnd == nil)
+        #expect(plainEntry.excerptRenderingVersion == nil)
+        #expect(plainEntry.excerptColorTag == nil)
+    }
+
+    @Test("Excerpt capture contract: a flat-text span crossing block boundaries restores paragraph breaks, excludes offset-invisible content, and renders one <p> per paragraph")
+    func blockAwareExcerptCapture() {
+        // Two paragraphs plus a footnote marker: the flat text fuses the paragraphs
+        // with no separator ("…the proposal.The Secretary…") and the marker digit is
+        // offset-invisible (data-skip) — the two defects a raw slice / raw
+        // sel.toString() capture exhibits.
+        let model = FRUSDocumentRenderModel(
+            documentId: "d1",
+            bodyNodes: [
+                .paragraph([.plainText("They agreed to the proposal."),
+                            .footnoteMarker(id: "fn1", displayLabel: "1")]),
+                .paragraph([.plainText("The Secretary replied at once.")]),
+            ],
+            footnotes: [])
+
+        // The block partition is exactly the flat text, re-cut at block seams — so
+        // flat-text offsets index into the joined blocks unchanged.
+        let flat = buildFlatText(from: model)
+        #expect(flat == "They agreed to the proposal.The Secretary replied at once.")
+        #expect(buildFlatTextBlocks(from: model).joined() == flat)
+
+        // A cross-paragraph span keeps its paragraph break; the marker digit the
+        // offsets exclude never appears in the frozen passage.
+        let spanning = flatTextExcerpt(from: model, start: 15, end: flat.utf16.count)
+        #expect(spanning == "the proposal.\n\nThe Secretary replied at once.")
+
+        // A single-block span is exactly the raw flat-text slice (pre-fix behavior).
+        #expect(flatTextExcerpt(from: model, start: 0, end: 4) == "They")
+
+        // Empty/inverted spans return nil — callers fall back to their old behavior.
+        #expect(flatTextExcerpt(from: model, start: 5, end: 5) == nil)
+        #expect(flatTextExcerpt(from: model, start: -1, end: 4) == nil)
+
+        // The frozen two-paragraph passage renders two <p> elements inside the
+        // excerpt blockquote (the HTML renderer serves export, preview, and PDF;
+        // DOCX splits on the same "\n\n").
+        let excerpt = CollectionExportExcerpt(
+            text: spanning ?? "", documentId: "d1", volumeId: "v1",
+            citation: "", colorTag: nil)
+        let html = CollectionItemHTMLRenderer(options: CollectionExportOptions())
+            .itemHTML(.excerpt(excerpt))
+        #expect(html.contains("<p>the proposal.</p>"))
+        #expect(html.contains("<p>The Secretary replied at once.</p>"))
+    }
+
+    @Test("Resolver excerpt pass-through: frozen text + citation fallback + colour; empty-text excerpts are skipped; the source volume is never required")
+    @MainActor
+    func resolverExcerptPassThrough() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()   // no downloadManager/pipeline — nothing to parse
+
+        let coll = Collection(name: "Excerpted")
+        context.insert(coll)
+
+        let h = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
+        h.entryKind = .heading
+        h.text = "Part I"
+
+        let ex = CollectionEntry(collectionId: coll.id, documentId: "d7",
+                                 volumeId: "excerptvol", sortOrder: 1)
+        ex.entryKind = .excerpt
+        ex.text = "Quoted passage.\n\nSecond paragraph."
+        ex.excerptStart = 10
+        ex.excerptEnd = 55
+        ex.excerptRenderingVersion = "0011223344556677"
+        ex.excerptColorTag = "pink"
+
+        let empty = CollectionEntry(collectionId: coll.id, documentId: "d8",
+                                    volumeId: "excerptvol", sortOrder: 2)
+        empty.entryKind = .excerpt
+        empty.text = ""    // malformed: nothing to quote — skipped defensively
+
+        for entry in [h, ex, empty] { context.insert(entry) }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(
+            collection: coll, entries: [ex, empty, h], allNotes: [], purpose: .preview)
+
+        #expect(items.map(kindLabel) == ["heading", "excerpt"])
+        guard case .excerpt(let payload) = items[1] else {
+            Issue.record("items[1] should be an excerpt")
+            return
+        }
+        #expect(payload.text == "Quoted passage.\n\nSecond paragraph.")   // verbatim
+        #expect(payload.documentId == "d7")
+        #expect(payload.volumeId == "excerptvol")
+        #expect(payload.citation == "excerptvol/d7")   // manifest-less fallback, like documents
+        #expect(payload.colorTag == "pink")
+        #expect(payload.color == .pink)
+    }
+
+    @Test("NativeFormat excerpts: any excerpt forces v2 (a v1 reader can never see one); content + anchors round-trip; the source highlight's UUID never serializes")
+    @MainActor
+    func nativeExcerptRoundTrip() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(container)
+
+        let coll = Collection(name: "Quotations")
+        sourceCtx.insert(coll)
+        let highlight = DocumentHighlight(
+            volumeId: "frus1969-76v01", documentId: "d42",
+            startOffset: 5, endOffset: 30, colorTag: "yellow",
+            selectedText: "A quoted line of despatch text.",
+            renderingVersion: "1234abcd5678ef90")
+        sourceCtx.insert(highlight)
+        let capture = try #require(CollectionExcerpts.capture(from: highlight))
+        let entry = CollectionExcerpts.makeEntry(from: capture, collectionId: coll.id,
+                                                 sortOrder: 0)
+        entry.collection = coll
+        sourceCtx.insert(entry)
+        try sourceCtx.save()
+
+        func makeFile() -> FRUSCollectionFile {
+            NativeCollectionSerializer.makeFile(
+                from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        }
+
+        // Write-minimum can't apply once an excerpt exists: the file is v2, so an
+        // old-style (v1-only) reader never sees the excerpt kind at all.
+        let file = makeFile()
+        #expect(file.formatVersion == 2)
+        #expect(file.minimumReaderVersion == 1)
+        let fileEntry = try #require(file.entries.first)
+        #expect(fileEntry.kind == "excerpt")
+        #expect(fileEntry.text == "A quoted line of despatch text.")
+        #expect(fileEntry.documentId == "d42")
+        #expect(fileEntry.volumeId == "frus1969-76v01")
+        #expect(fileEntry.excerptStart == 5)
+        #expect(fileEntry.excerptEnd == 30)
+        #expect(fileEntry.excerptRenderingVersion == "1234abcd5678ef90")
+        #expect(fileEntry.excerptColorTag == "yellow")
+
+        // Content + colour + provenance + anchors — NEVER the highlight's UUID.
+        let json = String(decoding: try NativeCollectionSerializer.encode(file), as: UTF8.self)
+        #expect(!json.contains(highlight.id.uuidString))
+
+        // Round-trip onto a fresh store reconstructs the excerpt entry.
+        let destContainer = try ModelContainer.makeTestContainer()
+        let destCtx = ModelContext(destContainer)
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(Data(json.utf8)), into: destCtx)
+        try destCtx.save()
+        let importedEntry = try #require((imported.documentEntries ?? []).first)
+        #expect(importedEntry.entryKind == .excerpt)
+        #expect(importedEntry.text == "A quoted line of despatch text.")
+        #expect(importedEntry.documentId == "d42")
+        #expect(importedEntry.volumeId == "frus1969-76v01")
+        #expect(importedEntry.excerptStart == 5)
+        #expect(importedEntry.excerptEnd == 30)
+        #expect(importedEntry.excerptRenderingVersion == "1234abcd5678ef90")
+        #expect(importedEntry.excerptColorTag == "yellow")
+
+        // Deleting the excerpt restores the v1 write-minimum (nothing else v2 here).
+        sourceCtx.delete(entry)
+        try sourceCtx.save()
+        #expect(makeFile().formatVersion == 1)
+
+        // Tolerant reader: a hypothetical FUTURE kind in a v2 file still skips —
+        // excerpts didn't weaken the unknown-kind guard.
+        let futureJSON = Data(#"{"format":"fruscollection","formatVersion":2,"minimumReaderVersion":1,"name":"F","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"hologram","text":"x"},{"kind":"excerpt","documentId":"d1","volumeId":"v1","text":"Kept."}]}"#.utf8)
+        let futureImport = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(futureJSON), into: destCtx)
+        let futureEntries = (futureImport.documentEntries ?? [])
+        try #require(futureEntries.count == 1)          // hologram skipped, excerpt kept
+        #expect(futureEntries[0].entryKind == .excerpt)
+        #expect(futureEntries[0].text == "Kept.")
+    }
+
+    @Test("Move engine: excerpt entries move as single rows (like prose) and travel inside their section's block")
+    func excerptMovesLikeProse() {
+        // Model-backed: [H A, excerpt, doc, H B, doc] — dragging H A to the end takes
+        // its excerpt and document along as one block.
+        let hA = outlineEntry(kind: .heading, level: 1, order: 0, text: "A")
+        let ex = outlineEntry(kind: .excerpt, order: 1, text: "Quoted.")
+        let d1 = outlineEntry(kind: .document, order: 2)
+        let hB = outlineEntry(kind: .heading, level: 1, order: 3, text: "B")
+        let d2 = outlineEntry(kind: .document, order: 4)
+        let entries = [hA, ex, d1, hB, d2]
+
+        let sectionMove = CollectionOutline.applyingMove(entries, fromIndex: 0, toOffset: 5)
+        #expect(sectionMove?.map(\.text) == [Optional("B"), nil, Optional("A"), Optional("Quoted."), nil])
+
+        // The excerpt itself moves as a single row (non-heading), with onMove semantics:
+        // dropped at the very end, past H B's document.
+        let rowMove = CollectionOutline.applyingMove(entries, fromIndex: 1, toOffset: 5)
+        #expect(rowMove?.map(\.text) == [Optional("A"), nil, Optional("B"), nil, Optional("Quoted.")])
+        // Self-drop is a no-op, exactly like prose/document rows.
+        #expect(CollectionOutline.applyingMove(entries, fromIndex: 1, toOffset: 2) == nil)
+
+        // The editors' post-move tail applies unchanged: reindex leaves 0..n.
+        for (i, e) in (rowMove ?? []).enumerated() { e.sortOrder = i }
+        #expect(rowMove?.map(\.sortOrder) == [0, 1, 2, 3, 4])
     }
 
     // MARK: - Outline editor engine tests (Authoring Phase 4, editor step)

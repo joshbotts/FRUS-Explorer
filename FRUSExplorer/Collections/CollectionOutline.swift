@@ -37,6 +37,12 @@ import Foundation
 ///          `outdentSection` (shift the heading *and* its descendant headings, then
 ///          normalize), and `visibleIndices` (collapse-state derivation for the editors'
 ///          chevrons — view state only, never persisted)
+///   1.2 — Authoring Phase 5 (overrides): the ancestor cascade generalized —
+///          `sectionOverrideValues(_:headingValues:)` is the type-safe generic core
+///          (one walk, any `Value`), and `sectionBodyDepthOverrides` now delegates to
+///          it. The resolver runs the same core once per override field (highlights,
+///          notes, source note, footnotes, summary prompt, related documents), so every
+///          per-section default cascades by exactly the body-depth rule
 enum CollectionOutline {
 
     /// The maximum heading nesting depth (locked decision A6: cap at 3, enforced in the
@@ -421,21 +427,49 @@ enum CollectionOutline {
     /// - Returns: One effective section override (raw `CollectionBodyDepth` value or
     ///   `nil`) per input position.
     static func sectionBodyDepthOverrides(_ refs: [StructuralRef]) -> [String?] {
+        sectionOverrideValues(refs, headingValues: refs.map {
+            $0.isHeading ? $0.bodyDepthOverride : nil
+        })
+    }
+
+    /// The **generic ancestor cascade** (Authoring Phase 5): per-position effective
+    /// section values for any per-heading override field, by exactly the body-depth
+    /// rule. `headingValues[i]` is the heading at position `i`'s own value (`nil` for
+    /// non-headings and headings that don't set one); the result at each position is the
+    /// nearest *ancestor* heading's non-nil value, walking up the derived tree — a
+    /// deeper heading's value shadows a shallower ancestor's, a heading without one
+    /// inherits its ancestor's, and a sibling heading with no value resets its section.
+    /// `nil` means "no ancestor sets it — fall through to the collection default".
+    ///
+    /// Type-safe by construction: callers pass typed values (`Bool?`, `UUID?`, raw-value
+    /// `String?`), never stringly-encoded field names, and the resolver runs this once
+    /// per override field so all of them cascade identically.
+    ///
+    /// - Parameters:
+    ///   - refs: Structural facts in collection order (levels may be raw; they are
+    ///     resolved defensively via `resolvedDepths`).
+    ///   - headingValues: One optional value per position — the heading's own override
+    ///     at heading positions, `nil` elsewhere. Must be `refs.count` long.
+    /// - Returns: One effective section value (or `nil`) per input position.
+    static func sectionOverrideValues<Value>(
+        _ refs: [StructuralRef],
+        headingValues: [Value?]
+    ) -> [Value?] {
         let depths = resolvedDepths(refs)
-        var overrides: [String?] = []
+        var overrides: [Value?] = []
         overrides.reserveCapacity(refs.count)
-        // Ancestor stack: (resolved level, that heading's own override or nil).
-        var stack: [(level: Int, override: String?)] = []
+        // Ancestor stack: (resolved level, that heading's own value or nil).
+        var stack: [(level: Int, value: Value?)] = []
         for (i, ref) in refs.enumerated() {
             if ref.isHeading {
                 let level = depths[i]
                 // Pop siblings/deeper sections: the new heading closes every section at
                 // its level or deeper, keeping only true ancestors on the stack.
                 while let top = stack.last, top.level >= level { stack.removeLast() }
-                stack.append((level, ref.bodyDepthOverride))
+                stack.append((level, headingValues.indices.contains(i) ? headingValues[i] : nil))
             }
-            // Nearest ancestor with a set override wins (scan from the deepest up).
-            overrides.append(stack.last(where: { $0.override != nil })?.override)
+            // Nearest ancestor with a set value wins (scan from the deepest up).
+            overrides.append(stack.last(where: { $0.value != nil })?.value)
         }
         return overrides
     }

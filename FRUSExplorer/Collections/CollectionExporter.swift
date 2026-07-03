@@ -92,8 +92,16 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
 
 /// Controls which footnotes are included in each exported document.
 ///
+/// **Legacy vocabulary (Authoring Phase 5).** The tri-state is superseded by the
+/// `Collection.includeFootnotes`/`includeSourceNote` Bool pair (which can express
+/// "all footnotes AND the source note"); the enum remains the raw-value vocabulary of
+/// the synced `Collection.footnoteStyle` field, which keeps being written for old
+/// readers, and of `.fruscollection` files. New code reads the collection's
+/// `effectiveIncludeFootnotes`/`effectiveIncludeSourceNote` instead.
+///
 /// Version history:
 ///   1.0 — Session 153: initial implementation
+///   1.1 — Authoring Phase 5: demoted to the legacy raw-value vocabulary (see above)
 enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
     /// No footnotes — body text only.
     case none
@@ -223,11 +231,23 @@ final class HighlightPaintTracker {
 ///          `includeNotes`, and `summaryPromptId`
 ///   1.2 — Collections rework Phase 1b: `bodyDepth` moved to per-document
 ///          `CollectionExportDocument.bodyDepth` (per-entry override); removed here
+///   1.3 — Authoring Phase 5: `footnoteStyle` replaced by the `includeFootnotes` +
+///          `includeSourceNote` Bool pair (both now expressible together). Callers build
+///          these from `Collection.effectiveIncludeFootnotes`/`effectiveIncludeSourceNote`,
+///          whose nil-pair derivation reproduces each legacy tri-state value exactly
 struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     var tocStyle: CollectionToCStyle = .citation
-    /// Which footnotes to include per document.
-    var footnoteStyle: CollectionFootnoteStyle = .all
+    /// When `true`, document footnotes are rendered where footnote rendering is gated
+    /// (the shared HTML renderer / live preview). Defaults to `true` — the legacy
+    /// `.all` behavior. (The PDF/DOCX exporters have never gated footnotes on the old
+    /// tri-state; that pre-existing behavior is deliberately unchanged so untouched
+    /// collections keep exporting byte-identically.)
+    var includeFootnotes: Bool = true
+    /// When `true`, the resolver fetches each document's archival source note and every
+    /// format appends a "Source:" block. Defaults to `false` — pre-Phase-5, only the
+    /// legacy `.sourceNoteOnly` style resolved it.
+    var includeSourceNote: Bool = false
     /// When `true`, inline user highlights are annotated in the document body.
     /// Implemented for all three export formats: HTML (`FRUSRenderNodeHTMLSerializer.injectHighlights`),
     /// PDF (`PDFCollectionExporter.drawFrameWithHighlights`), and DOCX
@@ -334,6 +354,19 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 ///          replaced single `noteText` with `noteTexts: [String]` (multi-note per entry);
 ///          added `includeDocumentBody: Bool`; `noteText` retained as computed backward-compat accessor
 ///   1.4 — Session 155: added `zoteroItem: ZoteroJSONExporter.Item?` for `.zoteroJSON` export
+///   1.5 — Authoring Phase 5: added `includeHeadnote` + `headnoteText` (an opt-in italic
+///          abstract above the body; a requested headnote with no stored summary renders
+///          a placeholder note — headnote generation-on-demand is out of scope)
+///   1.6 — Authoring Phase 5 (overrides): added the resolved per-entry override trio
+///          `applyHighlightsOverride`/`includeNotesOverride`/`includeFootnotesOverride`
+///          (nil = inherit `options`, so renderers gate on `doc.x ?? options.x`),
+///          `summaryPromptIdOverride` (the effective prompt for `.summaryOnly`
+///          generation/lookup), and `relatedDocumentCitations` — the pre-resolved
+///          "See also:" line (decision A10). Carried on the document payload rather
+///          than a new `CollectionExportItem` case so the exporter contract is
+///          unchanged and every format renders the line inside the document section
+///          it belongs to. All defaulted, so existing construction sites — and every
+///          untouched collection — render byte-identically
 struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     let documentId: String
@@ -372,8 +405,40 @@ struct CollectionExportDocument: Sendable {
     /// `options.applyHighlights == true`; empty otherwise.
     let highlights: [ExportHighlight]
     /// Raw archival source note text. Populated when
-    /// `options.footnoteStyle == .sourceNoteOnly`; `nil` otherwise.
+    /// `options.includeSourceNote == true`; `nil` otherwise.
     let sourceNoteText: String?
+    /// Whether this entry requested a headnote (Authoring Phase 5). When `true` and
+    /// `headnoteText` is empty/nil, renderers emit a placeholder note instead — the
+    /// resolver never generates a summary for a headnote.
+    let includeHeadnote: Bool
+    /// The resolved headnote text — the chosen (or fallback) stored `GeneratedSummary`.
+    /// Rendered as an italic abstract above the body when `includeHeadnote` is `true`.
+    let headnoteText: String?
+    /// The entry/section highlight override resolved by the cascade (Authoring Phase 5).
+    /// `nil` = inherit — renderers gate inline highlights on
+    /// `applyHighlightsOverride ?? options.applyHighlights`, so the default reproduces
+    /// the collection-level behavior exactly.
+    let applyHighlightsOverride: Bool?
+    /// The entry/section research-notes override resolved by the cascade (Phase 5).
+    /// `nil` = inherit — renderers gate note blocks on
+    /// `includeNotesOverride ?? options.includeNotes`.
+    let includeNotesOverride: Bool?
+    /// The entry/section footnote override resolved by the cascade (Phase 5). `nil` =
+    /// inherit — gated where footnote rendering is gated (the shared HTML renderer /
+    /// preview) via `includeFootnotesOverride ?? options.includeFootnotes`; the
+    /// pre-existing PDF/DOCX footnote gap is deliberately unchanged.
+    let includeFootnotesOverride: Bool?
+    /// The entry/section summary-prompt override resolved by the cascade (Phase 5).
+    /// `nil` = inherit the collection's `summaryPromptId`. Drives which prompt's stored
+    /// summary attaches (preview) or generates (export) for a `.summaryOnly` body, and
+    /// the headnote fallback pick.
+    let summaryPromptIdOverride: UUID?
+    /// The resolved "See also:" citations (decision A10, Authoring Phase 5): documents
+    /// this one cross-references that are **also in the collection**, in collection
+    /// order, deduplicated, self excluded. Empty (the default, and whenever the entry's
+    /// `includeRelatedDocuments` resolves off) renders nothing — untouched collections
+    /// are byte-identical.
+    let relatedDocumentCitations: [String]
     /// Pre-built Zotero JSON item for `.zoteroJSON` export. `nil` if volume
     /// metadata was unavailable when this document was resolved.
     let zoteroItem: ZoteroJSONExporter.Item?
@@ -411,6 +476,13 @@ struct CollectionExportDocument: Sendable {
         summaryText: String? = nil,
         highlights: [ExportHighlight] = [],
         sourceNoteText: String? = nil,
+        includeHeadnote: Bool = false,
+        headnoteText: String? = nil,
+        applyHighlightsOverride: Bool? = nil,
+        includeNotesOverride: Bool? = nil,
+        includeFootnotesOverride: Bool? = nil,
+        summaryPromptIdOverride: UUID? = nil,
+        relatedDocumentCitations: [String] = [],
         zoteroItem: ZoteroJSONExporter.Item? = nil
     ) {
         self.documentId = documentId
@@ -435,6 +507,13 @@ struct CollectionExportDocument: Sendable {
         self.summaryText = summaryText
         self.highlights = highlights
         self.sourceNoteText = sourceNoteText
+        self.includeHeadnote = includeHeadnote
+        self.headnoteText = headnoteText
+        self.applyHighlightsOverride = applyHighlightsOverride
+        self.includeNotesOverride = includeNotesOverride
+        self.includeFootnotesOverride = includeFootnotesOverride
+        self.summaryPromptIdOverride = summaryPromptIdOverride
+        self.relatedDocumentCitations = relatedDocumentCitations
         self.zoteroItem = zoteroItem
     }
 
@@ -448,6 +527,12 @@ struct CollectionExportDocument: Sendable {
             noteTexts: noteTexts, citation: citation, historyStateGovURL: historyStateGovURL,
             renderModel: renderModel, header: header, dateline: dateline,
             summaryText: text, highlights: highlights, sourceNoteText: sourceNoteText,
+            includeHeadnote: includeHeadnote, headnoteText: headnoteText,
+            applyHighlightsOverride: applyHighlightsOverride,
+            includeNotesOverride: includeNotesOverride,
+            includeFootnotesOverride: includeFootnotesOverride,
+            summaryPromptIdOverride: summaryPromptIdOverride,
+            relatedDocumentCitations: relatedDocumentCitations,
             zoteroItem: zoteroItem)
     }
 }
@@ -522,11 +607,44 @@ enum CollectionColophon {
     }
 }
 
+// MARK: - CollectionExportExcerpt
+
+/// A resolved excerpt payload (Authoring Phase 5): the frozen verbatim passage plus the
+/// provenance metadata renderers need for the auto-citation source line and the optional
+/// colour accent. Deliberately minimal — the entry's stored offsets/renderingVersion are
+/// anchoring metadata for a later precision-rendering flip (A9), not rendering inputs, so
+/// they never travel on the item.
+///
+/// Version history:
+///   1.0 — Authoring Phase 5 (excerpts): initial implementation
+struct CollectionExportExcerpt: Sendable {
+    /// The frozen verbatim passage (the excerpt entry's `text`).
+    let text: String
+    /// The source FRUS document identifier (provenance).
+    let documentId: String
+    /// The source volume identifier (provenance).
+    let volumeId: String
+    /// The formatted history.state.gov-style citation for the source line — the same
+    /// citation formatting document items use; empty when no provenance could be
+    /// resolved (renderers then omit the source line).
+    let citation: String
+    /// The source highlight's colour raw value (`DocumentHighlight.Color`), when the
+    /// excerpt was created from a highlight — drives the quote block's accent. `nil`
+    /// for excerpts captured from a plain selection.
+    let colorTag: String?
+
+    /// The typed colour accent, when `colorTag` carries a known value.
+    var color: DocumentHighlight.Color? {
+        colorTag.flatMap { DocumentHighlight.Color(rawValue: $0) }
+    }
+}
+
 // MARK: - CollectionExportItem
 
-/// One item in a composed collection export: a resolved document, a section heading, or an
-/// editorial prose block. Exporters render an ordered `[CollectionExportItem]`, so a
-/// collection can be an authored, sectioned reader rather than a flat document list (Phase 3a).
+/// One item in a composed collection export: a resolved document, a section heading, an
+/// editorial prose block, or an excerpt quotation. Exporters render an ordered
+/// `[CollectionExportItem]`, so a collection can be an authored, sectioned reader rather
+/// than a flat document list (Phase 3a).
 ///
 /// Version history (contract changes are compile-caught across all exporters and covered
 /// by the exporter contract tests):
@@ -534,6 +652,9 @@ enum CollectionColophon {
 ///   Authoring Phase 4 — `heading` gains `level: Int` (1...`CollectionOutline.maxLevel`);
 ///     producers emit `CollectionOutline`-resolved depths, renderers clamp defensively.
 ///     Level 1 renders exactly the pre-Phase-4 heading in every format.
+///   Authoring Phase 5 — `excerpt(CollectionExportExcerpt)`: a frozen quotation rendered
+///     as a styled block quote + auto-citation source line in HTML/PDF/DOCX; the
+///     reference formats (Zotero RIS, BibTeX) skip it by design, like heading/prose.
 enum CollectionExportItem: Sendable {
     /// A FRUS document, fully resolved.
     case document(CollectionExportDocument)
@@ -544,6 +665,10 @@ enum CollectionExportItem: Sendable {
     /// `NSAttributedString` to render bold/italic/underline/colour, or read its `.string` for
     /// the plain-text projection. `Data` (unlike `NSAttributedString`) is `Sendable`.
     case prose(Data)
+    /// A frozen verbatim quotation with provenance (Authoring Phase 5) — rendered as a
+    /// quote block plus a source-citation line in the rich formats; dropped by the
+    /// flat reference formats.
+    case excerpt(CollectionExportExcerpt)
 }
 
 extension Array where Element == CollectionExportItem {

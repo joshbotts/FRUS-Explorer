@@ -97,6 +97,16 @@ import UIKit
 ///   2.4 — Authoring Phase 4 review fix: front-matter footer copy corrected — the
 ///          introduction opens the body AFTER the table of contents (it is the
 ///          resolver's leading `.prose` item), not before it
+///   2.5 — Authoring Phase 5 (excerpts): the add menu gains "Add Highlighted Passages…"
+///          (`CollectionAddHighlightsSheet` — see its doc for why it lives here rather
+///          than in Add Documents); `.excerpt` entries render as `CollectionExcerptRow`
+///          (movable/deletable like prose, no body-depth controls); document rows'
+///          inspector gains a per-highlight "Insert as Excerpt" callback that appends
+///          via the shared `CollectionExcerpts` factory
+///   2.6 — Authoring Phase 5 review fixes: the timeline sheets map only `.document`
+///          entries — excerpt entries carry their source document's provenance ids, so
+///          mapping them too double-counted that document's year and duplicated the
+///          timeline `Item` id
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -134,6 +144,8 @@ struct CollectionEditorView: View {
     @State private var collapsedHeadingIds: Set<UUID> = []
 
     @State private var showAddDocuments   = false
+    /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
+    @State private var showAddHighlights  = false
     @State private var showExport         = false
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
@@ -257,7 +269,11 @@ struct CollectionEditorView: View {
             // macOS: plain content + bottom button bar (no NavigationStack chrome)
             VStack(spacing: 0) {
                 DocumentTimelineView(
-                    items: sortedEntries.map {
+                    // Document entries only — matching how orderedDocumentKeys and the
+                    // export document counts scope. Excerpts carry their source
+                    // document's provenance ids, so mapping them too would double-count
+                    // that document's year and duplicate the Item id ("volume/doc").
+                    items: sortedEntries.filter { $0.entryKind == .document }.map {
                         DocumentTimelineView.Item(
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
@@ -280,7 +296,9 @@ struct CollectionEditorView: View {
             #else
             NavigationStack {
                 DocumentTimelineView(
-                    items: sortedEntries.map {
+                    // Document entries only — see the macOS branch above for why
+                    // excerpt entries must not contribute timeline items.
+                    items: sortedEntries.filter { $0.entryKind == .document }.map {
                         DocumentTimelineView.Item(
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
@@ -365,6 +383,14 @@ struct CollectionEditorView: View {
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
+            }
+        }
+        .sheet(isPresented: $showAddHighlights) {
+            CollectionAddHighlightsSheet(
+                documentKeys: orderedDocumentKeys,
+                documentLabels: documentHeaders
+            ) { captures in
+                appendExcerpts(captures)
             }
         }
         .sheet(isPresented: $showExport) {
@@ -455,6 +481,14 @@ struct CollectionEditorView: View {
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
+            }
+        }
+        .sheet(isPresented: $showAddHighlights) {
+            CollectionAddHighlightsSheet(
+                documentKeys: orderedDocumentKeys,
+                documentLabels: documentHeaders
+            ) { captures in
+                appendExcerpts(captures)
             }
         }
         .sheet(isPresented: $showExport) {
@@ -981,11 +1015,19 @@ struct CollectionEditorView: View {
                         Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
                               systemImage: "text.alignleft")
                     }
+                    Button {
+                        showAddHighlights = true
+                    } label: {
+                        Label(String(localized: "collection.add.highlights",
+                                     defaultValue: "Add Highlighted Passages…"),
+                              systemImage: "text.quote")
+                    }
+                    .disabled(orderedDocumentKeys.isEmpty)
                 } label: {
                     Image(systemName: "plus").font(.caption)
                 }
                 .accessibilityLabel(String(localized: "collection.add.menu",
-                                           defaultValue: "Add documents, a section heading, or a note block"))
+                                           defaultValue: "Add documents, a section heading, a note block, or highlighted passages"))
                 if !sortedEntries.isEmpty {
                     Button {
                         showTimeline = true
@@ -1032,7 +1074,8 @@ struct CollectionEditorView: View {
                      documentHeader: documentHeaders[key],
                      volumeTitle: volumeTitle(for: entry),
                      documentDate: documentDates[key],
-                     isDuplicate: duplicateKeys.contains(key))
+                     isDuplicate: duplicateKeys.contains(key),
+                     onInsertExcerpt: { capture in appendExcerpts([capture]) })
         case .heading:
             let range = CollectionOutline.sectionRange(of: row.index, in: outline)
             CollectionHeadingRow(
@@ -1051,9 +1094,24 @@ struct CollectionEditorView: View {
             )
         case .prose:
             CollectionProseRow(entry: $sortedEntries[row.index])
+        case .excerpt:
+            // Movable/deletable like prose; iOS deletion stays on swipe (no inline trash).
+            CollectionExcerptRow(entry: entry,
+                                 volumeTitle: volumeTitle(for: entry),
+                                 onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil)
         case .unrecognized:
             UnrecognizedEntryRow()
         }
+    }
+
+    /// Deletes the single entry at a full-outline index (the excerpt row's inline trash
+    /// on the macOS sheet editor; iOS deletion stays on swipe via `deleteVisibleRows`).
+    private func deleteVisibleRow(_ index: Int) {
+        guard sortedEntries.indices.contains(index) else { return }
+        collapsedHeadingIds.remove(sortedEntries[index].id)
+        modelContext.delete(sortedEntries[index])
+        sortedEntries.remove(at: index)
+        finishOutlineMutation()
     }
 
     /// Whether this build renders the macOS sheet editor (its List has no swipe-to-delete,
@@ -1222,6 +1280,25 @@ struct CollectionEditorView: View {
         Set(sortedEntries.filter { $0.entryKind == .document }
             .map { CollectionDocumentDiscovery.documentKey(volumeId: $0.volumeId,
                                                            documentId: $0.documentId) })
+    }
+
+    /// Ordered (deduplicated) keys of the collection's document entries — scopes the
+    /// Add Highlighted Passages sheet to this collection's documents, in reading order.
+    private var orderedDocumentKeys: [String] {
+        var seen: Set<String> = []
+        return sortedEntries.filter { $0.entryKind == .document }
+            .map { CollectionDocumentDiscovery.documentKey(volumeId: $0.volumeId,
+                                                           documentId: $0.documentId) }
+            .filter { seen.insert($0).inserted }
+    }
+
+    /// Appends excerpt entries (Authoring Phase 5) at the end of the entry list via the
+    /// shared `CollectionExcerpts` factory, then saves — the excerpt sibling of
+    /// `appendEntries`.
+    private func appendExcerpts(_ captures: [CollectionExcerptCapture]) {
+        CollectionExcerpts.append(captures, to: collection,
+                                  sortedEntries: &sortedEntries, modelContext: modelContext)
+        try? modelContext.save()
     }
 
     /// Appends a structural entry (a section heading or a prose block) to the collection.

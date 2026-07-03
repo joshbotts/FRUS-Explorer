@@ -51,6 +51,10 @@ enum SmartCollectionSnapshot {
         // Preserve composition so the snapshot exports identically to the smart collection.
         snapshot.defaultBodyDepth = smart.defaultBodyDepth
         snapshot.footnoteStyle = smart.footnoteStyle
+        // Phase 5 footnote pair — copied verbatim (a nil pair stays nil, preserving
+        // the legacy-derivation semantics on the snapshot).
+        snapshot.includeFootnotes = smart.includeFootnotes
+        snapshot.includeSourceNote = smart.includeSourceNote
         snapshot.tocStyle = smart.tocStyle
         snapshot.applyHighlights = smart.applyHighlights
         snapshot.includeNotes = smart.includeNotes

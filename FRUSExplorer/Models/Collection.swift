@@ -40,6 +40,11 @@ import SwiftData
 ///          `introductionText` + `introductionRichText`, `includeColophon`) — all additive,
 ///          optional-or-defaulted, CloudKit-safe; defaults reproduce pre-Phase-4 exports exactly.
 ///          `note` keeps its existing role as the one-line title-page description
+///   1.5 — Authoring Phase 5: footnote tri-state fix — `includeFootnotes` +
+///          `includeSourceNote` Bool pair (both optional; `nil` derives from the legacy
+///          `footnoteStyle`, which keeps being written for old readers/devices — never
+///          delete or re-purpose a synced field). "All footnotes AND the source note"
+///          becomes expressible; the effective accessors are the only read surface
 @Model final class Collection {
 
     // MARK: - Identity
@@ -124,8 +129,86 @@ import SwiftData
 
     /// Footnote inclusion style for exports — a `CollectionFootnoteStyle` raw value
     /// (`"none"`, `"sourceNoteOnly"`, `"all"`).
+    ///
+    /// **Legacy field (Authoring Phase 5).** Superseded as the read surface by the
+    /// `includeFootnotes`/`includeSourceNote` Bool pair, but it is a synced field on
+    /// fielded builds, so it is never deleted or re-purposed: the effective setters keep
+    /// writing a best-fit raw value here so old readers and old devices behave sensibly.
     var footnoteStyle: String = "all" {
         didSet { lastModified = .now }
+    }
+
+    /// Whether exported documents include their footnotes (Authoring Phase 5).
+    /// `nil` (every pre-Phase-5 collection) means "derive from the legacy
+    /// `footnoteStyle`" — see `effectiveIncludeFootnotes`, the read surface.
+    /// Prefer the effective accessors; write through them so `footnoteStyle` stays
+    /// consistent for old readers.
+    var includeFootnotes: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Whether exported documents append their archival source note (Authoring Phase 5).
+    /// `nil` (every pre-Phase-5 collection) means "derive from the legacy
+    /// `footnoteStyle`" — see `effectiveIncludeSourceNote`, the read surface.
+    /// Prefer the effective accessors; write through them so `footnoteStyle` stays
+    /// consistent for old readers.
+    var includeSourceNote: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// The effective "include footnotes" flag: the stored Bool when set, else the value
+    /// derived from the legacy `footnoteStyle` (`all` → `true`; `sourceNoteOnly`/`none` →
+    /// `false`) — so an untouched collection composes exactly as it always has.
+    ///
+    /// Setting writes **both** stored Bools (freezing the currently-derived pair so a
+    /// later `footnoteStyle` rewrite cannot shift the other flag) **and** a best-fit
+    /// `footnoteStyle` raw value for old readers — see `bestFitFootnoteStyleRawValue`.
+    var effectiveIncludeFootnotes: Bool {
+        get { includeFootnotes ?? Self.derivedFootnoteFlags(fromStyleRawValue: footnoteStyle).footnotes }
+        set { writeFootnoteFlags(footnotes: newValue, sourceNote: effectiveIncludeSourceNote) }
+    }
+
+    /// The effective "include archival source note" flag: the stored Bool when set, else
+    /// the value derived from the legacy `footnoteStyle` (`sourceNoteOnly` → `true`;
+    /// `all`/`none` → `false`). Setting mirrors `effectiveIncludeFootnotes`.
+    var effectiveIncludeSourceNote: Bool {
+        get { includeSourceNote ?? Self.derivedFootnoteFlags(fromStyleRawValue: footnoteStyle).sourceNote }
+        set { writeFootnoteFlags(footnotes: effectiveIncludeFootnotes, sourceNote: newValue) }
+    }
+
+    /// Maps a legacy `footnoteStyle` raw value to the Bool pair it always meant:
+    /// `all` → (true, false), `sourceNoteOnly` → (false, true), `none` → (false, false).
+    /// An unknown raw value falls back to `all`, matching every pre-Phase-5 read site's
+    /// `CollectionFootnoteStyle(rawValue:) ?? .all`.
+    static func derivedFootnoteFlags(fromStyleRawValue raw: String) -> (footnotes: Bool, sourceNote: Bool) {
+        switch raw {
+        case "sourceNoteOnly": return (false, true)
+        case "none":           return (false, false)
+        default:               return (true, false)   // "all" + unknown values (legacy fallback)
+        }
+    }
+
+    /// The best-fit legacy `footnoteStyle` raw value for a Bool pair, written alongside
+    /// the pair so old readers/devices keep behaving sensibly: (true, false) → `all`,
+    /// (false, true) → `sourceNoteOnly`, (false, false) → `none`. The one combination the
+    /// tri-state cannot express — footnotes **and** the source note — writes `all`
+    /// (documented lossy mapping: an old build shows the footnotes and drops the source
+    /// note, which is the closer of the two degradations to the author's intent).
+    static func bestFitFootnoteStyleRawValue(footnotes: Bool, sourceNote: Bool) -> String {
+        switch (footnotes, sourceNote) {
+        case (true, false):  return "all"
+        case (false, true):  return "sourceNoteOnly"
+        case (false, false): return "none"
+        case (true, true):   return "all"   // inexpressible in the tri-state; see doc
+        }
+    }
+
+    /// Writes the Bool pair and the best-fit legacy `footnoteStyle` in one step — the
+    /// single write path used by both effective setters.
+    private func writeFootnoteFlags(footnotes: Bool, sourceNote: Bool) {
+        includeFootnotes = footnotes
+        includeSourceNote = sourceNote
+        footnoteStyle = Self.bestFitFootnoteStyleRawValue(footnotes: footnotes, sourceNote: sourceNote)
     }
 
     /// Table-of-contents label style for exports — a `CollectionToCStyle` raw value
@@ -203,7 +286,8 @@ import SwiftData
 ///
 /// A collection is an ordered sequence of these: `document` entries are the FRUS documents;
 /// `heading` entries start a section; `prose` entries are the researcher's own editorial note
-/// blocks. This turns a flat document list into an authored, sectioned reader.
+/// blocks; `excerpt` entries are frozen verbatim quotations from a document (Authoring
+/// Phase 5). This turns a flat document list into an authored, sectioned reader.
 enum CollectionEntryKind: String, CaseIterable, Sendable {
     /// A FRUS document (uses `documentId`/`volumeId`).
     case document
@@ -211,6 +295,12 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     case heading
     /// An editorial prose block (uses `text` as the body).
     case prose
+    /// A frozen verbatim quotation from a document (Authoring Phase 5): `text` is the
+    /// passage, `documentId`/`volumeId` its provenance for the auto-citation source line,
+    /// and the `excerpt*` fields carry the anchoring metadata copied at creation. On
+    /// pre-Phase-5 builds this raw value rides the `.unrecognized` sync guard: the entry
+    /// is inert and skipped, never misread as a junk document.
+    case excerpt
     /// A `kind` raw value written by a newer app version that this build does not
     /// understand (synced via CloudKit). Never persisted by this build; surfaced as an
     /// inert row and skipped by resolve/export so future entry kinds degrade gracefully
@@ -219,7 +309,7 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 
     /// Excludes `.unrecognized`: it is a decode fallback, not an authorable kind, so any
     /// menu or picker iterating the cases never offers it.
-    static var allCases: [CollectionEntryKind] { [.document, .heading, .prose] }
+    static var allCases: [CollectionEntryKind] { [.document, .heading, .prose, .excerpt] }
 }
 
 // MARK: - CollectionEntry
@@ -248,6 +338,24 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          `.document` (mixed-build CloudKit sync guard); the setter never persists it
 ///   1.7 — Authoring Phase 4: added `level` (heading nesting depth, default 1) — the tree is
 ///          level-encoded on the flat list; `sortOrder` semantics are untouched
+///   1.8 — Authoring Phase 5: added `includeHeadnote` (default `false`) + `headnoteSummaryId`
+///          — an opt-in italic abstract (a chosen `GeneratedSummary`) rendered above the
+///          document body in exports/preview; defaults reproduce pre-Phase-5 output exactly
+///   1.9 — Authoring Phase 5 (excerpts): added the `.excerpt` kind and its anchoring
+///          fields `excerptStart`/`excerptEnd`/`excerptRenderingVersion`/`excerptColorTag`
+///          — all additive and optional (nil on every existing entry), copied from the
+///          source highlight/selection at creation. Per decision A9 the frozen `text`
+///          is the rendering source of truth today; the anchors make precision slicing
+///          a later rendering-only flip
+///   1.10 — Authoring Phase 5 (overrides): per-entry composition overrides —
+///          `applyHighlightsOverride`, `includeNotesOverride`, `includeSourceNoteOverride`,
+///          `includeFootnotesOverride`, `summaryPromptIdOverride`, `selectedHighlightIds`
+///          (A8), and `includeRelatedDocuments` (A10). All optional-or-defaulted;
+///          `nil`/empty on every existing entry, reproducing pre-override behavior
+///          exactly. On a `.heading` entry the same fields act as **section-level
+///          defaults** for the documents it owns. Resolution happens in exactly one
+///          place — `CollectionContentResolver`, via the `CollectionOutline` ancestor
+///          cascade (entry override → nearest ancestor heading → collection default)
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -326,17 +434,137 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
         didSet { lastModified = .now }
     }
 
+    // MARK: - Composition Overrides (Authoring Phase 5)
+
+    /// Per-entry override of the collection's `applyHighlights` composition flag.
+    /// `nil` (every existing entry) inherits — the nearest ancestor heading's override
+    /// when one is set, else the collection default. On a `.heading` entry this is the
+    /// section-level default for the documents it owns. Resolved only by
+    /// `CollectionContentResolver` via the `CollectionOutline` cascade.
+    var applyHighlightsOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's `includeNotes` composition flag
+    /// (`nil` = inherit; section default on headings — see `applyHighlightsOverride`).
+    var includeNotesOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's effective include-source-note flag
+    /// (`nil` = inherit; section default on headings — see `applyHighlightsOverride`).
+    var includeSourceNoteOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's effective include-footnotes flag
+    /// (`nil` = inherit; section default on headings — see `applyHighlightsOverride`).
+    /// Like the collection-level flag, footnote gating applies where footnote rendering
+    /// is gated — the shared HTML renderer and the live preview (the PDF/DOCX footnote
+    /// gap predates this field and is deliberately unchanged).
+    var includeFootnotesOverride: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry override of the collection's `summaryPromptId` — which summarization
+    /// prompt supplies this document's `.summaryOnly` body and headnote-fallback pick.
+    /// `nil` = inherit (section default on headings — see `applyHighlightsOverride`).
+    var summaryPromptIdOverride: UUID? {
+        didSet { lastModified = .now }
+    }
+
+    /// IDs of the `DocumentHighlight` records to include when highlights apply to this
+    /// entry (decision A8, mirroring `selectedNoteIds`). **Empty means all highlights**
+    /// — the pre-override behavior — so every existing entry is unchanged. Highlight ids
+    /// are meaningful across the author's own CloudKit-synced devices; they are
+    /// deliberately **never serialized into `.fruscollection` files** (the referenced
+    /// highlights don't travel, so a recipient's export falls back to all-their-highlights
+    /// semantics).
+    var selectedHighlightIds: [UUID] = [] {
+        didSet { lastModified = .now }
+    }
+
+    /// Per-entry opt-in for the related-documents line (decision A10): when it resolves
+    /// `true`, exports append a "See also:" citation line listing the documents this one
+    /// cross-references **that are also in the collection** (in-collection targets only —
+    /// bounded and meaningful, never the full cross-reference fan-out). `nil` (every
+    /// existing entry) inherits the nearest ancestor heading's value, else **off** — the
+    /// collection has no related-documents default, so untouched collections are
+    /// unchanged. Section default on headings — see `applyHighlightsOverride`.
+    var includeRelatedDocuments: Bool? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Headnote (Authoring Phase 5)
+
+    /// When `true` on a document entry, exports and the live preview render an italic
+    /// abstract (a `GeneratedSummary`) **above** the document body — a headnote, versus
+    /// the body-depth `summaryOnly` summary-*instead-of*-body. Defaults to `false`, so
+    /// every existing entry renders exactly as before. Headnote resolution never
+    /// generates a summary on demand (out of scope for Authoring Phase 5 step 1; the
+    /// renderers show a placeholder note when no stored summary exists).
+    var includeHeadnote: Bool = false {
+        didSet { lastModified = .now }
+    }
+
+    /// The specific `GeneratedSummary.id` to render as this entry's headnote. `nil` with
+    /// `includeHeadnote == true` falls back to a stored summary for the document
+    /// (preferring one generated with the collection's `summaryPromptId`).
+    var headnoteSummaryId: UUID? {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Excerpt Anchors (Authoring Phase 5)
+
+    /// Unicode-scalar start offset of the excerpted passage within the source document's
+    /// flat text (the `DocumentHighlight.startOffset` coordinate space), copied from the
+    /// source highlight/selection when the excerpt was created. `nil` when the creation
+    /// path had no offsets (e.g. a footnote selection reported text only).
+    ///
+    /// **Decision A9.** The frozen `text` is the excerpt's rendering source of truth
+    /// today; these anchors are stored at creation — they are free to capture — so a
+    /// precision styled slice of the render model stays a later rendering-only decision.
+    var excerptStart: Int? {
+        didSet { lastModified = .now }
+    }
+
+    /// Unicode-scalar end offset (exclusive) of the excerpted passage — see
+    /// `excerptStart` for the coordinate space and the A9 rationale. `nil` when the
+    /// creation path had no offsets.
+    var excerptEnd: Int? {
+        didSet { lastModified = .now }
+    }
+
+    /// The source document's `renderingVersion` at excerpt creation (the
+    /// `DocumentHighlight.renderingVersion` scheme: a 16-char SHA-256 prefix over the
+    /// raw XML + converter version). A future precision-rendering flip (A9) compares it
+    /// against the current document version to decide whether the offsets still align;
+    /// today it is stored, never read at render time. `nil` when unavailable at creation.
+    var excerptRenderingVersion: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// The source highlight's `colorTag` (`"yellow"`/`"green"`/`"blue"`/`"pink"`), when
+    /// the excerpt was created from a `DocumentHighlight` — renderers use it as the
+    /// quote block's accent. `nil` for excerpts created from a plain text selection.
+    var excerptColorTag: String? {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Entry Kind (Phase 3a)
 
     /// What this entry contributes to the composed collection — a `CollectionEntryKind` raw
     /// value. Defaults to `"document"` so every existing entry stays a document. A `"heading"`
-    /// starts a section; a `"prose"` is an editorial note block. Heading/prose entries use
-    /// `text` and ignore `documentId`/`volumeId`. Stored raw for CloudKit compatibility.
+    /// starts a section; a `"prose"` is an editorial note block; an `"excerpt"` is a frozen
+    /// quotation (Phase 5). Heading/prose entries use `text` and ignore
+    /// `documentId`/`volumeId`; excerpt entries use `text` (the passage) AND
+    /// `documentId`/`volumeId` (provenance). Stored raw for CloudKit compatibility.
     var kind: String = "document" {
         didSet { lastModified = .now }
     }
 
-    /// The section title (for a `heading` entry) or the editorial body (for a `prose` entry).
+    /// The section title (for a `heading` entry), the editorial body (for a `prose` entry),
+    /// or the frozen verbatim passage (for an `excerpt` entry, Phase 5).
     /// `nil` for document entries. Always the plain-text form — a fallback for plain contexts
     /// and the source for a `prose` entry with no rich formatting.
     var text: String? {
