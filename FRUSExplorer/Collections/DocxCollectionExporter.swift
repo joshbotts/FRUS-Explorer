@@ -72,10 +72,16 @@ import Foundation
 ///          `outlineLvl` 0/1/2 — NOT the built-in `Heading2`/`Heading3`, which document
 ///          citations and in-document TEI headings already use (mapping authored sections
 ///          onto them would make sections indistinguishable from citations in Word's ToC);
-///          the ToC field widens to `\o "1-3"` (custom outline levels ride the existing
-///          `\u` switch); opt-in trailing colophon paragraph (`Colophon` style). The
-///          introduction needs no code here — it arrives as the resolver's leading
-///          `.prose` item
+///          the ToC field's `\o` range is content-driven: it stays `"1-2"` (the exact
+///          pre-Phase-4 field) unless an authored level-3 section exists, widening to
+///          `"1-3"` only then — because `\o` bounds the `\u` outline-level sweep, an
+///          unconditional widening would have pulled every in-document TEI heading and
+///          "Summary" label (built-in Heading3, outlineLvl 2) into Word's regenerated
+///          ToC even for collections using no Phase 4 feature. Residual tradeoff for
+///          three-deep collections: authored level-3 sections and in-document TEI
+///          headings share ToC level 3 and are indistinguishable there. Opt-in trailing
+///          colophon paragraph (`Colophon` style). The introduction needs no code here —
+///          it arrives as the resolver's leading `.prose` item
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -348,12 +354,19 @@ final class DocxCollectionExporter: CollectionExporter {
             + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: Date()))"
         body += styledPara(info, styleId: "Normal")
 
-        // Contents heading + Word TOC field code (updates on first open in Word). The TOC
-        // collects Heading1–Heading3 plus the SectionHeading styles (outline levels 0–2),
-        // so the authored section hierarchy appears in the generated contents alongside
-        // document headings.
+        // Contents heading + Word TOC field code (updates on first open in Word). The
+        // field's `\o` level range is content-driven: `"1-2"` (the exact pre-Phase-4
+        // field) unless an authored level-3 section exists, so a collection using no
+        // deep nesting keeps today's ToC — in particular, in-document TEI headings and
+        // "Summary" labels (built-in Heading3, outline level 2) stay out of Word's
+        // regenerated contents.
+        let maxHeadingLevel = items.reduce(into: 1) { acc, item in
+            if case .heading(_, let level) = item {
+                acc = max(acc, min(max(level, 1), CollectionOutline.maxLevel))
+            }
+        }
         body += styledPara("Contents", styleId: "Heading2")
-        body += tocFieldXML()
+        body += tocFieldXML(maxHeadingLevel: maxHeadingLevel)
 
         // Page break before the composed body
         body += "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
@@ -820,15 +833,23 @@ final class DocxCollectionExporter: CollectionExporter {
         return "<w:footnotes xmlns:w=\"\(w)\">\n\(separators)\n\(body)</w:footnotes>"
     }
 
-    /// Word field-code TOC: `\o "1-3"` collects Heading1–Heading3 (Phase 4 widened it from
-    /// `1-2` so a three-deep authored outline is representable); the `\u` switch collects
-    /// the custom `SectionHeading`/`SectionHeading2`/`SectionHeading3` styles by their
-    /// `outlineLvl`. `w:dirty="true"` causes Word to rebuild on first open.
-    private func tocFieldXML() -> String {
-        "    <w:p>\n"
+    /// Word field-code TOC. The `\o` level range bounds what the ToC collects (it caps
+    /// the `\u` outline-level sweep the way Word's Show-levels control does): `"1-2"` —
+    /// the exact pre-Phase-4 field — unless an authored level-3 section exists, in which
+    /// case it widens to `"1-3"` so the three-deep outline is representable. Level-2
+    /// sections need no widening: `SectionHeading2` carries `outlineLvl` 1, inside
+    /// `"1-2"`. The `\u` switch collects the custom
+    /// `SectionHeading`/`SectionHeading2`/`SectionHeading3` styles by their `outlineLvl`.
+    /// `w:dirty="true"` causes Word to rebuild on first open.
+    ///
+    /// - Parameter maxHeadingLevel: The deepest clamped authored heading level in the
+    ///   export (1 when the collection has no headings).
+    private func tocFieldXML(maxHeadingLevel: Int) -> String {
+        let range = maxHeadingLevel >= 3 ? "1-3" : "1-2"
+        return "    <w:p>\n"
         + "      <w:pPr><w:pStyle w:val=\"Normal\"/></w:pPr>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"begin\" w:dirty=\"true\"/></w:r>\n"
-        + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"1-3\" \\h \\z \\u </w:instrText></w:r>\n"
+        + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"\(range)\" \\h \\z \\u </w:instrText></w:r>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>\n"
         + "      <w:r><w:t>Right-click to update the table of contents.</w:t></w:r>\n"
         + "      <w:r><w:fldChar w:fldCharType=\"end\"/></w:r>\n"

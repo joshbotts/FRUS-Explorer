@@ -94,6 +94,9 @@ import UIKit
 ///          author line, introduction rich text, colophon toggle) joins the iPhone
 ///          Details disclosure / iPad inspector / macOS sheet form, all live-autosaved,
 ///          with the active Project name as the author-line placeholder (never persisted)
+///   2.4 — Authoring Phase 4 review fix: front-matter footer copy corrected — the
+///          introduction opens the body AFTER the table of contents (it is the
+///          resolver's leading `.prose` item), not before it
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -886,7 +889,7 @@ struct CollectionEditorView: View {
                         defaultValue: "Title Page & Introduction"))
         } footer: {
             Text(String(localized: "collection.frontmatter.footer",
-                        defaultValue: "Rendered on the exported title page and before the table of contents. Leave blank to keep the plain document layout."))
+                        defaultValue: "Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout."))
         }
     }
 

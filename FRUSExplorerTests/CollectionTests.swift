@@ -1245,6 +1245,18 @@ struct CollectionTests {
         #expect(docxContains("SectionHeading2"))                     // …styled distinguishably (outlineLvl 1)
         #expect(docxContains("Editorial contract prose."))           // .prose
         #expect(docxContains("Contract Citation Label"))             // .document
+        // The ToC field's `\o` level range is content-driven (Phase 4 review fix): this
+        // fixture's deepest authored heading is level 2, so the field must stay the exact
+        // pre-Phase-4 `\o "1-2"` — because `\o` bounds the `\u` outline-level sweep, a
+        // wider range would pull every in-document TEI heading and "Summary" label
+        // (built-in Heading3, outlineLvl 2) into Word's regenerated ToC.
+        #expect(docxContains("TOC \\o \"1-2\""))
+        #expect(!docxContains("TOC \\o \"1-3\""))
+        // Only an authored level-3 section widens the field to `\o "1-3"`.
+        let deepItems = items + [.heading("Contract Deep Sub", level: 3)]
+        let deepDocx = try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: metadata, items: deepItems))
+        #expect(deepDocx.range(of: Data("TOC \\o \"1-3\"".utf8)) != nil)
 
         // PDF — content streams aren't byte-searchable, so extract the page text with
         // PDFKit and assert every item kind's content actually made it onto a page
@@ -2181,6 +2193,36 @@ struct CollectionTests {
         #expect(moved?.map(\.sortOrder) == [0, 1, 2, 3])
         // A heading dropped into its own section leaves the model untouched.
         #expect(CollectionOutline.applyingMove(entries, fromIndex: 2, toOffset: 3) == nil)
+    }
+
+    @Test("Move engine: the editors' post-move tail (reindex THEN normalize) persists resolved levels — a level-2 section dragged to the top is written back at level 1")
+    func outlineMoveThenReindexThenNormalize() throws {
+        // Regression guard for the macOS Phase 4 review fix: normalize linearizes by
+        // `sortOrder`, so running it BEFORE reindexing sees the stale pre-move order,
+        // silently no-ops, and lets the orphan level persist (the section would then
+        // re-nest under a sibling on a later drag). Both editors must reindex first.
+        // 0:H-A(1)  1:doc  2:H-B(1)  3:H-C(2)  4:doc — drag H-C's section to the top.
+        let hA = outlineEntry(kind: .heading, level: 1, order: 0, text: "A")
+        let d1 = outlineEntry(kind: .document, order: 1)
+        let hB = outlineEntry(kind: .heading, level: 1, order: 2, text: "B")
+        let hC = outlineEntry(kind: .heading, level: 2, order: 3, text: "C")
+        let d2 = outlineEntry(kind: .document, order: 4)
+
+        let reordered = try #require(CollectionOutline.applyingMove(
+            [hA, d1, hB, hC, d2], fromIndex: 3, toOffset: 0))
+        // H-C's section (the heading + the trailing doc) leads the new order.
+        #expect(reordered.map(\.text) == [Optional("C"), nil, Optional("A"), nil, Optional("B")])
+
+        // The shared mutation tail, in the editors' order: reindex sortOrder 0..n FIRST,
+        // then normalize against the now-current order.
+        for (i, entry) in reordered.enumerated() { entry.sortOrder = i }
+        CollectionOutline.normalize(reordered)
+
+        // H-C now opens the outline, so its stored level must be written back to 1 —
+        // not left at the stale 2 the reversed (normalize-first) order preserved.
+        #expect(hC.level == 1)
+        #expect(hA.level == 1)
+        #expect(hB.level == 1)
     }
 
     @Test("Indent/outdent: the section shifts as a unit (descendant headings included), clamps at the cap, and normalize keeps the invariants")

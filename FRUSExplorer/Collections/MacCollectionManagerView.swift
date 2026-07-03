@@ -60,6 +60,10 @@ import UniformTypeIdentifiers
 ///          subtitle/author fields and a Front Matter disclosure (introduction rich text
 ///          + colophon toggle) joins Composition inside the scrolling list (respecting
 ///          the no-fixed-header-growth constraint), all live-autosaved
+///   1.10 — Authoring Phase 4 review fix: `finishOutlineMutation` reindexes `sortOrder`
+///          BEFORE `CollectionOutline.normalize` (matching iOS) — normalize linearizes
+///          by `sortOrder`, so the previous order made the post-move normalization pass
+///          a silent no-op and let orphan heading levels persist
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -802,10 +806,15 @@ private struct CollectionDetailPane: View {
     }
 
     /// The shared tail of every outline mutation: reindex `sortOrder` 0..n, normalize
-    /// heading levels (no orphan jumps persist), and save (reindexEntries saves).
+    /// heading levels (no orphan jumps persist), and save — in that order, matching the
+    /// iOS editor (`CollectionEditorView.finishOutlineMutation`). Reindexing must come
+    /// FIRST: `CollectionOutline.normalize` linearizes by `sortOrder`, so running it
+    /// against stale pre-mutation orders would reconstruct the old arrangement and
+    /// silently no-op, persisting orphan levels.
     private func finishOutlineMutation() {
+        for (i, entry) in sortedEntries.enumerated() { entry.sortOrder = i }
         CollectionOutline.normalize(sortedEntries)
-        reindexEntries()
+        try? modelContext.save()
     }
 
     /// Writes the introduction onto the model, live. An effectively empty introduction
