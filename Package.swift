@@ -29,10 +29,19 @@ import PackageDescription
 ///   1906–1910 Numerical File (microfilm M862). Requires `CATALOG_API_KEY`; caches raw
 ///   pages to disk. Run when refreshing the bundled index.
 ///
+/// - **SourceNoteEvalGenerator**: runs `SourceNoteParser` over the offline
+///   `citations.csv` eval corpus (267k source notes, 520 volumes) and writes a
+///   deterministic, diffable classification-rate report bucketed by FRUS era.
+///   Regression harness for parser grammar work; the committed BEFORE snapshot lives
+///   at `SourceNoteKit/eval-baseline.txt`. Env: `CITATIONS_CSV`, `OUTPUT`.
+///
 /// ## Library Components
 ///
 /// - **FTS5Store**: Swift actor wrapping SQLite FTS5 for full-text search. Used by the
 ///   app's search indexing pipeline. Designed for reuse outside FRUS Explorer.
+///
+/// - **SourceNoteKit**: the FRUS source-note parser shared between the app targets
+///   (compiled directly via `project.yml`, like FTS5Store) and the eval harness.
 ///
 /// Each tool is split into a library target (all logic, fully testable) and a thin
 /// executable target (entry point only). Tests import the library targets directly.
@@ -182,6 +191,52 @@ let package = Package(
             name: "VolumeSourcesIndexGeneratorTests",
             dependencies: [.target(name: "VolumeSourcesIndexGeneratorCore")],
             path: "VolumeSourcesIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - SourceNoteKit
+
+        /// The FRUS source-note parser (`SourceNoteParser`, `ParsedSourceNote`,
+        /// `ParsedVolumeSources`, `ArchiveCitation`), shared between the app and the
+        /// SPM eval harness. Like FTS5Store, these sources are ALSO compiled directly
+        /// into both app targets via a `project.yml` path entry (no SPM product
+        /// linkage), so the app and `SourceNoteEvalGenerator` always run the exact
+        /// same grammar.
+        .target(
+            name: "SourceNoteKit",
+            path: "SourceNoteKit",
+            exclude: ["eval-baseline.txt"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - SourceNoteEvalGenerator
+
+        /// All eval-harness logic: streams `citations.csv` (RFC-4180, quoted TEI
+        /// fields), replicates the IndexingPipeline's post-extraction note
+        /// normalization, runs `SourceNoteParser` over every source-note row, and
+        /// emits a deterministic, diffable classification-rate report bucketed by
+        /// FRUS era. Imported by the executable and tests.
+        .target(
+            name: "SourceNoteEvalGeneratorCore",
+            dependencies: [.target(name: "SourceNoteKit")],
+            path: "SourceNoteEvalGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls SourceNoteEvalRunner.run() and exits.
+        .executableTarget(
+            name: "SourceNoteEvalGenerator",
+            dependencies: [.target(name: "SourceNoteEvalGeneratorCore")],
+            path: "SourceNoteEvalGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for SourceNoteEvalGeneratorCore logic (CSV parsing, era
+        /// bucketing, note normalization).
+        .testTarget(
+            name: "SourceNoteEvalGeneratorTests",
+            dependencies: [.target(name: "SourceNoteEvalGeneratorCore")],
+            path: "SourceNoteEvalGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

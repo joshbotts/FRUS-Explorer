@@ -32,3 +32,6 @@ fastlane/test_output
 
 # Notarization
 notarization-*.json
+
+# SourceNoteEvalGenerator scratch output (committed baseline lives at SourceNoteKit/eval-baseline.txt)
+eval-report.txt

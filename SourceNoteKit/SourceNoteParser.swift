@@ -42,6 +42,9 @@ import Foundation
 ///   1.3 — Session 151: added `.cfpfFile`; fixed lot file regex to handle F-designator
 ///          (RG 84 post records); expanded period routing to pre-1906, 1906–1910,
 ///          1963–1973; added AAD Electronic Telegrams detection
+///   1.4 — Source Explorer Phase 2 (Session 2026-07-03): relocated unchanged to the
+///          `SourceNoteKit` shared target so the SPM eval harness
+///          (`SourceNoteEvalGenerator`) and both app targets compile the same parser
 public enum ParsedSourceNote: Sendable, Equatable {
 
     /// State Department central files identified by a decimal file number
@@ -207,6 +210,12 @@ public struct ArchiveCitation: Sendable {
 ///          run-ons like "Priority.Drafted by Dulles") or starting with a remark verb
 ///          (`Drafted`/`Sent`/`Received`/`Repeated`) now return nil, closing the
 ///          ~0.01% junk-value residue found by the full-corpus replay
+///   1.6 — Source Explorer Phase 2 (Session 2026-07-03): relocated unchanged into the
+///          `SourceNoteKit` shared target (compiled directly into both app targets per
+///          the FTS5Store pattern, and consumed as an SPM target by
+///          `SourceNoteEvalGenerator`). Grammar untouched; the per-call `#if DEBUG`
+///          parse print was removed — it emitted one line per note and would flood the
+///          eval harness's 267k-note corpus runs
 public struct SourceNoteParser {
 
     public init() {}
@@ -217,10 +226,6 @@ public struct SourceNoteParser {
     public func parse(_ sourceNote: String) -> ParsedSourceNote {
         let trimmed = sourceNote.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return .unrecognized(rawText: sourceNote) }
-
-        #if DEBUG
-        print("[SourceExplorer] Parsing: \(trimmed.prefix(80))")
-        #endif
 
         // Era 1 — "File No." variants (bare inline file number)
         if let result = tryFileNo(trimmed) { return result }
