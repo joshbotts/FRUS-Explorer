@@ -104,6 +104,10 @@ import CoreText
 ///          the next page via the same framesetter continuation `drawProseFlow` uses,
 ///          instead of being drawn once into a rect extending below the media box
 ///          (which viewers clip — the tail silently vanished from the PDF)
+///   1.16 — Session 2026-07-03 (prose links): a prose span carrying a `.link` attribute
+///          (the rich-text editor's Link control) renders underlined with the URL
+///          appended as small gray parenthetical text — the v1.14 visible-URL tradeoff
+///          applied inline; link-free prose renders byte-identically to 1.15
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -1213,6 +1217,9 @@ final class PDFCollectionExporter: CollectionExporter {
     /// JSON blob the shared decoder recovers rather than dropping). Bold/italic/
     /// underline/colour spans (decoded once by the shared `CollectionProse`) map to font-face,
     /// underline, and foreground-colour attributes; paragraphs are separated by a blank line.
+    /// A linked span renders underlined with the URL appended as small gray text in
+    /// parentheses — the v1.14 no-annotation tradeoff (bare CoreText frame drawing has no
+    /// link boxes; HTML/DOCX carry the real hyperlink), applied inline for prose.
     private func proseAttributedString(_ rtf: Data, fontSize: CGFloat = 11) -> NSAttributedString {
         let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
         let result = NSMutableAttributedString()
@@ -1224,7 +1231,7 @@ final class PDFCollectionExporter: CollectionExporter {
             for span in paragraph {
                 var attrs = makeStyledAttrs(fontSize: fontSize, bold: span.bold,
                                             italic: span.italic, gray: 0)
-                if span.underline {
+                if span.underline || span.linkURL != nil {
                     attrs[NSAttributedString.Key(kCTUnderlineStyleAttributeName as String)] =
                         CTUnderlineStyle.single.rawValue as CFNumber
                 }
@@ -1232,6 +1239,12 @@ final class PDFCollectionExporter: CollectionExporter {
                     attrs[NSAttributedString.Key(kCTForegroundColorAttributeName as String)] = color
                 }
                 result.append(NSAttributedString(string: span.text, attributes: attrs))
+                if let url = span.linkURL, !url.isEmpty,
+                   url != span.text.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    result.append(NSAttributedString(
+                        string: " (\(url))",
+                        attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45)))
+                }
             }
         }
         return result

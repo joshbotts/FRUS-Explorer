@@ -745,8 +745,10 @@ extension Array where Element == CollectionExportItem {
 
 /// One run of editorial-prose text plus the concrete inline formatting decoded from a
 /// Phase 3b rich-text blob. Bold/italic come from the run's `NSFont`/`UIFont` symbolic
-/// traits, underline from the underline-style attribute, and `colorHex` from the
-/// foreground colour. Produced by `CollectionProse.paragraphs(fromRTF:)`.
+/// traits, underline from the underline-style attribute, `colorHex` from the
+/// foreground colour, and `linkURL` from the `.link` attribute (Session 2026-07-03 —
+/// the editor's Link control; RTF round-trips it as a `HYPERLINK` field). Produced by
+/// `CollectionProse.paragraphs(fromRTF:)`.
 struct ProseFormattedSpan: Sendable {
     /// The run's text. May contain single `\n` line breaks; paragraph breaks (blank
     /// lines) are already split out into separate paragraphs by the decoder.
@@ -760,6 +762,10 @@ struct ProseFormattedSpan: Sendable {
     /// Uppercase `RRGGBB` (no leading `#`), or `nil` for (near-)black default text so
     /// ordinary prose isn't tagged with a redundant colour.
     let colorHex: String?
+    /// The run's `.link` URL as a string, or `nil` for unlinked text. HTML renders it as
+    /// an `<a href>`, DOCX as a real `<w:hyperlink>` relationship, PDF as underlined text
+    /// followed by the visible URL (CoreText frame drawing has no link annotations).
+    let linkURL: String?
 }
 
 // MARK: - CollectionProse
@@ -795,13 +801,19 @@ enum CollectionProse {
     }
 
     /// Emits spans for a decoded RTF body: bold/italic from the run's concrete font traits,
-    /// underline from the underline-style attribute, colour from the foreground colour.
+    /// underline from the underline-style attribute, colour from the foreground colour,
+    /// link URL from the `.link` attribute (`URL` or `String` valued — the RTF reader
+    /// restores `HYPERLINK` fields as `NSURL`).
     private static func paragraphs(fromDecoded ns: NSAttributedString) -> [[ProseFormattedSpan]] {
         var paragraphs: [[ProseFormattedSpan]] = [[]]
         let plain = ns.string as NSString
         ns.enumerateAttributes(in: NSRange(location: 0, length: ns.length), options: []) { attrs, range, _ in
             var bold = false, italic = false, underline = false
             var colorHex: String?
+            var linkURL: String?
+            if let link = attrs[.link] {
+                linkURL = (link as? URL)?.absoluteString ?? (link as? String)
+            }
             #if canImport(AppKit)
             if let font = attrs[.font] as? NSFont {
                 let traits = font.fontDescriptor.symbolicTraits
@@ -818,7 +830,7 @@ enum CollectionProse {
             if let style = attrs[.underlineStyle] as? Int, style != 0 { underline = true }
 
             append(text: plain.substring(with: range), bold: bold, italic: italic,
-                   underline: underline, colorHex: colorHex, to: &paragraphs)
+                   underline: underline, colorHex: colorHex, linkURL: linkURL, to: &paragraphs)
         }
         return paragraphs
     }
@@ -834,7 +846,7 @@ enum CollectionProse {
             append(text: String(attributed.characters[run.range]),
                    bold: intent.contains(.stronglyEmphasized),
                    italic: intent.contains(.emphasized),
-                   underline: false, colorHex: nil, to: &paragraphs)
+                   underline: false, colorHex: nil, linkURL: nil, to: &paragraphs)
         }
         return paragraphs
     }
@@ -843,14 +855,16 @@ enum CollectionProse {
     /// starting a new paragraph at each blank line — the single splitting rule both decode
     /// paths share.
     private static func append(text: String, bold: Bool, italic: Bool, underline: Bool,
-                               colorHex: String?, to paragraphs: inout [[ProseFormattedSpan]]) {
+                               colorHex: String?, linkURL: String?,
+                               to paragraphs: inout [[ProseFormattedSpan]]) {
         let parts = text.components(separatedBy: "\n\n")
         for (index, part) in parts.enumerated() {
             if index > 0 { paragraphs.append([]) }   // a blank line starts a new paragraph
             if !part.isEmpty {
                 paragraphs[paragraphs.count - 1].append(
                     ProseFormattedSpan(text: part, bold: bold, italic: italic,
-                                       underline: underline, colorHex: colorHex))
+                                       underline: underline, colorHex: colorHex,
+                                       linkURL: linkURL))
             }
         }
     }

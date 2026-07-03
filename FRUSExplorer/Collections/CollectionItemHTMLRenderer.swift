@@ -76,6 +76,10 @@ import SwiftUI
 ///          indent level); ToCs list the block by title like a section. The stylesheet
 ///          (`generatedCSS`) is emitted ONLY when the item list contains a generated
 ///          block, so block-free collections keep exporting byte-identically
+///   1.8 — Session 2026-07-03 (prose links): a prose span carrying a `.link` attribute
+///          (the rich-text editor's Link control, round-tripped through RTF) renders as
+///          an outermost `<a href>` around its formatted text; link-free prose is
+///          byte-identical to the 1.7 output
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -960,9 +964,10 @@ struct CollectionItemHTMLRenderer {
     /// Renders a rich-text prose block — supplied as **RTF** (or a legacy Phase 3b JSON blob,
     /// which the shared decoder recovers rather than dropping) — to an HTML fragment:
     /// bold/italic/underline/colour runs map to `<strong>`/`<em>`/`<u>`/`<span style=color>`,
-    /// blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is decoded once
-    /// by the shared `CollectionProse.paragraphs(fromRTF:)`, which resolves paragraph breaks
-    /// *before* spans are emitted so open/close tags never straddle a `<p>`.
+    /// a `.link` run to an outermost `<a href>` (Session 2026-07-03: the editor's Link
+    /// control), blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is
+    /// decoded once by the shared `CollectionProse.paragraphs(fromRTF:)`, which resolves
+    /// paragraph breaks *before* spans are emitted so open/close tags never straddle a `<p>`.
     private func proseHTML(_ rtf: Data) -> String {
         let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
         guard !paragraphs.isEmpty else { return "" }
@@ -975,6 +980,10 @@ struct CollectionItemHTMLRenderer {
                 if span.italic    { open += "<em>";     close = "</em>" + close }
                 if span.underline { open += "<u>";      close = "</u>" + close }
                 if let hex = span.colorHex { open += "<span style=\"color:#\(hex)\">"; close = "</span>" + close }
+                if let url = span.linkURL, !url.isEmpty {
+                    open = "<a href=\"\(escaped(url))\">" + open
+                    close += "</a>"
+                }
                 return open + escaped(span.text).replacingOccurrences(of: "\n", with: "<br>\n") + close
             }.joined()
             if !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

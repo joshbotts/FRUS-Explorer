@@ -318,6 +318,77 @@ struct CollectionTests {
         #expect(paragraphs[1].contains { $0.italic && $0.text == "emphasized" })
     }
 
+    // MARK: - ProseLinkTest (Session 2026-07-03: editor Link control)
+
+    /// RTF carrying a `.link` attribute over part of the text, exactly as the editor's
+    /// Link control stores it (an `NSURL`-valued attribute, written as an RTF
+    /// `HYPERLINK` field).
+    private func makeLinkedProseRTF() throws -> Data {
+        let m = NSMutableAttributedString(string: "See the archive for details.")
+        m.addAttribute(.link, value: URL(string: "https://history.state.gov/frus")!,
+                       range: NSRange(location: 4, length: 11))   // "the archive"
+        return try m.data(from: NSRange(location: 0, length: m.length),
+                          documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+    }
+
+    @Test("ProseLink: a .link attribute survives RTF storage and decodes into span linkURL")
+    func proseLinkRTFRoundTripsToSpans() throws {
+        let rtf = try makeLinkedProseRTF()
+
+        // The stored blob is valid RTF (the editor's persistence path is unchanged)…
+        let entry = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 0)
+        entry.entryKind = .prose
+        entry.richText = rtf
+        entry.text = "See the archive for details."
+        let exported = ProseRichText.exportRTF(from: entry)
+
+        // …and the shared decoder exposes the link on exactly the linked span.
+        let paragraphs = CollectionProse.paragraphs(fromRTF: exported)
+        try #require(paragraphs.count == 1)
+        let spans = paragraphs[0]
+        #expect(spans.map(\.text).joined() == "See the archive for details.")
+        let linked = spans.filter { $0.linkURL != nil }
+        try #require(linked.count == 1)
+        #expect(linked[0].text == "the archive")
+        #expect(linked[0].linkURL == "https://history.state.gov/frus")
+        // Unlinked spans stay unlinked.
+        #expect(spans.filter { $0.linkURL == nil }.allSatisfy { $0.text != "the archive" })
+    }
+
+    @Test("ProseLink: a linked prose span renders as <a href> in HTML, <w:hyperlink> in DOCX, and visible URL text in PDF")
+    func proseLinkExportsAcrossFormats() async throws {
+        let rtf = try makeLinkedProseRTF()
+        let metadata = CollectionExportMetadata(name: "Link Contract", note: nil)
+        let items: [CollectionExportItem] = [.prose(rtf)]
+
+        // HTML (export + live preview share this renderer): a real anchor around the
+        // linked text only.
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
+        let html = try String(contentsOf: htmlURL, encoding: .utf8)
+        #expect(html.contains("<a href=\"https://history.state.gov/frus\">the archive</a>"))
+        #expect(html.contains("See "))
+
+        // DOCX: a real external hyperlink — <w:hyperlink r:id> + Hyperlink rStyle +
+        // TargetMode="External" relationship (the Phase 6 relationship plumbing).
+        let docxURL = try await DocxCollectionExporter().export(metadata: metadata, items: items)
+        let docx = try Data(contentsOf: docxURL)
+        func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
+        #expect(docxContains("<w:hyperlink r:id=\"rId3\">"))
+        #expect(docxContains("<w:rStyle w:val=\"Hyperlink\"/>"))
+        #expect(docxContains("Target=\"https://history.state.gov/frus\" TargetMode=\"External\""))
+        #expect(docxContains("the archive"))
+
+        // PDF: the linked text plus the URL as visible parenthetical text (bare CoreText
+        // frame drawing has no link annotations — the documented v1.14 tradeoff).
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: items)
+        let pdfDocument = try #require(PDFDocument(data: try Data(contentsOf: pdfURL)))
+        let pdfText = (0..<pdfDocument.pageCount)
+            .compactMap { pdfDocument.page(at: $0)?.string }
+            .joined(separator: "\n")
+        #expect(pdfText.contains("the archive"))
+        #expect(pdfText.contains("history.state.gov/frus"))
+    }
+
     // MARK: - DocumentNoteAssociationTest
 
     @Test("DocumentNoteAssociationTest: CollectionEntry stores and retrieves researchNoteId")
