@@ -638,6 +638,9 @@ class CollectionContentResolver {
         let proseRTF: Data?
         /// The entry's own body-depth override raw value, if any.
         let bodyDepthOverride: String?
+        /// The entry's per-document title override (M3, D4; document entries only; `nil`
+        /// on smart refs). Drives both the ToC label and the export heading.
+        let titleOverride: String?
         /// Whether this document entry requested a headnote (Authoring Phase 5).
         let includeHeadnote: Bool
         /// The chosen `GeneratedSummary.id` for the headnote; `nil` = fallback pick.
@@ -675,6 +678,7 @@ class CollectionContentResolver {
             level = entry.level
             proseRTF = entry.entryKind == .prose ? ProseRichText.exportRTF(from: entry) : nil
             bodyDepthOverride = entry.bodyDepthOverride
+            titleOverride = entry.titleOverride
             includeHeadnote = entry.includeHeadnote
             headnoteSummaryId = entry.headnoteSummaryId
             excerptColorTag = entry.entryKind == .excerpt ? entry.excerptColorTag : nil
@@ -702,6 +706,7 @@ class CollectionContentResolver {
             level = 1
             proseRTF = nil
             bodyDepthOverride = nil
+            titleOverride = nil
             includeHeadnote = false
             headnoteSummaryId = nil
             excerptColorTag = nil
@@ -1114,6 +1119,7 @@ class CollectionContentResolver {
             sortOrder: ref.sortOrder,
             bodyDepth: effectiveDepth,
             title: "\(volumeTitle) — \(ref.documentId)",
+            titleOverride: ref.titleOverride,
             date: manifestEntry?.dateRange.earliest,
             bodyText: bodyText,
             noteTexts: resolvedNoteTexts,

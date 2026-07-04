@@ -585,8 +585,9 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.beginPDFPage(nil)
         var y = H - M
 
-        // Citation heading — noteAttributedString renders _text_ spans as italic.
-        let cit = doc.citation.isEmpty ? doc.title : doc.citation
+        // Heading: the per-entry `titleOverride` when set, else the citation (M3,
+        // centralized via `exportHeading`). noteAttributedString renders _text_ as italic.
+        let cit = doc.exportHeading
         let citBoldAttr = noteAttributedString(cit, fontSize: 13, gray: 0.0, bold: true)
         let citH = measureHeight(citBoldAttr, width: cw)
         draw(citBoldAttr, in: ctx,

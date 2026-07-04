@@ -4257,6 +4257,143 @@ struct CollectionTests {
         let all = CollectionOutline.visibleRows(in: items, collapsedHeadingIds: [d1.id])
         #expect(all.map(\.index) == [0, 1, 2])
     }
+
+    // MARK: - M3 title override (D4)
+
+    @Test("M3 exportHeading/tocLabel: a non-empty titleOverride wins for the heading and for BOTH ToC styles; unset falls back to citation-else-title exactly as before")
+    func m3ExportHeadingAndToC() {
+        // With an override: the heading and both ToC styles all read the override,
+        // regardless of citation/header/dateline.
+        let overridden = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 0,
+            title: "Vol I — d1", titleOverride: "Kennan's Long Telegram",
+            bodyText: "", citation: "Telegram 511, Feb 22, 1946",
+            header: "861.00/2-2246: Telegram", dateline: "Moscow, February 22, 1946")
+        #expect(overridden.exportHeading == "Kennan's Long Telegram")
+        #expect(overridden.tocLabel(style: .citation) == "Kennan's Long Telegram")
+        #expect(overridden.tocLabel(style: .headerAndDateline) == "Kennan's Long Telegram")
+
+        // Empty override string is treated as unset (write-on-clear → nil, but a stray "" degrades safely).
+        let empty = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 0,
+            title: "Vol I — d1", titleOverride: "", bodyText: "",
+            citation: "Telegram 511")
+        #expect(empty.exportHeading == "Telegram 511")
+        #expect(empty.tocLabel(style: .citation) == "Telegram 511")
+
+        // No override: byte-for-byte the pre-M3 derivation (citation, else title).
+        let plain = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 0,
+            title: "Vol I — d1", bodyText: "", citation: "Telegram 511",
+            header: "The Header", dateline: "Moscow")
+        #expect(plain.exportHeading == "Telegram 511")
+        #expect(plain.tocLabel(style: .citation) == "Telegram 511")
+        #expect(plain.tocLabel(style: .headerAndDateline) == "The Header — Moscow")
+        // No citation, no override: title is the ultimate fallback.
+        let bare = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 0,
+            title: "Vol I — d1", bodyText: "")
+        #expect(bare.exportHeading == "Vol I — d1")
+        #expect(bare.tocLabel(style: .citation) == "Vol I — d1")
+    }
+
+    @Test("M3 renderers: an entry's titleOverride shows in the HTML document heading AND its ToC entry; the DOCX heading carries it too; an unset override renders byte-identically to today")
+    func m3RenderersShowOverride() async throws {
+        let overridden = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 0,
+            title: "Vol I — d1", titleOverride: "Kennan Long Telegram",
+            bodyText: "Body.", citation: "Boring Citation 511")
+        let items: [CollectionExportItem] = [.document(overridden)]
+        let metadata = CollectionExportMetadata(name: "M3", note: nil)
+
+        // HTML: both the ToC entry and the <h2> document heading carry the override,
+        // and the boring citation never appears as a heading.
+        let html = CollectionItemHTMLRenderer().pageHTML(metadata: metadata, items: items)
+        #expect(html.contains("Kennan Long Telegram"))
+        #expect(!html.contains("Boring Citation 511"))
+
+        // DOCX: the stored-mode ZIP keeps document.xml uncompressed, so the heading text
+        // appears verbatim in the archive bytes.
+        let docxURL = try await DocxCollectionExporter().export(metadata: metadata, items: items)
+        let docxData = try Data(contentsOf: docxURL)
+        #expect(docxData.range(of: Data("Kennan Long Telegram".utf8)) != nil)
+
+        // PDF: the export succeeds (glyphs are compressed; the exportHeading unit above
+        // pins the value the PDF draws).
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: items)
+        #expect(try Data(contentsOf: pdfURL).prefix(4) == Data([0x25, 0x50, 0x44, 0x46]))
+
+        // Unset override → byte-identical to the pre-M3 render (the citation heading).
+        let plain = CollectionExportDocument(
+            documentId: "d1", volumeId: "v1", sortOrder: 0,
+            title: "Vol I — d1", bodyText: "Body.", citation: "Boring Citation 511")
+        let plainHTML = CollectionItemHTMLRenderer()
+            .pageHTML(metadata: metadata, items: [.document(plain)])
+        #expect(plainHTML.contains("Boring Citation 511"))
+        #expect(!plainHTML.contains("Kennan Long Telegram"))
+
+        // M3 finding 2: the un-downloaded-volume *preview card* also honors the override —
+        // an author who sets a title and previews a not-yet-downloaded document sees the
+        // override in the card, matching the exported heading. With no override the card
+        // still shows the citation (byte-identical to the pre-finding-2 behavior).
+        var previewRenderer = CollectionItemHTMLRenderer()
+        previewRenderer.citationOnlyVolumeIds = ["v1"]
+        let cardHTML = previewRenderer.pageHTML(metadata: metadata, items: items)
+        #expect(cardHTML.contains("Kennan Long Telegram"))
+        #expect(!cardHTML.contains("Boring Citation 511"))
+        let plainCardHTML = previewRenderer.pageHTML(metadata: metadata, items: [.document(plain)])
+        #expect(plainCardHTML.contains("Boring Citation 511"))
+    }
+
+    @Test("M3 serialization: a non-empty titleOverride forces v2 and round-trips (export→import); an empty/absent override stays formatVersion 1 byte-identical to pre-M3; a v1 file with no key imports as nil (derived title)")
+    func m3SerializationRoundTrip() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let coll = Collection(name: "Titled")
+        ctx.insert(coll)
+        let d = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        d.collection = coll
+        ctx.insert(d)
+        try ctx.save()
+
+        func makeFile() -> FRUSCollectionFile {
+            NativeCollectionSerializer.makeFile(
+                from: coll, includeNotes: false, resolveNoteTexts: { _ in [] })
+        }
+
+        // Untouched: write-minimum v1, and the key is absent from the bytes.
+        #expect(makeFile().formatVersion == 1)
+        let v1Data = try NativeCollectionSerializer.encode(makeFile())
+        #expect(!String(decoding: v1Data, as: UTF8.self).contains("titleOverride"))
+
+        // An empty override is treated as unset — still v1, byte-identical to the above.
+        d.titleOverride = ""
+        #expect(makeFile().formatVersion == 1)
+        #expect(try NativeCollectionSerializer.encode(makeFile()) == v1Data)
+
+        // A non-empty override forces v2, floor stays 1, and the key carries the text.
+        d.titleOverride = "Kennan Long Telegram"
+        let file = makeFile()
+        #expect(file.formatVersion == 2)
+        #expect(file.minimumReaderVersion == 1)
+        #expect(file.entries.first?.titleOverride == "Kennan Long Telegram")
+
+        // encode → decode → apply reconstructs the override (it IS portable content).
+        let data = try NativeCollectionSerializer.encode(file)
+        let destCtx = ModelContext(try ModelContainer.makeTestContainer())
+        let imported = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(data), into: destCtx)
+        try destCtx.save()
+        let importedEntry = try #require((imported.documentEntries ?? []).first)
+        #expect(importedEntry.titleOverride == "Kennan Long Telegram")
+
+        // Forward/backward compat: a pre-M3 v1 file with no titleOverride key imports as
+        // nil → the derived title, never corrupts.
+        let v1JSON = Data(#"{"format":"fruscollection","formatVersion":1,"name":"Old","composition":{"defaultBodyDepth":"full","footnoteStyle":"all","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"document","documentId":"d1","volumeId":"v1"}]}"#.utf8)
+        let old = NativeCollectionSerializer.apply(
+            try NativeCollectionSerializer.decode(v1JSON), into: destCtx)
+        #expect((old.documentEntries ?? []).first?.titleOverride == nil)
+    }
 }
 
 // MARK: - Resolver test doubles

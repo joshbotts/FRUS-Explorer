@@ -375,6 +375,13 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          schema/format change; the ids are still never serialized into
 ///          `.fruscollection`. Resolution lives in `CollectionContentResolver` and the
 ///          native-export closure; both honor empty = all
+///   1.13 — Collections Manager M3 (D4): added `titleOverride` (document entries only) — a
+///          shared plain-text override driving **both** the ToC label and the export
+///          heading. Additive/optional (`nil` on every existing entry, unchanged output).
+///          Unlike the id-set overrides it **is** portable content, so it travels in
+///          `.fruscollection`; a non-empty value promotes the file to `formatVersion 2`
+///          while untouched entries stay byte-identical. No `minimumReaderVersion` bump —
+///          a v1 reader ignoring the key degrades to the derived title
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -399,6 +406,27 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     }
 
     var volumeId: String = "" {
+        didSet { lastModified = .now }
+    }
+
+    // MARK: - Title Override (Collections Manager M3)
+
+    /// Per-entry title override (decision D4) — plain text that replaces the *derived*
+    /// document title in **both** the collection table-of-contents label **and** the
+    /// top-of-document export heading. `nil`/empty (every existing entry) uses the derived
+    /// default (the source note header, else the citation, else `"{volumeTitle} — {documentId}"`),
+    /// so untouched entries render exactly as before.
+    ///
+    /// **Document entries only.** Section headings edit their own title inline via
+    /// `CollectionHeadingRow`; the heading inspector variant does not expose this field.
+    ///
+    /// One shared field (not separate ToC/heading overrides): the name is deliberately
+    /// generic so a future ToC-vs-heading split is a *purely additive* field, not a
+    /// migration. Unlike `selectedHighlightIds`/`selectedNoteIds` this **is** portable
+    /// content (plain text, no device-local UUIDs), so it **travels in `.fruscollection`
+    /// files** — a non-empty value makes an entry a v2 feature (the serializer emits
+    /// `formatVersion 2`); an entry without one keeps the file byte-identical to pre-M3.
+    var titleOverride: String? {
         didSet { lastModified = .now }
     }
 

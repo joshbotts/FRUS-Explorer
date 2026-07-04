@@ -513,8 +513,9 @@ final class DocxCollectionExporter: CollectionExporter {
     ) -> String {
         var body = ""
 
-        // Section heading always shows the citation; markdownItalicRuns handles _text_.
-        let heading = doc.citation.isEmpty ? doc.title : doc.citation
+        // Section heading: the per-entry `titleOverride` when set, else the citation (M3,
+        // centralized via `exportHeading`); markdownItalicRuns handles _text_.
+        let heading = doc.exportHeading
         body += markdownItalicRuns(heading, styleId: "Heading2", bold: true)
 
         if !doc.historyStateGovURL.isEmpty {

@@ -381,6 +381,11 @@ struct CollectionExportDocument: Sendable {
     let bodyDepth: CollectionBodyDepth
     /// Human-readable document title (volume title + document ID).
     let title: String
+    /// The user's per-entry title override (M3, D4). `nil`/empty uses the derived heading
+    /// (`exportHeading`). A non-empty value replaces **both** the ToC label (`tocLabel`,
+    /// for both styles) and the top-of-document export heading. Defaulted `nil` at every
+    /// construction site so untouched exports stay byte-identical.
+    let titleOverride: String?
     /// ISO 8601 date string, if known.
     let date: String?
     /// Plain-text body of the document. Preserved as fallback when `renderModel` is nil.
@@ -446,8 +451,20 @@ struct CollectionExportDocument: Sendable {
     /// Backward-compatible single-note accessor.
     var noteText: String? { noteTexts.first }
 
-    /// Returns the ToC label appropriate for the given display style.
+    /// The top-of-document export heading (M3, D4): the user's `titleOverride` when
+    /// non-empty, else the citation (or `title` when no citation). The single centralizer
+    /// so the three exporters (HTML/PDF/DOCX) stay in lockstep — each renders this instead
+    /// of re-deriving `citation.isEmpty ? title : citation`.
+    var exportHeading: String {
+        if let override = titleOverride, !override.isEmpty { return override }
+        return citation.isEmpty ? title : citation
+    }
+
+    /// Returns the ToC label appropriate for the given display style. A non-empty
+    /// `titleOverride` wins first for **both** styles (M3, D4), so the ToC label and the
+    /// export heading name the document identically.
     func tocLabel(style: CollectionToCStyle) -> String {
+        if let override = titleOverride, !override.isEmpty { return override }
         switch style {
         case .citation:
             return citation.isEmpty ? title : citation
@@ -464,6 +481,7 @@ struct CollectionExportDocument: Sendable {
         sortOrder: Int,
         bodyDepth: CollectionBodyDepth = .full,
         title: String,
+        titleOverride: String? = nil,
         date: String? = nil,
         bodyText: String,
         noteText: String? = nil,
@@ -490,6 +508,7 @@ struct CollectionExportDocument: Sendable {
         self.sortOrder = sortOrder
         self.bodyDepth = bodyDepth
         self.title = title
+        self.titleOverride = titleOverride
         self.date = date
         self.bodyText = bodyText
         if let noteTexts {
@@ -523,7 +542,8 @@ struct CollectionExportDocument: Sendable {
     func withSummary(_ text: String) -> CollectionExportDocument {
         CollectionExportDocument(
             documentId: documentId, volumeId: volumeId, sortOrder: sortOrder,
-            bodyDepth: bodyDepth, title: title, date: date, bodyText: bodyText,
+            bodyDepth: bodyDepth, title: title, titleOverride: titleOverride,
+            date: date, bodyText: bodyText,
             noteTexts: noteTexts, citation: citation, historyStateGovURL: historyStateGovURL,
             renderModel: renderModel, header: header, dateline: dateline,
             summaryText: text, highlights: highlights, sourceNoteText: sourceNoteText,
