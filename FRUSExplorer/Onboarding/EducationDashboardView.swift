@@ -28,12 +28,20 @@ import SwiftUI
 ///   1.0 — Analytics Prep-A: initial implementation; `.placeholder` only
 ///   1.1 — Analytics SA-1b: replaced `.placeholder` with the real
 ///          `.seriesProduction` case
+///   1.2 — Analytics SA-2: added `.seriesGeography` (administration profiles
+///          deferred)
 enum EducationDashboard: String, Hashable {
     /// The live "Production & Timeliness" dashboard (SA-1b): four Swift Charts
     /// derived from the bundled `manifest.json` — publication lag, volumes per
     /// print year, coverage spans, and cumulative growth — that render offline,
     /// with zero index, mid-onboarding. See `SeriesProductionDashboard`.
     case seriesProduction
+    /// The live "Geographic Emphasis" dashboard (SA-2): three Swift Charts
+    /// derived from the bundled `manifest.json` + `volume-tag-taxonomy.json` —
+    /// regional emphasis over time, overall regional emphasis, and the
+    /// most-covered countries — that render offline, with zero index,
+    /// mid-onboarding. See `SeriesGeographyDashboard`.
+    case seriesGeography
 }
 
 // MARK: - EducationDashboardView
@@ -52,6 +60,7 @@ enum EducationDashboard: String, Hashable {
 /// Version history:
 ///   1.0 — Analytics Prep-A: initial implementation; renders `.placeholder`
 ///   1.1 — Analytics SA-1b: renders `.seriesProduction`
+///   1.2 — Analytics SA-2: renders `.seriesGeography`
 struct EducationDashboardView: View {
 
     /// Which dashboard to render.
@@ -61,6 +70,8 @@ struct EducationDashboardView: View {
         switch dashboard {
         case .seriesProduction:
             SeriesProductionDashboard()
+        case .seriesGeography:
+            SeriesGeographyDashboard()
         }
     }
 }

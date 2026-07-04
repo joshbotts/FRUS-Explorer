@@ -1,0 +1,279 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import SwiftUI
+import Charts
+
+// MARK: - SeriesGeographyDashboard
+
+/// The live "Geographic Emphasis" dashboard rendered inside the Research Guide
+/// (Series Analytics SA-2).
+///
+/// It reads the bundled/known volume manifest through `AppState.manifestStore`,
+/// builds the place-tag → region map from `AppState.volumeLevelTagStore`, derives
+/// a pure `SeriesGeographyData`, and renders three Swift Charts telling the
+/// geographic story of the FRUS series: how regional emphasis shifted from an
+/// early Europe/Western-Hemisphere concentration toward postwar diversification
+/// into Asia, the Near East, and Africa; the overall regional emphasis of the
+/// corpus; and the individual countries the series covers most. Everything is
+/// derived from the bundled `manifest.json` and `volume-tag-taxonomy.json`, so it
+/// renders offline, with zero index, mid-onboarding.
+///
+/// `AppState` is read as an *optional* environment value (the defensive pattern
+/// Prep-A established and SA-1b followed): an absent environment degrades to a
+/// neutral empty state rather than trapping.
+///
+/// Version history:
+///   1.0 — Analytics SA-2: initial implementation
+struct SeriesGeographyDashboard: View {
+
+    /// Optional so a missing environment yields a neutral empty state instead
+    /// of a trap. Both live presentation paths (the onboarding sheet and the
+    /// standalone Research Guide) inject `AppState` at the scene root, so this
+    /// normally resolves; the optionality is purely defensive.
+    @Environment(AppState.self) private var appState: AppState?
+
+    /// The manifest entries to summarise: the diff's known set when a live
+    /// refresh has happened, else the always-available bundled set, else empty
+    /// (defensive — `AppState` absent).
+    private var entries: [VolumeManifestEntry] {
+        guard let store = appState?.manifestStore else { return [] }
+        return store.diffResult?.known ?? store.bundledEntries
+    }
+
+    /// The place-tag slug → region map, built from the bundled taxonomy via the
+    /// tag store: every `.places` tag's `subcategory` maps to a
+    /// `GeographicRegion`. Empty when `AppState` is absent.
+    private var placeRegions: [String: GeographicRegion] {
+        guard let store = appState?.volumeLevelTagStore else { return [:] }
+        var map: [String: GeographicRegion] = [:]
+        for tag in store.allTags(inCategory: .places) {
+            map[tag.slug] = GeographicRegion.from(subcategory: tag.subcategory)
+        }
+        return map
+    }
+
+    /// The pure derivation driving every chart.
+    private var data: SeriesGeographyData {
+        SeriesGeographyData(entries: entries, placeRegions: placeRegions)
+    }
+
+    /// Resolves a place-tag slug to its display name via the tag store, falling
+    /// back to the raw slug when the taxonomy can't resolve it.
+    private func displayName(forSlug slug: String) -> String {
+        appState?.volumeLevelTagStore.resolve(slug: slug)?.displayName ?? slug
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            if entries.isEmpty || placeRegions.isEmpty {
+                emptyState
+            } else {
+                intro
+                regionTrendChart
+                regionTotalsChart
+                topCountriesChart
+                caveats
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Intro
+
+    /// A short framing paragraph above the charts.
+    private var intro: some View {
+        Text(String(localized: "series.geography.intro",
+                    defaultValue: "Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which resolve to the State Department's six regional bureaus. These charts trace how the series' geographic emphasis shifted over time — from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa — and which regions and countries the corpus covers most."))
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // MARK: - Chart 1: Regional emphasis over time (stacked area)
+
+    /// Stacked area of each region's fractional share of the volumes covering a
+    /// decade, over coverage decades. The anchor chart.
+    private var regionTrendChart: some View {
+        let data = data
+        return chartCard(
+            title: String(localized: "series.geography.trend.title",
+                          defaultValue: "Regional emphasis over time"),
+            caption: String(localized: "series.geography.trend.caption",
+                            defaultValue: "Each decade's volumes divided among the regions they cover — a volume spanning several regions splits evenly among them, so every decade sums to 100%. Decades are set by each volume's coverage midpoint.")
+        ) {
+            Chart {
+                ForEach(data.regionShareByDecade) { point in
+                    AreaMark(
+                        x: .value(
+                            String(localized: "series.geography.trend.x", defaultValue: "Coverage decade"),
+                            point.decade
+                        ),
+                        y: .value(
+                            String(localized: "series.geography.trend.y", defaultValue: "Share"),
+                            point.share
+                        )
+                    )
+                    .foregroundStyle(by: .value(
+                        String(localized: "series.geography.region.legend", defaultValue: "Region"),
+                        point.region.displayName
+                    ))
+                    .accessibilityLabel(Text(String(
+                        localized: "series.geography.trend.a11y.label",
+                        defaultValue: "\(point.region.displayName), \(String(point.decade))s"
+                    )))
+                    .accessibilityValue(Text(point.share, format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))))
+                }
+            }
+            .chartForegroundStyleScale(domain: GeographicRegion.ordered.map(\.displayName))
+            .chartYScale(domain: 0...1)
+            .chartYAxis {
+                AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
+            }
+            .chartXAxisLabel(String(localized: "series.geography.trend.x", defaultValue: "Coverage decade"))
+            .chartYAxisLabel(String(localized: "series.geography.trend.y", defaultValue: "Share of volumes"))
+            .frame(height: 280)
+        }
+    }
+
+    // MARK: - Chart 2: Overall regional emphasis
+
+    /// Bars of the volume-overlap count for each region.
+    private var regionTotalsChart: some View {
+        let data = data
+        return chartCard(
+            title: String(localized: "series.geography.totals.title",
+                          defaultValue: "Overall regional emphasis"),
+            caption: String(localized: "series.geography.totals.caption",
+                            defaultValue: "How many volumes touch each region across the whole series. A volume that covers several regions counts once in each, so these totals overlap.")
+        ) {
+            Chart {
+                ForEach(data.regionTotals) { total in
+                    BarMark(
+                        x: .value(
+                            String(localized: "series.geography.totals.x", defaultValue: "Region"),
+                            total.region.displayName
+                        ),
+                        y: .value(
+                            String(localized: "series.geography.totals.y", defaultValue: "Volumes"),
+                            total.volumeCount
+                        )
+                    )
+                    .foregroundStyle(by: .value(
+                        String(localized: "series.geography.region.legend", defaultValue: "Region"),
+                        total.region.displayName
+                    ))
+                    .accessibilityLabel(Text(total.region.displayName))
+                    .accessibilityValue(Text(total.volumeCount, format: .number))
+                }
+            }
+            .chartForegroundStyleScale(domain: GeographicRegion.ordered.map(\.displayName))
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisValueLabel(orientation: .vertical)
+                    AxisTick()
+                }
+            }
+            .chartXAxisLabel(String(localized: "series.geography.totals.x", defaultValue: "Region"))
+            .chartYAxisLabel(String(localized: "series.geography.totals.y", defaultValue: "Volumes"))
+            .frame(height: 260)
+        }
+    }
+
+    // MARK: - Chart 3: Most-covered countries
+
+    /// Horizontal bars of the most-tagged place tags, resolved to display names.
+    private var topCountriesChart: some View {
+        let data = data
+        return chartCard(
+            title: String(localized: "series.geography.countries.title",
+                          defaultValue: "Most-covered countries"),
+            caption: String(localized: "series.geography.countries.caption",
+                            defaultValue: "The individual place tags carried by the most volumes — the concrete detail behind the regional picture.")
+        ) {
+            Chart {
+                ForEach(data.topCountries) { country in
+                    BarMark(
+                        x: .value(
+                            String(localized: "series.geography.countries.x", defaultValue: "Volumes"),
+                            country.volumeCount
+                        ),
+                        y: .value(
+                            String(localized: "series.geography.countries.y", defaultValue: "Country"),
+                            displayName(forSlug: country.slug)
+                        )
+                    )
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityLabel(Text(displayName(forSlug: country.slug)))
+                    .accessibilityValue(Text(country.volumeCount, format: .number))
+                }
+            }
+            .chartYAxis {
+                AxisMarks(preset: .aligned) {
+                    AxisValueLabel()
+                }
+            }
+            .chartXAxisLabel(String(localized: "series.geography.countries.x", defaultValue: "Volumes"))
+            .frame(height: CGFloat(max(data.topCountries.count, 1)) * 24 + 40)
+        }
+    }
+
+    // MARK: - Caveats
+
+    /// A footer stating the honest limits of the geographic metadata.
+    private var caveats: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "series.geography.caveats.title", defaultValue: "About these figures"))
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(String(localized: "series.geography.caveats.body",
+                        defaultValue: "Place tags are volume-level editorial tags: a volume \"touches\" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six regional bureaus, with dependencies and territories folded into \"Other.\" 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 4)
+    }
+
+    // MARK: - Empty state
+
+    /// Neutral state shown when no manifest entries or no place-region map are
+    /// available (e.g. `AppState` absent). Never a crash.
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(String(localized: "series.geography.empty.title", defaultValue: "No geographic data"))
+                .font(.headline)
+            Text(String(localized: "series.geography.empty.message",
+                        defaultValue: "The bundled volume manifest or place-tag taxonomy is unavailable in this context."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Chart card
+
+    /// A titled, captioned container for a single chart, keeping the three
+    /// sections visually consistent (mirrors the SA-1b dashboard card).
+    private func chartCard<Content: View>(
+        title: String,
+        caption: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+            Text(caption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            content()
+        }
+    }
+}
