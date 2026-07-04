@@ -74,6 +74,11 @@ import SwiftUI
 ///          observer) — previously a stale subdued 0 kept asserting "no documents
 ///          in your indexed volumes cite this collection" after the user indexed
 ///          more volumes mid-session.
+///   1.8 — Session 2026-07-04 (macOS UI audit B2): on macOS the cross-volume
+///          affordance opens the Cross-Volume Provenance WINDOW
+///          (`openWindow(value: CrossVolumeProvenanceRequest(…))`) instead of setting
+///          the hoisted sheet binding — mirroring the S6 neighbors conversion.
+///          `crossVolumeTarget` is now written on iOS only.
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
@@ -106,7 +111,9 @@ struct VolumeSourcesView: View {
     /// loop). The `.sheet(item:)` must anchor exactly once, on the parent's `List`.
     @Binding var sourceNeighborsTarget: VolumeSourceNeighborsTarget?
     /// When set by a row's button, the PARENT presents the cross-volume provenance sheet
-    /// (see `sourceNeighborsTarget` for why presentation is hoisted).
+    /// (see `sourceNeighborsTarget` for why presentation is hoisted). **iOS only** —
+    /// on macOS the row opens the B2 Cross-Volume Provenance window directly and this
+    /// binding is never written.
     @Binding var crossVolumeTarget: CrossVolumeTarget?
     /// When set by a row's button, the PARENT presents the Collection detail sheet for
     /// a bundled authority record (see `sourceNeighborsTarget` for why presentation is
@@ -321,8 +328,16 @@ struct VolumeSourcesView: View {
                                           defaultValue: "Opens the collection's cross-volume detail"))
             } else if let crossVolume, crossVolume.volumeIds.count > 1 {
                 Button {
+                    // B2: window on macOS (browsable beside the volumes it names);
+                    // hoisted parent sheet on iOS. `openWindow` is an action, so it
+                    // is safe inside this section-emitting view (unlike a sheet).
+                    #if os(macOS)
+                    openWindow(value: CrossVolumeProvenanceRequest(
+                        title: entry.rawText, volumeIds: crossVolume.volumeIds))
+                    #else
                     crossVolumeTarget = CrossVolumeTarget(
                         title: entry.rawText, volumeIds: crossVolume.volumeIds)
+                    #endif
                 } label: {
                     Label {
                         Text(String(localized: "browser.sources.crossVolume",
@@ -542,27 +557,78 @@ struct CrossVolumeTarget: Identifiable {
     let id = UUID()
 }
 
-// MARK: - VolumeSourcesCrossVolumeSheet
+// MARK: - CrossVolumeProvenanceRequest
 
-/// Lists the volumes whose front-matter Sources sections cite a given archival collection —
-/// the cross-volume provenance folded by the `VolumeSourcesIndexGenerator`. Read-only: it
-/// answers "which other FRUS volumes drew on this same collection?" for a researcher tracing
-/// a body of records across the series.
-struct VolumeSourcesCrossVolumeSheet: View {
+/// A **value-typed, restorable description** of one cross-volume provenance listing —
+/// the hand-off payload for the macOS Cross-Volume Provenance window scene
+/// (`WindowGroup(for: CrossVolumeProvenanceRequest.self)`, UI audit B2).
+///
+/// The payload is fully self-contained: the citing-volume ids come from the bundled
+/// `volume-sources-index.json` authority at the moment the row is tapped, and volume
+/// titles resolve at render time against the always-available bundled manifest — so a
+/// window restored at relaunch renders complete rows immediately, with **no**
+/// `indexingPipeline` dependency and therefore no boot race and no possible false
+/// empty state (the S6 "Preparing your index…" guard is not needed here by
+/// construction; `volumeIds` is non-empty at every call site).
+///
+/// The request is deliberately the **legacy** (title + volume ids) shape, not a
+/// Phase-4 authority-record key: rows that resolve to a bundled
+/// `AuthorityCollectionRecord` never present this surface at all — they upgrade to
+/// the full Collection detail (`CollectionDetailSheet` / the Source Explorer
+/// window), which already lists citing volumes. This window exists precisely for
+/// the headings the authority does not track.
+///
+/// Identity is the full payload: `openWindow(value:)` focuses an existing window
+/// whose request compares equal and opens a new one otherwise — one window per
+/// distinct collection heading, browsable side by side.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit B2): initial implementation
+struct CrossVolumeProvenanceRequest: Codable, Hashable, Sendable {
+    /// The collection's front-matter display text, shown as context.
+    let title: String
+    /// The citing volumes, sorted (as stored in the bundled authority).
+    let volumeIds: [String]
+}
 
-    /// The collection's display text, shown as context.
+// MARK: - CrossVolumeProvenanceContent
+
+/// The shared **core** of both cross-volume provenance presentations: the citing-volume
+/// list with navigable rows. Chrome stays with the callers — `VolumeSourcesCrossVolumeSheet`
+/// wraps it in a `NavigationStack` with a Done button (iOS sheets), and the macOS
+/// `CrossVolumeProvenanceWindowView` shows it bare under a window title/subtitle.
+///
+/// Row taps post the volume to `AppState.pendingBrowseVolume` (consumed by the
+/// Corpus Browser window on macOS and the Browse tab on iOS — UI audit gap 12: the
+/// rows used to be dead ends) and then invoke `onNavigate`: the sheet passes
+/// `dismiss`, the window passes nothing so the list stays open beside the browser.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit B2/gap 12): extracted from
+///          `VolumeSourcesCrossVolumeSheet`; rows became navigable
+struct CrossVolumeProvenanceContent: View {
+
+    /// The collection's display text, shown as the list footer.
     let collectionTitle: String
     /// The citing volumes, sorted (as stored in the authority).
     let volumeIds: [String]
+    /// Invoked after a row tap posts its navigation hand-off. The iOS sheet dismisses
+    /// here; the macOS window intentionally stays open (browsable alongside the browser).
+    var onNavigate: (() -> Void)? = nil
 
     @Environment(AppState.self) private var appState
-    @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    /// Opens the Corpus Browser window for a tapped volume row.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    ForEach(volumeIds, id: \.self) { volumeId in
+        List {
+            Section {
+                ForEach(volumeIds, id: \.self) { volumeId in
+                    Button {
+                        open(volumeId)
+                    } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
                                 .font(.callout)
@@ -571,16 +637,68 @@ struct VolumeSourcesCrossVolumeSheet: View {
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
-                } header: {
-                    Text(String(localized: "browser.sources.crossVolume.sheet.header",
-                                defaultValue: "Volumes Citing This Collection"))
-                } footer: {
-                    Text(collectionTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    .buttonStyle(.plain)
+                    .accessibilityHint(String(localized: "browser.sources.crossVolume.row.hint",
+                                              defaultValue: "Opens this volume in the browser"))
                 }
+            } header: {
+                Text(String(localized: "browser.sources.crossVolume.sheet.header",
+                            defaultValue: "Volumes Citing This Collection"))
+            } footer: {
+                Text(collectionTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    /// Navigates to the tapped volume (Browse tab on iOS; the Corpus Browser window on
+    /// macOS, via the `pendingBrowseVolume` hand-off both consume).
+    private func open(_ volumeId: String) {
+        appState.pendingBrowseVolume = volumeId
+        #if os(macOS)
+        openWindow(id: "frus.corpusBrowser")
+        bringMacWindowToFront(id: "frus.corpusBrowser")
+        #else
+        appState.activeTab = .browse
+        #endif
+        onNavigate?()
+    }
+}
+
+// MARK: - VolumeSourcesCrossVolumeSheet
+
+/// Lists the volumes whose front-matter Sources sections cite a given archival collection —
+/// the cross-volume provenance folded by the `VolumeSourcesIndexGenerator`. It answers
+/// "which other FRUS volumes drew on this same collection?" for a researcher tracing
+/// a body of records across the series; each row opens its volume in the browser.
+///
+/// Version history:
+///   1.0 — Session 2026-07-03 (Source Explorer Phase 3/4 work): read-only volume list
+///   1.1 — Session 2026-07-04 (macOS UI audit B2/gap 12): list core extracted into the
+///          shared `CrossVolumeProvenanceContent` and rows became navigable
+///          (dismiss-and-navigate, like the Archival Neighbors sheet). On macOS every
+///          surface now opens the `CrossVolumeProvenanceRequest` window instead of
+///          this sheet, so the sheet is presented by the iOS surfaces only.
+struct VolumeSourcesCrossVolumeSheet: View {
+
+    /// The collection's display text, shown as context.
+    let collectionTitle: String
+    /// The citing volumes, sorted (as stored in the authority).
+    let volumeIds: [String]
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            CrossVolumeProvenanceContent(
+                collectionTitle: collectionTitle,
+                volumeIds: volumeIds,
+                onNavigate: { dismiss() }
+            )
             .navigationTitle(String(localized: "browser.sources.crossVolume.sheet.title",
                                     defaultValue: "Cross-Volume Provenance"))
             #if os(iOS)
@@ -597,3 +715,39 @@ struct VolumeSourcesCrossVolumeSheet: View {
         #endif
     }
 }
+
+#if os(macOS)
+
+// MARK: - CrossVolumeProvenanceWindowView
+
+/// Content for the macOS **Cross-Volume Provenance window** (UI audit B2): the shared
+/// `CrossVolumeProvenanceContent` under window chrome — the title names the surface,
+/// the subtitle names the collection.
+///
+/// A window, not a sheet, because the list is read *alongside* the volumes it names:
+/// a researcher tracing a body of records across the series steps through the citing
+/// volumes one by one, and a sheet died on its Done button with no way to keep the
+/// list in view. Here a row tap hands the volume to the Corpus Browser window
+/// (`pendingBrowseVolume`) and this window **stays open** beside it.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit B2): initial implementation
+struct CrossVolumeProvenanceWindowView: View {
+
+    /// The restorable listing description this window presents.
+    let request: CrossVolumeProvenanceRequest
+
+    var body: some View {
+        CrossVolumeProvenanceContent(
+            collectionTitle: request.title,
+            volumeIds: request.volumeIds,
+            onNavigate: nil   // the window stays open — that is the point of B2
+        )
+        .navigationTitle(String(localized: "browser.sources.crossVolume.sheet.title",
+                                defaultValue: "Cross-Volume Provenance"))
+        .navigationSubtitle(request.title)
+        .frame(minWidth: 400, minHeight: 420)
+    }
+}
+
+#endif // os(macOS)

@@ -47,6 +47,7 @@ import os
 /// |---------------------------------|---------------|--------------------------------------------------|
 /// | (default `WindowGroup`)         | WindowGroup   | Main document window (onboarding → main UI)      |
 /// | `"frus.search"`                 | Window        | Full-text search — persists while reading docs   |
+/// | `"frus.citationLookup"`         | Window        | Citation lookup (⌘⇧F) — the other find flow      |
 /// | `"frus.corpusBrowser"`          | Window        | Corpus browser — independent browsable window    |
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
@@ -55,6 +56,7 @@ import os
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
+/// | (`CrossVolumeProvenanceRequest`)| WindowGroup   | Cross-volume provenance — value-based, per collection (B2)|
 ///
 /// Version history:
 ///   1.0 — Session 01: initial implementation
@@ -107,6 +109,11 @@ import os
 ///          window scene added — value-based WindowGroup(for: ArchivalNeighborsRequest.self)
 ///          replacing every macOS `.sheet` presentation of ArchivalNeighborsSheet
 ///          (window-per-distinct-request, Codable restoration; see the scene comment)
+///   4.2 — Session 2026-07-04 (macOS UI audit B2/B4): Cross-Volume Provenance window
+///          scene added (value-based WindowGroup(for: CrossVolumeProvenanceRequest.self),
+///          same pattern as S6); Citation Lookup became the frus.citationLookup Window
+///          scene owning ⌘⇧F (mirroring frus.search's ⌘F) — the CommandGroup item that
+///          set the removed appState.showCitationLookup flag is gone
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -517,6 +524,24 @@ struct FRUSExplorerApp: App {
         .defaultSize(width: 820, height: 680)
         .keyboardShortcut("f", modifiers: .command)
 
+        // MARK: - Citation Lookup Window (UI audit B4)
+        //
+        // The other "find a document" flow. Its sibling, full-text Search (⌘F), is a
+        // window — Citation Lookup was a modal sheet on the same mental model (the
+        // audit's gap 7). The scene owns ⌘⇧F exactly as frus.search owns ⌘F, which
+        // also lists it in the Window menu; the old CommandGroup item (which set the
+        // now-removed appState.showCitationLookup flag) is gone. Parsed matches stay
+        // around while the researcher reads documents; result taps push the document
+        // inside this window's own NavigationStack (as they did inside the sheet).
+        Window(String(localized: "citationLookup.window.title", defaultValue: "Citation Lookup"),
+               id: "frus.citationLookup") {
+            CitationLookupWindowView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 620, height: 560)
+        .keyboardShortcut("f", modifiers: [.command, .shift])
+
         // MARK: - Corpus Browser Window
         Window("Corpus Browser", id: "frus.corpusBrowser") {
             CorpusBrowserWindowView()
@@ -575,6 +600,37 @@ struct FRUSExplorerApp: App {
             .modelContainer(modelContainer)
         }
         .defaultSize(width: 520, height: 560)
+
+        // MARK: - Cross-Volume Provenance Window (UI audit B2)
+        //
+        // Same pattern as the S6 Archival Neighbors scene above: the Codable+Hashable
+        // `CrossVolumeProvenanceRequest` fully describes the listing (collection title
+        // + citing-volume ids, both captured from the bundled authority at tap time),
+        // so the window renders from the value alone — no pending-state hand-off, no
+        // indexingPipeline dependency, and restoration across relaunches cannot race
+        // app boot (volume titles resolve against the always-available bundled
+        // manifest). Row taps hand the volume to the Corpus Browser window via
+        // `pendingBrowseVolume`; this window stays open. iOS keeps its `.sheet`.
+        WindowGroup(for: CrossVolumeProvenanceRequest.self) { $request in
+            Group {
+                if let request {
+                    CrossVolumeProvenanceWindowView(request: request)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "browser.sources.crossVolume.window.empty.title",
+                               defaultValue: "No Collection"),
+                        systemImage: "books.vertical",
+                        description: Text(
+                            String(localized: "browser.sources.crossVolume.window.empty.detail",
+                                   defaultValue: "Open Cross-Volume Provenance from a collection in a volume's Sources list.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 440, height: 520)
 
         // MARK: - Analytics Window
         Window("Corpus Analytics", id: "frus.analytics") {
@@ -754,15 +810,9 @@ struct FRUSExplorerApp: App {
             // only via the right-click Font submenu (ui-audit #2).
             TextFormattingCommands()
 
-            // Citation Lookup keyboard shortcut (⌘⇧F).
-            // Search (⌘F) is handled by the "frus.search" Window scene shortcut.
-            CommandGroup(after: .textEditing) {
-                Button(String(localized: "menu.citationLookup",
-                              defaultValue: "Find by Citation\u{2026}")) {
-                    appState.showCitationLookup = true
-                }
-                .keyboardShortcut("f", modifiers: [.command, .shift])
-            }
+            // Citation Lookup (⌘⇧F) is handled by the "frus.citationLookup" Window
+            // scene shortcut, exactly as Search (⌘F) is handled by "frus.search" —
+            // both find flows are windows with scene-owned shortcuts (UI audit B4).
 
             // "History" menu — last ten documents visited and searches executed,
             // plus a "Complete History…" item opening the combined, project-

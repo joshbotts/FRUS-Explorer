@@ -2787,6 +2787,9 @@ enum CorpusNavValue: Hashable {
 ///   1.2 — Session 87: People toolbar button opens `PersonIndexView` sheet
 ///   1.3 — Session 170: volume/section drill-down became a resizable detail-column
 ///          `NavigationStack` (`CorpusNavValue`) instead of nested fixed-size sheets
+///   1.4 — Session 2026-07-04 (macOS UI audit gap 12): consumes the
+///          `AppState.pendingBrowseVolume` hand-off (Cross-Volume Provenance rows) —
+///          selects the volume's subseries and pushes the volume onto the detail path
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -2799,6 +2802,12 @@ struct CorpusBrowserWindowView: View {
     /// Drill-down path for the detail column: volume → section → deeper section. Owned by
     /// the window so it survives detail re-renders and is shared by every pushed level.
     @State private var detailPath: [CorpusNavValue] = []
+    /// A volume push deferred until the subseries selection change lands (see
+    /// `consumePendingVolume`): the `.onChange(of: selectedSubseries)` observer resets
+    /// `detailPath` after every selection change, so pushing the volume synchronously
+    /// alongside the selection would be wiped by that reset. The observer applies this
+    /// push instead of the reset when it is set.
+    @State private var pendingVolumePush: String? = nil
 
     private var allEntries: [VolumeManifestEntry] {
         appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -2883,8 +2892,26 @@ struct CorpusBrowserWindowView: View {
                 }
             }
         }
-        // Switching subseries returns to the volume-list root (avoids a stale pushed volume).
-        .onChange(of: selectedSubseries) { _, _ in detailPath = [] }
+        // Switching subseries returns to the volume-list root (avoids a stale pushed
+        // volume) — unless the change was made by `consumePendingVolume`, whose
+        // deferred volume push is applied here instead of the reset.
+        .onChange(of: selectedSubseries) { _, _ in
+            if let volumeId = pendingVolumePush {
+                detailPath = [.volume(volumeId: volumeId)]
+                pendingVolumePush = nil
+            } else {
+                detailPath = []
+            }
+        }
+        // Consume a volume hand-off (Cross-Volume Provenance rows, UI audit gap 12):
+        // `.task` covers a window freshly created by the hand-off (`.onChange` misses
+        // a value that was already set), `.onChange` covers one already open —
+        // mirroring MacSearchWindowView's pendingSearch pattern.
+        .task { consumePendingVolume() }
+        .onChange(of: appState.pendingBrowseVolume) { _, volumeId in
+            guard volumeId != nil else { return }
+            consumePendingVolume()
+        }
         .frame(minWidth: 540, minHeight: 440)
         .sheet(isPresented: $showPeopleSheet) {
             VStack(spacing: 0) {
@@ -2902,6 +2929,25 @@ struct CorpusBrowserWindowView: View {
             }
             .frame(minWidth: 480, minHeight: 520)
         }
+    }
+
+    /// Applies (and clears) `AppState.pendingBrowseVolume`: selects the volume's
+    /// subseries in the sidebar and pushes the volume onto the detail path. When the
+    /// subseries selection has to change, the push is deferred through
+    /// `pendingVolumePush` so the selection observer's path reset doesn't wipe it.
+    private func consumePendingVolume() {
+        guard let volumeId = appState.pendingBrowseVolume,
+              let entry = allEntries.first(where: { $0.volumeId == volumeId }) else { return }
+        appState.pendingBrowseVolume = nil
+        if selectedSubseries == entry.subseries {
+            detailPath = [.volume(volumeId: volumeId)]
+        } else {
+            pendingVolumePush = volumeId
+            selectedSubseries = entry.subseries
+        }
+        #if DEBUG
+        print("[CorpusBrowserWindowView] pendingBrowseVolume consumed: \(volumeId)")
+        #endif
     }
 
     private func subseriesRow(_ sub: String) -> some View {
@@ -3679,6 +3725,10 @@ private struct DiscoveredMetadataRow: View {
 ///          sheet for volume-source rows removed — `VolumeSourcesView` opens the
 ///          value-based Archival Neighbors window directly on macOS, so the hoisted
 ///          binding is never set here anymore
+///   1.5 — Session 2026-07-04 (macOS UI audit B2): the Cross-Volume Provenance sheet
+///          removed the same way — `VolumeSourcesView` opens the value-based
+///          Cross-Volume Provenance window directly on macOS, so `crossVolumeTarget`
+///          is never set here anymore either
 private struct CorpusSectionDocumentView: View {
     let volumeId: String
     let section: VolumeSection
@@ -3692,9 +3742,10 @@ private struct CorpusSectionDocumentView: View {
     @State private var isLoading = true
     /// Hoisted presentation targets for the section-emitting front-matter subviews —
     /// the sheets anchor on this view's Lists, exactly once (see the body comments).
-    /// `sourceNeighborsTarget` is required by `VolumeSourcesView`'s shared init but is
-    /// never written on macOS (S6): the row action opens the Archival Neighbors
-    /// window directly, so no sheet anchors for it here.
+    /// `sourceNeighborsTarget` and `crossVolumeTarget` are required by
+    /// `VolumeSourcesView`'s shared init but are never written on macOS (S6/B2): the
+    /// row actions open the Archival Neighbors / Cross-Volume Provenance windows
+    /// directly, so no sheets anchor for them here.
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
     @State private var crossVolumeTarget: CrossVolumeTarget? = nil
     /// Hoisted Collection-detail target (Phase 4) — presented on this view's List.
@@ -3761,10 +3812,11 @@ private struct CorpusSectionDocumentView: View {
                     }
             } else if isSourcesSection {
                 // VolumeSourcesView emits Section content and must live inside a List.
-                // The remaining sheets anchor HERE on the List (see above). No sheet
-                // for `sourceNeighborsTarget`: on macOS the neighbors affordance opens
-                // the S6 Archival Neighbors window from the row action, so the binding
-                // is never set (it exists only for the shared iOS init).
+                // The remaining sheet anchors HERE on the List (see above). No sheets
+                // for `sourceNeighborsTarget` / `crossVolumeTarget`: on macOS those
+                // row affordances open the S6 Archival Neighbors / B2 Cross-Volume
+                // Provenance windows directly, so the bindings are never set (they
+                // exist only for the shared iOS init).
                 List {
                     VolumeSourcesView(volumeId: volumeId,
                                       sourceNeighborsTarget: $sourceNeighborsTarget,
@@ -3772,10 +3824,6 @@ private struct CorpusSectionDocumentView: View {
                                       collectionDetailTarget: $collectionDetailTarget)
                 }
                 .listStyle(.inset)
-                .sheet(item: $crossVolumeTarget) { target in
-                    VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
-                        .environment(appState)
-                }
                 .sheet(item: $collectionDetailTarget) { record in
                     CollectionDetailSheet(record: record)
                         .environment(appState)
@@ -3902,13 +3950,42 @@ private struct CorpusSectionDocumentView: View {
     }
 }
 
+/// Content for the macOS **Source Explorer window** (`frus.sourceExplorer`) — the
+/// app's home for NARA integration, in three segments:
+/// - **Source Note**: the current document's parsed source note
+///   (`MacSourceExplorerView`), targeted by the `appState.currentSourceNote*`
+///   pending-state hand-off.
+/// - **Collections**: the corpus-wide browse-by-collection authority list
+///   (Source Explorer Phase 4).
+/// - **NARA Lookup**: the live catalog query form (`NARACatalogLookupView`),
+///   targeted by the `appState.pendingNARALookup` hand-off — a window segment, not
+///   a modal, so the researcher can read the document text they are checking the
+///   citation against while querying (UI audit B3).
+///
+/// Version history:
+///   1.0 — New UI scaffolding: source-note window content
+///   1.1 — Session 2026-07-04 (Source Explorer Phase 4): Collections segment added
+///   1.2 — Session 2026-07-04 (macOS UI audit B3): NARA Lookup segment added,
+///          replacing the modal `NARACatalogLookupView` sheets in `MainWindowView`
+///          and `MacDocumentWindowView`; consumes `pendingNARALookup` (`.task` +
+///          `.onChange`, mirroring MacSearchWindowView's pendingSearch) and re-keys
+///          the lookup view's identity per hand-off so `@State(initialValue:)`
+///          repopulates the query field (the NARACatalogLookupItem rationale)
 struct SourceExplorerWindowView: View {
     @Environment(AppState.self) private var appState
 
-    /// The window's two views: the parsed document note, or the corpus-wide
-    /// browse-by-collection list (Source Explorer Phase 4).
-    private enum Mode: Hashable { case note, collections }
+    /// The window's three views: the parsed document note, the corpus-wide
+    /// browse-by-collection list (Source Explorer Phase 4), or the live NARA
+    /// Catalog lookup form (UI audit B3).
+    private enum Mode: Hashable { case note, collections, naraLookup }
     @State private var mode: Mode = .note
+
+    /// The current NARA Lookup hand-off, wrapped for view identity: a fresh `UUID`
+    /// per hand-off makes SwiftUI create a brand-new `NARACatalogLookupView`, so
+    /// `@State(initialValue:)` is honoured and the query field shows the newly
+    /// selected text (see `NARACatalogLookupItem`). `nil` when the user switched to
+    /// the segment manually — the form opens empty.
+    @State private var naraLookupItem: NARACatalogLookupItem? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -3918,10 +3995,12 @@ struct SourceExplorerWindowView: View {
                             defaultValue: "Source Note")).tag(Mode.note)
                 Text(String(localized: "source.explorer.window.mode.collections",
                             defaultValue: "Collections")).tag(Mode.collections)
+                Text(String(localized: "source.explorer.window.mode.naraLookup",
+                            defaultValue: "NARA Lookup")).tag(Mode.naraLookup)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: 320)
+            .frame(maxWidth: 400)
             .padding(.vertical, 8)
             Divider()
             switch mode {
@@ -3933,8 +4012,30 @@ struct SourceExplorerWindowView: View {
                 NavigationStack {
                     CollectionBrowserView()
                 }
+            case .naraLookup:
+                // Live catalog query form. `.id` re-keys the view per hand-off so a
+                // new selection replaces a stale query field (fresh @State identity).
+                NARACatalogLookupView(initialText: naraLookupItem?.text ?? "")
+                    .id(naraLookupItem?.id)
             }
         }
+        // Consume a NARA Lookup hand-off: `.task` covers a window freshly created by
+        // the hand-off (`.onChange` misses a value that was already set), `.onChange`
+        // covers one already open — mirroring MacSearchWindowView's pendingSearch.
+        .task { consumePendingNARALookup() }
+        .onChange(of: appState.pendingNARALookup) { _, text in
+            guard text != nil else { return }
+            consumePendingNARALookup()
+        }
+    }
+
+    /// Applies (and clears) `AppState.pendingNARALookup`: switches to the NARA Lookup
+    /// segment with a fresh lookup-view identity carrying the handed-off query text.
+    private func consumePendingNARALookup() {
+        guard let text = appState.pendingNARALookup else { return }
+        appState.pendingNARALookup = nil
+        naraLookupItem = NARACatalogLookupItem(text: text)
+        mode = .naraLookup
     }
 
     /// The pre-Phase-4 window content: the current document's parsed source note.

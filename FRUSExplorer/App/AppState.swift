@@ -102,6 +102,12 @@ import CloudKit
 ///          `citationMatchingEngine.noteVolumeDownloaded(_:)` on each volume's
 ///          `.complete` event so citation resolution sees newly downloaded volumes
 ///          without an app relaunch
+///   4.3 — Session 2026-07-04 (macOS UI audit B2/B3/B4): pendingBrowseVolume
+///          (cross-volume provenance rows → browser hand-off) and pendingNARALookup
+///          (selected text → Source Explorer window's NARA Lookup mode) added;
+///          showCitationLookup removed — Citation Lookup is a Window scene on macOS
+///          (`frus.citationLookup`) and local sheet state on iOS, so the cross-view
+///          flag had no remaining reader
 
 // MARK: - CloudKitSyncState
 
@@ -520,6 +526,18 @@ final class AppState {
     /// and appends the entry to its path, then this property is cleared.
     var pendingBrowseDocument: DocumentBrowserEntry? = nil
 
+    /// Cross-view hand-off for opening a **volume** in the browser (the volume-grain
+    /// sibling of `pendingBrowseDocument`), set by the Cross-Volume Provenance rows
+    /// (UI audit gap 12 — they used to be dead ends).
+    ///
+    /// Set immediately before `openWindow(id: "frus.corpusBrowser")` on macOS —
+    /// `CorpusBrowserWindowView` consumes it (`.task` for a freshly created window,
+    /// `.onChange` for one already open), selects the volume's subseries, pushes the
+    /// volume onto its detail path, and clears it. On iOS `BrowserView` consumes it
+    /// via `.onChange` and appends the volume to the Browse tab's path — mirroring
+    /// the `pendingBrowseDocument` pattern.
+    var pendingBrowseVolume: String? = nil
+
     /// The document currently targeted by the Cross-Reference Graph window.
     ///
     /// Set by `MainWindowView` immediately before `openWindow(id: "frus.crossReferenceGraph")`
@@ -544,6 +562,20 @@ final class AppState {
     var currentSourceNoteVolumeId: String? = nil
     var currentSourceNoteDocumentId: String? = nil
 
+    /// Cross-window hand-off into the Source Explorer window's **NARA Lookup** mode
+    /// (UI audit B3): the selected document text a caller wants pre-filled as the
+    /// catalog query.
+    ///
+    /// Set by the ResearchStripView `onNARALookup` closures (`MainWindowView`,
+    /// `MacDocumentWindowView`) immediately before
+    /// `openWindow(id: "frus.sourceExplorer")`. `SourceExplorerWindowView` consumes
+    /// it (`.task` for a freshly created window, `.onChange` for one already open),
+    /// switches to the NARA Lookup segment with a fresh view identity so the query
+    /// field shows the new text, and clears it — mirroring the `pendingSearch` /
+    /// `pendingCollectionSelection` pattern. macOS-only in practice; iOS presents
+    /// `NARACatalogLookupView` as a local sheet.
+    var pendingNARALookup: String? = nil
+
     /// `EducationPage.id` to open the Research Guide to directly, or `nil` to
     /// open at the first page.
     ///
@@ -566,10 +598,9 @@ final class AppState {
     /// is empty, because its `searchTrigger` never changes and no re-query fires.
     var indexGeneration: Int = 0
 
-    /// Controls presentation of the Citation Lookup sheet.
-    ///
-    /// Promoted from `BrowserView` local `@State` to `AppState`. Session 43.
-    var showCitationLookup: Bool = false
+    // `showCitationLookup` removed in 4.3 — Citation Lookup is a Window scene on
+    // macOS (`frus.citationLookup`, UI audit B4) and a local-state sheet on iOS
+    // (`SearchView`), so no cross-view flag remains.
 
     /// The most recent per-document indexing progress update, or `nil` when no
     /// indexing is in progress.

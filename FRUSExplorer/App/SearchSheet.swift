@@ -83,6 +83,9 @@ import SwiftUI
 ///          window (`openWindow(value: ArchivalNeighborsRequest.document…)`) instead
 ///          of a sheet, so the neighbors list survives row navigation; the
 ///          `archivalNeighborsTarget` state and its `.sheet` were removed
+///   1.12 — Session 2026-07-04 (macOS UI audit B4): "Find by Citation" opens the
+///          frus.citationLookup window (⌘⇧F, the sibling find flow) instead of a
+///          sheet; the `showCitationLookup` state and its `.sheet` were removed
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -92,7 +95,6 @@ struct MacSearchWindowView: View {
     @State private var searchVM = MacSearchViewModel()
     @State private var showAdvancedFilters = false
     @State private var showTimeline = false
-    @State private var showCitationLookup = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var saveSearchName = ""
@@ -182,9 +184,6 @@ struct MacSearchWindowView: View {
                 SearchFilterView(vm: filterVM)
             }
         }
-        .sheet(isPresented: $showCitationLookup) {
-            CitationLookupView()
-        }
         .sheet(isPresented: $showSaveSearchSheet) {
             saveSearchSheet
                 .modelContainer(modelContext.container)
@@ -250,7 +249,10 @@ struct MacSearchWindowView: View {
             ))
 
             Button {
-                showCitationLookup = true
+                // B4: Citation Lookup is its own window (⌘⇧F) — the sibling find
+                // flow to this Search window (⌘F).
+                openWindow(id: "frus.citationLookup")
+                bringMacWindowToFront(id: "frus.citationLookup")
             } label: {
                 Label(
                     String(localized: "search.citationLookup.button",

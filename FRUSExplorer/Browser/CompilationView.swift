@@ -59,6 +59,10 @@ import SwiftUI
 ///          `openWindow(value: ArchivalNeighborsRequest…)` and both neighbors sheets
 ///          (doc-keyed + hoisted volume-source) are now `#if os(iOS)`; the other
 ///          hoisted sheets (cross-volume, collection detail, person) are unchanged
+///   1.9 — Session 2026-07-04 (macOS UI audit B2): the hoisted Cross-Volume
+///          Provenance sheet joined the `#if os(iOS)` block — on macOS
+///          `VolumeSourcesView` opens the value-based Cross-Volume Provenance
+///          window directly, so `crossVolumeTarget` is never set there
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -176,11 +180,14 @@ struct CompilationView: View {
             }
             .environment(appState)
         }
-        #endif
+        // Cross-Volume Provenance is iOS-only here too (B2): on macOS the row action
+        // opens the value-based Cross-Volume Provenance window instead, so the
+        // binding is never set there.
         .sheet(item: $crossVolumeTarget) { target in
             VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
                 .environment(appState)
         }
+        #endif
         .sheet(item: $collectionDetailTarget) { record in
             CollectionDetailSheet(record: record)
                 .environment(appState)

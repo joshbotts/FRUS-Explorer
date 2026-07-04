@@ -158,14 +158,20 @@ struct NavigationStateTests {
         #expect(state.pendingBrowseDocument == nil)
     }
 
-    // showSearch was removed from AppState (Session 2026-06-07) — it was only ever
-    // set from a dead `#if os(macOS)` branch in BrowserView (unreachable since the
-    // file became iOS-only in Session 60) and never read or set to `true` anywhere.
+    // showSearch (Session 2026-06-07) and showCitationLookup (Session 2026-07-04,
+    // UI audit B4 — Citation Lookup is a macOS Window scene / iOS-local sheet
+    // state) were both removed from AppState.
 
-    @Test("AppState.showCitationLookup initialises to false")
-    func showCitationLookupInitiallyFalse() {
+    @Test("AppState.pendingBrowseVolume initialises to nil")
+    func pendingBrowseVolumeInitiallyNil() {
         let state = AppState()
-        #expect(state.showCitationLookup == false)
+        #expect(state.pendingBrowseVolume == nil)
+    }
+
+    @Test("AppState.pendingNARALookup initialises to nil")
+    func pendingNARALookupInitiallyNil() {
+        let state = AppState()
+        #expect(state.pendingNARALookup == nil)
     }
 }
 

@@ -991,20 +991,22 @@ private struct TrailingIconLabelStyle: LabelStyle {
 /// Version history:
 ///   1.0 — Session 159: initial implementation (iPad/Mac parity Phase 2 —
 ///          macOS native window tabbing)
+///   1.1 — Session 2026-07-04 (macOS UI audit B3): the NARA Catalog Lookup sheet
+///          replaced by the Source Explorer window's NARA Lookup segment
+///          (`pendingNARALookup` hand-off, mirroring `MainWindowView`)
 struct MacDocumentWindowView: View {
 
     /// The document this window opened for.
     let windowID: DocumentWindowID
 
     @Environment(AppState.self) private var appState
+    @Environment(\.openWindow) private var openWindow
 
     /// This window's own navigation stack — cross-reference taps push within the
     /// window rather than affecting the main window or other document windows.
     @State private var navigationPath: [DocumentBrowserEntry] = []
     /// This window's own highlight state (text selection, pending highlight link).
     @State private var highlightCoordinator = HighlightCoordinator()
-    /// NARA Catalog Lookup sheet item (see `MainWindowView` for the `.sheet(item:)` rationale).
-    @State private var naraLookupItem: NARACatalogLookupItem? = nil
 
     /// The document the window opened for, as a `DocumentBrowserEntry`.
     private var rootEntry: DocumentBrowserEntry {
@@ -1026,12 +1028,13 @@ struct MacDocumentWindowView: View {
                 entry: currentEntry,
                 highlightCoordinator: highlightCoordinator,
                 onNARALookup: { text in
-                    naraLookupItem = NARACatalogLookupItem(text: text)
+                    // B3: hand the selection to the Source Explorer window's NARA
+                    // Lookup segment (see `MainWindowView`).
+                    appState.pendingNARALookup = text
+                    openWindow(id: "frus.sourceExplorer")
+                    bringMacWindowToFront(id: "frus.sourceExplorer")
                 }
             )
-            .sheet(item: $naraLookupItem) { item in
-                NARACatalogLookupView(initialText: item.text)
-            }
 
             NavigationStack(path: $navigationPath) {
                 MacDocumentView(

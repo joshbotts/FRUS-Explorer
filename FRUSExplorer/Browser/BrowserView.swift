@@ -59,6 +59,11 @@ import SwiftUI
 ///          fully unused — removed from `AppState` in 2.2
 ///   2.2 — Session 2026-06-07: removed orphaned `appState.showSearch` (see 2.1);
 ///          `showCitationLookup` remains in AppState for the Citation Lookup sheet
+///          (removed from AppState in 2.3 — iOS Citation Lookup is SearchView-local
+///          sheet state; macOS is the frus.citationLookup Window scene)
+///   2.3 — Session 2026-07-04 (macOS UI audit gap 12): pendingBrowseVolume observer —
+///          Cross-Volume Provenance rows dismiss-and-navigate to the cited volume
+///          (the volume-grain sibling of the pendingBrowseDocument observer)
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -99,6 +104,19 @@ struct BrowserView: View {
             appState.pendingBrowseDocument = nil
             #if DEBUG
             print("[BrowserView] pendingBrowseDocument consumed: \(entry.volumeId)/\(entry.documentId)")
+            #endif
+        }
+        // Volume-grain sibling of the observer above (UI audit gap 12): Cross-Volume
+        // Provenance rows hand off a volume id; push its browser level and clear.
+        .onChange(of: appState.pendingBrowseVolume) { _, volumeId in
+            guard let volumeId, let vm = viewModel else { return }
+            appState.pendingBrowseVolume = nil
+            guard let entry = vm.allSubseriesGroups
+                .flatMap(\.volumes)
+                .first(where: { $0.volumeId == volumeId }) else { return }
+            vm.navigationPath.append(.volume(entry))
+            #if DEBUG
+            print("[BrowserView] pendingBrowseVolume consumed: \(volumeId)")
             #endif
         }
         .onChange(of: appState.filterDownloadedOnly) { _, flag in
