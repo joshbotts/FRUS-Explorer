@@ -13,23 +13,29 @@ import Testing
 
 /// Pure model tests for the "About the Series" content-model dashboards: the
 /// optional `EducationPage.dashboard` variant, the `.aboutTheSeries` category,
-/// and the real `.seriesProduction` page (Analytics SA-1b, which replaced the
-/// Prep-A DEBUG placeholder).
+/// and the real dashboard pages — `.seriesProduction` (Analytics SA-1b) and
+/// `.seriesGeography` (Analytics SA-2).
 ///
 /// These assert the content model only — no SwiftUI view is instantiated — so
 /// they run without an `AppState` environment. They guard against: a missing or
 /// duplicated dashboard page, a stray `dashboard` on a prose page (which must be
-/// `.aboutTheSeries`), and a broken deep-link contract for the page id.
+/// `.aboutTheSeries` with empty sections), and a broken deep-link contract for
+/// the page ids.
 ///
 /// Version history:
 ///   1.0 — Analytics Prep-A: initial implementation
 ///   1.1 — Analytics SA-1b: retargeted from the DEBUG placeholder to the real,
 ///          unconditional `series-production` page
+///   1.2 — Analytics SA-2: now covers BOTH dashboard pages
+///          (`series-production`, `series-geography`); the guard is kept general
 @MainActor
 struct EducationDashboardTests {
 
-    /// The dashboard page's stable id.
-    private static let productionPageID = "series-production"
+    /// The two dashboard page ids paired with their expected dashboard case.
+    private static let dashboardPages: [(id: String, dashboard: EducationDashboard)] = [
+        ("series-production", .seriesProduction),
+        ("series-geography", .seriesGeography),
+    ]
 
     /// The category carries a non-empty localised title.
     @Test("EducationDashboard: aboutTheSeries category has a non-empty title")
@@ -37,40 +43,57 @@ struct EducationDashboardTests {
         #expect(!EducationCategory.aboutTheSeries.title.isEmpty)
     }
 
-    /// Exactly one page carries the production dashboard, in both debug and
-    /// release, with the expected id, category, dashboard, and empty sections.
-    @Test("EducationDashboard: the series-production page is well-formed and unique")
-    func productionPageIsWellFormed() {
-        let dashboardPages = EducationPage.all.filter { $0.dashboard == .seriesProduction }
-        #expect(dashboardPages.count == 1)
+    /// Each dashboard case is carried by exactly one page, with the expected id,
+    /// category, dashboard, and empty sections; and each id is unique.
+    @Test("EducationDashboard: each dashboard page is well-formed and unique")
+    func dashboardPagesAreWellFormed() {
+        for expected in Self.dashboardPages {
+            let matches = EducationPage.all.filter { $0.dashboard == expected.dashboard }
+            #expect(matches.count == 1, "Expected exactly one page for \(expected.dashboard)")
 
-        guard let page = dashboardPages.first else { return }
-        #expect(page.id == Self.productionPageID)
-        #expect(page.category == .aboutTheSeries)
-        #expect(page.dashboard == .seriesProduction)
-        #expect(page.sections.isEmpty)
+            guard let page = matches.first else { continue }
+            #expect(page.id == expected.id)
+            #expect(page.category == .aboutTheSeries)
+            #expect(page.dashboard == expected.dashboard)
+            #expect(page.sections.isEmpty)
 
-        // The id is unique across all pages.
-        let matchingIds = EducationPage.all.filter { $0.id == Self.productionPageID }
-        #expect(matchingIds.count == 1)
+            // The id is unique across all pages.
+            let sameId = EducationPage.all.filter { $0.id == expected.id }
+            #expect(sameId.count == 1)
+        }
     }
 
-    /// The deep-link contract resolves the production page by id.
-    @Test("EducationDashboard: series-production resolves via the deep-link firstIndex lookup")
-    func productionResolvesViaDeepLink() {
-        let index = EducationPage.all.firstIndex { $0.id == Self.productionPageID }
-        #expect(index != nil)
+    /// Both dashboard pages exist and are distinct.
+    @Test("EducationDashboard: both dashboard pages are present and distinct")
+    func bothDashboardPagesPresent() {
+        let dashboards = EducationPage.all.compactMap(\.dashboard)
+        #expect(dashboards.contains(.seriesProduction))
+        #expect(dashboards.contains(.seriesGeography))
+        // Exactly two pages carry a dashboard.
+        #expect(EducationPage.all.filter { $0.dashboard != nil }.count == 2)
     }
 
-    /// Every page that carries a dashboard is an `.aboutTheSeries` page, and
-    /// every non-dashboard page carries a `nil` dashboard — guards against a
-    /// prose page accidentally sprouting a dashboard.
-    @Test("EducationDashboard: only aboutTheSeries pages carry a dashboard")
+    /// The deep-link contract resolves each dashboard page by id.
+    @Test("EducationDashboard: each dashboard page resolves via the deep-link firstIndex lookup")
+    func dashboardsResolveViaDeepLink() {
+        for expected in Self.dashboardPages {
+            let index = EducationPage.all.firstIndex { $0.id == expected.id }
+            #expect(index != nil, "Deep link failed to resolve \(expected.id)")
+        }
+    }
+
+    /// Every page that carries a dashboard is an `.aboutTheSeries` page with
+    /// empty sections, and every non-dashboard page carries a `nil` dashboard —
+    /// the general guard against a prose page sprouting a dashboard, or a
+    /// dashboard page carrying prose that would break the Markdown-link scan.
+    @Test("EducationDashboard: only aboutTheSeries pages carry a dashboard, with empty sections")
     func onlyAboutTheSeriesPagesCarryDashboards() {
         for page in EducationPage.all {
             if page.dashboard != nil {
                 #expect(page.category == .aboutTheSeries,
                         "Page \(page.id) carries a dashboard but is not .aboutTheSeries")
+                #expect(page.sections.isEmpty,
+                        "Dashboard page \(page.id) must have empty sections")
             } else {
                 #expect(page.dashboard == nil, "Page \(page.id) unexpectedly carries a dashboard")
             }

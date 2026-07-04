@@ -68,6 +68,8 @@ import SwiftUI
 ///          volume Sources list's local counts + cross-volume Collection view
 ///   1.10 — Analytics SA-1b: added the real "Production & Timeliness" dashboard
 ///          page (`.aboutTheSeries`), replacing the DEBUG-only Prep-A placeholder
+///   1.11 — Analytics SA-2: added the "Geographic Emphasis" dashboard page,
+///          second under "About the Series" (administration profiles deferred)
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -495,6 +497,8 @@ enum EducationCategory: String {
 ///   1.1 — Analytics Prep-A: added the optional `dashboard` body variant
 ///   1.2 — Analytics SA-1b: `all` now includes the unconditional
 ///          `seriesProduction` dashboard page (Prep-A's DEBUG placeholder removed)
+///   1.3 — Analytics SA-2: `all` now also includes the `seriesGeography`
+///          dashboard page, second under "About the Series"
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -532,7 +536,8 @@ struct EducationPage: Identifiable {
     /// (Analytics SA-1b). It is unconditional — shipped in both debug and
     /// release builds.
     static let all: [EducationPage] = [
-        page1, page2, page3, page4, page5, page6, page7, seriesProduction,
+        page1, page2, page3, page4, page5, page6, page7,
+        seriesProduction, seriesGeography,
     ]
 }
 
@@ -999,5 +1004,26 @@ private extension EducationPage {
         category: .aboutTheSeries,
         sections: [],
         dashboard: .seriesProduction
+    )
+}
+
+// MARK: - Series Geography dashboard page (Analytics SA-2)
+
+private extension EducationPage {
+    /// The live "About the Series" page that renders the Geographic Emphasis
+    /// dashboard (`EducationDashboard.seriesGeography`) in place of prose. Its
+    /// `sections` are empty by design — the renderers show the dashboard, not
+    /// sections — so it contributes no prose paragraph or Markdown link to scan.
+    /// Placed second under "About the Series", after `seriesProduction`.
+    /// Unconditional (shipped in debug and release).
+    static let seriesGeography = EducationPage(
+        id: "series-geography",
+        title: String(localized: "education.series.geography.page.title",
+                      defaultValue: "Geographic Emphasis"),
+        subtitle: String(localized: "education.series.geography.page.subtitle",
+                         defaultValue: "Which regions and countries the series covers most"),
+        category: .aboutTheSeries,
+        sections: [],
+        dashboard: .seriesGeography
     )
 }
